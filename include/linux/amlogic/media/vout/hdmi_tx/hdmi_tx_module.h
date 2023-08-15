@@ -481,9 +481,6 @@ struct hdmitx_dev {
  **********************************************************************/
 int hdmitx_edid_parse(struct hdmitx_dev *hdmitx_device);
 int check_dvi_hdmi_edid_valid(unsigned char *buf);
-enum hdmi_vic hdmitx_edid_get_VIC(struct hdmitx_dev *hdmitx_device,
-				  const char *disp_mode,
-				  char force_flag);
 bool hdmitx_edid_check_valid_mode(struct hdmitx_dev *hdev,
 				  struct hdmi_format_para *para);
 void hdmitx_edid_clear(struct hdmitx_dev *hdmitx_device);
@@ -506,11 +503,6 @@ bool is_hdmi14_4k(enum hdmi_vic vic);
  * current output is 4k420 mode.
  */
 bool is_hdmi4k_support_420(enum hdmi_vic vic);
-
-/* the hdmitx output limits to 1080p */
-bool hdmitx_limited_1080p(void);
-/* test current vic is over limited or not */
-bool is_vic_over_limited_1080p(enum hdmi_vic vic);
 
 /*
  * HDMI Repeater TX I/F

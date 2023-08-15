@@ -248,6 +248,8 @@ enum vsif_type {
 u32 hdmitx_edid_get_hdmi14_4k_vic(u32 vic);
 void phy_addr_clear(struct vsdb_phyaddr *vsdb_phy_addr);
 
+int hdmitx_edid_validate_mode(struct rx_cap *rxcap, u32 vic);
+
 /*edid is good return 0, otherwise return < 0.*/
 int hdmitx_edid_validate(unsigned char *rawedid);
 bool hdmitx_edid_is_all_zeros(unsigned char *rawedid);

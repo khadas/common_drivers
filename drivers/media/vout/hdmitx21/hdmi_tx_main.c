@@ -6391,7 +6391,7 @@ static int amhdmitx_probe(struct platform_device *pdev)
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
 	struct hdmitx_common *tx_comm = &hdev->tx_comm;
 
-	hdmitx_common_init(&hdev->tx_comm);
+	hdmitx_common_init(&hdev->tx_comm, &hdev->tx_hw);
 
 	pr_debug("amhdmitx_probe_start\n");
 	amhdmitx21_device_init(hdev);

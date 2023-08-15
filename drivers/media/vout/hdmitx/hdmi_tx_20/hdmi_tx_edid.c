@@ -31,8 +31,6 @@
 #include "hw/common.h"
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_edid.h>
 
-const struct hdmi_timing *hdmitx_mode_match_timing_name(const char *name);
-
 #define CEA_DATA_BLOCK_COLLECTION_ADDR_1STP 0x04
 #define VIDEO_TAG 0x40
 #define AUDIO_TAG 0x20
@@ -2287,38 +2285,6 @@ static bool is_rx_support_y420(struct hdmitx_dev *hdev, enum hdmi_vic vic)
 	return 0;
 }
 
-static bool hdmitx_check_4x3_16x9_mode(struct hdmitx_dev *hdev,
-		enum hdmi_vic vic)
-{
-	bool flag = 0;
-	int j;
-	struct rx_cap *prxcap = NULL;
-
-	prxcap = &hdev->tx_comm.rxcap;
-	if (vic == HDMI_720x480p60_4x3 ||
-		vic == HDMI_720x480i60_4x3 ||
-		vic == HDMI_720x576p50_4x3 ||
-		vic == HDMI_720x576i50_4x3) {
-		for (j = 0; (j < prxcap->VIC_count) && (j < VIC_MAX_NUM); j++) {
-			if ((vic + 1) == (prxcap->VIC[j] & 0xff)) {
-				flag = 1;
-				break;
-			}
-		}
-	} else if (vic == HDMI_720x480p60_16x9 ||
-			vic == HDMI_720x480i60_16x9 ||
-			vic == HDMI_720x576p50_16x9 ||
-			vic == HDMI_720x576i50_16x9) {
-		for (j = 0; (j < prxcap->VIC_count) && (j < VIC_MAX_NUM); j++) {
-			if ((vic - 1) == (prxcap->VIC[j] & 0xff)) {
-				flag = 1;
-				break;
-			}
-		}
-	}
-	return flag;
-}
-
 /* For some TV's EDID, there maybe exist some information ambiguous.
  * Such as EDID declare support 2160p60hz(Y444 8bit), but no valid
  * Max_TMDS_Clock2 to indicate that it can support 5.94G signal.
@@ -2329,11 +2295,8 @@ bool hdmitx_edid_check_valid_mode(struct hdmitx_dev *hdev,
 	bool valid = 0;
 	struct rx_cap *prxcap = NULL;
 	const struct dv_info *dv = &hdev->tx_comm.rxcap.dv_info;
-	enum hdmi_vic *vesa_t = &hdev->tx_comm.rxcap.vesa_timing[0];
 	unsigned int rx_max_tmds_clk = 0;
 	unsigned int calc_tmds_clk = 0;
-	int i = 0;
-	int svd_flag = 0;
 	/* Default max color depth is 24 bit */
 	enum hdmi_color_depth rx_y444_max_dc = COLORDEPTH_24B;
 	enum hdmi_color_depth rx_rgb_max_dc = COLORDEPTH_24B;
@@ -2341,19 +2304,9 @@ bool hdmitx_edid_check_valid_mode(struct hdmitx_dev *hdev,
 	if (!hdev || !para)
 		return 0;
 
-	/* if current limits to 1080p, here will check the freshrate and
-	 * 4k resolution
-	 */
-	if (hdmitx_limited_1080p()) {
-		if (is_vic_over_limited_1080p(para->vic)) {
-			pr_err("over limited vic%d in %s\n", para->vic, __func__);
-			return 0;
-		}
-	}
+	if (para->vic == HDMI_0_UNKNOWN)
+		return 0;
 
-	if (para->sname)
-		if (strcmp(para->sname, "invalid") == 0)
-			return 0;
 	/* exclude such as: 2160p60hz YCbCr444 10bit */
 	switch (para->vic) {
 	case HDMI_3840x2160p50_16x9:
@@ -2383,38 +2336,6 @@ bool hdmitx_edid_check_valid_mode(struct hdmitx_dev *hdev,
 			return 0;
 	}
 
-	/* target mode is not contained at RX SVD */
-	for (i = 0; (i < prxcap->VIC_count) && (i < VIC_MAX_NUM); i++) {
-		if (para->vic == prxcap->VIC[i]) {
-			svd_flag = 1;
-			break;
-		} else if (hdmitx_check_4x3_16x9_mode(hdev, para->vic & 0xff)) {
-			svd_flag = 1;
-			break;
-		}
-	}
-
-	if (para->vic >= HDMITX_VESA_OFFSET) {
-		if (para->cd != COLORDEPTH_24B)
-			return 0;
-		if (para->cs != HDMI_COLORSPACE_RGB)
-			return 0;
-		for (i = 0; vesa_t[i] && i < VESA_MAX_TIMING; i++) {
-			const struct hdmi_timing *timing =
-				hdmitx_mode_vic_to_hdmi_timing(vesa_t[i]);
-
-			if (timing) {
-				if (timing->vic >= HDMITX_VESA_OFFSET &&
-					para->vic == timing->vic) {
-					svd_flag = 1;
-					break;
-				}
-			}
-		}
-	}
-	if (svd_flag == 0)
-		return 0;
-
 	/* Get RX Max_TMDS_Clock */
 	if (prxcap->Max_TMDS_Clock2) {
 		rx_max_tmds_clk = prxcap->Max_TMDS_Clock2 * 5;
@@ -2424,11 +2345,12 @@ bool hdmitx_edid_check_valid_mode(struct hdmitx_dev *hdev,
 			prxcap->Max_TMDS_Clock1 = 0x1e;
 		rx_max_tmds_clk = prxcap->Max_TMDS_Clock1 * 5;
 	}
+
 	/* if current status already limited to 1080p, so here also needs to
 	 * limit the rx_max_tmds_clk as 150 * 1.5 = 225 to make the valid mode
 	 * checking works
 	 */
-	if (hdmitx_limited_1080p()) {
+	if (false /*hdmitx_limited_1080p()*/) {
 		if (rx_max_tmds_clk > 225)
 			rx_max_tmds_clk = 225;
 	}
@@ -2509,110 +2431,6 @@ bool hdmitx_edid_check_valid_mode(struct hdmitx_dev *hdev,
 	}
 
 	return valid;
-}
-
-static bool check_sd(struct rx_cap *prxcap, const char *_mode,
-	const char *mode, const unsigned int _vic,
-	unsigned int *vic)
-{
-	int i;
-	bool check1 = 0;
-	bool check2 = 0;
-
-	if (strcmp(_mode, mode) == 0) {
-		for (i = 0 ; i < prxcap->VIC_count ; i++) {
-			if (prxcap->VIC[i] == _vic)
-				check1 = 1;
-		}
-		for (i = 0 ; i < prxcap->VIC_count ; i++) {
-			if (prxcap->VIC[i] == (_vic + 1))
-				check2 = 1;
-		}
-		if (check1 == 1 && check2 == 0) {
-			*vic = _vic;
-			return 1;
-		}
-	}
-
-	return 0;
-}
-
-/* For some TV only support 480p 4:3,
- *then consider it also supports in disp_cap
- */
-static bool is_sink_only_sd_4x3(struct hdmitx_dev *hdev,
-	const char *mode, unsigned int *vic)
-{
-	struct rx_cap *prxcap = &hdev->tx_comm.rxcap;
-
-	if (check_sd(prxcap, "480i60hz", mode, HDMI_720x480i60_4x3, vic))
-		return 1;
-	if (check_sd(prxcap, "480p60hz", mode, HDMI_720x480p60_4x3, vic))
-		return 1;
-	if (check_sd(prxcap, "576i50hz", mode, HDMI_720x576i50_4x3, vic))
-		return 1;
-	if (check_sd(prxcap, "576p50hz", mode, HDMI_720x576p50_4x3, vic))
-		return 1;
-
-	return 0;
-}
-
-/* force_flag: 0 means check with RX's edid */
-/* 1 means no check with RX's edid */
-enum hdmi_vic hdmitx_edid_get_VIC(struct hdmitx_dev *hdev,
-				  const char *disp_mode,
-				  char force_flag)
-{
-	const struct hdmi_timing *timing;
-	enum hdmi_vic vic = HDMI_0_UNKNOWN;
-	struct rx_cap *prxcap = &hdev->tx_comm.rxcap;
-	enum hdmi_vic *vesa_t = &prxcap->vesa_timing[0];
-	enum hdmi_vic vesa_vic;
-	int j;
-
-	timing = hdmitx_mode_match_timing_name(disp_mode);
-	if (!timing || timing->vic == HDMI_0_UNKNOWN)
-		return HDMI_0_UNKNOWN;
-
-	if (hdmitx_hw_validate_mode(&hdev->tx_hw, timing->vic) != 0)
-		return HDMI_0_UNKNOWN;
-
-	vic = timing->vic;
-
-	if (vic >= HDMITX_VESA_OFFSET)
-		vesa_vic = vic;
-	else
-		vesa_vic = HDMI_0_UNKNOWN;
-
-	if (vic != HDMI_0_UNKNOWN) {
-		if (force_flag == 0) {
-			for (j = 0 ; j < prxcap->VIC_count; j++) {
-				if (prxcap->VIC[j] == vic)
-					break;
-			}
-			if (j >= prxcap->VIC_count)
-				vic = HDMI_0_UNKNOWN;
-		}
-		/* if TV only supports 480p/2, add 480p60hz as well */
-		if (is_sink_only_sd_4x3(hdev, disp_mode, &vic)) {
-			; /* pr_debug("hdmitx: find SD only 4x3\n"); */
-		}
-	}
-
-	if (vic == HDMI_UNKNOWN && vesa_vic != HDMI_UNKNOWN) {
-		for (j = 0; vesa_t[j] && j < VESA_MAX_TIMING; j++) {
-			timing = hdmitx_mode_vic_to_hdmi_timing(vesa_t[j]);
-
-			if (timing) {
-				if (timing->vic >= HDMITX_VESA_OFFSET &&
-					vesa_vic == timing->vic) {
-					vic = timing->vic;
-					break;
-				}
-			}
-		}
-	}
-	return vic;
 }
 
 /* Clear HDMI Hardware Module EDID RAM and EDID Buffer */

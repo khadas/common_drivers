@@ -11,6 +11,7 @@
 #include <linux/hdmi.h>
 
 #include <drm/amlogic/meson_connector_dev.h>
+#include <linux/amlogic/media/vout/hdmitx_common/hdmitx_hw_common.h>
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_edid.h>
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_types.h>
 
@@ -67,6 +68,12 @@ struct hdmitx_common {
 
 	struct hdmitx_base_state *states[HDMITX_MAX_MODULE];
 	struct hdmitx_base_state *old_states[HDMITX_MAX_MODULE];
+
+	/*soc limitation*/
+	int res_1080p;
+	int max_refreshrate;
+
+	struct hdmitx_hw_common *tx_hw;
 };
 
 struct hdmitx_base_state *hdmitx_get_mod_state(struct hdmitx_common *tx_common,
@@ -76,7 +83,7 @@ struct hdmitx_base_state *hdmitx_get_old_mod_state(struct hdmitx_common *tx_comm
 void hdmitx_get_init_state(struct hdmitx_common *tx_common,
 					struct hdmitx_binding_state *state);
 
-int hdmitx_common_init(struct hdmitx_common *tx_common);
+int hdmitx_common_init(struct hdmitx_common *tx_common, struct hdmitx_hw_common *hw_comm);
 int hdmitx_common_destroy(struct hdmitx_common *tx_common);
 
 int hdmitx_hpd_notify_unlocked(struct hdmitx_common *tx_comm);
@@ -85,6 +92,13 @@ int hdmitx_register_hpd_cb(struct hdmitx_common *tx_comm, struct connector_hpd_c
 unsigned char *hdmitx_get_raw_edid(struct hdmitx_common *tx_comm);
 int hdmitx_setup_attr(struct hdmitx_common *tx_comm, const char *buf);
 int hdmitx_get_attr(struct hdmitx_common *tx_comm, char attr[16]);
+
+/* modename policy: get vic from name and check if support by rx;
+ * return the vic of mode, if failed return HDMI_0_UNKNOWN;
+ */
+int hdmitx_parse_mode_vic(struct hdmitx_common *tx_comm, const char *mode);
+
+int hdmitx_common_validate_mode(struct hdmitx_common *tx_comm, u32 vic);
 
 int hdmitx_get_hdrinfo(struct hdmitx_common *tx_comm, struct hdr_info *hdrinfo);
 

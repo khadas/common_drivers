@@ -24,10 +24,3 @@ int hdmitx_hw_set_phy(struct hdmitx_hw_common *tx_hw, int flag)
 
 	return 0;
 }
-
-int hdmitx_hw_validate_mode(struct hdmitx_hw_common *tx_hw,
-	u32 vic)
-{
-	return tx_hw->validatemode(vic);
-}
-

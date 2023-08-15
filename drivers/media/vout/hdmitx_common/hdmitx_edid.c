@@ -183,3 +183,31 @@ u32 hdmitx_edid_get_hdmi14_4k_vic(u32 vic)
 
 	return ret;
 }
+
+int hdmitx_edid_validate_mode(struct rx_cap *rxcap, u32 vic)
+{
+	int i = 0;
+	bool edid_matched = false;
+
+	if (vic < HDMITX_VESA_OFFSET) {
+		/*check cea cap*/
+		for (i = 0 ; i < rxcap->VIC_count; i++) {
+			if (rxcap->VIC[i] == vic) {
+				edid_matched = true;
+				break;
+			}
+		}
+	} else {
+		enum hdmi_vic *vesa_t = &rxcap->vesa_timing[0];
+		/*check vesa mode.*/
+		for (i = 0; i < VESA_MAX_TIMING && vesa_t[i]; i++) {
+			if (vic == vesa_t[i]) {
+				edid_matched = true;
+				break;
+			}
+		}
+	}
+
+	return edid_matched ? 0 : -EINVAL;
+}
+

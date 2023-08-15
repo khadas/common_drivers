@@ -24,7 +24,7 @@ static const struct hdmi_timing edid_cea_modes_0[] = {
 	{HDMI_0_UNKNOWN, "invalid", NULL},
 	{HDMI_1_640x480p60_4x3, "640x480p60hz", NULL, 1, 31469, 59940, 25175,
 		800, 160, 16, 96, 48, 640, 525, 45, 10, 2, 33, 480, 1, 0, 0, 4, 3, 1, 1},
-	{HDMI_2_720x480p60_4x3, "720x480p60hz", "480p60hz_4x3", 1, 31469, 59940, 27000,
+	{HDMI_2_720x480p60_4x3, "720x480p60hz", "480p60hz", 1, 31469, 59940, 27000,
 		858, 138, 16, 62, 60, 720, 525, 45, 9, 6, 30, 480, 7, 0, 0, 4, 3, 8, 9},
 	{HDMI_3_720x480p60_16x9, "720x480p60hz", "480p60hz", 1, 31469, 59940, 27000,
 		858, 138, 16, 62, 60, 720, 525, 45, 9, 6, 30, 480, 7, 0, 0, 16, 9, 32, 27},
@@ -54,7 +54,7 @@ static const struct hdmi_timing edid_cea_modes_0[] = {
 		1716, 276, 32, 124, 120, 1440, 525, 45, 9, 6, 30, 480, 7, 0, 0, 16, 9, 16, 27},
 	{HDMI_16_1920x1080p60_16x9, "1920x1080p60hz", "1080p60hz", 1, 67500, 60000, 148500,
 		2200, 280, 88, 44, 148, 1920, 1125, 45, 4, 5, 36, 1080, 1, 1, 1, 16, 9, 1, 1},
-	{HDMI_17_720x576p50_4x3, "720x576p50hz", "576p50hz_4x3", 1, 31250, 50000, 27000,
+	{HDMI_17_720x576p50_4x3, "720x576p50hz", "576p50hz", 1, 31250, 50000, 27000,
 		864, 144, 12, 64, 68, 720, 625, 49, 5, 5, 39, 576, 1, 0, 0, 4, 3, 16, 15},
 	{HDMI_18_720x576p50_16x9, "720x576p50hz", "576p50hz", 1, 31250, 50000, 27000,
 		864, 144, 12, 64, 68, 720, 625, 49, 5, 5, 39, 576, 1, 0, 0, 16, 9, 64, 65},
@@ -546,11 +546,11 @@ const struct hdmi_timing *hdmitx_mode_match_timing_name(const char *name)
 			break;
 
 		/* check sname first */
-		if (timing->sname && !strncmp(timing->sname, name, strlen(timing->sname)))
+		if (timing->sname && !strcmp(timing->sname, name))
 			return timing;
 
 		/* check full name first */
-		if (!strncmp(timing->name, name, strlen(timing->name)))
+		if (!strcmp(timing->name, name))
 			return timing;
 
 		i++;
@@ -634,27 +634,6 @@ int hdmitx_mode_update_timing(struct hdmi_timing *t,
 	}
 
 	return alternate_clock;
-}
-
-enum hdmi_vic hdmitx_mode_get_alternate_4x3_vic(enum hdmi_vic vic)
-{
-	int i = 0;
-	struct {
-		u32 mode_16x9_vic;
-		u32 mode_4x3_vic;
-	} vic_pairs[] = {
-		{HDMI_7_720x480i60_16x9, HDMI_6_720x480i60_4x3},
-		{HDMI_3_720x480p60_16x9, HDMI_2_720x480p60_4x3},
-		{HDMI_22_720x576i50_16x9, HDMI_21_720x576i50_4x3},
-		{HDMI_18_720x576p50_16x9, HDMI_17_720x576p50_4x3},
-	};
-
-	for (i = 0; i < ARRAY_SIZE(vic_pairs); i++) {
-		if (vic_pairs[i].mode_16x9_vic == vic)
-			return vic_pairs[i].mode_4x3_vic;
-	}
-
-	return HDMI_0_UNKNOWN;
 }
 
 void hdmitx_mode_print_hdmi_timing(const struct hdmi_timing *t)

@@ -3,9 +3,12 @@
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
 
+#include <linux/errno.h>
 #include <linux/mm.h>
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_common.h>
 #include <hdmitx_boot_parameters.h>
+
+const struct hdmi_timing *hdmitx_mode_match_timing_name(const char *name);
 
 struct hdmitx_base_state *hdmitx_get_mod_state(struct hdmitx_common *tx_common,
 					       enum HDMITX_MODULE type)
@@ -27,28 +30,75 @@ void hdmitx_get_init_state(struct hdmitx_common *tx_common,
 }
 EXPORT_SYMBOL(hdmitx_get_init_state);
 
-int hdmitx_common_init(struct hdmitx_common *tx_common)
+int hdmitx_common_init(struct hdmitx_common *tx_comm, struct hdmitx_hw_common *hw_comm)
 {
 	struct hdmitx_boot_param *boot_param = get_hdmitx_boot_params();
 
 	/*load tx boot params*/
-	tx_common->hdr_priority = boot_param->hdr_mask;
-	memcpy(tx_common->hdmichecksum, boot_param->edid_chksum, sizeof(tx_common->hdmichecksum));
+	tx_comm->hdr_priority = boot_param->hdr_mask;
+	memcpy(tx_comm->hdmichecksum, boot_param->edid_chksum, sizeof(tx_comm->hdmichecksum));
 
-	memcpy(tx_common->fmt_attr, boot_param->color_attr, sizeof(tx_common->fmt_attr));
-	memcpy(tx_common->backup_fmt_attr, boot_param->color_attr, sizeof(tx_common->fmt_attr));
+	memcpy(tx_comm->fmt_attr, boot_param->color_attr, sizeof(tx_comm->fmt_attr));
+	memcpy(tx_comm->backup_fmt_attr, boot_param->color_attr, sizeof(tx_comm->fmt_attr));
 
-	tx_common->frac_rate_policy = boot_param->fraction_refreshrate;
-	tx_common->backup_frac_rate_policy = boot_param->fraction_refreshrate;
-	tx_common->config_csc_en = boot_param->config_csc;
+	tx_comm->frac_rate_policy = boot_param->fraction_refreshrate;
+	tx_comm->backup_frac_rate_policy = boot_param->fraction_refreshrate;
+	tx_comm->config_csc_en = boot_param->config_csc;
+
+	tx_comm->res_1080p = 0;
+	tx_comm->max_refreshrate = 60;
+
+	tx_comm->tx_hw = hw_comm;
 
 	/*mutex init*/
-	mutex_init(&tx_common->setclk_mutex);
+	mutex_init(&tx_comm->setclk_mutex);
 	return 0;
 }
 
-int hdmitx_common_destroy(struct hdmitx_common *tx_common)
+int hdmitx_common_destroy(struct hdmitx_common *tx_comm)
 {
+	return 0;
+}
+
+int hdmitx_common_validate_mode(struct hdmitx_common *tx_comm, u32 vic)
+{
+	const struct hdmi_timing *timing = hdmitx_mode_vic_to_hdmi_timing(vic);
+
+	if (!timing)
+		return -EINVAL;
+
+	/*soc level filter*/
+	/*filter 1080p max size.*/
+	if (tx_comm->res_1080p) {
+		/* if the vic equals to HDMI_UNKNOWN or VESA,
+		 * then create it as over limited
+		 */
+		if (vic == HDMI_0_UNKNOWN || vic >= HDMITX_VESA_OFFSET)
+			return -ERANGE;
+
+		/* check the resolution is over 1920x1080 or not */
+		if (timing->h_active > 1920 || timing->v_active > 1080)
+			return -ERANGE;
+
+		/* check the fresh rate is over 60hz or not */
+		if (timing->v_freq > 60000)
+			return -ERANGE;
+
+		/* test current vic is over 150MHz or not */
+		if (timing->pixel_freq > 150000)
+			return -ERANGE;
+	}
+	/*filter max refreshrate.*/
+	if (timing->v_freq > (tx_comm->max_refreshrate * 1000)) {
+		pr_info("validate refreshrate (%s)-(%d) fail\n",
+					timing->name, timing->v_freq);
+		return -EACCES;
+	}
+
+	/*ip level filter*/
+	if (tx_comm->tx_hw->validatemode(vic) != 0)
+		return -EPERM;
+
 	return 0;
 }
 
@@ -143,6 +193,71 @@ int hdmitx_update_edid_chksum(u8 *buf, u32 block_cnt, struct rx_cap *rxcap)
 		xtochar(edid_checkvalue[i], &rxcap->chksum[2 * i + 2]);
 
 	return 0;
+}
+
+static enum hdmi_vic get_alternate_ar_vic(enum hdmi_vic vic)
+{
+	int i = 0;
+	struct {
+		u32 mode_16x9_vic;
+		u32 mode_4x3_vic;
+	} vic_pairs[] = {
+		{HDMI_7_720x480i60_16x9, HDMI_6_720x480i60_4x3},
+		{HDMI_3_720x480p60_16x9, HDMI_2_720x480p60_4x3},
+		{HDMI_22_720x576i50_16x9, HDMI_21_720x576i50_4x3},
+		{HDMI_18_720x576p50_16x9, HDMI_17_720x576p50_4x3},
+	};
+
+	for (i = 0; i < ARRAY_SIZE(vic_pairs); i++) {
+		if (vic_pairs[i].mode_16x9_vic == vic)
+			return vic_pairs[i].mode_4x3_vic;
+		if (vic_pairs[i].mode_4x3_vic == vic)
+			return vic_pairs[i].mode_16x9_vic;
+	}
+
+	return HDMI_0_UNKNOWN;
+}
+
+int hdmitx_parse_mode_vic(struct hdmitx_common *tx_comm, const char *mode)
+{
+	const struct hdmi_timing *timing;
+	enum hdmi_vic vic = HDMI_0_UNKNOWN;
+	enum hdmi_vic alternate_vic = HDMI_0_UNKNOWN;
+
+	/*parse by name to find default mode*/
+	timing = hdmitx_mode_match_timing_name(mode);
+	if (!timing || timing->vic == HDMI_0_UNKNOWN)
+		return HDMI_0_UNKNOWN;
+
+	vic = timing->vic;
+	/* for compatibility: 480p/576p
+	 * 480p/576p use same short name in hdmitx_timing table, so when match name, will return
+	 * 4x3 mode fist. But user prefer 16x9 first, so try 16x9 first;
+	 */
+	alternate_vic = get_alternate_ar_vic(vic);
+	if (alternate_vic != HDMI_0_UNKNOWN) {
+		pr_info("get alternate vic %d->%d\n", vic, alternate_vic);
+		vic = alternate_vic;
+	}
+
+	/*check if vic supported by rx*/
+	if (hdmitx_edid_validate_mode(&tx_comm->rxcap, vic) == 0)
+		return vic;
+
+	/* for compatibility: 480p/576p, will get 0 if there is no alternate vic;*/
+	alternate_vic = get_alternate_ar_vic(vic);
+	if (alternate_vic != vic) {
+		pr_info("get alternate vic %d->%d\n", vic, alternate_vic);
+		vic = alternate_vic;
+	}
+
+	if (vic != HDMI_0_UNKNOWN && hdmitx_edid_validate_mode(&tx_comm->rxcap, vic) != 0)
+		vic = HDMI_0_UNKNOWN;
+
+	if (vic == HDMI_0_UNKNOWN)
+		pr_err("%s: parse mode %s fail\n", __func__, mode);
+
+	return vic;
 }
 
 /********************************Debug function***********************************/

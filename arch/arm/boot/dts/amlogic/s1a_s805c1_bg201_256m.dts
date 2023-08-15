@@ -1057,7 +1057,6 @@
 	status = "disabled";
 	phy-handle = <&internal_ephy>;
 	phy-mode = "rmii";
-	keep-alive = <1>;
 };
 
 &ir {

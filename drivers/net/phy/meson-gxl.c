@@ -350,7 +350,11 @@ static int custom_internal_config(struct phy_device *phydev)
 		phy_tst_write(phydev, 0x16, 0x8400);
 		pr_debug("setup voltage phy %x\n", phy_tst_read(phydev, 0x16));
 	}
-
+	/*s1a*/
+	if (voltage_phy == 3) {
+		phy_tst_write(phydev, 0x16, 0x8400);
+		pr_debug("setup voltage phy %x\n", phy_tst_read(phydev, 0x16));
+	}
 	return 0;
 }
 

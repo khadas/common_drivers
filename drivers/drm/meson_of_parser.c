@@ -49,6 +49,18 @@ static void meson_parse_dma_mask(struct device *dev)
 	}
 }
 
+static void meson_connect_parse_config(struct drm_device *dev, struct meson_of_conf *conf)
+{
+	int ret;
+
+	ret = of_property_read_string(dev->dev->of_node,
+				   "pref_mode", (const char **)&conf->pref_mode);
+	if (ret) {
+		DRM_DEBUG("%s parse pref mode fail!\n", __func__);
+		conf->pref_mode = NULL;
+	}
+}
+
 static void meson_video_parse_config(struct drm_device *dev, struct meson_of_conf *conf)
 {
 	u32 mode_flag = 0;
@@ -137,5 +149,6 @@ void meson_of_init(struct device *vpu_dev, struct drm_device *dev,
 
 	meson_osd_parse_config(dev, conf);
 	meson_video_parse_config(dev, conf);
+	meson_connect_parse_config(dev, conf);
 }
 

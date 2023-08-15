@@ -298,11 +298,17 @@ int meson_hdmitx_get_modes(struct drm_connector *connector)
 	struct drm_hdmitx_timing_para para;
 	struct am_hdmi_tx *am_hdmitx = connector_to_am_hdmi(connector);
 	char *strp = NULL;
+	struct meson_drm *priv;
+	struct meson_of_conf *conf;
+	bool pref_flag;
 
 	if (!am_hdmitx) {
 		DRM_ERROR("am_hdmitx is NULL!\n");
 		return count;
 	}
+
+	priv = am_hdmitx->base.drm_priv;
+	conf = &priv->of_conf;
 
 	edid = (struct edid *)am_hdmitx->hdmitx_dev->get_raw_edid();
 	drm_connector_update_edid_property(connector, edid);
@@ -375,10 +381,21 @@ int meson_hdmitx_get_modes(struct drm_connector *connector)
 				 * select 1080P mode with hightest refresh rate first,
 				 * if not find then select 720p mode as pref mode
 				 */
-				if (!(mode->flags & DRM_MODE_FLAG_INTERLACE) &&
+				if (conf->pref_mode && (!strcmp(conf->pref_mode, "2160p"))) {
+					pref_flag = (!(mode->flags & DRM_MODE_FLAG_INTERLACE)) &&
 					((mode->hdisplay == 3840 && mode->vdisplay == 2160) ||
-					(mode->hdisplay == 1920 && mode->vdisplay == 1080)  ||
-					(mode->hdisplay == 1280 && mode->vdisplay == 720))) {
+					(mode->hdisplay == 1920 && mode->vdisplay == 1080) ||
+					(mode->hdisplay == 1280 && mode->vdisplay == 720));
+					DRM_DEBUG("mode_name is %s, pref_flag = %d\n",
+						conf->pref_mode, pref_flag);
+				} else {
+					pref_flag = (!(mode->flags & DRM_MODE_FLAG_INTERLACE)) &&
+					((mode->hdisplay == 1920 && mode->vdisplay == 1080) ||
+					(mode->hdisplay == 1280 && mode->vdisplay == 720));
+					DRM_DEBUG("mode_name is %s, pref_flag = %d\n",
+						conf->pref_mode, pref_flag);
+				}
+				if (pref_flag) {
 					if (!pref_mode)
 						pref_mode = mode;
 					else if (pref_mode->hdisplay < mode->hdisplay)

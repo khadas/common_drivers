@@ -145,7 +145,6 @@ void hdcp_enable_intrs(bool en)
 
 static void hdmitx_phy_bandgap_en(struct hdmitx_dev *hdev)
 {
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	switch (hdev->data->chip_type) {
 	case MESON_CPU_ID_T7:
 	case MESON_CPU_ID_S1A:
@@ -154,7 +153,6 @@ static void hdmitx_phy_bandgap_en(struct hdmitx_dev *hdev)
 	default:
 		break;
 	}
-#endif
 }
 
 void hdmitx_top_intr_handler(struct work_struct *work)
@@ -206,13 +204,13 @@ void hdmitx_top_intr_handler(struct work_struct *work)
 	}
 next:
 	/* already called top_intr.callback, next others */
-
 	for (i = 1; i < sizeof(union intr_u) / sizeof(struct intr_t); i++) {
 		pint++;
 		/* pr_info("-----i = %d, pint->st_data = %x\n", i, pint->st_data); */
 		if (pint->st_data) {
 			val = pint->st_data;
-			pint->callback(pint);
+			if (pint->callback)
+				pint->callback(pint);
 		}
 	}
 }
@@ -225,7 +223,7 @@ static void intr_status_save_and_clear(void)
 	for (i = 0; i < sizeof(union intr_u) / sizeof(struct intr_t); i++) {
 		pint->st_data = hdmitx21_rd_reg(pint->intr_st_reg);
 		/* if (pint->intr_st_reg == TPI_INTR_ST0_IVCTX) */
-			/* pr_info("TPI_INTR_ST0_IVCTX :0x%x\n", pint->st_data); */
+			/*pr_info("TPI_INTR_ST0_IVCTX :0x%x\n", pint->st_data); */
 		hdmitx21_wr_reg(pint->intr_clr_reg, pint->st_data);
 		pint++;
 	}
@@ -239,7 +237,6 @@ static irqreturn_t intr_handler(int irq, void *dev)
 RE_ISR:
 	intr_status_save_and_clear();
 	top_intr_state = hdmitx21_rd_reg(HDMITX_TOP_INTR_STAT);
-
 	/* for hdcp cts test, need handle ASAP w/o any delay */
 	queue_delayed_work(hdev->hdmi_wq, &hdev->work_internal_intr, 0);
 
@@ -269,8 +266,7 @@ void hdmitx_setupirqs(struct hdmitx_dev *phdev)
 	if (phdev->pxp_mode)
 		return;
 
-	if (phdev->data->chip_type != MESON_CPU_ID_S1A)
-		hdmitx21_wr_reg(HDMITX_TOP_INTR_STAT_CLR, 0x7);
+	hdmitx21_wr_reg(HDMITX_TOP_INTR_STAT_CLR, 0x7);
 	r = request_irq(phdev->irq_hpd, &intr_handler,
 			IRQF_SHARED, "hdmitx",
 			(void *)phdev);

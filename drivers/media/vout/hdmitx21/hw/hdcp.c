@@ -49,7 +49,10 @@ bool get_hdcp1_lstore(void)
 bool get_hdcp2_lstore(void)
 {
 	struct arm_smccc_res res;
+	struct hdmitx_dev *hdev = get_hdmitx21_device();
 
+	if (hdev->data->chip_type == MESON_CPU_ID_S1A)
+		return 0;
 	arm_smccc_smc(HDCPTX_IOOPR, HDCP22_KEY_READY, 0, 0, 0, 0, 0, 0, &res);
 
 	return (unsigned int)((res.a0) & 0xffffffff);
@@ -67,6 +70,10 @@ bool get_hdcp1_result(void)
 bool get_hdcp2_result(void)
 {
 	struct arm_smccc_res res;
+	struct hdmitx_dev *hdev = get_hdmitx21_device();
+
+	if (hdev->data->chip_type == MESON_CPU_ID_S1A)
+		return 0;
 
 	arm_smccc_smc(HDCPTX_IOOPR, HDCP22_RESULT, 0, 0, 0, 0, 0, 0, &res);
 
@@ -76,6 +83,10 @@ bool get_hdcp2_result(void)
 bool get_hdcp2_topo(void)
 {
 	struct arm_smccc_res res;
+	struct hdmitx_dev *hdev = get_hdmitx21_device();
+
+	if (hdev->data->chip_type == MESON_CPU_ID_S1A)
+		return 0;
 
 	arm_smccc_smc(HDCPTX_IOOPR, HDCP22_GET_TOPO, 0, 0, 0, 0, 0, 0, &res);
 
@@ -85,9 +96,11 @@ bool get_hdcp2_topo(void)
 void set_hdcp2_topo(u32 topo_type)
 {
 	struct arm_smccc_res res;
+	struct hdmitx_dev *hdev = get_hdmitx21_device();
 
 	pr_info("%s: %d", __func__, topo_type);
-	arm_smccc_smc(HDCPTX_IOOPR, HDCP22_SET_TOPO, topo_type, 0, 0, 0, 0, 0, &res);
+	if (hdev->data->chip_type != MESON_CPU_ID_S1A)
+		arm_smccc_smc(HDCPTX_IOOPR, HDCP22_SET_TOPO, topo_type, 0, 0, 0, 0, 0, &res);
 }
 
 void hdcptx_init_reg(void)
@@ -247,10 +260,6 @@ bool hdcptx2_ds_rptr_capability(void)
 
 void hdcptx2_encryption_update(bool en)
 {
-	struct hdmitx_dev *hdev = get_hdmitx21_device();
-
-	if (hdev->data->chip_type == MESON_CPU_ID_S1A)
-		return;
 	hdmitx21_set_bit(HDCP2X_CTL_0_IVCTX, BIT_HDCP2X_CTL_0_ENCRYPT_EN, en);
 }
 
@@ -291,10 +300,6 @@ void hdcptx2_auth_stop(void)
 {
 	u8 ddc_status;
 	u8 count = 0;
-	struct hdmitx_dev *hdev = get_hdmitx21_device();
-
-	if (hdev->data->chip_type == MESON_CPU_ID_S1A)
-		return;
 
 	hdmitx21_wr_reg(HDCP2X_POLL_CS_IVCTX, 0x71);
 
@@ -325,10 +330,6 @@ void hdcptx2_auth_stop(void)
 
 void hdcptx2_reauth_send(void)
 {
-	struct hdmitx_dev *hdev = get_hdmitx21_device();
-
-	if (hdev->data->chip_type == MESON_CPU_ID_S1A)
-		return;
 	hdmitx21_wr_reg(HDCP2X_POLL_CS_IVCTX, 0x70);  /* Enable Polling */
 	hdmitx21_set_bit(HDCP2X_CTL_1_IVCTX, BIT_HDCP2X_CTL_1_HPD_SW, true);
 	hdmitx21_set_bit(HDCP2X_CTL_1_IVCTX, BIT_HDCP2X_CTL_1_REAUTH_SW, true);
@@ -389,10 +390,6 @@ void hdcptx2_src_auth_start(u8 content_type)
 	if (content_type != 0 && content_type != 1)
 		content_type = 0;
 
-	struct hdmitx_dev *hdev = get_hdmitx21_device();
-
-	if (hdev->data->chip_type == MESON_CPU_ID_S1A)
-		return;
 	/* reset hdcp2x logic and HW state machine */
 	reset_val = hdmitx21_rd_reg(HDCP2X_TX_SRST_IVCTX);
 	//hdmitx21_set_bit(HDCP2X_TX_SRST_IVCTX, BIT(5), true);

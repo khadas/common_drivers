@@ -171,19 +171,22 @@ void hdmitx21_set_hdcp_pclk(struct hdmitx_dev *hdev)
 
 static void set_hpll_clk_out(u32 clk)
 {
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
 
 	pr_info("config HPLL = %d frac_rate = %d\n", clk, frac_rate);
 
 	switch (hdev->data->chip_type) {
-	case MESON_CPU_ID_T7:
 	case MESON_CPU_ID_S1A:
+		set21_s1a_hpll_clk_out(frac_rate, clk);
+		break;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+	case MESON_CPU_ID_T7:
 		set21_t7_hpll_clk_out(frac_rate, clk);
+		break;
+#endif
 	default:
 		break;
 	}
-#endif
 
 	pr_info("config HPLL done\n");
 }
@@ -191,22 +194,22 @@ static void set_hpll_clk_out(u32 clk)
 /* HERE MUST BE BIT OPERATION!!! */
 static void set_hpll_sspll(enum hdmi_vic vic)
 {
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
 
 	switch (hdev->data->chip_type) {
 	case MESON_CPU_ID_T7:
-	case MESON_CPU_ID_S1A:
 		set21_hpll_sspll_t7(vic);
 		break;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	case MESON_CPU_ID_S5:
 		set21_hpll_sspll_s5(vic);
 		break;
+#endif
+	case MESON_CPU_ID_S1A:
 	default:
 		pr_info("%s%dNot match chip ID\n", __func__, __LINE__);
 		break;
 	}
-#endif
 }
 
 static void set_hpll_od1(u32 div)
@@ -216,8 +219,9 @@ static void set_hpll_od1(u32 div)
 	switch (hdev->data->chip_type) {
 	case MESON_CPU_ID_T7:
 	case MESON_CPU_ID_S1A:
-	default:
 		set21_hpll_od1_t7(div);
+		break;
+	default:
 		break;
 	}
 }
@@ -229,8 +233,9 @@ static void set_hpll_od2(u32 div)
 	switch (hdev->data->chip_type) {
 	case MESON_CPU_ID_T7:
 	case MESON_CPU_ID_S1A:
-	default:
 		set21_hpll_od2_t7(div);
+		break;
+	default:
 		break;
 	}
 }
@@ -242,8 +247,9 @@ static void set_hpll_od3(u32 div)
 	switch (hdev->data->chip_type) {
 	case MESON_CPU_ID_T7:
 	case MESON_CPU_ID_S1A:
-	default:
 		set21_hpll_od3_t7(div);
+		break;
+	default:
 		break;
 	}
 }
@@ -352,9 +358,18 @@ static void clocks_set_vid_clk_div_for_hdmi(int div_sel)
 {
 	int shift_val = 0;
 	int shift_sel = 0;
-	u32 reg_vid_pll = CLKCTRL_HDMI_VID_PLL_CLK_DIV;
+	u32 reg_vid_pll = 0;
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
 
+	switch (hdev->data->chip_type) {
+	case MESON_CPU_ID_S1A:
+		reg_vid_pll = CLKCTRL_VID_PLL_CLK0_DIV;
+		break;
+	case MESON_CPU_ID_T7:
+	default:
+		reg_vid_pll = CLKCTRL_HDMI_VID_PLL_CLK_DIV;
+		break;
+	}
 	pr_info("%s[%d] div = %d\n", __func__, __LINE__, div_sel);
 
 	/* Disable the output clock */
@@ -448,6 +463,11 @@ static void clocks_set_vid_clk_div_for_hdmi(int div_sel)
 		hd21_set_reg_bits(reg_vid_pll, shift_val, 0, 15);
 		hd21_set_reg_bits(reg_vid_pll, 0, 15, 1);
 	}
+
+	if (hdev->data->chip_type == MESON_CPU_ID_S1A)
+		if (div_sel == VID_PLL_DIV_6p25)
+			s1a_reset_div_clk(hdev);
+
 	/* Enable the final output clock */
 	hd21_set_reg_bits(reg_vid_pll, 1, 19, 1);
 }
@@ -964,18 +984,6 @@ static void set_hdmitx_htx_pll(struct hdmitx_dev *hdev,
 	}
 #endif
 
-	if (hdev->data->chip_type == MESON_CPU_ID_S1A) {
-		//pixel_clk fe_clk encp_clk
-		hd21_set_reg_bits(CLKCTRL_VID_PLL_CLK0_DIV, 3, 16, 2);
-		hd21_set_reg_bits(CLKCTRL_VID_PLL_CLK0_DIV, 1, 19, 1);
-
-		//encp_clk * 2 ---> move to encp_clk
-		hd21_set_reg_bits(CLKCTRL_VID_CLK0_DIV, 0, 8, 1);
-		hd21_set_reg_bits(CLKCTRL_VID_CLK0_DIV, 0, 24, 1);
-		//fe_clk * 2 [23:20] hdmitx_fe_clk clk sel ---> move to fe_clk
-		hd21_set_reg_bits(CLKCTRL_HDMI_CLK_CTRL, 0, 20, 4);
-	}
-
 	/* YUV 422 always use 24B mode */
 	if (cs == HDMI_COLORSPACE_YUV422)
 		cd = COLORDEPTH_24B;
@@ -1272,7 +1280,13 @@ void hdmitx_set_gp2pll(struct hdmitx_dev *hdev)
 
 void hdmitx_set_clkdiv(struct hdmitx_dev *hdev)
 {
-	hdmitx_set_s5_clkdiv(hdev);
+	switch (hdev->data->chip_type) {
+	case MESON_CPU_ID_S5:
+		hdmitx_set_s5_clkdiv(hdev);
+		break;
+	default:
+		break;
+	}
 }
 
 static void hdmitx_check_frac_rate(struct hdmitx_dev *hdev)
@@ -1295,7 +1309,6 @@ static void hdmitx_check_frac_rate(struct hdmitx_dev *hdev)
  * and measure the pixel clock from hardware clkmsr
  * then compare above 2 clocks
  */
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static bool test_pixel_clk(struct hdmitx_dev *hdev, const struct hw_enc_clk_val_group *t)
 {
 	u32 idx;
@@ -1387,21 +1400,16 @@ static bool test_pixel_clk(struct hdmitx_dev *hdev, const struct hw_enc_clk_val_
 	pr_info("calc_pixel_clk %dMHz msr_pixel_clk %dMHz\n", calc_pixel_clk, msr_pixel_clk);
 	return 0;
 }
-#endif
 
 void hdmitx21_set_clk(struct hdmitx_dev *hdev)
 {
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	int i;
-#endif
 	struct hw_enc_clk_val_group test_clks = {0};
 
 	hdmitx_check_frac_rate(hdev);
 
 	switch (hdev->data->chip_type) {
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	case MESON_CPU_ID_T7:
-	case MESON_CPU_ID_S1A:
 		/* set the clock and test the pixel clock */
 		for (i = 0; i < SET_CLK_MAX_TIMES; i++) {
 			set_hdmitx_htx_pll(hdev, &test_clks);
@@ -1412,7 +1420,10 @@ void hdmitx21_set_clk(struct hdmitx_dev *hdev)
 		if (i == SET_CLK_MAX_TIMES)
 			pr_info("need check hdmitx clocks\n");
 		break;
-#endif
+	case MESON_CPU_ID_S1A:
+		/* set the clock and test the pixel clock */
+		set_hdmitx_htx_pll(hdev, &test_clks);
+		break;
 	case MESON_CPU_ID_S5:
 	default:
 		disable_hdmitx_s5_plls(hdev);

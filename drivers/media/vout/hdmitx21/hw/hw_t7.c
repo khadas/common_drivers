@@ -8,7 +8,6 @@
 #include <linux/delay.h>
 #include "common.h"
 
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #define WAIT_FOR_PLL_LOCKED(_reg) \
 	do { \
 		u32 st = 0; \
@@ -284,7 +283,6 @@ void set21_t7_hpll_clk_out(u32 frac_rate, u32 clk)
 		break;
 	}
 }
-#endif
 
 void set21_hpll_od1_t7(u32 div)
 {
@@ -340,7 +338,6 @@ void set21_hpll_od3_t7(u32 div)
 	}
 }
 
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 void hdmitx21_phy_bandgap_en_t7(void)
 {
 	u32 val = 0;
@@ -414,4 +411,3 @@ void set21_hpll_sspll_t7(enum hdmi_vic vic)
 		break;
 	}
 }
-#endif

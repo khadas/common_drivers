@@ -1494,12 +1494,9 @@ static void hdcp2x_auth_stop(struct hdcp_t *p_hdcp)
 
 static void hdcp_reset_hw(struct hdcp_t *p_hdcp)
 {
-	struct hdmitx_dev *hdev = get_hdmitx21_device();
-
 	hdcptx_init_reg();
 	hdcp1x_auth_stop(p_hdcp);
-	if (hdev->data->chip_type != MESON_CPU_ID_S1A)
-		hdcp2x_auth_stop(p_hdcp);
+	hdcp2x_auth_stop(p_hdcp);
 }
 
 static void hdcptx_send_csm_msg(struct hdcp_t *p_hdcp)

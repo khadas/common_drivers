@@ -58,6 +58,22 @@ u32 get21_hdcp22_base(void)
 	return 0;
 }
 
+inline bool cor_reg_addr_mask(u32 addr)
+{
+	struct hdmitx_dev *hdev = get_hdmitx21_device();
+
+	addr = addr & 0xffff;
+	if (hdev->data->chip_type == MESON_CPU_ID_S1A)
+		if ((addr >= 0x0330 && addr <= 0x03ff) ||
+			(addr >= 0x0800 && addr <= 0x08ff) ||
+			(addr >= 0x0940 && addr <= 0x09ff) ||
+			(addr >= 0x0b00 && addr <= 0x0dff) ||
+			(addr >= 0x0f00 && addr <= 0x0fff))
+			return 1;
+
+	return 0;
+}
+
 static void sec_wr(u32 addr, u32 data)
 {
 	struct arm_smccc_res res;
@@ -199,6 +215,9 @@ static u8 hdmitx_rd_cor(u32 addr)
 	u32 base_offset;
 	u8 data;
 
+	if (cor_reg_addr_mask(addr))
+		return 0;
+
 	base_offset = reg21_maps[1].phy_addr;
 	data = sec_rd8(base_offset + addr);
 	return data;
@@ -215,6 +234,9 @@ static void hdmitx_wr_top(u32 addr, u32 data)
 static void hdmitx_wr_cor(u32 addr, u8 data)
 {
 	u32 base_offset;
+
+	if (cor_reg_addr_mask(addr))
+		return;
 
 	base_offset = reg21_maps[1].phy_addr;
 	sec_wr8(base_offset + addr, data);

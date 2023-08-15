@@ -151,6 +151,7 @@ void hdmitx21_phy_bandgap_en_s5(void);
 
 void set21_phy_by_mode_t7(u32 mode);
 void set21_phy_by_mode_s5(u32 mode);
+void set21_phy_by_mode_s1a(u32 mode);
 void hdmitx_s5_phy_pre_init(struct hdmitx_dev *hdev);
 void set21_phy_by_frl_mode_s5(enum frl_rate_enum frl_mode);
 
@@ -161,6 +162,8 @@ void hdmitx21_debugfs_init(void);
 
 void set21_t7_hpll_clk_out(u32 frac_rate, u32 clk);
 void set21_s5_htxpll_clk_out(u32 clk, u32 div);
+void set21_s1a_hpll_clk_out(u32 frac_rate, u32 clk);
+void s1a_reset_div_clk(struct hdmitx_dev *hdev);
 void set21_hpll_od0_t7(u32 div);
 void set21_hpll_od1_t7(u32 div);
 void set21_hpll_od2_t7(u32 div);

@@ -128,8 +128,7 @@ static int dump_hdmireg_show(struct seq_file *s, void *p)
 	// 0x00000800 - 0x00000879
 	dumpcor(s, CP2TX_CTRL_0_IVCTX, CP2TX_IPT_CTR_39TO32_IVCTX);
 	// 0x000008a0 - 0x000008d0
-	if (hdev->data->chip_type != MESON_CPU_ID_S1A)
-		dumpcor(s, HDCP2X_DEBUG_CTRL0_IVCTX, HDCP2X_DEBUG_STAT16_IVCTX);
+	dumpcor(s, HDCP2X_DEBUG_CTRL0_IVCTX, HDCP2X_DEBUG_STAT16_IVCTX);
 	// 0x00000900 - 0x00000933
 	dumpcor(s, SCRCTL_IVCTX, FRL_LTP_OVR_VAL1_IVCTX);
 	if (hdev->data->chip_type >= MESON_CPU_ID_S5) {

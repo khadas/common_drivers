@@ -450,6 +450,10 @@ static void hdmitx_late_resume(struct early_suspend *h)
 		HDMITX_LATE_RESUME);
 	hdev->tx_hw.cntlmisc(&hdev->tx_hw, MISC_SUSFLAG, 0);
 	pr_info("HDMITX: Late Resume\n");
+
+	/*notify to drm hdmi*/
+	hdmitx_hpd_notify_unlocked(&hdev->tx_comm);
+
 	mutex_unlock(&hdev->hdmimode_mutex);
 }
 
@@ -761,36 +765,36 @@ static int check_vic_4x3_and_16x9(struct hdmitx_dev *hdev, enum hdmi_vic vic)
 }
 
 /* check the resolution is over 1920x1080 or not */
-static bool is_over_1080p(struct hdmi_format_para *para)
+static bool is_over_1080p(const struct hdmi_timing *timing)
 {
-	if (!para)
+	if (!timing)
 		return 1;
 
-	if (para->timing.h_active > 1920 || para->timing.v_active > 1080)
+	if (timing->h_active > 1920 || timing->v_active > 1080)
 		return 1;
 
 	return 0;
 }
 
 /* check the fresh rate is over 60hz or not */
-static bool is_over_60hz(struct hdmi_format_para *para)
+static bool is_over_60hz(const struct hdmi_timing *timing)
 {
-	if (!para)
+	if (!timing)
 		return 1;
 
-	if (para->timing.v_freq > 60000)
+	if (timing->v_freq > 60000)
 		return 1;
 
 	return 0;
 }
 
 /* test current vic is over 150MHz or not */
-static bool is_over_pixel_150mhz(struct hdmi_format_para *para)
+static bool is_over_pixel_150mhz(const struct hdmi_timing *timing)
 {
-	if (!para)
+	if (!timing)
 		return 1;
 
-	if (para->timing.pixel_freq > 150000)
+	if (timing->pixel_freq > 150000)
 		return 1;
 
 	return 0;
@@ -798,25 +802,13 @@ static bool is_over_pixel_150mhz(struct hdmi_format_para *para)
 
 bool hdmitx21_is_vic_over_limited_1080p(enum hdmi_vic vic)
 {
-	struct vinfo_s *info = NULL;
-	struct hdmitx_dev *hdev = get_hdmitx21_device();
-	struct hdmitx_common *tx_comm = &hdev->tx_comm;
-	struct hdmi_format_para *para = NULL;
-	u8 mode[32];
+	const struct hdmi_timing *timing = NULL;
 
-	memset(mode, 0, sizeof(mode));
-
-	/* get current vinfo */
-	info = hdmitx_get_current_vinfo(NULL);
-	if (!info || !info->name)
+	timing = hdmitx21_gettiming_from_vic(vic);
+	if (!timing || !timing->name)
 		return 1;
-	if (strncmp(info->name, "invalid", strlen("invalid")) == 0)
+	if (strncmp(timing->name, "invalid", strlen("invalid")) == 0)
 		return 1;
-
-	strncpy(mode, info->name, sizeof(mode));
-	mode[31] = '\0';
-
-	hdmitx21_get_fmtpara(mode, tx_comm->fmt_attr, para);
 
 	/* if the vic equals to HDMI_UNKNOWN or VESA,
 	 * then treated it as over limited
@@ -824,8 +816,8 @@ bool hdmitx21_is_vic_over_limited_1080p(enum hdmi_vic vic)
 	if (vic == HDMI_0_UNKNOWN || vic >= HDMITX_VESA_OFFSET)
 		return 1;
 
-	if (is_over_1080p(para) || is_over_60hz(para) ||
-		is_over_pixel_150mhz(para)) {
+	if (is_over_1080p(timing) || is_over_60hz(timing) ||
+		is_over_pixel_150mhz(timing)) {
 		pr_err("over limited vic: %d\n", vic);
 		return 1;
 	} else {
@@ -5449,7 +5441,8 @@ static void hdmitx_hpd_plugout_handler(struct work_struct *work)
 	if (hdev->cedst_policy)
 		cancel_delayed_work(&hdev->work_cedst);
 	edidinfo_detach_to_vinfo(hdev);
-	frl_tx_stop(hdev);
+	if (hdev->data->chip_type != MESON_CPU_ID_S1A)
+		frl_tx_stop(hdev);
 	rx_hdcp2_ver = 0;
 	is_passthrough_switch = 0;
 	pr_info("plugout\n");
@@ -6388,7 +6381,7 @@ static int amhdmitx_probe(struct platform_device *pdev)
 		hdev->tx_hw.cntlmisc(&hdev->tx_hw, MISC_TRIGGER_HPD, 0);
 	}
 	hdev->hdmi_init = 1;
-    /* ll mode init values */
+	/* ll mode init values */
 	hdev->ll_enabled_in_auto_mode = false;
 	hdev->ll_user_set_mode = HDMI_LL_MODE_AUTO;
 

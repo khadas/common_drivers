@@ -208,7 +208,12 @@ static int amlogic_pcie_phy_power_on(struct amlogic_pcie *aml_pcie)
 
 	ret = phy_power_on(aml_pcie->phy);
 	if (ret) {
-		phy_exit(aml_pcie->phy);
+		/* check return value, just for coverity */
+		ret = phy_exit(aml_pcie->phy);
+		if (ret) {
+			dev_dbg(dev, " pcie phy exit failed\n");
+			return ret;
+		}
 		return ret;
 	}
 
@@ -236,13 +241,19 @@ set_phy_reg:
 static void amlogic_pcie_phy_power_off(struct amlogic_pcie *aml_pcie)
 {
 	struct device *dev = aml_pcie->pci.dev;
+	int ret = 0;
 	u32 val;
 
 	if (IS_ERR(aml_pcie->phy))
 		goto set_phy_reg;
 
-	phy_power_off(aml_pcie->phy);
-	phy_exit(aml_pcie->phy);
+	/* check return value, just for coverity */
+	ret = phy_power_off(aml_pcie->phy);
+	if (ret)
+		dev_dbg(dev, " pcie phy power off failed\n");
+	ret = phy_exit(aml_pcie->phy);
+	if (ret)
+		dev_dbg(dev, " pcie phy exit failed\n");
 
 set_phy_reg:
 	switch (aml_pcie->phy_type) {

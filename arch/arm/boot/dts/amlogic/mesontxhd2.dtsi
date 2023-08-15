@@ -938,8 +938,9 @@
 	amvideom: meson-amvideom {
 		compatible = "amlogic, amvideom-txhd2";
 		status = "okay";
-		interrupts = <0 3 1>;
-		interrupt-names = "vsync";
+		interrupts = <0 3 1
+				0 56 1>;
+		interrupt-names = "vsync", "vsync_viu2";
 	};
 
 	amlvecm: amlvecm {

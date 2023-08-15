@@ -2487,6 +2487,14 @@ static int arc_spdifout_mute_put(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
+static int arc_spdifout_reg_mute_put(struct snd_kcontrol *kcontrol,
+	struct snd_ctl_elem_value *ucontrol)
+{
+	aml_earctx_dmac_mute(ucontrol->value.integer.value[0]);
+
+	return 0;
+}
+
 static const struct snd_kcontrol_new earc_controls[] = {
 	SOC_SINGLE_BOOL_EXT("eARC RX ARC Switch",
 			    0,
@@ -2584,6 +2592,11 @@ static const struct snd_kcontrol_new earc_controls[] = {
 			    0,
 			    arc_spdifout_mute_get,
 			    arc_spdifout_mute_put),
+
+	SOC_SINGLE_BOOL_EXT("ARC eARC Spdifout Reg Mute",
+			    0,
+			    arc_spdifout_mute_get,
+			    arc_spdifout_reg_mute_put),
 
 	/* Status cchanel controller */
 	SND_IEC958(SNDRV_CTL_NAME_IEC958("", CAPTURE, DEFAULT),

@@ -564,7 +564,7 @@
 			};
 
 			pwm_ab: pwm@1b000 {
-				compatible = "amlogic,g12a-ee-pwm";
+				compatible = "amlogic,meson-g12a-ee-pwm";
 				reg = <0x0 0x1b000 0x0 0x20>;
 				#pwm-cells = <3>;
 				clocks = <&xtal>,
@@ -582,7 +582,7 @@
 			};
 
 			pwm_cd: pwm@1a000 {
-				compatible = "amlogic,g12a-ee-pwm";
+				compatible = "amlogic,meson-g12a-ee-pwm";
 				reg = <0x0 0x1a000  0x0 0x20>;
 				#pwm-cells = <3>;
 				clocks = <&xtal>,
@@ -597,7 +597,7 @@
 			};
 
 			pwm_ef: pwm@19000 {
-				compatible = "amlogic,g12a-ee-pwm";
+				compatible = "amlogic,meson-g12a-ee-pwm";
 				reg = <0x0 0x19000  0x0 0x20>;
 				#pwm-cells = <3>;
 				clocks = <&xtal>,
@@ -712,7 +712,7 @@
 			};
 
 			pwm_AO_ab: pwm@7000 {
-				compatible = "amlogic,g12a-ao-pwm";
+				compatible = "amlogic,meson-g12a-ao-pwm-ab";
 				reg = <0x0 0x7000  0x0 0x20>;
 				#pwm-cells = <3>;
 				clocks = <&xtal>,
@@ -727,7 +727,7 @@
 			};
 
 			pwm_AO_cd: pwm@2000 {
-				compatible = "amlogic,g12a-ao-pwm";
+				compatible = "amlogic,meson-g12a-ao-pwm-cd";
 				reg = <0x0 0x2000  0x0 0x20>;
 				#pwm-cells = <3>;
 				clocks = <&xtal>,

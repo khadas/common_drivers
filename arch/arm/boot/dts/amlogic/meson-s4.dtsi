@@ -314,7 +314,7 @@
 		mbox-irqctlr = <0>;
 		mbox-irqclr = <0>;
 		mbox-nums = <S4_MBOX_NUMS>;
-		mbox-id = <S4_MBOX_AO2REE>,
+		mboxids = <S4_MBOX_AO2REE>,
 			  <S4_MBOX_REE2AO>;
 		#mbox-cells = <1>;
 	};

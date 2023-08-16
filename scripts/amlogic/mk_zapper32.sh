@@ -5,31 +5,26 @@
 #
 
 ROOT_DIR=`pwd`
-
 ARCH=arm
-if [ "$1" = "--all" ]; then
-DEFCONFIG=meson64_a32_zapper_all_defconfig
-else
-DEFCONFIG=meson64_a32_zapper_defconfig
-fi
-
-KCONFIG_CONFIG=${ROOT_DIR}/common/common_drivers/arch/${ARCH}/configs/${DEFCONFIG}
-
-if [ "$1" = "--all" ]; then
-export KCONFIG_CONFIG
-
-${ROOT_DIR}/common/scripts/kconfig/merge_config.sh -m -r \
-	${ROOT_DIR}/common/common_drivers/arch/${ARCH}/configs/meson64_a32_zapper_defconfig  \
-	${ROOT_DIR}/common/common_drivers/arch/${ARCH}/configs/meson64_a32_zapper_ext_defconfig  \
-
-fi
-
-export -n KCONFIG_CONFIG
 CROSS_COMPILE_TOOL=${ROOT_DIR}/prebuilts/gcc/linux-x86/host/x86_64-arm-10.3-2021.07/bin/arm-none-linux-gnueabihf-
 
-source ${ROOT_DIR}/common/common_drivers/scripts/amlogic/mk_smarthome_common.sh $@
-
-if [ "$1" = "--all" ]; then
-	rm ${KCONFIG_CONFIG}*
+OPTION_PARAM="$*"
+if [[ "${OPTION_PARAM}" =~ "--all" ]]; then
+	echo "make meson64_a32_zapper_defconfig and meson64_a32_zapper_ext_defconfig"
+	DEBUG=1
+	OPTION_PARAM=${OPTION_PARAM//--all/}
+	DEFCONFIG=meson64_a32_zapper_all_defconfig
+	CONFIG_DIR=${ROOT_DIR}/common/common_drivers/arch/${ARCH}/configs
+	KCONFIG_CONFIG=${CONFIG_DIR}/${DEFCONFIG} ${ROOT_DIR}/common/scripts/kconfig/merge_config.sh -m -r \
+		${CONFIG_DIR}/meson64_a32_zapper_defconfig \
+		${CONFIG_DIR}/meson64_a32_zapper_ext_defconfig
+else
+	echo "make meson64_a32_zapper_defconfig"
+	DEFCONFIG=meson64_a32_zapper_defconfig
 fi
 
+source ${ROOT_DIR}/common/common_drivers/scripts/amlogic/mk_smarthome_common.sh ${OPTION_PARAM}
+
+if [[ "${DEBUG}" == "1" ]]; then
+	rm ${CONFIG_DIR}/${DEFCONFIG}
+fi

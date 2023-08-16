@@ -745,9 +745,10 @@ static inline void meson_spicc_tx(struct meson_spicc_device *spicc)
 
 static inline void meson_spicc_txrx(struct meson_spicc_device *spicc)
 {
-	int xfer;
+	int xfer = 1;
+	int rx_retry = 1000;
 
-	while (1) {
+	while (xfer) {
 		xfer = 0;
 		if (spicc->tx_remain && !meson_spicc_txfull(spicc)) {
 			xfer = 1;
@@ -756,13 +757,17 @@ static inline void meson_spicc_txrx(struct meson_spicc_device *spicc)
 		}
 
 		if (spicc->rx_remain && meson_spicc_rxready(spicc)) {
+			rx_retry = 1000;
 			xfer = 1;
 			meson_spicc_push_data(spicc,
 				readl_relaxed(spicc->base + SPICC_RXDATA));
 		}
 
-		if (!xfer)
-			break;
+		if (spicc->rx_remain && !spicc->tx_remain && rx_retry) {
+			rx_retry--;
+			xfer = 1;
+			udelay(1);
+		}
 	}
 }
 
@@ -876,6 +881,7 @@ static irqreturn_t meson_spicc_irq(int irq, void *data)
 
 	/* Enable TC interrupt since we transferred everything */
 	if (!spicc->tx_remain && !spicc->rx_remain) {
+		writel_relaxed(0, spicc->base + SPICC_INTREG);
 		if (spicc->xfer != &spicc->async_xfer) {
 			spi_finalize_current_transfer(spicc->controller);
 		} else {
@@ -953,8 +959,8 @@ static int meson_spicc_transfer_one(struct spi_controller *ctlr,
 		writel_bits_relaxed(SPICC_SMC, SPICC_SMC,
 				    spicc->base + SPICC_CONREG);
 		meson_spicc_txrx(spicc);
-		if (!spicc->tx_remain && !spicc->rx_remain)
-			return 0;
+		if (!spicc->tx_remain)
+			return spicc->rx_remain ? -EIO : 0;
 		writel_relaxed(spi_controller_is_slave(spicc->controller) ?
 			SPICC_RR_EN : SPICC_TC_EN, spicc->base + SPICC_INTREG);
 	}

@@ -170,6 +170,6 @@ void pre_vsync_process(void);
 
 ssize_t blend_conflict_show(struct class *cla,
 		struct class_attribute *attr, char *buf);
-
+void put_buffer_proc(void);
 #endif
 /*VIDEO_FUNC_HEADER_HH*/

@@ -23,8 +23,8 @@
 #include <linux/amlogic/media/video_sink/video.h>
 #endif
 #include <linux/amlogic/media/registers/cpu_version.h>
+#include <linux/amlogic/media/video_processor/video_pp_common.h>
 #include "videodisplay.h"
-#include "video_composer.h"
 
 static struct timeval vsync_time[MAX_VD_LAYERS];
 static DEFINE_MUTEX(video_display_mutex);
@@ -617,6 +617,8 @@ static struct vframe_s *vc_vf_peek(void *op_arg)
 	time2 = vsync_time[dev->index];
 
 	if (kfifo_peek(&dev->ready_q, &vf)) {
+		if (get_lowlatency_mode())
+			return vf;
 		if (vf->vc_private && vd_set_frame_delay[dev->index] > 0) {
 			vsync_index = vf->vc_private->vsync_index;
 			vc_print(dev->index, PRINT_OTHER,

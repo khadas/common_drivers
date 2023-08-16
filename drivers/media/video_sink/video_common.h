@@ -46,4 +46,7 @@ bool frc_n2m_worked(void);
 bool frc_n2m_1st_frame_worked(struct video_layer_s *layer);
 bool check_aisr_need_disable(struct video_layer_s *layer);
 bool is_aisr_enable(struct video_layer_s *layer);
+#ifndef CONFIG_AMLOGIC_VIDEO_COMPOSER
+bool get_lowlatency_mode(void);
+#endif
 #endif

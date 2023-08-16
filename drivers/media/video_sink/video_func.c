@@ -68,6 +68,7 @@
 #ifdef CONFIG_AMLOGIC_MEDIA_FRC
 #include <linux/amlogic/media/frc/frc_common.h>
 #endif
+#include <linux/amlogic/media/video_processor/video_pp_common.h>
 #include "video_common.h"
 #include "video_hw_s5.h"
 #include "vpp_post_s5.h"
@@ -2695,18 +2696,29 @@ static void vd_dispbuf_init(u8 layer_id)
 	}
 }
 
+void put_buffer_proc(void)
+{
+	int i;
+
+	for (i = 0; i < 3; i++) {
+		if (gvideo_recv[i])
+			gvideo_recv[i]->func->early_proc(gvideo_recv[i], 0);
+	}
+}
+
 static inline int recvx_early_proc(u8 path_index)
 {
 	if (atomic_read(&video_unreg_flag))
 		return -1;
 
 	check_src_fmt_change();
-	if (gvideo_recv[path_index]) {
-		/* normal mode: true; lowlatency mode: false */
-		gvideo_recv[path_index]->irq_mode = true;
-		//gvideo_recv[layer_id]->irq_mode = get_irq_mode();
-		gvideo_recv[path_index]->func->early_proc(gvideo_recv[path_index],
-						    over_field ? 1 : 0);
+	if (!get_lowlatency_mode()) {
+		if (gvideo_recv[path_index]) {
+			/* normal mode: true; lowlatency mode: false */
+			gvideo_recv[path_index]->irq_mode = true;
+			gvideo_recv[path_index]->func->early_proc(gvideo_recv[path_index],
+							    over_field ? 1 : 0);
+		}
 	}
 	return 0;
 }
@@ -4825,7 +4837,8 @@ void post_vsync_process(void)
 	}
 
 	if (debug_flag & DEBUG_FLAG_PRINT_DISBUF_PER_VSYNC)
-		pr_info("VID: path id: %d, %d; new_frame:%p, %p, %p, %p, %p, %p cur:%p, %p, %p, %p; vd dispbuf:%p, %p; vf_ext:%p, %p; local:%p, %p, %p, %p\n",
+		pr_info("VID(%s): path id: %d, %d; new_frame:%p, %p, %p, %p, %p, %p cur:%p, %p, %p, %p; vd dispbuf:%p, %p; vf_ext:%p, %p; local:%p, %p, %p, %p\n",
+			__func__,
 			vd_path_id[0], vd_path_id[1],
 			path_new_frame[0], path_new_frame[1],
 			path_new_frame[2], path_new_frame[3],
@@ -4855,7 +4868,8 @@ void post_vsync_process(void)
 							cur_vd_path_id[i],
 							&path_new_frame[0]);
 	if (debug_flag & DEBUG_FLAG_PRINT_DISBUF_PER_VSYNC)
-		pr_info("VID: layer enable status: VD1:e:%d,e_save:%d,g:%d,d:%d,f:%s; VD2:e:%d,e_save:%d,g:%d,d:%d,f:%s;",
+		pr_info("VID(%s): layer enable status: VD1:e:%d,e_save:%d,g:%d,d:%d,f:%s; VD2:e:%d,e_save:%d,g:%d,d:%d,f:%s;",
+			__func__,
 			vd_layer[0].enabled, vd_layer[0].enabled_status_saved,
 			vd_layer[0].global_output, vd_layer[0].disable_video,
 			vd_layer[0].force_disable ? "true" : "false",
@@ -4894,7 +4908,8 @@ void post_vsync_process(void)
 	}
 
 	if (debug_flag & DEBUG_FLAG_PRINT_DISBUF_PER_VSYNC)
-		pr_info("VID: path id: %d, %d, %d; new_frame:%p, %p, %p, %p, %p, %p cur:%p, %p, %p, %p, %p, %p; vd dispbuf:%p, %p, %p; vf_ext:%p, %p, %p; local:%p, %p, %p, %p, %p, %p\n",
+		pr_info("VID(%s): path id: %d, %d, %d; new_frame:%p, %p, %p, %p, %p, %p cur:%p, %p, %p, %p, %p, %p; vd dispbuf:%p, %p, %p; vf_ext:%p, %p, %p; local:%p, %p, %p, %p, %p, %p\n",
+			__func__,
 			vd_path_id[0], vd_path_id[1], vd_path_id[2],
 			path_new_frame[0], path_new_frame[1],
 			path_new_frame[2], path_new_frame[3],
@@ -4928,7 +4943,8 @@ void post_vsync_process(void)
 							cur_vd_path_id[i],
 							&path_new_frame[0]);
 	if (debug_flag & DEBUG_FLAG_PRINT_DISBUF_PER_VSYNC)
-		pr_info("VID: layer enable status: VD1:e:%d,e_save:%d,g:%d,d:%d,f:%s; VD2:e:%d,e_save:%d,g:%d,d:%d,f:%s; VD3:e:%d,e_save:%d,g:%d,d:%d,f:%s",
+		pr_info("(%s)VID: layer enable status: VD1:e:%d,e_save:%d,g:%d,d:%d,f:%s; VD2:e:%d,e_save:%d,g:%d,d:%d,f:%s; VD3:e:%d,e_save:%d,g:%d,d:%d,f:%s",
+			__func__,
 			vd_layer[0].enabled, vd_layer[0].enabled_status_saved,
 			vd_layer[0].global_output, vd_layer[0].disable_video,
 			vd_layer[0].force_disable ? "true" : "false",

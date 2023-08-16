@@ -122,6 +122,7 @@ MODULE_AMLOG(LOG_LEVEL_ERROR, 0, LOG_DEFAULT_LEVEL_DESC, LOG_MASK_DESC);
 #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_PRIME_SL
 #include <linux/amlogic/media/amprime_sl/prime_sl.h>
 #endif
+#include <linux/amlogic/media/video_processor/video_pp_common.h>
 
 #include <linux/math64.h>
 #include "video_receiver.h"
@@ -5300,6 +5301,8 @@ static irqreturn_t vsync_isr(int irq, void *dev_id)
 {
 	irqreturn_t ret;
 
+	if (get_lowlatency_mode())
+		put_buffer_proc();
 	lowlatency_vsync_count++;
 	if (atomic_inc_return(&video_proc_lock) > 1) {
 		vsync_proc_drop++;

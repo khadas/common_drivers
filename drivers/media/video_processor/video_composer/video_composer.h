@@ -314,5 +314,4 @@ void vc_private_q_init(struct composer_dev *dev);
 void vc_private_q_recycle(struct composer_dev *dev,
 	struct video_composer_private *vc_private);
 struct video_composer_private *vc_private_q_pop(struct composer_dev *dev);
-
 #endif /* VIDEO_COMPOSER_H */

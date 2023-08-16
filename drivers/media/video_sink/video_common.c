@@ -1415,6 +1415,13 @@ bool is_aisr_enable(struct video_layer_s *layer)
 	return ret;
 }
 
+#ifndef CONFIG_AMLOGIC_VIDEO_COMPOSER
+bool get_lowlatency_mode(void)
+{
+	return 0;
+}
+#endif
+
 MODULE_PARM_DESC(debug_common_flag, "\n debug_common_flag\n");
 module_param(debug_common_flag, uint, 0664);
 

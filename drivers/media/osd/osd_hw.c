@@ -8258,11 +8258,12 @@ static void osd_update_color_mode(u32 index)
 		enum color_index_e idx =
 			osd_hw.color_info[index]->color_index;
 
-		if (osd_hw.osd_meson_dev.cpu_id == __MESON_CPU_MAJOR_ID_S1A &&
-			idx != COLOR_INDEX_YUV_422)
-			matrix_RGB2YUV(index, MATRIX_RGB_YUV709, 1);
-		else
-			matrix_RGB2YUV(index, MATRIX_RGB_YUV709, 0);
+		if (osd_hw.osd_meson_dev.cpu_id == __MESON_CPU_MAJOR_ID_S1A) {
+			if (idx != COLOR_INDEX_YUV_422)
+				matrix_RGB2YUV(index, MATRIX_RGB_YUV709, 1);
+			else
+				matrix_RGB2YUV(index, MATRIX_RGB_YUV709, 0);
+		}
 		data32 = (osd_hw.scan_mode[index] ==
 			SCAN_MODE_INTERLACE) ? 2 : 0;
 		data32 |= osd_hw.osd_rdma_func[output_index].osd_rdma_rd

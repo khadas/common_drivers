@@ -630,21 +630,21 @@ static struct clk_regmap txhd2_gp0_pll = {
 #endif
 
 static const struct pll_mult_range txhd2__hifi_pll_mult_range = {
-	.min = 42,
-	.max = 83,
+	.min = 20,
+	.max = 40,
 };
 
 /*
  * Internal hifi pll emulation configuration parameters
  */
 static const struct reg_sequence txhd2_hifi_init_regs[] = {
-	{ .reg = HHI_HIFI_PLL_CNTL0,	.def = 0x6100004b },
-	{ .reg = HHI_HIFI_PLL_CNTL0,	.def = 0x7100004b },
+	{ .reg = HHI_HIFI_PLL_CNTL0,	.def = 0x61030024 },
+	{ .reg = HHI_HIFI_PLL_CNTL0,	.def = 0x71030024 },
 	{ .reg = HHI_HIFI_PLL_CNTL1,	.def = 0x25002000 },
-	{ .reg = HHI_HIFI_PLL_CNTL2,	.def = 0x09001140 },
-	{ .reg = HHI_HIFI_PLL_CNTL3,	.def = 0x00086720, .delay_us = 20 },
-	{ .reg = HHI_HIFI_PLL_CNTL0,	.def = 0x5100004b, .delay_us = 20 },
-	{ .reg = HHI_HIFI_PLL_CNTL2,	.def = 0x09011100 },
+	{ .reg = HHI_HIFI_PLL_CNTL2,	.def = 0x09001940 },
+	{ .reg = HHI_HIFI_PLL_CNTL3,	.def = 0x00083180, .delay_us = 20 },
+	{ .reg = HHI_HIFI_PLL_CNTL0,	.def = 0x51030024, .delay_us = 20 },
+	{ .reg = HHI_HIFI_PLL_CNTL2,	.def = 0x09001900 },
 };
 
 static struct clk_regmap txhd2_hifi_pll_dco = {
@@ -692,7 +692,7 @@ static struct clk_regmap txhd2_hifi_pll_dco = {
 			.shift   = 24,
 			.width   = 1,
 		},
-		.fixed_n = 0,
+		.fixed_n = 3,
 		.range = &txhd2__hifi_pll_mult_range,
 		.init_regs = txhd2_hifi_init_regs,
 		.init_count = ARRAY_SIZE(txhd2_hifi_init_regs),
@@ -702,8 +702,8 @@ static struct clk_regmap txhd2_hifi_pll_dco = {
 	.hw.init = &(struct clk_init_data){
 		.name = "hifi_pll_dco",
 		.ops = &meson_clk_pll_v3_ops,
-		.parent_data = &(const struct clk_parent_data) {
-			.fw_name = "xtal",
+		.parent_hws = (const struct clk_hw *[]) {
+			&txhd2_fclk_div5.hw
 		},
 		.num_parents = 1,
 		/*
@@ -758,13 +758,13 @@ static struct clk_regmap txhd2_hifi_pll = {
 #endif
 
 static const struct reg_sequence txhd2_hifi1_init_regs[] = {
-	{ .reg = HHI_HIFI1_PLL_CNTL0,	.def = 0x6100004b },
-	{ .reg = HHI_HIFI1_PLL_CNTL0,	.def = 0x7100004b },
+	{ .reg = HHI_HIFI1_PLL_CNTL0,	.def = 0x61030024 },
+	{ .reg = HHI_HIFI1_PLL_CNTL0,	.def = 0x71030024 },
 	{ .reg = HHI_HIFI1_PLL_CNTL1,	.def = 0x25002000 },
 	{ .reg = HHI_HIFI1_PLL_CNTL2,	.def = 0x09001140 },
-	{ .reg = HHI_HIFI1_PLL_CNTL3,	.def = 0x00086720, .delay_us = 20 },
-	{ .reg = HHI_HIFI1_PLL_CNTL0,	.def = 0x5100004b, .delay_us = 20 },
-	{ .reg = HHI_HIFI1_PLL_CNTL2,	.def = 0x09011100 },
+	{ .reg = HHI_HIFI1_PLL_CNTL3,	.def = 0x00083180, .delay_us = 20 },
+	{ .reg = HHI_HIFI1_PLL_CNTL0,	.def = 0x51030024, .delay_us = 20 },
+	{ .reg = HHI_HIFI1_PLL_CNTL2,	.def = 0x09001100 },
 };
 
 static struct clk_regmap txhd2_hifi1_pll_dco = {
@@ -812,7 +812,7 @@ static struct clk_regmap txhd2_hifi1_pll_dco = {
 			.shift   = 24,
 			.width   = 1,
 		},
-		.fixed_n = 0,
+		.fixed_n = 3,
 		.range = &txhd2__hifi_pll_mult_range,
 		.init_regs = txhd2_hifi1_init_regs,
 		.init_count = ARRAY_SIZE(txhd2_hifi1_init_regs),
@@ -822,8 +822,8 @@ static struct clk_regmap txhd2_hifi1_pll_dco = {
 	.hw.init = &(struct clk_init_data){
 		.name = "hifi1_pll_dco",
 		.ops = &meson_clk_pll_v3_ops,
-		.parent_data = &(const struct clk_parent_data) {
-			.fw_name = "xtal",
+		.parent_hws = (const struct clk_hw *[]) {
+			&txhd2_fclk_div5.hw
 		},
 		.num_parents = 1,
 		/*

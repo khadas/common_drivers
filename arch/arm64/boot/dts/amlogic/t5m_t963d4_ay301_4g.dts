@@ -446,6 +446,7 @@
 		compatible = "amlogic, vbi";
 		status = "okay";
 		interrupts = <0 210 1>;
+		flag_cma = <1>;/*1:share with codec_mm;0:kzalloc*/
 	};
 
 	multi-di {

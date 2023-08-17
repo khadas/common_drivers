@@ -267,6 +267,7 @@
 		regulator-min-microvolt = <3300000>;
 		regulator-max-microvolt = <3300000>;
 		regulator-boot-on;
+		regulator-always-on;
 /*		pinctrl-names = "default"; */
 		gpio = <&gpio_ao GPIOD_10 GPIO_ACTIVE_HIGH>;	/* gpio d 10 */
 		startup-delay-us = <70000>;

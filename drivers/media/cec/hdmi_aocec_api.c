@@ -2162,7 +2162,8 @@ void cec_get_wakeup_reason(void)
 		return;
 	}
 	aml_mbox_transfer_data(cec_mbox_chan, MBOX_CMD_WAKEUP_REASON_GET,
-			       NULL, 0, &cec_dev->wakeup_reason, 0, MBOX_SYNC);
+				NULL, 0, &cec_dev->wakeup_reason,
+				sizeof(cec_dev->wakeup_reason), MBOX_SYNC);
 	/* cec_dev->wakeup_reason = get_resume_reason(); */
 	CEC_ERR("wakeup_reason:0x%x\n", cec_dev->wakeup_reason);
 }

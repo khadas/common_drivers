@@ -32,6 +32,7 @@
 #include <linux/dma-mapping.h>
 #include <linux/dma-map-ops.h>
 #include <linux/sched/clock.h>
+#include <linux/arm-smccc.h>
 
 #include <linux/amlogic/media/video_sink/video.h>
 #include <linux/amlogic/media/amdolbyvision/dolby_vision.h>
@@ -4095,10 +4096,22 @@ inline int vdin_vsync_reset_mif(int index)
 	return vsync_reset_mask & 0x08;
 }
 
+/*
+ * config VDIN_SECURE_CFG via secure storage
+ */
+void vdin_secure_reg0_cfg(void)
+{
+	struct arm_smccc_res res;
+
+	arm_smccc_smc(VDIN_SECURE_CFG, 0,
+		      0, 0, 0, 0, 0, 0, &res);
+}
+
 void vdin_enable_module(struct vdin_dev_s *devp, bool enable)
 {
 	unsigned int offset = devp->addr_offset;
 
+	vdin_secure_reg0_cfg();
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu()) {
 		vdin_enable_module_s5(devp, enable);

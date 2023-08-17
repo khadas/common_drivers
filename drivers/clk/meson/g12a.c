@@ -2585,7 +2585,7 @@ static const struct clk_hw *g12a_vdec_parent_hws[] = {
  * It will probably change hifi pll rate, avoid change hifi pll
  * and gp0 pll rate, using mux table instead.
  */
-static struct clk_regmap g12a_vdec_1_sel = {
+static struct clk_regmap g12a_vdec_p0_sel = {
 	.data = &(struct clk_regmap_mux_data){
 		.offset = HHI_VDEC_CLK_CNTL,
 		.mask = 0x7,
@@ -2594,7 +2594,7 @@ static struct clk_regmap g12a_vdec_1_sel = {
 		.table = mux_table_vdec,
 	},
 	.hw.init = &(struct clk_init_data){
-		.name = "vdec_1_sel",
+		.name = "vdec_p0_sel",
 		.ops = &clk_regmap_mux_ops,
 		.parent_hws = g12a_vdec_parent_hws,
 		.num_parents = ARRAY_SIZE(g12a_vdec_parent_hws),
@@ -2602,7 +2602,7 @@ static struct clk_regmap g12a_vdec_1_sel = {
 	},
 };
 
-static struct clk_regmap g12a_vdec_1_div = {
+static struct clk_regmap g12a_vdec_p0_div = {
 	.data = &(struct clk_regmap_div_data){
 		.offset = HHI_VDEC_CLK_CNTL,
 		.shift = 0,
@@ -2610,33 +2610,33 @@ static struct clk_regmap g12a_vdec_1_div = {
 		.flags = CLK_DIVIDER_ROUND_CLOSEST,
 	},
 	.hw.init = &(struct clk_init_data){
-		.name = "vdec_1_div",
+		.name = "vdec_p0_div",
 		.ops = &clk_regmap_divider_ops,
 		.parent_hws = (const struct clk_hw *[]) {
-			&g12a_vdec_1_sel.hw
+			&g12a_vdec_p0_sel.hw
 		},
 		.num_parents = 1,
 		.flags = CLK_SET_RATE_PARENT,
 	},
 };
 
-static struct clk_regmap g12a_vdec_1 = {
+static struct clk_regmap g12a_vdec_p0 = {
 	.data = &(struct clk_regmap_gate_data){
 		.offset = HHI_VDEC_CLK_CNTL,
 		.bit_idx = 8,
 	},
 	.hw.init = &(struct clk_init_data) {
-		.name = "vdec_1",
+		.name = "vdec_p0",
 		.ops = &clk_regmap_gate_ops,
 		.parent_hws = (const struct clk_hw *[]) {
-			&g12a_vdec_1_div.hw
+			&g12a_vdec_p0_div.hw
 		},
 		.num_parents = 1,
 		.flags = CLK_SET_RATE_PARENT,
 	},
 };
 
-static struct clk_regmap g12a_vdec_hevcf_sel = {
+static struct clk_regmap g12a_hevcf_p0_sel = {
 	.data = &(struct clk_regmap_mux_data){
 		.offset = HHI_VDEC2_CLK_CNTL,
 		.mask = 0x7,
@@ -2645,7 +2645,7 @@ static struct clk_regmap g12a_vdec_hevcf_sel = {
 		.table = mux_table_vdec,
 	},
 	.hw.init = &(struct clk_init_data){
-		.name = "vdec_hevcf_sel",
+		.name = "hevcf_p0_sel",
 		.ops = &clk_regmap_mux_ops,
 		.parent_hws = g12a_vdec_parent_hws,
 		.num_parents = ARRAY_SIZE(g12a_vdec_parent_hws),
@@ -2653,7 +2653,7 @@ static struct clk_regmap g12a_vdec_hevcf_sel = {
 	},
 };
 
-static struct clk_regmap g12a_vdec_hevcf_div = {
+static struct clk_regmap g12a_hevcf_p0_div = {
 	.data = &(struct clk_regmap_div_data){
 		.offset = HHI_VDEC2_CLK_CNTL,
 		.shift = 0,
@@ -2661,33 +2661,33 @@ static struct clk_regmap g12a_vdec_hevcf_div = {
 		.flags = CLK_DIVIDER_ROUND_CLOSEST,
 	},
 	.hw.init = &(struct clk_init_data){
-		.name = "vdec_hevcf_div",
+		.name = "hevcf_p0_div",
 		.ops = &clk_regmap_divider_ops,
 		.parent_hws = (const struct clk_hw *[]) {
-			&g12a_vdec_hevcf_sel.hw
+			&g12a_hevcf_p0_sel.hw
 		},
 		.num_parents = 1,
 		.flags = CLK_SET_RATE_PARENT,
 	},
 };
 
-static struct clk_regmap g12a_vdec_hevcf = {
+static struct clk_regmap g12a_hevcf_p0 = {
 	.data = &(struct clk_regmap_gate_data){
 		.offset = HHI_VDEC2_CLK_CNTL,
 		.bit_idx = 8,
 	},
 	.hw.init = &(struct clk_init_data) {
-		.name = "vdec_hevcf",
+		.name = "hevcf_p0",
 		.ops = &clk_regmap_gate_ops,
 		.parent_hws = (const struct clk_hw *[]) {
-			&g12a_vdec_hevcf_div.hw
+			&g12a_hevcf_p0_div.hw
 		},
 		.num_parents = 1,
 		.flags = CLK_SET_RATE_PARENT,
 	},
 };
 
-static struct clk_regmap g12a_vdec_hevc_sel = {
+static struct clk_regmap g12a_hevc_p0_sel = {
 	.data = &(struct clk_regmap_mux_data){
 		.offset = HHI_VDEC2_CLK_CNTL,
 		.mask = 0x7,
@@ -2696,7 +2696,7 @@ static struct clk_regmap g12a_vdec_hevc_sel = {
 		.table = mux_table_vdec,
 	},
 	.hw.init = &(struct clk_init_data){
-		.name = "vdec_hevc_sel",
+		.name = "hevc_p0_sel",
 		.ops = &clk_regmap_mux_ops,
 		.parent_hws = g12a_vdec_parent_hws,
 		.num_parents = ARRAY_SIZE(g12a_vdec_parent_hws),
@@ -2704,7 +2704,7 @@ static struct clk_regmap g12a_vdec_hevc_sel = {
 	},
 };
 
-static struct clk_regmap g12a_vdec_hevc_div = {
+static struct clk_regmap g12a_hevc_p0_div = {
 	.data = &(struct clk_regmap_div_data){
 		.offset = HHI_VDEC2_CLK_CNTL,
 		.shift = 16,
@@ -2712,26 +2712,26 @@ static struct clk_regmap g12a_vdec_hevc_div = {
 		.flags = CLK_DIVIDER_ROUND_CLOSEST,
 	},
 	.hw.init = &(struct clk_init_data){
-		.name = "vdec_hevc_div",
+		.name = "hevc_p0_div",
 		.ops = &clk_regmap_divider_ops,
 		.parent_hws = (const struct clk_hw *[]) {
-			&g12a_vdec_hevc_sel.hw
+			&g12a_hevc_p0_sel.hw
 		},
 		.num_parents = 1,
 		.flags = CLK_SET_RATE_PARENT,
 	},
 };
 
-static struct clk_regmap g12a_vdec_hevc = {
+static struct clk_regmap g12a_hevc_p0 = {
 	.data = &(struct clk_regmap_gate_data){
 		.offset = HHI_VDEC2_CLK_CNTL,
 		.bit_idx = 24,
 	},
 	.hw.init = &(struct clk_init_data) {
-		.name = "vdec_hevc",
+		.name = "hevc_p0",
 		.ops = &clk_regmap_gate_ops,
 		.parent_hws = (const struct clk_hw *[]) {
-			&g12a_vdec_hevc_div.hw
+			&g12a_hevc_p0_div.hw
 		},
 		.num_parents = 1,
 		.flags = CLK_SET_RATE_PARENT,
@@ -4852,7 +4852,7 @@ static struct clk_regmap g12a_12m_gate = {
 #endif
 
 static const struct clk_parent_data g12a_vdec_mux_parent_hws[] = {
-	{ .hw = &g12a_vdec_1.hw },
+	{ .hw = &g12a_vdec_p0.hw },
 	{ .hw = &g12a_vdec_p1.hw },
 };
 
@@ -4872,7 +4872,7 @@ static struct clk_regmap g12a_vdec_mux = {
 };
 
 static const struct clk_parent_data g12a_hevc_mux_parent_hws[] = {
-	{ .hw = &g12a_vdec_hevc.hw },
+	{ .hw = &g12a_hevc_p0.hw },
 	{ .hw = &g12a_hevc_p1.hw },
 };
 
@@ -4892,7 +4892,7 @@ static struct clk_regmap g12a_hevc_mux = {
 };
 
 static const struct clk_parent_data g12a_hevcf_mux_parent_hws[] = {
-	{ .hw = &g12a_vdec_hevcf.hw },
+	{ .hw = &g12a_hevcf_p0.hw },
 	{ .hw = &g12a_hevcf_p1.hw },
 };
 
@@ -5471,15 +5471,15 @@ static struct clk_hw_onecell_data g12a_hw_onecell_data = {
 		[CLKID_PCIE_PLL]		= &g12a_pcie_pll.hw,
 		[CLKID_PCIE_BGP]		= &g12a_pcie_bgp.hw,
 		[CLKID_PCIE_HCSL]		= &g12a_pcie_hcsl.hw,
-		[CLKID_VDEC_1_SEL]		= &g12a_vdec_1_sel.hw,
-		[CLKID_VDEC_1_DIV]		= &g12a_vdec_1_div.hw,
-		[CLKID_VDEC_1]			= &g12a_vdec_1.hw,
-		[CLKID_VDEC_HEVC_SEL]		= &g12a_vdec_hevc_sel.hw,
-		[CLKID_VDEC_HEVC_DIV]		= &g12a_vdec_hevc_div.hw,
-		[CLKID_VDEC_HEVC]		= &g12a_vdec_hevc.hw,
-		[CLKID_VDEC_HEVCF_SEL]		= &g12a_vdec_hevcf_sel.hw,
-		[CLKID_VDEC_HEVCF_DIV]		= &g12a_vdec_hevcf_div.hw,
-		[CLKID_VDEC_HEVCF]		= &g12a_vdec_hevcf.hw,
+		[CLKID_VDEC_P0_SEL]		= &g12a_vdec_p0_sel.hw,
+		[CLKID_VDEC_P0_DIV]		= &g12a_vdec_p0_div.hw,
+		[CLKID_VDEC_P0]			= &g12a_vdec_p0.hw,
+		[CLKID_HEVC_P0_SEL]		= &g12a_hevc_p0_sel.hw,
+		[CLKID_HEVC_P0_DIV]		= &g12a_hevc_p0_div.hw,
+		[CLKID_HEVC_P0]			= &g12a_hevc_p0.hw,
+		[CLKID_HEVCF_P0_SEL]		= &g12a_hevcf_p0_sel.hw,
+		[CLKID_HEVCF_P0_DIV]		= &g12a_hevcf_p0_div.hw,
+		[CLKID_HEVCF_P0]		= &g12a_hevcf_p0.hw,
 		[CLKID_TS_DIV]			= &g12a_ts_div.hw,
 		[CLKID_TS]			= &g12a_ts.hw,
 		[CLKID_SPICC0_MUX]		= &g12a_spicc0_mux.hw,
@@ -5750,15 +5750,15 @@ static struct clk_hw_onecell_data g12b_hw_onecell_data = {
 		[CLKID_PCIE_PLL]		= &g12a_pcie_pll.hw,
 		[CLKID_PCIE_BGP]		= &g12a_pcie_bgp.hw,
 		[CLKID_PCIE_HCSL]               = &g12a_pcie_hcsl.hw,
-		[CLKID_VDEC_1_SEL]		= &g12a_vdec_1_sel.hw,
-		[CLKID_VDEC_1_DIV]		= &g12a_vdec_1_div.hw,
-		[CLKID_VDEC_1]			= &g12a_vdec_1.hw,
-		[CLKID_VDEC_HEVC_SEL]		= &g12a_vdec_hevc_sel.hw,
-		[CLKID_VDEC_HEVC_DIV]		= &g12a_vdec_hevc_div.hw,
-		[CLKID_VDEC_HEVC]		= &g12a_vdec_hevc.hw,
-		[CLKID_VDEC_HEVCF_SEL]		= &g12a_vdec_hevcf_sel.hw,
-		[CLKID_VDEC_HEVCF_DIV]		= &g12a_vdec_hevcf_div.hw,
-		[CLKID_VDEC_HEVCF]		= &g12a_vdec_hevcf.hw,
+		[CLKID_VDEC_P0_SEL]		= &g12a_vdec_p0_sel.hw,
+		[CLKID_VDEC_P0_DIV]		= &g12a_vdec_p0_div.hw,
+		[CLKID_VDEC_P0]			= &g12a_vdec_p0.hw,
+		[CLKID_HEVC_P0_SEL]		= &g12a_hevc_p0_sel.hw,
+		[CLKID_HEVC_P0_DIV]		= &g12a_hevc_p0_div.hw,
+		[CLKID_HEVC_P0]			= &g12a_hevc_p0.hw,
+		[CLKID_HEVCF_P0_SEL]		= &g12a_hevcf_p0_sel.hw,
+		[CLKID_HEVCF_P0_DIV]		= &g12a_hevcf_p0_div.hw,
+		[CLKID_HEVCF_P0]		= &g12a_hevcf_p0.hw,
 		[CLKID_TS_DIV]			= &g12a_ts_div.hw,
 		[CLKID_TS]			= &g12a_ts.hw,
 		[CLKID_SYS1_PLL_DCO]		= &g12b_sys1_pll_dco.hw,
@@ -6080,15 +6080,15 @@ static struct clk_hw_onecell_data sm1_hw_onecell_data = {
 		[CLKID_PCIE_PLL]		= &g12a_pcie_pll.hw,
 		[CLKID_PCIE_BGP]		= &g12a_pcie_bgp.hw,
 		[CLKID_PCIE_HCSL]               = &g12a_pcie_hcsl.hw,
-		[CLKID_VDEC_1_SEL]		= &g12a_vdec_1_sel.hw,
-		[CLKID_VDEC_1_DIV]		= &g12a_vdec_1_div.hw,
-		[CLKID_VDEC_1]			= &g12a_vdec_1.hw,
-		[CLKID_VDEC_HEVC_SEL]		= &g12a_vdec_hevc_sel.hw,
-		[CLKID_VDEC_HEVC_DIV]		= &g12a_vdec_hevc_div.hw,
-		[CLKID_VDEC_HEVC]		= &g12a_vdec_hevc.hw,
-		[CLKID_VDEC_HEVCF_SEL]		= &g12a_vdec_hevcf_sel.hw,
-		[CLKID_VDEC_HEVCF_DIV]		= &g12a_vdec_hevcf_div.hw,
-		[CLKID_VDEC_HEVCF]		= &g12a_vdec_hevcf.hw,
+		[CLKID_VDEC_P0_SEL]		= &g12a_vdec_p0_sel.hw,
+		[CLKID_VDEC_P0_DIV]		= &g12a_vdec_p0_div.hw,
+		[CLKID_VDEC_P0]			= &g12a_vdec_p0.hw,
+		[CLKID_HEVC_P0_SEL]		= &g12a_hevc_p0_sel.hw,
+		[CLKID_HEVC_P0_DIV]		= &g12a_hevc_p0_div.hw,
+		[CLKID_HEVC_P0]			= &g12a_hevc_p0.hw,
+		[CLKID_HEVCF_P0_SEL]		= &g12a_hevcf_p0_sel.hw,
+		[CLKID_HEVCF_P0_DIV]		= &g12a_hevcf_p0_div.hw,
+		[CLKID_HEVCF_P0]		= &g12a_hevcf_p0.hw,
 		[CLKID_TS_DIV]			= &g12a_ts_div.hw,
 		[CLKID_TS]			= &g12a_ts.hw,
 		[CLKID_GP1_PLL_DCO]		= &sm1_gp1_pll_dco.hw,
@@ -6403,15 +6403,15 @@ static struct clk_regmap *const g12a_clk_regmaps[] __initconst = {
 	&g12a_pcie_pll_dco,
 	&g12a_pcie_bgp,
 	&g12a_pcie_hcsl,
-	&g12a_vdec_1_sel,
-	&g12a_vdec_1_div,
-	&g12a_vdec_1,
-	&g12a_vdec_hevc_sel,
-	&g12a_vdec_hevc_div,
-	&g12a_vdec_hevc,
-	&g12a_vdec_hevcf_sel,
-	&g12a_vdec_hevcf_div,
-	&g12a_vdec_hevcf,
+	&g12a_vdec_p0_sel,
+	&g12a_vdec_p0_div,
+	&g12a_vdec_p0,
+	&g12a_hevc_p0_sel,
+	&g12a_hevc_p0_div,
+	&g12a_hevc_p0,
+	&g12a_hevcf_p0_sel,
+	&g12a_hevcf_p0_div,
+	&g12a_hevcf_p0,
 	&g12a_ts_div,
 	&g12a_ts,
 	&g12b_cpu_clk,

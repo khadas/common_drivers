@@ -48,7 +48,8 @@
 //2023.7.25 hdmirx suspend
 //2023.7.27 phy setting and control pcs reset
 //2023.8.8 fix edid switch issue
-#define RX_VER0 "ver.2023/08/08"
+//2023.8.18 fix no sound when no aif pkt
+#define RX_VER0 "ver.2023/08/18"
 
 /*print type*/
 #define COR1_LOG	0x10000

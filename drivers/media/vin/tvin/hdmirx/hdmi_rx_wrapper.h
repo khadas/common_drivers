@@ -26,7 +26,7 @@
 /* #define AUD_SR_RANGE 2000 */
 #define PHY_REQUEST_CLK_MIN	170000000
 #define PHY_REQUEST_CLK_MAX	370000000
-#define TIMER_STATE_CHECK	(1 * HZ / 200)
+#define TIMER_STATE_CHECK	(1 * HZ / 100)
 
 struct freq_ref_s {
 	bool interlace;

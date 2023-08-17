@@ -1704,14 +1704,21 @@ void rx_get_aud_info(struct aud_info_s *audio_info, u8 port)
 		tmp += hdmirx_rd_cor(RX_ACR_DBYTE2_DP2_IVCRX, port) << 8;
 		tmp += hdmirx_rd_cor(RX_ACR_DBYTE3_DP2_IVCRX, port);
 		audio_info->cts = tmp;
-		//if (rx_info.chip_id >= CHIP_ID_T3) {
-		if (pkt->length == 10) { //aif length is 10
-			if (audio_info->aud_hbr_rcv)
+		if (rx_info.chip_id == CHIP_ID_T7) {
+			if (audio_info->aud_hbr_rcv) {
 				audio_info->aud_packet_received = 8;
-			else
-				audio_info->aud_packet_received = 1;
+			} else {
+				if (pkt->length == 10) { //aif length is 10
+					audio_info->aud_packet_received = 1;
+				} else if (audio_info->n) {
+					audio_info->aud_packet_received = 1;
+				} else {
+					audio_info->aud_packet_received = 0;
+				}
+			}
 		} else {
-			audio_info->aud_packet_received = 0;
+			audio_info->aud_packet_received =
+				hdmirx_rd_top(TOP_MISC_STAT0, port) >> 16 & 0xff;
 		}
 		audio_info->ch_sts[0] = hdmirx_rd_cor(RX_CHST1_AUD_IVCRX, port);
 		audio_info->ch_sts[1] = hdmirx_rd_cor(RX_CHST2_AUD_IVCRX, port);

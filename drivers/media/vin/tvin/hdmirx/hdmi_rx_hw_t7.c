@@ -36,7 +36,7 @@
 u32 rterm_trim_flag_t7;
 /* FT trim value 4 bits */
 u32 rterm_trim_val_t7;
-int hdcp_22_en = 1;
+int hdcp_22_en;
 
 /* for T7 */
 static const u32 phy_misci_t7[][4] = {

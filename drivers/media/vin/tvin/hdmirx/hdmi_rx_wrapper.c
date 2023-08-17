@@ -4422,8 +4422,8 @@ void hdmirx_open_port(enum tvin_port_e port)
 	rx_info.main_port = (port - TVIN_PORT_HDMI0) & 0xf;
 	if (port_debug_en)
 		rx_info.sub_port = rx_info.main_port;
-	if (rx_info.chip_id < CHIP_ID_T3X)
-		signal_status_init(rx_info.main_port);
+	//if (rx_info.chip_id < CHIP_ID_T3X)
+		//signal_status_init(rx_info.main_port);
 	rx[rx_info.main_port].no_signal = false;
 	rx[rx_info.main_port].wait_no_sig_cnt = 0;
 	//vic_check_en = false;
@@ -4944,10 +4944,7 @@ void rx_main_state_machine(void)
 			rx[port].state = FSM_WAIT_CLK_STABLE;
 			break;
 		}
-		if (rx[port].spec_vendor_id && !rx_is_specific_20_dev(port))
-			dwc_rst_wait_cnt_max = spec_dev_wait_cnt_max;
-		else
-			dwc_rst_wait_cnt_max = 30;
+
 		rx[port].var.dwc_rst_wait_cnt++;
 		if (rx[port].var.dwc_rst_wait_cnt < dwc_rst_wait_cnt_max)
 			break;

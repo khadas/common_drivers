@@ -6,7 +6,6 @@
 /dts-v1/;
 
 #include "mesontxhd2.dtsi"
-#include "mesontxhd2_drm.dtsi"
 #include "meson_txhd2-panel.dtsi"
 #include "partition_mbox_normal_txhd2_P_32.dtsi"
 #include "mesontxhd2_audio.dtsi"
@@ -912,37 +911,12 @@
 };
 
 &meson_fb {
-	status = "disabled";
+	status = "okay";
 	display_size_default = <1280 720 1280 2160 32>;
 	mem_size = <0x00400000 0xb00000 0x100000>;
 	logo_addr = "0x3f800000";
 	mem_alloc = <0>;
 	pxp_mode = <0>; /** 0:normal mode 1:pxp mode */
-};
-
-&drm_vpu {
-	status = "okay";
-	logo_addr = "0x3f800000";
-
-	connectors_dev: port@1 {
-		drm_to_lcd0: endpoint@0 {
-			reg = <0>;
-			remote-endpoint = <&lcd0_to_drm>;
-		};
-	};
-};
-
-&lcd {
-	ports {
-		port {
-			#address-cells = <1>;
-			#size-cells = <0>;
-			lcd0_to_drm: endpoint@0 {
-				reg = <0>;
-				remote-endpoint = <&drm_to_lcd0>;
-			};
-		};
-	};
 };
 
 &uart_AO {

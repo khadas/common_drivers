@@ -520,7 +520,7 @@ static int aml_set_tdm_mclk_2(struct aml_tdm *p_tdm,
 		clk_set_rate(p_tdm->mclk, freq);
 	p_tdm->last_mclk_freq = freq;
 
-	pr_info("%s:set mclk:%d, standard_sysclk: %d, get mclk:%lu, mpll:%lu, clk_src_cd:%lu\n",
+	pr_debug("%s:set mclk:%d, standard_sysclk: %d, get mclk:%lu, mpll:%lu, clk_src_cd:%lu\n",
 		__func__,
 		freq,
 		p_tdm->setting.standard_sysclk,

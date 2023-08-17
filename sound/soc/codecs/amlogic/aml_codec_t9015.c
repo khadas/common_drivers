@@ -315,9 +315,14 @@ static int aml_T9015_audio_set_bias_level(struct snd_soc_component *component,
 		break;
 
 	case SND_SOC_BIAS_OFF:
-		 /* only power down bit[0:7] */
-		snd_soc_component_update_bits(component, AUDIO_CONFIG_BLOCK_ENABLE,
-									0xff << 0, 0x0 << 0);
+		snd_soc_component_write(component,
+					AUDIO_CONFIG_BLOCK_ENABLE, 0xB000);
+		usleep_range(10000, 10050);
+		snd_soc_component_write(component,
+					AUDIO_CONFIG_BLOCK_ENABLE, 0xC000);
+		msleep(200);
+		snd_soc_component_write(component,
+					AUDIO_CONFIG_BLOCK_ENABLE, 0);
 		break;
 
 	default:
@@ -344,10 +349,12 @@ static int aml_T9015_audio_reset(struct snd_soc_component *component)
 
 static int aml_T9015_audio_start_up(struct snd_soc_component *component)
 {
-	snd_soc_component_write(component, AUDIO_CONFIG_BLOCK_ENABLE, 0xF000);
+	snd_soc_component_write(component, AUDIO_CONFIG_BLOCK_ENABLE, 0xc000);
 	msleep(200);
+	snd_soc_component_write(component, AUDIO_CONFIG_BLOCK_ENABLE, 0xF000);
+	msleep(50);
 	snd_soc_component_write(component, AUDIO_CONFIG_BLOCK_ENABLE, 0xB000);
-
+	usleep_range(1000, 1050);
 	return 0;
 }
 

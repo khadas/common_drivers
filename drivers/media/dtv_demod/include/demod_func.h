@@ -88,6 +88,9 @@
 /* for table end */
 #define TABLE_FLG_END		0xffffffff
 
+#define OTP_LIC		((0x0010  << 2) + 0xfe440000)
+#define OTP_LIC13	(OTP_LIC + 0x1C)
+
 /* debug info=====================================================*/
 extern int aml_demod_debug;
 
@@ -662,6 +665,7 @@ struct fe_l2a_internal_param {
 	//struct io_access		tuner_io_fcn;
 };
 
+int is_s1a_dvbs_disabled(void);
 void st_dvbs2_init(void);
 bool tuner_find_by_name(struct dvb_frontend *fe, const char *name);
 void tuner_set_params(struct dvb_frontend *fe);

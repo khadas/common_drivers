@@ -1938,6 +1938,30 @@ enum fe_bandwidth dtvdemod_convert_bandwidth(unsigned int input)
 	return output;
 }
 
+int is_s1a_dvbs_disabled(void)
+{
+	int ret = 0;
+	unsigned int val;
+	void __iomem *reg_addr;
+
+	reg_addr = ioremap(OTP_LIC13, sizeof(unsigned int));
+	if (!reg_addr) {
+		PR_ERR("%s ioremap fail !!\n", __func__);
+		return ret;
+	}
+	val = readl(reg_addr);
+	/* bit 12: FEAT_DISABLE_DVB_C */
+	/* ret = 1 & (val >> 12); */
+
+	/* bit 13: FEAT_DISABLE_DVB_S2*/
+	ret = 1 & (val >> 13);
+
+	iounmap(reg_addr);
+	PR_INFO("%s: val 0x%x, ret %d .\n", __func__, val, ret);
+
+	return ret;
+}
+
 #if defined AML_DEMOD_SUPPORT_DVBT || defined AML_DEMOD_SUPPORT_ISDBT
 void calculate_cordic_para(void)
 {

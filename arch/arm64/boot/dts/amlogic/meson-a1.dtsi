@@ -1119,6 +1119,8 @@
 		dsp-start-mode = <1>; /*0:scpi start mode,1:smc start mode*/
 		boot_sram_addr = <0xfff00000>;
 		boot_sram_size = <0x80000>;
+		mboxes = <&mbox_pl A1_REE2DSPA_DSP>,
+			 <&mbox_pl A1_REE2DSPB_DSP>;
 		power-domains = <&pwrdm PDID_DSP_A>, <&pwrdm PDID_DSP_B>;
 		power-domain-names = "dspa", "dspb";
 		status = "okay";

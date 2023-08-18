@@ -37,12 +37,11 @@
 		ranges;
 
 		dsp_fw_reserved:linux,dsp_fw {
-			status = "disabled";
 			compatible = "shared-dma-pool";
 			reusable;
 			size = <0x0 0x1400000>;
 			alignment = <0x0 0x400000>;
-			alloc-ranges = <0x0 0x2800000 0x0 0x1400000>;
+			reg = <0x0 0x02800000 0x0 0x01400000>;
 		};
 
 		secos_reserved:linux,secos {

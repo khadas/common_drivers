@@ -5057,16 +5057,24 @@ void hdmirx_set_vp_mapping(enum colorspace_e cs, u8 port)
 
 	if (rx_info.chip_id == CHIP_ID_T3X) {
 		data32 = 0;
-		data32 |= 2 << 9;
-		data32 |= 1 << 6;
-		data32 |= 0 << 3;
+		if (cs == E_COLOR_YUV422) {
+			data32 |= 3 << 9;
+			data32 |= 3 << 6;
+			data32 |= 3 << 3;
+		} else {
+			data32 |= 2 << 9;
+			data32 |= 1 << 6;
+			data32 |= 0 << 3;
+		}
 		hdmirx_wr_cor(VP_INPUT_MAPPING_VID_IVCRX, data32 & 0xff, port);
 		hdmirx_wr_cor(VP_INPUT_MAPPING_VID_IVCRX + 1, (data32 >> 8) & 0xff, port);
+		data32 = hdmirx_rd_top_common_1(TOP_VID_CNTL);
 		data32 &= (~(0x7 << 24));
 		data32 |= 2 << 24;
 		hdmirx_wr_top_common_1(TOP_VID_CNTL, data32);//to do
 		return;
 	}
+
 	switch (cs) {
 	case E_COLOR_YUV422:
 		data32 |= 3 << 9;

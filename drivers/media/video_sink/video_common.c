@@ -1364,6 +1364,16 @@ bool check_aisr_need_disable(struct video_layer_s *layer)
 	struct disp_info_s *disp_layer = &glayer_info[layer->layer_id];
 	const struct vinfo_s *info = NULL;
 
+	//n2m :not check slice num
+	if ((frc_get_n2m_setting() != 2) &&
+		layer->slice_num >= 2) {
+		if (debug_common_flag & DEBUG_FLAG_COMMON_AISR)
+			pr_info("%s:n2m=%d slice_num(%d)\n",
+				__func__,
+				frc_get_n2m_setting(),
+				layer->slice_num);
+		return false;
+	}
 	info = get_current_vinfo();
 	if (info) {
 		layer_width = disp_layer->layer_width;
@@ -1374,6 +1384,14 @@ bool check_aisr_need_disable(struct video_layer_s *layer)
 			ret = false;
 		else
 			ret = true;
+		if (debug_common_flag & DEBUG_FLAG_COMMON_AISR)
+			pr_info("%s:ret=%d width(%d, %d), height(%d,%d)\n",
+				__func__,
+				ret,
+				layer_width,
+				info->width * aisr_size_threshold / 100,
+				layer_height,
+				info->height * aisr_size_threshold / 100);
 	}
 	return ret;
 }

@@ -11725,11 +11725,10 @@ bool aisr_update_frame_info(struct video_layer_s *layer,
 	/* update layer->aisr_mif_setting */
 	if (vf->vc_private &&
 	    vf->vc_private->flag & VC_FLAG_AI_SR &&
-	    layer->slice_num <= 1 &&
 	    check_aisr_need_disable(layer)) {
 		struct vf_nn_sr_t *srout_data = NULL;
 
-		layer->slice_num = 1;
+		//layer->slice_num = 1;
 		layer->aisr_mif_setting.aisr_enable = 1;
 		srout_data = vf->vc_private->srout_data;
 		if (srout_data) {
@@ -11781,29 +11780,14 @@ bool aisr_update_frame_info(struct video_layer_s *layer,
 			if (di_hf_y_reverse != layer->aisr_mif_setting.di_hf_y_reverse)
 				layer->new_vpp_setting = true;
 			layer->aisr_mif_setting.di_hf_y_reverse = di_hf_y_reverse;
+			if (debug_common_flag & DEBUG_FLAG_COMMON_AISR)
+				pr_info("%s(%d):aisr_enable(%d, %d)\n",
+					__func__, __LINE__,
+					layer->aisr_mif_setting.aisr_enable,
+					cur_dev->aisr_enable);
 		}
 	} else {
 		layer->aisr_mif_setting.aisr_enable = 0;
-		#ifdef test
-		if (vf->vc_private &&
-		    vf->vc_private->flag & VC_FLAG_AI_SR &&
-		    layer->slice_num >= 2) {
-			if ((frc_get_n2m_setting() == 2) && !frc_is_on()) {
-				struct disp_info_s *layer = NULL;
-
-				/* if axis is odd, need adjust to even */
-				layer = &glayer_info[layer->layer_id];
-				if (layer->layer_height % 2)
-					layer->layer_height++;
-				if (layer->layer_width % 2)
-					layer->layer_width++;
-				if (debug_flag)
-					pr_info("%s: adjust layer_width=%d, layer_height=%d\n",
-						__func__,
-						layer->layer_width, layer->layer_height);
-			}
-		}
-		#endif
 	}
 	if (layer->aisr_mif_setting.aisr_enable !=
 		cur_dev->aisr_enable)
@@ -12113,8 +12097,15 @@ s32 config_aisr_position(struct video_layer_s *layer,
 	    !aisr_mif_setting->aisr_enable)
 		return -1;
 
-	if (!cur_dev->aisr_frame_parms.aisr_enable)
+	if (!cur_dev->aisr_frame_parms.aisr_enable) {
 		aisr_mif_setting->aisr_enable = 0;
+		if (debug_common_flag & DEBUG_FLAG_COMMON_AISR)
+			pr_info("%s(%d):aisr_enable(%d, %d, %d)\n",
+				__func__, __LINE__,
+				aisr_mif_setting->aisr_enable,
+				cur_dev->aisr_enable,
+				cur_dev->aisr_frame_parms.aisr_enable);
+	}
 	aisr_mif_setting->vscale_skip_count =
 		cur_dev->aisr_frame_parms.vscale_skip_count;
 	if (aisr_mif_setting->di_hf_y_reverse) {

@@ -1490,7 +1490,7 @@ int update_vpp_input_info(const struct vinfo_s *info)
 			vpp_input.din_y_start[0] = vd_proc_vd1_info->vd1_dout_y_start[0];
 		}
 	} else if (vd_proc_vd1_info->vd1_slices_dout_dpsel == VD1_SLICES_DOUT_2S4P) {
-		vpp_input.din_hsize[0] = SIZE_ALIG16(vd_proc_vd1_info->vd1_dout_hsize[0]);
+		vpp_input.din_hsize[0] = SIZE_ALIG32(vd_proc_vd1_info->vd1_dout_hsize[0]);
 		vpp_input.din_vsize[0] = vd_proc_vd1_info->vd1_dout_vsize[0];
 		vpp_input.din_x_start[0] = vd_proc_vd1_info->vd1_dout_x_start[0];
 		vpp_input.din_y_start[0] = vd_proc_vd1_info->vd1_dout_y_start[0];

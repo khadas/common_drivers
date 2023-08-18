@@ -2204,7 +2204,7 @@ static void vd_slices_padding_set(u32 vpp_index,
 			vd1_proc_unit_dout_vsize =
 				vd_proc_vd1_info->vd1_proc_unit_dout_vsize[slice];
 			if (vd1_proc_unit_dout_hsize <
-				SIZE_ALIG16(vd_proc_vd1_info->vd1_dout_hsize[0]) / 2) {
+				SIZE_ALIG32(vd_proc_vd1_info->vd1_dout_hsize[0]) / 2) {
 				slice_pad_ena[slice] = 1;
 				slice_pad_h_bgn[slice] = 0;
 				slice_pad_h_end[slice] =
@@ -2657,7 +2657,7 @@ static void vd_proc_set(u32 vpp_index, struct vd_proc_s *vd_proc)
 			/* vd1 dout 2s2p path */
 			rdma_wr_bits(VPP_VD_SYS_CTRL, 2, 0, 2);
 			rdma_wr(SLICE2PPC_H_V_SIZE, vd1_dout_vsize << 16 |
-				SIZE_ALIG16(vd1_dout_hsize) / 2);
+				SIZE_ALIG32(vd1_dout_hsize) / 2);
 		}
 		break;
 	case VD1_4SLICES_MODE:
@@ -10597,6 +10597,11 @@ void aisr_reshape_addr_set_s5(struct video_layer_s *layer,
 		cur_dev->aisr_enable = 0;
 		cur_dev->pps_auto_calc = 0;
 		video_info_change_status &= ~VIDEO_AISR_FRAME_EVENT;
+		if (debug_common_flag & DEBUG_FLAG_COMMON_AISR)
+			pr_info("%s(%d):aisr_enable(%d, %d)\n",
+				__func__, __LINE__,
+				aisr_mif_setting->aisr_enable,
+				cur_dev->aisr_enable);
 		return;
 	}
 	cur_dev->scaler_sep_coef_en = 1;
@@ -11625,12 +11630,23 @@ void set_video_slice_policy(struct video_layer_s *layer,
 			/* 4k 120hz */
 			} else if (vinfo->width > 1920 && vinfo->height > 1080 &&
 				(vinfo->sync_duration_num /
-			    vinfo->sync_duration_den > 60) &&
-			    (!(frc_n2m_1st_frame_worked(layer) &&
-			    is_aisr_enable(layer)))) {
-				/* 4k120hz and !frc_n2m_worked, enalbe 2 slice, others 1 slice */
-				slice_num = 2;
-				if (video_is_meson_s5_cpu() && is_amdv_enable())
+			    vinfo->sync_duration_den > 60)) {
+				/* 4k120hz and frc_n2m_worked && aisr enable 1 slice */
+				if (frc_n2m_1st_frame_worked(layer)) {
+					if (is_aisr_enable(layer))
+						slice_num = 1;
+					else
+						slice_num = 2;
+				} else {
+					slice_num = 2;
+					/* temp set for current frame */
+					if (is_aisr_enable(layer)) {
+						layer->property_changed = true;
+						layer->aisr_mif_setting.aisr_enable = 0;
+					}
+				}
+				if (slice_num == 2 &&
+					video_is_meson_s5_cpu() && is_amdv_enable())
 					vd1s1_vd2_prebld_en = 1;
 			} else {
 				slice_num = 1;
@@ -12145,7 +12161,7 @@ void update_frc_in_size(struct video_layer_s *layer)
 			SIZE_ALIG32(layer->next_frame_par->nnhf_input_w);
 	else if (layer->slice_num == 2)
 		layer->next_frame_par->frc_h_size =
-			SIZE_ALIG16(layer->next_frame_par->nnhf_input_w);
+			SIZE_ALIG32(layer->next_frame_par->nnhf_input_w);
 	else
 		layer->next_frame_par->frc_h_size = layer->next_frame_par->nnhf_input_w;
 	layer->next_frame_par->frc_v_size = layer->next_frame_par->nnhf_input_h;

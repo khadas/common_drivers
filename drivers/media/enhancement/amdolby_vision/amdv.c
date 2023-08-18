@@ -344,6 +344,10 @@ u32 py_size[7] = {737280, 184320, 46080, 13824, 4608, 1152, 576};
 
 struct dolby5_top1_md_hist dv5_md_hist;
 
+/*mode 0:10bit, 1: 12bit, 2: 8bit, 3: 10bit>>2*/
+static u32 probe_mode;
+static u32 probe_en;
+
 static unsigned int amdv_target_min = 50; /* 0.0001 */
 static unsigned int amdv_target_max[3][3] = {
 	{ 4000, 1000, 100 }, /* DV => DV/HDR/SDR */
@@ -14175,7 +14179,7 @@ void amdv_insert_crc(bool print)
 			crc_output_buff_off);
 	}
 
-	snprintf(cur_crc, sizeof(cur_crc), "0x%08x", crc);
+	snprintf(cur_crc, sizeof(cur_crc), "%08x", crc);
 }
 
 void tv_amdv_dma_table_modify(u32 tbl_id, u64 value)
@@ -15069,6 +15073,169 @@ static ssize_t	amdolby_vision_brightness_off_show
 	len += sprintf(buf + len, "HLG HDMI, OTT: %d %d\n",
 			brightness_off[4][0], brightness_off[4][1]);
 
+	return len;
+}
+
+static ssize_t amdv_probe_en_store
+	(struct class *cla,
+	struct class_attribute *attr,
+	const char *buf, size_t count)
+{
+	int ret;
+
+	ret = kstrtoint(buf, 0, &probe_en);
+	if (ret < 0)
+		return -EINVAL;
+
+	if (is_aml_t3x()) {
+		WRITE_VPP_DV_REG_BITS(VPU_DOLBY_WRAP_PROB_CTRL, probe_en, 0, 1);
+		pr_info("amdv_probe_en 0x%x\n", probe_en);
+	}
+	return count;
+}
+
+static ssize_t amdv_probe_sel_show(struct class *cla,
+					   struct class_attribute *attr,
+					   char *buf)
+{
+	if (is_aml_t3x()) {
+		pr_info("Usage:\n");
+		pr_info("echo port > /sys/class/amdolby_vision/probe_sel\n");
+		pr_info("0 : dolby_core_in\n");
+		pr_info("1 : dolby_core_out\n");
+		pr_info("2 : ovlp_win2_slc0_out\n");
+		pr_info("3 : ovlp_win2_slc1_out\n");
+		pr_info("4 : vdin_2dv_2ppc\n");
+		pr_info("5 : dv2vdin_2ppc\n");
+		pr_info("cur probe mode:%d, sel:%d\n", probe_mode,
+			(READ_VPP_DV_REG(VPU_DOLBY_WRAP_PROB_CTRL) >> 2) & 0xf);
+	}
+	return 0;
+}
+
+static ssize_t amdv_probe_sel_store(struct class *cla,
+					    struct class_attribute *attr,
+					    const char *buf, size_t count)
+{
+	long val = 0;
+	u32 mode = 0;
+	u32 sel = 0;
+
+	if (kstrtoul(buf, 16, &val) < 0)
+		return -EINVAL;
+
+	mode = (val >> 4) & 0xf;
+	probe_mode = mode;
+	sel = val & 0xf;
+	if (is_aml_t3x()) {
+		if (sel < 6) {
+			WRITE_VPP_DV_REG_BITS(VPU_DOLBY_WRAP_PROB_CTRL, sel, 2, 6);
+		} else {
+			pr_info("error! please cat /sys/class/amdolby_vision/probe_sel\n");
+			return 0;
+		}
+		pr_info("amdv_probe_sel 0x%x\n", (u32)val);
+	}
+	return strnlen(buf, count);
+}
+
+/*set w,h*/
+static ssize_t amdv_probe_size_store(struct class *cla,
+					    struct class_attribute *attr,
+					    const char *buf, size_t count)
+{
+	long w, h;
+	char *buf_orig, *parm[MAX_PARAM] = {NULL};
+
+	if (!buf)
+		return -EFAULT;
+
+	buf_orig = kstrdup(buf, GFP_KERNEL);
+	parse_param_amdv(buf_orig, (char **)&parm);
+
+	if (!parm[0] || !parm[1]) {
+		pr_info("missing parameter...\n");
+		kfree(buf_orig);
+		return -EINVAL;
+	}
+	if (kstrtoul(parm[0], 10, &w) < 0)
+		return -EINVAL;
+	if (kstrtoul(parm[1], 10, &h) < 0)
+		return -EINVAL;
+
+	if (is_aml_t3x())
+		WRITE_VPP_DV_REG(VPU_DOLBY_WRAP_PROB_SIZE, (h << 16) | w);
+
+	return strnlen(buf, count);
+}
+
+/*set x,y*/
+static ssize_t amdv_probe_pos_store(struct class *cla,
+					    struct class_attribute *attr,
+					    const char *buf, size_t count)
+{
+	long val_x, val_y;
+	char *buf_orig, *parm[MAX_PARAM] = {NULL};
+
+	if (!buf)
+		return -EFAULT;
+
+	buf_orig = kstrdup(buf, GFP_KERNEL);
+	parse_param_amdv(buf_orig, (char **)&parm);
+
+	if (!parm[0] || !parm[1]) {
+		pr_info("missing parameter...\n");
+		kfree(buf_orig);
+		return -EINVAL;
+	}
+	if (kstrtoul(parm[0], 10, &val_x) < 0)
+		return -EINVAL;
+	if (kstrtoul(parm[1], 10, &val_y) < 0)
+		return -EINVAL;
+
+	if (is_aml_t3x())
+		WRITE_VPP_DV_REG(VPU_DOLBY_WRAP_PROB_WIN, (val_y << 16) | val_x);
+
+	return strnlen(buf, count);
+}
+
+static ssize_t amdv_probe_data_show(struct class *cla,
+					    struct class_attribute *attr,
+					    char *buf)
+{
+	ssize_t len = 0;
+	u32 probe_data0;
+	u32 probe_data1;
+
+	if (is_aml_t3x()) {
+		probe_data0 = READ_VPP_DV_REG(VPU_DOLBY_WRAP_RO_DAT0);
+		probe_data1 = READ_VPP_DV_REG(VPU_DOLBY_WRAP_RO_DAT1);
+		if (probe_mode == 0) /*10bit*/
+			len += sprintf(buf + len,
+			"amdv_probe_data %x, %x, %x\n",
+			(probe_data0 >> 20) & 0x3ff,
+			(probe_data0 >> 10) & 0x3ff,
+			(probe_data0 >> 0) & 0x3ff);
+		else if (probe_mode == 1)  /*12bit*/
+			len += sprintf(buf + len,
+			"amdv_probe_data %x, %x, %x\n",
+			((probe_data1 & 0xf) << 8) | ((probe_data0 >> 24) & 0xff),
+			(probe_data0 >> 12) & 0xfff, probe_data0 & 0xfff);
+		else if (probe_mode == 2) /*8bit*/
+			len += sprintf(buf + len,
+			"amdv_probe_data %x, %x, %x\n",
+			(probe_data0 >> 16) & 0xff,
+			(probe_data0 >> 8) & 0xff,
+			(probe_data0 >> 0) & 0xff);
+		else if (probe_mode == 3) /*every 10bit >> 2, for dolby tunnel data*/
+			len += sprintf(buf + len,
+			"amdv_probe_data %x, %x, %x\n",
+			((probe_data0 >> 20) & 0x3ff) >> 2,
+			((probe_data0 >> 10) & 0x3ff) >> 2,
+			((probe_data0 >> 0) & 0x3ff) >> 2);
+		else
+			len += sprintf(buf + len, "err probe mode %d\n", probe_mode);
+	}
 	return len;
 }
 
@@ -16227,6 +16394,18 @@ static struct class_attribute amdolby_vision_class_attrs[] = {
 	__ATTR(num_downsamplers, 0644,
 	       amdolby_vision_num_downsamplers_show,
 	       amdolby_vision_num_downsamplers_store),
+	__ATTR(probe_en, 0644,
+	       NULL, amdv_probe_en_store),
+	__ATTR(probe_sel, 0644,
+	       amdv_probe_sel_show,
+	       amdv_probe_sel_store),
+	__ATTR(probe_pos, 0644,
+	       NULL, amdv_probe_pos_store),
+	__ATTR(probe_size, 0644,
+		   NULL, amdv_probe_size_store),
+	__ATTR(probe_data, 0644,
+	       amdv_probe_data_show,
+	       NULL),
 	__ATTR_NULL
 };
 

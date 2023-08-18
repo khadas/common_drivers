@@ -724,9 +724,7 @@ static struct vframe_s *recv_common_dequeue_frame(struct video_recv_s *ins,
 						dv_toggle_frame(vf, vd_path, true);
 					}
 				}
-#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
 				vd_layer[0].vf_top1 = vf_top1;
-#endif
 				/*not drop frame or drop 3 in frame2-3*/
 				/*currently drop 2 in frame2-3,frame 2 pyramid missed*/
 				/*if (is_amdv_enable() && get_top1_onoff())*/

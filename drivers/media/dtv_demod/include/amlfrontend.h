@@ -129,6 +129,7 @@
 /*  V3.5.003 multi path interference unqualified problem */
 /*  V3.5.004 bring up new dvbc blind scan feature */
 /*  V3.5.005 s1a add efuse config */
+/*  V3.5.006 fix j83b qam setting when auto qam */
 /****************************************************/
 /****************************************************************/
 /*               AMLDTVDEMOD_VER  Description:                  */
@@ -145,8 +146,8 @@
 /*->The last four digits indicate the release time              */
 /****************************************************************/
 #define KERNEL_4_9_EN		1
-#define AMLDTVDEMOD_VER "V3.5.005"
-#define DTVDEMOD_VER	"2023/08/25: s1a add efuse config"
+#define AMLDTVDEMOD_VER "V3.5.006"
+#define DTVDEMOD_VER	"2023/08/25: fix j83b qam setting when auto qam"
 #define AMLDTVDEMOD_T2_FW_VER "V1558.20230628"
 #define DEMOD_DEVICE_NAME  "dtvdemod"
 

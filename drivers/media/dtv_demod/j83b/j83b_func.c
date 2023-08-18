@@ -654,6 +654,18 @@ void atsc_j83b_reg_initial(struct aml_dtvdemod *demod, struct dvb_frontend *fe)
 		atsc_j83b_qam_auto_scan(demod, 1);
 	}
 
+	qam_write_reg(demod, 0x65, 0x700c); // offset
+	qam_write_reg(demod, 0xb4, 0x32030);
+	qam_write_reg(demod, 0xb7, 0x3084);
+
+	// agc gain
+	qam_write_reg(demod, 0x24, (qam_read_reg(demod, 0x24) | (1 << 17)));
+	qam_write_reg(demod, 0x60, 0x10466000);
+	qam_write_reg(demod, 0xac, (qam_read_reg(demod, 0xac) & (~0xff00))
+		| 0x800);
+	qam_write_reg(demod, 0xae, (qam_read_reg(demod, 0xae)
+		& (~0xff000000)) | 0x8000000);
+
 	qam_write_reg(demod, 0x7, 0x10f23);
 	qam_write_reg(demod, 0x3a, 0x0);
 	qam_write_reg(demod, 0x7, 0x10f33);

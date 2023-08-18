@@ -148,11 +148,15 @@ int gxtv_demod_atsc_j83b_set_frontend(struct dvb_frontend *fe)
 		}
 		param_j83b.ch_freq = c->frequency / 1000;
 		param_j83b.mode = amdemod_qam(c->modulation);
-		PR_ATSC("%s, modulation: %d\n", __func__, c->modulation);
-		if (c->modulation == QAM_64)
-			param_j83b.symb_rate = 5057;
-		else
+		if (param_j83b.mode == QAM_MODE_AUTO ||
+			param_j83b.mode == QAM_MODE_256) {
 			param_j83b.symb_rate = 5361;
+			param_j83b.mode = QAM_MODE_256;
+			demod->auto_qam_mode = QAM_MODE_256;
+		} else {
+			param_j83b.symb_rate = 5057;
+			demod->auto_qam_mode = param_j83b.mode;
+		}
 
 		atsc_j83b_set_ch(demod, &param_j83b, fe);
 
@@ -163,11 +167,11 @@ int gxtv_demod_atsc_j83b_set_frontend(struct dvb_frontend *fe)
 			qam_write_reg(demod, 0x30, 0x41f2f69);
 		}
 
-		demod_dvbc_store_qam_cfg(demod);
-		demod_dvbc_set_qam(demod, param_j83b.mode, false);
-	}
+		demod_atsc_j83b_store_qam_cfg(demod);
+		demod_atsc_j83b_set_qam(demod, param_j83b.mode, false);
 
-	PR_DBG("atsc_mode is %d\n", demod->atsc_mode);
+		PR_ATSC("j83b mode: %d.\n", param_j83b.mode);
+	}
 
 	return 0;
 }
@@ -333,7 +337,6 @@ int atsc_j83b_read_status(struct dvb_frontend *fe, enum fe_status *status, bool 
 	int str = 0;
 	unsigned int s;
 	unsigned int curtime, time_passed_qam;
-	static enum qam_md_e qam;
 	static int check_first;
 	static unsigned int time_start_qam;
 	static unsigned int timeout;
@@ -346,7 +349,6 @@ int atsc_j83b_read_status(struct dvb_frontend *fe, enum fe_status *status, bool 
 		demod->time_start = jiffies_to_msecs(jiffies);
 		time_start_qam = 0;
 		if (c->modulation == QAM_AUTO) {
-			qam = QAM_MODE_256;
 			check_first = 1;
 		} else {
 			check_first = 0;
@@ -391,9 +393,9 @@ int atsc_j83b_read_status(struct dvb_frontend *fe, enum fe_status *status, bool 
 
 		*status = FE_HAS_LOCK | FE_HAS_SIGNAL | FE_HAS_CARRIER |
 			FE_HAS_VITERBI | FE_HAS_SYNC;
-		demod->real_para.modulation = amdemod_qam_fe(qam);
+		demod->real_para.modulation = amdemod_qam_fe(demod->auto_qam_mode);
 
-		PR_ATSC("locked at Qam:%s\n", get_qam_name(qam));
+		PR_ATSC("locked at Qam:%s\n", get_qam_name(demod->auto_qam_mode));
 	} else if (s < 3) {
 		if (time_start_qam == 0)
 			time_start_qam = curtime;
@@ -413,8 +415,9 @@ int atsc_j83b_read_status(struct dvb_frontend *fe, enum fe_status *status, bool 
 			}
 
 			if (c->modulation == QAM_AUTO) {
-				qam = qam == QAM_MODE_64 ? QAM_MODE_256 : QAM_MODE_64;
-				atsc_j83b_switch_qam(fe, qam);
+				demod->auto_qam_mode = demod->auto_qam_mode == QAM_MODE_64 ?
+						QAM_MODE_256 : QAM_MODE_64;
+				atsc_j83b_switch_qam(fe, demod->auto_qam_mode);
 				time_start_qam = 0;
 			}
 		}
@@ -453,8 +456,8 @@ int atsc_j83b_read_status(struct dvb_frontend *fe, enum fe_status *status, bool 
 		if (demod->last_lock == -1)
 			PR_ATSC("!! >> lost again << !!\n");
 		else
-			PR_INFO("!! >> UNLOCK << !!, freq=%d, time_passed:%u\n",
-				c->frequency, demod->time_passed);
+			PR_INFO("!! >> UNLOCK << !!, freq=%d, qam %d, time_passed:%u\n",
+				c->frequency, demod->auto_qam_mode, demod->time_passed);
 		demod->last_lock = -1;
 	} else {
 		if (demod->last_lock == 1)
@@ -490,11 +493,20 @@ int atsc_j83b_set_frontend_mode(struct dvb_frontend *fe, int mode)
 	demod_set_mode_ts(demod, SYS_DVBC_ANNEX_A);
 	param_j83b.ch_freq = temp_freq / 1000;
 	param_j83b.mode = amdemod_qam(c->modulation);
-	if (c->modulation == QAM_64)
-		param_j83b.symb_rate = 5057;
-	else
+	if (param_j83b.mode == QAM_MODE_AUTO ||
+		param_j83b.mode == QAM_MODE_256) {
 		param_j83b.symb_rate = 5361;
+		param_j83b.mode = QAM_MODE_256;
+		demod->auto_qam_mode = QAM_MODE_256;
+	} else {
+		param_j83b.symb_rate = 5057;
+		demod->auto_qam_mode = param_j83b.mode;
+	}
+
 	atsc_j83b_set_ch(demod, &param_j83b, fe);
+
+	demod_atsc_j83b_restore_qam_cfg(demod);
+	demod_atsc_j83b_set_qam(demod, param_j83b.mode, false);
 
 	return 0;
 }

@@ -144,6 +144,7 @@ struct aml_card_data {
 	enum aud_codec_types hdmi_audio_type;
 	enum hdmitx_src hdmitx_src;
 	int i2s_to_hdmitx_mask;
+	int ai_sort_ret;
 };
 
 #define aml_priv_to_dev(priv) ((priv)->snd_card.dev)
@@ -331,6 +332,31 @@ static int hdmitx_src_select_put_enum(struct snd_kcontrol *kcontrol,
 }
 #endif
 
+static int aml_audio_hal_ai_sort_get_int(struct snd_kcontrol *kcontrol,
+	struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_card *card = snd_kcontrol_chip(kcontrol);
+	struct aml_card_data *p_aml_audio;
+
+	p_aml_audio = snd_soc_card_get_drvdata(card);
+	ucontrol->value.integer.value[0] = p_aml_audio->ai_sort_ret;
+	return 0;
+}
+
+static int aml_audio_hal_ai_sort_set_int(struct snd_kcontrol *kcontrol,
+	struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_card *card = snd_kcontrol_chip(kcontrol);
+	struct aml_card_data *p_aml_audio;
+	int value = ucontrol->value.integer.value[0];
+
+	p_aml_audio = snd_soc_card_get_drvdata(card);
+
+	audio_send_uevent(card->dev, AI_SOUND_MODE_EVENT, value);
+	p_aml_audio->ai_sort_ret = value;
+	return 0;
+}
+
 static const struct snd_kcontrol_new snd_user_controls[] = {
 	SOC_ENUM_EXT("Audio HAL Format",
 			audio_hal_format_enum,
@@ -360,6 +386,10 @@ static const struct snd_kcontrol_new snd_user_controls[] = {
 			i2s_to_hdmitx_mask_get_enum,
 			i2s_to_hdmitx_mask_put_enum),
 #endif
+	SOC_SINGLE_EXT("AI Sort Result",
+			0, 0, 0, 0,
+			aml_audio_hal_ai_sort_get_int,
+			aml_audio_hal_ai_sort_set_int),
 };
 
 static void jack_audio_start_timer(struct aml_card_data *card_data,

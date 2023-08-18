@@ -24,6 +24,10 @@ static struct audio_uevent audio_events[] = {
 		.env  = "EARCTX_ARC_STATE=",
 	},
 	{
+		.type = AI_SOUND_MODE_EVENT,
+		.env  = "AI_SOUND_MODE=",
+	},
+	{
 		.type = AUDIO_NONE_EVENT,
 	}
 };

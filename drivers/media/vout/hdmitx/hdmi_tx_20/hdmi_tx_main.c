@@ -5891,6 +5891,7 @@ static bool hdmitx_set_i2s_mask(char ch_num, char ch_msk)
 	struct hdmitx_dev *hdev = &hdmitx_device;
 	static unsigned int update_flag = -1;
 
+	pr_debug("%s[%d] ch_num %d ch_msk %d\n", __func__, __LINE__, ch_num, ch_msk);
 	if (!(ch_num == 2 || ch_num == 4 ||
 	      ch_num == 6 || ch_num == 8)) {
 		pr_info("err chn setting, must be 2, 4, 6 or 8, Rst as def\n");
@@ -5928,23 +5929,40 @@ static int hdmitx_notify_callback_a(struct notifier_block *block,
 	enum hdmi_audio_fs n_rate = aud_samp_rate_map(aud_param->rate);
 	enum hdmi_audio_sampsize n_size = aud_size_map(aud_param->size);
 
+	if (aud_param->prepare) {
+		aud_param->prepare = 0;
+		hdev->tx_hw.cntlmisc(&hdev->tx_hw, MISC_AUDIO_ACR_CTRL, 0);
+		hdev->tx_hw.cntlmisc(&hdev->tx_hw, MISC_AUDIO_PREPARE, 0);
+		audio_param->type = CT_PREPARE;
+		pr_info("audio prepare\n");
+		return 0;
+	}
 	hdev->audio_param_update_flag = 0;
 	hdev->audio_notify_flag = 0;
 	if (hdmitx_set_i2s_mask(aud_param->chs, aud_param->i2s_ch_mask))
 		hdev->audio_param_update_flag = 1;
-	pr_info("%s[%d] type:%lu rate:%d size:%d chs:%d fifo_rst:%d aud_src_if:%d\n",
-		__func__, __LINE__, cmd, n_rate, n_size,
-		aud_param->chs, aud_param->fifo_rst, aud_param->aud_src_if);
+	pr_info("type:%lu rate:%d size:%d chs:%d fifo_rst:%d aud_src_if:%d\n",
+		cmd, n_rate, n_size, aud_param->chs, aud_param->fifo_rst,
+		aud_param->aud_src_if);
+	if (aud_param->aud_src_if == AUD_SRC_IF_SPDIF) {
+		pr_debug("%s[%d] aud_src_if is %d, aud_output_ch is 0x%x, reset aud_output_ch as 0\n",
+			__func__, __LINE__, aud_param->aud_src_if, hdev->aud_output_ch);
+		hdev->aud_output_ch = 0;
+	} else {
+		if (hdev->aud_output_ch == 0) {
+			hdev->aud_output_ch = (2 << 4) + 1;
+			pr_debug("%s[%d] aud_src_if is %d, set default aud_output_ch 0x%x\n",
+				__func__, __LINE__, aud_param->aud_src_if, hdev->aud_output_ch);
+		}
+	}
 	if (audio_param->sample_rate != n_rate) {
 		/* if the audio sample rate or type changes, stop ACR firstly */
-		hdev->tx_hw.cntlmisc(&hdev->tx_hw, MISC_AUDIO_ACR_CTRL, 0);
 		audio_param->sample_rate = n_rate;
 		hdev->audio_param_update_flag = 1;
 	}
 
 	if (audio_param->type != cmd) {
 		/* if the audio sample rate or type changes, stop ACR firstly */
-		hdev->tx_hw.cntlmisc(&hdev->tx_hw, MISC_AUDIO_ACR_CTRL, 0);
 		audio_param->type = cmd;
 		pr_info(AUD "aout notify format %s\n",
 			aud_type_string[audio_param->type & 0xff]);

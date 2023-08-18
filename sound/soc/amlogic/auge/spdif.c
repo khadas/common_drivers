@@ -260,9 +260,21 @@ static int ss_prepare(struct snd_pcm_substream *substream,
 			int share_lvl,
 			int separated)
 {
+	struct snd_soc_pcm_runtime *rtd = substream->private_data;
 	struct samesrc_ops *ops = NULL;
+	int spdif_id = -1;
 
 	pr_debug("%s() %d, lvl %d\n", __func__, __LINE__, share_lvl);
+	if (samesource_sel >= SHAREBUFFER_SPDIFA &&
+	    samesource_sel <= SHAREBUFFER_SPDIFB) {
+		spdif_id = samesource_sel - SHAREBUFFER_SPDIFA;
+	}
+
+	if (get_hdmitx_audio_src(rtd->card) == spdif_id) {
+		pr_info("hdmitx src switch to spdif %d\n", spdif_id);
+		set_spdif_to_hdmitx_id(spdif_id);
+	}
+
 	sharebuffer_prepare(substream,
 		pfrddr,
 		samesource_sel,
@@ -1305,6 +1317,7 @@ static void aml_dai_spdif_shutdown(struct snd_pcm_substream *substream,
 {
 	struct aml_spdif *p_spdif = snd_soc_dai_get_drvdata(cpu_dai);
 	char *clk_name = (char *)__clk_get_name(p_spdif->sysclk);
+	struct snd_soc_card *card = cpu_dai->component->card;
 
 	if (p_spdif->standard_sysclk % 11025 == 0) {
 		if (!strcmp(__clk_get_name(clk_get_parent(p_spdif->clk_spdifout)),
@@ -1317,6 +1330,9 @@ static void aml_dai_spdif_shutdown(struct snd_pcm_substream *substream,
 
 	/* disable clock and gate */
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
+		if (get_hdmitx_audio_src(card) == p_spdif->id)
+			notify_hdmitx_to_prepare();
+
 		if (p_spdif->clk_cont) {
 			pr_info("spdif_%s keep clk continuous\n",
 				(p_spdif->id == 0) ? "a" : "b");
@@ -1555,11 +1571,17 @@ static int aml_dai_spdif_hw_params(struct snd_pcm_substream *substream,
 				struct snd_soc_dai *cpu_dai)
 {
 	struct aml_spdif *p_spdif = snd_soc_dai_get_drvdata(cpu_dai);
+	struct snd_soc_card *card = cpu_dai->component->card;
 	unsigned int rate = params_rate(params);
 	int ret = 0;
 
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
 		rate *= 128;
+		if (get_hdmitx_audio_src(card) == p_spdif->id) {
+			/* notify HDMITX to disable audio packet */
+			notify_hdmitx_to_prepare();
+			set_spdif_to_hdmitx_id(p_spdif->id);
+		}
 
 		snd_soc_dai_set_sysclk(cpu_dai,
 				0, rate, SND_SOC_CLOCK_OUT);

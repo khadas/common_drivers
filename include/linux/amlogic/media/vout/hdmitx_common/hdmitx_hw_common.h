@@ -60,6 +60,7 @@
 #define MISC_AUDIO_RESET	(CMD_MISC_OFFSET + 0x16)
 #define MISC_DIS_HPLL		(CMD_MISC_OFFSET + 0x17)
 #define MISC_AUDIO_ACR_CTRL     (CMD_MISC_OFFSET + 0x18)
+#define MISC_AUDIO_PREPARE	(CMD_MISC_OFFSET + 0x1a)
 
 /***********************************************************************
  *                          Get State //getstate

@@ -371,6 +371,7 @@ static void hdmitx_early_suspend(struct early_suspend *h)
 	clear_rx_vinfo(hdev);
 	hdmitx21_edid_clear(hdev);
 	hdmitx21_edid_ram_buffer_clear(hdev);
+	hdmitx_edid_done = false;
 	edidinfo_detach_to_vinfo(hdev);
 	/* clear audio/video mute flag of stream type */
 	hdmitx21_video_mute_op(1, VIDEO_MUTE_PATH_2);
@@ -5400,7 +5401,8 @@ static void hdmitx_hpd_plugin_handler(struct work_struct *work)
 	mutex_unlock(&hdev->hdmimode_mutex);
 	mutex_unlock(&hdev->tx_comm.setclk_mutex);
 	/*notify to drm hdmi*/
-	hdmitx_hpd_notify_unlocked(&hdev->tx_comm);
+	if (!hdev->suspend_flag)
+		hdmitx_hpd_notify_unlocked(&hdev->tx_comm);
 }
 
 static void clear_rx_vinfo(struct hdmitx_dev *hdev)
@@ -5527,7 +5529,8 @@ static void hdmitx_hpd_plugout_handler(struct work_struct *work)
 	mutex_unlock(&hdev->hdmimode_mutex);
 	mutex_unlock(&hdev->tx_comm.setclk_mutex);
 	/*notify to drm hdmi*/
-	hdmitx_hpd_notify_unlocked(&hdev->tx_comm);
+	if (!hdev->suspend_flag)
+		hdmitx_hpd_notify_unlocked(&hdev->tx_comm);
 }
 
 int get21_hpd_state(void)

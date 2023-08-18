@@ -1279,6 +1279,10 @@
 	logo_addr = "0x7f800000";
 };
 
+&drm_amcvbsout {
+	status = "okay";
+};
+
 &pwm_AO_cd {
 		status = "okay";
 };

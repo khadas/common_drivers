@@ -34,8 +34,8 @@
 
 &drm_vpu {
 	connectors_dev: port@1 {
-		drm_to_lcd0: endpoint@1 {
-			reg = <1>;
+		drm_to_lcd0: endpoint@2 {
+			reg = <2>;
 			remote-endpoint = <&lcd0_to_drm>;
 		};
 	};

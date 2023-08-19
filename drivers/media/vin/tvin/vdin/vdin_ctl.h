@@ -174,7 +174,7 @@ struct ldim_max_s {
 #define DV_META_NORMAL_PKT_SIZE		121
 
 #define VDIN_INPUT_DATA_THRESHOLD	50
-#define VDIN_INPUT_MAX_FPS		5 // max_fps<200HZ
+#define VDIN_INPUT_MAX_FPS		4000 //max_fps < 240HZ (us)
 #define VDIN_INPUT_ABNORMAL_SIZE_THRESHOLD		100
 
 struct dv_meta_pkt {
@@ -364,4 +364,5 @@ void vdin_bist(struct vdin_dev_s *devp, unsigned int mode);
 unsigned int vdin_calculate_common_divisor(unsigned int x, unsigned int y);
 int vdin_get_base_fr(struct vdin_dev_s *devp);
 bool vdin_is_3d_interlace_signal(struct vdin_dev_s *devp);
+u64 vdin_calculate_isr_interval_value(struct vdin_dev_s *devp);
 #endif

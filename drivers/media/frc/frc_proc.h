@@ -21,6 +21,8 @@
 #define IN_W_SIZE_UHD_90   3456
 #define IN_H_SIZE_UHD_90   1944
 
+#define FRC_RE_CFG_CNT  3
+
 enum vf_sts {
 	VFRAME_NO = 0,
 	VFRAME_HAVE = 1,

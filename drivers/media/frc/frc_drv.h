@@ -99,8 +99,9 @@
 // frc_20230802 adjust loss num
 // frc_20230828 init vlock in bootup
 // frc_20230908 t3x revB configure set_2
+// frc_20230918 t3x revB use pre_vsync from vpu
 
-#define FRC_FW_VER			"2023-0918 t3x revB use pre_vsync from vpu"
+#define FRC_FW_VER			"2023-0921 fix frc security abnormal"
 #define FRC_KERDRV_VER                  2976
 
 #define FRC_DEVNO	1

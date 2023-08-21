@@ -483,10 +483,6 @@ int frc_update_in_sts(struct frc_dev_s *devp, struct st_frc_in_sts *frc_in_sts,
 		}
 
 	}
-	/*secure mode*/
-	if (devp->in_sts.secure_mode &&
-		!secure_tee_handle && devp->buf.cma_mem_alloced)
-		schedule_work(&devp->frc_secure_work);
 
 	if (frc_in_sts->frc_hd_start_lines != cur_video_sts->VPP_hd_start_lines_ ||
 		frc_in_sts->frc_hd_end_lines != cur_video_sts->VPP_hd_end_lines_) {
@@ -867,6 +863,22 @@ void frc_input_vframe_handle(struct frc_dev_s *devp, struct vframe_s *vf,
 			else
 				frc_set_seamless_proc(0); // tvin close seamless
 		}
+	}
+
+	/*secure mode*/
+	if (devp->in_sts.secure_mode != devp->buf.secured &&
+		devp->buf.cma_mem_alloced) {
+		if (devp->in_sts.secure_mode == 0 &&
+			devp->buf.secured == 1) {
+			no_input = true;
+			frc_re_cfg_cnt = 0;  // need reopen instantly
+		} else {
+			schedule_work(&devp->frc_secure_work);
+		}
+		pr_frc(2, "frc_re_cfg_cnt:%d pre_secure_mode:%d\n",
+			frc_re_cfg_cnt, devp->buf.secured);
+	} else {
+		frc_re_cfg_cnt = FRC_RE_CFG_CNT;
 	}
 
 	if (devp->frc_hw_pos == FRC_POS_AFTER_POSTBLEND)

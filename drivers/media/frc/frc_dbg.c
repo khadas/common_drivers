@@ -299,26 +299,26 @@ ssize_t frc_debug_if_help(struct frc_dev_s *devp, char *buf)
 
 	len += sprintf(buf + len, "frc_debug info:\n");
 
-	len += sprintf(buf + len, "status=%d\n", devp->frc_sts.state);
-	len += sprintf(buf + len, "dbg_level=%d\n", frc_dbg_en);//style for tool
-	len += sprintf(buf + len, "dbg_mode=%d\n", devp->frc_sts.state);
-	len += sprintf(buf + len, "test_pattern=%d\n", devp->frc_test_ptn);
-	len += sprintf(buf + len, "frc_pos=%d\n", devp->frc_hw_pos);
-	len += sprintf(buf + len, "frc_pause=%d\n", devp->frc_fw_pause);
-	len += sprintf(buf + len, "film_mode=%d\n", devp->film_mode);
-	len += sprintf(buf + len, "ud_dbg=%d %d %d %d\n",
+	len += sprintf(buf + len, "status\t\t=%d\n", devp->frc_sts.state);
+	len += sprintf(buf + len, "dbg_level\t=%d\n", frc_dbg_en);//style for tool
+	len += sprintf(buf + len, "dbg_mode\t=%d\n", devp->frc_sts.state);
+	len += sprintf(buf + len, "test_pattern\t=%d\n", devp->frc_test_ptn);
+	len += sprintf(buf + len, "frc_pos\t\t=%d\n", devp->frc_hw_pos);
+	len += sprintf(buf + len, "frc_pause\t=%d\n", devp->frc_fw_pause);
+	len += sprintf(buf + len, "film_mode\t=%d\n", devp->film_mode);
+	len += sprintf(buf + len, "ud_dbg\t\t=%d %d %d %d\n",
 		devp->ud_dbg.inp_ud_dbg_en, devp->ud_dbg.meud_dbg_en,
 		devp->ud_dbg.mcud_dbg_en, devp->ud_dbg.vpud_dbg_en);
-	len += sprintf(buf + len, "auto_ctrl=%d\n", devp->frc_sts.auto_ctrl);
-	len += sprintf(buf + len, "memc_lossy=%d\n", fw_data->frc_top_type.memc_loss_en);
-	len += sprintf(buf + len, "power_ctrl=%d\n", devp->power_on_flag);
-	len += sprintf(buf + len, "memc_level=%d\n", fw_data->frc_top_type.frc_memc_level);
-	len += sprintf(buf + len, "vendor=%d\n", fw_data->frc_fw_alg_ctrl.frc_algctrl_u8vendor);
-	len += sprintf(buf + len, "mcfb=%d\n", fw_data->frc_fw_alg_ctrl.frc_algctrl_u8mcfb);
-	len += sprintf(buf + len, "filmset=%d\n", fw_data->frc_fw_alg_ctrl.frc_algctrl_u32film);
-	len += sprintf(buf + len, "set_n2m=%d\n", devp->in_out_ratio);
-	len += sprintf(buf + len, "auto_n2m=%d\n", devp->auto_n2m);
-	len += sprintf(buf + len, "set_mcdw=%d\n", READ_FRC_REG(FRC_INP_MCDW_CTRL));
+	len += sprintf(buf + len, "auto_ctrl\t=%d\n", devp->frc_sts.auto_ctrl);
+	len += sprintf(buf + len, "memc_lossy\t=0x%x\n", fw_data->frc_top_type.memc_loss_en);
+	len += sprintf(buf + len, "power_ctrl\t=%d\n", devp->power_on_flag);
+	len += sprintf(buf + len, "memc_level\t=%d\n", fw_data->frc_top_type.frc_memc_level);
+	len += sprintf(buf + len, "vendor\t\t=%d\n", fw_data->frc_fw_alg_ctrl.frc_algctrl_u8vendor);
+	len += sprintf(buf + len, "mcfb\t\t=%d\n", fw_data->frc_fw_alg_ctrl.frc_algctrl_u8mcfb);
+	len += sprintf(buf + len, "filmset\t\t=%d\n", fw_data->frc_fw_alg_ctrl.frc_algctrl_u32film);
+	len += sprintf(buf + len, "set_n2m\t\t=%d\n", devp->in_out_ratio);
+	len += sprintf(buf + len, "auto_n2m\t=%d\n", devp->auto_n2m);
+	len += sprintf(buf + len, "set_mcdw\t=(read reg check)\n");
 
 	return len;
 }
@@ -591,10 +591,14 @@ exit:
 ssize_t frc_debug_rdma_if_help(struct frc_dev_s *devp, char *buf)
 {
 	ssize_t len = 0;
+	struct frc_fw_data_s *fw_data;
 
-	len += sprintf(buf + len, "frc_rdma\t:  ctrl or debug frc rdma\n");
-	len += sprintf(buf + len, "addr_val addr val\t: set reg value to rdma table\n");
-	len += sprintf(buf + len, "rdma_en\n");
+	if (!devp)
+		return len;
+	fw_data = (struct frc_fw_data_s *)devp->fw_data;
+	len += sprintf(buf + len, "frc_rdma\t=ctrl or debug frc rdma\n");
+	len += sprintf(buf + len, "addr_val\t=addr val(set reg value to rdma table)\n");
+	len += sprintf(buf + len, "rdma_en\t\t=%d\n", fw_data->frc_top_type.rdma_en);
 	return len;
 }
 
@@ -648,37 +652,43 @@ exit:
 ssize_t frc_debug_param_if_help(struct frc_dev_s *devp, char *buf)
 {
 	ssize_t len = 0;
+	struct frc_fw_data_s *fw_data;
 
-	len += sprintf(buf + len, "dbg_input_hsize=%d\n", devp->dbg_input_hsize);
-	len += sprintf(buf + len, "dbg_input_vsize=%d\n", devp->dbg_input_vsize);
-	len += sprintf(buf + len, "ratio val=%d\n", devp->dbg_in_out_ratio);
-	len += sprintf(buf + len, "dbg_ratio=%d\n", devp->dbg_in_out_ratio);
-	len += sprintf(buf + len, "dbg_force=%d\n", devp->dbg_force_en);
-	len += sprintf(buf + len, "monitor_ireg=%d", devp->dbg_reg_monitor_i);
-	len += sprintf(buf + len, "monitor_oreg=%d\n", devp->dbg_reg_monitor_o);
+	fw_data = (struct frc_fw_data_s *)devp->fw_data;
+	len += sprintf(buf + len, "dbg_input_hsize\t=%d\n", devp->dbg_input_hsize);
+	len += sprintf(buf + len, "dbg_input_vsize\t=%d\n", devp->dbg_input_vsize);
+	len += sprintf(buf + len, "dbg_ratio\t=%d\n", devp->dbg_in_out_ratio);
+	len += sprintf(buf + len, "dbg_force\t=%d\n", devp->dbg_force_en);
+	len += sprintf(buf + len, "monitor_ireg\t=%d\n", devp->dbg_reg_monitor_i);
+	len += sprintf(buf + len, "monitor_oreg\t=%d\n", devp->dbg_reg_monitor_o);
 	len += sprintf(buf + len, "monitor_dump\n");
-	len += sprintf(buf + len, "monitor_vf=%d\n", devp->dbg_vf_monitor);
-	len += sprintf(buf + len, "seamless=%d\n", devp->in_sts.frc_seamless_en);
-	len += sprintf(buf + len, "secure_on\t: [start_addr size] under 32bit ddr\n");
-	len += sprintf(buf + len, "secure_off\t: closed frc secure buf\n");
-	len += sprintf(buf + len, "set_seg\t:\n");
-	len += sprintf(buf + len, "set_demo\t:\n");
-	len += sprintf(buf + len, "demo_win\t:\n");
-	len += sprintf(buf + len, "out_line=%d\n", devp->out_line);
-	len += sprintf(buf + len, "chk_motion=%d\n", devp->ud_dbg.res0_dbg_en);
-	len += sprintf(buf + len, "chk_vd=%d\n", devp->ud_dbg.res1_dbg_en);
-	len += sprintf(buf + len, "inp_err=%d\n", devp->ud_dbg.res1_time_en);
-	len += sprintf(buf + len, "dbg_ro\t:\n");
-	len += sprintf(buf + len, "frc_clk_auto=%d\n", devp->clk_chg);
-	len += sprintf(buf + len, "frc_force_in\t:\n");
-	len += sprintf(buf + len, "frc_no_tell\t:\n");
-	len += sprintf(buf + len, "frc_dp [0-5]\t: 1:red 5:black display pattern\n");
-	len += sprintf(buf + len, "frc_ip [0-5]\t: 1:red 5:black input pattern\n");
-	len += sprintf(buf + len, "mcdw_ratio=%d\n", devp->buf.mcdw_size_rate);
-	len += sprintf(buf + len, "chg_patch=%d\n", devp->ud_dbg.res2_time_en);
-	len += sprintf(buf + len, "osdbit_fcolr\t:\n");
-	len += sprintf(buf + len, "prot_mode=%d\n", devp->prot_mode);
-	len += sprintf(buf + len, "set_urgent\t:\n");
+	len += sprintf(buf + len, "monitor_vf\t=%d\n", devp->dbg_vf_monitor);
+	len += sprintf(buf + len, "seamless\t=%d\n", devp->in_sts.frc_seamless_en);
+	len += sprintf(buf + len, "secure_on\t=[start_addr size] under 32bit ddr\n");
+	len += sprintf(buf + len, "secure_off\t=closed frc secure buf\n");
+	len += sprintf(buf + len, "set_seg\t\t=(read reg check)\n");
+	len += sprintf(buf + len, "set_demo\t=(read reg check)\n");
+	len += sprintf(buf + len, "demo_win\t=(read reg check)\n");
+	len += sprintf(buf + len, "out_line\t=%d\n", devp->out_line);
+	len += sprintf(buf + len, "chk_motion\t=%d\n", devp->ud_dbg.res0_dbg_en);
+	len += sprintf(buf + len, "chk_vd\t\t=%d\n", devp->ud_dbg.res1_dbg_en);
+	len += sprintf(buf + len, "inp_err\t\t=%d\n", devp->ud_dbg.res1_time_en);
+	len += sprintf(buf + len, "dbg_ro\t\t=(check DBG_STAT reg\n");
+	len += sprintf(buf + len, "frc_clk_auto\t=%d\n", devp->clk_chg);
+	len += sprintf(buf + len, "frc_force_in\t=%d\n",
+					(fw_data->frc_top_type.vfp & BIT_4));
+	len += sprintf(buf + len, "frc_no_tell\t=%d\n",
+					(fw_data->frc_top_type.vfp & BIT_7));
+	len += sprintf(buf + len, "frc_dp [0-5]\t=1:red 5:black display pattern\n");
+	len += sprintf(buf + len, "frc_ip [0-5]\t=1:red 5:black input pattern\n");
+	len += sprintf(buf + len, "mcdw_ratio\t=0x%x\n", devp->buf.mcdw_size_rate);
+	len += sprintf(buf + len, "chg_patch\t=%d\n", devp->ud_dbg.res2_time_en);
+	len += sprintf(buf + len, "osdbit_fcolr\t=(read reg check)\n");
+	len += sprintf(buf + len, "prot_mode\t=%d\n", devp->prot_mode);
+	len += sprintf(buf + len, "set_urgent\t=(read reg check)\n");
+	len += sprintf(buf + len, "no_ko_mode\t=%d\n", devp->no_ko_mode);
+	len += sprintf(buf + len, "tell_ready\t=%d\n", devp->other2_flag);
+	len += sprintf(buf + len, "chg_slice_num\t=(read reg check)\n");
 	return len;
 }
 
@@ -901,15 +911,15 @@ ssize_t frc_debug_other_if_help(struct frc_dev_s *devp, char *buf)
 {
 	ssize_t len = 0;
 
-	len += sprintf(buf + len, "crc_read=%d\n", devp->frc_crc_data.frc_crc_read);
-	len += sprintf(buf + len, "crc_en=%d %d %d %d\n",
+	len += sprintf(buf + len, "crc_read\t=%d\n", devp->frc_crc_data.frc_crc_read);
+	len += sprintf(buf + len, "crc_en\t\t=%d %d %d %d\n",
 		devp->frc_crc_data.me_wr_crc.crc_en, devp->frc_crc_data.me_rd_crc.crc_en,
 		devp->frc_crc_data.mc_wr_crc.crc_en, devp->frc_crc_data.frc_crc_pr);
-	len += sprintf(buf + len, "freq_en=%d\n", devp->in_sts.high_freq_en);
-	len += sprintf(buf + len, "inp_adj_en=%d\n", devp->in_sts.inp_size_adj_en);
-	len += sprintf(buf + len, "crash_int_en\t:\n");
-	len += sprintf(buf + len, "del_120_pth=%d\n", devp->ud_dbg.res2_dbg_en);
-	len += sprintf(buf + len, "pr_dbg=%d\n", devp->ud_dbg.pr_dbg);
+	len += sprintf(buf + len, "freq_en\t\t=%d\n", devp->in_sts.high_freq_en);
+	len += sprintf(buf + len, "inp_adj_en\t=%d\n", devp->in_sts.inp_size_adj_en);
+	len += sprintf(buf + len, "crash_int_en\t=(check log)\n");
+	len += sprintf(buf + len, "del_120_pth\t=%d\n", devp->ud_dbg.res2_dbg_en);
+	len += sprintf(buf + len, "pr_dbg\t\t=%d\n", devp->ud_dbg.pr_dbg);
 	return len;
 }
 

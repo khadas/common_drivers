@@ -214,16 +214,17 @@ irqreturn_t frc_input_isr(int irq, void *dev_id)
 	struct frc_dev_s *devp = (struct frc_dev_s *)dev_id;
 	u64 timestamp = sched_clock();
 
+	if (!devp->probe_ok || !devp->power_on_flag)
+		return IRQ_HANDLED;
+	if (devp->clk_state == FRC_CLOCK_OFF)
+		return IRQ_HANDLED;
+
 	devp->in_sts.vs_cnt++;
 	/*update vs time*/
 	timestamp = div64_u64(timestamp, 1000);
 	devp->in_sts.vs_duration = timestamp - devp->in_sts.vs_timestamp;
 	devp->in_sts.vs_timestamp = timestamp;
 
-	if (!devp->probe_ok || !devp->power_on_flag)
-		return IRQ_HANDLED;
-	if (devp->clk_state == FRC_CLOCK_OFF)
-		return IRQ_HANDLED;
 	inp_undone_read(devp);
 	if (devp->dbg_reg_monitor_i)
 		frc_in_reg_monitor(devp);
@@ -512,36 +513,45 @@ enum efrc_event frc_input_sts_check(struct frc_dev_s *devp,
 	frc_top->inp_padding_xofst = devp->in_sts.frc_hsc_startp;
 	frc_top->inp_padding_yofst = devp->in_sts.frc_vsc_startp;
 
-	/* check size change */
+	/* check h size change */
 	devp->in_sts.size_chged = 0;
 	if (devp->in_sts.in_hsize != cur_in_sts->in_hsize) {
 		pr_frc(1, "hsize change (%d - %d)\n",
 			devp->in_sts.in_hsize, cur_in_sts->in_hsize);
 		devp->in_sts.in_hsize = cur_in_sts->in_hsize;
-		if (devp->in_sts.in_hsize == 0) {
+		if (devp->in_sts.frc_seamless_en) {
+			if (devp->in_sts.in_hsize == 0) {
+				/*need reconfig*/
+				devp->frc_sts.re_cfg_cnt = frc_re_cfg_cnt;
+				sts_change |= FRC_EVENT_VF_CHG_IN_SIZE;
+			} else if  (devp->frc_sts.state == FRC_STATE_ENABLE) {
+				devp->in_sts.size_chged = 1;
+			}
+		} else {
 			/*need reconfig*/
 			devp->frc_sts.re_cfg_cnt = frc_re_cfg_cnt;
 			sts_change |= FRC_EVENT_VF_CHG_IN_SIZE;
-		} else if  (devp->frc_sts.state == FRC_STATE_ENABLE) {
-			devp->in_sts.size_chged = 1;
 		}
 	}
-
-	/* check size change */
+	/* check v size change */
 	if (devp->in_sts.in_vsize != cur_in_sts->in_vsize) {
 		pr_frc(1, "vsize change (%d - %d)\n",
 			devp->in_sts.in_vsize, cur_in_sts->in_vsize);
-
 		devp->in_sts.in_vsize = cur_in_sts->in_vsize;
-		if (devp->in_sts.in_vsize == 0) {
+		if (devp->in_sts.frc_seamless_en) {
+			if (devp->in_sts.in_vsize == 0) {
+				/*need reconfig*/
+				devp->frc_sts.re_cfg_cnt = frc_re_cfg_cnt;
+				sts_change |= FRC_EVENT_VF_CHG_IN_SIZE;
+			} else if (devp->frc_sts.state == FRC_STATE_ENABLE) {
+				devp->in_sts.size_chged = 1;
+			}
+		} else {
 			/*need reconfig*/
 			devp->frc_sts.re_cfg_cnt = frc_re_cfg_cnt;
 			sts_change |= FRC_EVENT_VF_CHG_IN_SIZE;
-		} else if (devp->frc_sts.state == FRC_STATE_ENABLE) {
-			devp->in_sts.size_chged = 1;
 		}
 	}
-
 	if (devp->in_sts.frc_seamless_en && !devp->in_sts.frc_is_tvin) {
 		if (seamless_cnt == 1) {
 			frc_input_init(devp, frc_top);
@@ -1408,7 +1418,7 @@ void frc_state_handle_new(struct frc_dev_s *devp)
 				// frc_state_change_finish(devp);
 				devp->frc_sts.frame_cnt++;
 				off2on_cnt++;
-			} else if (frc_check_film_mode(devp) != 0 || off2on_cnt > 50) {
+			} else if (frc_check_film_mode(devp) != 0 || off2on_cnt > 29) {
 				pr_frc(log, "d-e_stat_chg %s -> %s[%d] done, used_frm:%d[%d]\n",
 						frc_state_ary[cur_state],
 						frc_state_ary[new_state],
@@ -1567,7 +1577,7 @@ void frc_state_handle_new(struct frc_dev_s *devp)
 				// frc_state_change_finish(devp);
 				devp->frc_sts.frame_cnt++;
 				off2on_cnt++;
-			} else if (frc_check_film_mode(devp) != 0 || devp->frc_sts.frame_cnt > 30) {
+			} else if (frc_check_film_mode(devp) != 0 || devp->frc_sts.frame_cnt > 29) {
 				pr_frc(log, "b-e_stat_chg %s -> %s[%d] done, used frm:%d[%d]\n",
 						frc_state_ary[cur_state],
 						frc_state_ary[new_state],
@@ -2018,10 +2028,10 @@ u16 frc_check_film_mode(struct frc_dev_s *frc_devp)
 	fw_data = (struct frc_fw_data_s *)frc_devp->fw_data;
 	frc_top = &fw_data->frc_top_type;
 
-	if (frc_devp->frc_sts.state == FRC_STATE_ENABLE)
+	//if (frc_devp->frc_sts.state == FRC_STATE_ENABLE)
 		frc_top->film_mode  = READ_FRC_REG(FRC_REG_PHS_TABLE) >> 8 & 0xFF;
-	else
-		frc_top->film_mode  = EN_DRV_VIDEO;
+	//else
+	//	frc_top->film_mode  = EN_DRV_VIDEO;
 	return (u16)(frc_top->film_mode);
 }
 

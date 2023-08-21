@@ -21,7 +21,7 @@
 #include <linux/amlogic/media/codec_mm/codec_mm.h>
 #include <linux/amlogic/media/codec_mm/dmabuf_manage.h>
 #include <linux/amlogic/media/codec_mm/configs.h>
-#if IS_ENABLED(CONFIG_AML_OPTEE)
+#if IS_ENABLED(CONFIG_AMLOGIC_OPTEE)
 #include <linux/amlogic/tee_drv.h>
 #endif
 #include <uapi/linux/dvb/aml_dmx_ext.h>
@@ -38,7 +38,7 @@
 static int dmabuf_manage_debug = 1;
 module_param(dmabuf_manage_debug, int, 0644);
 
-#if IS_ENABLED(CONFIG_AML_OPTEE)
+#if IS_ENABLED(CONFIG_AMLOGIC_OPTEE)
 static u32 secure_heap_version = SECURE_HEAP_USER_TA_VERSION;
 #else
 static u32 secure_heap_version = SECURE_HEAP_DYNAMIC_ALLOC_VERSION;
@@ -72,7 +72,7 @@ static u32 secure_vdec_config = 0x7C;
 #define DMABUF_MANAGE_POOL_ALIGN_2N		20
 #define DMABUF_MANAGE_POOL_SIZE_MB		32
 
-#if IS_ENABLED(CONFIG_AML_OPTEE)
+#if IS_ENABLED(CONFIG_AMLOGIC_OPTEE)
 #define DMABUF_MANAGE_BLOCK_MIN_SIZE_KB				(256 * 1024)
 
 #define TA_SECMEM_V2_CMD_INIT						294
@@ -113,7 +113,7 @@ struct secure_pool_info {
 	u32 block_size;
 	u32 max_frame_size;
 	u32 channel_register;
-#if IS_ENABLED(CONFIG_AML_OPTEE)
+#if IS_ENABLED(CONFIG_AMLOGIC_OPTEE)
 	struct tee_ioctl_open_session_arg secmem_session;
 	struct tee_shm *shm_pool;
 #endif
@@ -136,7 +136,7 @@ static struct list_head dmx_filter_list;
 static int dev_no;
 static struct device *dmabuf_manage_dev;
 static DEFINE_MUTEX(g_secure_pool_mutex);
-#if IS_ENABLED(CONFIG_AML_OPTEE)
+#if IS_ENABLED(CONFIG_AMLOGIC_OPTEE)
 static struct tee_context *g_secmem_context;
 
 enum TEE_CMD_PARAMTYPE {
@@ -1058,7 +1058,7 @@ error:
 	return 1;
 }
 
-#if IS_ENABLED(CONFIG_AML_OPTEE)
+#if IS_ENABLED(CONFIG_AMLOGIC_OPTEE)
 static int dmabuf_manage_secmem_ctx_match(struct tee_ioctl_version_data *ver,
 	const void *data)
 {
@@ -1325,7 +1325,7 @@ static void dmabuf_manage_destroy_secmem_pool(struct secure_pool_info *pool)
 static int dmabuf_manage_secure_pool_init(u32 id_high, u32 id_low, u32 block_size,
 	u32 *pool_addr, u32 *pool_size, u32 version)
 {
-#if IS_ENABLED(CONFIG_AML_OPTEE)
+#if IS_ENABLED(CONFIG_AMLOGIC_OPTEE)
 	int ret = 0;
 
 	if (version < SECURE_HEAP_USER_TA_VERSION)
@@ -1547,7 +1547,7 @@ int dmabuf_manage_secure_pool_status(u32 id_high, u32 id_low, u32 frame_size,
 	return 0;
 }
 
-#if IS_ENABLED(CONFIG_AML_OPTEE)
+#if IS_ENABLED(CONFIG_AMLOGIC_OPTEE)
 static int dmabuf_manage_secure_v2_block_alloc(struct secure_pool_info *pool, u32 size, u32 *handle)
 {
 	int res = 0;
@@ -1658,7 +1658,7 @@ error:
 
 static int dmabuf_manage_release_dmabufheap_resource(struct secure_pool_info *pool)
 {
-#if IS_ENABLED(CONFIG_AML_OPTEE)
+#if IS_ENABLED(CONFIG_AMLOGIC_OPTEE)
 	struct block_node *block = NULL;
 	struct list_head *pos = NULL, *tmp = NULL;
 
@@ -1691,7 +1691,7 @@ phys_addr_t dmabuf_manage_secure_block_alloc(u32 id_high, u32 id_low, u32 size,
 	mutex_lock(&g_secure_pool_mutex);
 	pool = dmabuf_manage_get_secure_vdec_pool(id_high, id_low);
 	if (pool) {
-#if IS_ENABLED(CONFIG_AML_OPTEE)
+#if IS_ENABLED(CONFIG_AMLOGIC_OPTEE)
 		if (version == SECURE_HEAP_USER_TA_VERSION)
 			dmabuf_manage_secure_v2_block_alloc(pool, size, (u32 *)&addr);
 		else
@@ -1734,7 +1734,7 @@ int dmabuf_manage_secure_block_free(u32 id_high, u32 id_low, u32 release,
 
 	if (pool) {
 		if (addr && size > 0) {
-#if IS_ENABLED(CONFIG_AML_OPTEE)
+#if IS_ENABLED(CONFIG_AMLOGIC_OPTEE)
 			if (version == SECURE_HEAP_USER_TA_VERSION)
 				dmabuf_manage_secure_v2_block_free(pool, addr);
 			else
@@ -1756,7 +1756,7 @@ int dmabuf_manage_secure_block_free(u32 id_high, u32 id_low, u32 release,
 		}
 
 		if (release) {
-#if IS_ENABLED(CONFIG_AML_OPTEE)
+#if IS_ENABLED(CONFIG_AMLOGIC_OPTEE)
 			if (version == SECURE_HEAP_USER_TA_VERSION)
 				dmabuf_manage_destroy_secmem_pool(pool);
 			else

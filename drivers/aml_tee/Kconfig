@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0-only
 # Generic Trusted Execution Environment Configuration
-config AML_TEE
+config AMLOGIC_AMLTEE
 	tristate "Trusted Execution Environment support"
 	depends on HAVE_ARM_SMCCC || COMPILE_TEST || CPU_SUP_AMD
 	select CRYPTO
@@ -11,7 +11,7 @@ config AML_TEE
 	  This implements a generic interface towards a Trusted Execution
 	  Environment (TEE).
 
-if AML_TEE
+if AMLOGIC_AMLTEE
 
 menu "TEE drivers"
 

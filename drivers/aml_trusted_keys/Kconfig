@@ -28,7 +28,7 @@ config AMLOGIC_TRUSTED_KEYS
 
 config AMLOGIC_TRUSTED_KEYS_TEE
 	tristate "Amlogic TEE-based trusted keys"
-	depends on AML_TEE >= AMLOGIC_TRUSTED_KEYS
+	depends on AMLOGIC_AMLTEE >= AMLOGIC_TRUSTED_KEYS
 	default n
 	help
 	  Enable use of the Trusted Execution Environment (TEE) as trusted

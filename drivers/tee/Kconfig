@@ -2,7 +2,7 @@
 
 config AMLOGIC_TEE
 	tristate "TEE Support for Amlogic"
-	depends on AML_TEE
+	depends on AMLOGIC_AMLTEE
 	default n
 	help
 	  Amlogic TEE driver

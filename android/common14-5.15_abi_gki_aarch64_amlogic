@@ -2,6 +2,7 @@
   sysfs_create_bin_file
   vabits_actual
   list_sort
+  kthread_flush_worker
 
 # amlogic-debug.ko
   __tracepoint_android_rvh_do_undefinstr
@@ -26,6 +27,7 @@
   __drm_puts_seq_file
   __drm_printfn_coredump
   __drm_puts_coredump
+  drm_atomic_helper_shutdown
 
 # amlogic-mmc.ko
   mmc_gpiod_request_cd

@@ -661,9 +661,19 @@ static const struct dev_pm_ops am_meson_drm_pm_ops = {
 				am_meson_drm_pm_resume)
 };
 
+static void am_meson_drv_shutdown(struct platform_device *pdev)
+{
+	struct meson_drm *priv;
+
+	priv = dev_get_drvdata(&pdev->dev);
+	if (priv)
+		drm_atomic_helper_shutdown(priv->drm);
+}
+
 static struct platform_driver am_meson_drm_platform_driver = {
 	.probe      = am_meson_drv_probe,
 	.remove     = am_meson_drv_remove,
+	.shutdown   = am_meson_drv_shutdown,
 	.driver     = {
 		.owner  = THIS_MODULE,
 		.name   = DRIVER_NAME,

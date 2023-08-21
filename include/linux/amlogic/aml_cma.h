@@ -44,7 +44,9 @@ void cma_keep_high_active(struct page *page, struct list_head *high,
 void update_gfp_flags(gfp_t *gfp);
 void check_water_mark(long free_pages, unsigned long mark);
 struct compact_control;
-void check_page_to_cma(struct compact_control *cc, struct page *page);
+void check_page_to_cma(struct compact_control *cc,
+		       struct address_space *mapping,
+		       struct page *page);
 struct page *get_compact_page(struct page *migratepage,
 			      struct compact_control *cc);
 

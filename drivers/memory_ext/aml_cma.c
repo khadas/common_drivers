@@ -607,20 +607,22 @@ int cma_mmu_op(struct page *page, int count, bool set)
 	return 0;
 }
 
-void check_page_to_cma(struct compact_control *cc, struct page *page)
+void check_page_to_cma(struct compact_control *cc,
+		       struct address_space *mapping,
+		       struct page *page)
 {
-	struct address_space *mapping;
-
 	/* no need check once it is true */
 	if (test_bit(FORBID_TO_CMA_BIT, &cc->total_migrate_scanned))
 		return;
 
-	mapping = page_mapping(page);
 	if ((unsigned long)mapping & PAGE_MAPPING_ANON)
 		mapping = NULL;
 
-	if (PageKsm(page) && !PageSlab(page))
+#ifdef CONFIG_KSM
+	if ((((unsigned long)page->mapping & PAGE_MAPPING_FLAGS) == PAGE_MAPPING_KSM) &&
+	    !PageSlab(page))
 		__set_bit(FORBID_TO_CMA_BIT, &cc->total_migrate_scanned);
+#endif
 
 	if (mapping && cma_forbidden_mask(mapping_gfp_mask(mapping)))
 		__set_bit(FORBID_TO_CMA_BIT, &cc->total_migrate_scanned);

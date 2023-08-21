@@ -1682,6 +1682,8 @@ static const struct proc_ops pagetrace_proc_ops = {
 };
 
 #if IS_MODULE(CONFIG_AMLOGIC_PAGE_TRACE)
+struct page_summary *dump_sum;
+
 static char sym_dump_header[32] = "dump_header";
 
 static struct kprobe kp_dump_header = {
@@ -1754,7 +1756,7 @@ static void __kprobes dump_header_handler_post(struct kprobe *p,
 	if (!sum)
 		return;
 
-	sum->sum = vzalloc(size);
+	sum->sum = dump_sum;
 	if (!sum->sum) {
 		kfree(sum);
 		return;
@@ -1780,7 +1782,6 @@ static void __kprobes dump_header_handler_post(struct kprobe *p,
 			SHOW_CNT, size, sum->ticks);
 	pr_info("==============================\n");
 
-	vfree(sum->sum);
 	kfree(sum);
 }
 #endif
@@ -1789,6 +1790,7 @@ static int __init page_trace_module_init(void)
 {
 #if IS_MODULE(CONFIG_AMLOGIC_PAGE_TRACE)
 	int ret;
+	int size = sizeof(struct page_summary) * SHOW_CNT;
 #endif
 
 #ifdef CONFIG_AMLOGIC_PAGE_TRACE_INLINE
@@ -1831,6 +1833,7 @@ static int __init page_trace_module_init(void)
 	aml_text = aml_kallsyms_lookup_name("_text");
 	page_trace_mem_init();
 
+	dump_sum = vzalloc(size);
 	kp_dump_header.post_handler = dump_header_handler_post;
 	ret = register_kprobe(&kp_dump_header);
 	if (ret < 0) {
@@ -1929,6 +1932,9 @@ static void __exit page_trace_module_exit(void)
 
 	if (!trace_buffer)
 		vfree(trace_buffer);
+
+	if (!dump_sum)
+		vfree(dump_sum);
 #endif
 }
 module_init(page_trace_module_init);
@@ -2044,11 +2050,11 @@ void __init page_trace_mem_init(void)
 	struct zone *zone;
 	unsigned long total_page = 0;
 
-	/* find_static_common_symbol(); */
-	kthread_run(find_static_common_symbol, NULL, "PAGETRACE_TASK");
-
 	if (page_trace_disable)
 		return;
+
+	/* find_static_common_symbol(); */
+	kthread_run(find_static_common_symbol, NULL, "PAGETRACE_TASK");
 
 	aml_for_each_populated_zone(zone) {
 		total_page += zone->spanned_pages;

@@ -344,6 +344,7 @@ static unsigned int dolby_fw_audio_license_query(struct dolby_fw_args *info)
 		pr_err("%s:%d: audio license query fail!\n",
 			__func__, __LINE__);
 		ret = 0;
+		goto err1;
 	}
 	ret = outlen;
 err1:
@@ -399,6 +400,7 @@ static int dolby_fw_critical_query(struct dolby_fw_args *info)
 		pr_err("%s:%d: get critical fail!\n",
 				__func__, __LINE__);
 		ret = 0;
+		goto err1;
 	}
 	ret = size;
 

@@ -1002,6 +1002,10 @@ static struct pglist_data *aml_next_online_pgdat(struct pglist_data *pgdat)
 
 	if (nid == MAX_NUMNODES)
 		return NULL;
+	/*
+	 * This code is copy from upstream, please ignore the problem.
+	 */
+	/* coverity[dead_error_line:SUPPRESS] */
 	return NODE_DATA(nid);
 }
 
@@ -1520,7 +1524,7 @@ static int update_page_trace(struct seq_file *m, struct zone *zone,
 	unsigned long pfn;
 	unsigned long start_pfn = zone->zone_start_pfn;
 	unsigned long end_pfn = start_pfn + zone->present_pages;
-	int    ret = 0, mt;
+	int    ret = 0, mt = 0;
 	struct page_trace *trace;
 	struct page_summary *p;
 	struct rb_root root[MIGRATE_TYPES];

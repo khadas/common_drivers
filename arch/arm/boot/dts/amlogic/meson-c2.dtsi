@@ -1399,8 +1399,8 @@
 	dmc_monitor {
 		compatible = "amlogic,dmc_monitor-c2";
 		status = "okay";
-		reg_base = <0xfe024180>;
-		reg = <0xFE024180 0x100>;
+		reg_base = <0xfe024000>;
+		reg = <0xFE024000 0x300>;
 		interrupts = <GIC_SPI 153 IRQ_TYPE_LEVEL_HIGH>;
 	};
 	galcore {

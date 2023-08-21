@@ -128,13 +128,17 @@ int __init slab_trace_init(void)
 		if (!cache || cache->size >= PAGE_SIZE)
 			continue;
 
-		sprintf(buf, "trace_%s", cache->name);
+		snprintf(buf, sizeof(buf), "trace_%s", cache->name);
 		group = kzalloc(sizeof(*group), GFP_KERNEL);
 		if (!group)
 			goto nomem;
 
 		cache_size = PAGE_SIZE * (1 << get_cache_max_order(cache));
 		cache_size = (cache_size / cache->size) * sizeof(int);
+		/*
+		 * This problem is triggered by upstream code, please ignore.
+		 */
+		/* coverity[array_free:SUPPRESS] */
 		group->ip_cache = kmem_cache_create(buf, cache_size, cache_size,
 						    SLAB_NOLEAKTRACE, NULL);
 		if (!group->ip_cache)
@@ -440,6 +444,7 @@ int slab_trace_mark_object(void *object, unsigned long ip,
 	struct slab_trace_group *group;
 	unsigned long addr, flags, index;
 	unsigned long stack[SLAB_STACK_DEP] = {0};
+	unsigned int *tmp_stack = (unsigned int *)stack;
 	unsigned int hash, len;
 	int s_index;
 
@@ -467,7 +472,7 @@ int slab_trace_mark_object(void *object, unsigned long ip,
 	WARN_ON(index >= trace->object_count);
 	if (save_obj_stack(stack, SLAB_STACK_DEP))
 		return -EINVAL;
-	hash = jhash2((unsigned int *)stack, len, 0x9747b28c);
+	hash = jhash2(tmp_stack, len, 0x9747b28c);
 	record_stack(hash, stack);
 	trace->object_ip[index] = hash;
 	pr_debug("%s, mk object:%p,%lx, idx:%ld, trace:%p, group:%p,%ld, %ps\n",

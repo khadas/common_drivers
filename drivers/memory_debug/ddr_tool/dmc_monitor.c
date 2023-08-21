@@ -144,6 +144,10 @@ static struct pglist_data *next_online_pgdat_dmc(struct pglist_data *pgdat)
 
 	if (nid == MAX_NUMNODES)
 		return NULL;
+	/*
+	 * This code is copy from upstream, please ignore the problem.
+	 */
+	/* coverity[dead_error_line:SUPPRESS] */
 	return NODE_DATA(nid);
 }
 

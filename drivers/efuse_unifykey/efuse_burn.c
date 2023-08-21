@@ -63,6 +63,7 @@ static long efuse_burn_unlocked_ioctl(struct file *file,
 			return -EFAULT;
 		}
 		if (efuse_burn_lockable_is_cfg(info.itemname) == 0) {
+			info.itemname[31] = '\0';
 			info.status = efuse_burn_check_burned(info.itemname);
 		} else {
 			pr_err("%s: efuse_burn check item not cfg\n", __func__);

@@ -28,30 +28,30 @@
 #include "ddr_port.h"
 #include "dmc_monitor.h"
 
-#define DMC_PROT0_RANGE		((0x0030  << 2))
-#define DMC_PROT0_CTRL		((0x0031  << 2))
-#define DMC_PROT0_CTRL1		((0x0032  << 2))
+#define DMC_PROT0_RANGE		((0x0090  << 2))
+#define DMC_PROT0_CTRL		((0x0091  << 2))
+#define DMC_PROT0_CTRL1		((0x0092  << 2))
 
-#define DMC_PROT1_RANGE		((0x0033  << 2))
-#define DMC_PROT1_CTRL		((0x0034  << 2))
-#define DMC_PROT1_CTRL1		((0x0035  << 2))
+#define DMC_PROT1_RANGE		((0x0093  << 2))
+#define DMC_PROT1_CTRL		((0x0094  << 2))
+#define DMC_PROT1_CTRL1		((0x0095  << 2))
 
-#define DMC_PROT_VIO_0		((0x0036  << 2))
-#define DMC_PROT_VIO_1		((0x0037  << 2))
+#define DMC_PROT_VIO_0		((0x0096  << 2))
+#define DMC_PROT_VIO_1		((0x0097  << 2))
 
-#define DMC_PROT_VIO_2		((0x0038  << 2))
-#define DMC_PROT_VIO_3		((0x0039  << 2))
+#define DMC_PROT_VIO_2		((0x0098  << 2))
+#define DMC_PROT_VIO_3		((0x0099  << 2))
 
-#define DMC_PROT_IRQ_CTRL	((0x003a  << 2))
-#define DMC_IRQ_STS		((0x003b  << 2))
+#define DMC_PROT_IRQ_CTRL	((0x009a  << 2))
+#define DMC_IRQ_STS		((0x009b  << 2))
 
-#define DMC_IRQ_STS_C2		((0x0030  << 2))
+#define DMC_IRQ_STS_C2		((0x0090  << 2))
 
-#define DMC_SEC_STATUS		((0x009a  << 2))
-#define DMC_VIO_ADDR0		((0x009b  << 2))
-#define DMC_VIO_ADDR1		((0x009c  << 2))
-#define DMC_VIO_ADDR2		((0x009d  << 2))
-#define DMC_VIO_ADDR3		((0x009e  << 2))
+#define DMC_SEC_STATUS		((0x00fa  << 2))
+#define DMC_VIO_ADDR0		((0x00fb  << 2))
+#define DMC_VIO_ADDR1		((0x00fc  << 2))
+#define DMC_VIO_ADDR2		((0x00fd  << 2))
+#define DMC_VIO_ADDR3		((0x00fe  << 2))
 
 static size_t c2_dmc_dump_reg(char *buf)
 {
@@ -72,7 +72,7 @@ static size_t c2_dmc_dump_reg(char *buf)
 	}
 	val = dmc_prot_rw(dmc_mon->io_mem1, DMC_PROT_IRQ_CTRL, 0, DMC_READ);
 	sz += sprintf(buf + sz, "DMC_PROT_IRQ_CTRL:%lx\n", val);
-	val = dmc_prot_rw(dmc_mon->io_mem1, 0 - DMC_IRQ_STS_C2, 0, DMC_READ);
+	val = dmc_prot_rw(dmc_mon->io_mem1, DMC_IRQ_STS_C2, 0, DMC_READ);
 	sz += sprintf(buf + sz, "DMC_IRQ_STS:%lx\n", val);
 
 	return sz;

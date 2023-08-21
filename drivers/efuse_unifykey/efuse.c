@@ -100,7 +100,8 @@ int efuse_burn_lockable_is_cfg(char *itemname)
 	int i;
 
 	for (i = 0; i < efusecheck.item_num; i++) {
-		if (strcmp(itemname, efusecheck.infos[i].itemname) == 0) {
+		if (strncmp(itemname, efusecheck.infos[i].itemname,
+			sizeof(efusecheck.infos[i].itemname)) == 0) {
 			ret = 0;
 			break;
 		}
@@ -1206,7 +1207,7 @@ static int efuse_probe(struct platform_device *pdev)
 	struct aml_efuse_dev *efuse_dev;
 	struct resource *reg_mem = NULL;
 	void __iomem *reg_base = NULL;
-	unsigned int  secureboot_mask;
+	unsigned int  secureboot_mask = 0;
 
 	efuse_dev = devm_kzalloc(&pdev->dev, sizeof(*efuse_dev), GFP_KERNEL);
 	if (!efuse_dev) {

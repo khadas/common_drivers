@@ -1335,6 +1335,7 @@
 		 */
 
 		samesource_sel = <5>;
+		spdif_soft_mute = <1>;
 
 		/*spdif clk tuning enable*/
 		clk_tuning_enable = <1>;

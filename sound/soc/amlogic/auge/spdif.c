@@ -99,6 +99,7 @@ struct aml_spdif {
 
 	/* mixer control vals */
 	bool mute;
+	int spdif_soft_mute;
 	enum SPDIF_SRC spdifin_src;
 	int clk_tuning_enable;
 	bool on;
@@ -659,22 +660,26 @@ static int aml_audio_set_spdif_mute(struct snd_kcontrol *kcontrol,
 	struct pinctrl_state *state = NULL;
 	bool mute = !!ucontrol->value.integer.value[0];
 
-	if (IS_ERR_OR_NULL(p_spdif->pin_ctl)) {
-		pr_err("%s(), no pinctrl", __func__);
-		return 0;
-	}
-	if (mute) {
-		state = pinctrl_lookup_state
-			(p_spdif->pin_ctl, "spdif_pins_mute");
+	if (!p_spdif->spdif_soft_mute) {
+		if (IS_ERR_OR_NULL(p_spdif->pin_ctl)) {
+			pr_err("%s(), no pinctrl", __func__);
+			return 0;
+		}
+		if (mute) {
+			state = pinctrl_lookup_state
+				(p_spdif->pin_ctl, "spdif_pins_mute");
 
-		if (!IS_ERR_OR_NULL(state))
-			pinctrl_select_state(p_spdif->pin_ctl, state);
+			if (!IS_ERR_OR_NULL(state))
+				pinctrl_select_state(p_spdif->pin_ctl, state);
+		} else {
+			state = pinctrl_lookup_state
+				(p_spdif->pin_ctl, "spdif_pins");
+
+			if (!IS_ERR_OR_NULL(state))
+				pinctrl_select_state(p_spdif->pin_ctl, state);
+		}
 	} else {
-		state = pinctrl_lookup_state
-			(p_spdif->pin_ctl, "spdif_pins");
-
-		if (!IS_ERR_OR_NULL(state))
-			pinctrl_select_state(p_spdif->pin_ctl, state);
+		aml_spdif_out_mute(p_spdif->actrl, p_spdif->id, mute);
 	}
 
 	p_spdif->mute = mute;
@@ -854,9 +859,9 @@ static const struct snd_kcontrol_new snd_spdif_controls[] = {
 #endif
 
 	SOC_SINGLE_EXT("spdif out channel status",
-			0, 0, 0xffffffff, 0,
-			spdif_get_cs,
-			spdif_set_cs),
+				0, 0, 0xffffffff, 0,
+				spdif_get_cs,
+				spdif_set_cs),
 	SOC_SINGLE_EXT("SPDIF CLK Fine Setting",
 				0, 0, 2000000, 0,
 				spdif_clk_get,
@@ -893,16 +898,16 @@ static const struct snd_kcontrol_new snd_spdif_b_controls[] = {
 				0, aml_audio_get_spdif_mute,
 				aml_audio_set_spdif_mute),
 	SOC_ENUM_EXT("Audio spdif_b format",
-		     aud_codec_type_enum,
-		     spdif_b_format_get_enum,
-		     spdif_b_format_set_enum),
+				aud_codec_type_enum,
+				spdif_b_format_get_enum,
+				spdif_b_format_set_enum),
 	SOC_SINGLE_EXT("SPDIF_B CLK Fine Setting",
-		       0, 0, 2000000, 0,
-		       spdif_clk_get, spdif_clk_set),
+				0, 0, 2000000, 0,
+				spdif_clk_get, spdif_clk_set),
 	SOC_SINGLE_EXT("spdif_b out channel status",
-			0, 0, 0xffffffff, 0,
-			spdif_get_cs,
-			spdif_set_cs),
+				0, 0, 0xffffffff, 0,
+				spdif_get_cs,
+				spdif_set_cs),
 };
 
 #define SPDIFIN_ERR_CNT 100
@@ -1381,8 +1386,9 @@ static int aml_dai_spdif_prepare(struct snd_pcm_substream *substream,
 			if (p_spdif->samesource_sel != SHAREBUFFER_NONE)
 				spdif_sharebuffer_trigger(p_spdif, runtime->channels,
 							  SNDRV_PCM_TRIGGER_STOP);
-			aml_spdif_mute(p_spdif->actrl,
-				substream->stream, p_spdif->id, false);
+			if (!p_spdif->mute)
+				aml_spdif_mute(p_spdif->actrl,
+					substream->stream, p_spdif->id, false);
 		}
 
 		if (get_hdmitx_audio_src(rtd->card) == p_spdif->id) {
@@ -1477,8 +1483,9 @@ static int aml_dai_spdif_trigger(struct snd_pcm_substream *substream, int cmd,
 
 			aml_frddr_enable(p_spdif->fddr, 1);
 			udelay(100);
-			aml_spdif_mute(p_spdif->actrl,
-				substream->stream, p_spdif->id, false);
+			if (!p_spdif->mute)
+				aml_spdif_mute(p_spdif->actrl,
+					substream->stream, p_spdif->id, false);
 			if (p_spdif->samesource_sel != SHAREBUFFER_NONE)
 				spdif_sharebuffer_mute(p_spdif, false);
 		} else {
@@ -1505,8 +1512,9 @@ static int aml_dai_spdif_trigger(struct snd_pcm_substream *substream, int cmd,
 			 * only mute, ensure spdif outputs zero data.
 			 */
 			if (p_spdif->clk_cont) {
-				aml_spdif_mute(p_spdif->actrl,
-					substream->stream, p_spdif->id, true);
+				if (!p_spdif->mute)
+					aml_spdif_mute(p_spdif->actrl,
+						substream->stream, p_spdif->id, true);
 				if (p_spdif->samesource_sel != SHAREBUFFER_NONE)
 					spdif_sharebuffer_mute(p_spdif, true);
 			} else {
@@ -1904,6 +1912,15 @@ static int aml_spdif_parse_of(struct platform_device *pdev)
 		p_spdif->samesource_sel = SHAREBUFFER_NONE;
 	else
 		p_spdif->samesource_sel = ss;
+
+	ret = of_property_read_u32(dev->of_node, "spdif_soft_mute",
+			&p_spdif->spdif_soft_mute);
+	if (ret < 0) {
+		p_spdif->spdif_soft_mute = 0;
+	} else {
+		p_spdif->spdif_soft_mute = 1;
+		pr_info("%s spdif-[%d] use soft mute for spdif out\n", __func__, p_spdif->id);
+	}
 
 	/* clock for spdif in */
 	if (p_spdif->id == 0) {

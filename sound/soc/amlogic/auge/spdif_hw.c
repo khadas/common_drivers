@@ -52,6 +52,29 @@ void aml_spdif_enable(struct aml_audio_controller *actrl,
 	}
 }
 
+void aml_spdif_out_mute(struct aml_audio_controller *actrl,
+	int index, bool is_mute)
+{
+	int mute_lr = 0;
+	unsigned int offset, reg;
+
+	if (is_mute)
+		mute_lr = 0x3;
+
+	offset = EE_AUDIO_SPDIFOUT_B_CTRL0 - EE_AUDIO_SPDIFOUT_CTRL0;
+	reg = EE_AUDIO_SPDIFOUT_CTRL0 + offset * index;
+	if (!is_mute)
+		aml_audiobus_update_bits(actrl, reg, 0x1 << 30, 0x0 << 30);
+	aml_audiobus_update_bits(actrl, reg, 0x3 << 21, mute_lr << 21);
+	if (is_mute) {
+		aml_audiobus_update_bits(actrl, reg, 0x1 << 30, 0x1 << 30);
+
+		offset = EE_AUDIO_SPDIFOUT_B_CTRL1 - EE_AUDIO_SPDIFOUT_CTRL1;
+		reg = EE_AUDIO_SPDIFOUT_CTRL1 + offset * index;
+		aml_audiobus_update_bits(actrl, reg, 0x1 << 3, 0x1 << 3);
+	}
+}
+
 void aml_spdif_mute(struct aml_audio_controller *actrl,
 	int stream, int index, bool is_mute)
 {
@@ -61,20 +84,7 @@ void aml_spdif_mute(struct aml_audio_controller *actrl,
 		mute_lr = 0x3;
 
 	if (stream == SNDRV_PCM_STREAM_PLAYBACK) {
-		unsigned int offset, reg;
-
-		offset = EE_AUDIO_SPDIFOUT_B_CTRL0 - EE_AUDIO_SPDIFOUT_CTRL0;
-		reg = EE_AUDIO_SPDIFOUT_CTRL0 + offset * index;
-		if (!is_mute)
-			aml_audiobus_update_bits(actrl, reg, 0x1 << 30, 0x0 << 30);
-		aml_audiobus_update_bits(actrl, reg, 0x3 << 21, mute_lr << 21);
-		if (is_mute) {
-			aml_audiobus_update_bits(actrl, reg, 0x1 << 30, 0x1 << 30);
-
-			offset = EE_AUDIO_SPDIFOUT_B_CTRL1 - EE_AUDIO_SPDIFOUT_CTRL1;
-			reg = EE_AUDIO_SPDIFOUT_CTRL1 + offset * index;
-			aml_audiobus_update_bits(actrl, reg, 0x1 << 3, 0x1 << 3);
-		}
+		aml_spdif_out_mute(actrl, index, is_mute);
 	} else {
 		aml_audiobus_update_bits(actrl, EE_AUDIO_SPDIFIN_CTRL0,
 					 0x3 << 6, mute_lr << 6);

@@ -588,6 +588,34 @@
 	pinctrl-0=<&i2c1_pins1>;
 };
 
+&CPU0 {
+	operating-points-v2 = <&single_cpu_opp_table0>,
+		<&single_cpu_opp_table1>,
+		<&single_cpu_opp_table2>,
+		<&single_cpu_opp_table3>;
+};
+
+&CPU1 {
+	operating-points-v2 = <&single_cpu_opp_table0>,
+		<&single_cpu_opp_table1>,
+		<&single_cpu_opp_table2>,
+		<&single_cpu_opp_table3>;
+};
+
+&CPU2 {
+	operating-points-v2 = <&single_cpu_opp_table0>,
+		<&single_cpu_opp_table1>,
+		<&single_cpu_opp_table2>,
+		<&single_cpu_opp_table3>;
+};
+
+&CPU3 {
+	operating-points-v2 = <&single_cpu_opp_table0>,
+		<&single_cpu_opp_table1>,
+		<&single_cpu_opp_table2>,
+		<&single_cpu_opp_table3>;
+};
+
 &spicc0 {
 	status = "disabled";
 	pinctrl-names = "default";

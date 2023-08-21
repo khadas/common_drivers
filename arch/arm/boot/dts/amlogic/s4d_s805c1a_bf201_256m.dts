@@ -1362,6 +1362,7 @@
 
 &drm_subsystem {
 	fbdev_sizes = <1280 720 1280 1440 32>;
+	fbdev_zorder = <1 0>;
 };
 
 &amlogic_codec {

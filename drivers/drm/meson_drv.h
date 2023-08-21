@@ -99,6 +99,7 @@ struct meson_drm {
 	/*CONFIG_AMLOGIC_DRM_EMULATE_FBDEV*/
 	struct meson_drm_fbdev_config ui_config;
 	struct meson_drm_fbdev *osd_fbdevs[MESON_MAX_OSD];
+	u32 fbdev_zorder[MESON_MAX_OSD];
 
 	struct meson_drm_bound_data bound_data;
 

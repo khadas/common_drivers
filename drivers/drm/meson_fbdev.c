@@ -18,6 +18,7 @@
 #include "meson_fb.h"
 #include "meson_fbdev.h"
 #include "meson_plane.h"
+#include "meson_vpu_pipeline.h"
 
 #define PREFERRED_BPP		32
 #define PREFERRED_DEPTH	32
@@ -622,8 +623,9 @@ static const struct drm_fb_helper_funcs meson_drm_fb_helper_funcs = {
 static int am_meson_fbdev_parse_config(struct drm_device *dev)
 {
 	struct meson_drm *private = dev->dev_private;
+	struct meson_vpu_pipeline *pipeline = private->pipeline;
 	u32 sizes[5], overlay_sizes[5];
-	int ret, tmp;
+	int ret, tmp, i;
 
 	ret = of_property_read_u32_array(dev->dev->of_node,
 				   "fbdev_sizes", sizes, 5);
@@ -648,6 +650,14 @@ static int am_meson_fbdev_parse_config(struct drm_device *dev)
 		private->ui_config.overlay_fb_h = overlay_sizes[3];
 		private->ui_config.overlay_fb_bpp = overlay_sizes[4];
 	}
+	/*initial fbdev zorder*/
+	for (i = 0; i < MESON_MAX_OSD; i++)
+		private->fbdev_zorder[i] = i;
+
+	tmp = of_property_read_u32_array(dev->dev->of_node, "fbdev_zorder",
+		private->fbdev_zorder, pipeline->num_osds);
+	if (tmp)
+		DRM_DEBUG("undefined fbdev_zorder!\n");
 
 	return ret;
 }
@@ -759,7 +769,7 @@ int am_meson_drm_fbdev_init(struct drm_device *dev)
 	if (drmdev->primary_plane) {
 		drmdev->ui_config.overlay_flag = 0;
 		fbdev = am_meson_create_drm_fbdev(dev, drmdev->primary_plane);
-		fbdev->zorder = OSD_PLANE_BEGIN_ZORDER;
+		fbdev->zorder = OSD_PLANE_BEGIN_ZORDER + drmdev->fbdev_zorder[0];
 		DRM_INFO("create fbdev for primary plane [%p]\n", fbdev);
 	}
 
@@ -775,11 +785,10 @@ int am_meson_drm_fbdev_init(struct drm_device *dev)
 		drmdev->ui_config.overlay_flag = 1;
 		fbdev = am_meson_create_drm_fbdev(dev, &osd_plane->base);
 		if (fbdev) {
-			fbdev->zorder = OSD_PLANE_BEGIN_ZORDER + fbdev_cnt;
+			fbdev->zorder = OSD_PLANE_BEGIN_ZORDER + drmdev->fbdev_zorder[i];
 			fbdev_cnt++;
-			DRM_INFO("create fbdev for plane (%d %d %d %s)\n",
-				i, osd_plane->plane_index,
-				osd_plane->base.base.id, osd_plane->base.name);
+			DRM_INFO("create fbdev for plane (%d %d) zorder=%d\n",
+				i, osd_plane->plane_index, drmdev->fbdev_zorder[i]);
 		} else {
 			DRM_ERROR("create fbdev for plane %d failed\n", i);
 			break;

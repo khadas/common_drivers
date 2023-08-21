@@ -2536,7 +2536,7 @@ static int vidioc_dqbuf(struct file *file, void *priv, struct v4l2_buffer *p)
 
 	ret = buf_mgr_dq_checkin(dev->dp_buf_mgr, file_vf);
 	if (ret != 0)
-		v4l_print(dev->inst, PRINT_ERROR, "dq_checkin fail\n");
+		v4l_print(dev->inst, PRINT_OTHER, "dq_checkin fail\n");
 
 	fput(file_vf);
 

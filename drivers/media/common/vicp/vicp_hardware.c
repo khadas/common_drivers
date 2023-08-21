@@ -123,7 +123,7 @@ void init_vicp_module_reg(enum meson_cpuid_type_e cpuid)
 		vicp_reg_array_init(VICP_SUPPORT_CHIP_t3X, VICP_MODULE_LOSSY_COMPRESS,
 			&lossy_compress_reg);
 	} else {
-		vicp_print(VICP_ERROR, "this chip don't support vicp.\n", __func__);
+		vicp_print(VICP_ERROR, "[%s]: this chip don't support vicp.\n", __func__);
 	}
 }
 

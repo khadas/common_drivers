@@ -16,6 +16,7 @@
 #include <dt-bindings/input/input.h>
 #include <dt-bindings/input/meson_ir.h>
 #include <dt-bindings/iio/adc/amlogic-saradc.h>
+#include <dt-bindings/mailbox/t3-mbox.h>
 #include "meson-ir-map.dtsi"
 #include "mesong12a-bifrost.dtsi"
 / {
@@ -326,32 +327,43 @@
 		compatible = "amlogic,meson-vrtc";
 		reg = <0xfe010288 0x4>; //SYSCTRL_STATUS_REG2
 		status = "okay";
-		mboxes = <&mhu_fifo 3>;
+		mboxes = <&mbox_fifo T3_REE2AO_VRTC>;
 	};
 
-	mhu_fifo: mhu@0 {
+	mbox_fifo: mbox_fifo@0xfe006000 {
 		status = "okay";
-		compatible = "amlogic, meson_mhu_fifo";
-		reg = <0xfe006000 0x1000>,  /* mhu wr fifo */
-		      <0xfe007180 0x80>,   /* mhu set reg */
-		      <0xfe007200 0x80>,   /* mhu clr reg */
-		      <0xfe007280 0x80>,   /* mhu sts reg */
-		      <0xfe007040 0xc0>;   /* mhu irqctrl reg */
-		interrupts = <0 248 1>;   /* irq top */
+		compatible = "amlogic, t3-mbox-fifo";
+		reg = <0xfe006000 0x1000>,	/* mbox wr fifo */
+		      <0xfe007180 0x80>,	/* mbox set reg */
+		      <0xfe007200 0x80>,	/* mbox clr reg */
+		      <0xfe007280 0x80>,	/* mbox sts reg */
+		      <0xfe007040 0xc0>;	/* mbox irqctrl reg */
+		interrupts = <GIC_SPI 248 IRQ_TYPE_EDGE_RISING>;	/* mbox irq top */
 		mbox-irqmax = <64>;
-		mbox-irqctlr = <0>;
-		mbox-nums = <4>;
-		mbox-names = "dsp_dev",
-			     "ap_to_dspa",
-			     "ao_dev",
-			     "ap_to_ao";
-		mboxes = <&mhu_fifo 0>,
-			 <&mhu_fifo 1>,
-			 <&mhu_fifo 2>,
-			 <&mhu_fifo 3>;
-		mbox-id = <0x0 0x1 0x2 0x3>;
-		mbox-wr-rd = <1>;
+		mbox-irqctlr = <0x14>;
+		mbox-irqclr = <0x8>;
+		mbox-nums = <T3_MBOX_NUMS>;
+		mboxids = <T3_MBOX_DSPA2REE>,
+			  <T3_MBOX_REE2DSPA>,
+			  <T3_MBOX_AO2REE>,
+			  <T3_MBOX_REE2AO>;
 		#mbox-cells = <1>;
+		mbox-wr-same;
+	};
+
+	mbox_devfs {
+		status = "okay";
+		compatible = "amlogic, mbox-devfs";
+		mbox-nums = <3>;
+		mbox-names = "ree2aocpu",
+			     "dsp_dev",
+			     "dspa2ree";
+		mboxes = <&mbox_fifo T3_REE2AO_DEV>,
+			 <&mbox_fifo T3_REE2DSPA_DEV>,
+			 <&mbox_fifo T3_DSPA2REE_DEV>;
+		mbox-dests = <MAILBOX_AOCPU>,
+			     <MAILBOX_DSP>,
+			     <MAILBOX_DSP>;
 	};
 
 	vdac: vdac {
@@ -402,6 +414,7 @@
 		power-domains = <&pwrdm PDID_T3_DSPA>;
 		power-domain-names = "dspa";
 		status = "okay";
+		mboxes = <&mbox_fifo T3_REE2DSPA_DSP>;
 	};
 
 	vbat: fixedregulator@0 {
@@ -1202,6 +1215,7 @@
 			tx-fifo-depth = <2048>;
 			/*1:inphy; 2:exphy;*/
 			internal_phy = <1>;
+			mboxes = <&mbox_fifo T3_REE2AO_ETH>;
 			status = "disabled";
 
 			mdio0: mdio {
@@ -1683,6 +1697,8 @@
 		       0xfe000000 0x2000
 		       0xfe004000 0x2000>;
 		reg-names = "ao","periphs","clock","pad_reg";
+		mbox-names = "mbox_cec";
+		mboxes = <&mbox_fifo T3_REE2AO_AOCEC>;
 	};
 
 	aml_dma {
@@ -2420,6 +2436,7 @@
 
 	state_led: state_led {
 		compatible = "amlogic,state-led-aocpu";
+		mboxes = <&mbox_fifo T3_REE2AO_LED>;
 		status = "disabled";
 	};
 

@@ -166,7 +166,7 @@ struct optee_timer {
  * @supp:		supplicant synchronization struct for RPC to supplicant
  * @pool:		shared memory pool
  * @rpc_param_count:	If > 0 number of RPC parameters to make room for
- * @scan_bus_done	flag if device registation was already done.
+ * @scan_bus_done	flag if device registration was already done.
  * @scan_bus_wq		workqueue to scan optee bus and register optee drivers
  * @scan_bus_work	workq to scan optee bus and register optee drivers
  */

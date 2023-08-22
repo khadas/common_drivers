@@ -248,7 +248,7 @@ out:
 }
 
 /**
- * optee_free_msg_arg() - Free previsouly obtained shared memory
+ * optee_free_msg_arg() - Free previously obtained shared memory
  * @ctx:	Caller TEE context
  * @entry:	Pointer returned when the shared memory was obtained
  * @offs:	Offset of shared memory buffer to free

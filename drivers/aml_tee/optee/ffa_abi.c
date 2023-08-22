@@ -221,7 +221,7 @@ static int to_msg_param_ffa_mem(struct optee_msg_param *mp,
  * @optee:	main service struct
  * @msg_params:	OPTEE_MSG parameters
  * @num_params:	number of elements in the parameter arrays
- * @params:	subsystem itnernal parameter representation
+ * @params:	subsystem internal parameter representation
  * Returns 0 on success or <0 on failure
  */
 static int optee_ffa_to_msg_param(struct optee *optee,
@@ -646,7 +646,7 @@ static int optee_ffa_do_call_with_arg(struct tee_context *ctx,
 /*
  * 6. Driver initialization
  *
- * During driver inititialization is the OP-TEE Secure Partition is probed
+ * During driver initialization is the OP-TEE Secure Partition is probed
  * to find out which features it supports so the driver can be initialized
  * with a matching configuration.
  */

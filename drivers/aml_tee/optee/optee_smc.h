@@ -561,11 +561,11 @@ struct optee_smc_disable_shm_cache_result {
  * Call register usage:
  * a0      SMC Function ID, OPTEE_SMC_ENABLE_LOGGER
  * a1      Enable logger: a1 > 0; disable logger: a1 = 0;
- * a2-a7   Not used
+ * a2-7    Not used
  *
  * Normal return register usage:
  * a0      Enable logger result
- * a1-a3   Preserved
+ * a1-7    Preserved
  */
 #define OPTEE_SMC_FUNCID_ENABLE_LOGGER                     0xE001
 #define OPTEE_SMC_ENABLE_LOGGER  OPTEE_SMC_FAST_CALL_VAL(OPTEE_SMC_FUNCID_ENABLE_LOGGER)

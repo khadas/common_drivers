@@ -202,7 +202,7 @@ static int to_msg_param_reg_mem(struct optee_msg_param *mp,
  * @optee:	main service struct
  * @msg_params:	OPTEE_MSG parameters
  * @num_params:	number of elements in the parameter arrays
- * @params:	subsystem itnernal parameter representation
+ * @params:	subsystem internal parameter representation
  * Returns 0 on success or <0 on failure
  */
 static int optee_to_msg_param(struct optee *optee,
@@ -602,7 +602,7 @@ static const struct tee_shm_pool_ops pool_ops = {
 /**
  * optee_shm_pool_alloc_pages() - create page-based allocator pool
  *
- * This pool is used when OP-TEE supports dymanic SHM. In this case
+ * This pool is used when OP-TEE supports dynamic SHM. In this case
  * command buffers and such are allocated from kernel's own memory.
  */
 static struct tee_shm_pool *optee_shm_pool_alloc_pages(void)

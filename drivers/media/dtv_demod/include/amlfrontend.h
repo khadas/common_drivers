@@ -126,6 +126,7 @@
 /*  V3.5.000 s1a bringup */
 /*  V3.5.001 fix rda5815m bandwidth and dvbs iq swap config */
 /*  V3.5.002 s1a dvbc bringup */
+/*  V3.5.003 multi path interference unqualified problem */
 /****************************************************/
 /****************************************************************/
 /*               AMLDTVDEMOD_VER  Description:                  */
@@ -142,9 +143,9 @@
 /*->The last four digits indicate the release time              */
 /****************************************************************/
 #define KERNEL_4_9_EN		1
-#define AMLDTVDEMOD_VER "V3.5.002"
-#define DTVDEMOD_VER	"2023/08/22: s1a dvbc bringup"
-#define AMLDTVDEMOD_T2_FW_VER "V1551.20220524"
+#define AMLDTVDEMOD_VER "V3.5.003"
+#define DTVDEMOD_VER	"2023/08/22: multi path interference unqualified problem"
+#define AMLDTVDEMOD_T2_FW_VER "V1558.20230628"
 #define DEMOD_DEVICE_NAME  "dtvdemod"
 
 #define THRD_TUNER_STRENGTH_ATSC (-87)

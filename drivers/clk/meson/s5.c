@@ -8117,22 +8117,6 @@ static struct platform_driver s5_driver = {
 	},
 };
 
-#ifndef CONFIG_AMLOGIC_MODIFY
 builtin_platform_driver(s5_driver);
-#else
-#ifndef MODULE
-static int __init s5_clkc_init(void)
-{
-	return platform_driver_register(&s5_driver);
-}
-arch_initcall_sync(s5_clkc_init);
-#else
-int __init meson_s5_clkc_init(void)
-{
-	return platform_driver_register(&s5_driver);
-}
-module_init(meson_s5_clkc_init);
-#endif
-#endif
 
 MODULE_LICENSE("GPL v2");

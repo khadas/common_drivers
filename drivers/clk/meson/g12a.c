@@ -6700,5 +6700,6 @@ static struct platform_driver g12a_driver = {
 	},
 };
 
-module_platform_driver(g12a_driver);
+builtin_platform_driver(g12a_driver);
+
 MODULE_LICENSE("GPL v2");

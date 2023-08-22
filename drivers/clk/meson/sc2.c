@@ -5880,22 +5880,6 @@ static struct platform_driver sc2_driver = {
 	},
 };
 
-#ifndef CONFIG_AMLOGIC_MODIFY
 builtin_platform_driver(sc2_driver);
-#else
-#ifndef MODULE
-static int sc2_clkc_init(void)
-{
-	return platform_driver_register(&sc2_driver);
-}
-arch_initcall_sync(sc2_clkc_init);
-#else
-int __init meson_sc2_clkc_init(void)
-{
-	return platform_driver_register(&sc2_driver);
-}
-module_init(meson_sc2_clkc_init);
-#endif
-#endif
 
 MODULE_LICENSE("GPL v2");

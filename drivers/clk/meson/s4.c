@@ -6285,22 +6285,6 @@ static struct platform_driver s4_driver = {
 	},
 };
 
-#ifndef CONFIG_AMLOGIC_MODIFY
 builtin_platform_driver(s4_driver);
-#else
-#ifndef MODULE
-static int __init s4_clkc_init(void)
-{
-	return platform_driver_register(&s4_driver);
-}
-arch_initcall_sync(s4_clkc_init);
-#else
-int __init meson_s4_clkc_init(void)
-{
-	return platform_driver_register(&s4_driver);
-}
-module_init(meson_s4_clkc_init);
-#endif
-#endif
 
 MODULE_LICENSE("GPL v2");

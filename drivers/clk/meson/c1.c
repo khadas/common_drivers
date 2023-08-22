@@ -2452,23 +2452,7 @@ static struct platform_driver c1_driver = {
 	},
 };
 
-#ifndef CONFIG_AMLOGIC_MODIFY
 builtin_platform_driver(c1_driver);
-#else
-#ifndef MODULE
-static int __init c1_clkc_init(void)
-{
-	return platform_driver_register(&c1_driver);
-}
-arch_initcall_sync(c1_clkc_init);
-#else
-int __init meson_c1_clkc_init(void)
-{
-	return platform_driver_register(&c1_driver);
-}
-module_init(meson_c1_clkc_init);
-#endif
-#endif
 
 MODULE_LICENSE("GPL v2");
 

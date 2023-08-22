@@ -534,7 +534,7 @@
 		status = "okay";
 		reg = <0xff638000 0x400
 		       0xff6388a8 0x4>;
-		interrupts = <0 52 IRQ_TYPE_EDGE_RISING>;
+		interrupts = <0 52 IRQ_TYPE_LEVEL_HIGH>;
 		interrupt-names = "ddr_bandwidth";
 	};
 
@@ -543,7 +543,7 @@
 		status = "okay";
 		reg = <0xff638000 0x400>;
 		reg_base = <0xff639000>;
-		interrupts = <0 52 IRQ_TYPE_EDGE_RISING>;
+		interrupts = <0 52 IRQ_TYPE_LEVEL_HIGH>;
 	};
 	galcore {
 		compatible = "amlogic, galcore";

@@ -4705,6 +4705,19 @@ static long vdin_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 				devp->prop.latency.it_content,
 				devp->prop.latency.cn_type);
 		break;
+	case TVIN_IOC_G_IMAX_STATUS:
+		if (devp->parm.info.status != TVIN_SIG_STATUS_STABLE)
+			pr_info("get TVIN_IOC_G_IMAX_STATUS signal not stable\n");
+
+		if (copy_to_user(argp, &devp->prop.imax_flag,
+				 sizeof(devp->prop.imax_flag))) {
+			ret = -EFAULT;
+			pr_info("TVIN_IOC_G_IMAX_STATUS err\n\n");
+			break;
+		}
+		if (vdin_dbg_en)
+			pr_info("TVIN_IOC_G_IMAX_STATUS:%d\n", devp->prop.imax_flag);
+		break;
 	case TVIN_IOC_G_VDIN_HIST:
 		if (devp->index == 0) {
 			pr_info("TVIN_IOC_G_VDIN_HIST can't be used at vdin0\n");

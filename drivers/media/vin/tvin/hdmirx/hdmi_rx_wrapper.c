@@ -7508,6 +7508,8 @@ void dump_video_status(u8 port)
 	rx_pr("dolby_vision = %d\n", rx[port].vs_info_details.dolby_vision_flag);
 	rx_pr("dv ll = %d\n", rx[port].vs_info_details.low_latency);
 	rx_pr("cuva hdr = %d\n", rx[port].vs_info_details.cuva_hdr);
+	rx_pr("filmmaker = %d\n", rx[port].vs_info_details.filmmaker);
+	rx_pr("iMax = %d\n", rx[port].vs_info_details.imax);
 	//rx_pr("VTEM = %d\n", rx[port_idx].vrr_en);
 	rx_pr("DRM = %d\n", rx_pkt_chk_attach_drm(port));
 	rx_pr("freesync = %d\n-bit0 supported,bit1:enabled.bit2:active",

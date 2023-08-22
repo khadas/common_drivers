@@ -593,8 +593,9 @@ struct vsi_info_s {
 	bool hdr10plus;
 	bool cuva_hdr;
 	bool filmmaker;
+	bool imax;
 	u8 ccbpc;
-	u8 vsi_state; // bit0-6: 4K3D/VSI21/HDR10+/DV10/DV15/CUVA/filmmaker
+	u8 vsi_state; // bit0-6: 4K3D/VSI21/HDR10+/DV10/DV15/CUVA/filmmaker/imax
 	u8 emp_pkt_cnt;
 	u8 timeout;
 	u8 max_frl_rate;

@@ -1159,6 +1159,7 @@ void hdmirx_get_vsi_info(struct tvin_sig_property_s *prop, u8 port)
 		prop->hdr10p_info.hdr10p_on = false;
 		prop->cuva_info.cuva_on = false;
 		prop->filmmaker.fmm_vsif_flag = false;
+		prop->imax_flag = false;
 		last_vsi_state = rx[port].vs_info_details.vsi_state;
 	}
 	if (rx[port].pre.colorspace != E_COLOR_YUV420)
@@ -1175,6 +1176,8 @@ void hdmirx_get_vsi_info(struct tvin_sig_property_s *prop, u8 port)
 		rx[port].vs_info_details.vsi_state = E_VSI_CUVAHDR;
 	else if (rx[port].vs_info_details.vsi_state & E_VSI_FILMMAKER)
 		rx[port].vs_info_details.vsi_state = E_VSI_FILMMAKER;
+	else if (rx[port].vs_info_details.vsi_state & E_VSI_IMAX)
+		rx[port].vs_info_details.vsi_state = E_VSI_IMAX;
 	else if (rx[port].vs_info_details.vsi_state & E_VSI_VSI21)
 		rx[port].vs_info_details.vsi_state = E_VSI_VSI21;
 	else
@@ -1218,6 +1221,10 @@ void hdmirx_get_vsi_info(struct tvin_sig_property_s *prop, u8 port)
 				(u8 *)&rx_pkt[port].multi_vs_info[FILMMAKER] + 4,
 				sizeof(struct tvin_fmm_data_s) - 3);
 		}
+		break;
+	case E_VSI_IMAX:
+		if (rx[port].vs_info_details.imax)
+			prop->imax_flag = true;
 		break;
 	case E_VSI_4K3D:
 		if (hdmirx_hw_get_3d_structure(port) == 1) {

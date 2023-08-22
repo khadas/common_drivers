@@ -596,6 +596,7 @@ enum tvin_sg_chg_flg {
 #define TVIN_IOC_G_INPUT_TIMING		_IOR(_TM_T, 0x52, struct tvin_format_s)
 #define TVIN_IOC_G_VRR_STATUS		_IOR(_TM_T, 0x53, struct vdin_vrr_freesync_param_s)
 #define TVIN_IOC_G_VDIN_STATUS         _IOR(_TM_T, 0x54, unsigned int)
+#define TVIN_IOC_G_IMAX_STATUS         _IOR(_TM_T, 0x55, bool)
 
 #define TVIN_IOC_S_CANVAS_RECOVERY  _IO(_TM_T, 0x0a)
 /* TVAFE */

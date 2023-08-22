@@ -573,6 +573,7 @@ struct tvin_sig_property_s {
 	unsigned int skip_vf_num;/*skip pre vframe num*/
 	struct tvin_latency_s latency;
 	struct tvin_fmm_s filmmaker;
+	bool imax_flag;
 	struct tvin_hdr10plus_info_s hdr10p_info;
 	struct tvin_emp_data_s emp_data;
 	struct tvin_vtem_data_s vtem_data;

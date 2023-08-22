@@ -6406,7 +6406,8 @@ void vdin_vs_proc_monitor(struct vdin_dev_s *devp)
 		if (devp->prop.latency.allm_mode != devp->pre_prop.latency.allm_mode ||
 		    devp->prop.latency.it_content != devp->pre_prop.latency.it_content ||
 		    devp->prop.latency.cn_type != devp->pre_prop.latency.cn_type ||
-		    devp->prop.filmmaker.fmm_flag != devp->pre_prop.filmmaker.fmm_flag)
+		    devp->prop.filmmaker.fmm_flag != devp->pre_prop.filmmaker.fmm_flag ||
+		    devp->prop.imax_flag != devp->pre_prop.imax_flag)
 			devp->dv.allm_chg_cnt++;
 		else
 			devp->dv.allm_chg_cnt = 0;

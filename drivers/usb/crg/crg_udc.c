@@ -4699,6 +4699,7 @@ static int crg_udc_remove(struct platform_device *pdev)
 	struct crg_gadget_dev *crg_udc;
 	u32 tmp = 0;
 	struct crg_uccr *uccr;
+	int i = 0;
 
 	crg_udc = &crg_udc_dev;
 	uccr = crg_udc->uccr;
@@ -4739,6 +4740,9 @@ static int crg_udc_remove(struct platform_device *pdev)
 	CRG_DEBUG("%s %d gadget remove\n", __func__, __LINE__);
 
 	memset(&crg_udc_dev, 0, sizeof(struct crg_gadget_dev));
+
+	for (i = 0; i < CRE_REQ_NUM; i++)
+		g_udc_req_ptr[i].used = 0;
 
 	return 0;
 }

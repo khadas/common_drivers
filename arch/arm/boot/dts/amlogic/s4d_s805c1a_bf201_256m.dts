@@ -17,6 +17,16 @@
 	#address-cells = <1>;
 	#size-cells = <1>;
 
+	cpus:cpus {
+		CPU2:cpu@2 {
+			status = "fail";
+		};
+
+		CPU3:cpu@3 {
+			status = "fail";
+		};
+	};
+
 	aliases {
 		serial0 = &uart_B;
 		serial1 = &uart_A;

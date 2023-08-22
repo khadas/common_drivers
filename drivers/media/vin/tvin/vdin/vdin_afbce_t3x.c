@@ -513,7 +513,8 @@ void vdin_pause_afbce_write_t3x(struct vdin_dev_s *devp, unsigned int rdma_enabl
 /* frm_end will not pull up if using rdma IF to clear afbce flag */
 void vdin_afbce_clear_write_down_flag_t3x(struct vdin_dev_s *devp)
 {
-	W_VCBUS(VDIN0_AFBCE_CLR_FLAG + devp->addr_offset, 0);
+	/* bit0:frm_end_clr;bit1:enc_error_clr */
+	W_VCBUS_BIT(VDIN0_AFBCE_CLR_FLAG + devp->addr_offset, 3, 0, 2);
 }
 
 /* return 1: write down */
@@ -521,13 +522,14 @@ int vdin_afbce_read_write_down_flag_t3x(struct vdin_dev_s *devp)
 {
 	int frm_end = -1, wr_abort = -1;
 
-	//frm_end = rd_bits(0, AFBCE_STA_FLAG, 0, 1);
-	frm_end = rd_bits(0, devp->addr_offset + VDIN0_AFBCE_STAT1, 31, 1);
+	frm_end = rd_bits(0, devp->addr_offset + VDIN0_AFBCE_STA_FLAGT, 0, 1);
+	//frm_end = rd_bits(0, devp->addr_offset + VDIN0_AFBCE_STAT1, 31, 1);
 	wr_abort = rd_bits(0, devp->addr_offset + VDIN0_AFBCE_STA_FLAGT, 2, 2);
 
 	if (vdin_isr_monitor & VDIN_ISR_MONITOR_WRITE_DONE)
-		pr_info("frm_end:%#x,wr_abort:%#x\n",
-			frm_end, wr_abort);
+		pr_info("frm_end:%#x,wr_abort:%#x;[%#x]:%#x,[%#x]:%#x\n", frm_end, wr_abort,
+			VDIN0_AFBCE_STAT1, rd(devp->addr_offset, VDIN0_AFBCE_STAT1),
+			VDIN0_AFBCE_STA_FLAGT, rd(devp->addr_offset, VDIN0_AFBCE_STA_FLAGT));
 
 	if (frm_end == 1 && wr_abort == 0)
 		return 1;

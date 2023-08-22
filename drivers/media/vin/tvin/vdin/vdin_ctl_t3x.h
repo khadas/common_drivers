@@ -236,5 +236,7 @@ void vdin_pause_mif_write_t3x(struct vdin_dev_s *devp, unsigned int rdma_enable)
 bool vdin_check_is_spd_data(struct vdin_dev_s *devp);
 void vdin_sw_reset_t3x(struct vdin_dev_s *devp);
 void vdin_bist_t3x(struct vdin_dev_s *devp, unsigned int mode);
+bool vdin_is_wrmif_done_t3x(struct vdin_dev_s *devp);
+void vdin_clr_write_done_t3x(struct vdin_dev_s *devp);
 #endif
 

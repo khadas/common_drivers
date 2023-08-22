@@ -840,7 +840,6 @@ void receiver_vf_put(struct vframe_s *vf, struct vf_pool *p)
 			spin_unlock_irqrestore(&p->log_lock, flags);
 		}
 	}
-	atomic_dec(&p->buffer_cnt);
 }
 
 struct vframe_s *vdin_vf_peek(void *op_arg)
@@ -892,6 +891,7 @@ void vdin_vf_put(struct vframe_s *vf, void *op_arg)
 		/*if (p->dv_buf_ori[vf->index])*/
 		/*	memset(p->dv_buf_ori[vf->index], 0, dolby_size_byte);*/
 	}
+	atomic_dec(&p->buffer_cnt);
 }
 
 int vdin_vf_states(struct vframe_states *vf_ste, void *op_arg)

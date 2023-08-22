@@ -3210,19 +3210,20 @@ irqreturn_t vdin_isr(int irq, void *dev_id)
 		vdin_drop_frame_info(devp, "3d tran fmt or game interlace");
 		goto irq_handled;
 	}
-	/* Check whether frame written done */
-	if (devp->dts_config.chk_write_done_en && !devp->dbg_no_wr_check) {
-		if (!vdin_write_done_check(offset, devp)) {
-			devp->vdin_irq_flag = VDIN_IRQ_FLG_SKIP_FRAME;
-			vdin_drop_frame_info(devp, "write done check");
-			vdin_drop_cnt++;
-		}
-	}
 
 	curr_wr_vfe = devp->curr_wr_vfe;
 	curr_wr_vf  = &curr_wr_vfe->vf;
 
 	next_wr_vfe = provider_vf_peek(devp->vfp);
+
+	/* Check whether frame written done */
+	if (devp->dts_config.chk_write_done_en && !devp->dbg_no_wr_check) {
+		if (!vdin_write_done_check(offset, devp) && next_wr_vfe) {
+			devp->vdin_irq_flag = VDIN_IRQ_FLG_SKIP_FRAME;
+			vdin_drop_frame_info(devp, "write done check");
+			vdin_drop_cnt++;
+		}
+	}
 
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	/* change afbce mode */
@@ -5678,8 +5679,8 @@ static const struct match_data_s vdin_dt_t3x = {
 	.hw_ver = VDIN_HW_T3X,
 	.vdin0_en = 1, .vdin1_en = 1,   .vdin2_en = 1,
 	.de_tunnel_tunnel = 0, /*0,1*/  .ipt444_to_422_12bit = 0, /*0,1*/
-	.vdin0_line_buff_size = 0x1000, .vdin1_line_buff_size = 0x780,
-	.vdin2_line_buff_size = 0x1000,
+	.vdin0_line_buff_size = 0x800, .vdin1_line_buff_size = 0x800,
+	.vdin2_line_buff_size = 0x800,
 	.vdin0_set_hdr = false, .vdin1_set_hdr = false,
 };
 

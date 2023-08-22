@@ -2453,7 +2453,7 @@ void vdin_pp_default_t3x(struct vdin_dev_s *devp)
 		(0 << PP_LFIFO_GCLK_CTRL_BIT) |
 		(1 << PP_LFIFO_SOFT_RST_BIT)  |
 		(lfifo_buf_size << PP_LFIFO_BUF_SIZE_BIT) |
-		(0 << PP_LFIFO_URG_CTRL_BIT));
+		(0xc281 << PP_LFIFO_URG_CTRL_BIT));
 }
 
 void vdin_dw_default_t3x(struct vdin_dev_s *devp)
@@ -2687,7 +2687,9 @@ void vdin_enable_module_t3x(struct vdin_dev_s *devp, bool enable)
 {
 	//unsigned int offset = devp->addr_offset;
 
-	//vdin_dmc_ctrl(devp, 1);
+	W_VCBUS_BIT(VPU_WRARB_UGT_L2C1, 2,
+		VPU_WRARB_UGT_VDIN_BIT, VPU_WRARB_UGT_VDIN_WID);
+
 	if (enable)	{
 		/* set VDIN_MEAS_CLK_CNTL, select XTAL clock */
 		/* if (is_meson_gxbb_cpu()) */
@@ -2709,34 +2711,44 @@ void vdin_enable_module_t3x(struct vdin_dev_s *devp, bool enable)
 
 bool vdin_write_done_check_t3x(unsigned int offset, struct vdin_dev_s *devp)
 {
-	if (vdin_isr_monitor & VDIN_ISR_MONITOR_WRITE_DONE) {
-		pr_info("vdin%d,[%#x]:%#x,[%#x]:%#x,[%#x]:%#x\n", devp->index,
-			VDIN0_LFIFO_BUF_COUNT, rd(0, VDIN0_LFIFO_BUF_COUNT),
-			VDIN_INTF_VDI_INT_STATUS1, rd(0, VDIN_INTF_VDI_INT_STATUS1),
-			VDIN0_WRMIF_RO_STATUS, rd(devp->addr_offset, VDIN0_WRMIF_RO_STATUS));
-	}
-	/*clear int status,reg_field_done_clr_bit */
-	//wr_bits(offset, VDIN_WRMIF_CTRL, 1, 18, 1);//cause video flicker
+	bool ret = false;
 
-//	/*clear int status*/
-//	wr_bits(offset, VDIN_WR_CTRL, 1,
-//			DIRECT_DONE_CLR_BIT, DIRECT_DONE_CLR_WID);
-//	wr_bits(offset, VDIN_WR_CTRL, 0,
-//			DIRECT_DONE_CLR_BIT, DIRECT_DONE_CLR_WID);
-//
-//	if (cpu_after_eq(MESON_CPU_MAJOR_ID_TM2)) {
-//		if (rd_bits(offset, VDIN_RO_WRMIF_STATUS,
-//			    WRITE_DONE_BIT, WRITE_DONE_WID))
-//			return true;
-//
-//	} else {
-//		if (rd_bits(offset, VDIN_COM_STATUS0,
-//			    DIRECT_DONE_STATUS_BIT, DIRECT_DONE_STATUS_WID))
-//			return true;
-//	}
-//	devp->wr_done_abnormal_cnt++;
-//	return false;
-	return true;
+	devp->stats.write_done_check++;
+
+	/*clear int status*/
+	//wr_bits(offset, VDIN0_WRMIF_CTRL, 1, 18, 1);
+	//wr_bits(offset, VDIN0_WRMIF_CTRL, 0, 18, 1);
+
+	if (vdin_is_wrmif_done_t3x(devp)) {
+		devp->stats.wmif_normal_cnt++;
+		ret = true;
+	} else {
+		devp->stats.wmif_abnormal_cnt++;
+		ret = false;
+	}
+
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+	if (devp->afbce_valid && devp->double_wr) { /* afbce */
+		if (vdin_afbce_read_write_down_flag_t3x(devp)) {
+			devp->stats.afbce_normal_cnt++;
+			ret = true;
+		} else {
+			devp->stats.afbce_abnormal_cnt++;
+			ret = false;
+		}
+	}
+#endif
+
+	vdin_clr_write_done_t3x(devp);
+
+	if (vdin_isr_monitor & VDIN_ISR_MONITOR_WRITE_DONE)
+		pr_info("%s vdin%d irq:%d,check:%d,afbce:%d %d mif:%d %d\n",
+			__func__, devp->index, devp->stats.wr_done_irq_cnt,
+			devp->stats.write_done_check,
+			devp->stats.afbce_normal_cnt, devp->stats.afbce_abnormal_cnt,
+			devp->stats.wmif_normal_cnt, devp->stats.wmif_abnormal_cnt);
+
+	return ret;
 }
 
 /* just for horizontal down scale src_w is origin width,
@@ -3807,4 +3819,18 @@ void vdin_bist_t3x(struct vdin_dev_s *devp, unsigned int mode)
 	wr(0, VDIN_INTF_PTGEN_CTRL,
 		(bist_en << 0) | (test_pat << 1) | (hblank << 4) |
 		(vblank << 12) | (vde_start << 20));
+}
+
+bool vdin_is_wrmif_done_t3x(struct vdin_dev_s *devp)
+{
+	if (rd_bits(devp->addr_offset, VDIN0_CORE_FRM_END, 3, 1))
+	//if (rd_bits(devp->addr_offset, VDIN0_WRMIF_RO_STATUS, 0, 1))
+		return true;
+	return false;
+}
+
+void vdin_clr_write_done_t3x(struct vdin_dev_s *devp)
+{
+	wr_bits(devp->addr_offset, VDIN0_CORE_CTRL, 0xf, 15, 4);
+	wr_bits(devp->addr_offset, VDIN0_CORE_CTRL, 0x0, 15, 4);
 }

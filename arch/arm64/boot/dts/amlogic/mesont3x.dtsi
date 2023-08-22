@@ -2651,6 +2651,7 @@
 		 * bit7 -- afbce for smaller resolution
 		 */
 		afbce_bit_mode = <0x11>;
+		chk_wr_done_en;
 		lossy_mode = <0x0>; /* 0x0:quan_lossy 0x1:cr_lossy */
 		cr_lossy_ratio = <50>; /* the compression ration in cr_lossy mode */
 		/* urgent_en; */

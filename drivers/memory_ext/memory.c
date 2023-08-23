@@ -22,7 +22,7 @@
 #include <linux/amlogic/aml_cma.h>
 #include <../../../mm/internal.h>
 #include <linux/kmemleak.h>
-#ifdef CONFIG_AMLOGIC_PAGE_TRACE
+#if IS_BUILTIN(CONFIG_AMLOGIC_PAGE_TRACE)
 #include <linux/amlogic/page_trace.h>
 #include <linux/kasan.h>
 #endif
@@ -89,14 +89,14 @@ void *aml_slub_alloc_large(size_t size, gfp_t flags, int order)
 		__SetPageHead(page);
 		SetPageOwnerPriv1(page);	/* special flag */
 
-	#ifdef CONFIG_AMLOGIC_PAGE_TRACE
+	#if IS_BUILTIN(CONFIG_AMLOGIC_PAGE_TRACE)
 		fun = get_page_trace(page);
 	#endif
 
 		for (i = 1; i < used_pages; i++) {
 			p = page + i;
 			set_compound_head(p, page);
-		#ifdef CONFIG_AMLOGIC_PAGE_TRACE
+		#if IS_BUILTIN(CONFIG_AMLOGIC_PAGE_TRACE)
 			set_page_trace(page, 0, flags, (void *)fun);
 		#endif
 		}

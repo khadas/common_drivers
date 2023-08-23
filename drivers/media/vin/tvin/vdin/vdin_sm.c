@@ -1028,7 +1028,10 @@ void tvin_smr(struct vdin_dev_s *devp)
 					sm_print_prestable = 0;
 				} else {
 					sm_p->state = TVIN_SM_STATUS_UNSTABLE;
-					info->status = TVIN_SIG_STATUS_UNSTABLE;
+					if (info->fmt)
+						info->status = TVIN_SIG_STATUS_UNSTABLE;
+					else
+						info->status = TVIN_SIG_STATUS_NOSIG;
 					devp->frame_drop_num = vdin_re_cfg_drop_cnt;
 				}
 			} else {

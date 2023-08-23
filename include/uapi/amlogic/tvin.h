@@ -211,6 +211,7 @@ enum tvin_sig_fmt_e {
 	TVIN_SIG_FMT_BT601_MAX = 0x80a,
 	TVIN_SIG_FMT_BT601_THRESHOLD = 0xa00,
 	TVIN_SIG_FMT_MAX,
+	TVIN_SIG_FMT_NOT_SUPPORT = 0xfffffff0,
 };
 
 /* tvin signal status */

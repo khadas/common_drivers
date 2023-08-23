@@ -1276,6 +1276,8 @@ void set_video_zorder_ext(int layer_index, int zorder)
 
 void  get_video_input_info(struct video_input_info *input_info)
 {
+	if (!cur_frame_par[0])
+		return;
 	input_info->height = cur_frame_par[0]->video_input_h;
 	input_info->width = cur_frame_par[0]->video_input_w;
 }

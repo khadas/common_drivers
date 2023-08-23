@@ -149,6 +149,14 @@
 			alignment = <0x0 0x100000>;
 			//no-map;
 		};
+		/*  vdin0 CMA pool */
+		vdin0_cma_reserved:linux,vdin0_cma {
+			compatible = "shared-dma-pool";
+			reusable;
+		/* 1920x1080x2x4  =16+4 M */
+			size = <0x0 0x04000000>;
+			alignment = <0x0 0x400000>;
+		};
 		/*  vdin1 CMA pool */
 		vdin1_cma_reserved:linux,vdin1_cma {
 			compatible = "shared-dma-pool";
@@ -678,7 +686,7 @@
 		ch0_sel = <0>;
 		ch1_sel = <1>;
 
-		status = "disabled";
+		status = "okay";
 	};
 	audio_effect:eqdrc{
 		/*eq_enable = <1>;*/
@@ -697,7 +705,7 @@
 		channel_mask = <0x3>;
 	};
 	auge_sound {
-		compatible = "amlogic, g12a-sound-card";
+		compatible = "amlogic, auge-sound-card";
 		aml-audio-card,name = "AML-AUGESOUND";
 
 		/*avout mute gpio*/
@@ -729,7 +737,7 @@
 				system-clock-frequency = <24576000>;
 			};
 			tdmacodec: codec {
-				sound-dai = <&dummy_codec>;
+				sound-dai = <&dummy_codec &dummy_codec>;
 			};
 		};
 
@@ -765,7 +773,8 @@
 				system-clock-frequency = <12288000>;
 			};
 			tdmbcodec: codec {
-				sound-dai = <&dummy_codec>;
+				sound-dai = <&dummy_codec &dummy_codec
+				&amlogic_codec &ad82584f_62>;
 			};
 		};
 
@@ -880,6 +889,114 @@
 		status = "disabled";
 	};
 	/* Audio Related end */
+	vbat: fixedregulator@vbat {
+		compatible = "regulator-fixed";
+		regulator-name = "12V";
+		regulator-min-microvolt = <12000000>;
+		regulator-max-microvolt = <12000000>;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
+	vcc5v_reg: fixedregulator@vcc5v {
+		vin-supply = <&vbat>;
+		compatible = "regulator-fixed";
+		regulator-name = "VCC_5V";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		pinctrl-names = "default";
+		//GPIOH_8(OD) Set:
+		// Output disable= Enable VCC5V
+		//gpio = <&gpio GPIOH_8 GPIO_ACTIVE_HIGH>;
+		startup-delay-us = <70000>;
+		enable-active-high;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
+	vddq_reg: fixedregulator@vddq {
+		compatible = "regulator-fixed";
+		vin-supply = <&vbat>;
+		regulator-name = "VDDQ";
+		regulator-min-microvolt = <1200000>;
+		regulator-max-microvolt = <1200000>;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
+	vddao3v3_reg: fixedregulator@vddao3v3 {
+		vin-supply = <&vbat>;
+		compatible = "regulator-fixed";
+		regulator-name = "VDDAO_3.3V";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
+	vcc3v3_reg: fixedregulator@vcc3v3 {
+		compatible = "regulator-fixed";
+		vin-supply = <&vddao3v3_reg>;
+		regulator-name = "VCC3.3V";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		pinctrl-names = "default";
+		//TEST_N(High) Set:
+		//Output L= Disable VCC3.3V
+		//Output H= Enable VCC3.3V
+		gpio = <&gpio_ao GPIO_TEST_N GPIO_ACTIVE_HIGH>;
+		startup-delay-us = <70000>;
+		enable-active-high;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
+	vcc1v8_reg: fixedregulator@vcc1v8 {
+		vin-supply = <&vcc3v3_reg>;
+		compatible = "regulator-fixed";
+		regulator-name = "VCC1.8V";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
+	flash_1v8_reg: fixedregulator@flash_1v8 {
+		vin-supply = <&vcc3v3_reg>;
+		compatible = "regulator-fixed";
+		regulator-name = "FLASH_1.8V";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
+	vddio_ao18_reg: fixedregulator@vddio_ao18 {
+		vin-supply = <&vddao3v3_reg>;
+		compatible = "regulator-fixed";
+		regulator-name = "VDDIO_AO18";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
+	vddio_c: sdcard-1v8_3v3 {
+		compatible = "regulator-gpio";
+		regulator-name = "VDDIO_C";
+		vin-supply = <&vddao3v3_reg>;
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <3300000>;
+		// L/HiZ: 3.3V, H: 1.8V
+		gpio = <&gpio_ao GPIOAO_2 GPIO_ACTIVE_HIGH>;
+		gpios-states = <0>;
+		regulator-boot-on;
+		//regulator-always-on;
+
+		/* Based on P200 schematics, signal CARD_1.8V/3.3V_CTR */
+		states = <1800000 1
+			  3300000 0>;
+	};
 
 	cpu_opp_table0: cpu_opp_table0 {
 		compatible = "operating-points-v2";
@@ -1207,14 +1324,14 @@
 	clock-frequency = <300000>; /* default 100k */
 
 	/* for ref board */
-	//ad82584f_62: ad82584f_62@62 {
-	//	compatible = "ESMT, ad82584f";
-	//	#sound-dai-cells = <0>;
-	//	reg = <0x31>;
-	//	status = "disabled";
-	//	reset_pin = <&gpio GPIOA_5 0>;
-	//	no_mclk;
-	//};
+	ad82584f_62: ad82584f_62@31 {
+		compatible = "ESMT, ad82584f";
+		#sound-dai-cells = <0>;
+		reg = <0x31>;
+		status = "disabled";
+		reset_pin = <&gpio GPIOA_5 0>;
+		no_mclk;
+	};
 
 	//bl_extern_i2c {
 	//	compatible = "bl_extern, i2c";
@@ -1247,15 +1364,13 @@
 		dai-tdm-lane-slot-mask-out = <1 0 0 0>;
 		dai-tdm-clk-sel = <1>;
 		clocks = <&clkaudio CLKID_AUDIO_MCLK_B
-				&clkaudio CLKID_AUDIO_MCLK_PAD0
 				&clkc CLKID_MPLL1
 				&clkc CLKID_MPLL0
 				&clkaudio CLKID_AUDIO_SPDIFOUT_A>;
-		clock-names = "mclk", "mclk_pad", "clk_srcpll",
+		clock-names = "mclk", "clk_srcpll",
 			"samesource_srcpll", "samesource_clk";
 		pinctrl-names = "tdm_pins";
-		pinctrl-0 = <&tdmb_mclk &tdmout_b &tdmin_b>;
-
+		pinctrl-0 = <&tdmout_b &tdm_b_clk_pins>;
 		/*
 		 * 0: tdmout_a;
 		 * 1: tdmout_b;
@@ -1355,7 +1470,7 @@
 
 		interrupt-names = "irq_spdifin";
 		pinctrl-names = "spdif_pins";
-		pinctrl-0 = <&spdifout &spdifin>;
+		pinctrl-0 = <&spdifout /* &spdifin */>;
 
 		/*spdif clk tuning enable*/
 		clk_tuning_enable = <1>;
@@ -1378,7 +1493,7 @@
 		#sound-dai-cells = <0>;
 
 		clocks = <&clkaudio CLKID_AUDIO_GATE_PDM
-			&clkc CLKID_HIFI_PLL
+			&clkc CLKID_FCLK_DIV3
 			&clkc CLKID_HIFI_PLL
 			&clkaudio CLKID_AUDIO_PDMIN0
 			&clkaudio CLKID_AUDIO_PDMIN1>;
@@ -1387,7 +1502,7 @@
 			"dclk_srcpll",
 			"pdm_dclk",
 			"pdm_sysclk";
-
+		src-clk-freq = <491520000>;
 		pinctrl-names = "pdm_pins";
 		pinctrl-0 = <&pdmin>;
 
@@ -1458,12 +1573,12 @@
 		#sound-dai-cells = <0>;
 
 		clocks = <&clkaudio CLKID_AUDIO_GATE_PDM
-			&clkc CLKID_HIFI_PLL
+			&clkc CLKID_FCLK_DIV3
 			&clkc CLKID_HIFI_PLL
 			&clkaudio CLKID_AUDIO_PDMIN0
 			&clkaudio CLKID_AUDIO_PDMIN1
-			&clkc CLKID_MPLL0
-			&clkaudio CLKID_AUDIO_MCLK_A>;
+			&clkc CLKID_MPLL1
+			&clkaudio CLKID_AUDIO_MCLK_B>;
 		clock-names = "pdm_gate",
 			"pdm_sysclk_srcpll",
 			"pdm_dclk_srcpll",
@@ -1480,10 +1595,11 @@
 		 * 4: pdmin;
 		 */
 		datain_src = <4>;
-		datain_chnum = <2>;
-		datain_chmask = <0x3>;
+		datain_chnum = <6>;
+		datain_chmask = <0x3f>;
 		/* config which data pin for loopback */
-		datain-lane-mask-in = <1 0 0 0>;
+		datain-lane-mask-in = <1 1 1 0>;
+		src-clk-freq = <491520000>;
 
 		/* calc mclk for datalb */
 		mclk-fs = <256>;
@@ -1517,8 +1633,8 @@
 			&clkc CLKID_MPLL3
 			&clkaudio CLKID_AUDIO_PDMIN0
 			&clkaudio CLKID_AUDIO_PDMIN1
-			&clkc CLKID_MPLL0
-			&clkaudio CLKID_AUDIO_MCLK_A>;
+			&clkc CLKID_MPLL1
+			&clkaudio CLKID_AUDIO_MCLK_B>;
 		clock-names = "pdm_gate",
 			"pdm_sysclk_srcpll",
 			"pdm_dclk_srcpll",
@@ -1709,24 +1825,16 @@
 			function = "bt656";
 		};
 	};
-
-	spdifout: spdifout {
-		mux { /* GPIOH_4 */
-			groups = "spdif_out_h";
-			function = "spdif_out";
-		};
-	};
-
 }; /* end of pinctrl_periphs */
 
-//&pinctrl_aobus {
-//	spdifout: spdifout {
-//		mux { /* gpiao_10 */
-//			groups = "spdif_out_ao";
-//			function = "spdif_out_ao";
-//		};
-//	};
-//};  /* end of pinctrl_aobus */
+&pinctrl_aobus {
+	spdifout: spdifout {
+		mux { /* GPIOAO_10 */
+			groups = "spdif_ao_out";
+			function = "spdif_ao_out";
+		};
+	};
+};  /* end of pinctrl_aobus */
 
 &audio_data {
 	status = "okay";
@@ -1951,6 +2059,15 @@
 
 &lcd {
 	status = "disabled";
+};
+
+&pinctrl_audio {
+	tdm_b_clk_pins: tdm_b_clk_pins {
+		mux {
+			groups = "tdm_sclk1", "tdm_lrclk1";
+			function = "tdm_clk_outb";
+		};
+	};
 };
 
 &pinctrl_aobus {

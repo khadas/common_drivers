@@ -2777,16 +2777,18 @@ static void dump_m_setting(struct m_dovi_setting_s *m_setting,
 			pr_info("tm2_stb reg: 0x1a0c = 0x%x\n",
 				READ_VPP_DV_REG(AMDV_PATH_CTRL));
 		} else if (is_aml_t7_stbmode()) {
-			pr_info("t7_stb reg: vd1 core1 0x1a83(bit4) = 0x%x\n",
+			pr_info("t7_stb reg: vd1 core1 0x1a83(bit4, 0:enable) = 0x%x\n",
 				READ_VPP_DV_REG(VPP_VD1_DSC_CTRL));
-			pr_info("t7_stb reg: vd2 core1 0x1a84 val = 0x%x\n",
+			pr_info("t7_stb reg: vd2 core1 0x1a84(bit4, 0:enable) val = 0x%x\n",
 				READ_VPP_DV_REG(VPP_VD2_DSC_CTRL));
-			pr_info("t7_stb reg: vd3 core1 0x1a85 val = 0x%x\n",
+			pr_info("t7_stb reg: vd3 core1 0x1a85(bit4, 0:enable) val = 0x%x\n",
 				READ_VPP_DV_REG(VPP_VD3_DSC_CTRL));
-			pr_info("t7_stb reg: core2a 0x1a0f(bit14) = 0x%x\n",
+			pr_info("t7_stb reg: core2a 0x1a0f(bit14, 0:enable) = 0x%x\n",
 				READ_VPP_DV_REG(MALI_AFBCD_TOP_CTRL));
-			pr_info("t7_stb reg: core2c 0x1a55(bit19) = 0x%x\n",
+			pr_info("t7_stb reg: core2c 0x1a55(bit19, 0:enable) = 0x%x\n",
 				READ_VPP_DV_REG(MALI_AFBCD1_TOP_CTRL));
+			pr_info("t7_stb reg: core3 0x1d93(bit3, 1:enable) = 0x%x\n",
+				READ_VPP_DV_REG(VPP_AMDV_CTRL));
 		} else if (is_aml_s5()) {
 			pr_info("s5 reg: vd1 core1 0x2822(bit0, 1:enable) = 0x%x\n",
 				READ_VPP_DV_REG(VD1_S0_DV_BYPASS_CTRL));

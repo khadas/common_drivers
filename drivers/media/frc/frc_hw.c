@@ -1629,7 +1629,12 @@ void frc_top_init(struct frc_dev_s *frc_devp)
 				mc_frm_dly + mc_hold_line - reg_mc_out_line;
 			if (mc_frm_dly + mc_hold_line < reg_mc_out_line)
 				gst_frc_param.frc_mcfixlines = 0;
-			gst_frc_param.s2l_en = 1;
+			if (frc_devp->vlock_flag == 1) {
+				gst_frc_param.s2l_en = 0;
+				frc_devp->vlock_flag = 0;
+			} else {
+				gst_frc_param.s2l_en = 1;
+			}
 			if (vlock_sync_frc_vporch(gst_frc_param) < 0)
 				PR_ERR("frc_infrom vlock fail, check vlock st!\n");
 			else

@@ -95,9 +95,10 @@
 // frc_20230602 frc add ctrl for ko load or not
 // frc_20230607 frc fixed input framerate
 // frc_20230706 frc clk new flow
-// frc_20230724 optimize frc seamless mode"
+// frc_20230724 optimize frc seamless mode
+// frc_20230802 adjust loss num
 
-#define FRC_FW_VER			"2023-0802 adjust loss num"
+#define FRC_FW_VER			"2023-0828 init vlock in bootup"
 #define FRC_KERDRV_VER                  2976
 
 #define FRC_DEVNO	1
@@ -637,7 +638,7 @@ struct frc_dev_s {
 	u32 dbg_vf_monitor;
 
 	u8  little_win;
-	u8  test1;
+	u8  vlock_flag;
 	u16 test2;
 
 	// u32 prot_mode;/*0:memc prefetch acorrding mode frame 1:memc prefetch 1 frame*/

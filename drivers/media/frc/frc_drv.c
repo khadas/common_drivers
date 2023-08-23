@@ -1026,7 +1026,7 @@ static void frc_drv_initial(struct frc_dev_s *devp)
 	devp->auto_n2m = 1;
 	devp->other1_flag = 0;
 	devp->other2_flag = 25;  // 16;
-
+	devp->vlock_flag = 1;
 	/*input sts initial*/
 	devp->in_sts.have_vf_cnt = 0;
 	devp->in_sts.no_vf_cnt = 0;

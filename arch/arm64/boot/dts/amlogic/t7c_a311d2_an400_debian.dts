@@ -1343,7 +1343,7 @@
 }; /* end of audiobus */
 
 &earc {
-	status = "okay";
+	status = "disabled";
 };
 
 &crg_udc_2 {

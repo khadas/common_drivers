@@ -393,8 +393,8 @@ static int am_meson_logo_init_fb(struct drm_device *dev,
 #endif
 	}
 
-	if (!strcmp("null", slogo->outputmode) ||
-		!strcmp("dummy_l", slogo->outputmode)) {
+	if (!strcmp("null", slogo->outputmode)/* ||
+		!strcmp("dummy_l", slogo->outputmode)*/) {
 		DRM_DEBUG("NULL MODE or DUMMY MODE, nothing to do.");
 		kfree(slogo);
 		return -EINVAL;
@@ -719,6 +719,8 @@ static void am_meson_load_logo(struct drm_device *dev,
 	found = 0;
 	list_for_each_entry(connector, &dev->mode_config.connector_list, head) {
 		drm_modeset_lock_all(dev);
+		if (!strcmp("dummy_l", meson_fb->logo->outputmode))
+			connector->force = DRM_FORCE_ON;
 		if (drm_modeset_is_locked(&dev->mode_config.connection_mutex))
 			drm_modeset_unlock(&dev->mode_config.connection_mutex);
 		num_modes = connector->funcs->fill_modes(connector,

@@ -428,8 +428,9 @@ int attach_aipq_hook_mod_info(int shared_fd,
 			output_fps = 90000 * 16 * (u64)output_pts_inc_scale;
 			output_fps = div64_u64(output_fps, output_pts_inc_scale_base);
 		}
-		aipq_print(PRINT_OTHER, "output_fps is %d.\n", output_fps);
-		if (output_fps > 24000) {
+		aipq_print(PRINT_OTHER, "scale: %d, base: %d, output_fps is %d.\n",
+			output_pts_inc_scale, output_pts_inc_scale_base, output_fps);
+		if (output_fps < 24000) {
 			aipq_print(PRINT_OTHER,
 				"output_fps more than 60, ai_pq bypass.\n");
 			aipq_info->need_do_aipq = 0;

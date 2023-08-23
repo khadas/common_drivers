@@ -605,6 +605,9 @@ static void osdblend_set_state(struct meson_vpu_block *vblk,
 	struct meson_vpu_osdblend_state *mvobs;
 	struct meson_vpu_pipeline_state *pipeline_state;
 	struct osdblend_reg_s *reg = osdblend->reg;
+	struct rdma_reg_ops *reg_ops = state->sub->reg_ops;
+	struct osd_scope_s scope_default = {0xffff, 0xffff, 0x0439, 0x043a};
+	int i = 0;
 
 	MESON_DRM_BLOCK("%s set_state called.\n", osdblend->base.name);
 	mvobs = to_osdblend_state(state);
@@ -612,6 +615,23 @@ static void osdblend_set_state(struct meson_vpu_block *vblk,
 	if (!pipeline_state) {
 		MESON_DRM_BLOCK("pipeline_state is NULL!!\n");
 		return;
+	}
+
+	if (pipeline_state->pipeline->osd_version == OSD_V1) {
+		mvobs->input_mask |= 5;
+		for (i = 0; i < MAX_DIN_NUM; i++) {
+			if (mvobs->din_channel_mux[i] == 0)
+				mvobs->din_channel_mux[i] = 4;
+		}
+
+		for (i = 0; i < MAX_DIN_NUM; i++) {
+			if (!(mvobs->input_osd_mask & BIT(i))) {
+				memcpy(&mvobs->din_channel_scope[i],
+					&scope_default, sizeof(struct osd_scope_s));
+			}
+		}
+
+		reg_ops->rdma_write_reg_bits(VIU_OSD_BLEND_CTRL, 4, 29, 3);
 	}
 
 	#ifdef OSDBLEND_CHECK_METHOD_COMBINATION

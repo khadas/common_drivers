@@ -18,7 +18,7 @@
 
 #include "mesong12a.dtsi"
 #include "partition_mbox_normal_P_32.dtsi"
-
+#include "mesong12a_drm.dtsi"
 / {
 	model = "Amlogic";
 	amlogic-dt-id = "g12a_u212_2g";
@@ -1049,7 +1049,7 @@
 }; /* end of / */
 
 &fb {
-	status = "okay";
+	status = "disabled";
 	display_size_default = <1920 1080 1920 2160 32>;
 	mem_size = <0x00800000 0x1980000 0x100000 0x100000 0x800000>;
 	logo_addr = "0x7f800000";
@@ -1504,6 +1504,15 @@
 };  /* end of pinctrl_aobus */
 
 &amhdmitx {
+	status = "okay";
+};
+
+&drm_vpu {
+	status = "okay";
+	logo_addr = "0x7f800000";
+};
+
+&drm_amcvbsout {
 	status = "okay";
 };
 

@@ -1331,6 +1331,14 @@
 	pinctrl-0=<&ao_i2c_master_pins1>;
 	clock-frequency = <100000>; /* default 100k */
 
+	gpio_expander: gpio-controller@20 {
+		compatible = "ti,tca6408";
+		reg = <0x20>;
+		gpio-controller;
+		#gpio-cells = <2>;
+		status = "okay";
+	};
+
 	khadas-mcu {
 		compatible = "khadas-mcu";
 		reg = <0x18>;

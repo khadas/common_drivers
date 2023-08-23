@@ -36,12 +36,16 @@
 		#size-cells = <1>;
 		ranges;
 
-		dsp_fw_reserved:linux,dsp_fw {
-			compatible = "shared-dma-pool";
-			reusable;
-			size = <0x1400000>;
-			alignment = <0x400000>;
-			alloc-ranges = <0x2800000 0x1400000>;
+		dsp_fw_reserved0:linux,dsp_fw0 {
+			compatible = "amlogic, dsp";
+			size = <0x1000000>;
+			reg = <0x2800000 0x1000000>;
+		};
+
+		dsp_fw_reserved1:linux,dsp_fw1 {
+			compatible = "amlogic, dsp";
+			size = <0x400000>;
+			reg = <0x3800000 0x400000>;
 		};
 
 		secos_reserved:linux,secos {

@@ -66,10 +66,9 @@
 		};
 
 		dsp_fw_reserved:linux,dsp_fw {
-			compatible = "shared-dma-pool";
-			reusable;
-			alignment = <0x400000>;
-			reg = <0x3400000 0x800000>;
+			compatible = "amlogic,dsp";
+			size = <0x600000>;
+			reg = <0x3400000 0x600000>;
 		};
 
 		/*dsp_shm_reserved:linux,dsp_shm {      */

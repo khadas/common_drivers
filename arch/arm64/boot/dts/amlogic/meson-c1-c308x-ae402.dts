@@ -47,12 +47,16 @@
 			alloc-ranges = <0x0 0x05000000 0x0 0x400000>;
 		};
 
-		dsp_fw_reserved:linux,dsp_fw {
-			compatible = "shared-dma-pool";
-			reusable;
-			size = <0x0 0x000000>;
-			alignment = <0x0 0x400000>;
-			alloc-ranges = <0x0 0x3400000 0x0 0x800000>;
+		dsp_fw_reserved0:linux,dsp_fw0 {
+			compatible = "amlogic, dsp";
+			size = <0x0 0x600000>;
+			reg = <0x0 0x3400000 0x0 0x600000>;
+		};
+
+		dsp_fw_reserved1:linux,dsp_fw1 {
+			compatible = "amlogic, dsp";
+			size = <0x0 0x200000>;
+			reg = <0x0 0x3a00000 0x0 0x200000>;
 		};
 
 		autocap_reserved:linux,autocap_reserved {

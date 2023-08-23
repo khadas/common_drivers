@@ -17,6 +17,7 @@
 #include "meson-ir-map.dtsi"
 #include <dt-bindings/power/cx-pd.h>
 #include <dt-bindings/mailbox/amlogic,mbox.h>
+#include <dt-bindings/firmware/amlogic,firmware.h>
 #include <dt-bindings/mailbox/c2-mbox.h>
 
 / {
@@ -703,26 +704,20 @@
 			#address-cells = <0>;
 		};
 
-		hifi4dsp: hifi4dsp {
-			compatible = "amlogic, hifi4dsp";
+		hifidsp0: hifidsp0 {
+			compatible = "amlogic, hifidsp0";
+			status = "okay";
+			startup-position = /bits/ 8 <PURE_DDR>; /*host dsp start mode : DDR*/
 			memory-region = <&dsp_fw_reserved>;
-			reg = <0xfe030000 0x114>,   /*dspa base address*/
-			      <0xfe040000 0x114>,   /*dspb base address*/
-			      <0xfe000800 0xff>;
-			reg-names = "dspa_top_reg", "dspb_top_reg";
+			reg-names = "base-reg",
+				    "ddrfw-region";
+			reg = <0xfe030000 0x114>, /*host base address*/
+			      <0x0 0x600000>; /*host ddrfw region [offset size]*/
 			clocks = <&clkc CLKID_DSPA_SEL>;
 			clock-names = "dspa_clk";
-			dspa_clkfreq = <400000000>;
-			dsp-cnt = <1>;
-			dspaoffset = <0>;
-			dspboffset = <0x600000>;
-			dsp-start-mode = <1>; /*0:scpi start mode,1:smc start mode*/
-			bootlocation = <1>;   /*1: boot from DDR, 2: from sram, 3...*/
-			boot_sram_addr = <0xfff00000>;
-			boot_sram_size = <0x80000>;
 			power-domains = <&pwrdm PDID_CX_DSP_A>;
 			mboxes = <&mbox_pl C2_REE2DSPA_DSP>;
-			status = "okay";
+			clkfreq-khz = <400000>;
 		};
 
 		vddcpu0: pwm_b-regulator {

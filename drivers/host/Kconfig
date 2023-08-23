@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+
+# amlogic mcu host driver  configuration
+
+config AMLOGIC_HOST_DRIVER
+	tristate "mcu host driver control support"
+	default n
+	help
+		This is the Amlogic
+		kernel load mcu driver
+		support the amlogic mcu host driver;
+

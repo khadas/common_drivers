@@ -95,12 +95,16 @@
 			clear-map;
 		};
 
-		dsp_fw_reserved:linux,dsp_fw {
-			compatible = "shared-dma-pool";
-			reusable;
-			size = <0x0 0x1000000>;
-			alignment = <0x0 0x400000>;
-			alloc-ranges = <0x0 0x40000000 0x0 0x1000000>;
+		dsp_fw_reserved0:linux,dsp_fw0 {
+			compatible = "amlogic, dsp";
+			size = <0x0 0x800000>;
+			reg = <0x0 0x40000000 0x0 0x800000>;
+		};
+
+		dsp_fw_reserved1:linux,dsp_fw1 {
+			compatible = "amlogic, dsp";
+			size = <0x0 0x800000>;
+			reg = <0x0 0x40800000 0x0 0x800000>;
 		};
 
 		/*dsp_shm_reserved:linux,dsp_shm {      */

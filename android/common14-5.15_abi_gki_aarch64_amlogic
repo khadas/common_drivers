@@ -17,3 +17,5 @@
   xhci_get_ep_ctx
   usb_hcd_link_urb_to_ep
 
+# amlogic-host.ko
+unregister_die_notifier

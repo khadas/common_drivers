@@ -11,6 +11,6 @@
 #define AMLOGIC_KERNEL_BOOTED		0x8000
 #define RAMDUMP_STICKY_DATA_MASK	0xFFFF
 
-void ramdump_sync_data(void);
+noinline void ramdump_sync_data(void);
 
 #endif /* __RAMDUMP_H__ */

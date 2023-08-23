@@ -43,6 +43,8 @@
 #include <linux/capability.h>
 #include <asm/cacheflush.h>
 #include <linux/amlogic/gki_module.h>
+#include <trace/hooks/debug.h>
+#include <linux/panic_notifier.h>
 
 static unsigned long ramdump_base;
 static unsigned long ramdump_size;
@@ -182,9 +184,9 @@ static struct bin_attribute ramdump_attr = {
 	.read  = ramdump_bin_read,
 	.write = ramdump_bin_write,
 };
-#else
+
 #ifdef CONFIG_ARM64
-void ramdump_sync_data(void)
+noinline void ramdump_sync_data(void)
 {
 	/*
 	 * back port from old kernel version for function
@@ -243,11 +245,13 @@ void ramdump_sync_data(void)
 		"ret	x12\n");
 }
 #else
-void ramdump_sync_data(void)
+noinline void ramdump_sync_data(void)
 {
 	flush_cache_all();
 }
 #endif
+
+#else
 
 #ifdef CONFIG_64BIT
 static void free_reserved_highmem(unsigned long start, unsigned long end)
@@ -502,6 +506,33 @@ static void lazy_clear_work(struct work_struct *work)
 		clear, free, tick / 1000);
 }
 
+#if defined(CONFIG_TRACEPOINTS) && defined(CONFIG_ANDROID_VENDOR_HOOKS)
+static void do_flush_cpu_cache(void)
+{
+	int cpu = smp_processor_id();
+
+	pr_info("ramdump: CPU-%d flush cache ...\n", cpu);
+	ramdump_sync_data();
+	pr_info("ramdump: CPU-%d flush cache finish.\n", cpu);
+}
+
+static void flush_all_cache_hook(void *data, struct pt_regs *regs)
+{
+	do_flush_cpu_cache();
+}
+
+static int panic_notify(struct notifier_block *self,
+			unsigned long cmd, void *ptr)
+{
+	do_flush_cpu_cache();
+	return NOTIFY_DONE;
+}
+
+static struct notifier_block panic_notifier = {
+	.notifier_call	= panic_notify,
+};
+#endif
+
 static int __init ramdump_probe(struct platform_device *pdev)
 {
 	unsigned long total_mem;
@@ -513,6 +544,20 @@ static int __init ramdump_probe(struct platform_device *pdev)
 
 	total_mem = get_num_physpages() << PAGE_SHIFT;
 	pr_info("Total Memory:[%lx]\n", total_mem);
+
+#if defined(CONFIG_TRACEPOINTS) && defined(CONFIG_ANDROID_VENDOR_HOOKS)
+	if (!ramdump_disable) {
+		/* flush cache for online cpu */
+		ret = register_trace_android_vh_ipi_stop(flush_all_cache_hook, NULL);
+		if (ret)
+			pr_err("%s, register_trace_android_vh_ipi_stop err(%d).\n", __func__, ret);
+
+		/* flush cache for panic cpu */
+		ret = atomic_notifier_chain_register(&panic_notifier_list, &panic_notifier);
+		if (ret)
+			pr_err("%s, register panic_notifier err(%d).\n", __func__, ret);
+	}
+#endif
 
 	ram = kzalloc(sizeof(*ram), GFP_KERNEL);
 	if (!ram)

@@ -716,6 +716,68 @@ void show_regs_32(struct pt_regs *regs)
 }
 #endif
 
+#ifdef CONFIG_ARM64
+noinline void aml_flush_cache_all(void)
+{
+	asm volatile
+		("mov	x12, x30\n"
+		"dsb	sy\n"
+		"mrs	x0, clidr_el1\n"
+		"and	x3, x0, #0x7000000\n"
+		"lsr	x3, x3, #23\n"
+		"cbz	x3, finished\n"
+		"mov	x10, #0\n"
+	"loop1:\n"
+		"add	x2, x10, x10, lsr #1\n"
+		"lsr	x1, x0, x2\n"
+		"and	x1, x1, #7\n"
+		"cmp	x1, #2\n"
+		"b.lt	skip\n"
+		"mrs	x9, daif\n"
+		"msr    daifset, #2\n"
+		"msr	csselr_el1, x10\n"
+		"isb\n"
+		"mrs	x1, ccsidr_el1\n"
+		"msr    daif, x9\n"
+		"and	x2, x1, #7\n"
+		"add	x2, x2, #4\n"
+		"mov	x4, #0x3ff\n"
+		"and	x4, x4, x1, lsr #3\n"
+		"clz	w5, w4\n"
+		"mov	x7, #0x7fff\n"
+		"and	x7, x7, x1, lsr #13\n"
+	"loop2:\n"
+		"mov	x9, x4\n"
+	"loop3:\n"
+		"lsl	x6, x9, x5\n"
+		"orr	x11, x10, x6\n"
+		"lsl	x6, x7, x2\n"
+		"orr	x11, x11, x6\n"
+		"dc	cisw, x11\n"
+		"subs	x9, x9, #1\n"
+		"b.ge	loop3\n"
+		"subs	x7, x7, #1\n"
+		"b.ge	loop2\n"
+	"skip:\n"
+		"add	x10, x10, #2\n"
+		"cmp	x3, x10\n"
+		"b.gt	loop1\n"
+	"finished:\n"
+		"mov	x10, #0\n"
+		"msr	csselr_el1, x10\n"
+		"dsb	sy\n"
+		"isb\n"
+		"mov	x0, #0\n"
+		"ic	ialluis\n"
+		"ret	x12\n");
+}
+#else
+noinline void aml_flush_cache_all(void)
+{
+	flush_cache_all();
+}
+#endif
+
 #if (defined CONFIG_ARM64) || (defined CONFIG_AMLOGIC_ARMV8_AARCH32)
 void fiq_debug_entry(void)
 {
@@ -755,6 +817,10 @@ void fiq_debug_entry(void)
 	regs.ARM_r1 = (unsigned long)fiq_regs.regs[1];
 	regs.ARM_r0 = (unsigned long)fiq_regs.regs[0];
 #endif
+	pr_err("\n");
+	pr_err("ramdump: CPU-%d flush cache ...\n", cpu);
+	aml_flush_cache_all();
+	pr_err("ramdump: CPU-%d flush cache finish.\n", cpu);
 
 	pr_err("\n\n--------fiq_dump CPU%d--------\n\n", cpu);
 	if (fiq_check_show_regs_en) {

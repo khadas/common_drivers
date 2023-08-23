@@ -73,8 +73,13 @@
  * FRL modes without DSC: sub-pll, htx-pll, fpll
  * FRL modes with DSC: sub-pll, htx-pll, fpll, gp2pll
  */
-static const char od_map[9] = {
-	0, 0, 1, 0, 2, 0, 0, 0, 3,
+static const char od_map[17] = {
+	[0] = 0,
+	[1] = 0,
+	[2] = 1,
+	[4] = 2,
+	[8] = 3,
+	[16] = 4,
 };
 
 void disable_hdmitx_s5_plls(struct hdmitx_dev *hdev)
@@ -187,7 +192,7 @@ static void set_s5_htxpll_clk_4_5_6g(const u32 clk, const bool frl_en)
 	}
 	hd21_write_reg(ANACTRL_HDMIPLL_CTRL3,
 		0x000c0000 | (htxpll_m << 8) | (htxpll_ref_clk_od << 4));
-	hd21_write_reg(ANACTRL_HDMIPLL_CTRL4, 0x03400293 | (frl_en << 25));
+	hd21_write_reg(ANACTRL_HDMIPLL_CTRL4, 0x03400293);
 	hd21_write_reg(ANACTRL_HDMIPLL_CTRL5, 0x00000203);
 	hd21_write_reg(ANACTRL_HDMIPLL_CTRL6, 0x00000000);
 	hd21_set_reg_bits(ANACTRL_HDMIPLL_CTRL3, 1, 0, 1);
@@ -270,9 +275,8 @@ void set_frl_hpll_od(enum frl_rate_enum rate)
 	case FRL_8G4L:
 	case FRL_10G4L:
 	case FRL_12G4L:
-		hd21_set_reg_bits(ANACTRL_HDMIPLL_CTRL3, 0, 20, 2);
-		break;
 	default:
+		hd21_set_reg_bits(ANACTRL_HDMIPLL_CTRL3, 0, 20, 2);
 		break;
 	};
 }

@@ -565,8 +565,7 @@ static ssize_t contenttype_mode_show(struct device *dev,
 		"cinema",
 	};
 
-	if (global_tx_common->ct_mode >= 0 &&
-		global_tx_common->ct_mode < ARRAY_SIZE(ct_names))
+	if (global_tx_common->ct_mode < ARRAY_SIZE(ct_names))
 		pos += snprintf(buf + pos, PAGE_SIZE, "%s\n\r",
 					ct_names[global_tx_common->ct_mode]);
 

@@ -1273,7 +1273,7 @@ void hdmitx_set_gp2pll(struct hdmitx_dev *hdev)
 			break;
 		div *= 2;
 		gp2pll_vco *= 2;
-	} while (div <= 16);
+	} while (div <= 8);
 
 	hdmitx_set_s5_gp2pll(gp2pll_vco, div);
 }

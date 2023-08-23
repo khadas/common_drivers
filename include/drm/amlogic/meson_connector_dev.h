@@ -138,8 +138,17 @@ struct meson_dummyl_dev {
 /*dummy_l specified type*/
 #define DRM_MODE_CONNECTOR_MESON_DUMMY_L  0x200
 
+/*dummy_p specified struct*/
+struct meson_dummyp_dev {
+	struct meson_connector_dev base;
+};
+
+/*dummy_p specified type*/
+#define DRM_MODE_CONNECTOR_MESON_DUMMY_P  0x201
+
 #define to_meson_panel_dev(x)	container_of(x, struct meson_panel_dev, base)
 #define to_meson_dummyl_dev(x)	container_of(x, struct meson_dummyl_dev, base)
+#define to_meson_dummyp_dev(x)	container_of(x, struct meson_dummyp_dev, base)
 
 /*lcd specified struct*/
 

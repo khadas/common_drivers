@@ -10,6 +10,7 @@
 #include "meson_lcd.h"
 #endif
 #include "meson_dummyl.h"
+#include "meson_dummyp.h"
 
 int meson_connector_dev_bind(struct drm_device *drm,
 	int type, struct meson_connector_dev *intf)
@@ -42,6 +43,9 @@ int meson_connector_dev_bind(struct drm_device *drm,
 
 	case DRM_MODE_CONNECTOR_MESON_DUMMY_L:
 		return meson_dummyl_dev_bind(drm, type, intf);
+
+	case DRM_MODE_CONNECTOR_MESON_DUMMY_P:
+		return meson_dummyp_dev_bind(drm, type, intf);
 
 	default:
 		pr_err("unknown connector tye %d\n", type);
@@ -83,6 +87,9 @@ int meson_connector_dev_unbind(struct drm_device *drm,
 
 	case DRM_MODE_CONNECTOR_MESON_DUMMY_L:
 		return meson_dummyl_dev_unbind(drm, type, connector_id);
+
+	case DRM_MODE_CONNECTOR_MESON_DUMMY_P:
+		return meson_dummyp_dev_unbind(drm, type, connector_id);
 
 	default:
 		pr_err("unknown connector tye %d\n", type);

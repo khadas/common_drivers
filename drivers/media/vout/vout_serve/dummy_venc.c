@@ -35,6 +35,8 @@
 #include "vout_func.h"
 #include "vout_reg.h"
 
+/* 0 dummyl，1 dummyp，2 dummyi */
+static u32 dummy_venc_type;
 enum dummy_venc_chip_e {
 	DUMMY_VENC_DFT = 0,
 	DUMMY_VENC_SC2, /* 1 */
@@ -92,6 +94,7 @@ struct dummy_venc_data_s {
 struct dummy_venc_driver_s {
 	struct device *dev;
 	struct meson_dummyl_dev drm_instance;
+	struct meson_dummyp_dev drm_instance_p;
 	int drm_id;
 	unsigned char status;
 	unsigned char vout_valid;
@@ -2231,6 +2234,47 @@ static const struct component_ops meson_dummyl_bind_ops = {
 	.unbind	= meson_dummyl_unbind,
 };
 
+static int meson_dummyp_bind(struct device *dev,
+			      struct device *master, void *data)
+{
+	struct meson_drm_bound_data *bound_data = data;
+
+	dummy_encp_drv->drm_instance_p.base.ver = MESON_DRM_CONNECTOR_V10;
+	if (bound_data->connector_component_bind) {
+		dummy_encp_drv->drm_id = bound_data->connector_component_bind
+			(bound_data->drm,
+			DRM_MODE_CONNECTOR_MESON_DUMMY_P,
+			&dummy_encp_drv->drm_instance_p.base);
+		pr_err("%s dummyp[%d]\n", __func__, dummy_encp_drv->drm_id);
+	} else {
+		pr_err("no bind func from drm.\n");
+	}
+
+	return 0;
+}
+
+static void meson_dummyp_unbind(struct device *dev,
+				 struct device *master, void *data)
+{
+	struct meson_drm_bound_data *bound_data = data;
+
+	if (bound_data->connector_component_unbind) {
+		bound_data->connector_component_unbind(bound_data->drm,
+			DRM_MODE_CONNECTOR_MESON_DUMMY_P, dummy_encp_drv->drm_id);
+		pr_err("%s dummyp[%d]\n", __func__, dummy_encp_drv->drm_id);
+	} else {
+		pr_err("no unbind func from drm.\n");
+	}
+
+	dummy_encp_drv->drm_id = 0;
+}
+
+/*drm component bind*/
+static const struct component_ops meson_dummyp_bind_ops = {
+	.bind	= meson_dummyp_bind,
+	.unbind	= meson_dummyp_unbind,
+};
+
 static void dummy_venc_dts_config(struct device_node *of_node,
 		struct dummy_venc_data_s *vdata)
 {
@@ -2243,6 +2287,7 @@ static void dummy_venc_dts_config(struct device_node *of_node,
 		return;
 
 	ret = of_property_read_u32(of_node, "default_venc_index", &temp);
+	of_property_read_u32(of_node, "dummy_venc_type", &dummy_venc_type);
 	if (ret == 0) {
 		vdata->default_venc_index = temp;
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
@@ -2335,7 +2380,17 @@ static int dummy_venc_probe(struct platform_device *pdev)
 
 	dummy_venc_creat_class();
 
-	component_add(&pdev->dev, &meson_dummyl_bind_ops);
+	switch (dummy_venc_type) {
+	case 0:
+		component_add(&pdev->dev, &meson_dummyl_bind_ops);
+		break;
+	case 1:
+		component_add(&pdev->dev, &meson_dummyp_bind_ops);
+		break;
+	default:
+		VOUTPR("%s bind none\n", __func__);
+		break;
+	};
 
 	VOUTPR("%s OK\n", __func__);
 

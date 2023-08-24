@@ -515,7 +515,7 @@ module_param(hdmi_csc_type, uint, 0444);
 MODULE_PARM_DESC(hdmi_csc_type, "\n current color space convert type\n");
 #endif
 
-/*Android U force mode: hdr_policy = 4*/
+/* Android U force mode: hdr_policy = 4 */
 /* 0: follow sink, 1: follow source, 2: debug, 0xff: bootup default value */
 /* by default follow source to match default sdr_mode*/
 static uint hdr_policy;
@@ -544,8 +544,11 @@ int boot_hdr_policy(char *str)
 		hdr_policy = 0; /*follow sink*/
 		pr_debug("boot hdr_policy: 0\n");
 	} else if (strncmp("2", str, 1) == 0) {
-		hdr_policy = 2; /*force mode*/
+		hdr_policy = 2; /*force policy for vivid*/
 		pr_debug("boot hdr_policy: 2\n");
+	} else if (strncmp("4", str, 1) == 0) {
+		hdr_policy = 4; /*force policy for u*/
+		pr_debug("boot hdr_policy: 4\n");
 	}
 	return 0;
 }
@@ -4085,11 +4088,17 @@ uint32_t sink_hdr_support(const struct vinfo_s *vinfo)
 	u32 hdr_cap = 0;
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	u32 dv_cap = 0;
+	bool u_force = false;
+
+	/* hdr_cap from vinfo for Android U force mode*/
+	if (get_amdv_policy() == AMDV_FORCE_OUTPUT_MODE ||
+		hdr_policy == 4)
+		u_force = true;
 
 	/* when policy == follow sink(0) or force output (2) */
 	/* use force_output */
 	if (get_force_output() != 0 &&
-	    get_hdr_policy() != 1) {
+	    get_hdr_policy() != 1 && !u_force) {
 		switch (get_force_output()) {
 		case BT709:
 		case BT_BYPASS:
@@ -4111,9 +4120,6 @@ uint32_t sink_hdr_support(const struct vinfo_s *vinfo)
 		default:
 			break;
 		}
-		dv_cap = sink_dv_support(vinfo);
-		if (dv_cap)
-			hdr_cap |= (dv_cap << DV_SUPPORT_SHF) & DV_SUPPORT;
 	} else if (vinfo) {
 		if (vinfo->hdr_info.hdr_support & HDR_SUPPORT)
 			hdr_cap |= HDR_SUPPORT;

@@ -1656,6 +1656,322 @@ int hdr_policy_process(struct vinfo_s *vinfo,
 				}
 			}
 		}
+	} else if (cur_hdr_policy == 4 &&
+		!is_amdv_enable()) {
+		/* dv off, *->force_output for android u */
+		/* support hlg, hdr10 and sdr at present. */
+		if (vd_path == VD1_PATH ||
+		    ((vd_path == VD2_PATH || vd_path == VD3_PATH) &&
+		     !is_video_layer_on(VD1_PATH))) {
+			/* VD1 or VD2 without VD1 */
+			target_format[vd_path] = get_force_output();
+			if (target_format[vd_path] == BT2020_PQ ||
+				target_format[vd_path] == BT2020) {
+				if (sink_hdr_support(vinfo) & HDR_SUPPORT)
+					target_format[vd_path] = BT2020_PQ;
+				else if ((sink_hdr_support(vinfo) & HLG_SUPPORT))
+					target_format[vd_path] = BT2020_HLG;
+				else
+					target_format[vd_path] = BT709;
+			}
+			if (target_format[vd_path] == BT2020_HLG) {
+				if (sink_hdr_support(vinfo) & HLG_SUPPORT)
+					target_format[vd_path] = BT2020_HLG;
+				else if ((sink_hdr_support(vinfo) & HDR_SUPPORT))
+					target_format[vd_path] = BT2020_PQ;
+				else
+					target_format[vd_path] = BT709;
+			}
+			/* ui set force hdr10/hlg, output hdr10+ if tv supports hdr10+ */
+			if (source_format[vd_path] == HDRTYPE_HDR10PLUS &&
+				sink_hdr_support(vinfo) & HDRP_SUPPORT)
+				target_format[vd_path] = BT2020_PQ_DYNAMIC;
+			switch (target_format[vd_path]) {
+			case BT709:
+				sdr_process_mode[vd_path] = PROC_BYPASS;
+				hlg_process_mode[vd_path] = PROC_HLG_TO_SDR;
+				hdr_process_mode[vd_path] = PROC_HDR_TO_SDR;
+				hdr10_plus_process_mode[vd_path] = PROC_HDRP_TO_SDR;
+				cuva_hdr_process_mode[vd_path] = PROC_CUVA_TO_SDR;
+				cuva_hlg_process_mode[vd_path] = PROC_CUVAHLG_TO_SDR;
+				break;
+			case BT2020:
+				sdr_process_mode[vd_path] =
+					PROC_SDR_TO_HDR;
+				hlg_process_mode[vd_path] =
+					PROC_HLG_TO_HDR;
+				hdr_process_mode[vd_path] =
+					PROC_BYPASS;
+				hdr10_plus_process_mode[vd_path] =
+					PROC_HDRP_TO_HDR;
+				cuva_hdr_process_mode[vd_path] = PROC_CUVA_TO_HDR;
+				cuva_hlg_process_mode[vd_path] = PROC_CUVAHLG_TO_HDR;
+				break;
+			case BT2020_PQ:
+				sdr_process_mode[vd_path] = PROC_SDR_TO_HDR;
+				hlg_process_mode[vd_path] = PROC_HLG_TO_HDR;
+				hdr_process_mode[vd_path] = PROC_BYPASS;
+				hdr10_plus_process_mode[vd_path] = PROC_HDRP_TO_HDR;
+				cuva_hdr_process_mode[vd_path] = PROC_CUVA_TO_HDR;
+				cuva_hlg_process_mode[vd_path] = PROC_CUVAHLG_TO_HDR;
+				break;
+			case BT2020_PQ_DYNAMIC:
+				sdr_process_mode[vd_path] = PROC_SDR_TO_HDR;
+				hlg_process_mode[vd_path] = PROC_HLG_TO_HDR;
+				hdr_process_mode[vd_path] = PROC_BYPASS;
+				hdr10_plus_process_mode[vd_path] = PROC_BYPASS;
+				cuva_hdr_process_mode[vd_path] = PROC_CUVA_TO_HDR;
+				cuva_hlg_process_mode[vd_path] = PROC_CUVAHLG_TO_HDR;
+				break;
+			case BT2020_HLG:
+				sdr_process_mode[vd_path] = PROC_SDR_TO_HLG;
+				hlg_process_mode[vd_path] = PROC_BYPASS;
+				hdr_process_mode[vd_path] = PROC_HDR_TO_HLG;
+				hdr10_plus_process_mode[vd_path] = PROC_HDRP_TO_HLG;
+				cuva_hdr_process_mode[vd_path] = PROC_CUVA_TO_HLG;
+				cuva_hlg_process_mode[vd_path] = PROC_CUVAHLG_TO_HLG;
+				break;
+			case BT2100_IPT:
+				/* hdr module not handle dv output */
+				break;
+			case BT_BYPASS:
+				/* force bypass all process */
+				sdr_process_mode[vd_path] = PROC_BYPASS;
+				hlg_process_mode[vd_path] = PROC_BYPASS;
+				hdr_process_mode[vd_path] = PROC_BYPASS;
+				hdr10_plus_process_mode[vd_path] = PROC_BYPASS;
+				cuva_hdr_process_mode[vd_path] = PROC_BYPASS;
+				cuva_hlg_process_mode[vd_path] = PROC_BYPASS;
+				break;
+			case BT2020YUV_BT2020RGB_CUVA:
+				sdr_process_mode[vd_path] = PROC_SDR_TO_CUVA;
+				hlg_process_mode[vd_path] = PROC_HLG_TO_CUVA;
+				hdr_process_mode[vd_path] = PROC_HDR_TO_CUVA;
+				hdr10_plus_process_mode[vd_path] = PROC_HDRP_TO_CUVA;
+				cuva_hdr_process_mode[vd_path] = PROC_BYPASS;
+				cuva_hlg_process_mode[vd_path] = PROC_CUVAHLG_TO_CUVA;
+				break;
+			default:
+				sdr_process_mode[vd_path] = PROC_BYPASS;
+				hlg_process_mode[vd_path] = PROC_HLG_TO_SDR;
+				hdr_process_mode[vd_path] = PROC_HDR_TO_SDR;
+				hdr10_plus_process_mode[vd_path] = PROC_HDRP_TO_SDR;
+				cuva_hdr_process_mode[vd_path] = PROC_CUVA_TO_SDR;
+				cuva_hlg_process_mode[vd_path] = PROC_CUVAHLG_TO_SDR;
+				break;
+			}
+		} else {
+			/* VD2 with VD1 on, VD2 follow VD1 */
+			if (!is_vpp1(VD2_PATH)) {
+				oth_path = VD1_PATH;
+				switch (source_format[vd_path]) {
+				case HDRTYPE_SDR:
+					/* VD2 source SDR */
+					if (target_format[oth_path] == BT2020 ||
+						target_format[oth_path] == BT2020_PQ ||
+					    target_format[oth_path] == BT2020_PQ_DYNAMIC) {
+						/* other layer output HDR */
+						/* sdr *->hdr */
+						sdr_process_mode[vd_path] = PROC_SDR_TO_HDR;
+						target_format[vd_path] = target_format[oth_path];
+					} else if (target_format[oth_path] == BT2020_HLG) {
+						/* other layer on and not sdr */
+						/* sdr *->hlg */
+						sdr_process_mode[vd_path] = PROC_SDR_TO_HLG;
+						target_format[vd_path] = BT2020_HLG;
+					} else if (target_format[oth_path] ==
+						BT2020YUV_BT2020RGB_CUVA) {
+						/* other layer on and not sdr */
+						/* sdr *->cuva */
+						sdr_process_mode[vd_path] = PROC_SDR_TO_CUVA;
+						target_format[vd_path] = BT2020YUV_BT2020RGB_CUVA;
+					} else {
+						/* sdr->sdr */
+						sdr_process_mode[vd_path] = PROC_BYPASS;
+						target_format[vd_path] = BT709;
+					}
+					break;
+				case HDRTYPE_HLG:
+					/* VD2 source HLG */
+					if (target_format[oth_path] == BT2020_HLG) {
+						/* hlg->hlg */
+						hlg_process_mode[vd_path] = PROC_BYPASS;
+						target_format[vd_path] = BT2020_HLG;
+					} else if (target_format[oth_path] == BT2020_PQ ||
+						   target_format[oth_path] == BT2020_PQ_DYNAMIC) {
+						/* hlg->hdr */
+						hlg_process_mode[vd_path] = PROC_HLG_TO_HDR;
+						target_format[vd_path] = BT2020_PQ;
+					} else if (target_format[oth_path] ==
+						BT2020YUV_BT2020RGB_CUVA) {
+						/* hlg->cuva */
+						hlg_process_mode[vd_path] = PROC_HLG_TO_CUVA;
+						target_format[vd_path] = BT2020YUV_BT2020RGB_CUVA;
+					} else if (target_format[oth_path] == BT709) {
+						/* hlg->sdr */
+						hlg_process_mode[vd_path] = PROC_HLG_TO_SDR;
+						target_format[vd_path] = BT709;
+					}
+					break;
+				case HDRTYPE_HDR10:
+				case HDRTYPE_PRIMESL:
+					/* VD2 source HDR10 */
+					if (target_format[oth_path] == BT2020_PQ ||
+					    target_format[oth_path] == BT2020_PQ_DYNAMIC) {
+						/* hdr->hdr */
+						hdr_process_mode[vd_path] = PROC_BYPASS;
+						target_format[vd_path] = BT2020_PQ;
+					} else if (target_format[oth_path] == BT2020_HLG) {
+						/* hdr->hlg */
+						hdr_process_mode[vd_path] = PROC_HDR_TO_HLG;
+						target_format[vd_path] = BT2020_HLG;
+					} else if (target_format[oth_path] ==
+						BT2020YUV_BT2020RGB_CUVA) {
+						/* cuva_hdr bypass*/
+						hdr_process_mode[vd_path] = PROC_BYPASS;
+						target_format[vd_path] = BT2020YUV_BT2020RGB_CUVA;
+					} else {
+						/* hdr->sdr */
+						hdr_process_mode[vd_path] = PROC_HDR_TO_SDR;
+						target_format[vd_path] = BT709;
+					}
+					break;
+				case HDRTYPE_HDR10PLUS:
+					/* VD2 source HDR10+ */
+					if (target_format[oth_path] == BT2020_PQ ||
+					    target_format[oth_path] == BT2020_PQ_DYNAMIC) {
+						/* hdr->hdr */
+						hdr10_plus_process_mode[vd_path] = PROC_HDRP_TO_HDR;
+						target_format[vd_path] = BT2020_PQ;
+					} else if (target_format[oth_path] == BT2020_HLG) {
+						/* hdr->hlg */
+						hdr10_plus_process_mode[vd_path] = PROC_HDR_TO_HLG;
+						target_format[vd_path] = BT2020_HLG;
+					} else if (target_format[oth_path] ==
+						BT2020YUV_BT2020RGB_CUVA) {
+						/* hdr->cuva */
+						hdr10_plus_process_mode[vd_path] =
+							PROC_HDRP_TO_CUVA;
+						target_format[vd_path] = BT2020YUV_BT2020RGB_CUVA;
+					} else {
+						/* hdr->sdr */
+						hdr10_plus_process_mode[vd_path] = PROC_HDRP_TO_SDR;
+						target_format[vd_path] = BT709;
+					}
+					break;
+				case HDRTYPE_CUVA_HDR:
+					/* VD2 source cuva */
+					if (target_format[oth_path] == BT2020_PQ ||
+					    target_format[oth_path] == BT2020_PQ_DYNAMIC) {
+						/* hdr->cuva */
+						cuva_hdr_process_mode[vd_path] = PROC_CUVA_TO_HDR;
+						target_format[vd_path] = BT2020_PQ;
+					} else if (target_format[oth_path] ==
+						BT2020YUV_BT2020RGB_CUVA) {
+						/* hdr10->cuva */
+						cuva_hdr_process_mode[vd_path] = PROC_BYPASS;
+						target_format[vd_path] = BT2020YUV_BT2020RGB_CUVA;
+					} else if (target_format[oth_path] == BT2020_HLG) {
+						/* hdr->hlg */
+						cuva_hdr_process_mode[vd_path] = PROC_CUVA_TO_HLG;
+						target_format[vd_path] = BT2020_HLG;
+					} else {
+						/* cuva->sdr */
+						cuva_hdr_process_mode[vd_path] = PROC_CUVA_TO_SDR;
+						target_format[vd_path] = BT709;
+					}
+					break;
+				case HDRTYPE_CUVA_HLG:
+					/* VD2 source cuva_hlg */
+					if (target_format[oth_path] == BT2020_PQ ||
+					    target_format[oth_path] == BT2020_PQ_DYNAMIC) {
+						/* hdrhlg->hdr */
+						cuva_hlg_process_mode[vd_path] =
+							PROC_CUVAHLG_TO_HDR;
+						target_format[vd_path] = BT2020_PQ;
+					} else if (target_format[oth_path] ==
+						BT2020YUV_BT2020RGB_CUVA) {
+						/* cuva_hlg->cuva */
+						cuva_hlg_process_mode[vd_path] =
+							PROC_CUVAHLG_TO_CUVA;
+						target_format[vd_path] = BT2020YUV_BT2020RGB_CUVA;
+					} else if (target_format[oth_path] == BT2020_HLG) {
+						/* hdr->hlg */
+						cuva_hlg_process_mode[vd_path] =
+							PROC_CUVAHLG_TO_HLG;
+						target_format[vd_path] = BT2020_HLG;
+					} else {
+						/* cuva->sdr */
+						cuva_hlg_process_mode[vd_path] =
+							PROC_CUVAHLG_TO_SDR;
+						target_format[vd_path] = BT709;
+					}
+					break;
+				default:
+					break;
+				}
+			}
+		}
+	} else if (cur_hdr_policy == 4 &&
+		is_amdv_enable()) {
+		if (vd_path == VD1_PATH && is_amdv_on() && is_amdv_stb_mode()) {
+			if (source_format[vd_path] == HDRTYPE_DOVI ||
+			    (source_format[vd_path] == HDRTYPE_HDR10 &&
+			    (dv_hdr_policy & 1)) ||
+			    (source_format[vd_path] == HDRTYPE_HLG &&
+			    (dv_hdr_policy & 2)) ||
+			    (source_format[vd_path] == HDRTYPE_SDR/* &&*/
+			    /* (dv_hdr_policy & 0x20)*/)) {
+				sdr_process_mode[vd_path] = PROC_BYPASS;
+				hdr_process_mode[vd_path] = PROC_BYPASS;
+				hlg_process_mode[vd_path] = PROC_BYPASS;
+				hdr10_plus_process_mode[vd_path] = PROC_BYPASS;
+				cuva_hdr_process_mode[vd_path] = PROC_BYPASS;
+				cuva_hlg_process_mode[vd_path] = PROC_BYPASS;
+				target_format[vd_path] = BT709;
+				set_hdr_module_status(vd_path, HDR_MODULE_OFF);
+				amdv_set_toggle_flag(1);
+			}
+		} else if (vd_path == VD2_PATH && is_amdv_on() && is_amdv_stb_mode()) {
+			if (!support_multi_core1()) {
+				/* vd2 *->ipt when vd1 dolby on */
+				hdr_process_mode[vd_path] = PROC_MATCH;
+				hlg_process_mode[vd_path] = PROC_MATCH;
+				sdr_process_mode[vd_path] = PROC_MATCH;
+				hdr10_plus_process_mode[vd_path] = PROC_MATCH;
+				cuva_hdr_process_mode[vd_path] = PROC_MATCH;
+				cuva_hlg_process_mode[vd_path] = PROC_MATCH;
+				target_format[vd_path] = BT2100_IPT;
+			} else {/*multi dv core1, processed by dv*/
+				if (source_format[vd_path] == HDRTYPE_DOVI ||
+				    (source_format[vd_path] == HDRTYPE_HDR10 &&
+				    (dv_hdr_policy & 1)) ||
+				    (source_format[vd_path] == HDRTYPE_HLG &&
+				    (dv_hdr_policy & 2)) ||
+				    (source_format[vd_path] == HDRTYPE_SDR/* &&*/
+				    /* (dv_hdr_policy & 0x20)*/)) {
+					/* vd2 follow sink: dv handle sdr/hdr/hlg/dovi */
+					sdr_process_mode[vd_path] = PROC_BYPASS;
+					hdr_process_mode[vd_path] = PROC_BYPASS;
+					hlg_process_mode[vd_path] = PROC_BYPASS;
+					hdr10_plus_process_mode[vd_path] = PROC_BYPASS;
+					cuva_hdr_process_mode[vd_path] = PROC_BYPASS;
+					cuva_hlg_process_mode[vd_path] = PROC_BYPASS;
+					target_format[vd_path] = BT709;
+					set_hdr_module_status(vd_path, HDR_MODULE_OFF);
+					amdv_set_toggle_flag(1);
+				} else {
+					/* vd2 *->ipt when vd1 dolby on */
+					hdr_process_mode[vd_path] = PROC_MATCH;
+					hlg_process_mode[vd_path] = PROC_MATCH;
+					sdr_process_mode[vd_path] = PROC_MATCH;
+					hdr10_plus_process_mode[vd_path] = PROC_MATCH;
+					cuva_hdr_process_mode[vd_path] = PROC_MATCH;
+					cuva_hlg_process_mode[vd_path] = PROC_MATCH;
+					target_format[vd_path] = BT2100_IPT;
+				}
+			}
+		}
 	}
 
 out:

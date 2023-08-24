@@ -90,9 +90,11 @@ static void check_violation(struct dmc_monitor *mon, void *data)
 	if (irqreg & DMC_WRITE_VIOLATION) {
 		status = dmc_prot_rw(dmc_mon->io_mem1, DMC_PROT_VIO_1, 0, DMC_READ);
 		addr = dmc_prot_rw(dmc_mon->io_mem1, DMC_PROT_VIO_0, 0, DMC_READ);
+		rw = 'w';
 	} else if (irqreg & DMC_READ_VIOLATION) {
 		status = dmc_prot_rw(dmc_mon->io_mem1, DMC_PROT_VIO_3, 0, DMC_READ);
 		addr = dmc_prot_rw(dmc_mon->io_mem1, DMC_PROT_VIO_2, 0, DMC_READ);
+		rw = 'r';
 	}
 
 	/* clear irq */

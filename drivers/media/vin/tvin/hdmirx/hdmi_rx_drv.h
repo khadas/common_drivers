@@ -100,7 +100,8 @@
 /* 2023.8.1 add ctrl of 5v wake up */
 /* 2023.08.14 modify the mapped emp buffer address*/
 /* 2023.8.25 fix 40M 192k 176k no sound */
-#define RX_VER1 "ver.2023/8/25"
+/* 2023.08.28 support FRL 3G3L & 6G3L */
+#define RX_VER1 "ver.2023/8/28"
 
 /* 50ms timer for hdmirx main loop (HDMI_STATE_CHECK_FREQ is 20) */
 

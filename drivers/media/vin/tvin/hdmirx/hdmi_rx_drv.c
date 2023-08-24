@@ -569,10 +569,7 @@ void hdmirx_dec_close(struct tvin_frontend_s *fe)
 	rx_info.open_fg = 0;
 	devp = container_of(fe, struct hdmirx_dev_s, frontend);
 	parm = &devp->param;
-	if (rx_info.arc_port == port && rx[port].state < FSM_SIG_STABLE) {
-		rx_set_cur_hpd(1, 4, port);
-		pre_port = 0xff;
-	}
+	port_hpd_rst_flag |= (1 << port);
 	rx[port].vs_info_details.hdmi_allm = 0;
 	rx[port].cur.cn_type = 0;
 	rx[port].cur.it_content = 0;

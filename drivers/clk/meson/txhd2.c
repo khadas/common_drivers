@@ -3496,53 +3496,22 @@ static int meson_txhd2_dvfs_setup(struct platform_device *pdev)
 	return 0;
 }
 
-static struct regmap_config clkc_regmap_config = {
-	.reg_bits       = 32,
-	.val_bits       = 32,
-	.reg_stride     = 4,
-};
-
-static struct regmap *txhd2_regmap_resource(struct device *dev, char *name)
-{
-	struct resource res;
-	void __iomem *base;
-	int i;
-	struct device_node *node = dev->of_node;
-
-	i = of_property_match_string(node, "reg-names", name);
-	if (of_address_to_resource(node, i, &res))
-		return ERR_PTR(-ENOENT);
-	base = devm_ioremap_resource(dev, &res);
-	if (IS_ERR(base))
-		return ERR_CAST(base);
-
-	clkc_regmap_config.max_register = resource_size(&res) - 4;
-	clkc_regmap_config.name = devm_kasprintf(dev, GFP_KERNEL,
-						 "%s-%s", node->name,
-						 name);
-	if (!clkc_regmap_config.name)
-		return ERR_PTR(-ENOMEM);
-
-	return devm_regmap_init_mmio(dev, base, &clkc_regmap_config);
-}
-
 static int __ref meson_txhd2_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
-	struct regmap *basic_map;
-	struct regmap *cpu_map;
+	struct regmap *basic_map, *cpu_map;
 	int ret, i;
 
 	/* Get regmap for different clock area */
-	basic_map = txhd2_regmap_resource(dev, "basic");
+	basic_map = meson_clk_regmap_resource(pdev, dev, 0);
 	if (IS_ERR(basic_map)) {
 		dev_err(dev, "basic clk registers not found\n");
 		return PTR_ERR(basic_map);
 	}
 
-	cpu_map = txhd2_regmap_resource(dev, "cpu");
+	cpu_map = meson_clk_regmap_resource(pdev, dev, 1);
 	if (IS_ERR(cpu_map)) {
-		dev_err(dev, "pll clk registers not found\n");
+		dev_err(dev, "cpu clk registers not found\n");
 		return PTR_ERR(cpu_map);
 	}
 

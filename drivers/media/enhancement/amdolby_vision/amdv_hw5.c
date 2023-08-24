@@ -732,7 +732,7 @@ static void dolby5_dpth_ctrl(int hsize, int vsize, struct vd_proc_info_t *vd_pro
 	slice_en = slice_num == 2 ? 0x3 : 0x1;
 	ovlp_en = slice_num == 2 ? 0x1 : 0x0;
 
-	if ((debug_dolby & 0x8000))
+	if ((debug_dolby & 0x80000))
 		pr_info("slice %d,size %d %d %d %d %d %d %d %d\n",
 				slice_num, vd1_hsize, vd1_vsize,
 				vd1_slice0_hsize, vd1_slice0_vsize,
@@ -840,7 +840,7 @@ static void dolby5_dpth_ctrl(int hsize, int vsize, struct vd_proc_info_t *vd_pro
 		win3.ovlp_win_vbgn = 0;
 		win3.ovlp_win_vend = ovlp_ivsize - 1;
 
-		if (debug_dolby & 0x8000) {
+		if (debug_dolby & 0x80000) {
 			pr_info("scaler_in_hsize %d %d, output_extra %d, ovlp_ahsize %d\n",
 					vd_proc_info->slice[0].scaler_in_hsize,
 					vd_proc_info->slice[1].scaler_in_hsize,
@@ -1017,10 +1017,14 @@ void enable_amdv_hw5(int enable)
 			}
 			if (dolby_vision_flags & FLAG_CERTIFICATION) {
 				/* bypass dither/PPS/SR/CM, EO/OE */
-				if (!vd_proc_info || vd_proc_info->slice_num != 2)
+				if (!vd_proc_info || vd_proc_info->slice_num != 2) {
 					bypass_pps_sr_gamma_gainoff(5);
-				else /*black screen when bypass from preblend to VADJ1 at 2slice */
+				} else {
+					/*black screen when bypass from preblend*/
+					/*to VADJ1 at 2slice*/
 					bypass_pps_sr_gamma_gainoff(4);
+					VSYNC_WR_DV_REG_BITS(T3X_VD_PROC_BYPASS_CTRL, 0, 1, 1);
+				}
 				/* bypass all video effect */
 				video_effect_bypass(1);
 			} else {
@@ -1060,6 +1064,20 @@ void enable_amdv_hw5(int enable)
 				}
 				top2_info.core_on = true;
 				pr_dv_dbg("TV top2 turn on\n");
+				if (dolby_vision_flags & FLAG_CERTIFICATION) {
+					/* bypass dither/PPS/SR/CM, EO/OE */
+					if (!vd_proc_info || vd_proc_info->slice_num == 1) {
+						bypass_pps_sr_gamma_gainoff(5);
+					} else {
+						/*black screen when bypass from preblend*/
+						/*to VADJ1 at 2slice*/
+						bypass_pps_sr_gamma_gainoff(4);
+						VSYNC_WR_DV_REG_BITS(T3X_VD_PROC_BYPASS_CTRL,
+							0, 1, 1);
+					}
+					/* bypass all video effect */
+					video_effect_bypass(1);
+				}
 			}
 			if (!(amdv_mask & 1) ||
 				(!top1_info.amdv_setting_video_flag &&
@@ -1497,6 +1515,9 @@ int tv_top2_set(u64 *reg_data,
 			vd1_slice0_vsize = vd_proc_info->slice[0].vsize;
 		}
 	}
+	if (test_dv & DEBUG_5065_RGB_BUG) /*rgb*/
+		tv_hw5_setting->top2_reg[23] = 0x00000058000002c1;
+
 	//update_top2_reg(vd1_slice0_hsize, vsize);
 	py_level = NO_LEVEL;//todo
 	if (enable_top1)
@@ -1555,12 +1576,12 @@ int tv_top2_set(u64 *reg_data,
 		if (hdmi && !hdr10 && !dv_unique_drm) {
 			/*hdmi DV STD and DV LL:  need detunnel*/
 			if (slice_num == 2)
-				VSYNC_WR_DV_REG_BITS(VPU_DOLBY_WRAP_IRQ, 3, 18, 2);
+				VSYNC_WR_DV_REG_BITS(VPU_DOLBY_WRAP_IRQ, 3, 19, 2);
 			else
 				VSYNC_WR_DV_REG_BITS(VPU_DOLBY_WRAP_IRQ, 1, 19, 1);
 		} else {
 			if (slice_num == 2)
-				VSYNC_WR_DV_REG_BITS(VPU_DOLBY_WRAP_IRQ, 0, 18, 2);
+				VSYNC_WR_DV_REG_BITS(VPU_DOLBY_WRAP_IRQ, 0, 19, 2);
 			else
 				VSYNC_WR_DV_REG_BITS(VPU_DOLBY_WRAP_IRQ, 0, 19, 1);
 		}

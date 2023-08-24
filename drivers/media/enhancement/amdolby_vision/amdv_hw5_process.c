@@ -1288,7 +1288,7 @@ int amdv_parse_metadata_hw5_top1(struct vframe_s *vf)
 	tv_hw5_setting->top1.set_bit_depth = src_bdp;
 	tv_hw5_setting->top1.set_chroma_format = src_chroma_format;
 	tv_hw5_setting->top1.set_yuv_range = SIGNAL_RANGE_SMPTE;
-	tv_hw5_setting->top1.color_format = CP_YUV;
+	tv_hw5_setting->top1.color_format = (vf && (vf->type & VIDTYPE_RGB_444)) ? CP_RGB : CP_YUV;
 	tv_hw5_setting->top1.vsem_if = vsem_if_buf;
 	tv_hw5_setting->top1.vsem_if_size = vsem_if_size;
 	tv_hw5_setting->hdr10_param = &v_inst_info->hdr10_param;
@@ -1558,11 +1558,12 @@ int amdv_parse_metadata_hw5(struct vframe_s *vf,
 			if (toggle_mode == 2)
 				src_format =  tv_hw5_setting->top2.src_format;
 			if (vf->type & VIDTYPE_VIU_422)
-				src_chroma_format = 1;
+				src_chroma_format = 1;/*CF_UYVY*/
 			if (dv_unique_drm) {
 				src_format = FORMAT_DOVI_LL;
 				input_mode = IN_MODE_HDMI;
-				src_chroma_format = 1;
+				src_chroma_format = 3;/*CF_I444*/
+				src_bdp = 8;
 				req.aux_size = 0;
 				req.aux_buf = NULL;
 			} else {
@@ -1574,16 +1575,18 @@ int amdv_parse_metadata_hw5(struct vframe_s *vf,
 					prepare_hdr10_param
 						(p_mdc, &v_inst_info->hdr10_param);
 					req.dv_enhance_exist = 0;
-					src_bdp = 12;
+					src_bdp = 10;
 				}
 				if (src_format != FORMAT_DOVI &&
 					(is_hlg_frame(vf) || force_hdmin_fmt == 2)) {
 					src_format = FORMAT_HLG;
-					src_bdp = 12;
+					src_bdp = 10;
 				}
-				if (src_format == FORMAT_SDR &&
-					!req.dv_enhance_exist)
-					src_bdp = 12;
+				if (src_format == FORMAT_SDR && force_sdr10 == 1)
+					src_format = FORMAT_SDR10;
+
+				if (src_format == FORMAT_SDR10)
+					src_bdp = 10;
 			}
 		}
 		if ((debug_dolby & 4) && req.aux_size) {
@@ -2066,7 +2069,7 @@ int amdv_parse_metadata_hw5(struct vframe_s *vf,
 	tv_hw5_setting->top2.set_bit_depth = src_bdp;
 	tv_hw5_setting->top2.set_chroma_format = src_chroma_format;
 	tv_hw5_setting->top2.set_yuv_range = SIGNAL_RANGE_SMPTE;
-	tv_hw5_setting->top2.color_format = CP_YUV;
+	tv_hw5_setting->top2.color_format = (vf && (vf->type & VIDTYPE_RGB_444)) ? CP_RGB : CP_YUV;
 	tv_hw5_setting->top2.vsem_if = vsem_if_buf;
 	tv_hw5_setting->top2.vsem_if_size = vsem_if_size;
 	tv_hw5_setting->top2.el_flag = el_flag;
@@ -2356,7 +2359,9 @@ int amdolby_vision_process_hw5_top1(struct vframe_s *vf_top1,
 		tv_hw5_setting->top1.src_format ==
 		FORMAT_HLG ||
 		tv_hw5_setting->top1.src_format ==
-		FORMAT_SDR))
+		FORMAT_SDR ||
+		tv_hw5_setting->top2.src_format ==
+		FORMAT_SDR10))
 		src_is_42210bit = true;
 
 	if (tv_hw5_setting)
@@ -2597,7 +2602,9 @@ int amdolby_vision_process_hw5(struct vframe_s *vf_top1,
 				tv_hw5_setting->top2.src_format ==
 				FORMAT_HLG ||
 				tv_hw5_setting->top2.src_format ==
-				FORMAT_SDR))
+				FORMAT_SDR ||
+				tv_hw5_setting->top2.src_format ==
+				FORMAT_SDR10))
 				src_is_42210bit = true;
 
 			if (tv_hw5_setting)
@@ -2665,7 +2672,9 @@ int amdolby_vision_process_hw5(struct vframe_s *vf_top1,
 				tv_hw5_setting->top2.src_format ==
 				FORMAT_HLG ||
 				tv_hw5_setting->top2.src_format ==
-				FORMAT_SDR))
+				FORMAT_SDR ||
+				tv_hw5_setting->top2.src_format ==
+				FORMAT_SDR10))
 				src_is_42210bit = true;
 
 			if (tv_hw5_setting)

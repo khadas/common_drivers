@@ -101,6 +101,7 @@
 #define DEBUG_ENABLE_TOP2_INT       0x10
 #define DEBUG_FIXED_LUT             0x20
 #define DEBUG_FIXED_REG             0x40
+#define DEBUG_5065_RGB_BUG          0x80
 
 enum core1_switch_type {
 	NO_SWITCH = 0,

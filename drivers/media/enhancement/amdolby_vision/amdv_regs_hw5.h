@@ -754,5 +754,6 @@
 
 #define VPU_TOP_MISC               0x2709
 #define T3X_VD1_BLEND_SRC_CTRL     0x1d0d
+#define T3X_VENC_CRC               0x278c /*venc CRC*/
 
 #endif

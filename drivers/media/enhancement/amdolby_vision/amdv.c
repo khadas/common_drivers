@@ -462,6 +462,7 @@ u32 num_downsamplers;
 int gd_rf_adjust;
 int enable_vf_check;
 static u32 last_vf_valid_crc;
+bool venc_crc_enable;
 unsigned int debug_dolby;
 module_param(debug_dolby, uint, 0664);
 MODULE_PARM_DESC(debug_dolby, "\n debug_dolby\n");
@@ -1878,6 +1879,12 @@ void reset_dv_param(void)
 		memset(&dv5_md_hist.l1l4_md[0], 0, sizeof(dv5_md_hist.l1l4_md));
 		memset(dv5_md_hist.hist_vaddr[0], 0, dv5_md_hist.hist_size);
 		memset(dv5_md_hist.hist_vaddr[1], 0, dv5_md_hist.hist_size);
+
+		if (tv_hw5_setting) {
+			tv_hw5_setting->top2.video_width = 0xffff;
+			tv_hw5_setting->top2.video_height = 0xffff;
+			tv_hw5_setting->top2.src_format = FORMAT_INVALID;
+		}
 	} else {
 		core1_disp_hsize = 0;
 		core1_disp_vsize = 0;
@@ -9482,7 +9489,7 @@ int amdv_parse_metadata_v2_stb(struct vframe_s *vf,
 			if (dv_unique_drm) {
 				src_format = FORMAT_DOVI_LL;
 				input_mode = IN_MODE_HDMI;
-				src_bdp = 12;
+				src_bdp = 8;
 				req.aux_size = 0;
 				req.aux_buf = NULL;
 			} else {
@@ -11154,6 +11161,8 @@ void calculate_crc(void)
 					//if (READ_VPP_DV_REG(AMDV_TV_DIAG_CTRL) == 0xb) {
 					u32 crc = READ_VPP_DV_REG
 						(DOLBY5_CORE2_CRC_OUT_FRM);//todo
+					if (venc_crc_enable)
+						crc = READ_VPP_DV_REG(T3X_VENC_CRC);
 					snprintf(cur_crc, sizeof(cur_crc), "0x%08x", crc);
 					//}
 					crc_count++;
@@ -14131,7 +14140,10 @@ void amdv_insert_crc(bool print)
 	if (is_aml_tvmode()) {
 		if (is_aml_t3x()) {
 			crc_enable = true;//todo
-			crc = READ_VPP_DV_REG(DOLBY5_CORE2_CRC_OUT_FRM);
+			if (!venc_crc_enable)
+				crc = READ_VPP_DV_REG(DOLBY5_CORE2_CRC_OUT_FRM);
+			else
+				crc = READ_VPP_DV_REG(T3X_VENC_CRC);
 		} else {
 			crc_enable = (READ_VPP_DV_REG(AMDV_TV_DIAG_CTRL) == 0xb);
 			crc = READ_VPP_DV_REG(AMDV_TV_OUTPUT_DM_CRC);
@@ -14803,6 +14815,15 @@ static ssize_t amdolby_vision_debug_store
 			return -EINVAL;
 		force_sdr10 = val;
 		pr_info("set force_sdr10 %d\n", force_sdr10);
+	} else if (!strcmp(parm[0], "venc_crc_enable")) {
+		if (kstrtoul(parm[1], 10, &val) < 0)
+			return -EINVAL;
+		venc_crc_enable = val;
+		if (venc_crc_enable)
+			WRITE_VPP_DV_REG_BITS(T3X_VENC_CRC, 1, 16, 1);
+		else
+			WRITE_VPP_DV_REG_BITS(T3X_VENC_CRC, 0, 16, 1);
+		pr_info("set venc_crc_enable %d\n", venc_crc_enable);
 	} else {
 		pr_info("unsupport cmd\n");
 	}

@@ -1,4 +1,4 @@
-From a2ed4fe6677a649018124dd2c3bd53818c74c829 Mon Sep 17 00:00:00 2001
+From e23596b48113e5bdd392dcb701dfb476f20033f8 Mon Sep 17 00:00:00 2001
 From: Jianxiong Pan <jianxiong.pan@amlogic.com>
 Date: Tue, 23 May 2023 13:37:52 +0800
 Subject: [PATCH] mm: port lowmemorykiller for 5.15+P. [1/2]
@@ -20,9 +20,9 @@ Signed-off-by: Jianxiong Pan <jianxiong.pan@amlogic.com>
  include/linux/mm_inline.h | 40 +++++++++++++++++++++++++++++++++++++++
  include/linux/mmzone.h    |  8 ++++++++
  include/linux/sched.h     |  8 ++++++++
- mm/vmscan.c               | 24 +++++++++++++++++++++++
+ mm/vmscan.c               | 12 ++++++++++++
  mm/vmstat.c               |  8 ++++++++
- 5 files changed, 88 insertions(+)
+ 5 files changed, 76 insertions(+)
 
 diff --git a/include/linux/mm_inline.h b/include/linux/mm_inline.h
 index 4a0cb6988014..003acbb9d3a0 100644
@@ -113,7 +113,7 @@ index 4a0cb6988014..003acbb9d3a0 100644
  
  #ifdef CONFIG_ANON_VMA_NAME
 diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index 00043460669d..118483bc92d9 100644
+index 30b7c36d4b43..4d38e7d04a6e 100644
 --- a/include/linux/mmzone.h
 +++ b/include/linux/mmzone.h
 @@ -177,6 +177,14 @@ enum zone_stat_item {
@@ -132,10 +132,10 @@ index 00043460669d..118483bc92d9 100644
  
  enum node_stat_item {
 diff --git a/include/linux/sched.h b/include/linux/sched.h
-index ac3209d171d2..12689062f1db 100644
+index 2bbce8564e9b..d4f8ad582cb9 100644
 --- a/include/linux/sched.h
 +++ b/include/linux/sched.h
-@@ -1779,6 +1779,9 @@ static __always_inline bool is_percpu_thread(void)
+@@ -1787,6 +1787,9 @@ static __always_inline bool is_percpu_thread(void)
  #define PFA_SPEC_IB_DISABLE		5	/* Indirect branch speculation restricted */
  #define PFA_SPEC_IB_FORCE_DISABLE	6	/* Indirect branch speculation permanently restricted */
  #define PFA_SPEC_SSB_NOEXEC		7	/* Speculative Store Bypass clear on execve() */
@@ -145,7 +145,7 @@ index ac3209d171d2..12689062f1db 100644
  
  #define TASK_PFA_TEST(name, func)					\
  	static inline bool task_##func(struct task_struct *p)		\
-@@ -1821,6 +1824,11 @@ TASK_PFA_CLEAR(SPEC_IB_DISABLE, spec_ib_disable)
+@@ -1829,6 +1832,11 @@ TASK_PFA_CLEAR(SPEC_IB_DISABLE, spec_ib_disable)
  TASK_PFA_TEST(SPEC_IB_FORCE_DISABLE, spec_ib_force_disable)
  TASK_PFA_SET(SPEC_IB_FORCE_DISABLE, spec_ib_force_disable)
  
@@ -158,10 +158,10 @@ index ac3209d171d2..12689062f1db 100644
  current_restore_flags(unsigned long orig_flags, unsigned long flags)
  {
 diff --git a/mm/vmscan.c b/mm/vmscan.c
-index bdd00fbb7f95..a768eaae4ccf 100644
+index dbf3bb871b02..5c44c3789633 100644
 --- a/mm/vmscan.c
 +++ b/mm/vmscan.c
-@@ -1985,6 +1985,11 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
+@@ -1988,6 +1988,11 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
  	unsigned long skipped = 0;
  	unsigned long scan, total_scan, nr_pages;
  	LIST_HEAD(pages_skipped);
@@ -173,10 +173,10 @@ index bdd00fbb7f95..a768eaae4ccf 100644
  
  	total_scan = 0;
  	scan = 0;
-@@ -2037,6 +2042,13 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
+@@ -2038,6 +2043,13 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
+ 		nr_taken += nr_pages;
+ 		nr_zone_taken[page_zonenum(page)] += nr_pages;
  		move_to = dst;
- move:
- 		list_move(&page->lru, move_to);
 +	#ifdef CONFIG_AMLOGIC_LMK
 +		migrate_type = get_pageblock_migratetype(page);
 +		if (is_migrate_cma(migrate_type) ||
@@ -184,35 +184,9 @@ index bdd00fbb7f95..a768eaae4ccf 100644
 +			__mod_zone_page_state(page_zone(page),
 +					      lru + num, -nr_pages);
 +	#endif /* CONFIG_AMLOGIC_LMK */
+ move:
+ 		list_move(&page->lru, move_to);
  	}
- 
- 	/*
-@@ -2166,6 +2178,10 @@ static unsigned int move_pages_to_lru(struct lruvec *lruvec,
- 	int nr_pages, nr_moved = 0;
- 	LIST_HEAD(pages_to_free);
- 	struct page *page;
-+#ifdef CONFIG_AMLOGIC_LMK
-+	int num = NR_INACTIVE_ANON_CMA - NR_ZONE_INACTIVE_ANON;
-+	int migrate_type = 0;
-+#endif /* CONFIG_AMLOGIC_LMK */
- 
- 	while (!list_empty(list)) {
- 		page = lru_to_page(list);
-@@ -2214,6 +2230,14 @@ static unsigned int move_pages_to_lru(struct lruvec *lruvec,
- 		nr_moved += nr_pages;
- 		if (PageActive(page))
- 			workingset_age_nonresident(lruvec, nr_pages);
-+	#ifdef CONFIG_AMLOGIC_LMK
-+		migrate_type = get_pageblock_migratetype(page);
-+		if (is_migrate_cma(migrate_type) ||
-+		    is_migrate_isolate(migrate_type))
-+			__mod_zone_page_state(page_zone(page),
-+					      NR_ZONE_LRU_BASE + page_lru(page) + num,
-+					      nr_pages);
-+	#endif /* CONFIG_AMLOGIC_LMK */
- 	}
- 
- 	/*
 diff --git a/mm/vmstat.c b/mm/vmstat.c
 index 4349599d0209..9b8e45d808bf 100644
 --- a/mm/vmstat.c

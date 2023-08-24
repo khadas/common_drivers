@@ -390,9 +390,10 @@
 			reg = <0x0 0xff800014 0x0 0x8>,
 				  <0x0 0xff800024 0x0 0x14>,
 				  <0x0 0xff80001c 0x0 0x8>;
-			reg-names = "mux","gpio", "drive-strength";
+			reg-names = "mux","gpio", "ds";
 			gpio-controller;
 			#gpio-cells = <2>;
+			gpio-ranges = <&pinctrl_aobus 0 0 16>;
 		};
 	};
 
@@ -412,9 +413,10 @@
 				"pull",
 				"pull-enable",
 				"gpio",
-				"drive-strength";
+				"ds";
 			gpio-controller;
 			#gpio-cells = <2>;
+			gpio-ranges = <&pinctrl_periphs 0 0 85>;
 		};
 	};
 

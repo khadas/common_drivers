@@ -282,7 +282,7 @@ else
 			${ROOT_DIR}/${BUILD_DIR}/build.sh "$@"
 		else
 			if [[ "${FULL_KERNEL_VERSION}" != "common13-5.15" && "${ARCH}" = "arm" ]]; then
-				${ROOT_DIR}/common/common_drivers/scripts/amlogic/mk_android32.sh $@
+				build_android_32bit $@
 			else
 				${ROOT_DIR}/${BUILD_DIR}/build.sh "$@"
 			fi

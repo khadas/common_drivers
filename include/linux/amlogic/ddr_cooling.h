@@ -16,7 +16,7 @@ struct ddr_cooling_device {
 	void __iomem *vddr_reg;
 	u32 ddr_status;
 	u32 ddr_bits[2];
-	u32 ddr_data[16];
+	u32 ddr_data[20];
 	u32 ddr_bits_keep;	/*for keep ddr reg val excepts change bits*/
 	u32 last_state;
 	struct list_head node;

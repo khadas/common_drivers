@@ -408,10 +408,11 @@
 		compatible = "amlogic, meson-cooldev";
 		cooling_devices {
 			ddr_cool {
-				ddr_reg = <0xff638648>;
-				ddr_status = <3>;
-				ddr_bits = <1 3>;
-				ddr_data = <0x0 0x1 0x3>;
+				ddr_reg = <0xff6384b4>;
+				ddr_status = <13>;
+				ddr_bits = <0 15>;
+				ddr_data = <13356 12022 9616 7512 6010 4808 3756 3004 2404
+					1878 1502 1000 750>;
 				node_name = "ddr_cool0";
 				device_type = "ddr";
 			};
@@ -452,8 +453,8 @@
 					type = "passive";
 				};
 				pddr_change: trip-point@2 {
-					temperature = <75000>;
-					hysteresis = <10000>;
+					temperature = <55000>;
+					hysteresis = <5000>;
 					type = "hot";
 				};
 				pcritical: trip-point@3 {
@@ -465,7 +466,7 @@
 			cooling-maps {
 				cpufreq_cooling_map {
 					trip = <&pcontrol>;
-					cooling-device = <&CPU0 0 8>;
+					cooling-device = <&CPU0 0 5>;
 					contribution = <1024>;
 				};
 				ddr_cooling_map {

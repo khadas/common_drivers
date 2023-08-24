@@ -198,8 +198,8 @@
 		dmaheap_fb_reserved:heap-fb {
 			compatible = "shared-dma-pool";
 			reusable;
-			/* 1080p+4K TV androidT size 160M */
-			size = <0x0 0xa000000>;
+			/* 4KUI 3840x2160x4x6 androidU size 212M */
+			size = <0x0 0xd400000>;
 			alignment = <0x0 0x400000>;
 		};
 

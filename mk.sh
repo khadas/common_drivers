@@ -6,7 +6,6 @@ function show_help {
 	echo "  --arch                  for ARCH, build 64 or 32 bit kernel, arm|arm64[default], require parameter value"
 	echo "  --abi                   for ABI, call build_abi.sh not build.sh, 1|0[default], not require parameter value"
 	echo "  --build_config          for BUILD_CONFIG, common_drivers/build.config.amlogic[default]|common/build.config.gki.aarch64, require parameter value"
-	echo "  --symbol_strict         for KMI_SYMBOL_LIST_STRICT_MODE, 1[default]|0, require parameter value"
 	echo "  --lto                   for LTO, full|thin[default]|none, require parameter value"
 	echo "  --menuconfig            for only menuconfig, not require parameter value"
 	echo "  --basicconfig           for basicconfig, m(menuconfig)[default]|n"
@@ -158,11 +157,11 @@ if [[ "${FULL_KERNEL_VERSION}" != "common13-5.15" && "${ARCH}" = "arm64" && ${BA
 		echo "]" 					>> ${PROJECT_DIR}/project.bzl
 
 		echo 						>> ${PROJECT_DIR}/project.bzl
-		echo "VENDOR_MODULES_REMOVE = [" 		>> ${PROJECT_DIR}/project.bzl
+		echo "MODULES_OUT_REMOVE = [" 		>> ${PROJECT_DIR}/project.bzl
 		echo "]" 					>> ${PROJECT_DIR}/project.bzl
 
 		echo 						>> ${PROJECT_DIR}/project.bzl
-		echo "VENDOR_MODULES_ADD = [" 			>> ${PROJECT_DIR}/project.bzl
+		echo "MODULES_OUT_ADD = [" 			>> ${PROJECT_DIR}/project.bzl
 		echo "]" 					>> ${PROJECT_DIR}/project.bzl
 
 		echo 						>> ${PROJECT_DIR}/project.bzl

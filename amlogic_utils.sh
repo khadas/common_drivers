@@ -1340,11 +1340,6 @@ function handle_input_parameters () {
 			VA=1
 			shift
 			;;
-		--symbol_strict)
-			KMI_SYMBOL_LIST_STRICT_MODE=$2
-			VA=1
-			shift
-			;;
 		--menuconfig)
 			MENUCONFIG=1
 			shift

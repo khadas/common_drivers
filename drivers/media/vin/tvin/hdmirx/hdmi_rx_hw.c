@@ -4223,11 +4223,7 @@ void cor_init(u8 port)
 	hdmirx_wr_cor(RX_TDM_CTRL2_AUD_IVCRX, 0x10, port);
 
 	//clr gcp wr; disable hw avmute for [T7,T5M)
-	if (rx_info.chip_id >= CHIP_ID_T7 && rx_info.chip_id < CHIP_ID_T5M)
-		hdmirx_wr_cor(DEC_AV_MUTE_DP2_IVCRX, 0x20, port);
-	else
-		hdmirx_wr_cor(DEC_AV_MUTE_DP2_IVCRX, 0x00, port);
-
+	hdmirx_wr_cor(DEC_AV_MUTE_DP2_IVCRX, 0x20, port);
 	// hdcp 2x ECC detection enable  mode 3
 	hdmirx_wr_cor(HDCP2X_RX_ECC_CTRL, 3, port);
 	hdmirx_wr_cor(HDCP2X_RX_ECC_CONS_ERR_THR, 50, port);

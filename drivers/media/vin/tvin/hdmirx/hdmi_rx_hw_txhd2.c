@@ -1217,7 +1217,7 @@ void aml_eq_cfg_txhd2(void)
 	u32 idx = rx[port].phy.phy_bw;
 
 	/* dont need to run eq if no sqo_clk or pll not lock */
-	if (!aml_phy_pll_lock(port) || !is_clk_stable(port))
+	if (!is_clk_stable(port))
 		return;
 	hdmirx_wr_bits_amlphy(TXHD2_HDMIRX20PHY_DCHD_CDR, TXHD2_CDR_RSTB, 1);
 	hdmirx_wr_bits_amlphy(TXHD2_HDMIRX20PHY_DCHD_CDR, TXHD2_CDR_EN, 1);

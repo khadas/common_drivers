@@ -166,7 +166,7 @@ static int check_mask_setup(char *ptr)
 
 __setup("check_mask=", check_mask_setup);
 
-void notrace __nocfi pstore_io_save(unsigned long reg, unsigned long val, unsigned int flag,
+void __nocfi pstore_io_save(unsigned long reg, unsigned long val, unsigned int flag,
 									unsigned long *irq_flags)
 {
 	int cpu;

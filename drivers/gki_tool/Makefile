@@ -7,4 +7,4 @@ PR_FMT_DEFINE="-Dpr_fmt(fmt)= \"[$(PR_FMT)]: \" fmt"
 ccflags-y += $(PR_FMT_DEFINE)
 
 obj-$(CONFIG_AMLOGIC_GKI_TOOL) = $(MODULE_NAME).o
-$(MODULE_NAME)-y += gki_tool.o gki_module.o module_debug.o
+$(MODULE_NAME)-y += gki_tool.o gki_module.o

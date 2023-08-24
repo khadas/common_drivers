@@ -1354,7 +1354,10 @@ static int __nocfi aml_smmu_symbol_init(void *data)
 
 	pcie_swiotlb_init(dev);
 	aml_dma_atomic_pool_init(dev);
+
+#ifdef CONFIG_ANDROID_VENDOR_HOOKS
 	register_trace_android_rvh_iommu_setup_dma_ops(set_dma_ops_hook, NULL);
+#endif
 
 	aml_global_group = kzalloc(sizeof(*aml_global_group), GFP_KERNEL);
 	if (!aml_global_group)

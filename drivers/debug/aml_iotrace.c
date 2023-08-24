@@ -22,6 +22,8 @@
 #include <linux/amlogic/aml_iotrace.h>
 #include <linux/amlogic/gki_module.h>
 #include <linux/workqueue.h>
+#include <trace/hooks/module.h>
+#include <linux/rbtree.h>
 #define AML_PERSISTENT_RAM_SIG (0x4c4d41) /* AML */
 
 static int ramoops_ftrace_en;
@@ -31,8 +33,9 @@ static int ramoops_ftrace_en;
  * bit1: sched_trace
  * bit2: irq_trace
  * bit3: smc_trace
- * bit4: other_trace
- * disable bits will forbit record this type log
+ * bit4: misc_trace: use for record module_base information
+ *       do not disable this bit
+ * disable bits will forbid record this type log
  * record all type log as default
  */
 int ramoops_trace_mask = 0x1f;
@@ -188,6 +191,43 @@ struct aml_ramoops_context {
 };
 
 static struct aml_ramoops_context aml_oops_cxt;
+
+static struct rb_root pc_lockup_symbol_root;
+
+struct pc_lockup_symbol {
+	struct rb_node node;
+	unsigned int mod_name_hash;
+	unsigned int mod_size;
+	unsigned long last_mod_base;
+	unsigned long curr_mod_base;
+};
+
+#ifdef CONFIG_ANDROID_VENDOR_HOOKS
+static unsigned long convert_pc_val(unsigned long val)
+{
+	struct rb_node *node;
+
+	for (node = rb_first(&pc_lockup_symbol_root); node; node = rb_next(node)) {
+		struct pc_lockup_symbol *this;
+
+		this = container_of(node, struct pc_lockup_symbol, node);
+
+		if (val >= this->last_mod_base && val < this->last_mod_base + this->mod_size) {
+			if (!this->curr_mod_base) // module is not load
+				return val;
+			else
+				return (val - this->last_mod_base + this->curr_mod_base);
+		}
+	}
+
+	return val; // not module region
+}
+#else
+static inline unsigned long convert_pc_val(unsigned long val)
+{
+	return val;
+}
+#endif
 
 static int aml_ramoops_parse_dt(void)
 {
@@ -698,8 +738,8 @@ static int percpu_trace_show(struct seq_file *s, void *v)
 		(struct io_trace_data *)(data->ptr + sizeof(struct record_head));
 		seq_printf(s, "[%04ld.%06ld@%d] <%s-%d> <%6s %08x-%8x>  <%ps <- %pS>\n",
 			sec, us, prz->cpu, head->comm, head->pid, record_name[io_data->flag],
-			io_data->reg, io_data->val, (void *)(io_data->ip & ~(0x3)),
-			(void *)(io_data->parent_ip));
+			io_data->reg, io_data->val, (void *)(convert_pc_val(io_data->ip) & ~(0x3)),
+			(void *)(convert_pc_val(io_data->parent_ip)));
 	} else {
 		memset(buf, 0, sizeof(buf));
 		memcpy(buf, (void *)head + sizeof(struct record_head), head->size);
@@ -767,11 +807,6 @@ static void get_first_record_type(struct prz_record_iter **iter, int cpu,
 					aml_oops_cxt.smc_przs[cpu]->old_log_size;
 		break;
 
-	case AML_PSTORE_TYPE_MISC:
-		aml_oops_cxt.record_iter[type][cpu].ptr = aml_oops_cxt.misc_przs[cpu]->old_log;
-		aml_oops_cxt.record_iter[type][cpu].total_size =
-					aml_oops_cxt.misc_przs[cpu]->old_log_size;
-		break;
 	default:
 		pr_err("Error aml_pstore_type_id %d\n", type);
 		return;
@@ -828,11 +863,6 @@ static struct prz_record_iter *prz_record_iter_init(void)
 			get_first_record_type(&iter, cpu, AML_PSTORE_TYPE_SMC, &min_time);
 		else
 			aml_oops_cxt.record_iter[AML_PSTORE_TYPE_SMC][cpu].over = 1;
-
-		if (aml_oops_cxt.misc_przs[cpu]->old_log)
-			get_first_record_type(&iter, cpu, AML_PSTORE_TYPE_MISC, &min_time);
-		else
-			aml_oops_cxt.record_iter[AML_PSTORE_TYPE_MISC][cpu].over = 1;
 	}
 		return iter;
 }
@@ -883,7 +913,6 @@ static struct prz_record_iter *get_next_record(void)
 		get_next_record_type(&iter, cpu, AML_PSTORE_TYPE_SCHED, &min_time);
 		get_next_record_type(&iter, cpu, AML_PSTORE_TYPE_IRQ, &min_time);
 		get_next_record_type(&iter, cpu, AML_PSTORE_TYPE_SMC, &min_time);
-		get_next_record_type(&iter, cpu, AML_PSTORE_TYPE_MISC, &min_time);
 	}
 		return iter;
 }
@@ -1027,11 +1056,7 @@ static void proc_init(void)
 		if (aml_oops_cxt.smc_przs[cpu]->old_log_size)
 			proc_create_data("smc_trace", S_IFREG | 0440, dir_cpu_ar[cpu],
 				&percpu_trace_file_ops, aml_oops_cxt.smc_przs[cpu]);
-
-		if (aml_oops_cxt.misc_przs[cpu]->old_log_size)
-			proc_create_data("misc_trace", S_IFREG | 0440, dir_cpu_ar[cpu],
-				&percpu_trace_file_ops, aml_oops_cxt.misc_przs[cpu]);
-		}
+	}
 }
 
 static void trace_auto_show_iter(struct prz_record_iter *iter)
@@ -1051,8 +1076,8 @@ static void trace_auto_show_iter(struct prz_record_iter *iter)
 		(struct io_trace_data *)(iter->ptr + sizeof(struct record_head));
 		pr_info("[%04ld.%06ld@%d] <%s-%d> <%6s %08x-%8x>  <%ps <- %pS>\n",
 			sec, us, iter->cpu, head->comm, head->pid, record_name[data->flag],
-			data->reg, data->val, (void *)(data->ip & ~(0x3)),
-			(void *)(data->parent_ip));
+			data->reg, data->val, (void *)(convert_pc_val(data->ip) & ~(0x3)),
+			(void *)(convert_pc_val(data->parent_ip)));
 	} else {
 		memset(buf, 0, sizeof(buf));
 		memcpy(buf, (void *)head + sizeof(struct record_head), head->size);
@@ -1080,6 +1105,78 @@ void iotrace_auto_dump(void)
 	}
 }
 
+static int pc_lockup_symbol_insert(struct rb_root *root, struct pc_lockup_symbol *new)
+{
+	struct rb_node **link = &root->rb_node, *parent = NULL;
+
+	/* Figure out where to put new node */
+	while (*link) {
+		struct pc_lockup_symbol *this = container_of(*link, struct pc_lockup_symbol, node);
+		long result = new->last_mod_base - this->last_mod_base;
+
+		parent = *link;
+		if (result < 0)
+			link = &((*link)->rb_left);
+		else if (result > 0)
+			link = &((*link)->rb_right);
+		else
+			return 0;
+	}
+
+	/* Add new node and rebalance tree */
+	rb_link_node(&new->node, parent, link);
+	rb_insert_color(&new->node, root);
+
+	return 1;
+}
+
+static void parse_module_base(void)
+{
+	int cpu;
+	void *ptr, *end;
+
+	for_each_possible_cpu(cpu) {
+		if (aml_oops_cxt.misc_przs[cpu]->old_log_size) {
+			ptr = aml_oops_cxt.misc_przs[cpu]->old_log;
+			end = ptr + aml_oops_cxt.misc_przs[cpu]->old_log_size;
+
+			while (*(u32 *)ptr != 0xabcdef) {
+				ptr++;
+
+				if (ptr + sizeof(struct record_head) > end)
+					goto next;
+			}
+
+			if (ptr + sizeof(struct record_head) +
+				((struct record_head *)ptr)->size > end)
+				goto next;
+
+			// parse module base information from pstore buffer
+			pc_lockup_symbol_insert(&pc_lockup_symbol_root,
+			((struct pc_lockup_symbol *)((void *)ptr + sizeof(struct record_head))));
+
+			while (1) {
+				ptr += sizeof(struct record_head) +
+					((struct record_head *)ptr)->size;
+
+				if (ptr + sizeof(struct record_head) > end)
+					goto next;
+
+				if (ptr + sizeof(struct record_head) +
+					((struct record_head *)ptr)->size > end)
+					goto next;
+
+				pc_lockup_symbol_insert(&pc_lockup_symbol_root,
+				((struct pc_lockup_symbol *)
+				((void *)ptr + sizeof(struct record_head))));
+			}
+
+next:
+				nop();
+		}
+	}
+}
+
 static void iotrace_work_func(struct work_struct *work)
 {
 	pr_info("ramoops_io_en:%d, ramoops_io_dump=%d, ramoops_io_skip=%d\n",
@@ -1087,6 +1184,51 @@ static void iotrace_work_func(struct work_struct *work)
 	iotrace_auto_dump();
 	cancel_delayed_work(&iotrace_work);
 }
+
+#ifdef CONFIG_ANDROID_VENDOR_HOOKS
+static unsigned int BKDRHash(char *str)
+{
+	unsigned int seed = 131;
+	unsigned int hash = 0;
+
+	while (*str)
+		hash = hash * seed + (*str++);
+
+	return (hash & 0x7FFFFFFF);
+}
+
+static void module_base_hook(void *data, const struct module *mod)
+{
+	struct pc_lockup_symbol mod_data;
+	struct rb_node *node;
+
+	mod_data.mod_name_hash = BKDRHash((char *)mod->name);
+	mod_data.mod_size = (unsigned long)mod->core_layout.size;
+	mod_data.last_mod_base = (unsigned long)mod->core_layout.base;
+	mod_data.curr_mod_base = 0x0;
+
+	aml_pstore_write(AML_PSTORE_TYPE_MISC, (void *)&mod_data, sizeof(struct pc_lockup_symbol));
+
+	/* update module curr core_layout base */
+
+	for (node = rb_last(&pc_lockup_symbol_root); node; node = rb_prev(node)) {
+		struct pc_lockup_symbol *this;
+
+		this = container_of(node, struct pc_lockup_symbol, node);
+
+		if (mod_data.mod_name_hash == this->mod_name_hash) {
+			this->curr_mod_base = (unsigned long)mod->core_layout.base;
+			break;
+		}
+	}
+
+	if (ramoops_io_dump)
+		pr_info("module:%s core_base:%lx, size=%lx, init_base:%lx, size=%lx\n",
+			mod->name, (unsigned long)mod->core_layout.base,
+			(unsigned long)mod->core_layout.size, (unsigned long)mod->init_layout.base,
+			(unsigned long)mod->init_layout.size);
+}
+#endif
 
 int __init aml_iotrace_init(void)
 {
@@ -1102,9 +1244,19 @@ int __init aml_iotrace_init(void)
 	ftrace_ramoops_init();
 
 	ramoops_ftrace_en = 1;
-	pr_info("Amlogic debug-iotrace driver version V2\n");
+	/*
+	 * V1: iotrace builtin,like 5.4/4.9
+	 * V2: iotrace built to ko
+	 * V3: iotrace do not modify module init_layout free,
+	 *	   use offset to record pc_symbol
+	 */
+	pr_info("Amlogic debug-iotrace driver version V3\n");
 
 	if (ramoops_io_dump) {
+#ifdef CONFIG_ANDROID_VENDOR_HOOKS
+		register_trace_android_vh_set_module_permit_after_init(module_base_hook, NULL);
+#endif
+		parse_module_base();
 		INIT_DELAYED_WORK(&iotrace_work, iotrace_work_func);
 		queue_delayed_work(system_unbound_wq, &iotrace_work,
 				   ramoops_io_dump_delay_secs * HZ);

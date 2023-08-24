@@ -16,12 +16,10 @@
 #include <linux/kallsyms.h>
 
 #include "gki_tool.h"
-#include "module_debug.h"
 
 static int __init gki_tool_init(void)
 {
 	gki_module_init();
-	module_debug_init();
 	return 0;
 }
 

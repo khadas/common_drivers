@@ -5,3 +5,7 @@
 # amlogic-debug.ko
   __tracepoint_android_rvh_do_undefinstr
   __traceiter_android_rvh_do_undefinstr
+
+# amlogic-debug-iotrace.ko
+  __tracepoint_android_vh_set_module_permit_after_init
+  __traceiter_android_vh_set_module_permit_after_init

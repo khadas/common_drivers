@@ -1016,6 +1016,7 @@ static void frc_drv_initial(struct frc_dev_s *devp)
 	devp->frc_fw_pause = false;
 	// devp->frc_fw_pause = true;
 	devp->frc_sts.frame_cnt = 0;
+	devp->frc_sts.changed_flag = 0;
 	devp->frc_sts.state_transing = false;
 	devp->frc_sts.re_cfg_cnt = 0;
 	devp->frc_sts.out_put_mode_changed = false;

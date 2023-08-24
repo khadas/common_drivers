@@ -209,9 +209,32 @@ void frc_out_task_print(u64 timer)
 	}
 }
 
+/*use to frc "status" debug*/
+void frc_isr_print_zero(struct frc_dev_s *devp)
+{
+	if (devp->frc_sts.changed_flag == 0)
+		return;
+	devp->in_sts.vs_duration = 0;
+	devp->in_sts.vs_timestamp = 0;
+	devp->in_sts.vs_cnt = 0;
+	devp->in_sts.vs_tsk_cnt = 0;
+
+	devp->out_sts.vs_duration = 0;
+	devp->out_sts.vs_timestamp = 0;
+	devp->out_sts.vs_cnt = 0;
+	devp->out_sts.vs_tsk_cnt = 0;
+
+	devp->frc_sts.changed_flag = 0;
+}
+
 irqreturn_t frc_input_isr(int irq, void *dev_id)
 {
 	struct frc_dev_s *devp = (struct frc_dev_s *)dev_id;
+	if (!devp->probe_ok || !devp->power_on_flag)
+		return IRQ_HANDLED;
+	if (devp->clk_state == FRC_CLOCK_OFF)
+		return IRQ_HANDLED;
+
 	u64 timestamp = sched_clock();
 
 	if (!devp->probe_ok || !devp->power_on_flag)
@@ -266,6 +289,11 @@ void frc_input_tasklet_pro(unsigned long arg)
 irqreturn_t frc_output_isr(int irq, void *dev_id)
 {
 	struct frc_dev_s *devp = (struct frc_dev_s *)dev_id;
+	if (!devp->probe_ok || !devp->power_on_flag)
+		return IRQ_HANDLED;
+	if (devp->clk_state == FRC_CLOCK_OFF)
+		return IRQ_HANDLED;
+
 	u64 timestamp = sched_clock();
 	// struct frc_rdma_info *frc_rdma = frc_get_rdma_info();
 
@@ -274,11 +302,6 @@ irqreturn_t frc_output_isr(int irq, void *dev_id)
 	timestamp = div64_u64(timestamp, 1000);
 	devp->out_sts.vs_duration = timestamp - devp->out_sts.vs_timestamp;
 	devp->out_sts.vs_timestamp = timestamp;
-
-	if (!devp->probe_ok || !devp->power_on_flag)
-		return IRQ_HANDLED;
-	if (devp->clk_state == FRC_CLOCK_OFF)
-		return IRQ_HANDLED;
 
 	me_undone_read(devp);
 	mc_undone_read(devp);
@@ -859,6 +882,11 @@ void frc_input_vframe_handle(struct frc_dev_s *devp, struct vframe_s *vf,
 
 void frc_state_change_finish(struct frc_dev_s *devp)
 {
+	if (devp->frc_sts.state == FRC_STATE_ENABLE &&
+		(devp->frc_sts.new_state == FRC_STATE_BYPASS ||
+		devp->frc_sts.new_state == FRC_STATE_DISABLE))
+		devp->frc_sts.changed_flag = 1;
+
 	devp->frc_sts.state = devp->frc_sts.new_state;
 	devp->frc_sts.state_transing = false;
 	devp->frc_sts.frame_cnt = 0;

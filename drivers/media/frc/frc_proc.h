@@ -33,6 +33,8 @@ irqreturn_t frc_axi_crash_isr(int irq, void *dev_id);
 void frc_input_tasklet_pro(unsigned long arg);
 void frc_output_tasklet_pro(unsigned long arg);
 
+void frc_isr_print_zero(struct frc_dev_s *devp);
+
 void frc_hw_initial(struct frc_dev_s *frc_devp);
 
 void frc_scene_detect_input(struct frc_fw_data_s *fw_data);

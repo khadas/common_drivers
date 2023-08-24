@@ -386,6 +386,7 @@ struct st_frc_sts {
 	enum frc_state_e new_state;
 	u32 state_transing;
 	u32 frame_cnt;
+	u8 changed_flag;
 	u32 vs_cnt;
 	u32 re_cfg_cnt;
 	u32 out_put_mode_changed;

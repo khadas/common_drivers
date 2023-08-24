@@ -224,35 +224,35 @@ void frc_status(struct frc_dev_s *devp)
 			devp->power_on_flag, devp->clk_state,
 			devp->frc_hw_pos, devp->frc_fw_pause);
 	pr_frc(0, "work_state= %d (%s), new= %d\n", devp->frc_sts.state,
-	       frc_state_ary[devp->frc_sts.state], devp->frc_sts.new_state);
+			frc_state_ary[devp->frc_sts.state], devp->frc_sts.new_state);
 	pr_frc(0, "auto_ctrl= %d\n", devp->frc_sts.auto_ctrl);
 	pr_frc(0, "memc_level= %d(%d)\n", fw_data->frc_top_type.frc_memc_level,
-					fw_data->frc_top_type.frc_memc_level_1);
+			fw_data->frc_top_type.frc_memc_level_1);
 	pr_frc(0, "secure_mode= %d, buf secured= %d\n",
-				devp->in_sts.secure_mode, devp->buf.secured);
+			devp->in_sts.secure_mode, devp->buf.secured);
 	pr_frc(0, "frc_get_vd_flag= 0x%X(game:0/pc:1/pic:2/hbw:3/limsz:4/vlock:5/in_size_err:6)\n",
-				devp->in_sts.st_flag);
+			devp->in_sts.st_flag);
 	pr_frc(0, "dc_rate(me:%d,mc_y:%d,mc_c:%d,mcdw_y:%d,mcdw_c:%d), real total size:%d\n",
-		devp->buf.me_comprate, devp->buf.mc_y_comprate,
-		devp->buf.mc_c_comprate, devp->buf.mcdw_y_comprate,
-		devp->buf.mcdw_c_comprate, devp->buf.real_total_size);
+			devp->buf.me_comprate, devp->buf.mc_y_comprate,
+			devp->buf.mc_c_comprate, devp->buf.mcdw_y_comprate,
+			devp->buf.mcdw_c_comprate, devp->buf.real_total_size);
 	pr_frc(0, "memc(mcdw)_loss_en=0x%x\n",
 			fw_data->frc_top_type.memc_loss_en);
 	pr_frc(0, "prot_mode= %d\n", devp->prot_mode);
 	pr_frc(0, "high_freq_flash= %d\n", devp->in_sts.high_freq_flash);
 	pr_frc(0, "force_en= %d, force_hsize= %d, force_vsize= %d\n",
-		devp->force_size.force_en, devp->force_size.force_hsize,
-		devp->force_size.force_vsize);
+			devp->force_size.force_en, devp->force_size.force_hsize,
+			devp->force_size.force_vsize);
 	pr_frc(0, "dbg_en= %d ratio_mode= 0x%x, dbg_hsize= %d, vsize= %d\n",
 			devp->dbg_force_en, devp->dbg_in_out_ratio,
 			devp->dbg_input_hsize, devp->dbg_input_vsize);
 	pr_frc(0, "vf_sts= %d, vf_type= 0x%x, signal_type= 0x%x, source_type= 0x%x\n",
-	       devp->in_sts.vf_sts,
-	       devp->in_sts.vf_type, devp->in_sts.signal_type, devp->in_sts.source_type);
+			devp->in_sts.vf_sts,
+			devp->in_sts.vf_type, devp->in_sts.signal_type, devp->in_sts.source_type);
 	pr_frc(0, "vf_rate= %d (duration= %d)\n", frc_check_vf_rate(devp->in_sts.duration, devp),
-					devp->in_sts.duration);
+				devp->in_sts.duration);
 	pr_frc(0, "vpu_int vs_duration= %dus timestamp= %ld\n",
-	       devp->vs_duration, (ulong)devp->vs_timestamp);
+			devp->vs_duration, (ulong)devp->vs_timestamp);
 	pr_frc(0, "frc_in vs_duration= %dus timestamp= %ld\n",
 	       devp->in_sts.vs_duration, (ulong)devp->in_sts.vs_timestamp);
 	pr_frc(0, "frc_in isr vs_cnt= %d, vs_tsk_cnt:%d, inp_err cnt= %d\n",
@@ -265,10 +265,10 @@ void frc_status(struct frc_dev_s *devp)
 		devp->frc_sts.me_undone_cnt, devp->frc_sts.mc_undone_cnt,
 		devp->frc_sts.vp_undone_cnt);
 	pr_frc(0, "frc_st vs_cnt:%d vf_repeat_cnt:%d vf_null_cnt:%d\n", devp->frc_sts.vs_cnt,
-		devp->in_sts.vf_repeat_cnt, devp->in_sts.vf_null_cnt);
+				devp->in_sts.vf_repeat_cnt, devp->in_sts.vf_null_cnt);
 	pr_frc(0, "vout sync_duration_num= %d sync_duration_den= %d out_hz= %d\n",
-		vinfo->sync_duration_num, vinfo->sync_duration_den,
-		vinfo->sync_duration_num / vinfo->sync_duration_den);
+			vinfo->sync_duration_num, vinfo->sync_duration_den,
+			vinfo->sync_duration_num / vinfo->sync_duration_den);
 	pr_frc(0, "film_mode= %d\n", frc_check_film_mode(devp));
 	pr_frc(0, "mc_fallback= %d\n", fw_data->frc_fw_alg_ctrl.frc_algctrl_u8mcfb);
 	pr_frc(0, "frm_buffer_num= %d\n", fw_data->frc_top_type.frc_fb_num);

@@ -2869,7 +2869,7 @@ static void vdin_set_one_buffer_mode(struct vdin_dev_s *devp, struct vf_entry *n
 	/* vrr lock,and game mode 2, enter one buffer mode */
 	if ((devp->game_mode & VDIN_GAME_MODE_2) &&
 		devp->dbg_force_one_buffer != 2  &&
-		(frame_lock_type_vrr_lock() || devp->dbg_force_one_buffer)) {
+		(frame_lock_type_vrr_lock() && devp->dbg_force_one_buffer)) {
 		/* all vf will use this phy address of current next_wr_vfe */
 		if (devp->af_num >= VDIN_CANVAS_MAX_CNT) {
 			devp->af_num = next_wr_vfe->af_num;

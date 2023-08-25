@@ -2468,7 +2468,7 @@ irqreturn_t irq3_handler(int irq, void *params)
 		if (rx[E_PORT3].state >= FSM_SIG_STABLE) {
 			rx[E_PORT3].vsync_cnt++;
 			if (rx_spd_type[E_PORT3]) {
-				rx_pkt_handler(PKT_BUFF_SET_SPD, E_PORT2);
+				rx_pkt_handler(PKT_BUFF_SET_SPD, E_PORT3);
 				rx_spd_type[E_PORT3] = 0;
 			}
 			if (rx_emp_type[E_PORT3] & EMP_TYPE_VTEM) {

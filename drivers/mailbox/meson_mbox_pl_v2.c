@@ -23,6 +23,7 @@
 #include <linux/of_device.h>
 #include <linux/amlogic/aml_mbox.h>
 #include <dt-bindings/mailbox/t5w-mbox.h>
+#include <dt-bindings/mailbox/t5d-mbox.h>
 #include <dt-bindings/mailbox/txhd2-mbox.h>
 #include "meson_mbox_pl.h"
 #include "meson_mbox_comm.h"
@@ -423,6 +424,21 @@ static struct mbox_domain_data t5w_mbox_domains_data __initdata = {
 	.domain_counts = ARRAY_SIZE(t5w_mbox_domains),
 };
 
+struct mbox_domain t5d_mbox_domains[] = {
+	[T5D_AO2REE]    = MBOX_DOMAIN(T5D_AO2REE, T5D_MBOX_AO2REE, 0),
+	[T5D_REE2AO0]   = MBOX_DOMAIN(T5D_REE2AO0, T5D_MBOX_REE2AO, 0),
+	[T5D_REE2AO1]   = MBOX_DOMAIN(T5D_REE2AO1, T5D_MBOX_REE2AO, 0),
+	[T5D_REE2AO2]   = MBOX_DOMAIN(T5D_REE2AO2, T5D_MBOX_REE2AO, 0),
+	[T5D_REE2AO3]   = MBOX_DOMAIN(T5D_REE2AO3, T5D_MBOX_REE2AO, 0),
+	[T5D_REE2AO4]   = MBOX_DOMAIN(T5D_REE2AO4, T5D_MBOX_REE2AO, 0),
+	[T5D_REE2AO5]   = MBOX_DOMAIN(T5D_REE2AO5, T5D_MBOX_REE2AO, 0),
+};
+
+static struct mbox_domain_data t5d_mbox_domains_data __initdata = {
+	.mbox_domains = t5d_mbox_domains,
+	.domain_counts = ARRAY_SIZE(t5d_mbox_domains),
+};
+
 struct mbox_domain txhd2_mbox_domains[] = {
 	[TXHD2_AO2REE]    = MBOX_DOMAIN(TXHD2_AO2REE, TXHD2_MBOX_AO2REE, 0),
 	[TXHD2_REE2AO0]   = MBOX_DOMAIN(TXHD2_REE2AO0, TXHD2_MBOX_REE2AO, 0),
@@ -442,6 +458,10 @@ static const struct of_device_id mbox_of_match[] = {
 	{
 		.compatible = "amlogic, t5w-mbox-pl",
 		.data = &t5w_mbox_domains_data,
+	},
+	{
+		.compatible = "amlogic, t5d-mbox-pl",
+		.data = &t5d_mbox_domains_data,
 	},
 	{
 		.compatible = "amlogic, txhd2-mbox-pl",

@@ -1734,6 +1734,11 @@ static void dump_vf(int vc_index, struct vframe_s *vf, int flag)
 	if (!vf)
 		return;
 
+	if (vf->flag & VFRAME_FLAG_VIDEO_SECURE) {
+		vc_print(vc_index, PRINT_ERROR, "%s: security vf.\n", __func__);
+		return;
+	}
+
 	if (flag == 0)
 		snprintf(name_buf, sizeof(name_buf),
 			"/data/src_vframe_%d.yuv", dump_vframe);

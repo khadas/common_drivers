@@ -26,11 +26,13 @@ struct meson_cma_heap_buffer {
 	struct list_head attachments;
 	struct mutex lock;//protect list operation
 	unsigned long len;
+	struct sg_table sg_table;
 	struct page *cma_pages;
 	struct page **pages;
 	pgoff_t pagecount;
 	int vmap_cnt;
 	void *vaddr;
+	bool uncached;
 };
 
 struct meson_dma_heap_attachment {
@@ -38,6 +40,7 @@ struct meson_dma_heap_attachment {
 	struct sg_table table;
 	struct list_head list;
 	bool mapped;
+	bool uncached;
 };
 
 static int meson_cma_heap_attach(struct dma_buf *dmabuf,
@@ -63,7 +66,7 @@ static int meson_cma_heap_attach(struct dma_buf *dmabuf,
 	a->dev = attachment->dev;
 	INIT_LIST_HEAD(&a->list);
 	a->mapped = false;
-
+	a->uncached = buffer->uncached;
 	attachment->priv = a;
 
 	mutex_lock(&buffer->lock);
@@ -92,11 +95,12 @@ static struct sg_table *meson_cma_heap_map_dma_buf(struct dma_buf_attachment *at
 {
 	struct meson_dma_heap_attachment *a = attachment->priv;
 	struct sg_table *table = &a->table;
-	int attrs = attachment->dma_map_attrs;
+	int attr = 0;
 	int ret;
 
-	attrs |= DMA_ATTR_SKIP_CPU_SYNC;
-	ret = dma_map_sgtable(attachment->dev, table, direction, attrs);
+	if (a->uncached)
+		attr = DMA_ATTR_SKIP_CPU_SYNC;
+	ret = dma_map_sgtable(attachment->dev, table, direction, attr);
 	if (ret)
 		return ERR_PTR(-ENOMEM);
 	a->mapped = true;
@@ -108,11 +112,12 @@ static void meson_cma_heap_unmap_dma_buf(struct dma_buf_attachment *attachment,
 				   enum dma_data_direction direction)
 {
 	struct meson_dma_heap_attachment *a = attachment->priv;
-	int attrs = attachment->dma_map_attrs;
+	int attr = 0;
 
-	attrs |= DMA_ATTR_SKIP_CPU_SYNC;
+	if (a->uncached)
+		attr = DMA_ATTR_SKIP_CPU_SYNC;
 	a->mapped = false;
-	dma_unmap_sgtable(attachment->dev, table, direction, attrs);
+	dma_unmap_sgtable(attachment->dev, table, direction, attr);
 }
 
 static int meson_cma_heap_dma_buf_begin_cpu_access(struct dma_buf *dmabuf,
@@ -170,7 +175,8 @@ static int meson_cma_heap_mmap(struct dma_buf *dmabuf, struct vm_area_struct *vm
 	if ((vma->vm_flags & (VM_SHARED | VM_MAYSHARE)) == 0)
 		return -EINVAL;
 
-	vma->vm_page_prot = pgprot_writecombine(vma->vm_page_prot);
+	if (buffer->uncached)
+		vma->vm_page_prot = pgprot_writecombine(vma->vm_page_prot);
 	vma->vm_ops = &dma_heap_vm_ops;
 	vma->vm_private_data = buffer;
 
@@ -180,7 +186,10 @@ static int meson_cma_heap_mmap(struct dma_buf *dmabuf, struct vm_area_struct *vm
 static void *meson_cma_heap_do_vmap(struct meson_cma_heap_buffer *buffer)
 {
 	void *vaddr;
-	pgprot_t pgprot = pgprot_writecombine(PAGE_KERNEL);
+	pgprot_t pgprot = PAGE_KERNEL;
+
+	if (buffer->uncached)
+		pgprot = pgprot_writecombine(PAGE_KERNEL);
 
 	vaddr = vmap(buffer->pages, buffer->pagecount, VM_MAP, pgprot);
 	if (!vaddr)
@@ -229,6 +238,24 @@ static void meson_cma_heap_vunmap(struct dma_buf *dmabuf, struct dma_buf_map *ma
 	dma_buf_map_clear(map);
 }
 
+static int meson_cma_heap_zero_buffer(struct meson_cma_heap_buffer *buffer)
+{
+	struct sg_table *sgt = &buffer->sg_table;
+	struct sg_page_iter piter;
+	struct page *p;
+	void *vaddr;
+	int ret = 0;
+
+	for_each_sgtable_page(sgt, &piter, 0) {
+		p = sg_page_iter_page(&piter);
+		vaddr = kmap_atomic(p);
+		memset(vaddr, 0, PAGE_SIZE);
+		kunmap_atomic(vaddr);
+	}
+
+	return ret;
+}
+
 static void meson_cma_heap_dma_buf_release(struct dma_buf *dmabuf)
 {
 	struct meson_cma_heap_buffer *buffer = dmabuf->priv;
@@ -240,6 +267,7 @@ static void meson_cma_heap_dma_buf_release(struct dma_buf *dmabuf)
 		buffer->vaddr = NULL;
 	}
 
+	meson_cma_heap_zero_buffer(buffer);
 	/* free page list */
 	kfree(buffer->pages);
 	/* release memory */
@@ -273,6 +301,7 @@ static struct dma_buf *meson_cma_heap_allocate(struct dma_heap *heap,
 	unsigned long align = get_order(size);
 	struct page *cma_pages;
 	struct dma_buf *dmabuf;
+	struct sg_table *table;
 	int ret = -ENOMEM;
 	pgoff_t pg;
 
@@ -330,7 +359,17 @@ static struct dma_buf *meson_cma_heap_allocate(struct dma_heap *heap,
 	buffer->cma_pages = cma_pages;
 	buffer->heap = meson_cma_heap;
 	buffer->pagecount = pagecount;
+	buffer->uncached = true;
 
+	table = &buffer->sg_table;
+	ret = sg_alloc_table_from_pages(table, buffer->pages,
+					buffer->pagecount, 0,
+					buffer->pagecount << PAGE_SHIFT,
+					GFP_KERNEL);
+	if (ret) {
+		ret = -ENOMEM;
+		goto free_cma;
+	}
 	/* create the dmabuf */
 	exp_info.exp_name = dma_heap_get_name(heap);
 	exp_info.ops = &meson_cma_heap_buf_ops;
@@ -342,11 +381,25 @@ static struct dma_buf *meson_cma_heap_allocate(struct dma_heap *heap,
 		ret = PTR_ERR(dmabuf);
 		goto free_pages;
 	}
+	/*
+	 * For uncached buffers, we need to initially flush cpu cache, since
+	 * the __GFP_ZERO on the allocation means the zeroing was done by the
+	 * cpu and thus it is likely cached. Map (and implicitly flush) and
+	 * unmap it now so we don't get corruption later on.
+	 */
+	if (buffer->uncached) {
+		dma_map_sgtable(dma_heap_get_dev(heap), table,
+						DMA_BIDIRECTIONAL, 0);
+		dma_unmap_sgtable(dma_heap_get_dev(heap), table,
+						DMA_BIDIRECTIONAL, 0);
+	}
+
 	return dmabuf;
 
 free_pages:
-	kfree(buffer->pages);
+	sg_free_table(table);
 free_cma:
+	kfree(buffer->pages);
 	cma_release(meson_cma_heap->cma, cma_pages, pagecount);
 free_buffer:
 	kfree(buffer);
@@ -379,6 +432,9 @@ static int __add_meson_cma_heap(struct cma *cma, void *data)
 		kfree(meson_cma_heap);
 		return ret;
 	}
+	dma_coerce_mask_and_coherent(dma_heap_get_dev(meson_cma_heap->heap),
+		DMA_BIT_MASK(64));
+	mb(); /* make sure we only set allocate after dma_mask is set */
 
 	return 0;
 }

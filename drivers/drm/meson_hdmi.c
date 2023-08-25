@@ -1385,7 +1385,7 @@ static int meson_hdmitx_choose_preset_mode(struct am_hdmi_tx *hdmitx,
 	/* check if hdmi can support this mode. if not, set vmode to dummy*/
 	vout_mode = vout_func_validate_vmode(amcrtc->vout_index, modename, 0);
 	DRM_INFO(" %s validate vmode %s, %x\n", __func__, modename, vout_mode);
-	if (vout_mode != VMODE_HDMI) {
+	if (vout_mode != VMODE_HDMI && am_hdmi_info.hdmitx_dev->detect()) {
 		DRM_INFO("no matched hdmi mode\n");
 		return -EINVAL;
 	}
@@ -1397,6 +1397,8 @@ static int meson_hdmitx_choose_preset_mode(struct am_hdmi_tx *hdmitx,
 		DRM_ERROR("mode %s NOT supporteds\n", modename);
 		vout_mode = vout_func_validate_vmode(amcrtc->vout_index, "dummy_l", 0);
 		meson_crtc_state->preset_vmode = vout_mode;
+	} else {
+		meson_crtc_state->preset_vmode = VMODE_HDMI;
 	}
 
 	DRM_INFO("%s update %s expect %x\n", __func__, modename, vout_mode);

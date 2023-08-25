@@ -1774,7 +1774,10 @@ static void update_current_para(struct hdmitx_dev *hdev)
 	if (!info || !info->name)
 		return;
 	memset(mode, 0, sizeof(mode));
-	strncpy(mode, info->name, sizeof(mode) - 1);
+	if (!info || !info->name)
+		strncpy(mode, " ", sizeof(mode) - 1);
+	else
+		strncpy(mode, info->name, sizeof(mode) - 1);
 	if (strstr(hdev->tx_comm.fmt_attr, "420")) {
 		if (!strstr(mode, "420"))
 			strncat(mode, "420", sizeof(mode) - strlen("420") - 1);

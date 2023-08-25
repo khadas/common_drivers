@@ -3819,6 +3819,10 @@ void rx_get_global_variable(const char *buf)
 	pr_var(rx[E_PORT1].var.avi_chk_frames, i++);
 	pr_var(rx[E_PORT2].var.avi_chk_frames, i++);
 	pr_var(rx[E_PORT3].var.avi_chk_frames, i++);
+	pr_var(rx[E_PORT0].phy.aud_div, i++);
+	pr_var(rx[E_PORT1].phy.aud_div, i++);
+	pr_var(rx[E_PORT2].phy.aud_div, i++);
+	pr_var(rx[E_PORT3].phy.aud_div, i++);
 	pr_var(rx_info.aml_phy.cdr_fr_en, i++);
 	pr_var(rx_info.aml_phy.force_sqo, i++);
 	pr_var(rx_info.aml_phy.os_rate, i++);
@@ -4133,6 +4137,18 @@ int rx_set_global_variable(const char *buf, int size)
 	if (set_pr_var(tmpbuf, var_to_str(rx[E_PORT3].var.avi_chk_frames),
 		&rx[E_PORT3].var.avi_chk_frames, value))
 		return pr_var(rx[E_PORT3].var.avi_chk_frames, index);
+	if (set_pr_var(tmpbuf, var_to_str(rx[E_PORT0].phy.aud_div),
+		&rx[E_PORT0].phy.aud_div, value))
+		return pr_var(rx[E_PORT0].phy.aud_div, index);
+	if (set_pr_var(tmpbuf, var_to_str(rx[E_PORT1].phy.aud_div),
+		&rx[E_PORT1].phy.aud_div, value))
+		return pr_var(rx[E_PORT1].phy.aud_div, index);
+	if (set_pr_var(tmpbuf, var_to_str(rx[E_PORT2].phy.aud_div),
+		&rx[E_PORT2].phy.aud_div, value))
+		return pr_var(rx[E_PORT2].phy.aud_div, index);
+	if (set_pr_var(tmpbuf, var_to_str(rx[E_PORT3].phy.aud_div),
+		&rx[E_PORT3].phy.aud_div, value))
+		return pr_var(rx[E_PORT3].phy.aud_div, index);
 	if (set_pr_var(tmpbuf, var_to_str(vsvdb_update_hpd_en), &vsvdb_update_hpd_en, value))
 		return pr_var(vsvdb_update_hpd_en, index);
 	if (set_pr_var(tmpbuf, var_to_str(clk_chg_max), &clk_chg_max, value))
@@ -7848,6 +7864,8 @@ int hdmirx_debug(const char *buf, int size)
 		rx_21_fpll_cfg(rx[port].var.frl_rate, port);
 	} else if (strncmp(tmpbuf, "wake", 4) == 0) {
 		hdmirx_wr_bits_top_common(TOP_EDID_RAM_OVR0_DATA, _BIT(0), 1);
+	} else if (strncmp(tmpbuf, "aud_cal", 7) == 0) {
+		txhd2_aud_clk_cal();
 	}
 	return 0;
 }

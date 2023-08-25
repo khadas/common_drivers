@@ -4580,6 +4580,8 @@ void rx_aud_pll_ctl(bool en, u8 port)
 				/* 2:tmds_clk 1:ref_clk 0:mpll_clk */
 				if (rx[port].phy.pll_bw == 0)
 					tmp = 0xc80;
+				else if (rx[port].phy.pll_bw == 1)
+					tmp = 0x80;
 				else
 					tmp = 0x88;
 				wr_reg_hhi(HHI_AUD_PLL_CNTL2, tmp);

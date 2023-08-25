@@ -99,7 +99,8 @@
 /* 2023.7.12 txhd2 bring up debug */
 /* 2023.8.1 add ctrl of 5v wake up */
 /* 2023.08.14 modify the mapped emp buffer address*/
-#define RX_VER1 "ver.2023/8/14"
+/* 2023.8.25 fix 40M 192k 176k no sound */
+#define RX_VER1 "ver.2023/8/25"
 
 /* 50ms timer for hdmirx main loop (HDMI_STATE_CHECK_FREQ is 20) */
 

@@ -72,7 +72,6 @@ extern u32 cdr_value;
 extern u32 eq_value;
 extern u32 misc2_value;
 extern u32 misc1_value;
-
 /*--------------------------function declare------------------*/
 /* T5m */
 void aml_phy_init_txhd2(void);
@@ -104,6 +103,8 @@ void quick_sort2_txhd2(int arr[], int l, int r);
 void txhd2_pbist(void);
 void clk_init_cor_txhd2(void);
 void rx_dig_clk_en_txhd2(bool en);
+void txhd2_aud_clk_cal(void);
+
 /*function declare end*/
 
 #endif /*_HDMI_RX_TXHD2_H*/

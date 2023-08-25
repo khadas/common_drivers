@@ -25,6 +25,7 @@
 #include <linux/slab.h>
 #include <linux/dma-mapping.h>
 #include <linux/highmem.h>
+#include <linux/amlogic/clk_measure.h>
 
 /* Local Include */
 #include "hdmi_rx_repeater.h"
@@ -179,13 +180,13 @@ void txhd2_720p_pll_cfg(void)
 	usleep_range(10, 20);
 	hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x05050013);
 	usleep_range(10, 20);
-	hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_1, 0x61401f42);
+	hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_1, 0x21401f42);
 	usleep_range(10, 20);
 	hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x05050017);
 	usleep_range(10, 20);
 	hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x45050017);
 	usleep_range(10, 20);
-	rx[port].phy.aud_div = 0;
+	rx[port].phy.aud_div = 2;
 }
 
 void txhd2_1080p_pll_cfg(void)
@@ -2389,4 +2390,69 @@ void rx_dig_clk_en_txhd2(bool en)
 	hdmirx_wr_bits_clk_ctl(HHI_HDMIRX_CLK_CNTL1, MODET_CLK_EN, en);
 	hdmirx_wr_bits_clk_ctl(HHI_HDMIRX_CLK_CNTL0, _BIT(24), en);
 	hdmirx_wr_bits_clk_ctl(HHI_HDMIRX_CLK_CNTL0, _BIT(8), en);
+}
+
+int calc_pow(int x, int n)
+{
+	if (n == 0)
+		return 1;
+	else
+		return x * calc_pow(x, n - 1);
+}
+
+void txhd2_aud_clk_cal(void)
+{
+	u32 M;
+	u32 N;
+	u32 vco;
+	u32 div2_8;
+	u32 div1_5;
+	u32 div2_n;
+	u32 div_2_n;
+	u32 pll_clk_test_out;
+	int cts_div;
+	int n;
+	u32 cts;
+	u32 aud_clk;
+	int tmds_clk;
+	int clk_rate;
+
+	clk_rate = rx_get_scdc_clkrate_sts(rx_info.main_port);
+	if (clk_rate)
+		tmds_clk = meson_clk_measure_with_precision(63, 32) / MHz / 4;
+	else
+		tmds_clk = meson_clk_measure_with_precision(63, 32) / MHz;
+	rx_pr("tmds clk = %d\n", tmds_clk);
+	M = hdmirx_rd_bits_amlphy(TXHD2_HDMIRX20PLL_CTRL0, MSK(5, 4));
+	if (M == 0)
+		return;
+	rx_pr("M = %d\n", M);
+	N = hdmirx_rd_bits_amlphy(TXHD2_HDMIRX20PLL_CTRL0, MSK(9, 12));
+	rx_pr("N = %d\n", N);
+	vco = tmds_clk * N / M;
+	rx_pr("vco = %d\n", vco);
+	div2_8 = hdmirx_rd_bits_amlphy(TXHD2_HDMIRX20PLL_CTRL1, _BIT(26));
+	if (div2_8 == 1)
+		rx_pr("div 8\n");
+	else
+		rx_pr("div 2\n");
+	div1_5 = hdmirx_rd_bits_amlphy(TXHD2_HDMIRX20PLL_CTRL1, _BIT(28));
+	if (div1_5 == 1)
+		rx_pr("div 1\n");
+	else
+		rx_pr("div 5\n");
+	div2_n = hdmirx_rd_bits_amlphy(TXHD2_HDMIRX20PLL_CTRL1, MSK(3, 29));
+	div_2_n = calc_pow(2, div2_n);
+	rx_pr("div %d\n", div_2_n);
+	pll_clk_test_out = vco / (div2_8 == 1 ? 8 : 2) / (div1_5 == 1 ? 1 : 5) / div_2_n;
+	rx_pr("pll_clk_test_out = %d\n", pll_clk_test_out);
+	cts_div = calc_pow(2, rd_reg_hhi(HHI_AUD_PLL_CNTL3) & 0x3);
+	cts = rx[rx_info.main_port].aud_info.cts;
+	if (cts == 0)
+		return;
+	rx_pr("cts = %d\n", cts);
+	n = rx[rx_info.main_port].aud_info.n;
+	rx_pr("n = %d\n", n);
+	aud_clk = pll_clk_test_out * n / cts / cts_div;
+	rx_pr("aud_clk = %d\n", aud_clk);
 }

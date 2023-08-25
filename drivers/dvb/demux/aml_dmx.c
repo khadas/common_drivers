@@ -770,7 +770,7 @@ static int _dmx_ts_feed_set(struct dmx_ts_feed *ts_feed, u16 pid, int ts_type,
 	if (pes_type == DMX_PES_OTHER && dump_type >= DMX_DUMP_DVR_TYPE &&
 		dump_type <= DMX_DUMP_INPUT_TYPE) {
 		dump_sid = ((filter->params.pes.flags >> 24) & 0xff);
-		filter->params.pes.flags = 0;
+		filter->params.pes.flags &= 0x0000ffff;
 		if (dump_type == DMX_DUMP_TS_TYPE) {
 			/* nothing to do */
 		} else {

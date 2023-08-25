@@ -13,6 +13,8 @@
 #include <linux/syscalls.h>
 #include <linux/delay.h>
 
+#include <linux/highmem.h>
+
 //#define CHECK_PACKET_ALIGNM
 #ifdef CHECK_PACKET_ALIGNM
 #include <linux/highmem.h>
@@ -1324,6 +1326,11 @@ int SC2_bufferid_write(struct chan_id *pchan, const char *buf, char *buf_phys,
 	int total = count;
 	s64 prev_time_nsec;
 	s64 max_timeout_nsec;
+	unsigned char *vaddr = 0;
+	unsigned long reg = 0;
+	unsigned long length = 0;
+	struct page *page = NULL;
+	int alignment = sizeof(unsigned long);
 
 	pr_dbg("%s start w:%d id:%d, addr:0x%0x\n", __func__,
 			count, pchan->id, (u32)(long)buf_phys);
@@ -1346,6 +1353,44 @@ int SC2_bufferid_write(struct chan_id *pchan, const char *buf, char *buf_phys,
 		pchan->memdescs->bits.address = tmp;
 		pchan->memdescs->bits.byte_length =
 			ts_data->buf_end - ts_data->buf_start;
+
+		if (dump_input_cb) {
+			#ifdef CONFIG_ARM64
+			if (pfn_is_map_memory(ts_data->buf_start >> PAGE_SHIFT)) {
+			#else
+			if (pfn_valid(ts_data->buf_start >> PAGE_SHIFT)) {
+			#endif
+				page = pfn_to_page(ts_data->buf_start >> PAGE_SHIFT);
+				vaddr = kmap(page) + (ts_data->buf_start & ~PAGE_MASK);
+				kasan_disable_current();
+				//pr_dbg("%s %d buffers start = %lx phy addr = %lx
+				//vir addr = %lx\n",
+				//__func__, __LINE__, ts_data.buf_start, tmp, vaddr);
+				dump_input_cb(pchan->id, -1, DMX_DUMP_INPUT_TYPE, vaddr,
+				pchan->memdescs->bits.byte_length, &dump_input_head);
+				kasan_enable_current();
+				kunmap(page);
+			} else {
+				reg = round_down(ts_data->buf_start, alignment - 1);
+				length = (ts_data->buf_end - ts_data->buf_start) +
+								(ts_data->buf_start - reg);
+				vaddr = (void *)ioremap_wc(reg, length);
+				if (IS_ERR_OR_NULL(vaddr)) {
+					dprint("%s %d ioremap fail\n", __func__, __LINE__);
+				} else {
+					//pr_dbg("%s %d buffers start = %lx
+					//phy addr = %lx vir addr = %lx\n",
+					//__func__, __LINE__, ts_data.buf_start,
+					//tmp, vaddr);
+					dump_input_cb(pchan->id, -1, DMX_DUMP_INPUT_TYPE,
+						vaddr + (ts_data->buf_start - reg),
+						pchan->memdescs->bits.byte_length,
+						&dump_input_head);
+
+					iounmap(vaddr);
+				}
+			}
+		}
 
 		dma_sync_single_for_device(aml_get_device(),
 			pchan->memdescs_phy, sizeof(union mem_desc),

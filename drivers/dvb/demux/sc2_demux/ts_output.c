@@ -16,6 +16,7 @@
 #include <linux/version.h>
 #include <linux/module.h>
 #include <linux/dma-mapping.h>
+#include <linux/highmem.h>
 
 #include "sc2_control.h"
 #include "ts_output.h"
@@ -509,7 +510,7 @@ static int section_process(struct out_elem *pout)
 			remain_len = ret - w_size;
 			if (dump_other_cb)
 				dump_other_cb(pout->sid, pout->es_pes->pid,
-					DMX_DUMP_SECTION_TYPE, pread, w_size,
+					DMX_DUMP_SECTION_TYPE, pread, ret,
 					&dump_other_head);
 			if (remain_len) {
 				if (pout->pchan->sec_level)
@@ -547,6 +548,13 @@ static int dvr_process(struct out_elem *pout)
 	char *pread;
 	int flag = 0;
 	int overflow = 0;
+	unsigned char *vaddr = 0;
+	unsigned long reg = 0;
+	unsigned long length = 0;
+	unsigned long addr = 0;
+	int alignment = sizeof(unsigned long);
+	struct page *page = NULL;
+
 
 	if (pout->pchan->sec_level)
 		flag = 1;
@@ -563,10 +571,39 @@ static int dvr_process(struct out_elem *pout)
 				pread, ret, &dump_other_head);
 		} else if (pout->cb_ts_list && flag == 1) {
 			if (dump_other_cb) {
-				enforce_flush_cache(pread, ret);
-				dump_other_cb(pout->sid, -1, DMX_DUMP_DVR_TYPE,
-					pread - pout->pchan->mem_phy +
-						pout->pchan->mem, ret, &dump_other_head);
+				addr = (unsigned long)pread;
+				#ifdef CONFIG_ARM64
+				if (pfn_is_map_memory(addr >> PAGE_SHIFT)) {
+				#else
+				if (pfn_valid(addr >> PAGE_SHIFT)) {
+				#endif
+					page = pfn_to_page(addr >> PAGE_SHIFT);
+					vaddr = kmap(page) + (addr & ~PAGE_MASK);
+					kasan_disable_current();
+					//pr_dbg("%s %d buffers start = %lx vir addr = %lx\n",
+					//	__func__, __LINE__, pread, vaddr);
+					dump_other_cb(pout->sid, -1, DMX_DUMP_DVR_TYPE, vaddr,
+						ret, &dump_other_head);
+					kasan_enable_current();
+					kunmap(page);
+				} else {
+					reg = round_down(addr, alignment - 1);
+					length = ret + ((unsigned long)pread - reg);
+					vaddr = (void *)ioremap_wc(reg, length);
+					if (IS_ERR_OR_NULL(vaddr)) {
+						dprint("%s %d ioremap fail\n", __func__, __LINE__);
+					} else {
+						//pr_dbg("%s %d buffers start = %lx reg = %lx
+						//vir addr = %lx length = %lx ret = %lx
+						//vaddr = %lx\n", __func__, __LINE__, pread, reg,
+						//vaddr, length, ret,
+						//vaddr + ((unsigned long)pread - reg));
+						dump_other_cb(pout->sid, -1, DMX_DUMP_DVR_TYPE,
+							vaddr + ((unsigned long)pread - reg),
+									ret, &dump_other_head);
+						iounmap(vaddr);
+					}
+				}
 			}
 			write_sec_ts_data(pout, pread, ret);
 		}

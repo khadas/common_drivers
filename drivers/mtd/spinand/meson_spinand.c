@@ -402,6 +402,11 @@ static void meson_partition_relocate(struct mtd_info *mtd,
 #endif
 }
 
+static const char * const meson_mtd_types[] = {
+	"cmdlinepart",
+	NULL
+};
+
 int meson_add_mtd_partitions(struct mtd_info *mtd)
 {
 	struct meson_partition_platform_data *pdata;
@@ -412,8 +417,9 @@ int meson_add_mtd_partitions(struct mtd_info *mtd)
 
 	pdata = meson_partition_parse_platform_data(mtd_get_of_node(mtd));
 	if (!pdata) {
-		pr_err("%s: parse platform data failed\n", __func__);
-		return -ENODEV;
+		pr_err("no partition in dts, init partition from env!\n");
+		mtd->name = "aml-nand";
+		return mtd_device_parse_register(mtd, meson_mtd_types, NULL, NULL, 0);
 	}
 
 	/* bootloader */

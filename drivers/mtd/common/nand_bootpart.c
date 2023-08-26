@@ -11,6 +11,7 @@
 #include <linux/amlogic/aml_rsv.h>
 
 static char *cmdline;
+static char *rsv_cmdline;
 struct storage_startup_parameter g_ssp;
 EXPORT_SYMBOL_GPL(g_ssp);
 
@@ -154,6 +155,20 @@ int aml_nand_param_check_and_layout_init(struct mtd_info *mtd)
 	return ret;
 }
 EXPORT_SYMBOL_GPL(aml_nand_param_check_and_layout_init);
+
+char *aml_nand_get_rsv_cmdline(void)
+{
+	return rsv_cmdline;
+}
+EXPORT_SYMBOL_GPL(aml_nand_get_rsv_cmdline);
+
+int mtdrsvpart_setup(char *s)
+{
+	rsv_cmdline = s;
+	return 0;
+}
+
+__setup("mtdrsvparts=", mtdrsvpart_setup);
 
 int mtdbootpart_setup(char *s)
 {

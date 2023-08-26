@@ -17,15 +17,18 @@
 #include <linux/slab.h>
 #include <linux/vmalloc.h>
 
+char *aml_nand_get_rsv_cmdline(void);
+
 /* protect flag inside */
 static int rsv_protect = 1;
 static struct meson_rsv_block_t rsv_blk_cnt[NAND_RSV_END_INDEX] = {
-	{"rsv_block_num", DEFAULT_NAND_RSV_BLOCK_NUM, NAND_RSV_INDEX},
-	{"rsv_gap_block_num", DEFAULT_NAND_GAP_BLOCK_NUM, NAND_GAP_INDEX},
-	{"rsv_bbt_block_num", DEFAULT_NAND_BBT_BLOCK_NUM, NAND_BBT_INDEX},
-	{"rsv_env_block_num", DEFAULT_NAND_ENV_BLOCK_NUM, NAND_ENV_INDEX},
-	{"rsv_key_block_num", DEFAULT_NAND_KEY_BLOCK_NUM, NAND_KEY_INDEX},
-	{"rsv_dtb_block_num", DEFAULT_NAND_DTB_BLOCK_NUM, NAND_DTB_INDEX},
+	{"rsv_block_num", DEFAULT_NAND_RSV_BLOCK_NUM, 0, NAND_RSV_INDEX},
+	{"rsv_gap_block_num", DEFAULT_NAND_GAP_BLOCK_NUM, 0, NAND_GAP_INDEX},
+	{"rsv_bbt_block_num", DEFAULT_NAND_BBT_BLOCK_NUM, 0, NAND_BBT_INDEX},
+	{"rsv_env_block_num", DEFAULT_NAND_ENV_BLOCK_NUM, 0, NAND_ENV_INDEX},
+	{"rsv_key_block_num", DEFAULT_NAND_KEY_BLOCK_NUM, 0, NAND_KEY_INDEX},
+	{"rsv_dtb_block_num", DEFAULT_NAND_DTB_BLOCK_NUM, 0, NAND_DTB_INDEX},
+	{"rsv_ddr_block_num", DEFAULT_NAND_DDR_BLOCK_NUM, 0, NAND_DDR_INDEX},
 };
 
 u32 meson_rsv_get_block_cnt(enum meson_rsv_blk_cnt index)
@@ -34,24 +37,87 @@ u32 meson_rsv_get_block_cnt(enum meson_rsv_blk_cnt index)
 }
 EXPORT_SYMBOL(meson_rsv_get_block_cnt);
 
-void meson_rsv_prase_parameter_from_dtb(struct mtd_info *mtd)
+int meson_rsv_prase_parameter_from_dtb(struct mtd_info *mtd)
 {
 	struct device_node *node = mtd->dev.parent->of_node;
 	u32 i, ret = 0;
-
-	if (!of_property_read_bool(node, "rsv_board_config"))
-		return;
 
 	for (i = 0; i < NAND_RSV_END_INDEX; i++) {
 		ret = of_property_read_u32(node, rsv_blk_cnt[i].para_rsv_name,
 					   &rsv_blk_cnt[i].block_cnt);
 		if (ret) {
-			pr_info("%s %d,please config para item %s in dts\n",
+			pr_err("%s %d,please config para item %s in dts\n",
 				__func__, __LINE__, rsv_blk_cnt[i].para_rsv_name);
+			return ret;
 		}
 	}
+
+	return ret;
 }
 EXPORT_SYMBOL(meson_rsv_prase_parameter_from_dtb);
+
+int meson_rsv_prase_parameter_from_cmdline(struct mtd_info *mtd)
+{
+	u32 i, start, end, size;
+	char *p;
+
+	p = aml_nand_get_rsv_cmdline();
+	if (!p)
+		goto error;
+
+	p = strchr(p, ':');
+	if (!p)
+		goto error;
+
+	p++;
+	for (i = 0; i < NAND_RSV_END_INDEX; i++) {
+		start = memparse(p, NULL);
+		p = strchr(p, '@');
+		if (!p)
+			goto error;
+		p++;
+		end = memparse(p, NULL);
+		p = strchr(p, '@');
+		if (!p)
+			goto error;
+		p++;
+		size = memparse(p, NULL);
+		rsv_blk_cnt[i].block_cnt = (end - start) / mtd->erasesize;
+		rsv_blk_cnt[i].size = size;
+		p = strchr(p, ',');
+		if (!p)
+			goto error;
+		p++;
+	}
+
+	return 0;
+error:
+	pr_err("%s %d: rsv cmdline is invalid!\n", __func__, __LINE__);
+	return -EINVAL;
+}
+EXPORT_SYMBOL(meson_rsv_prase_parameter_from_cmdline);
+
+int meson_rsv_prase_parameter_init(struct mtd_info *mtd)
+{
+	struct device_node *node = mtd->dev.parent->of_node;
+	u32 ret = 0;
+
+	ret = of_property_read_bool(node, "rsv_dts_config");
+	if (ret) {
+		pr_err("%s %d: init rsv from dts!\n", __func__, __LINE__);
+		return meson_rsv_prase_parameter_from_dtb(mtd);
+	}
+
+	ret = of_property_read_bool(node, "rsv_env_config");
+	if (ret) {
+		pr_err("%s %d: init rsv from cmdline!\n", __func__, __LINE__);
+		return meson_rsv_prase_parameter_from_cmdline(mtd);
+	}
+
+	/* default rsv */
+	return ret;
+}
+EXPORT_SYMBOL(meson_rsv_prase_parameter_init);
 
 static inline void _aml_rsv_disprotect(void)
 {
@@ -887,7 +953,7 @@ int meson_rsv_init(struct mtd_info *mtd,
 	unsigned int env_size = 0;
 	u32 pages_per_blk_shift, start, vernier;
 
-	meson_rsv_prase_parameter_from_dtb(mtd);
+	meson_rsv_prase_parameter_init(mtd);
 	pages_per_blk_shift = mtd->erasesize_shift - mtd->writesize_shift;
 	start = BOOT_TOTAL_PAGES >> pages_per_blk_shift;
 	start += rsv_blk_cnt[NAND_GAP_INDEX].block_cnt;
@@ -956,6 +1022,8 @@ int meson_rsv_init(struct mtd_info *mtd,
 		handler->env->valid_node->phy_blk_addr = -1;
 		if (!of_property_read_u32(mtd_get_of_node(mtd), "env_size", &env_size))
 			handler->env->size = env_size;
+		else if (rsv_blk_cnt[NAND_ENV_INDEX].size)
+			handler->env->size = rsv_blk_cnt[NAND_ENV_INDEX].size;
 		else
 			handler->env->size = CONFIG_ENV_SIZE;
 		handler->env->handler = handler;
@@ -991,10 +1059,14 @@ int meson_rsv_init(struct mtd_info *mtd,
 		handler->key->write = meson_rsv_key_write;
 		memcpy(handler->key->name, KEY_NAND_MAGIC, 4);
 		vernier += rsv_blk_cnt[NAND_KEY_INDEX].block_cnt;
-		if (mtd->erasesize < 0x40000)
-			handler->key->size = mtd->erasesize >> 2;
-		else
-			handler->key->size = 0x40000;
+		if (rsv_blk_cnt[NAND_KEY_INDEX].size) {
+			handler->key->size = rsv_blk_cnt[NAND_KEY_INDEX].size;
+		} else {
+			if (mtd->erasesize < 0x40000)
+				handler->key->size = mtd->erasesize >> 2;
+			else
+				handler->key->size = 0x40000;
+		}
 	}
 
 	if (rsv_blk_cnt[NAND_DTB_INDEX].block_cnt) {
@@ -1022,10 +1094,14 @@ int meson_rsv_init(struct mtd_info *mtd,
 		handler->dtb->write = meson_rsv_dtb_write;
 		memcpy(handler->dtb->name, DTB_NAND_MAGIC, 4);
 		vernier += rsv_blk_cnt[NAND_DTB_INDEX].block_cnt;
-		if (mtd->erasesize < 0x40000)
-			handler->dtb->size = mtd->erasesize >> 1;
-		else
-			handler->dtb->size = 0x40000;
+		if (rsv_blk_cnt[NAND_DTB_INDEX].size) {
+			handler->dtb->size = rsv_blk_cnt[NAND_DTB_INDEX].size;
+		} else {
+			if (mtd->erasesize < 0x40000)
+				handler->dtb->size = mtd->erasesize >> 1;
+			else
+				handler->dtb->size = 0x40000;
+		}
 	}
 
 	if ((vernier - start) > rsv_blk_cnt[NAND_RSV_INDEX].block_cnt) {
@@ -1034,21 +1110,25 @@ int meson_rsv_init(struct mtd_info *mtd,
 		goto error;
 	}
 
-	pr_info("bbt_start=%d end=%d\n", handler->bbt->start_block,
-			handler->bbt->end_block);
+	pr_info("bbt_start=%d end=%d size=0x%x\n", handler->bbt->start_block,
+			handler->bbt->end_block,
+			handler->bbt->size);
 	if (rsv_blk_cnt[NAND_ENV_INDEX].block_cnt) {
-		pr_info("env_start=%d end=%d\n", handler->env->start_block,
-				handler->env->end_block);
+		pr_info("env_start=%d end=%d size=0x%x\n", handler->env->start_block,
+				handler->env->end_block,
+				handler->env->size);
 		meson_rsv_register_cdev(handler->env, ENV_CDEV_NAME);
 	}
 	if (rsv_blk_cnt[NAND_KEY_INDEX].block_cnt) {
-		pr_info("key_start=%d end=%d\n", handler->key->start_block,
-				handler->key->end_block);
+		pr_info("key_start=%d end=%d size=0x%x\n", handler->key->start_block,
+				handler->key->end_block,
+				handler->key->size);
 		meson_rsv_register_unifykey(handler->key);
 	}
 	if (rsv_blk_cnt[NAND_DTB_INDEX].block_cnt) {
-		pr_info("dtb_start=%d end=%d\n", handler->dtb->start_block,
-				handler->dtb->end_block);
+		pr_info("dtb_start=%d end=%d size=0x%x\n", handler->dtb->start_block,
+				handler->dtb->end_block,
+				handler->dtb->size);
 		meson_rsv_register_cdev(handler->dtb, DTB_CDEV_NAME);
 	}
 

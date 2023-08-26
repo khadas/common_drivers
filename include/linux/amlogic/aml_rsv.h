@@ -14,7 +14,7 @@
 #define DEFAULT_NAND_ENV_BLOCK_NUM 8
 #define DEFAULT_NAND_KEY_BLOCK_NUM 8
 #define DEFAULT_NAND_DTB_BLOCK_NUM 4
-#define DEFAULT_NAND_DDR_BLOCK_NUM 2
+#define DEFAULT_NAND_DDR_BLOCK_NUM 0
 
 #define BBT_NAND_MAGIC	"nbbt"
 #define ENV_NAND_MAGIC	"nenv"
@@ -35,12 +35,14 @@ enum meson_rsv_blk_cnt {
 	NAND_ENV_INDEX,
 	NAND_KEY_INDEX,
 	NAND_DTB_INDEX,
+	NAND_DDR_INDEX,
 	NAND_RSV_END_INDEX
 };
 
 struct meson_rsv_block_t {
 	char para_rsv_name[32];
 	u32 block_cnt;
+	u32 size;
 	u32 index;
 };
 
@@ -112,7 +114,8 @@ struct meson_rsv_user_t {
 	struct mutex lock;
 };
 
-void meson_rsv_prase_parameter_from_dtb(struct mtd_info *mtd);
+int meson_rsv_prase_parameter_from_dtb(struct mtd_info *mtd);
+int meson_rsv_prase_parameter_from_cmdline(struct mtd_info *mtd);
 int meson_rsv_register_cdev(struct meson_rsv_info_t *info, char *name);
 int meson_rsv_register_unifykey(struct meson_rsv_info_t *key);
 int meson_rsv_bbt_write(u_char *source, size_t size);

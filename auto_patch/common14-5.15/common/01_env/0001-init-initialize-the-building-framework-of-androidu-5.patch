@@ -1,4 +1,4 @@
-From 1c5affba9c3b6ea245e1e29ff0f57851adadbb4a Mon Sep 17 00:00:00 2001
+From e909756dac2b8b059372ccd28c949dde898c9532 Mon Sep 17 00:00:00 2001
 From: Wanwei Jiang <wanwei.jiang@amlogic.com>
 Date: Thu, 2 Feb 2023 15:49:10 +0800
 Subject: [PATCH] init: initialize the building framework of androidu-5.15 for
@@ -19,9 +19,8 @@ Change-Id: Icfbc29709af1545b802ed7794808a2ab560ed08a
 Signed-off-by: Wanwei Jiang <wanwei.jiang@amlogic.com>
 ---
  .gitignore                                |   3 +
- Makefile                                  |  35 ++
- build.config.gki.aarch64                  |   4 -
- drivers/Kconfig                           |  62 ++++
+ Makefile                                  |  26 ++
+ drivers/Kconfig                           |  61 +++
  scripts/amlogic/licence_check.pl          | 153 ++++++++
  scripts/amlogic/licence_pre.pl            |  53 +++
  scripts/amlogic/merge_pre_check.pl        | 429 ++++++++++++++++++++++
@@ -29,7 +28,7 @@ Signed-off-by: Wanwei Jiang <wanwei.jiang@amlogic.com>
  scripts/amlogic/pre-commit-common_drivers |  24 ++
  scripts/checkpatch.pl                     | 158 ++++----
  scripts/kconfig/Makefile                  |   9 +-
- 11 files changed, 870 insertions(+), 84 deletions(-)
+ 10 files changed, 860 insertions(+), 80 deletions(-)
  create mode 100755 scripts/amlogic/licence_check.pl
  create mode 100755 scripts/amlogic/licence_pre.pl
  create mode 100755 scripts/amlogic/merge_pre_check.pl
@@ -37,7 +36,7 @@ Signed-off-by: Wanwei Jiang <wanwei.jiang@amlogic.com>
  create mode 100755 scripts/amlogic/pre-commit-common_drivers
 
 diff --git a/.gitignore b/.gitignore
-index 265959544978..0bbfe4cd37fc 100644
+index 265959544978a..0bbfe4cd37fcb 100644
 --- a/.gitignore
 +++ b/.gitignore
 @@ -162,3 +162,6 @@ x509.genkey
@@ -48,7 +47,7 @@ index 265959544978..0bbfe4cd37fc 100644
 +# amlogic drivers
 +/common_drivers/
 diff --git a/Makefile b/Makefile
-index 845c7a4009b4..6ebebe21a61c 100644
+index 845c7a4009b4d..b6c961ad0b0c9 100644
 --- a/Makefile
 +++ b/Makefile
 @@ -438,6 +438,14 @@ ifneq ($(SRCARCH),$(SUBARCH))
@@ -66,12 +65,18 @@ index 845c7a4009b4..6ebebe21a61c 100644
  KCONFIG_CONFIG	?= .config
  export KCONFIG_CONFIG
  
-@@ -689,10 +697,19 @@ ifdef need-config
+@@ -689,10 +697,25 @@ ifdef need-config
  include include/config/auto.conf
  endif
  
 +ifdef CONFIG_AMLOGIC_DRIVER
-+include $(srctree)/$(COMMON_DRIVERS_DIR)/header_include.mk
++USERINCLUDE    += \
++		-I$(srctree)/$(COMMON_DRIVERS_DIR)/include \
++		-I$(srctree)/$(COMMON_DRIVERS_DIR)/include/uapi
++
++LINUXINCLUDE   += \
++		-I$(srctree)/$(COMMON_DRIVERS_DIR)/include \
++		-I$(srctree)/$(COMMON_DRIVERS_DIR)/include/uapi
 +KBUILD_CFLAGS += -Werror
 +endif
 +
@@ -86,7 +91,7 @@ index 845c7a4009b4..6ebebe21a61c 100644
  drivers-$(CONFIG_SAMPLES) += samples/
  drivers-$(CONFIG_NET) += net/
  drivers-y	+= virt/
-@@ -1221,6 +1238,9 @@ ifeq ($(KBUILD_EXTMOD),)
+@@ -1221,6 +1244,9 @@ ifeq ($(KBUILD_EXTMOD),)
  endif
  	$(Q)$(MAKE) $(hdr-inst)=$(hdr-prefix)include/uapi
  	$(Q)$(MAKE) $(hdr-inst)=$(hdr-prefix)arch/$(SRCARCH)/include/uapi
@@ -96,47 +101,11 @@ index 845c7a4009b4..6ebebe21a61c 100644
  
  ifeq ($(KBUILD_EXTMOD),)
  core-y			+= kernel/ certs/ mm/ fs/ ipc/ security/ crypto/
-@@ -2080,8 +2100,23 @@ endif # config-build
- endif # mixed-build
- endif # need-sub-make
- 
-+ifdef CONFIG_AMLOGIC_DRIVER
- PHONY += FORCE
- FORCE:
-+	$(Q)-cp $(srctree)/scripts/amlogic/pre-commit $(srctree)/.git/hooks/pre-commit
-+	$(Q)-cp $(srctree)/scripts/amlogic/pre-commit-common_drivers $(srctree)/$(COMMON_DRIVERS_DIR)/.git/hooks/pre-commit
-+	$(Q)-chmod +x $(srctree)/$(COMMON_DRIVERS_DIR)/.git/hooks/pre-commit
-+	$(Q)-mkdir -p $(srctree)/$(COMMON_DRIVERS_DIR)/scripts/amlogic
-+	$(Q)-cp $(srctree)/scripts/amlogic/licence_pre.pl $(srctree)/$(COMMON_DRIVERS_DIR)/scripts/amlogic
-+	$(Q)-cp $(srctree)/scripts/amlogic/licence_check.pl $(srctree)/$(COMMON_DRIVERS_DIR)/scripts/amlogic
-+	$(Q)-cp $(srctree)/scripts/amlogic/merge_pre_check.pl $(srctree)/$(COMMON_DRIVERS_DIR)/scripts/amlogic
-+	$(Q)-cp $(srctree)/scripts/checkpatch.pl  $(srctree)/$(COMMON_DRIVERS_DIR)/scripts/
-+	$(Q)-cp $(srctree)/scripts/spelling.txt  $(srctree)/$(COMMON_DRIVERS_DIR)/scripts/
-+	$(Q)-cp $(srctree)/scripts/const_structs.checkpatch  $(srctree)/$(COMMON_DRIVERS_DIR)/scripts/
-+else
-+PHONY += FORCE
-+FORCE:
-+endif
- 
- # Declare the contents of the PHONY variable as phony.  We keep that
- # information in a variable so we can use it in if_changed and friends.
-diff --git a/build.config.gki.aarch64 b/build.config.gki.aarch64
-index d3980621c116..d041f915a313 100644
---- a/build.config.gki.aarch64
-+++ b/build.config.gki.aarch64
-@@ -15,7 +15,3 @@ BUILD_GKI_ARTIFACTS=1
- BUILD_GKI_BOOT_IMG_SIZE=67108864
- BUILD_GKI_BOOT_IMG_GZ_SIZE=47185920
- BUILD_GKI_BOOT_IMG_LZ4_SIZE=53477376
--
--if [ -n "${GKI_BUILD_CONFIG_FRAGMENT}" ]; then
--source ${GKI_BUILD_CONFIG_FRAGMENT}
--fi
 diff --git a/drivers/Kconfig b/drivers/Kconfig
-index 67f44716797e..3a48502776a6 100644
+index 67f44716797e5..b45de86239e17 100644
 --- a/drivers/Kconfig
 +++ b/drivers/Kconfig
-@@ -238,4 +238,66 @@ source "drivers/interconnect/Kconfig"
+@@ -238,4 +238,65 @@ source "drivers/interconnect/Kconfig"
  source "drivers/counter/Kconfig"
  
  source "drivers/most/Kconfig"
@@ -153,13 +122,12 @@ index 67f44716797e..3a48502776a6 100644
 +
 +if AMLOGIC_DRIVER
 +config AMLOGIC_BREAK_GKI_20
-+        bool "Amlogic Break GKI 2.0"
-+        default n
-+        help
-+          this option is provide for control Break GKI 2.0,
-+          if you want to break gki2.0 rule, should enable it,
-+          all break gki2.0 modify should be depends on this option
-+
++	bool "Amlogic Break GKI 2.0"
++	default n
++	help
++	  this option is provide for control Break GKI 2.0,
++	  if you want to break gki2.0 rule, should enable it,
++	  all break gki2.0 modify should be depends on this option
 +
 +config AMLOGIC_BREAK_GKI
 +	bool "Amlogic Break GKI"
@@ -205,7 +173,7 @@ index 67f44716797e..3a48502776a6 100644
  endmenu
 diff --git a/scripts/amlogic/licence_check.pl b/scripts/amlogic/licence_check.pl
 new file mode 100755
-index 000000000000..2163ce102ab6
+index 0000000000000..2163ce102ab62
 --- /dev/null
 +++ b/scripts/amlogic/licence_check.pl
 @@ -0,0 +1,153 @@
@@ -364,7 +332,7 @@ index 000000000000..2163ce102ab6
 +}
 diff --git a/scripts/amlogic/licence_pre.pl b/scripts/amlogic/licence_pre.pl
 new file mode 100755
-index 000000000000..a364fbe60a84
+index 0000000000000..a364fbe60a84d
 --- /dev/null
 +++ b/scripts/amlogic/licence_pre.pl
 @@ -0,0 +1,53 @@
@@ -423,7 +391,7 @@ index 000000000000..a364fbe60a84
 +exit $out;
 diff --git a/scripts/amlogic/merge_pre_check.pl b/scripts/amlogic/merge_pre_check.pl
 new file mode 100755
-index 000000000000..b2c9a1df0f17
+index 0000000000000..b2c9a1df0f176
 --- /dev/null
 +++ b/scripts/amlogic/merge_pre_check.pl
 @@ -0,0 +1,429 @@
@@ -858,7 +826,7 @@ index 000000000000..b2c9a1df0f17
 +exit $exit;
 diff --git a/scripts/amlogic/pre-commit b/scripts/amlogic/pre-commit
 new file mode 100755
-index 000000000000..fba48e4904e0
+index 0000000000000..fba48e4904e06
 --- /dev/null
 +++ b/scripts/amlogic/pre-commit
 @@ -0,0 +1,24 @@
@@ -888,7 +856,7 @@ index 000000000000..fba48e4904e0
 +git diff --name-status --cached $against -- | ./scripts/amlogic/licence_pre.pl -
 diff --git a/scripts/amlogic/pre-commit-common_drivers b/scripts/amlogic/pre-commit-common_drivers
 new file mode 100755
-index 000000000000..fba48e4904e0
+index 0000000000000..fba48e4904e06
 --- /dev/null
 +++ b/scripts/amlogic/pre-commit-common_drivers
 @@ -0,0 +1,24 @@
@@ -917,7 +885,7 @@ index 000000000000..fba48e4904e0
 +
 +git diff --name-status --cached $against -- | ./scripts/amlogic/licence_pre.pl -
 diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 88cb294dc447..ca6812482f83 100755
+index 88cb294dc4472..ca6812482f83a 100755
 --- a/scripts/checkpatch.pl
 +++ b/scripts/checkpatch.pl
 @@ -59,7 +59,7 @@ my $configuration_file = ".checkpatch.conf";
@@ -1198,7 +1166,7 @@ index 88cb294dc447..ca6812482f83 100755
  # check for pointless casting of alloc functions
  		if ($line =~ /\*\s*\)\s*$allocFunctions\b/) {
 diff --git a/scripts/kconfig/Makefile b/scripts/kconfig/Makefile
-index 5a215880b268..1aa948880a3d 100644
+index 5a215880b2688..1aa948880a3df 100644
 --- a/scripts/kconfig/Makefile
 +++ b/scripts/kconfig/Makefile
 @@ -91,7 +91,14 @@ else

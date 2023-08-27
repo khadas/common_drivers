@@ -221,8 +221,6 @@ if [[ "${FULL_KERNEL_VERSION}" != "common13-5.15" && "${ARCH}" = "arm64" && ${BA
 	fi
 	set +x
 
-	sed -i "/GKI_BUILD_CONFIG_FRAGMENT/d" ${PROJECT_DIR}/build.config.gki10
-
 	echo "========================================================"
 	echo "after compiling with bazel and organizing the document"
 	source ${KERNEL_DIR}/build.config.constants

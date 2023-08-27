@@ -1,0 +1,47 @@
+From abd262a2ea2852c9f59e39a98a225e071d8b63bd Mon Sep 17 00:00:00 2001
+From: Wanwei Jiang <wanwei.jiang@amlogic.com>
+Date: Fri, 17 Mar 2023 17:35:31 +0800
+Subject: [PATCH 2/3] bazel: support use bazel tool to build [1/1]
+
+PD#SWPL-112151
+
+Problem:
+support use bazel tool to build
+
+Solution:
+support use bazel tool to build
+
+Verify:
+sc2
+
+Change-Id: I96e80b97ed481f32239955748ffa52e7d40a85aa
+Signed-off-by: Wanwei Jiang <wanwei.jiang@amlogic.com>
+---
+ BUILD.bazel | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/BUILD.bazel b/BUILD.bazel
+index e58326282f05..3f233e5a87fb 100644
+--- a/BUILD.bazel
++++ b/BUILD.bazel
+@@ -15,6 +15,10 @@ load(
+     "merged_kernel_uapi_headers",
+ )
+ load(":modules.bzl", "COMMON_GKI_MODULES_LIST")
++load("//common:common_drivers/modules.bzl", "ALL_MODULES_REMOVE")
++remove_modules_items = {module: None for module in depset(ALL_MODULES_REMOVE).to_list()}
++COMMON_GKI_MODULES_LIST = [module for module in depset(COMMON_GKI_MODULES_LIST).to_list() if module not in remove_modules_items] \
++			if remove_modules_items else COMMON_GKI_MODULES_LIST
+ 
+ package(
+     default_visibility = [
+@@ -745,3 +749,6 @@ ddk_headers(
+     ],
+     visibility = ["//visibility:private"],
+ )
++
++load("//common:common_drivers/amlogic.bzl", "define_amlogic")
++define_amlogic()
+-- 
+2.41.0
+

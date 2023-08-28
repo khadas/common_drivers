@@ -499,7 +499,7 @@ static struct meson_ee_pwrc_mem_domain tm2_pwrc_mem_atvdemod[] = {
 };
 
 #define VPU_PD(__name, __top_pd, __mem, __get_power, __resets,		\
-		__clks, __dom_id, __mem_size)					\
+		__clks, __dom_id, __mem_size, __flag)					\
 	{								\
 		.name = __name,						\
 		.reset_names_count = __resets,				\
@@ -509,6 +509,7 @@ static struct meson_ee_pwrc_mem_domain tm2_pwrc_mem_atvdemod[] = {
 		.mem_pd_count = ARRAY_SIZE(__mem_size),			\
 		.mem_pd = __mem,					\
 		.get_power = __get_power,				\
+		.flags = __flag,					\
 	}
 
 #define TOP_PD(__name, __top_pd, __mem, __get_power, __resets,		\
@@ -532,14 +533,15 @@ static bool pwrc_ee_get_power(struct meson_ee_pwrc_domain *pwrc_domain);
 static struct meson_ee_pwrc_domain_desc g12a_pwrc_domains[] = {
 	[PWRC_G12A_VPU_ID]  = VPU_PD("VPU", &g12a_pwrc_vpu, g12a_pwrc_mem_vpu,
 				     pwrc_ee_get_power, 11, 2,
-				     PWRC_G12A_VPU_ID, g12a_pwrc_mem_vpu),
+				     PWRC_G12A_VPU_ID, g12a_pwrc_mem_vpu, 0),
 	[PWRC_G12A_ETH_ID] = MEM_PD("ETH", g12a_pwrc_mem_eth, PWRC_G12A_ETH_ID,
 					0, g12a_pwrc_mem_eth),
 };
 
 static struct meson_ee_pwrc_domain_desc sm1_pwrc_domains[] = {
 	[PWRC_SM1_VPU_ID]  = VPU_PD("VPU", &sm1_pwrc_vpu, sm1_pwrc_mem_vpu,
-				    pwrc_ee_get_power, 11, 2, PWRC_SM1_VPU_ID, sm1_pwrc_mem_vpu),
+				    pwrc_ee_get_power, 11, 2, PWRC_SM1_VPU_ID, sm1_pwrc_mem_vpu
+					, GENPD_FLAG_ALWAYS_ON),
 	[PWRC_SM1_NNA_ID]  = TOP_PD("NNA", &sm1_pwrc_nna, sm1_pwrc_mem_nna,
 				    pwrc_ee_get_power, 3, PWRC_SM1_NNA_ID, 0, sm1_pwrc_mem_nna),
 	[PWRC_SM1_USB_ID]  = TOP_PD("USB", &sm1_pwrc_usb, sm1_pwrc_mem_usb,
@@ -570,7 +572,7 @@ static struct meson_ee_pwrc_domain_desc sm1_pwrc_domains[] = {
 
 static struct meson_ee_pwrc_domain_desc tm2_pwrc_domains[] = {
 	[PWRC_TM2_VPU_ID]  = VPU_PD("VPU", &tm2_pwrc_vpu, tm2_pwrc_mem_vpu,
-				    pwrc_ee_get_power, 11, 2, PWRC_TM2_VPU_ID, tm2_pwrc_mem_vpu),
+				    pwrc_ee_get_power, 11, 2, PWRC_TM2_VPU_ID, tm2_pwrc_mem_vpu, 0),
 	[PWRC_TM2_NNA_ID]  = TOP_PD("NNA", &tm2_pwrc_nna, tm2_pwrc_mem_nna,
 				    pwrc_ee_get_power, 1, PWRC_TM2_NNA_ID, 0, tm2_pwrc_mem_nna),
 	[PWRC_TM2_USB_ID]  = TOP_PD("USB", &tm2_pwrc_usb, tm2_pwrc_mem_usb,

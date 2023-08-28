@@ -2,6 +2,7 @@
 
 KBUILD_CFLAGS += -Wlarger-than=32768
 #KBUILD_CFLAGS += -Wstack-usage=1856
+KBUILD_CFLAGS += -Wno-error=stringop-overread
 
 # Amlogic
 MODULE_NAME_DUMMY = amlogic-snd-codec-dummy

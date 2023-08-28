@@ -1558,9 +1558,9 @@ int SC2_bufferid_write(struct chan_id *pchan, const char __user *buf,
 					   pchan->mem_size, total, pack_len);
 		}
 		prev_time_nsec = ktime_to_ns(ktime_get());
-		max_timeout_nsec = (s64)write_timeout_ms * 1000;
+		max_timeout_nsec = (s64)write_timeout_ms * 1000 * 1000;
 		do {
-			usleep_range(1, 10);
+			usleep_range(100, 200);
 		} while (!rdma_get_done(pchan->id) &&
 			(ktime_to_ns(ktime_get()) - prev_time_nsec) < max_timeout_nsec);
 

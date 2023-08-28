@@ -1292,7 +1292,7 @@
 	rdma{
 		compatible = "amlogic, meson, rdma";
 		dev_name = "amlogic-rdma";
-		status = "disabled";
+		status = "okay";
 		interrupts = <0 89 1>;
 		interrupt-names = "rdma";
 	};

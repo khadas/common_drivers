@@ -305,16 +305,20 @@
 		compatible = "amlogic, vpu-g12a";
 		dev_name = "vpu";
 		status = "okay";
-		//clocks = <&clkc CLKID_VAPB_MUX>,
-		//	<&clkc CLKID_VPU_INTR>,
-		//	<&clkc CLKID_VPU_P0_COMP>,
-		//	<&clkc CLKID_VPU_P1_COMP>,
-		//	<&clkc CLKID_VPU_MUX>;
-		//clock-names = "vapb_clk",
-		//	"vpu_intr_gate",
-		//	"vpu_clk0",
-		//	"vpu_clk1",
-		//	"vpu_clk";
+		reg = <0x0 0xff63c000 0x0 0x1000>,   /* clk   */
+				<0x0 0xff900000 0x0 0x100000>,   /* vcbus */
+				<0x0 0xffd00000 0x0 0x26000>, /* cbus   */
+				<0x0 0xff800000 0x0 0x100000>; /* aobus */
+		clocks = <&clkc CLKID_VAPB_SEL>,
+			<&clkc CLKID_VPU_INTR>,
+			<&clkc CLKID_VPU_0>,
+			<&clkc CLKID_VPU_1>,
+			<&clkc CLKID_VPU>;
+		clock-names = "vapb_clk",
+			"vpu_intr_gate",
+			"vpu_clk0",
+			"vpu_clk1",
+			"vpu_clk";
 		clk_level = <7>;
 		/* 0: 100.0M    1: 166.7M    2: 200.0M    3: 250.0M */
 		/* 4: 333.3M    5: 400.0M    6: 500.0M    7: 666.7M */

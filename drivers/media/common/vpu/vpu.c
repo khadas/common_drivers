@@ -2170,6 +2170,49 @@ static struct vpu_data_s vpu_data_t5m = {
 	.clktree_init = vpu_clktree_init_dft,
 };
 
+static struct vpu_data_s vpu_data_g12a = {
+	.chip_type = VPU_CHIP_G12A,
+	.chip_name = "g12a",
+
+	.clk_level_dft = CLK_LEVEL_DFT_G12A,
+	.clk_level_max = CLK_LEVEL_MAX_G12A,
+	.fclk_div_table = fclk_div_table_g12a,
+	.clk_table = vpu_clk_table,
+	.reg_map_table = vpu_reg_table,
+	.test_reg_table = vcbus_test_reg,
+
+	.vpu_clk_reg = HHI_VPU_CLK_CNTL,
+	.vapb_clk_reg = HHI_VAPBCLK_CNTL,
+
+	.gp_pll_valid = 0,
+	.mem_pd_reg[0] = HHI_VPU_MEM_PD_REG0,
+	.mem_pd_reg[1] = HHI_VPU_MEM_PD_REG1,
+	.mem_pd_reg[2] = HHI_VPU_MEM_PD_REG2,
+	.mem_pd_reg[3] = VPU_REG_END,
+	.mem_pd_reg[4] = VPU_REG_END,
+	.mem_pd_reg_flag = 0,
+
+	.pwrctrl_id_table = NULL,
+
+	.power_table = vpu_power_g12a,
+	.iso_table = vpu_iso_g12a,
+	.reset_table = vpu_reset_g12a,
+	.module_init_table = NULL,
+
+	.mem_pd_table = vpu_mem_pd_g12b,
+	.clk_gate_table = vpu_clk_gate_g12a,
+
+	.power_on = vpu_power_on,
+	.power_off = vpu_power_off,
+	.mem_pd_init_off = vpu_mem_pd_init_off,
+	.module_init_config = vpu_module_init_config,
+	.power_init_check = vpu_power_init_check_dft,
+	.mempd_switch = vpu_vmod_mem_pd_switch,
+	.mempd_get = vpu_vmod_mem_pd_get,
+	.clk_apply = vpu_clk_apply_dft,
+	.clktree_init = vpu_clktree_init_dft,
+};
+
 static struct vpu_data_s vpu_data_g12b = {
 	.chip_type = VPU_CHIP_G12B,
 	.chip_name = "g12b",
@@ -2392,6 +2435,10 @@ static const struct of_device_id vpu_of_table[] = {
 	{
 		.compatible = "amlogic, vpu-t5m",
 		.data = &vpu_data_t5m,
+	},
+	{
+		.compatible = "amlogic, vpu-g12a",
+		.data = &vpu_data_g12a,
 	},
 	{
 		.compatible = "amlogic, vpu-g12b",

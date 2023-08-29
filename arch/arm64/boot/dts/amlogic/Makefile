@@ -84,3 +84,5 @@ dtb-y += t7_a311d2_an400_bluebell.dtb
 dtb-y += t7c_a311d2_an400_bluebell_4g.dtb
 dtb-y += t7c_a311d2_an400_bluebell_8g.dtb
 dtb-y += t7c_a311d2_an400_bluebell-hdmitx-only-4g.dtb
+dtb-y += t7c_a311d2_an400_mercury.dtb
+dtb-y += t7_a311d2_an400_mercury.dtb

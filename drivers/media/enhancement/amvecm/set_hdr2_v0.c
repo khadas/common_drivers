@@ -1272,10 +1272,10 @@ int calc_gmut_shift(struct hdr_proc_mtx_param_s *hdr_mtx_param)
 			else
 				gmut_shift = 0; /* use integer mode for gamut coeff */
 		}
-		if ((is_meson_g12a_cpu() || is_meson_g12a_cpu()) &&
+		if ((is_meson_g12a_cpu() || is_meson_g12b_cpu()) &&
 			(hdr_mtx_param->p_sel & CUVA_SDR))
 			gmut_shift = 9;
-		else if ((is_meson_g12a_cpu() || is_meson_g12a_cpu()) &&
+		else if ((is_meson_g12a_cpu() || is_meson_g12b_cpu()) &&
 			(hdr_mtx_param->p_sel & HLG_SDR) && cuva_static_hlg_en)
 			gmut_shift = 9;
 	} else if (hdr_mtx_param->p_sel & CUVAHLG_SDR) {
@@ -2063,6 +2063,11 @@ void set_hdr_matrix(enum hdr_module_sel module_sel,
 				adpscl_shift[1] = OO_NOR -
 				_log2((1 << OO_NOR) / 32)
 				- 1;
+			}
+			if ((get_cpu_type() == MESON_CPU_MAJOR_ID_G12A) ||
+				(get_cpu_type() == MESON_CPU_MAJOR_ID_G12B)) {
+				adpscl_shift[0] = adp_scal_x_shift;
+				adpscl_shift[1] = 8;
 			}
 		} else if (hdr_mtx_param->p_sel & CUVAHLG_SDR) {
 			adpscl_shift[0] = hdr_lut_param->adp_scal_x_shift;
@@ -3761,6 +3766,15 @@ enum hdr_process_sel hdr_func(enum hdr_module_sel module_sel,
 				hdr_mtx_param.mtx_gamut[i] =
 				ncl_2020_709_8bit[i];
 		}
+
+		if ((is_meson_g12a_cpu() ||
+		    is_meson_g12b_cpu()) &&
+		    (hdr_process_select & HDR_SDR)) {
+			for (i = 0; i < 9; i++)
+				hdr_mtx_param.mtx_gamut[i] =
+				ncl_2020_709[i];
+		}
+
 		for (i = 0; i < MTX_NUM_PARAM; i++) {
 			hdr_mtx_param.mtx_in[i] = coeff_in[i];
 			hdr_mtx_param.mtx_cgain[i] = rgb2ycbcr_709[i];

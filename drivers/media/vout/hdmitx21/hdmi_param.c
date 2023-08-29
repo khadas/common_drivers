@@ -129,9 +129,8 @@ static bool _tst_fmt_name(struct hdmi_format_para *para,
 		return 0;
 	/* check sname first */
 	for (i = 0; i < hdmitx21_timing_size(); i++) {
-		if (timing->sname && strncmp(name, timing->sname, strlen(name)) == 0) {
+		if (timing->sname && strncmp(name, timing->sname, strlen(timing->sname)) == 0) {
 			para->timing = *timing;
-			para->vic = timing->vic;
 			goto next;
 		}
 		timing++;
@@ -140,9 +139,8 @@ static bool _tst_fmt_name(struct hdmi_format_para *para,
 	/* check name */
 	timing = hdmitx21_get_timing_para0();
 	for (i = 0; i < hdmitx21_timing_size(); i++) {
-		if (strncmp(name, timing->name, strlen(name)) == 0) {
+		if (strncmp(name, timing->name, strlen(timing->name)) == 0) {
 			para->timing = *timing;
-			para->vic = timing->vic;
 			break;
 		}
 		timing++;

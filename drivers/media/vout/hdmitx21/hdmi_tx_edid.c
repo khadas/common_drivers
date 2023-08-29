@@ -2905,8 +2905,9 @@ bool hdmitx21_edid_check_valid_mode(struct hdmitx_dev *hdev,
 	 * 4k resolution
 	 */
 	if (hdmitx21_limited_1080p()) {
-		if (hdmitx21_is_vic_over_limited_1080p(para->vic)) {
-			pr_err("over limited vic%d in %s\n", para->vic, __func__);
+		if (hdmitx21_is_vic_over_limited_1080p(para->timing.vic)) {
+			pr_err("over limited vic%d in %s\n", para->timing.vic,
+			       __func__);
 			return 0;
 		}
 	}

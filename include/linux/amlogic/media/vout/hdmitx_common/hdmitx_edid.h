@@ -8,6 +8,7 @@
 #include <linux/types.h>
 #include <linux/amlogic/media/vout/vinfo.h>
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_mode.h>
+#include <linux/amlogic/media/vout/hdmi_tx_ext.h>
 
 #define EDID_MAX_BLOCK		8
 #define VESA_MAX_TIMING		64
@@ -246,6 +247,7 @@ enum vsif_type {
 
 /*edid apis*/
 u32 hdmitx_edid_get_hdmi14_4k_vic(u32 vic);
+void phy_addr_clear(struct vsdb_phyaddr *vsdb_phy_addr);
 
 /*edid is good return 0, otherwise return < 0.*/
 int hdmitx_edid_validate(unsigned char *rawedid);

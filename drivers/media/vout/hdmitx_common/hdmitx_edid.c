@@ -5,7 +5,18 @@
 #include <linux/errno.h>
 #include <linux/kernel.h>
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_edid.h>
-#include <linux/amlogic/media/vout/hdmi_tx_ext.h>
+
+void phy_addr_clear(struct vsdb_phyaddr *vsdb_phy_addr)
+{
+	if (!vsdb_phy_addr)
+		return;
+
+	vsdb_phy_addr->a = 0;
+	vsdb_phy_addr->b = 0;
+	vsdb_phy_addr->c = 0;
+	vsdb_phy_addr->d = 0;
+	vsdb_phy_addr->valid = 0;
+}
 
 static bool hdmitx_edid_header_invalid(u8 *buf)
 {

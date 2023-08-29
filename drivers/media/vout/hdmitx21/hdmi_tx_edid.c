@@ -3108,6 +3108,7 @@ void hdmitx21_edid_clear(struct hdmitx_dev *hdmitx_device)
 	hdmitx_device->tx_comm.edid_parsing = 0;
 	hdmitx_edid_set_default_aud(hdmitx_device);
 	rx_set_hdr_lumi(&tmp[0], 2);
+	phy_addr_clear(&hdmitx_device->hdmi_info.vsdb_phy_addr);
 	//rx_set_receiver_edid(&tmp[0], 2);
 	/* clear info */
 	hdmitx_device->hdmi_info.support_underscan_flag = 0;

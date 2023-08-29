@@ -124,7 +124,8 @@
 /* 2023.08.15 support black pattern for t7~t5w */
 /* 2023.08.18 fix YUV422 data lost issue */
 /* 2023.8.25 gcp avmute issue */
-#define RX_VER2 "ver.2023/8/25"
+/* 2023.08.28 fix t3x sound issue */
+#define RX_VER2 "ver.2023/8/28"
 
 #define PFIFO_SIZE 160
 #define HDCP14_KEY_SIZE 368

@@ -262,7 +262,7 @@ struct crg_udc_request {
 	struct transfer_trb_s *last_trb;
 	bool all_trbs_queued;
 	bool short_pkt;
-	bool used;
+	atomic_t used;
 };
 
 #define CRE_REQ_NUM 100
@@ -2008,17 +2008,21 @@ crg_udc_alloc_request(struct usb_ep *_ep, gfp_t gfp_flags)
 
 	//udc_req_ptr = kzalloc(sizeof(*udc_req_ptr), gfp_flags);
 	for (i = 0; i < CRE_REQ_NUM; i++) {
-		if (g_udc_req_ptr[i].used == 0) {
-			g_udc_req_ptr[i].used = 1;
+		if (atomic_xchg(&g_udc_req_ptr[i].used, 1) == 0) {
 			udc_req_ptr = &g_udc_req_ptr[i];
 			break;
 		}
 	}
 
+	if (i >= CRE_REQ_NUM) {
+		CRG_ERROR("fail to alloc g_udc_req_ptr\n");
+		return NULL;
+	}
+
 	CRG_DEBUG("udc_req_ptr = 0x%p\n", udc_req_ptr);
 
-	if (!udc_req_ptr)
-		return NULL;
+	//if (!udc_req_ptr)
+		//return NULL;
 
 	udc_req_ptr->usb_req.dma = DMA_ADDR_INVALID;
 	INIT_LIST_HEAD(&udc_req_ptr->queue);
@@ -2034,8 +2038,7 @@ static void crg_udc_free_request(struct usb_ep *_ep, struct usb_request *_req)
 		return;
 
 	udc_req_ptr = container_of(_req, struct crg_udc_request, usb_req);
-
-	udc_req_ptr->used = 0;
+	WARN_ON(!atomic_xchg(&udc_req_ptr->used, 0));
 	//kfree(udc_req_ptr);
 }
 
@@ -4739,10 +4742,9 @@ static int crg_udc_remove(struct platform_device *pdev)
 
 	CRG_DEBUG("%s %d gadget remove\n", __func__, __LINE__);
 
-	memset(&crg_udc_dev, 0, sizeof(struct crg_gadget_dev));
-
 	for (i = 0; i < CRE_REQ_NUM; i++)
-		g_udc_req_ptr[i].used = 0;
+		atomic_set(&g_udc_req_ptr[i].used, 0);
+	memset(&crg_udc_dev, 0, sizeof(struct crg_gadget_dev));
 
 	return 0;
 }

@@ -1003,41 +1003,75 @@
 	};
 
 	amhdmitx: amhdmitx{
-		compatible = "amlogic, amhdmitx";
+		compatible = "amlogic, amhdmitx-g12a";
 		dev_name = "amhdmitx";
-		status = "okay";
+		status = "disabled";
 		vend-data = <&vend_data>;
 		pinctrl-names="default", "hdmitx_i2c";
 		pinctrl-0=<&hdmitx_hpd &hdmitx_ddc>;
 		pinctrl-1=<&hdmitx_hpd_gpio &i2c3_master_pins1>;
-		hdmitx-gpios-hpd = <&gpio GPIOH_2 0>;
-		hdmitx-gpios-scl = <&gpio GPIOH_1 0>;
-		hdmitx-gpios-sda = <&gpio GPIOH_0 0>;
-		//clocks = <&clkc CLKID_VCLK2_ENCI
-		//	&clkc CLKID_VCLK2_VENCI0
-		//	&clkc CLKID_VCLK2_VENCI1
-		//	&clkc CLKID_VAPB_MUX
-		//	&clkc CLKID_VPU_MUX>;
-		//clock-names = "venci_top_gate",
-		//	"venci_0_gate",
-		//	"venci_1_gate",
-		//	"hdmi_vapb_clk",
-		//	"hdmi_vpu_clk";
+		clocks = <&clkc CLKID_VCLK2_ENCI
+			&clkc CLKID_VCLK2_VENCI0
+			&clkc CLKID_VCLK2_VENCI1
+			&clkc CLKID_VAPB_SEL
+			&clkc CLKID_VPU>;
+		clock-names = "venci_top_gate",
+			"venci_0_gate",
+			"venci_1_gate",
+			"hdmi_vapb_clk",
+			"hdmi_vpu_clk";
 		/* HPD, 57 + 32 = 89; CEC, 151 + 32 = 183*/
 		interrupts = <0 57 4
 			0 3 1>;
 		interrupt-names = "hdmitx_hpd", "viu1_vsync";
 		/* 0:M8B 1:GXBB 2:GXTVBB 3:GXL 4:GXM
 		 * 5:TXL 6:TXLX 7:AXG 8:GXLX 9:TXHD
-		 * 10:G12A
+		 * 10:G12A 11:G12B
 		 */
 		ic_type = <10>;
-		dongle_mode = <0>;
+		reg =	<0x0 0xffd00000 0x0 0x100000>,
+			<0x0 0xff900000 0x0 0x40000>,
+			<0x0 0xff63c000 0x0 0x2000>,
+			<0x0 0xff608000 0x0 0x4000>, //TOP
+			<0x0 0xff600000 0x0 0x8000>, //DWC reverse
+			<0x0 0xffe01000 0x0 0x100>,  //ESM
+			<0x0 0x00000000 0x0 0x000>,	/* reserved */
+			<0x0 0x00000000 0x0 0x000>,	/* reserved */
+			<0x0 0xffd00000 0x0 0x1100>,
+			<0x0 0x00000000 0x0 0x000>,	/* reserved */
+			<0x0 0x00000000 0x0 0x0000>,/* reserved */
+			<0x0 0x00000000 0x0 0x0000>, /* reserved */
+			<0x0 0xff634400 0x0 0x2000>,
+			<0x0 0xff800000 0x0 0x100000>;
+		reg-names = "cbus",
+			    "vpu",
+			    "hiu",
+			    "hdmitxdwc",
+			    "hdmitxtop",
+			    "esm",
+			    "anactrl",
+			    "pwrctrl",
+			    "resetctrl",
+			    "sysctrl",
+			    "clkctrl",
+			"padctrl",
+			"periphs",
+			"aobus";
 		vend_data: vend_data{ /* Should modified by Customer */
 			vendor_name = "Amlogic"; /* Max Chars: 8 */
 			product_desc = "MBox Meson Ref"; /* Max Chars: 16 */
 			/* standards.ieee.org/develop/regauth/oui/oui.txt */
 			vendor_id = <0x000000>;
+		};
+		ports {
+			port {
+				#address-cells = <1>;
+				#size-cells = <0>;
+				hdmitx_to_drm: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <0>;
+				};
+			};
 		};
 	};
 

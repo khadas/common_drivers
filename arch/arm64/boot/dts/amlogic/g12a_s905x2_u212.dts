@@ -1471,6 +1471,10 @@
 
 };  /* end of pinctrl_aobus */
 
+&amhdmitx {
+	status = "okay";
+};
+
 &audio_data {
 	status = "okay";
 };

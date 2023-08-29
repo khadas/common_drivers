@@ -52,6 +52,9 @@
 #include <linux/jump_label.h>
 #include <linux/types.h>
 #endif
+#ifdef CONFIG_PAGE_OWNER
+#include <linux/page_owner.h>
+#endif
 
 /* from mm/ path */
 #include <internal.h>
@@ -198,7 +201,7 @@ static void __nocfi aml_page_pinner_failure_detect(struct page *page)
 	 *	return;
 	 */
 
-	__page_pinner_failure_detect(page);
+	//__page_pinner_failure_detect(page);
 }
 #else
 static void aml_page_pinner_failure_detect(struct page *page)
@@ -240,6 +243,21 @@ unsigned long (*aml_kallsyms_lookup_name)(const char *name);
 static struct kprobe kp_lookup_name = {
 	.symbol_name	= "kallsyms_lookup_name",
 };
+#endif
+
+#ifdef CONFIG_PAGE_OWNER
+#if IS_MODULE(CONFIG_AMLOGIC_CMA)
+void (*aml__dump_owner)(const struct page *page);
+#else
+static void aml__dump_owner(const struct page *page)
+{
+	__dump_page_owner(page);
+}
+#endif
+#else
+static void aml__dump_owner(const struct page *page)
+{
+}
 #endif
 
 /*
@@ -1041,7 +1059,7 @@ int cma_alloc_contig_boost(unsigned long start_pfn, unsigned long count)
 	return ret;
 }
 
-static int __aml_check_pageblock_isolate(unsigned long pfn,
+static int __nocfi __aml_check_pageblock_isolate(unsigned long pfn,
 					 unsigned long end_pfn,
 					 int flags)
 {
@@ -1069,6 +1087,7 @@ static int __aml_check_pageblock_isolate(unsigned long pfn,
 			pfn++;
 		} else {
 			cma_debug(1, page, " isolate failed\n");
+			aml__dump_owner(page);
 			break;
 		}
 	}
@@ -1441,6 +1460,7 @@ void show_page(struct page *page)
 		page->flags & 0xffffffff,
 		page_mapcount(page), page_count(page), page->private, page->index,
 		(void *)trace);
+	aml__dump_owner(page);
 	if (cma_debug_level > 4 && !irqs_disabled())
 		rmap_walk_vma(page);
 }
@@ -1768,19 +1788,6 @@ struct kprobe kp_cma_release = {
 	.pre_handler = cma_release_pre_handler,
 };
 
-static int __nocfi __kprobes getblk_gfp_pre_handler(struct kprobe *p, struct pt_regs *regs)
-{
-	if (regs->regs[3] | __GFP_MOVABLE)
-		regs->regs[3] = regs->regs[3] & ~__GFP_MOVABLE;
-
-	return 0;
-}
-
-struct kprobe kp_getblk_gfp = {
-	.symbol_name  = "__getblk_gfp",
-	.pre_handler = getblk_gfp_pre_handler,
-};
-
 static void *get_symbol_addr(const char *symbol_name)
 {
 	struct kprobe kp;
@@ -1837,6 +1844,9 @@ static int __nocfi common_symbol_init(void *data)
 		unsigned int migratetype, int flags))get_symbol_addr("start_isolate_page_range");
 #endif
 
+#ifdef CONFIG_PAGE_OWNER
+	aml__dump_owner = (void (*)(const struct page *page))get_symbol_addr("__dump_page_owner");
+#endif
 	ret = register_kprobe(&kp_cma_alloc);
 	if (ret < 0) {
 		pr_err("register_kprobe:%s failed, returned %d\n",
@@ -1848,13 +1858,6 @@ static int __nocfi common_symbol_init(void *data)
 	if (ret < 0) {
 		pr_err("register_kprobe:%s failed, returned %d\n",
 		       kp_cma_release.symbol_name, ret);
-		return 1;
-	}
-
-	ret = register_kprobe(&kp_getblk_gfp);
-	if (ret < 0) {
-		pr_err("register_kprobe:%s failed, returned %d\n",
-		       kp_getblk_gfp.symbol_name, ret);
 		return 1;
 	}
 

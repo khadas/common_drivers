@@ -283,6 +283,12 @@ static void viuin_set_vdin_if_mux_ctrl(enum tvin_port_e port)
 			wr_bits_viu(VPU_VIU_VDIN_IF_MUX_CTRL, viu_mux, 24, 5);
 		}
 	} else if (viu_sel == 2) {
+		/* for vdi6 , vdin source 7*/
+		wr_bits_viu(VPU_VIU_VDIN_IF_MUX_CTRL, 0, 0, 5);
+		wr_bits_viu(VPU_VIU_VDIN_IF_MUX_CTRL, viu_mux, 0, 5);
+		wr_bits_viu(VPU_VIU_VDIN_IF_MUX_CTRL, 0, 8, 5);
+		wr_bits_viu(VPU_VIU_VDIN_IF_MUX_CTRL, viu_mux, 8, 5);
+		/* for vdi8 , vdin source 9*/
 		wr_bits_viu(VPU_VIU_VDIN_IF_MUX_CTRL, 0, 16, 5);
 		wr_bits_viu(VPU_VIU_VDIN_IF_MUX_CTRL, viu_mux, 16, 5);
 		wr_bits_viu(VPU_VIU_VDIN_IF_MUX_CTRL, 0, 24, 5);
@@ -405,13 +411,14 @@ static void viuin_set_wr_bak_ctrl_t3x(enum tvin_port_e port)
 	const struct vinfo_s *vinfo = NULL;
 
 	vinfo = get_current_vinfo();
-	if (!vinfo)
+	if (!vinfo) {
 		pr_info("%s vinfo == NULL\n", __func__);
-	else
+	} else {
 		pr_info("ppc:%d,w:%d,h:%d,dur:%d\n", vinfo->cur_enc_ppc,
 			vinfo->width, vinfo->height, vinfo->std_duration);
+		wr_viu(VPU_VIU2VDIN_HDN_CTRL, vinfo->width);
+	}
 
-	wr_viu(VPU_VIU2VDIN_HDN_CTRL, vinfo->width);
 	if (vinfo && vinfo->width * vinfo->height * vinfo->std_duration >
 		VDIN_LITE_CORE_MAX_PIXEL_CLOCK) { //need skip
 		/* din_mode,2ppc */

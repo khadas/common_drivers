@@ -1271,6 +1271,14 @@ void vdin_set_top(struct vdin_dev_s *devp, unsigned int offset,
 		vdin_data_bus_1 = VDIN_MAP_RCR;
 		vdin_data_bus_2 = VDIN_MAP_Y_G;
 		break;
+	case TVIN_YUV444:
+		/*YUV444 mapping*/
+		if (devp->set_canvas_manual == 1) {
+			vdin_data_bus_0 = VDIN_MAP_Y_G;
+			vdin_data_bus_1 = VDIN_MAP_RCR;
+			vdin_data_bus_2 = VDIN_MAP_BPB;
+		}
+		break;
 	case TVIN_RGB444:
 		/*RGB mapping*/
 		if (devp->set_canvas_manual == 1) {

@@ -4797,10 +4797,17 @@ static long vdin_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		}
 
 		memset(&param, 0, sizeof(struct vdin_parm_s));
-		if (cpu_after_eq(MESON_CPU_MAJOR_ID_SM1))
+
+		if (is_meson_txhd2_cpu() && devp->set_canvas_manual == 1 &&
+		    devp->dts_config.kestone_sel) {
+			param.port = TVIN_PORT_VIU1_WB0_POST_BLEND;
+			devp->flags |= VDIN_FLAG_MANUAL_CONVERSION;
+			devp->debug.dest_cfmt = TVIN_RGB444;
+		} else if (cpu_after_eq(MESON_CPU_MAJOR_ID_SM1)) {
 			param.port = TVIN_PORT_VIU1_WB0_VPP;
-		else
+		} else {
 			param.port = TVIN_PORT_VIU1;
+		}
 
 		param.h_active = vdin_v4l2_param.width;
 		param.v_active = vdin_v4l2_param.height;
@@ -5993,6 +6000,8 @@ static void vdin_get_dts_config(struct vdin_dev_s *devp,
 	devp->cr_lossy_param.burst_length_add_en = 0;
 	devp->cr_lossy_param.burst_length_add_value = 2;
 	devp->cr_lossy_param.ofset_burst4_en = 0;
+	/* for txhd2 only now */
+	devp->dts_config.kestone_sel = 1;
 }
 
 static int vdin_drv_probe(struct platform_device *pdev)

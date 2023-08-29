@@ -88,8 +88,8 @@ int color_bar_debug_en;
 int color_bar_lvl;
 /* used in other module */
 //static int audio_sample_rate;
-int reset_pcs_flag = 10;
-int reset_pcs_cnt = 1;
+int reset_pcs_flag;
+int reset_pcs_cnt = 10;
 int port_debug_en = 1;
 int flt_ready_max = 3;
 int frl_debug_en;

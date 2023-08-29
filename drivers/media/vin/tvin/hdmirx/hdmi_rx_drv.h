@@ -50,6 +50,7 @@
 //2023.8.8 fix edid switch issue
 //2023.8.18 fix no sound when no aif pkt
 //2023.8.25 fix t3x port4 get spd info err
+//2023.8.29 hdcp cts
 #define RX_VER0 "ver.2023/08/18"
 
 /*print type*/

@@ -1,5 +1,8 @@
 # SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 
+#break GKI
+CONFIG_AMLOGIC_BREAK_GKI=y
+
 # amlogic-uart
 CONFIG_AMLOGIC_SERIAL_MESON=y
 

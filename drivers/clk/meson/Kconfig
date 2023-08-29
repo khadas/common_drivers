@@ -60,7 +60,6 @@ config AMLOGIC_MESON_CLK_MEASURE
 
 config AMLOGIC_CLK_DEBUG
 	tristate "Amlogic Meson SoC Clock Debug Driver"
-	depends on AMLOGIC_BREAK_GKI
 	help
 	  Say yes to support of debugging online a set of SoC clocks
 	  from the debugfs interface.

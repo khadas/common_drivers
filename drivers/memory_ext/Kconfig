@@ -3,7 +3,6 @@
 menuconfig AMLOGIC_MEMORY_EXTEND
 	bool "AMLOGIC memory extend support"
 	depends on AMLOGIC_DRIVER
-	depends on AMLOGIC_BREAK_GKI
 	depends on AMLOGIC_BREAK_GKI_20
 	select SWIOTLB if !AMLOGIC_MEMORY_OPT
 	select DMA_RESTRICTED_POOL if !AMLOGIC_MEMORY_OPT
@@ -26,7 +25,7 @@ config AMLOGIC_PAGE_TRACE
 
 config AMLOGIC_PAGE_TRACE_INLINE
 	bool "page trace inline into page flags"
-	depends on AMLOGIC_BREAK_GKI_20
+	depends on AMLOGIC_BREAK_GKI
 	depends on AMLOGIC_PAGE_TRACE
 	depends on 64BIT
 	depends on !KASAN_HW_TAGS && !KASAN_SW_TAGS
@@ -40,7 +39,6 @@ config AMLOGIC_PAGE_TRACE_INLINE
 
 config AMLOGIC_SLAB_TRACE
 	bool "Amlogic trace for slab usage"
-	depends on AMLOGIC_BREAK_GKI_20
 	depends on SLUB
 	depends on AMLOGIC_MEMORY_EXTEND
 	default n
@@ -75,7 +73,7 @@ config AMLOGIC_STACKPROTECTOR
 
 config AMLOGIC_VMAP
 	bool "Amlogic kernel stack"
-	depends on AMLOGIC_BREAK_GKI_20
+	depends on AMLOGIC_BREAK_GKI
 	depends on AMLOGIC_MEMORY_EXTEND
 	depends on AMLOGIC_STACKPROTECTOR
 	depends on !AMLOGIC_ARM_KASAN
@@ -107,7 +105,7 @@ config AMLOGIC_ZSTD
 
 config AMLOGIC_MEMORY_STAT
 	bool "Amlogic stat memory info"
-	depends on AMLOGIC_BREAK_GKI_20
+	depends on AMLOGIC_BREAK_GKI
 	depends on AMLOGIC_MEMORY_EXTEND
 	default n
 	help
@@ -125,7 +123,7 @@ config AMLOGIC_CMA_DIS
 
 config AMLOGIC_MEMORY_OPT
 	bool "Amlogic memory optimization support"
-	depends on AMLOGIC_BREAK_GKI_20
+	depends on AMLOGIC_BREAK_GKI
 	depends on AMLOGIC_MEMORY_EXTEND
 	default n
 	help
@@ -136,7 +134,7 @@ config AMLOGIC_MEMORY_OPT
 
 config AMLOGIC_PIN_LOCKED_FILE
 	bool "Amlogic pin locked file"
-	depends on AMLOGIC_BREAK_GKI_20
+	depends on AMLOGIC_BREAK_GKI
 	depends on AMLOGIC_MEMORY_EXTEND
 	default n
 	help
@@ -148,7 +146,7 @@ config AMLOGIC_PIN_LOCKED_FILE
 
 config AMLOGIC_PIN_LOCKED_FILE_V2
 	bool "Amlogic pin locked file new version"
-	depends on AMLOGIC_BREAK_GKI_20
+	depends on AMLOGIC_BREAK_GKI
 	depends on AMLOGIC_MEMORY_EXTEND
 	default n
 	help

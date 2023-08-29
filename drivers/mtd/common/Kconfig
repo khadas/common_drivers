@@ -21,7 +21,7 @@ config AMLOGIC_NAND
 	bool "Amlogic NAND modification"
 	default n
 	depends on MTD_BLOCK
-	depends on AMLOGIC_BREAK_GKI_20
+	depends on AMLOGIC_BREAK_GKI
 	help
 		Add bad block handling for mtd block. some
 		filesystems or users don't care the bad blocks

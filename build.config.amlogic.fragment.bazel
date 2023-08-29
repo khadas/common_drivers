@@ -16,7 +16,6 @@ function pre_defconfig_cmds() {
 	if [[ ${GKI_CONFIG} == gki_20 ]]; then
 		if [[ -z ${ANDROID_PROJECT} ]]; then
 			echo "CONFIG_AMLOGIC_DRIVER=y" > ${temp_file}
-			#echo "CONFIG_AMLOGIC_BREAK_GKI=y" >> ${temp_file}
 			echo "CONFIG_AMLOGIC_MODIFY=y" >> ${temp_file}
 			echo "CONFIG_AMLOGIC_IN_KERNEL_MODULES=y" >> ${temp_file}
 

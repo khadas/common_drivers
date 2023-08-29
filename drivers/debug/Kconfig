@@ -10,7 +10,6 @@ config AMLOGIC_DEBUG
 config AMLOGIC_BGKI_DEBUG_MISC
 	bool "Amlogic Debug Builtin Code"
 	depends on AMLOGIC_DEBUG
-	depends on AMLOGIC_BREAK_GKI
 	depends on AMLOGIC_BREAK_GKI_20
 	default n
 	help
@@ -29,7 +28,6 @@ config AMLOGIC_DEBUG_ATRACE
 config AMLOGIC_BOOT_TIME
 	bool "AMLOGIC boot time optimi zation"
 	depends on AMLOGIC_BREAK_GKI
-	depends on AMLOGIC_BREAK_GKI_20
 	default n
 	help
 	  This option is set up for Amlogic boot time optimization,
@@ -106,6 +104,7 @@ config AMLOGIC_GKI_CONFIG
 
 config AMLOGIC_ENV_DEBUG
 	bool "AMLOGIC env debug"
+	depends on AMLOGIC_BREAK_GKI_20
 	depends on AMLOGIC_DEBUG
 	default n
 	help
@@ -114,6 +113,7 @@ config AMLOGIC_ENV_DEBUG
 config AMLOGIC_ZAPPER_CUT
 	bool "zapper cut"
 	depends on AMLOGIC_DEBUG
+	depends on AMLOGIC_BREAK_GKI
 	default n
 	help
 	  remove more for zapper
@@ -158,7 +158,7 @@ config AMLOGIC_APU
 config AMLOGIC_BGKI_SCHED_SYSCTL
 	bool "Amlogic sched sysctl"
 	default n
-	depends on AMLOGIC_BREAK_GKI_20
+	depends on AMLOGIC_BREAK_GKI
 	help
 	  this is for vts vts_kernel_proc_file_api_test support in
 	  android S.

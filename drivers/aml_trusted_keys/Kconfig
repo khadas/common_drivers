@@ -2,6 +2,7 @@
 config AMLOGIC_LINUX_FBE
 	bool "Amlogic's FBE implementation"
 	default n
+	depends on AMLOGIC_BREAK_GKI
 	depends on AMLOGIC_TRUSTED_KEYS && AMLOGIC_TRUSTED_KEYS_TEE
 	help
 	  This option is for enabling Amlogic's FBE feature. Currently,
@@ -9,6 +10,7 @@ config AMLOGIC_LINUX_FBE
 
 config AMLOGIC_LINUX_FBE_RDK
 	bool "Customization of Amlogic's FBE for RDK"
+	depends on AMLOGIC_BREAK_GKI
 	depends on AMLOGIC_LINUX_FBE
 	default n
 	help

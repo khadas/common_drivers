@@ -14,6 +14,7 @@ config AMLOGIC_AUDIO_BRIDGE
 
 config AMLOGIC_BRIDGE_UAC
 	bool "audio UAC bridge support"
+	depends on AMLOGIC_BREAK_GKI
 	depends on AMLOGIC_AUDIO_BRIDGE && (USB_CONFIGFS_F_UAC1 || USB_CONFIGFS_F_UAC2)
 	default n
 	help
@@ -24,6 +25,7 @@ config AMLOGIC_BRIDGE_UAC
 
 config AMLOGIC_BRIDGE_HID
 	bool "support the HID control"
+	depends on AMLOGIC_BREAK_GKI
 	depends on AMLOGIC_AUDIO_BRIDGE && AMLOGIC_BRIDGE_UAC
 	default n
 	help

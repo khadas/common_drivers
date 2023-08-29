@@ -36,6 +36,7 @@ config ANDROID_LOW_MEMORY_KILLER_AUTODETECT_OOM_ADJ_VALUES
 
 config AMLOGIC_LMK
 	bool "Amlogic Low Memory Killer vendor"
+	depends on AMLOGIC_BREAK_GKI
 	help
 		Add file free page statistics, which also triggers lmkd
 		when there are many files in free.

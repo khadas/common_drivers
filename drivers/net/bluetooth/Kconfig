@@ -9,6 +9,7 @@ config AMLOGIC_LINUX_BT_SMP
 
 config AMLOGIC_LINUX_BT_SUPPORT_WAKEUP
 	bool "Support BT deep sleep wake-up"
+	depends on AMLOGIC_BREAK_GKI
 	depends on BT
 	default n
 	help

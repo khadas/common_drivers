@@ -3591,7 +3591,13 @@ static irqreturn_t vsync_isr(int irq, void *dev_id)
 		pr_info("vsync isr\n");
 	lowlatency_vsync_count++;
 	if (lowlatency_enable) {
-		vd_dispbuf_to_put();
+		if (overrun_flag) {
+			overrun_flag = false;
+			vsync_proc_drop++;
+			lowlatency_overrun_recovery_cnt++;
+		} else {
+			vd_dispbuf_to_put();
+		}
 		return IRQ_HANDLED;
 	}
 

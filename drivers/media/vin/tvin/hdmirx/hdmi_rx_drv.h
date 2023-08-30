@@ -102,7 +102,8 @@
 /* 2023.08.14 modify the mapped emp buffer address*/
 /* 2023.8.25 fix 40M 192k 176k no sound */
 /* 2023.08.28 support FRL 3G3L & 6G3L */
-#define RX_VER1 "ver.2023/8/28"
+/* 2023.08.31 add vpp mute cnt */
+#define RX_VER1 "ver.2023/8/31"
 
 /* 50ms timer for hdmirx main loop (HDMI_STATE_CHECK_FREQ is 20) */
 
@@ -849,6 +850,7 @@ struct rx_s {
 	bool vrr_en;
 	u8 free_sync_sts;
 	u8 afifo_sts;
+	u8 vpp_mute_cnt;
 	u32 ecc_err;
 	u32 ecc_pkt_cnt;
 	u32 ecc_err_frames_cnt;
@@ -974,6 +976,7 @@ extern int rx_phy_level;
 extern int vdin_reset_pcs_en;
 extern int rx_5v_wake_up_en;
 extern char edid_cur[EDID_SIZE];
+extern int vpp_mute_cnt;
 #ifdef CONFIG_AMLOGIC_MEDIA_VRR
 extern struct notifier_block vrr_notify;
 #endif

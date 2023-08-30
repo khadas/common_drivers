@@ -3869,6 +3869,7 @@ void rx_get_global_variable(const char *buf)
 	pr_var(phy_term_lel_t3x_21, i++);
 	pr_var(flt_ready_max, i++);
 	pr_var(frl_debug_en, i++);
+	pr_var(vpp_mute_cnt, i++);
 }
 
 bool str_cmp(unsigned char *buff, unsigned char *str)
@@ -4439,6 +4440,9 @@ int rx_set_global_variable(const char *buf, int size)
 	if (set_pr_var(tmpbuf, var_to_str(phy_term_lel_t3x_21),
 		&phy_term_lel_t3x_21, value))
 		return pr_var(phy_term_lel_t3x_21, index);
+	if (set_pr_var(tmpbuf, var_to_str(vpp_mute_cnt),
+		&vpp_mute_cnt, value))
+		return pr_var(vpp_mute_cnt, index);
 	return 0;
 }
 
@@ -5239,6 +5243,10 @@ void rx_main_state_machine(void)
 			if (rx[port].skip > 0) {
 				rx[port].skip--;
 			} else if (vpp_mute_enable) {
+				if (rx[port].vpp_mute_cnt > 0) {
+					rx[port].vpp_mute_cnt--;
+					break;
+				}
 				/* clear vpp mute after signal stable */
 				if (get_video_mute()) {
 					if (rx[port].var.mute_cnt++ < one_frame_cnt + 1)

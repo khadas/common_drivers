@@ -658,6 +658,11 @@ static void *percpu_trace_start(struct seq_file *s, loff_t *pos)
 	data->ptr = (void *)prz->old_log + *pos;
 	data->total_size = prz->old_log_size;
 
+	if (*pos + sizeof(struct record_head) > data->total_size) {
+		kfree(data);
+		return NULL;
+	}
+
 	while (*(u32 *)data->ptr != 0xabcdef) {
 		(data->ptr)++;
 		(*pos)++;
@@ -868,6 +873,13 @@ static void get_next_record_type(struct prz_record_iter **iter, int cpu,
 		enum aml_pstore_type_id type, unsigned long long *min_time)
 {
 	if (!aml_oops_cxt.record_iter[type][cpu].over) {
+		if (aml_oops_cxt.record_iter[type][cpu].size +
+			sizeof(struct record_head) >
+			aml_oops_cxt.record_iter[type][cpu].total_size) {
+			aml_oops_cxt.record_iter[type][cpu].over = 1;
+			return;
+		}
+
 		while (*(u32 *)aml_oops_cxt.record_iter[type][cpu].ptr != 0xabcdef) {
 			aml_oops_cxt.record_iter[type][cpu].ptr++;
 			aml_oops_cxt.record_iter[type][cpu].size++;
@@ -876,16 +888,17 @@ static void get_next_record_type(struct prz_record_iter **iter, int cpu,
 				aml_oops_cxt.record_iter[type][cpu].total_size) {
 				aml_oops_cxt.record_iter[type][cpu].over = 1;
 				break;
-				}
-			}
-			if (!aml_oops_cxt.record_iter[type][cpu].over &&
-			((struct record_head *)aml_oops_cxt.record_iter[type][cpu].ptr)->time <
-			*min_time) {
-				*min_time =
-			((struct record_head *)aml_oops_cxt.record_iter[type][cpu].ptr)->time;
-				*iter = &aml_oops_cxt.record_iter[type][cpu];
 			}
 		}
+
+		if (!aml_oops_cxt.record_iter[type][cpu].over &&
+		((struct record_head *)aml_oops_cxt.record_iter[type][cpu].ptr)->time <
+		*min_time) {
+			*min_time =
+		((struct record_head *)aml_oops_cxt.record_iter[type][cpu].ptr)->time;
+			*iter = &aml_oops_cxt.record_iter[type][cpu];
+		}
+	}
 }
 
 static struct prz_record_iter *get_next_record(void)

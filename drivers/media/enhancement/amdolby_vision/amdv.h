@@ -894,6 +894,8 @@ extern u32 content_fps;
 extern u32 num_downsamplers;
 extern u32 force_sdr10;
 extern bool py_enabled;
+extern bool l1l4_enabled;
+extern u32 l1l4_distance;
 extern u8 force_drm[32];
 extern bool dv_unique_drm;
 /************/

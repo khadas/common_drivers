@@ -67,7 +67,8 @@ static int last_int_top2 = 0x10;/*bit4 out_frm_wr_done*/
 static u32 last_py_level = NO_LEVEL;
 u32 py_level = NO_LEVEL;/*todo*/
 bool py_enabled = true;/*when top1 on,enable pyramid by default.some idk case disable pyramid*/
-
+bool l1l4_enabled = true;/*when top1 on,enable l1l4 by default.some idk case disable l1l4*/
+u32 l1l4_distance;
 struct vd_proc_info_t *vd_proc_info;
 
 u32 test_dv;
@@ -390,8 +391,10 @@ static void dolby5_top1_rdmif
 static void check_pr_enabled(void)
 {
 	bool pr_enabled = true;
+	bool l1l4 = true;
 
 	if (tv_hw5_setting && tv_hw5_setting->pq_config) {
+		l1l4 = tv_hw5_setting->pq_config->tdc.ana_config.enalbe_l1l4_gen;
 		pr_enabled = tv_hw5_setting->pq_config->tdc.pr_config.supports_precision_rendering;
 
 		if (pr_enabled && tv_hw5_setting->dynamic_cfg)
@@ -403,6 +406,13 @@ static void check_pr_enabled(void)
 		pr_dv_dbg("top1 enabled but pyramid disabled!\n");
 
 	py_enabled = pr_enabled;
+	l1l4_enabled = l1l4;
+	if (!l1l4_enabled)
+		l1l4_distance = 0;
+	else if (py_enabled)
+		l1l4_distance = 1;
+	else
+		l1l4_distance = 2;
 }
 
 /*if pyramid is enable in cfg, we force enable pyramid for top1+top1b due to*/
@@ -1032,6 +1042,8 @@ void enable_amdv_hw5(int enable)
 				if (dolby_vision_flags & FLAG_BYPASS_VPP)
 					video_effect_bypass(1);
 			}
+			isr_cnt = 0;
+			top1_done = false;
 			pr_info("TV core turn on\n");
 		} else {
 			if (!top1_info.core_on && enable_top1 &&
@@ -1695,6 +1707,8 @@ int tv_top_set(u64 *top1_reg,
 			py_rd_id = 0;
 			l1l4_rd_index = 0;
 			l1l4_wr_index = 0;
+			isr_cnt = 0;
+			top1_done = false;
 		}
 
 		/*update pyramid write index when toggle new frame, except first frame*/
@@ -1714,6 +1728,8 @@ int tv_top_set(u64 *top1_reg,
 	} else {
 		top1_info.core_on = false;
 		top1_info.core_on_cnt = 0;
+		if (!top2_info.core_on)
+			isr_cnt = 0;
 	}
 
 	/*first frame with top1, not enable top2*/
@@ -1840,9 +1856,15 @@ void get_l1l4_hist(void)
 	tv_hw5_setting->top1_stats.top1_l1l4.l4_std = dv5_md_hist.l1l4_md[index][3];
 
 	if (debug_dolby & 0x100000)
-		pr_info("get hist[%d], index %d %d\n", index, l1l4_rd_index, l1l4_wr_index);
+		pr_info("get hist[%d], index %d/%d, l1l4_distance %d\n",
+			index, l1l4_rd_index, l1l4_wr_index, l1l4_distance);
 
-	l1l4_rd_index = l1l4_rd_index ^ 1;
+	if (dolby_vision_flags & FLAG_CERTIFICATION) {
+		if (top2_info.core_on_cnt >= l1l4_distance)/*cmodel hist delay one or two frame*/
+			l1l4_rd_index = (l1l4_rd_index + 1) % HIST_BUF_COUNT;
+	} else {
+		l1l4_rd_index = (l1l4_rd_index + 1) % HIST_BUF_COUNT;
+	}
 }
 
 #define FOR_DEBUG 0
@@ -1867,7 +1889,7 @@ void set_l1l4_hist(void)
 	if (new_top1_toggle) {
 		new_top1_toggle = false;
 		if (top1_info.core_on_cnt > 1)
-			l1l4_wr_index = l1l4_wr_index ^ 1;
+			l1l4_wr_index = (l1l4_wr_index + 1) % HIST_BUF_COUNT;
 	}
 
 	index = l1l4_wr_index;

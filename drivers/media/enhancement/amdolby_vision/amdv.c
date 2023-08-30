@@ -1806,6 +1806,11 @@ void set_frame_count(int val)
 {
 	if (!multi_dv_mode)
 		frame_count = val;
+
+	if (is_aml_hw5()) {
+		top1_v_info.frame_count = 0;
+		top2_v_info.frame_count = 0;
+	}
 }
 
 int get_frame_count(void)
@@ -1875,6 +1880,7 @@ void reset_dv_param(void)
 		top2_v_info.frame_count = 0;
 		py_wr_id = 0;
 		py_rd_id = 0;
+		l1l4_distance = 0;
 		memset(&dv5_md_hist.hist[0], 0, sizeof(dv5_md_hist.hist));
 		memset(&dv5_md_hist.l1l4_md[0], 0, sizeof(dv5_md_hist.l1l4_md));
 		memset(dv5_md_hist.hist_vaddr[0], 0, dv5_md_hist.hist_size);
@@ -16011,9 +16017,10 @@ static ssize_t amdolby_vision_inst_status_show
 			tv_hw5_setting->pq_config->tdc.pr_config.precision_rendering_strength,
 			tv_hw5_setting->pq_config->tdc.ana_config.enalbe_l1l4_gen);
 		}
-		len += sprintf(buf + len, "pyramid:wr=%d rd=%d level=%s,cfg enabled=%d\n",
+		len += sprintf(buf + len, "pyramid:wr=%d rd=%d level=%s,pd=%d,l1l4=%d %d\n",
 			py_wr_id, py_rd_id,
-			py_level == 0 ? "6" : (py_level == 1 ? "7" : "0"), py_enabled);
+			py_level == 0 ? "6" : (py_level == 1 ? "7" : "0"),
+			py_enabled, l1l4_enabled, l1l4_distance);
 
 		len += sprintf(buf + len, "==========TOP1=========\n");
 		len += sprintf(buf + len, "top1 enable: %d\n", enable_top1);

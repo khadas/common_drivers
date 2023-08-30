@@ -11,13 +11,15 @@
 
 #include <linux/types.h>
 
+#define HIST_BUF_COUNT 3
+
 struct dolby5_top1_md_hist {
-	u32 l1l4_md[2][4];
+	u32 l1l4_md[HIST_BUF_COUNT][4];
 	u8 hist[256];
 	void *hist_vaddr[2];
 	dma_addr_t hist_paddr[2];
 	u32 hist_size;
-	u16 histogram[2][128];
+	u16 histogram[HIST_BUF_COUNT][128];
 };
 
 struct dolby5_top1_type {

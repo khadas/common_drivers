@@ -9,6 +9,7 @@
 #include "pinctrl-meson-axg-pmx.h"
 
 static const struct pinctrl_pin_desc meson_g12a_periphs_pins[] = {
+	MESON_PIN(GPIOV_0),
 	MESON_PIN(GPIOZ_0),
 	MESON_PIN(GPIOZ_1),
 	MESON_PIN(GPIOZ_2),
@@ -152,6 +153,7 @@ static const unsigned int sdio_d2_pins[]		= { GPIOX_2 };
 static const unsigned int sdio_d3_pins[]		= { GPIOX_3 };
 static const unsigned int sdio_clk_pins[]		= { GPIOX_4 };
 static const unsigned int sdio_cmd_pins[]		= { GPIOX_5 };
+static const unsigned int sdio_dummy_pins[] = {GPIOV_0};
 
 /* sdcard */
 static const unsigned int sdcard_d0_c_pins[]		= { GPIOC_0 };
@@ -507,6 +509,7 @@ static const unsigned int remote_input_a_pins[]		= {GPIOA_15};
 /*end of SM1*/
 
 static struct meson_pmx_group meson_g12a_periphs_groups[] __initdata = {
+	GPIO_GROUP(GPIOV_0),
 	GPIO_GROUP(GPIOZ_0),
 	GPIO_GROUP(GPIOZ_1),
 	GPIO_GROUP(GPIOZ_2),
@@ -876,6 +879,9 @@ static struct meson_pmx_group meson_g12a_periphs_groups[] __initdata = {
 	GROUP(tdmc_dout5_a,		7),
 	GROUP(world_sync_a,		1),
 	GROUP(remote_input_a,		1),
+
+	/* bank GPIOV */
+	GROUP(sdio_dummy,	1),
 };
 
 /* uart_ao_a */
@@ -1065,6 +1071,8 @@ static struct meson_pmx_group meson_g12a_aobus_groups[] __initdata = {
 };
 
 static const char * const gpio_periphs_groups[] = {
+	"GPIOV_0",
+
 	"GPIOZ_0", "GPIOZ_1", "GPIOZ_2", "GPIOZ_3", "GPIOZ_4",
 	"GPIOZ_5", "GPIOZ_6", "GPIOZ_7", "GPIOZ_8", "GPIOZ_9",
 	"GPIOZ_10", "GPIOZ_11", "GPIOZ_12", "GPIOZ_13", "GPIOZ_14",
@@ -1523,6 +1531,8 @@ static struct meson_pmx_func meson_g12a_aobus_functions[] __initdata = {
 
 static struct meson_bank meson_g12a_periphs_banks[] = {
 	/* name  first  last  irq  pullen  pull  dir  out  in  ds */
+	BANK_DS("V",    GPIOV_0,    GPIOV_0,   -1, -1,
+	5,  17,  5,  17,  16,  17,  17,  17,  18,  17, -1, -1),
 	BANK_DS("Z",    GPIOZ_0,    GPIOZ_15, 12, 27,
 		4,  0,  4,  0,  12,  0,  13, 0,  14, 0, 5, 0),
 	BANK_DS("H",    GPIOH_0,    GPIOH_8, 28, 36,
@@ -1550,6 +1560,7 @@ static struct meson_bank meson_g12a_aobus_banks[] = {
 
 static struct meson_pmx_bank meson_g12a_periphs_pmx_banks[] = {
 	/*	 name	 first		last	   reg	offset  */
+	BANK_PMX("V",    GPIOV_0, GPIOV_0, 0x2, 24),
 	BANK_PMX("Z",    GPIOZ_0, GPIOZ_15, 0x6, 0),
 	BANK_PMX("H",    GPIOH_0, GPIOH_8,  0xb, 0),
 	BANK_PMX("BOOT", BOOT_0,  BOOT_15,  0x0, 0),

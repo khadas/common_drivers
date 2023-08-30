@@ -3787,6 +3787,7 @@ void __nocfi get_mte_sync_tags_hook(void)
 {
 	static DEFINE_MUTEX(lock);
 	struct cma *cma = NULL;
+	struct page *page = NULL;
 #if defined(CONFIG_ARM64)
 	int ret;
 
@@ -3811,11 +3812,17 @@ void __nocfi get_mte_sync_tags_hook(void)
 	}
 	pr_info("%s, %s, %lx, %lx\n", __func__, cma_get_name(cma), cma->base_pfn, cma->count);
 	/* spin_lock_irqsave(&cma->lock, flags); */
+	page = cma_alloc(cma, cma->count, 0, 0);
+	if (!page) {
+		pr_err("cma alloc failed.\n");
+		return;
+	}
 	mutex_lock(&lock);
 	if (aml_init_mm)
 		tvp_setup_cma_full_pagemap(cma->base_pfn, cma->count);
 	/* spin_unlock_irqrestore(&cma->lock, flags); */
 	mutex_unlock(&lock);
+	cma_release(cma, page, cma->count);
 }
 #endif
 

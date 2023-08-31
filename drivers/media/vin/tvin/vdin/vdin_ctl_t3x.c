@@ -693,6 +693,10 @@ void vdin_set_top_t3x(struct vdin_dev_s *devp, enum tvin_port_e port,
 	wr(0, VPU_VDIN_HDMI1_CTRL1,
 		(0 << 0) |  /* xxx */
 		(100 << 8));/* reg_rdwin_auto */
+	if (devp->h_skip_en)
+		wr_bits(0, VPU_VDIN_HDMI0_CTRL1, 1, 4, 2); /* reg_hskip_mode */
+	if (devp->v_skip_en)
+		wr_bits(0, VPU_VDIN_HDMI0_CTRL1, 1, 7, 1); /* reg_vskip_en */
 }
 
 /*this function will set the bellow parameters of devp:
@@ -718,6 +722,23 @@ void vdin_set_decimation_t3x(struct vdin_dev_s *devp)
 	devp->h_active = devp->fmt_info_p->h_active /
 			(devp->prop.decimation_ratio + 1);
 	devp->v_active = devp->fmt_info_p->v_active;
+
+	devp->h_skip_en = false;
+	devp->v_skip_en = false;
+	/* if exceed the maximum processing capacity,skipping in preproc */
+	if (devp->h_active > VDIN_LITE_CORE_MAX_W &&
+		devp->prop.color_format != TVIN_YUV422) {
+		devp->h_active = devp->h_active / 2;
+		devp->h_skip_en = true;
+	}
+	if (devp->v_active > VDIN_LITE_CORE_MAX_H &&
+	   (devp->prop.color_format == TVIN_RGB444 ||
+	    devp->prop.color_format == TVIN_YUV444 ||
+		devp->prop.color_format == TVIN_YUV422)) {
+		devp->v_active = devp->v_active / 2;
+		devp->v_skip_en = true;
+	}
+
 	if (vdin_ctl_dbg)
 		pr_info("%s decimation_ratio=%u,new_clk=%u.h:%d,v:%d\n",
 			__func__, devp->prop.decimation_ratio, new_clk,

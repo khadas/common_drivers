@@ -1011,6 +1011,8 @@ struct vdin_dev_s {
 	bool hist_bar_enable;
 	bool rdma_not_register;
 	bool interlace_drop_bottom;
+	bool h_skip_en;
+	bool v_skip_en;
 	unsigned int ignore_frames;
 	/*use frame rate to cal duration*/
 	unsigned int use_frame_rate;

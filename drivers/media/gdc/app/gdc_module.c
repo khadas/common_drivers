@@ -446,8 +446,11 @@ static int meson_gdc_dma_map(struct gdc_dma_cfg *cfg)
 		gdc_log(LOG_ERR, "Failed to access dma buff");
 		goto access_err;
 	}
-
-	ret = dma_buf_vmap(dbuf, &map);     //change in kernel5.15 yuhua.lin
+	/*
+	 * no need to initialize map
+	 */
+	/* coverity[uninit_use_in_call]*/
+	ret = dma_buf_vmap(dbuf, &map);
 	if (ret) {
 		gdc_log(LOG_ERR, "Failed to vmap dma buf");
 		goto vmap_err;

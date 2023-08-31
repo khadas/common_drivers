@@ -4118,6 +4118,7 @@ struct vframe_s *amvideo_toggle_frame(s32 *vd_path_id)
 					    vd_path_id[0] == VFM_PATH_AUTO)
 						dv_new_vf =
 						dv_toggle_frame(vf, VD1_PATH, true);
+					/*coverity[Unused value]*/
 					if (hold_video)
 						dv_new_vf = NULL;
 #endif

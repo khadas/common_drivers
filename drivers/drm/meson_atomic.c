@@ -469,7 +469,7 @@ int meson_atomic_commit(struct drm_device *dev,
 		ret = drm_atomic_helper_swap_state(state, true);
 		meson_atomic_helper_async_commit(dev, state);
 		drm_atomic_helper_cleanup_planes(dev, state);
-		meson_commit_reenter_inc(priv, crtc_index, ASYNC_MODE);
+		meson_commit_reenter_dec(priv, crtc_index, ASYNC_MODE);
 
 		return 0;
 	}

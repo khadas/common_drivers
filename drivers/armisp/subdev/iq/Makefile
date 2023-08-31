@@ -20,10 +20,11 @@ obj-m += iv009_isp_iq.o
 M_PATH := $(shell dirname $(lastword $(MAKEFILE_LIST)))
 
 ifeq ($(FW_SRC_OBJ),)
-	FW_SRC := $(wildcard src/*.c src/*/*.c src/*/*/*.c app/*.c app/*/*.c)
+	FW_SRC := $(wildcard $(M_PATH)/src/*.c $(M_PATH)/src/*/*.c $(M_PATH)/src/*/*/*.c $(M_PATH)/app/*.c $(M_PATH)/app/*/*.c)
+	FW_SRC := $(subst $(M_PATH)/,,$(FW_SRC))
 	export FW_SRC_OBJ := $(FW_SRC:.c=.o)
 
-	ifneq ($(wildcard src/fw_lib/libacamera_isp.a),)
+	ifneq ($(wildcard $(M_PATH)/src/fw_lib/libacamera_isp.a),)
 		export FW_SRC_OBJ := $(FW_SRC_OBJ) src/fw_lib/libacamera_isp.a
 	endif
 endif

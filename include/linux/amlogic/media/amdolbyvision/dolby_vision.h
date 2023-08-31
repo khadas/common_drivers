@@ -345,14 +345,14 @@ int amdv_parse_metadata_hw5_top1(struct vframe_s *vf);
 #define AMDV_UPDATE_OSD_MODE 0x00000001
 #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
 int amdv_notifier_call_chain(unsigned long val, void *v);
-int register_osd_func(int (*get_osd_enable_status)(enum OSD_INDEX index));
+int register_osd_func(int (*get_osd_enable_status)(u32 index));
 #else
 static inline int amdv_notifier_call_chain(unsigned long val, void *v)
 {
 	return 0;
 }
 
-static inline int register_osd_func(int (*get_osd_enable_status)(enum OSD_INDEX index))
+static inline int register_osd_func(int (*get_osd_enable_status)(u32 index))
 {
 	return 0;
 }

@@ -84,20 +84,20 @@
 		ion_cma_reserved:linux,ion-dev {
 			compatible = "shared-dma-pool";
 			reusable;
-			size = <0x0 0x4000000>;
+			size = <0x0 0x0>;
 			alignment = <0x0 0x400000>;
 			no-kernel-map;
 		};
 		ion_fb_reserved:linux,ion-fb {
 			compatible = "shared-dma-pool";
 			reusable;
-			size = <0x0 0x20000000>;
+			size = <0x0 0x0>;
 			alignment = <0x0 0x400000>;
 		};
 		dmaheap_cma_reserved:heap-gfx {
 			compatible = "shared-dma-pool";
 			reusable;
-			size = <0x0 0x3400000>;
+			size = <0x0 0x12c00000>;
 			alignment = <0x0 0x400000>;
 		};
 		dmaheap_fb_reserved:heap-fb {

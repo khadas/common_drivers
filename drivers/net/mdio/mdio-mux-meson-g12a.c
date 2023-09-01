@@ -21,6 +21,8 @@ EXPORT_SYMBOL_GPL(phy_analog_config_addr);
 /*0 for 12nm, 1 for 22nm*/
 unsigned int phy_pll_mode;
 EXPORT_SYMBOL_GPL(phy_pll_mode);
+unsigned int phy_mode;
+EXPORT_SYMBOL_GPL(phy_mode);
 #endif
 
 #define ETH_PLL_STS		0x40
@@ -207,7 +209,6 @@ static int g12a_enable_internal_mdio(struct g12a_mdio_mux *priv)
 	struct device_node *np = priv->dev->of_node;
 	unsigned int tx_amp_addr = 0;
 	unsigned int st_mode = 0;
-	unsigned int phy_mode = 0;
 	unsigned int rx_R = 0;
 	unsigned int tx_R = 0;
 	unsigned int efuse_get_tmp = 0;

@@ -263,7 +263,9 @@ int hdmitx_edid_validate_format_para(struct rx_cap *prxcap,
 			if (para->cd != COLORDEPTH_24B && !para->frl_clk)
 				return -EPERM;
 		break;
+	case HDMI_6_720x480i60_4x3:
 	case HDMI_7_720x480i60_16x9:
+	case HDMI_21_720x576i50_4x3:
 	case HDMI_22_720x576i50_16x9:
 		if (para->cs == HDMI_COLORSPACE_YUV422)
 			return -EPERM;

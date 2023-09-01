@@ -17,14 +17,6 @@
 
 #define HDMI_INFOFRAME_TYPE_VENDOR2 (0x81 | 0x100)
 
-struct frac_rate_table {
-	char *hz;
-	u32 sync_num_int;
-	u32 sync_den_int;
-	u32 sync_num_dec;
-	u32 sync_den_dec;
-};
-
 struct hdmitx_ctrl_ops {
 	int (*pre_enable_mode)(struct hdmitx_common *tx_comm, struct hdmi_format_para *para);
 	int (*enable_mode)(struct hdmitx_common *tx_comm, struct hdmi_format_para *para);

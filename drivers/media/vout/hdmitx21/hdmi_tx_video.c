@@ -323,7 +323,7 @@ int hdmitx21_construct_vsif(struct hdmitx_dev *hdev, enum vsif_type type,
 		db[0] = GET_OUI_BYTE0(ieeeoui);
 		db[1] = GET_OUI_BYTE1(ieeeoui);
 		db[2] = GET_OUI_BYTE2(ieeeoui);
-		if (_is_hdmi14_4k(hdev->tx_comm.cur_VIC)) {
+		if (hdmitx_edid_get_hdmi14_4k_vic(hdev->tx_comm.cur_VIC) > 0) {
 			fill_hdmi4k_vsif_data(hdev->tx_comm.cur_VIC, db, hb);
 			hdmitx21_set_avi_vic(0);
 			hdmi_vend_infoframe_rawset(hb, vsif_db);
@@ -339,7 +339,7 @@ int hdmitx21_construct_vsif(struct hdmitx_dev *hdev, enum vsif_type type,
 		db[3] = 0x1; /* Fixed value */
 		if (on) {
 			db[4] |= 1 << 1; /* set bit1, ALLM_MODE */
-			if (_is_hdmi14_4k(hdev->tx_comm.cur_VIC))
+			if (hdmitx_edid_get_hdmi14_4k_vic(hdev->tx_comm.cur_VIC) > 0)
 				hdmitx21_set_avi_vic(hdev->tx_comm.cur_VIC);
 			hdmi_vend_infoframe2_rawset(hb, vsif_db);
 		} else {

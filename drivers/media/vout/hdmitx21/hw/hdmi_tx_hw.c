@@ -39,6 +39,12 @@
 #define to_hdmitx21_dev(x)     container_of(x, struct hdmitx_dev, tx_hw)
 
 #define MESON_CPU_ID_T7 0
+
+/*TODO: move to struct hdmitx_hw*/
+static u32 tx_max_frl_rate;
+static u32 chip_type;
+static struct hdmitx_infoframe *infoframes;
+
 static void hdmi_phy_suspend(void);
 static void hdmi_phy_wakeup(struct hdmitx_dev *hdev);
 static void hdmitx_set_phy(struct hdmitx_dev *hdev);
@@ -268,10 +274,10 @@ void hdmitx21_sys_reset(void)
 	}
 }
 
-bool hdmitx21_uboot_already_display(struct hdmitx_dev *hdev)
+static bool hdmitx21_uboot_already_display(void)
 {
-	if (hdev->pxp_mode)
-		return 0;
+//	if (hdev->pxp_mode)
+//		return 0;
 
 	if (hd21_read_reg(ANACTRL_HDMIPHY_CTRL0))
 		return 1;
@@ -307,45 +313,46 @@ static enum hdmi_color_depth _get_colordepth(void)
 	return depth;
 }
 
-static enum hdmi_vic _get_vic_from_vsif(struct hdmitx_dev *hdev)
-{
-	int ret;
-	u8 body[32] = {0};
-	enum hdmi_vic hdmi4k_vic = HDMI_0_UNKNOWN;
-	union hdmi_infoframe *infoframe = &hdev->infoframes.vend;
-	struct hdmi_vendor_infoframe *vendor = &infoframe->vendor.hdmi;
-
-	ret = hdmitx_infoframe_rawget(HDMI_INFOFRAME_TYPE_VENDOR, body);
-	if (ret == -1 || ret == 0)
-		return hdmi4k_vic;
-	ret = hdmi_infoframe_unpack(infoframe, body, sizeof(body));
-	if (ret < 0) {
-		pr_info("hdmitx21: parsing VEND failed %d\n", ret);
-	} else {
-		switch (vendor->vic) {
-		case 1:
-			hdmi4k_vic = HDMI_95_3840x2160p30_16x9;
-			break;
-		case 2:
-			hdmi4k_vic = HDMI_94_3840x2160p25_16x9;
-			break;
-		case 3:
-			hdmi4k_vic = HDMI_93_3840x2160p24_16x9;
-			break;
-		case 4:
-			hdmi4k_vic = HDMI_98_4096x2160p24_256x135;
-			break;
-		default:
-			break;
-		}
-	}
-	return hdmi4k_vic;
-}
+/*
+ *static enum hdmi_vic _get_vic_from_vsif(void)
+ *{
+ *	int ret;
+ *	u8 body[32] = {0};
+ *	enum hdmi_vic hdmi 4k_vic = HDMI_0_UNKNOWN;
+ *	union hdmi_infoframe *infoframe = &infoframes->vend;
+ *	struct hdmi_vendor_infoframe *vendor = &infoframe->vendor.hdmi;
+ *
+ *	ret = hdmitx_infoframe_rawget(HDMI_INFOFRAME_TYPE_VENDOR, body);
+ *	if (ret == -1 || ret == 0)
+ *		return hdmi4k_vic;
+ *	ret = hdmi_infoframe_unpack(infoframe, body, sizeof(body));
+ *	if (ret < 0) {
+ *		pr_info("hdmitx21: parsing VEND failed %d\n", ret);
+ *	} else {
+ *		switch (vendor->vic) {
+ *		case 1:
+ *			hdmi4k_vic = HDMI_95_3840x2160p30_16x9;
+ *			break;
+ *		case 2:
+ *			hdmi4k_vic = HDMI_94_3840x2160p25_16x9;
+ *			break;
+ *		case 3:
+ *			hdmi4k_vic = HDMI_93_3840x2160p24_16x9;
+ *			break;
+ *		case 4:
+ *			hdmi4k_vic = HDMI_98_4096x2160p24_256x135;
+ *			break;
+ *		default:
+ *			break;
+ *		}
+ *	}
+ *	return hdmi4k_vic;
+ *}
+ */
 
 static void hdmi_hwp_init(struct hdmitx_dev *hdev, u8 reset)
 {
 	u32 data32;
-	struct hdmi_format_para tmp_para;
 
 	if (hdev->data->chip_type >= MESON_CPU_ID_S5) {
 		hd21_set_reg_bits(CLKCTRL_VID_CLK0_CTRL, 7, 0, 3);
@@ -357,43 +364,8 @@ static void hdmi_hwp_init(struct hdmitx_dev *hdev, u8 reset)
 	}
 
 	pr_info("%s%d\n", __func__, __LINE__);
-	if (!reset && hdmitx21_uboot_already_display(hdev)) {
-		int ret;
-		u8 body[32] = {0};
-		union hdmi_infoframe *infoframe = &hdev->infoframes.avi;
-		struct hdmi_avi_infoframe *avi = &infoframe->avi;
-		const struct hdmi_timing *tp;
-		const char *name;
-		enum hdmi_vic vic = HDMI_0_UNKNOWN;
-
-		hdev->ready = 1;
-		ret = hdmitx_infoframe_rawget(HDMI_INFOFRAME_TYPE_AVI, body);
-		if (ret == -1 || ret == 0) {
-			pr_info("hdmitx21: AVI not enabled %d\n", ret);
-			return;
-		}
-		ret = hdmi_infoframe_unpack(infoframe, body, sizeof(body));
-		if (ret < 0) {
-			pr_info("hdmitx21: parsing AVI failed %d\n", ret);
-		} else {
-			tmp_para.cs = avi->colorspace;
-			tmp_para.cd = _get_colordepth();
-			if (tmp_para.cs == HDMI_COLORSPACE_YUV422)
-				tmp_para.cd = COLORDEPTH_36B;
-			hdmitx21_rebuild_fmt_attr_str(hdev, &tmp_para);
-			vic = avi->video_code;
-			if (vic == HDMI_0_UNKNOWN)
-				vic = _get_vic_from_vsif(hdev);
-			hdev->tx_comm.cur_VIC = vic;
-			tp = hdmitx_mode_vic_to_hdmi_timing(vic);
-			if (tp) {
-				name = tp->sname ? tp->sname : tp->name;
-				update_para_from_mode(hdev, name, hdev->tx_comm.fmt_attr,
-						      &hdev->tx_comm.fmt_para);
-			}
-			pr_info("hdmitx21: parsing AVI CS%d CD%d VIC%d\n",
-				avi->colorspace, hdev->tx_comm.fmt_para.cd, hdev->tx_comm.cur_VIC);
-		}
+	if (!reset && hdmitx21_uboot_already_display()) {
+		pr_info("uboot already displayed\n");
 		return;
 	}
 
@@ -497,8 +469,38 @@ int hdmitx21_validate_mode(u32 vic)
 	return 0;
 }
 
+static int hdmitx21_calc_formatpara(struct hdmi_format_para *para)
+{
+	bool frl_enable = true;
+
+	if (chip_type < MESON_CPU_ID_S5)	//todo, not in parse
+		frl_enable = false;	//t7 not support frl
+
+	para->tmds_clk = hdmitx_calc_tmds_clk(para->timing.pixel_freq,
+		para->cs, para->cd);
+
+	if (frl_enable) {
+		u32 tx_frl_bandwidth = 0;
+
+		para->frl_clk = hdmitx_calc_frl_clk(para->timing.pixel_freq,
+			para->cs, para->cd);
+		tx_frl_bandwidth = para->frl_clk / 1000;
+		if (tx_frl_bandwidth > hdmitx_get_frl_bandwidth(tx_max_frl_rate))
+			para->frl_clk = 0;
+	} else {
+		para->frl_clk = 0;
+	}
+
+	return 0;
+}
+
 void hdmitx21_meson_init(struct hdmitx_dev *hdev)
 {
+	/*TODO: move to hdmitx_hw struct*/
+	tx_max_frl_rate = hdev->tx_max_frl_rate;
+	chip_type = hdev->data->chip_type;
+	infoframes = &hdev->infoframes;
+
 	pr_info("%s%d\n", __func__, __LINE__);
 	hdev->hwop.setdispmode = hdmitx_set_dispmode;
 	hdev->hwop.setaudmode = hdmitx_set_audmode;
@@ -512,6 +514,7 @@ void hdmitx21_meson_init(struct hdmitx_dev *hdev)
 	hdev->tx_hw.cntlconfig = hdmitx_cntl_config;
 	hdev->tx_hw.cntlmisc = hdmitx_cntl_misc;
 	hdev->tx_hw.validatemode = hdmitx21_validate_mode;
+	hdev->tx_hw.calcformatpara = hdmitx21_calc_formatpara;
 	hdmi_hwp_init(hdev, 0);
 	hdmitx21_debugfs_init();
 	hdev->tx_hw.cntlmisc(&hdev->tx_hw, MISC_AVMUTE_OP, CLR_AVMUTE);
@@ -933,7 +936,8 @@ static int hdmitx_set_dispmode(struct hdmitx_dev *hdev)
 		(0 << 6) |
 		(((para->cd == COLORDEPTH_24B) ? 1 : 0) << 10) |
 		(0 << 12);
-	if (para->cd == COLORDEPTH_24B && hdmitx21_dv_en() == 0)
+	if (para->cd == COLORDEPTH_24B &&
+		((hdmitx21_get_cur_dv_st() & HDMI_DV_TYPE) == HDMI_DV_TYPE))
 		data32 |= (1 << 4);
 	hd21_write_reg(VPU_HDMI_DITH_CNTL, data32);
 	hdmitx21_dither_config(hdev);
@@ -1214,21 +1218,6 @@ enum hdmi_tf_type hdmitx21_get_cur_hdr10p_st(void)
 		type = HDMI_HDR10P_DV_VSIF;
 
 	return type;
-}
-
-bool hdmitx21_hdr_en(void)
-{
-	return (hdmitx21_get_cur_hdr_st() & HDMI_HDR_TYPE) == HDMI_HDR_TYPE;
-}
-
-bool hdmitx21_dv_en(void)
-{
-	return (hdmitx21_get_cur_dv_st() & HDMI_DV_TYPE) == HDMI_DV_TYPE;
-}
-
-bool hdmitx21_hdr10p_en(void)
-{
-	return (hdmitx21_get_cur_hdr10p_st() & HDMI_HDR10P_TYPE) == HDMI_HDR10P_TYPE;
 }
 
 #define GET_OUTCHN_NO(a)	(((a) >> 4) & 0xf)
@@ -2600,6 +2589,57 @@ static enum hdmi_vic get_vic_from_pkt(void)
 	return vic;
 }
 
+static enum hdmi_colorspace get_cs_from_pkt(void)
+{
+	int ret;
+	u8 body[32] = {0};
+	union hdmi_infoframe *infoframe = &infoframes->avi;
+	struct hdmi_avi_infoframe *avi = &infoframe->avi;
+	enum hdmi_colorspace cs = HDMI_COLORSPACE_RESERVED6;
+
+	ret = hdmitx_infoframe_rawget(HDMI_INFOFRAME_TYPE_AVI, body);
+	if (ret == -1 || ret == 0) {
+		pr_info("hdmitx21: AVI not enabled %d\n", ret);
+		return cs;
+	}
+
+	ret = hdmi_infoframe_unpack(infoframe, body, sizeof(body));
+	if (ret < 0)
+		pr_info("hdmitx21: parsing AVI failed %d\n", ret);
+	else
+		cs = avi->colorspace;
+
+	return cs;
+}
+
+static enum hdmi_color_depth get_cd_from_pkt(void)
+{
+	int ret;
+	u8 body[32] = {0};
+	union hdmi_infoframe *infoframe = &infoframes->avi;
+	struct hdmi_avi_infoframe *avi = &infoframe->avi;
+	enum hdmi_color_depth cd = COLORDEPTH_RESERVED;
+	enum hdmi_colorspace cs = HDMI_COLORSPACE_RESERVED6;
+
+	ret = hdmitx_infoframe_rawget(HDMI_INFOFRAME_TYPE_AVI, body);
+	if (ret == -1 || ret == 0) {
+		pr_info("hdmitx21: AVI not enabled %d\n", ret);
+		return cd;
+	}
+
+	ret = hdmi_infoframe_unpack(infoframe, body, sizeof(body));
+	if (ret < 0) {
+		pr_info("hdmitx21: parsing AVI failed %d\n", ret);
+	} else {
+		cs = avi->colorspace;
+		cd = _get_colordepth();
+		if (cs == HDMI_COLORSPACE_YUV422)
+			cd = COLORDEPTH_36B;
+	}
+
+	return cd;
+}
+
 static int hdmitx_get_state(struct hdmitx_hw_common *tx_hw, u32 cmd,
 			    u32 argv)
 {
@@ -2611,11 +2651,14 @@ static int hdmitx_get_state(struct hdmitx_hw_common *tx_hw, u32 cmd,
 	switch (cmd) {
 	case STAT_VIDEO_VIC:
 		return (int)get_vic_from_pkt();
-	case STAT_VIDEO_CLK:
-		break;
-	case STAT_HDR_TYPE:
-		return 0;
+	case STAT_VIDEO_CS:
+		return (int)get_cs_from_pkt();
+	case STAT_VIDEO_CD:
+		return (int)get_cd_from_pkt();
+	case STAT_TX_OUTPUT:
+		return hdmitx21_uboot_already_display();
 	default:
+		pr_err("Unsupported cmd %x\n", cmd);
 		break;
 	}
 	return 0;
@@ -3016,7 +3059,8 @@ void hdmitx21_dither_config(struct hdmitx_dev *hdev)
 {
 	struct hdmi_format_para *para = &hdev->tx_comm.fmt_para;
 
-	if (para->cd == COLORDEPTH_24B && hdmitx21_dv_en() == 0)
+	if (para->cd == COLORDEPTH_24B &&
+		((hdmitx21_get_cur_dv_st() & HDMI_DV_TYPE) == HDMI_DV_TYPE))
 		hd21_set_reg_bits(VPU_HDMI_DITH_CNTL, 1, 4, 1);
 	else
 		hd21_set_reg_bits(VPU_HDMI_DITH_CNTL, 0, 4, 1);

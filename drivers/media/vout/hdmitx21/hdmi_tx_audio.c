@@ -230,7 +230,6 @@ int hdmitx21_set_audio(struct hdmitx_dev *hdev,
 		     struct hdmitx_audpara *audio_param)
 {
 	int i, ret = -1;
-	/* struct hdmi_audio_infoframe *info = &hdev->infoframes.aud.audio; */
 	u8 CHAN_STAT_BUF[24 * 2];
 	u32 hdmi_ch = hdev->hdmi_ch;
 

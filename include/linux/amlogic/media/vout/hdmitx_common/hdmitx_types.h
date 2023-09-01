@@ -58,6 +58,8 @@ enum hdmi_aspect_ratio {
 	TV_ASPECT_RATIO_MAX
 };
 
+#define HDMI_INFOFRAME_TYPE_VENDOR2 (0x81 | 0x100)
+
 enum frl_rate_enum {
 	FRL_NONE = 0,
 	FRL_3G3L = 1,
@@ -82,6 +84,18 @@ enum hdmi_phy_para {
 struct size_map {
 	unsigned int sample_bits;
 	enum hdmi_audio_sampsize ss;
+};
+
+#define HDMI_PACKET_TYPE_GCP 0x3
+
+struct hdmitx_infoframe {
+	u32 enable;
+	union hdmi_infoframe vend;
+	union hdmi_infoframe avi;
+	union hdmi_infoframe spd;
+	union hdmi_infoframe aud;
+	union hdmi_infoframe drm;
+	union hdmi_infoframe emp;
 };
 
 #endif

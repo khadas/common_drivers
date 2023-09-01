@@ -7,181 +7,9 @@
 #include <linux/string.h>
 #include <linux/amlogic/media/vout/hdmi_tx21/hdmi_tx_module.h>
 
-struct hdmi_format_para *para;
-
-static struct hdmi_format_para fmt_para_non_hdmi_fmt = {
-	.timing = {
-		.vic = HDMI_0_UNKNOWN,
-		.name = "invalid",
-		.sname = "invalid",
-		.pixel_repetition_factor = 0,
-		.pi_mode = 1,
-		.h_pict = 16,
-		.v_pict = 9,
-	},
-};
-
-static struct parse_cd parse_cd_[] = {
-	{COLORDEPTH_24B, "8bit",},
-	{COLORDEPTH_30B, "10bit"},
-	{COLORDEPTH_36B, "12bit"},
-	{COLORDEPTH_48B, "16bit"},
-};
-
-static struct parse_cs parse_cs_[] = {
-	{HDMI_COLORSPACE_RGB, "rgb",},
-	{HDMI_COLORSPACE_YUV422, "422",},
-	{HDMI_COLORSPACE_YUV444, "444",},
-	{HDMI_COLORSPACE_YUV420, "420",},
-};
-
-static struct parse_cr parse_cr_[] = {
-	{HDMI_QUANTIZATION_RANGE_LIMITED, "limit",},
-	{HDMI_QUANTIZATION_RANGE_FULL, "full",},
-};
-
-/* parse the name string to cs/cd/cr */
-static void _parse_hdmi_attr(char const *name,
-	enum hdmi_colorspace *cs,
-	enum hdmi_color_depth *cd,
-	enum hdmi_quantization_range *cr)
-{
-	int i;
-
-	if (!cs || !cd || !cr)
-		return;
-	if (!name) {
-		/* assign defalut value*/
-		*cs = HDMI_COLORSPACE_RGB;
-		*cd = COLORDEPTH_24B;
-		*cr = HDMI_QUANTIZATION_RANGE_FULL;
-		return;
-	}
-
-	/* parse color depth */
-	for (i = 0; i < sizeof(parse_cd_) / sizeof(struct parse_cd); i++) {
-		if (strstr(name, parse_cd_[i].name)) {
-			*cd = parse_cd_[i].cd;
-			break;
-		}
-	}
-	/* set default value */
-	if (i == sizeof(parse_cd_) / sizeof(struct parse_cd))
-		*cd = COLORDEPTH_24B;
-
-	/* parse color space */
-	for (i = 0; i < sizeof(parse_cs_) / sizeof(struct parse_cs); i++) {
-		if (strstr(name, parse_cs_[i].name)) {
-			*cs = parse_cs_[i].cs;
-			break;
-		}
-	}
-	/* set default value */
-	if (i == sizeof(parse_cs_) / sizeof(struct parse_cs))
-		*cs = HDMI_COLORSPACE_RGB;
-
-	/* parse color range */
-	for (i = 0; i < sizeof(parse_cr_) / sizeof(struct parse_cr); i++) {
-		if (strstr(name, parse_cr_[i].name)) {
-			*cr = parse_cr_[i].cr;
-			break;
-		}
-	}
-	/* set default value */
-	if (i == sizeof(parse_cr_) / sizeof(struct parse_cr))
-		*cr = HDMI_QUANTIZATION_RANGE_FULL;
-}
-
-static u32 _calc_tmds_clk(u32 pixel_freq, enum hdmi_colorspace cs,
-	enum hdmi_color_depth cd)
-{
-	u32 tmds_clk = pixel_freq;
-
-	if (cs == HDMI_COLORSPACE_YUV420)
-		tmds_clk = tmds_clk / 2;
-	if (cs != HDMI_COLORSPACE_YUV422) {
-		switch (cd) {
-		case COLORDEPTH_48B:
-			tmds_clk *= 2;
-			break;
-		case COLORDEPTH_36B:
-			tmds_clk = tmds_clk * 3 / 2;
-			break;
-		case COLORDEPTH_30B:
-			tmds_clk = tmds_clk * 5 / 4;
-			break;
-		case COLORDEPTH_24B:
-		default:
-			break;
-		}
-	}
-
-	return tmds_clk;
-}
-
 struct hdmi_format_para *hdmitx21_get_vesa_paras(struct vesa_standard_timing *t)
 {
 	return NULL;
-}
-
-static int hdmitx21_construct_format_para_from_timing(const struct hdmi_timing *timing,
-	struct hdmi_format_para *para)
-{
-	para->vic = timing->vic;
-	para->name = timing->name;
-	para->sname = timing->sname;
-
-	para->timing = *timing;
-	para->tmds_clk = _calc_tmds_clk(para->timing.pixel_freq, para->cs, para->cd);
-
-	if (timing->vic == HDMIV_2560x1600p60hz) {
-		para->tmds_clk_div40 = 0;
-		para->scrambler_en = 0;
-	} else {
-		if (timing->pixel_freq > 340000) {
-			para->tmds_clk_div40 = 1;
-			para->scrambler_en = 1;
-		} else {
-			para->tmds_clk_div40 = 0;
-			para->scrambler_en = 0;
-		}
-	}
-
-	para->frac_mode = 0;
-
-	return 0;
-}
-
-/*
- * Parameter 'name' can should be full name as 1920x1080p60hz,
- * 3840x2160p60hz, etc
- * attr strings likes as '444,8bit'
- */
-int hdmi21_get_fmt_para(enum hdmi_vic vic,
-			const char *attr, struct hdmi_format_para *para)
-{
-	const struct hdmi_timing *timing = NULL;
-
-	memcpy(para, &fmt_para_non_hdmi_fmt, sizeof(struct hdmi_format_para));
-
-	if (!attr)
-		return -EINVAL;
-
-	if (!para) {
-		pr_err("%s should pass valid para pointer to save\n", __func__);
-		return -EINVAL;
-	}
-
-	timing = hdmitx_mode_vic_to_hdmi_timing(vic);
-	if (!timing) {
-		pr_err("%s: get timing from vic (%d) fail\n", __func__, vic);
-		return -EINVAL;
-	}
-
-	_parse_hdmi_attr(attr, &para->cs, &para->cd, &para->cr);
-	hdmitx21_construct_format_para_from_timing(timing, para);
-
-	return 0;
 }
 
 /* Recommended N and Expected CTS for 32kHz */
@@ -602,55 +430,23 @@ u32 hdmi21_get_aud_n_paras(enum hdmi_audio_fs fs,
 	return n * N_multiples;
 }
 
-bool _is_hdmi14_4k(enum hdmi_vic vic)
-{
-	bool ret = 0;
-	int i;
-	enum hdmi_vic hdmi14_4k[] = {
-		HDMI_93_3840x2160p24_16x9,
-		HDMI_94_3840x2160p25_16x9,
-		HDMI_95_3840x2160p30_16x9,
-		HDMI_98_4096x2160p24_256x135,
-	};
+/* for csc coef */
+static const u8 coef_yc444_rgb_24bit_601[] = {
+	0x20, 0x00, 0x69, 0x26, 0x74, 0xfd, 0x01, 0x0e,
+	0x20, 0x00, 0x2c, 0xdd, 0x00, 0x00, 0x7e, 0x9a,
+	0x20, 0x00, 0x00, 0x00, 0x38, 0xb4, 0x7e, 0x3b
+};
 
-	for (i = 0; i < ARRAY_SIZE(hdmi14_4k); i++) {
-		if (vic == hdmi14_4k[i]) {
-			ret = 1;
-			break;
-		}
-	}
+static const u8 coef_yc444_rgb_24bit_709[] = {
+	0x20, 0x00, 0x71, 0x06, 0x7a, 0x02, 0x00, 0xa7,
+	0x20, 0x00, 0x32, 0x64, 0x00, 0x00, 0x7e, 0x6d,
+	0x20, 0x00, 0x00, 0x00, 0x3b, 0x61, 0x7e, 0x25
+};
 
-	return ret;
-}
+static const struct hdmi_csc_coef_table hdmi_csc_coef[] = {
+	{HDMI_COLORSPACE_YUV444, HDMI_COLORSPACE_RGB, COLORDEPTH_24B, 0,
+		sizeof(coef_yc444_rgb_24bit_601), coef_yc444_rgb_24bit_601},
+	{HDMI_COLORSPACE_YUV444, HDMI_COLORSPACE_RGB, COLORDEPTH_24B, 1,
+		sizeof(coef_yc444_rgb_24bit_709), coef_yc444_rgb_24bit_709},
+};
 
-bool _is_y420_vic(enum hdmi_vic vic)
-{
-	int i;
-	enum hdmi_vic y420_vic[] = {
-		HDMI_96_3840x2160p50_16x9,
-		HDMI_97_3840x2160p60_16x9,
-		HDMI_101_4096x2160p50_256x135,
-		HDMI_102_4096x2160p60_256x135,
-		HDMI_106_3840x2160p50_64x27,
-		HDMI_107_3840x2160p60_64x27,
-	};
-	const struct hdmi_timing *timing;
-
-	for (i = 0; i < ARRAY_SIZE(y420_vic); i++) {
-		if (vic == y420_vic[i]) {
-			return 1;
-		}
-	}
-
-	/* In Spec2.1 Table 7-34, greater than 2160p30hz will support y420 */
-	timing = hdmitx_mode_vic_to_hdmi_timing(vic);
-	if (!timing)
-		return 0;
-
-	if (timing->v_active >= 2160 && timing->v_freq > 30000)
-		return 1;
-	if (timing->v_active >= 4320)
-		return 1;
-
-	return 0;
-}

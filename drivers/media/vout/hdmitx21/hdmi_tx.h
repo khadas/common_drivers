@@ -83,7 +83,7 @@ void hdmitx21_disable_clk(struct hdmitx_dev *hdev);
 u32 hdcp21_rd_hdcp22_ver(void);
 void hdmitx_infoframe_send(u16 info_type, u8 *body);
 
-/* there are 2 ways to send out infoframes
+/* there are 2 ways to send out infoframe
  * xxx_infoframe_set() will take use of struct xxx_infoframe_set
  * xxx_infoframe_rawset() will directly send with rawdata
  * if info, hb, or pb == NULL, disable send infoframe
@@ -260,18 +260,6 @@ enum vrr_component_conf {
 	CONF_BASE_REFRESH_RATE,
 };
 
-/* CONF_AVI_BT2020 */
-#define CLR_AVI_BT2020	0x0
-#define SET_AVI_BT2020	0x1
-/* CONF_AVI_Q01 */
-#define RGB_RANGE_DEFAULT	0
-#define RGB_RANGE_LIM		1
-#define RGB_RANGE_FUL		2
-#define RGB_RANGE_RSVD		3
-/* CONF_AVI_YQ01 */
-#define YCC_RANGE_LIM		0
-#define YCC_RANGE_FUL		1
-#define YCC_RANGE_RSVD		2
 void hdmi_avi_infoframe_config(enum avi_component_conf conf, u8 val);
 
 int hdmitx_infoframe_rawget(u16 info_type, u8 *body);
@@ -423,7 +411,6 @@ void hdmitx_setupirqs(struct hdmitx_dev *phdev);
 void ddc_toggle_sw_tpi(void);
 bool hdmitx_ddcm_read(u8 seg_index, u8 slave_addr, u8 reg_addr, u8 *p_buf, u16 len);
 bool hdmitx_ddcm_write(u8 seg_index, u8 slave_addr, u8 reg_addr, u8 data);
-bool is_cur_mode_hdmi(void);
 
 extern unsigned long hdcp_reauth_dbg;
 extern unsigned long streamtype_dbg;

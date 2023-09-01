@@ -24,59 +24,6 @@ ulong g_flt_1_e; /* record the clear time of FLT_UPDATE */
 static bool frl_schedule_work(struct frl_train_t *p, u32 delay_ms, u32 period_ms);
 static bool frl_stop_work(struct frl_train_t *p);
 
-/* get the corresponding bandwidth of current FRL_RATE, Unit: MHz */
-u32 get_frl_bandwidth(const enum frl_rate_enum rate)
-{
-	const u32 frl_bandwidth[] = {
-		[FRL_NONE] = 0,
-		[FRL_3G3L] = 9000,
-		[FRL_6G3L] = 18000,
-		[FRL_6G4L] = 24000,
-		[FRL_8G4L] = 32000,
-		[FRL_10G4L] = 40000,
-		[FRL_12G4L] = 48000,
-	};
-
-	if (rate > FRL_12G4L)
-		return 0;
-	return frl_bandwidth[rate];
-}
-
-u32 calc_frl_bandwidth(u32 pixel_freq, enum hdmi_colorspace cs,
-	enum hdmi_color_depth cd)
-{
-	u32 bandwidth;
-
-	bandwidth = calc_tmds_bandwidth(pixel_freq, cs, cd);
-
-	/* bandwidth = tmds_bandwidth * 24 * 1.122 */
-	bandwidth = bandwidth * 24;
-	bandwidth = bandwidth * 561 / 500;
-
-	return bandwidth;
-}
-
-u32 calc_tmds_bandwidth(u32 pixel_freq, enum hdmi_colorspace cs,
-	enum hdmi_color_depth cd)
-{
-	u32 bandwidth = pixel_freq;
-
-	if (cs == HDMI_COLORSPACE_YUV420)
-		bandwidth /= 2;
-	if (cs != HDMI_COLORSPACE_YUV422) {
-		if (cd == COLORDEPTH_48B)
-			bandwidth = bandwidth * 2;
-		else if (cd == COLORDEPTH_36B)
-			bandwidth = bandwidth * 3 / 2;
-		else if (cd == COLORDEPTH_30B)
-			bandwidth = bandwidth * 5 / 4;
-		else
-			bandwidth = bandwidth * 1;
-	}
-
-	return bandwidth;
-}
-
 /* for legacy HDMI2.0 or earlier modes, still select TMDS */
 /* TODO DSC modes */
 enum frl_rate_enum hdmitx21_select_frl_rate(bool dsc_en, enum hdmi_vic vic,
@@ -92,7 +39,7 @@ enum frl_rate_enum hdmitx21_select_frl_rate(bool dsc_en, enum hdmi_vic vic,
 	if (!timing)
 		return FRL_NONE;
 
-	tx_tmds_bandwidth = calc_tmds_bandwidth(timing->pixel_freq / 1000, cs, cd);
+	tx_tmds_bandwidth = hdmitx_calc_tmds_clk(timing->pixel_freq / 1000, cs, cd);
 	pr_info("Hactive=%d Vactive=%d Vfreq=%d TMDS_BandWidth=%d\n",
 		timing->h_active, timing->v_active,
 		timing->v_freq, tx_tmds_bandwidth);
@@ -106,7 +53,7 @@ enum frl_rate_enum hdmitx21_select_frl_rate(bool dsc_en, enum hdmi_vic vic,
 	tx_frl_bandwidth = tx_tmds_bandwidth * 24;
 	tx_frl_bandwidth = tx_frl_bandwidth * 561 / 500;
 	for (rate = FRL_3G3L; rate < FRL_12G4L + 1; rate++) {
-		if (tx_frl_bandwidth <= get_frl_bandwidth(rate)) {
+		if (tx_frl_bandwidth <= hdmitx_get_frl_bandwidth(rate)) {
 			pr_info("select frl_rate as %d\n", rate);
 			return rate;
 		}

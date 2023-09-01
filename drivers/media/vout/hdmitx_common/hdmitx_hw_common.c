@@ -25,7 +25,7 @@ int hdmitx_hw_set_phy(struct hdmitx_hw_common *tx_hw, int flag)
 	return 0;
 }
 
-u32 hdmitx_hw_calc_frl_bandwidth(u32 pixel_freq,
+u32 hdmitx_calc_frl_clk(u32 pixel_freq,
 	enum hdmi_colorspace cs, enum hdmi_color_depth cd)
 {
 	u32 bandwidth;

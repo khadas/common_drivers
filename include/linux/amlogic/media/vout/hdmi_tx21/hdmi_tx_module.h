@@ -226,15 +226,7 @@ struct hdmitx_dev {
 		int (*cntlmisc)(struct hdmitx_dev *hdev, u32 cmd, u32 arg);
 		int (*cntl)(struct hdmitx_dev *hdev, u32 cmd, u32 arg); /* Other control */
 	} hwop;
-	struct {
-		u32 enable;
-		union hdmi_infoframe vend;
-		union hdmi_infoframe avi;
-		union hdmi_infoframe spd;
-		union hdmi_infoframe aud;
-		union hdmi_infoframe drm;
-		union hdmi_infoframe emp;
-	} infoframes;
+	struct hdmitx_infoframe infoframes;
 	struct hdmi_config_platform_data config_data;
 	enum hdmi_event_t hdmitx_event;
 	u32 irq_hpd;
@@ -341,31 +333,21 @@ struct hdmitx_dev {
 };
 
 struct hdmitx_dev *get_hdmitx21_device(void);
+int hdmitx21_construct_vsif(struct hdmitx_dev *hdev,
+	enum vsif_type type, int on, void *param);
 
 /***********************************************************************
  *    hdmitx protocol level interface
  **********************************************************************/
-enum hdmi_vic hdmitx21_edid_vic_tab_map_vic(const char *disp_mode);
 int hdmitx21_edid_parse(struct hdmitx_dev *hdev);
 int check21_dvi_hdmi_edid_valid(u8 *buf);
-enum hdmi_vic hdmitx21_edid_get_VIC(struct hdmitx_dev *hdev,
-				  const char *disp_mode,
-				  char force_flag);
-bool hdmitx21_edid_check_valid_mode(struct hdmitx_dev *hdev,
-				  struct hdmi_format_para *para);
-const char *hdmitx21_edid_vic_to_string(enum hdmi_vic vic);
 void hdmitx21_edid_clear(struct hdmitx_dev *hdev);
 void hdmitx21_edid_ram_buffer_clear(struct hdmitx_dev *hdev);
 void hdmitx21_edid_buf_compare_print(struct hdmitx_dev *hdev);
 void hdmitx21_dither_config(struct hdmitx_dev *hdev);
-
-int hdmitx21_construct_vsif(struct hdmitx_dev *hdev,
-	enum vsif_type type, int on, void *param);
-
-/* if vic is 93 ~ 95, or 98 (HDMI14 4K), return 1 */
-bool _is_hdmi14_4k(enum hdmi_vic vic);
-/* if vic is 96, 97, 101, 102, 106, 107, 4k 50/60hz, return 1 */
-bool _is_y420_vic(enum hdmi_vic vic);
+enum hdmi_tf_type hdmitx21_get_cur_hdr_st(void);
+enum hdmi_tf_type hdmitx21_get_cur_dv_st(void);
+enum hdmi_tf_type hdmitx21_get_cur_hdr10p_st(void);
 
 /* set vic to AVI.VIC */
 void hdmitx21_set_avi_vic(enum hdmi_vic vic);
@@ -456,7 +438,6 @@ int hdmitx21_set_uevent(enum hdmitx_event type, int val);
 int hdmitx21_set_uevent_state(enum hdmitx_event type, int state);
 
 void hdmi_set_audio_para(int para);
-int get21_cur_vout_index(void);
 void phy_hpll_off(void);
 int get21_hpd_state(void);
 void hdmitx21_event_notify(unsigned long state, void *arg);
@@ -492,8 +473,6 @@ enum ddc_op {
 	DDC_UNMUX_DDC,
 };
 
-int hdmitx21_ddc_hw_op(enum ddc_op cmd);
-
 #define HDMITX_HWCMD_MUX_HPD_IF_PIN_HIGH       0x3
 #define HDMITX_HWCMD_TURNOFF_HDMIHW           0x4
 #define HDMITX_HWCMD_MUX_HPD                0x5
@@ -524,19 +503,5 @@ int hdmitx21_ddc_hw_op(enum ddc_op cmd);
 #define INTR_MASKN_DISABLE  1
 #define INTR_CLEAR          2
 
-/* the hdmitx output limits to 1080p */
-bool hdmitx21_limited_1080p(void);
-/* test current vic is over limited or not */
-bool hdmitx21_is_vic_over_limited_1080p(enum hdmi_vic vic);
-
-void vsem_init_cfg(struct hdmitx_dev *hdev);
-
-enum hdmi_tf_type hdmitx21_get_cur_hdr_st(void);
-enum hdmi_tf_type hdmitx21_get_cur_dv_st(void);
-enum hdmi_tf_type hdmitx21_get_cur_hdr10p_st(void);
-bool hdmitx21_hdr_en(void);
-bool hdmitx21_dv_en(void);
-bool hdmitx21_hdr10p_en(void);
 u32 aud_sr_idx_to_val(enum hdmi_audio_fs e_sr_idx);
-bool hdmitx21_uboot_already_display(struct hdmitx_dev *hdev);
 #endif

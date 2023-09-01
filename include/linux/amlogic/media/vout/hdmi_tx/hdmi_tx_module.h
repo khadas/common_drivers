@@ -631,7 +631,6 @@ unsigned int hdmitx_rd_reg(unsigned int addr);
 unsigned int hdmitx_rd_check_reg(unsigned int addr, unsigned int exp_data,
 				 unsigned int mask);
 bool hdmitx_get_bit(unsigned int addr, unsigned int bit_nr);
-void vsem_init_cfg(struct hdmitx_dev *hdev);
 
 enum hdmi_tf_type hdmitx_get_cur_hdr_st(void);
 enum hdmi_tf_type hdmitx_get_cur_dv_st(void);

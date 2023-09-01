@@ -13,13 +13,6 @@
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_edid.h>
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_mode.h>
 
-#define HDMI_PACKET_TYPE_GCP 0x3
-
-u32 calc_frl_bandwidth(u32 pixel_freq, enum hdmi_colorspace cs,
-	enum hdmi_color_depth cd);
-u32 calc_tmds_bandwidth(u32 pixel_freq, enum hdmi_colorspace cs,
-	enum hdmi_color_depth cd);
-
 enum hdmi_audio_fs;
 
 struct hdmi_csc_coef_table {

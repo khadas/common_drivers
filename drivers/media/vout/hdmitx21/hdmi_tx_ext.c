@@ -81,27 +81,13 @@ EXPORT_SYMBOL(get_hdmitx_phy_addr);
 
 void get_attr(char attr[16])
 {
-#if defined(CONFIG_AMLOGIC_HDMITX)
-	if (get_hdmitx20_init() == 1)
-		pr_err("Not support tx20 %s anymore.\n", __func__);
-#endif
-#if defined(CONFIG_AMLOGIC_HDMITX21)
-	if (get_hdmitx21_init() == 1)
-		get21_attr(attr);
-#endif
+	pr_err("Not support tx20 %s anymore.\n", __func__);
 }
 EXPORT_SYMBOL(get_attr);
 
 void setup_attr(const char *buf)
 {
-#if defined(CONFIG_AMLOGIC_HDMITX)
-	if (get_hdmitx20_init() == 1)
-		pr_err("Not support tx20 %s anymore.\n", __func__);
-#endif
-#if defined(CONFIG_AMLOGIC_HDMITX21)
-	if (get_hdmitx21_init() == 1)
-		setup21_attr(buf);
-#endif
+	pr_err("Not support tx20 %s anymore.\n", __func__);
 }
 EXPORT_SYMBOL(setup_attr);
 

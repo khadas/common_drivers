@@ -677,7 +677,7 @@
 				system-clock-frequency = <12288000>;
 			};
 			tdmbcodec: codec {
-				sound-dai = <&dummy_codec &dummy_codec
+				sound-dai = <&dummy_codec
 				&amlogic_codec &ad82584f_62>;
 			};
 		};
@@ -744,7 +744,7 @@
 			/* suffix-name, sync with android audio hal
 			 * what's the dai link used for
 			 */
-			suffix-name = "alsaPORT-pdm";
+			suffix-name = "alsaPORT-pdm-builtinmic";
 			cpu {
 				sound-dai = <&pdm>;
 			};

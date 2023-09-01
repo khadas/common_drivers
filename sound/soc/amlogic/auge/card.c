@@ -67,6 +67,16 @@ static const char * const audio_format[] = {
 	"DOLBY_AC4_ATMOS_PROMPT_ON_ATMOS",
 };
 
+#ifdef CONFIG_AMLOGIC_ZAPPER_CUT
+static const char * const digital_mode[] = {
+	"AML_HAL_PCM",
+	"AML_HAL_DD",
+	"AML_HAL_AUTO",
+	"AML_HAL_BYPASS",
+	"AML_HAL_DDP",
+};
+#endif
+
 enum audio_hal_format {
 	TYPE_PCM = 0,
 	TYPE_DTS_EXPRESS = 1,
@@ -90,6 +100,16 @@ enum audio_hal_format {
 	TYPE_MAT_ATMOS_PROMPT_ON_ATMOS = 19,
 	TYPE_AC4_ATMOS_PROMPT_ON_ATMOS = 20,
 };
+
+#ifdef CONFIG_AMLOGIC_ZAPPER_CUT
+enum audio_digital_mode {
+	AML_HAL_PCM = 0,
+	AML_HAL_DD = 1,
+	AML_HAL_AUTO = 2,
+	AML_HAL_BYPASS = 3,
+	AML_HAL_DDP = 4,
+};
+#endif
 
 struct aml_jack {
 	struct snd_soc_jack jack;
@@ -145,6 +165,9 @@ struct aml_card_data {
 	enum hdmitx_src hdmitx_src;
 	int i2s_to_hdmitx_mask;
 	int ai_sort_ret;
+#ifdef CONFIG_AMLOGIC_ZAPPER_CUT
+	enum audio_digital_mode dgt_mod;
+#endif
 };
 
 #define aml_priv_to_dev(priv) ((priv)->snd_card.dev)
@@ -200,6 +223,12 @@ static const struct soc_enum audio_hal_format_enum =
 	SOC_ENUM_SINGLE(SND_SOC_NOPM, 0, ARRAY_SIZE(audio_format),
 			audio_format);
 
+#ifdef CONFIG_AMLOGIC_ZAPPER_CUT
+static const struct soc_enum audio_digital_mode_enum =
+	SOC_ENUM_SINGLE(SND_SOC_NOPM, 0, ARRAY_SIZE(digital_mode),
+			digital_mode);
+#endif
+
 static int aml_audio_hal_format_get_enum(struct snd_kcontrol *kcontrol,
 	struct snd_ctl_elem_value *ucontrol)
 {
@@ -230,6 +259,36 @@ static int aml_audio_hal_format_set_enum(struct snd_kcontrol *kcontrol,
 
 	return 0;
 }
+
+#ifdef CONFIG_AMLOGIC_ZAPPER_CUT
+static int aml_audio_digital_mode_get_enum(struct snd_kcontrol *kcontrol,
+	struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_card *card = snd_kcontrol_chip(kcontrol);
+	struct aml_card_data *p_aml_audio;
+
+	p_aml_audio = snd_soc_card_get_drvdata(card);
+	ucontrol->value.integer.value[0] = p_aml_audio->dgt_mod;
+
+	return 0;
+}
+
+static int aml_audio_digital_mode_set_enum(struct snd_kcontrol *kcontrol,
+	struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_card *card = snd_kcontrol_chip(kcontrol);
+	struct aml_card_data *p_aml_audio;
+	int digital_mode = ucontrol->value.integer.value[0];
+
+	p_aml_audio = snd_soc_card_get_drvdata(card);
+	pr_info("update audio digital mode! digital_mode = %d\n", digital_mode);
+
+	if (p_aml_audio->dgt_mod != digital_mode)
+		p_aml_audio->dgt_mod = digital_mode;
+
+	return 0;
+}
+#endif
 
 static int aml_chip_id_get(struct snd_kcontrol *kcontrol,
 			struct snd_ctl_elem_value *ucontrol)
@@ -360,6 +419,13 @@ static const struct snd_kcontrol_new snd_user_controls[] = {
 			audio_hal_format_enum,
 			aml_audio_hal_format_get_enum,
 			aml_audio_hal_format_set_enum),
+
+#ifdef CONFIG_AMLOGIC_ZAPPER_CUT
+	SOC_ENUM_EXT("Audio Digital Mode",
+			audio_digital_mode_enum,
+			aml_audio_digital_mode_get_enum,
+			aml_audio_digital_mode_set_enum),
+#endif
 
 	SND_SOC_BYTES_EXT("AML chip id", 1,
 			aml_chip_id_get, NULL),

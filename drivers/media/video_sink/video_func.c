@@ -1281,6 +1281,10 @@ void  get_video_input_info(struct video_input_info *input_info)
 		return;
 	input_info->height = cur_frame_par[0]->video_input_h;
 	input_info->width = cur_frame_par[0]->video_input_w;
+	input_info->crop_top = cur_frame_par[0]->crop_top;
+	input_info->crop_bottom = cur_frame_par[0]->crop_bottom;
+	input_info->crop_left = cur_frame_par[0]->crop_left;
+	input_info->crop_right = cur_frame_par[0]->crop_right;
 }
 
 static void vdx_force_black(u8 layer_id)

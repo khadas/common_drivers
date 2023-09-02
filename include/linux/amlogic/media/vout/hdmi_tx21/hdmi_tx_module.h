@@ -259,7 +259,6 @@ struct hdmitx_dev {
 	atomic_t kref_audio_mute;
 	/**/
 	u8 hpd_event; /* 1, plugin; 2, plugout */
-	u8 drm_mode_setting; /* 1, setting; 0, keeping */
 	u8 rhpd_state; /* For repeater use only, no delay */
 	u8 force_audio_flag;
 	u8 mux_hpd_if_pin_high_flag;
@@ -422,17 +421,6 @@ struct hdmitx_dev {
 #define MISC_SUSFLAG            (CMD_MISC_OFFSET + 0X15)
 #define MISC_IS_FRL_MODE        (CMD_MISC_OFFSET + 0X16)
 #define MISC_CLK_DIV_RST        (CMD_MISC_OFFSET + 0X17)
-
-/***********************************************************************
- *                          Get State //getstate
- **********************************************************************/
-#define STAT_VIDEO_VIC          (CMD_STAT_OFFSET + 0x00)
-#define STAT_VIDEO_CLK          (CMD_STAT_OFFSET + 0x01)
-#define STAT_AUDIO_FORMAT       (CMD_STAT_OFFSET + 0x10)
-#define STAT_AUDIO_CHANNEL      (CMD_STAT_OFFSET + 0x11)
-#define STAT_AUDIO_CLK_STABLE   (CMD_STAT_OFFSET + 0x12)
-#define STAT_AUDIO_PACK         (CMD_STAT_OFFSET + 0x13)
-#define STAT_HDR_TYPE           (CMD_STAT_OFFSET + 0x20)
 
 struct hdmitx_dev *get_hdmitx21_device(void);
 

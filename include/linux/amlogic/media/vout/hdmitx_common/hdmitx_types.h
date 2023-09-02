@@ -8,34 +8,16 @@
 
 #include <linux/types.h>
 #include <linux/hdmi.h>
-#include <linux/amlogic/media/vout/hdmitx_common/hdmitx_mode.h>
-#include <linux/amlogic/media/vout/vinfo.h>
 
-struct hdmi_format_para {
-	enum hdmi_vic vic;
-	unsigned char *name;
-	unsigned char *sname;
-
-	/*valid info*/
-	enum hdmi_color_depth cd; /* cd8, cd10 or cd12 */
-	enum hdmi_colorspace cs; /* 0/1/2/3: rgb/422/444/420 */
-	enum hdmi_quantization_range cr; /* limit, full */
-	/*valid info end*/
-
-	unsigned int pixel_repetition_factor;
-	unsigned int progress_mode:1;
-
-	/*valid info*/
-	u32 scrambler_en:1;
-	u32 tmds_clk_div40:1;
-	u32 tmds_clk; /* Unit: 1000 */
-	/*valid info end*/
-
-	struct hdmi_timing timing;
-
-	/*valid info*/
-	u32 frac_mode;
-	/*valid info end*/
+enum frl_rate_enum {
+	FRL_NONE = 0,
+	FRL_3G3L = 1,
+	FRL_6G3L = 2,
+	FRL_6G4L = 3,
+	FRL_8G4L = 4,
+	FRL_10G4L = 5,
+	FRL_12G4L = 6,
+	FRL_INVALID = 7,
 };
 
 #endif

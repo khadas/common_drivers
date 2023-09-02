@@ -99,11 +99,6 @@ enum hdmitx_audcts {
 	AUD_CTS_AUTO = 0, AUD_CTS_FIXED, AUD_CTS_CALC,
 };
 
-struct dispmode_vic {
-	const char *disp_mode;
-	enum hdmi_vic VIC;
-};
-
 struct hdmitx_audinfo {
 	/* !< Signal decoding type -- TvAudioType */
 	enum hdmi_audio_type type;

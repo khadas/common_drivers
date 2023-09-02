@@ -352,7 +352,6 @@ struct hdmitx_dev {
 	atomic_t kref_audio_mute;
 	/**/
 	unsigned char hpd_event; /* 1, plugin; 2, plugout */
-	unsigned char drm_mode_setting; /* 1, setting; 0, keeping */
 	unsigned char rhpd_state; /* For repeater use only, no delay */
 	unsigned char hdcp_max_exceed_state;
 	unsigned int hdcp_max_exceed_cnt;
@@ -481,8 +480,6 @@ struct hdmitx_dev {
  **********************************************************************/
 int hdmitx_edid_parse(struct hdmitx_dev *hdmitx_device);
 int check_dvi_hdmi_edid_valid(unsigned char *buf);
-bool hdmitx_edid_check_valid_mode(struct hdmitx_dev *hdev,
-				  struct hdmi_format_para *para);
 void hdmitx_edid_clear(struct hdmitx_dev *hdmitx_device);
 void hdmitx_edid_ram_buffer_clear(struct hdmitx_dev *hdmitx_device);
 void hdmitx_edid_buf_compare_print(struct hdmitx_dev *hdmitx_device);
@@ -697,6 +694,4 @@ bool hdmitx_find_vendor_null_pkt(struct hdmitx_dev *hdev);
 int hdmitx_set_uevent_state(enum hdmitx_event type, int state);
 int hdmitx_set_uevent(enum hdmitx_event type, int val);
 struct extcon_dev *get_hdmitx_extcon_hdmi(void);
-
-int hdmitx_uboot_already_display(int type);
 #endif

@@ -132,8 +132,6 @@ static int hdmitx21_construct_format_para_from_timing(const struct hdmi_timing *
 	para->sname = timing->sname;
 
 	para->timing = *timing;
-	para->pixel_repetition_factor = timing->pixel_repetition_factor;
-	para->progress_mode = timing->pi_mode;
 	para->tmds_clk = _calc_tmds_clk(para->timing.pixel_freq, para->cs, para->cd);
 
 	if (timing->vic == HDMIV_2560x1600p60hz) {
@@ -603,27 +601,6 @@ u32 hdmi21_get_aud_n_paras(enum hdmi_audio_fs fs,
 		n = p->def_n;
 	return n * N_multiples;
 }
-
-/* for csc coef */
-
-static const u8 coef_yc444_rgb_24bit_601[] = {
-	0x20, 0x00, 0x69, 0x26, 0x74, 0xfd, 0x01, 0x0e,
-	0x20, 0x00, 0x2c, 0xdd, 0x00, 0x00, 0x7e, 0x9a,
-	0x20, 0x00, 0x00, 0x00, 0x38, 0xb4, 0x7e, 0x3b
-};
-
-static const u8 coef_yc444_rgb_24bit_709[] = {
-	0x20, 0x00, 0x71, 0x06, 0x7a, 0x02, 0x00, 0xa7,
-	0x20, 0x00, 0x32, 0x64, 0x00, 0x00, 0x7e, 0x6d,
-	0x20, 0x00, 0x00, 0x00, 0x3b, 0x61, 0x7e, 0x25
-};
-
-static const struct hdmi_csc_coef_table hdmi_csc_coef[] = {
-	{HDMI_COLORSPACE_YUV444, HDMI_COLORSPACE_RGB, COLORDEPTH_24B, 0,
-		sizeof(coef_yc444_rgb_24bit_601), coef_yc444_rgb_24bit_601},
-	{HDMI_COLORSPACE_YUV444, HDMI_COLORSPACE_RGB, COLORDEPTH_24B, 1,
-		sizeof(coef_yc444_rgb_24bit_709), coef_yc444_rgb_24bit_709},
-};
 
 bool _is_hdmi14_4k(enum hdmi_vic vic)
 {

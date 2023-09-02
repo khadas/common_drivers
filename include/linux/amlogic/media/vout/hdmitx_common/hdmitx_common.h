@@ -11,9 +11,9 @@
 #include <linux/hdmi.h>
 
 #include <drm/amlogic/meson_connector_dev.h>
+#include <linux/amlogic/media/vout/hdmitx_common/hdmitx_format_para.h>
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_hw_common.h>
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_edid.h>
-#include <linux/amlogic/media/vout/hdmitx_common/hdmitx_types.h>
 
 #define HDMI_INFOFRAME_TYPE_VENDOR2 (0x81 | 0x100)
 
@@ -83,8 +83,40 @@ struct hdmitx_base_state *hdmitx_get_old_mod_state(struct hdmitx_common *tx_comm
 void hdmitx_get_init_state(struct hdmitx_common *tx_common,
 					struct hdmitx_binding_state *state);
 
+/*******************************hdmitx common api*******************************/
 int hdmitx_common_init(struct hdmitx_common *tx_common, struct hdmitx_hw_common *hw_comm);
 int hdmitx_common_destroy(struct hdmitx_common *tx_common);
+/* modename policy: get vic from name and check if support by rx;
+ * return the vic of mode, if failed return HDMI_0_UNKNOWN;
+ */
+int hdmitx_common_parse_vic_in_edid(struct hdmitx_common *tx_comm, const char *mode);
+/* validate if vic can supported. return 0 if can support, return < 0 with error reason;
+ * This function used by get_mode_list;
+ */
+int hdmitx_common_validate_vic(struct hdmitx_common *tx_comm, u32 vic);
+/* for some non-std TV, it declare 4k while MAX_TMDS_CLK
+ * not match 4K format, so filter out mode list by
+ * check if basic color space/depth is supported
+ * or not under this resolution;
+ * return 0 when can found valid cs/cd configs, or return < 0;
+ */
+int hdmitx_common_check_valid_para_of_vic(struct hdmitx_common *tx_comm, enum hdmi_vic vic);
+/* validate if hdmi_format_para can support, return 0 if can support or return < 0;
+ * vic should already validate by hdmitx_common_validate_mode(), will not check if vic
+ * support by rx. This function used to verify hdmi setting config from userspace;
+ */
+int hdmitx_common_validate_format_para(struct hdmitx_common *tx_comm,
+	struct hdmi_format_para *para);
+
+/* create hdmi_format_para from config and also calc setting from hw;*/
+int hdmitx_common_build_format_para(struct hdmitx_common *tx_comm,
+		struct hdmi_format_para *para, enum hdmi_vic vic, u32 frac_rate_policy,
+		enum hdmi_colorspace cs, enum hdmi_color_depth cd, enum hdmi_quantization_range cr);
+
+/* For bootup init: init hdmi_format_para from hw configs.*/
+int hdmitx_common_init_bootup_format_para(struct hdmitx_common *tx_comm,
+		struct hdmi_format_para *para);
+/*******************************hdmitx common api end*******************************/
 
 int hdmitx_hpd_notify_unlocked(struct hdmitx_common *tx_comm);
 int hdmitx_register_hpd_cb(struct hdmitx_common *tx_comm, struct connector_hpd_cb *hpd_cb);
@@ -92,13 +124,6 @@ int hdmitx_register_hpd_cb(struct hdmitx_common *tx_comm, struct connector_hpd_c
 unsigned char *hdmitx_get_raw_edid(struct hdmitx_common *tx_comm);
 int hdmitx_setup_attr(struct hdmitx_common *tx_comm, const char *buf);
 int hdmitx_get_attr(struct hdmitx_common *tx_comm, char attr[16]);
-
-/* modename policy: get vic from name and check if support by rx;
- * return the vic of mode, if failed return HDMI_0_UNKNOWN;
- */
-int hdmitx_parse_mode_vic(struct hdmitx_common *tx_comm, const char *mode);
-
-int hdmitx_common_validate_mode(struct hdmitx_common *tx_comm, u32 vic);
 
 int hdmitx_get_hdrinfo(struct hdmitx_common *tx_comm, struct hdr_info *hdrinfo);
 

@@ -627,10 +627,10 @@ int hdmitx_mode_update_timing(struct hdmi_timing *t,
 						mul_u32_u32(t->h_total, t->v_total));
 		t->h_freq = DIV_ROUND_CLOSEST_ULL(mul_u32_u32(t->pixel_freq, 1000), t->h_total);
 
-		pr_info("Timing %s update frac_mode(%d):\n",
-			t->name, to_frac_mode);
-		pr_info("\tPixel_freq(%d), h_freq (%d), v_freq(%d).\n",
-			t->pixel_freq, t->h_freq, t->v_freq);
+		/*pr_info("Timing %s update frac_mode(%d):\n", t->name, to_frac_mode);
+		 *pr_info("\tPixel_freq(%d), h_freq (%d), v_freq(%d).\n",
+		 *	t->pixel_freq, t->h_freq, t->v_freq);
+		 */
 	}
 
 	return alternate_clock;

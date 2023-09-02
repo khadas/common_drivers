@@ -55,6 +55,8 @@
 #define HDMITX_VIC_MASK			0xff
 #define to_hdmitx20_dev(x)	container_of(x, struct hdmitx_dev, tx_hw)
 
+static int chip_type;
+
 static void mode420_half_horizontal_para(void);
 static void hdmi_phy_suspend(void);
 static void hdmi_phy_wakeup(struct hdmitx_dev *hdev);
@@ -391,9 +393,10 @@ static int hdmitx_uboot_sc2_already_display(void)
 	return ret;
 }
 
-int hdmitx_uboot_already_display(int type)
+static int hdmitx_uboot_already_display(void)
 {
 	int ret = 0;
+	int type = chip_type;
 
 	if (type >= MESON_CPU_ID_SC2)
 		return hdmitx_uboot_sc2_already_display();
@@ -454,8 +457,6 @@ static void set_vmode_clk(struct hdmitx_dev *hdev)
 
 static void hdmi_hwp_init(struct hdmitx_dev *hdev)
 {
-	struct hdmi_format_para *para = &hdev->tx_comm.fmt_para;
-
 	hdmitx_set_sys_clk(hdev, 0xff);
 	hdmitx_set_cts_hdcp22_clk(hdev);
 	hdmitx_set_hdcp_pclk(hdev);
@@ -482,63 +483,7 @@ static void hdmi_hwp_init(struct hdmitx_dev *hdev)
 		hd_set_reg_bits(P_TM2_HHI_HDMI_PHY_CNTL2, 0x3, 0, 2);
 	else
 		hd_set_reg_bits(P_HHI_HDMI_PHY_CNTL3, 0x3, 0, 2);
-	if (hdmitx_uboot_already_display(hdev->data->chip_type)) {
-		hdev->tx_comm.cur_VIC = get_vic_from_pkt();
-		hdev->ready = 1;
-		/* Get uboot output color space from AVI */
-		switch (hdmitx_rd_reg(HDMITX_DWC_FC_AVICONF0) & 0x3) {
-		case 1:
-			para->cs = HDMI_COLORSPACE_YUV422;
-			break;
-		case 2:
-			para->cs = HDMI_COLORSPACE_YUV444;
-			break;
-		case 3:
-			para->cs = HDMI_COLORSPACE_YUV420;
-			break;
-		default:
-			para->cs = HDMI_COLORSPACE_RGB;
-			break;
-		}
-		/* If color space is not 422, then get depth from VP_PR_CD */
-		if (para->cs != HDMI_COLORSPACE_YUV422) {
-			switch ((hdmitx_rd_reg(HDMITX_DWC_VP_PR_CD) >> 4) &
-				0xf) {
-			case 5:
-				para->cd = COLORDEPTH_30B;
-				break;
-			case 6:
-				para->cd = COLORDEPTH_36B;
-				break;
-			case 7:
-				para->cd = COLORDEPTH_48B;
-				break;
-			case 0:
-			case 4:
-			default:
-				para->cd = COLORDEPTH_24B;
-				break;
-			}
-		} else {
-			/* If colorspace is 422, then get depth from VP_REMAP */
-			switch (hdmitx_rd_reg(HDMITX_DWC_VP_REMAP) & 0x3) {
-			case 1:
-				para->cd = COLORDEPTH_30B;
-				break;
-			case 2:
-				para->cd = COLORDEPTH_36B;
-				break;
-			case 0:
-			default:
-				para->cd = COLORDEPTH_24B;
-				break;
-			}
-		}
-		pr_info("%s: init uboot setting (%d,%d,%d)\n",
-			__func__, hdev->tx_comm.cur_VIC, para->cs, para->cd);
-	} else {
-		para->cd = COLORDEPTH_RESERVED;
-		para->cs = HDMI_COLORSPACE_RESERVED6;
+	if (hdmitx_uboot_already_display() == 0) {
 		/* reset HDMITX APB & TX & PHY */
 		hdmitx_sys_reset();
 		if (hdev->data->chip_type < MESON_CPU_ID_G12A) {
@@ -644,7 +589,7 @@ int hdmitx_uboot_audio_en(void)
 		return 0;
 }
 
-int hdmitx_validate_mode(u32 vic)
+static int hdmitx_validate_mode(u32 vic)
 {
 	int i = 0;
 	/*tx20 supported vics*/
@@ -717,8 +662,20 @@ int hdmitx_validate_mode(u32 vic)
 	return -EINVAL;
 }
 
+static int hdmitx_calc_formatpara(struct hdmi_format_para *para)
+{
+	/*update tmds clock.*/
+	para->tmds_clk = hdmitx_calc_tmds_clk(para->timing.pixel_freq,
+		para->cs, para->cd);
+
+	return 0;
+}
+
 void hdmitx_meson_init(struct hdmitx_dev *hdev)
 {
+	/*TODO: move to hdmitx hw struct*/
+	chip_type = hdev->data->chip_type;
+
 	hdev->hwop.setpacket = hdmitx_set_packet;
 	hdev->tx_hw.setdatapacket = hdmitx_set_datapacket;
 	hdev->hwop.disablepacket = hdmitx_disable_packet;
@@ -736,6 +693,7 @@ void hdmitx_meson_init(struct hdmitx_dev *hdev)
 	hdev->tx_hw.cntlconfig = hdmitx_cntl_config;
 	hdev->tx_hw.cntlmisc = hdmitx_cntl_misc;
 	hdev->tx_hw.validatemode = hdmitx_validate_mode;
+	hdev->tx_hw.calcformatpara = hdmitx_calc_formatpara;
 	hdmi_hwp_init(hdev);
 	hdmi_hwi_init(hdev);
 	hdev->tx_hw.cntlmisc(&hdev->tx_hw, MISC_AVMUTE_OP, CLR_AVMUTE);
@@ -6021,6 +5979,64 @@ static enum hdmi_vic get_vic_from_pkt(void)
 	return vic;
 }
 
+static enum hdmi_colorspace get_cs_from_pkt(void)
+{
+	/* Get uboot output color space from AVI */
+	switch (hdmitx_rd_reg(HDMITX_DWC_FC_AVICONF0) & 0x3) {
+	case 1:
+		return HDMI_COLORSPACE_YUV422;
+	case 2:
+		return HDMI_COLORSPACE_YUV444;
+	case 3:
+		return HDMI_COLORSPACE_YUV420;
+	default:
+		return HDMI_COLORSPACE_RGB;
+	}
+}
+
+static enum hdmi_color_depth get_cd_from_pkt(void)
+{
+	enum hdmi_colorspace cs = get_cs_from_pkt();
+	enum hdmi_color_depth cd = COLORDEPTH_RESERVED;
+
+	/* If color space is not 422, then get depth from VP_PR_CD */
+	if (cs != HDMI_COLORSPACE_YUV422) {
+		switch ((hdmitx_rd_reg(HDMITX_DWC_VP_PR_CD) >> 4) &
+			0xf) {
+		case 5:
+			cd = COLORDEPTH_30B;
+			break;
+		case 6:
+			cd = COLORDEPTH_36B;
+			break;
+		case 7:
+			cd = COLORDEPTH_48B;
+			break;
+		case 0:
+		case 4:
+		default:
+			cd = COLORDEPTH_24B;
+			break;
+		}
+	} else {
+		/* If colorspace is 422, then get depth from VP_REMAP */
+		switch (hdmitx_rd_reg(HDMITX_DWC_VP_REMAP) & 0x3) {
+		case 1:
+			cd = COLORDEPTH_30B;
+			break;
+		case 2:
+			cd = COLORDEPTH_36B;
+			break;
+		case 0:
+		default:
+			cd = COLORDEPTH_24B;
+			break;
+		}
+	}
+
+	return cd;
+}
+
 static int read_phy_status(struct hdmitx_hw_common *tx_hw)
 {
 	int phy_val = 0;
@@ -6052,12 +6068,18 @@ static int hdmitx_get_state(struct hdmitx_hw_common *tx_hw, unsigned int cmd,
 	switch (cmd) {
 	case STAT_VIDEO_VIC:
 		return (int)get_vic_from_pkt();
+	case STAT_VIDEO_CS:
+		return (int)get_cs_from_pkt();
+	case STAT_VIDEO_CD:
+		return (int)get_cd_from_pkt();
 	case STAT_VIDEO_CLK:
 		break;
 	case STAT_HDR_TYPE:
 		return hdmitx_rd_reg(HDMITX_DWC_FC_DRM_PB00) & 0xff;
 	case STAT_TX_PHY:
 		return read_phy_status(tx_hw);
+	case STAT_TX_OUTPUT:
+		return hdmitx_uboot_already_display();
 	default:
 		break;
 	}
@@ -6441,8 +6463,8 @@ static void config_hdmi20_tx(enum hdmi_vic vic,
 	data32 |= t->h_pol << 5;
 	data32 |= (1 << 4);
 	data32 |= (1 << 3);
-	data32 |= (!(para->progress_mode) << 1);
-	data32 |= (!(para->progress_mode) << 0);
+	data32 |= (!(t->pi_mode) << 1);
+	data32 |= (!(t->pi_mode) << 0);
 	hdmitx_wr_reg(HDMITX_DWC_FC_INVIDCONF,  data32);
 
 	data32  = t->h_active & 0xff;

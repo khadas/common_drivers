@@ -184,6 +184,34 @@ u32 hdmitx_edid_get_hdmi14_4k_vic(u32 vic)
 	return ret;
 }
 
+bool hdmitx_edid_check_y420_support(struct rx_cap *prxcap, enum hdmi_vic vic)
+{
+	unsigned int i = 0;
+	bool ret = false;
+	const struct hdmi_timing *timing = hdmitx_mode_vic_to_hdmi_timing(vic);
+
+	if (!timing)
+		return ret;
+
+	/* In Spec2.1 Table 7-34, greater than 2160p30hz will support y420 */
+	if ((timing->v_active >= 2160 && timing->v_freq > 30000) ||
+		timing->v_active >= 4320) {
+		for (i = 0; i < Y420_VIC_MAX_NUM; i++) {
+			if (prxcap->y420_vic[i]) {
+				if (prxcap->y420_vic[i] == vic) {
+					ret = true;
+					break;
+				}
+			} else {
+				ret = false;
+				break;
+			}
+		}
+	}
+
+	return ret;
+}
+
 int hdmitx_edid_validate_mode(struct rx_cap *rxcap, u32 vic)
 {
 	int i = 0;
@@ -209,5 +237,132 @@ int hdmitx_edid_validate_mode(struct rx_cap *rxcap, u32 vic)
 	}
 
 	return edid_matched ? 0 : -EINVAL;
+}
+
+/* For some TV's EDID, there maybe exist some information ambiguous.
+ * Such as EDID declare support 2160p60hz(Y444 8bit), but no valid
+ * Max_TMDS_Clock2 to indicate that it can support 5.94G signal.
+ */
+int hdmitx_edid_validate_format_para(struct rx_cap *prxcap,
+		struct hdmi_format_para *para)
+{
+	const struct dv_info *dv = &prxcap->dv_info;
+	unsigned int calc_tmds_clk = 0;
+	unsigned int rx_max_tmds_clk = 0;
+	int ret = 0;
+
+	switch (para->timing.vic) {
+	case HDMI_96_3840x2160p50_16x9:
+	case HDMI_97_3840x2160p60_16x9:
+	case HDMI_101_4096x2160p50_256x135:
+	case HDMI_102_4096x2160p60_256x135:
+	case HDMI_106_3840x2160p50_64x27:
+	case HDMI_107_3840x2160p60_64x27:
+		if (para->cs == HDMI_COLORSPACE_RGB ||
+		    para->cs == HDMI_COLORSPACE_YUV444)
+			if (para->cd != COLORDEPTH_24B && !para->frl_clk)
+				return -EPERM;
+		break;
+	case HDMI_7_720x480i60_16x9:
+	case HDMI_22_720x576i50_16x9:
+		if (para->cs == HDMI_COLORSPACE_YUV422)
+			return -EPERM;
+	default:
+		break;
+	}
+
+	/* DVI case, only 8bit */
+	if (prxcap->ieeeoui != HDMI_IEEE_OUI) {
+		if (para->cd != COLORDEPTH_24B)
+			return -EPERM;
+	}
+
+	/*FOR hdmi 2.0 TMDS: check clk limitation.*/
+	/* Get RX Max_TMDS_Clock, and compare format clks*/
+	if (prxcap->Max_TMDS_Clock2) {
+		rx_max_tmds_clk = prxcap->Max_TMDS_Clock2 * 5;
+	} else {
+		/* Default min is 74.25 / 5 */
+		if (prxcap->Max_TMDS_Clock1 < 0xf)
+			prxcap->Max_TMDS_Clock1 = 0x1e;
+		rx_max_tmds_clk = prxcap->Max_TMDS_Clock1 * 5;
+	}
+	calc_tmds_clk = para->tmds_clk / 1000;
+	if (calc_tmds_clk > rx_max_tmds_clk)
+		ret = -ERANGE;
+	/* If tmds check failed, try frl*
+	 * FOR hdmi 2.1 : check frl limitation.
+	 */
+	if (ret != 0) {
+		u32 rx_frl_bandwidth = hdmitx_get_frl_bandwidth(prxcap->max_frl_rate);
+		u32 tx_frl_bandwidth = para->frl_clk / 1000;
+
+		if (tx_frl_bandwidth > 0 && rx_frl_bandwidth > 0 &&
+			tx_frl_bandwidth <= rx_frl_bandwidth)
+			ret = 0;
+	}
+	/*TDMS/FRL all failed, return;*/
+	if (ret != 0)
+		return -ERANGE;
+
+	if (para->cs == HDMI_COLORSPACE_YUV444) {
+		enum hdmi_color_depth rx_y444_max_dc = COLORDEPTH_24B;
+		/* Rx may not support Y444 */
+		if (!(prxcap->native_Mode & (1 << 5)))
+			return -EACCES;
+		if (prxcap->dc_y444 && (prxcap->dc_30bit ||
+					dv->sup_10b_12b_444 == 0x1))
+			rx_y444_max_dc = COLORDEPTH_30B;
+		if (prxcap->dc_y444 && (prxcap->dc_36bit ||
+					dv->sup_10b_12b_444 == 0x2))
+			rx_y444_max_dc = COLORDEPTH_36B;
+
+		if (para->cd <= rx_y444_max_dc)
+			ret = 0;
+		else
+			ret = -EACCES;
+
+		return ret;
+	}
+
+	if (para->cs == HDMI_COLORSPACE_YUV422) {
+		/* Rx may not support Y422 */
+		if (prxcap->native_Mode & (1 << 4))
+			ret = 0;
+		else
+			ret = -EACCES;
+
+		return ret;
+	}
+
+	if (para->cs == HDMI_COLORSPACE_RGB) {
+		enum hdmi_color_depth rx_rgb_max_dc = COLORDEPTH_24B;
+		/* Always assume RX supports RGB444 */
+		if (prxcap->dc_30bit || dv->sup_10b_12b_444 == 0x1)
+			rx_rgb_max_dc = COLORDEPTH_30B;
+		if (prxcap->dc_36bit || dv->sup_10b_12b_444 == 0x2)
+			rx_rgb_max_dc = COLORDEPTH_36B;
+
+		if (para->cd <= rx_rgb_max_dc)
+			ret = 0;
+		else
+			ret = -EACCES;
+
+		return ret;
+	}
+
+	if (para->cs == HDMI_COLORSPACE_YUV420) {
+		ret = 0;
+		if (!hdmitx_edid_check_y420_support(prxcap, para->vic))
+			ret = -EACCES;
+		else if (!prxcap->dc_30bit_420 && para->cd == COLORDEPTH_30B)
+			ret = -EACCES;
+		else if (!prxcap->dc_36bit_420 && para->cd == COLORDEPTH_36B)
+			ret = -EACCES;
+
+		return ret;
+	}
+
+	return -EACCES;
 }
 

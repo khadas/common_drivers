@@ -8,6 +8,10 @@
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_common.h>
 #include <hdmitx_boot_parameters.h>
 
+int hdmitx_format_para_init(struct hdmi_format_para *para,
+		enum hdmi_vic vic, u32 frac_rate_policy,
+		enum hdmi_colorspace cs, enum hdmi_color_depth cd,
+		enum hdmi_quantization_range cr);
 const struct hdmi_timing *hdmitx_mode_match_timing_name(const char *name);
 
 struct hdmitx_base_state *hdmitx_get_mod_state(struct hdmitx_common *tx_common,
@@ -45,6 +49,8 @@ int hdmitx_common_init(struct hdmitx_common *tx_comm, struct hdmitx_hw_common *h
 	tx_comm->backup_frac_rate_policy = boot_param->fraction_refreshrate;
 	tx_comm->config_csc_en = boot_param->config_csc;
 
+	hdmitx_format_para_reset(&tx_comm->fmt_para);
+
 	tx_comm->res_1080p = 0;
 	tx_comm->max_refreshrate = 60;
 
@@ -60,7 +66,7 @@ int hdmitx_common_destroy(struct hdmitx_common *tx_comm)
 	return 0;
 }
 
-int hdmitx_common_validate_mode(struct hdmitx_common *tx_comm, u32 vic)
+int hdmitx_common_validate_vic(struct hdmitx_common *tx_comm, u32 vic)
 {
 	const struct hdmi_timing *timing = hdmitx_mode_vic_to_hdmi_timing(vic);
 
@@ -90,8 +96,7 @@ int hdmitx_common_validate_mode(struct hdmitx_common *tx_comm, u32 vic)
 	}
 	/*filter max refreshrate.*/
 	if (timing->v_freq > (tx_comm->max_refreshrate * 1000)) {
-		pr_info("validate refreshrate (%s)-(%d) fail\n",
-					timing->name, timing->v_freq);
+		//pr_info("validate refreshrate (%s)-(%d) fail\n", timing->name, timing->v_freq);
 		return -EACCES;
 	}
 
@@ -100,6 +105,72 @@ int hdmitx_common_validate_mode(struct hdmitx_common *tx_comm, u32 vic)
 		return -EPERM;
 
 	return 0;
+}
+
+int hdmitx_common_validate_format_para(struct hdmitx_common *tx_comm,
+	struct hdmi_format_para *para)
+{
+	int ret = 0;
+	unsigned int calc_tmds_clk = para->tmds_clk / 1000;
+
+	if (para->vic == HDMI_0_UNKNOWN)
+		return -EPERM;
+
+	/* if current status already limited to 1080p, so here also needs to
+	 * limit the rx_max_tmds_clk as 150 * 1.5 = 225 to make the valid mode
+	 * checking works
+	 */
+	if (tx_comm->res_1080p) {
+		if (calc_tmds_clk > 225)
+			return -ERANGE;
+	}
+
+	ret = hdmitx_edid_validate_format_para(&tx_comm->rxcap, para);
+
+	return ret;
+}
+
+int hdmitx_common_build_format_para(struct hdmitx_common *tx_comm,
+		struct hdmi_format_para *para, enum hdmi_vic vic, u32 frac_rate_policy,
+		enum hdmi_colorspace cs, enum hdmi_color_depth cd, enum hdmi_quantization_range cr)
+{
+	int ret = 0;
+
+	ret = hdmitx_format_para_init(para, vic, frac_rate_policy, cs, cd, cr);
+	if (ret == 0)
+		ret = tx_comm->tx_hw->calcformatpara(para);
+	if (ret < 0)
+		hdmitx_format_para_print(para);
+
+	return ret;
+}
+
+int hdmitx_common_init_bootup_format_para(struct hdmitx_common *tx_comm,
+		struct hdmi_format_para *para)
+{
+	int ret = 0;
+	struct hdmitx_hw_common *tx_hw = tx_comm->tx_hw;
+
+	if (tx_hw->getstate(tx_hw, STAT_TX_OUTPUT, 0)) {
+		para->vic = tx_hw->getstate(tx_hw, STAT_VIDEO_VIC, 0);
+		para->cs = tx_hw->getstate(tx_hw, STAT_VIDEO_CS, 0);
+		para->cd = tx_hw->getstate(tx_hw, STAT_VIDEO_CD, 0);
+
+		pr_info("%s: init uboot format para (%d,%d,%d)\n",
+			__func__, para->vic, para->cs, para->cd);
+
+		ret = hdmitx_common_build_format_para(tx_comm, para, para->vic,
+			tx_comm->frac_rate_policy, para->cs, para->cd,
+			HDMI_QUANTIZATION_RANGE_FULL);
+		if (ret == 0) {
+			pr_info("%s init ok\n", __func__);
+			hdmitx_format_para_print(para);
+		}
+
+		return ret;
+	} else {
+		return hdmitx_format_para_reset(para);
+	}
 }
 
 int hdmitx_hpd_notify_unlocked(struct hdmitx_common *tx_comm)
@@ -218,7 +289,54 @@ static enum hdmi_vic get_alternate_ar_vic(enum hdmi_vic vic)
 	return HDMI_0_UNKNOWN;
 }
 
-int hdmitx_parse_mode_vic(struct hdmitx_common *tx_comm, const char *mode)
+int hdmitx_common_check_valid_para_of_vic(struct hdmitx_common *tx_comm, enum hdmi_vic vic)
+{
+	struct hdmi_format_para tst_para;
+	enum hdmi_color_depth cd; /* cd8, cd10 or cd12 */
+	enum hdmi_colorspace cs; /* 0/1/2/3: rgb/422/444/420 */
+	const enum hdmi_quantization_range cr = HDMI_QUANTIZATION_RANGE_FULL; /*default to full*/
+	int i = 0;
+
+	if (vic == HDMI_0_UNKNOWN)
+		return -EINVAL;
+
+	if (vic == HDMI_96_3840x2160p50_16x9 ||
+		vic == HDMI_97_3840x2160p60_16x9 ||
+		vic == HDMI_101_4096x2160p50_256x135 ||
+		vic == HDMI_102_4096x2160p60_256x135) {
+		cs = HDMI_COLORSPACE_YUV420;
+		cd = COLORDEPTH_24B;
+		if (hdmitx_common_build_format_para(tx_comm,
+			&tst_para, vic, false, cs, cd, cr) == 0 &&
+			hdmitx_common_validate_format_para(tx_comm, &tst_para) == 0) {
+			return 0;
+		}
+	}
+
+	struct {
+		enum hdmi_colorspace cs;
+		enum hdmi_color_depth cd;
+	} test_color_attr[] = {
+		{HDMI_COLORSPACE_RGB, COLORDEPTH_24B},
+		{HDMI_COLORSPACE_YUV444, COLORDEPTH_24B},
+		{HDMI_COLORSPACE_YUV422, COLORDEPTH_36B},
+	};
+
+	for (i = 0; i < ARRAY_SIZE(test_color_attr); i++) {
+		cs = test_color_attr[i].cs;
+		cd = test_color_attr[i].cd;
+		hdmitx_format_para_reset(&tst_para);
+		if (hdmitx_common_build_format_para(tx_comm,
+			&tst_para, vic, false, cs, cd, cr) == 0 &&
+			hdmitx_common_validate_format_para(tx_comm, &tst_para) == 0) {
+			return 0;
+		}
+	}
+
+	return -EPERM;
+}
+
+int hdmitx_common_parse_vic_in_edid(struct hdmitx_common *tx_comm, const char *mode)
 {
 	const struct hdmi_timing *timing;
 	enum hdmi_vic vic = HDMI_0_UNKNOWN;
@@ -236,7 +354,7 @@ int hdmitx_parse_mode_vic(struct hdmitx_common *tx_comm, const char *mode)
 	 */
 	alternate_vic = get_alternate_ar_vic(vic);
 	if (alternate_vic != HDMI_0_UNKNOWN) {
-		pr_info("get alternate vic %d->%d\n", vic, alternate_vic);
+		//pr_info("get alternate vic %d->%d\n", vic, alternate_vic);
 		vic = alternate_vic;
 	}
 
@@ -247,15 +365,20 @@ int hdmitx_parse_mode_vic(struct hdmitx_common *tx_comm, const char *mode)
 	/* for compatibility: 480p/576p, will get 0 if there is no alternate vic;*/
 	alternate_vic = get_alternate_ar_vic(vic);
 	if (alternate_vic != vic) {
-		pr_info("get alternate vic %d->%d\n", vic, alternate_vic);
+		//pr_info("get alternate vic %d->%d\n", vic, alternate_vic);
 		vic = alternate_vic;
 	}
 
 	if (vic != HDMI_0_UNKNOWN && hdmitx_edid_validate_mode(&tx_comm->rxcap, vic) != 0)
 		vic = HDMI_0_UNKNOWN;
 
+	/* Dont call hdmitx_common_check_valid_para_of_vic anymore.
+	 * This function used to parse user passed mode name which should already
+	 * checked by hdmitx_common_check_valid_para_of_vic().
+	 */
+
 	if (vic == HDMI_0_UNKNOWN)
-		pr_err("%s: parse mode %s fail\n", __func__, mode);
+		pr_err("%s: parse mode %s vic %d\n", __func__, mode, vic);
 
 	return vic;
 }

@@ -267,23 +267,9 @@ enum hdmi_aspect_ratio {
 
 struct vesa_standard_timing;
 
-unsigned int hdmi_get_csc_coef(unsigned int input_format,
-			       unsigned int output_format,
-			       unsigned int color_depth,
-			       unsigned int color_format,
-			       const unsigned char **coef_array,
-			       unsigned int *coef_length);
-int hdmi_get_fmt_para(enum hdmi_vic vic,
-		char const *attr, struct hdmi_format_para *para);
-int hdmitx_construct_format_para_from_timing(const struct hdmi_timing *timing,
-	struct hdmi_format_para *para);
-const char *hdmi_get_str_cd(struct hdmi_format_para *para);
-const char *hdmi_get_str_cs(struct hdmi_format_para *para);
-const char *hdmi_get_str_cr(struct hdmi_format_para *para);
 unsigned int hdmi_get_aud_n_paras(enum hdmi_audio_fs fs,
 				  enum hdmi_color_depth cd,
 				  unsigned int tmds_clk);
-int hdmitx_format_list_init(void);
 
 struct size_map {
 	unsigned int sample_bits;

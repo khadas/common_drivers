@@ -107,7 +107,7 @@ struct hdmi_format_para *hdmitx21_get_vesa_paras(struct vesa_standard_timing
 	*t);
 struct hdmi_format_para *hdmitx21_tst_fmt_name(const char *name,
 	const char *attr);
-int hdmi21_get_fmt_para(enum hdmi_vic vic, const char *mode, const char *attr,
+int hdmi21_get_fmt_para(enum hdmi_vic vic, const char *attr,
 			struct hdmi_format_para *para);
 u32 hdmi21_get_aud_n_paras(enum hdmi_audio_fs fs,
 				  enum hdmi_color_depth cd,

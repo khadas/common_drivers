@@ -159,14 +159,14 @@ static int hdmitx21_construct_format_para_from_timing(const struct hdmi_timing *
  * 3840x2160p60hz, etc
  * attr strings likes as '444,8bit'
  */
-int hdmi21_get_fmt_para(enum hdmi_vic vic, const char *name,
+int hdmi21_get_fmt_para(enum hdmi_vic vic,
 			const char *attr, struct hdmi_format_para *para)
 {
 	const struct hdmi_timing *timing = NULL;
 
 	memcpy(para, &fmt_para_non_hdmi_fmt, sizeof(struct hdmi_format_para));
 
-	if (!name || !attr)
+	if (!attr)
 		return -EINVAL;
 
 	if (!para) {

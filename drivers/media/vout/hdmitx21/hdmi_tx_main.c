@@ -94,6 +94,7 @@ static void edidinfo_detach_to_vinfo(struct hdmitx_dev *hdev);
 
 static int hdmi21_get_valid_fmt_para(struct hdmitx_dev *hdev,
 		char const *name, char const *attr, struct hdmi_format_para *para);
+static void hdmitx21_reset_format_para(struct hdmi_format_para *para);
 static void update_current_para(struct hdmitx_dev *hdev);
 static void hdmi_tx_enable_ll_mode(bool enable);
 static int hdmitx_hook_drm(struct device *device);
@@ -1773,7 +1774,7 @@ static int hdmi21_get_valid_fmt_para(struct hdmitx_dev *hdev,
 		//return -EINVAL;
 	}
 
-	return hdmi21_get_fmt_para(vic, name, attr, para);
+	return hdmi21_get_fmt_para(vic, attr, para);
 }
 
 static int calc_vinfo_from_hdmi_timing(const struct hdmi_timing *timing, struct vinfo_s *tx_vinfo)
@@ -1815,6 +1816,17 @@ static int calc_vinfo_from_hdmi_timing(const struct hdmi_timing *timing, struct 
 	return 0;
 }
 
+static void hdmitx21_reset_format_para(struct hdmi_format_para *para)
+{
+	if (!para)
+		return;
+
+	memset(para, 0, sizeof(struct hdmi_format_para));
+	para->vic = HDMI_0_UNKNOWN;
+	para->name = "invalid";
+	para->sname = "invalid";
+}
+
 void update_para_from_mode(struct hdmitx_dev *hdev,
 	const char *name, const char *fmt_attr,
 	struct hdmi_format_para *update_para)
@@ -1822,6 +1834,7 @@ void update_para_from_mode(struct hdmitx_dev *hdev,
 	struct vinfo_s *vinfo = &hdev->tx_comm.hdmitx_vinfo;
 
 	if (hdmi21_get_valid_fmt_para(hdev, name, fmt_attr, update_para) < 0) {
+		hdmitx21_reset_format_para(update_para);
 		pr_err("get format para failed (%s,%s)\n", name, fmt_attr);
 		return;
 	}
@@ -4879,7 +4892,7 @@ static int hdmitx_module_disable(enum vmode_e cur_vmod, void *data)
 	frl_tx_stop(hdev);
 	hdev->tx_hw.cntlmisc(&hdev->tx_hw, MISC_TMDS_PHY_OP, TMDS_PHY_DISABLE);
 	/* hdmitx21_disable_clk(hdev); */
-	update_para_from_mode(hdev, "invalid", hdev->tx_comm.fmt_attr, &hdev->tx_comm.fmt_para);
+	hdmitx21_reset_format_para(&hdev->tx_comm.fmt_para);
 	hdmitx_validate_vmode("null", 0, NULL);
 	if (hdev->cedst_policy)
 		cancel_delayed_work(&hdev->work_cedst);

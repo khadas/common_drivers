@@ -1133,7 +1133,7 @@
 	fip_size = <0x280000>;
 	bl2ex_2_copies;
 
-	rsv_board_config;
+	rsv_dts_config;
 	rsv_block_num = <14>;
 	rsv_gap_block_num = <4>;
 	rsv_bbt_block_num = <4>;

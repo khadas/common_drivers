@@ -1785,6 +1785,8 @@ void clear_dolby_vision_wait(void)
 {
 	int i;
 
+	if (debug_dolby & 2)
+		pr_info("clear amdv_wait_on\n");
 	amdv_wait_on = false;
 	if (is_aml_hw5()) {
 		top1_v_info.amdv_wait_init = false;
@@ -9564,8 +9566,10 @@ int amdv_parse_metadata_v2_stb(struct vframe_s *vf,
 		current_mode = dolby_vision_mode;
 		if (amdv_policy_process
 			(vf, &current_mode, check_format)) {
-			if (!dv_inst[pri_input].amdv_wait_init)
+			if (!dv_inst[pri_input].amdv_wait_init) {
 				amdv_set_toggle_flag(1);
+				amdv_wait_on = true;
+			}
 			pr_info("[%s] output change from %d to %d(%d, %p, %d)\n",
 				__func__, dolby_vision_mode, current_mode,
 				toggle_mode, vf, src_format);

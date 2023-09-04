@@ -1,0 +1,84 @@
+From c91db0e19aa6ea2230eff81dd89cbb87d7fb9959 Mon Sep 17 00:00:00 2001
+From: "qiankun.wang" <qiankun.wang@amlogic.com>
+Date: Fri, 25 Aug 2023 12:48:23 +0800
+Subject: [PATCH] ARM: stacktrace: filter irq stacks. [1/1]
+
+PD#SWPL-101774
+
+Problem:
+save_stack_trace can't simplify all callers'
+use of stackdepot, because the value of
+"__irqentry_text_start" and "__irqentry_text_end"
+is same.
+
+Solution:
+"#define __exception_irq_entry	__irq_entry" to
+make the section ".irqentry.text" is not empty.
+
+Verify:
+THXD2
+
+Change-Id: Ib99f366955a051cb439ee9f86dfe2c667288d2d0
+Signed-off-by: qiankun.wang <qiankun.wang@amlogic.com>
+---
+ arch/arm/include/asm/exception.h | 4 ++++
+ lib/Kconfig                      | 6 ++++--
+ mm/kasan/kasan.h                 | 6 ++++++
+ 3 files changed, 14 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/include/asm/exception.h b/arch/arm/include/asm/exception.h
+index 58e039a851af..c56ab8bb419a 100644
+--- a/arch/arm/include/asm/exception.h
++++ b/arch/arm/include/asm/exception.h
+@@ -10,10 +10,14 @@
+ 
+ #include <linux/interrupt.h>
+ 
++#ifdef CONFIG_AMLOGIC_ARM_KASAN
++#define __exception_irq_entry   __irq_entry
++#else
+ #ifdef CONFIG_FUNCTION_GRAPH_TRACER
+ #define __exception_irq_entry	__irq_entry
+ #else
+ #define __exception_irq_entry
+ #endif
++#endif
+ 
+ #endif /* __ASM_ARM_EXCEPTION_H */
+diff --git a/lib/Kconfig b/lib/Kconfig
+index baa977e003b7..bfbaaa878c90 100644
+--- a/lib/Kconfig
++++ b/lib/Kconfig
+@@ -677,8 +677,10 @@ config STACKDEPOT
+ 
+ config STACK_HASH_ORDER
+ 	int "stack depot hash size (12 => 4KB, 20 => 1024KB)"
+-	range 12 20
+-	default 20
++	range 12 20 if !AMLOGIC_ARM_KASAN
++	range 6 20 if AMLOGIC_ARM_KASAN
++	default 20 if !AMLOGIC_ARM_KASAN
++	default 6 if AMLOGIC_ARM_KASAN
+ 	depends on STACKDEPOT
+ 	help
+ 	 Select the hash size as a power of 2 for the stackdepot hash table.
+diff --git a/mm/kasan/kasan.h b/mm/kasan/kasan.h
+index 47da190423d4..ec8d244f3c64 100644
+--- a/mm/kasan/kasan.h
++++ b/mm/kasan/kasan.h
+@@ -245,6 +245,12 @@ struct kasan_global {
+ 
+ /* Structures for keeping alloc and free meta. */
+ 
++#ifdef CONFIG_AMLOGIC_ARM_KASAN
++#define KASAN_STACK_DEPTH 32
++#else
++#define KASAN_STACK_DEPTH 64
++#endif
++
+ #ifdef CONFIG_KASAN_GENERIC
+ 
+ struct kasan_alloc_meta {
+-- 
+2.25.1
+

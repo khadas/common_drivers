@@ -56,7 +56,7 @@ struct dolby5_top1_type top1_type;
 static u32 isr_cnt;
 bool enable_top1;//todo
 bool top1_done;
-
+bool ignore_top1_result;
 u32 l1l4_wr_index;
 u32 l1l4_rd_index;
 static bool new_top1_toggle;
@@ -78,6 +78,7 @@ MODULE_PARM_DESC(test_dv, "\n test_dv\n");
 /*1:case0 480x270 420-8bit read from array*/
 /*2:case0 480x270 420-8bit read from file*/
 /*3:case5344 1080p 444-10  read from file*/
+/*4:case5363 1080x1080 444-10  read from file*/
 u32 fix_data;
 module_param(fix_data, uint, 0664);
 MODULE_PARM_DESC(fix_data, "\n fix_data\n");
@@ -104,6 +105,8 @@ void fixed_buf_config(void)
 
 	if (fix_data == CASE5344_TOP1_READFROM_FILE)
 		y_buf_size = 1920 * 1080 * 4;
+	else if (fix_data == CASE5363_TOP1_READFROM_FILE)
+		y_buf_size = 540 * 540 * 4;
 
 #ifdef CONFIG_AMLOGIC_MEDIA_CODEC_MM
 	fixed_y_buf_paddr = codec_mm_alloc_for_dma("amdv",
@@ -237,7 +240,7 @@ static void dolby5_top1_rdmif
 
 	unsigned int cntl_bits_mode;
 	unsigned int cntl_pixel_bytes;
-	unsigned int cntl_color_map = 0; //1 or 2, 420 nv12 or nv21
+	unsigned int cntl_color_map = 0; //1: 420 nv12, 2 420 nv21, 0: 444/422
 	unsigned int cntl_bit16_mode = 0;
 	unsigned int cvfmt_en = 0; //420
 	unsigned int chfmt_en = 0; //420/422
@@ -295,7 +298,8 @@ static void dolby5_top1_rdmif
 		cntl_bits_mode = 0;//p010 mode(10bit valid data + 6bit padding0)
 		cntl_pixel_bytes = 1;
 		cntl_bit16_mode = 1;//p010,16bit
-		if (fix_data == CASE5344_TOP1_READFROM_FILE) {
+		if (fix_data == CASE5344_TOP1_READFROM_FILE ||
+			fix_data == CASE5363_TOP1_READFROM_FILE) {
 			cntl_bits_mode = 3;
 			cntl_pixel_bytes = 1;
 			cntl_bit16_mode = 0;
@@ -361,7 +365,8 @@ static void dolby5_top1_rdmif
 
 	if (fix_data) {
 		VSYNC_WR_DV_REG(DOLBY_TOP1_BADDR_Y, fixed_y_buf_paddr >> 4);
-		if (fix_data != CASE5344_TOP1_READFROM_FILE)
+		if (fix_data != CASE5344_TOP1_READFROM_FILE &&
+			fix_data != CASE5363_TOP1_READFROM_FILE)/*p444,one plane*/
 			VSYNC_WR_DV_REG(DOLBY_TOP1_BADDR_CB, fixed_uv_buf_paddr >> 4);
 	} else {
 		VSYNC_WR_DV_REG(DOLBY_TOP1_BADDR_Y, baddr[0] >> 4);
@@ -386,9 +391,9 @@ static void dolby5_top1_rdmif
 	//}
 };
 
-/*check pyramid is enable in cfg*/
+/*check pyramid is enable in cfg case5350 5353 5354*/
 /*if disabled, we force enable pyramid for top1+top1b due to hw5 not support bypass top1b*/
-static void check_pr_enabled(void)
+static void check_pr_enabled_in_cfg(void)
 {
 	bool pr_enabled = true;
 	bool l1l4 = true;
@@ -413,6 +418,35 @@ static void check_pr_enabled(void)
 		l1l4_distance = 1;
 	else
 		l1l4_distance = 2;
+}
+
+/*Check pyramid is enable in reg, case5343*/
+/*For low res(w<480), even if cfg enable pyramid, controlpath will disable*/
+/*intensity image and pyramid*/
+static void check_pr_enabled_in_reg(u32 *p_reg_top1, u32 *p_reg_top1b)
+{
+	int reg_val, reg_addr;
+	int reg_val_b, reg_addr_b;
+
+	reg_val = p_reg_top1[2 * 2];
+	reg_val = reg_val & 0xffffffff;
+	reg_addr = p_reg_top1[2 * 2 + 1];
+	reg_addr = reg_addr & 0xffff;
+	reg_addr = reg_addr >> 2;
+
+	reg_val_b = p_reg_top1b[2 * 2];
+	reg_val_b = reg_val_b & 0xffffffff;
+	reg_addr_b = p_reg_top1b[2 * 2 + 1];
+	reg_addr_b = reg_addr_b & 0xffff;
+	reg_addr_b = reg_addr_b >> 2;
+
+	if (reg_addr == 1 && (reg_val & 0x14) == 0x14 && reg_addr_b == 1 && (reg_val_b & 0x1)) {
+		if ((debug_dolby & 0x80000))
+			pr_dv_dbg("top1 intensity/l1l4/pyramid bypassed!\n");
+		ignore_top1_result = true;
+	} else {
+		ignore_top1_result = false;
+	}
 }
 
 /*if pyramid is enable in cfg, we force enable pyramid for top1+top1b due to*/
@@ -538,7 +572,9 @@ static void dolby5_top1_ini(struct dolby5_top1_type *dolby5_top1)
 		top1b_ahb_num = dolby5_top1->core1b_ahb_num;
 	}
 
-	check_pr_enabled();
+	check_pr_enabled_in_cfg();
+	if (py_enabled && (dolby_vision_flags & FLAG_CERTIFICATION))
+		check_pr_enabled_in_reg(p_reg_top1, p_reg_top1b);
 
 	if (p_reg_top1)
 		dolby5_ahb_reg_config(p_reg_top1, 0, top1_ahb_num);
@@ -1111,6 +1147,7 @@ void enable_amdv_hw5(int enable)
 				top2_info.core_on_cnt = 0;
 				set_frame_count(0);
 				set_vf_crc_valid(0);
+				crc_count = 0;
 				pr_dv_dbg("TV CORE turn off\n");
 			}
 		}
@@ -1320,6 +1357,8 @@ int tv_top1_set(u64 *top1_reg,
 		top1_type.rdmif_stride[i] = top1_stride_rdmif(top1_vd_info.width, plane_bits);
 		if (fix_data == CASE5344_TOP1_READFROM_FILE)
 			top1_type.rdmif_stride[i] = 480;
+		else if (fix_data == CASE5363_TOP1_READFROM_FILE)
+			top1_type.rdmif_stride[i] = 136;
 	}
 	top1_type.rdmif_stride[2] = 0;
 
@@ -1352,7 +1391,7 @@ int tv_top1_set(u64 *top1_reg,
 	else if (top1_vd_info.bitdepth == 8)
 		top1_type.bit_mode = 1;
 
-	if (fix_data == CASE5344_TOP1_READFROM_FILE) {
+	if (fix_data == CASE5344_TOP1_READFROM_FILE || fix_data == CASE5363_TOP1_READFROM_FILE) {
 		top1_type.fmt_mode = 0;//test, force 444
 		top1_vd_info.bitdepth = 10;
 		top1_type.bit_mode = 0;

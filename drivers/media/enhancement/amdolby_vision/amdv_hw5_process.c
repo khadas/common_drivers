@@ -112,7 +112,7 @@ void update_top1_onoff(struct vframe_s *vf)
 {
 	u32 w;
 	u32 h;
-	bool last_enable_top1 = true;
+	static bool last_enable_top1 = true;
 
 	if (vf) {
 		if (!(vf->type & VIDTYPE_COMPRESS))
@@ -123,7 +123,7 @@ void update_top1_onoff(struct vframe_s *vf)
 		h = (vf->type & VIDTYPE_COMPRESS) ?
 			vf->compHeight : vf->height;
 
-		if (w < 480)
+		if (w <= 256 || h <= 144)
 			enable_top1 = false;
 		//else
 		//	enable_top1 = true;
@@ -145,7 +145,8 @@ void update_top1_onoff(struct vframe_s *vf)
 			if (debug_dolby & 1)
 				pr_dv_dbg("top1 status changed %d %d, update pyramid in cfg\n",
 					last_enable_top1, enable_top1);
-			update_cp_cfg_hw5(true);/*disable pyramid in cfg*/
+			/*disable pyramid in cfg if !enable_top1, otherwise resotre it*/
+			update_cp_cfg_hw5(true);
 		}
 
 		last_enable_top1 = enable_top1;
@@ -1193,7 +1194,7 @@ int amdv_parse_metadata_hw5_top1(struct vframe_s *vf)
 		tv_hw5_setting->top1.video_height != h ||
 		hdr10_src_primary_changed) {
 		if (debug_dolby & 0x100)
-			pr_dv_dbg("reset control_path fmt %d->%d, w %d->%d, h %d->%d\n",
+			pr_dv_dbg("reset control_path_analyze fmt %d->%d, w %d->%d, h %d->%d\n",
 				tv_hw5_setting->top1.src_format, src_format,
 				tv_hw5_setting->top1.video_width, w,
 				tv_hw5_setting->top1.video_height, h);
@@ -2003,10 +2004,13 @@ int amdv_parse_metadata_hw5(struct vframe_s *vf,
 	tv_input_info->tid = get_pic_mode();
 	if (debug_dolby & 0x400)
 		do_gettimeofday(&start);
-	/*for hdmi in cert, only run control_path for different frame*/
-	if ((dolby_vision_flags & FLAG_CERTIFICATION) &&
-	    !vf_changed && input_mode == IN_MODE_HDMI) {
-		run_control_path = false;
+
+	if (dolby_vision_flags & FLAG_CERTIFICATION) {
+		/*for hdmi in cert, only run control_path for different frame*/
+		if (!vf_changed && input_mode == IN_MODE_HDMI)
+			run_control_path = false;
+		else if (toggle_mode != 1)
+			run_control_path = false;
 	}
 
 	if (ambient_update) {
@@ -2192,7 +2196,8 @@ int amdv_wait_metadata_hw5(struct vframe_s *vf)
 				pr_dv_dbg("wait top1 and need to do top1\n");
 			return 4;
 		}
-		if (top1_info.core_on && (!top1_done /*&& !temp_done*/)) {//todo
+		if (top1_info.core_on &&
+			(!top1_done && !ignore_top1_result/*&& !temp_done*/)) {//todo
 			if (vf && (debug_dolby & 8))
 				pr_dv_dbg("wait top1\n");
 			return 5;

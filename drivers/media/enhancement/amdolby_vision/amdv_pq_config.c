@@ -1038,7 +1038,8 @@ void update_cp_cfg_hw5(bool update_pyramid)
 		tdc->t_primaries[5] = cur_debug_tprimary[2][1]; /*by*/
 	}
 
-	if (update_pyramid && !enable_top1) {
+	if (update_pyramid && !enable_top1 &&
+		(tdc->pr_config.supports_precision_rendering || tdc->ana_config.enalbe_l1l4_gen)) {
 		tdc->pr_config.supports_precision_rendering = 0;
 		tdc->pr_config.precision_rendering_strength = 0;
 		tdc->ana_config.enalbe_l1l4_gen = 0;
@@ -1244,10 +1245,10 @@ static bool get_one_line(char **cfg_buf, char *line_buf, bool ignore_comments)
 
 	line_buf[0] = '\0';
 	while (*line_buf == '\0') {
-		if (debug_dolby & 0x2)
+		if (debug_dolby & 0x200)
 			pr_info("*cfg_buf: %s\n", *cfg_buf);
 		line_end = strnchr(*cfg_buf, MAX_READ_SIZE, '\n');
-		if (debug_dolby & 0x2)
+		if (debug_dolby & 0x200)
 			pr_info("line_end: %s\n", line_end);
 		if (!line_end) {
 			line_len = strlen(*cfg_buf);

@@ -429,6 +429,7 @@ struct dovi_setting_s {
 #define CASE0_TOP1_READFROM_ARRAY 1
 #define CASE0_TOP1_READFROM_FILE 2
 #define CASE5344_TOP1_READFROM_FILE 3
+#define CASE5363_TOP1_READFROM_FILE 4
 
 struct dovi_setting_video_s {
 	struct composer_reg_ipcore comp_reg;
@@ -896,6 +897,7 @@ extern u32 force_sdr10;
 extern bool py_enabled;
 extern bool l1l4_enabled;
 extern u32 l1l4_distance;
+extern bool ignore_top1_result;
 extern u8 force_drm[32];
 extern bool dv_unique_drm;
 /************/

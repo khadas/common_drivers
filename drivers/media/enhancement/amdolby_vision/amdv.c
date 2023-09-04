@@ -1842,6 +1842,8 @@ void reset_dv_param(void)
 	dolby_vision_flags &= ~FLAG_MUTE;
 	hdmi_frame_count = 0;
 	force_bypass_from_prebld_to_vadj1 = 0;
+	setting_update_count = 0;
+	crc_count = 0;
 	if (multi_dv_mode) {
 		for (i = 0; i < NUM_INST; i++) {
 			dv_inst[i].amdv_src_format = 0;
@@ -13539,6 +13541,27 @@ static ssize_t amdolby_vision_load_reg_file_store
 				p_buf_64[0], p_buf_64[1], p_buf_64[2]);
 
 			codec_mm_dma_flush(y_vaddr, 1920 * 1080 * 4, DMA_TO_DEVICE);
+			//codec_mm_unmap_phyaddr(y_vaddr);
+		}
+	} else if (!strcmp(parm[0], "case5363_top1")) {
+		/*444-10bit interlaved, one pixel yuv share 32bit*/
+		load_reg_and_lut_file(parm[1], &top1_pic_txt);
+		if (y_vaddr && fix_data == CASE5363_TOP1_READFROM_FILE) {
+			read_top1_pic_to_buf(top1_pic_txt, y_vaddr, 540 * 540, false);
+			u32 *p_buf = (u32 *)y_vaddr;
+			u64 *p_buf_64 = (u64 *)y_vaddr;
+
+			pr_info("p_8bit %x %x %x %x %x %x %x %x %x %x %x %x\n",
+				y_vaddr[0], y_vaddr[1], y_vaddr[2], y_vaddr[3],
+				y_vaddr[4], y_vaddr[5], y_vaddr[6], y_vaddr[7],
+				y_vaddr[8], y_vaddr[9], y_vaddr[10], y_vaddr[11]);
+			pr_info("p_32bit %x %x %x %x, end: %x %x\n",
+				p_buf[0], p_buf[1], p_buf[2], p_buf[3],
+				p_buf[291600 - 2], p_buf[291600 - 1]);
+			pr_info("p_64bit %llx %llx %llx\n",
+				p_buf_64[0], p_buf_64[1], p_buf_64[2]);
+
+			codec_mm_dma_flush(y_vaddr, 540 * 540 * 4, DMA_TO_DEVICE);
 			//codec_mm_unmap_phyaddr(y_vaddr);
 		}
 	}

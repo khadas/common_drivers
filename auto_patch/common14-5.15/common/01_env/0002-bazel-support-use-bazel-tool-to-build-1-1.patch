@@ -1,7 +1,7 @@
-From abd262a2ea2852c9f59e39a98a225e071d8b63bd Mon Sep 17 00:00:00 2001
+From b302a5c15f28e238ac1c294563b7ab8473c81fe4 Mon Sep 17 00:00:00 2001
 From: Wanwei Jiang <wanwei.jiang@amlogic.com>
 Date: Fri, 17 Mar 2023 17:35:31 +0800
-Subject: [PATCH 2/3] bazel: support use bazel tool to build [1/1]
+Subject: [PATCH] bazel: support use bazel tool to build [1/1]
 
 PD#SWPL-112151
 
@@ -17,31 +17,43 @@ sc2
 Change-Id: I96e80b97ed481f32239955748ffa52e7d40a85aa
 Signed-off-by: Wanwei Jiang <wanwei.jiang@amlogic.com>
 ---
- BUILD.bazel | 7 +++++++
- 1 file changed, 7 insertions(+)
+ BUILD.bazel | 3 +++
+ modules.bzl | 6 ++++++
+ 2 files changed, 9 insertions(+)
 
 diff --git a/BUILD.bazel b/BUILD.bazel
-index e58326282f05..3f233e5a87fb 100644
+index 22e8105c4c51..7018a500aafd 100644
 --- a/BUILD.bazel
 +++ b/BUILD.bazel
-@@ -15,6 +15,10 @@ load(
-     "merged_kernel_uapi_headers",
- )
- load(":modules.bzl", "COMMON_GKI_MODULES_LIST")
-+load("//common:common_drivers/modules.bzl", "ALL_MODULES_REMOVE")
-+remove_modules_items = {module: None for module in depset(ALL_MODULES_REMOVE).to_list()}
-+COMMON_GKI_MODULES_LIST = [module for module in depset(COMMON_GKI_MODULES_LIST).to_list() if module not in remove_modules_items] \
-+			if remove_modules_items else COMMON_GKI_MODULES_LIST
- 
- package(
-     default_visibility = [
-@@ -745,3 +749,6 @@ ddk_headers(
+@@ -792,3 +792,6 @@ ddk_headers(
      ],
      visibility = ["//visibility:private"],
  )
 +
 +load("//common:common_drivers/amlogic.bzl", "define_amlogic")
 +define_amlogic()
+diff --git a/modules.bzl b/modules.bzl
+index d8c38eeb33a9..3e24057c9ce1 100644
+--- a/modules.bzl
++++ b/modules.bzl
+@@ -6,6 +6,8 @@ This module contains a full list of kernel modules
+  compiled by GKI.
+ """
+ 
++load("//common:common_drivers/modules.bzl", "ALL_MODULES_REMOVE")
++
+ _COMMON_GKI_MODULES_LIST = [
+     # keep sorted
+     "drivers/block/zram/zram.ko",
+@@ -106,4 +108,8 @@ def get_gki_modules_list(arch = None):
+             arch,
+         ))
+ 
++    remove_modules_items = {module: None for module in depset(ALL_MODULES_REMOVE).to_list()}
++    gki_modules_list = [module for module in depset(gki_modules_list).to_list() if module not in remove_modules_items] \
++			if remove_modules_items else gki_modules_list
++
+     return gki_modules_list
 -- 
-2.41.0
+2.25.1
 

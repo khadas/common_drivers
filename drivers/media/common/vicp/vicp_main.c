@@ -1252,11 +1252,15 @@ static int vicp_pm_resume(struct device *dev)
 	return 0;
 }
 
-#endif
-
 static const struct dev_pm_ops vicp_dev_pm_ops = {
 	SET_SYSTEM_SLEEP_PM_OPS(vicp_pm_suspend, vicp_pm_resume)
 };
+#endif
+
+static void vicp_shutdown(struct platform_device *pdev)
+{
+	vicp_clock_config(0);
+}
 
 static struct platform_driver vicp_driver = {
 	.probe = vicp_probe,
@@ -1265,6 +1269,7 @@ static struct platform_driver vicp_driver = {
 	.suspend = vicp_suspend,
 	.resume = vicp_resume,
 #endif
+	.shutdown   = vicp_shutdown,
 	.driver = {
 		.owner = THIS_MODULE,
 		.name = "amlogic-vicp",

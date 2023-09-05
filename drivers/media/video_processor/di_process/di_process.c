@@ -821,6 +821,7 @@ static int di_process_init(struct di_process_dev *dev)
 			  dev->di_index);
 		return dev->di_index;
 	}
+	dev->di_is_tvp = false;
 	dp_print(dev->index, PRINT_OTHER,
 		  "%s: di_index = %d\n", __func__, dev->di_index);
 
@@ -933,6 +934,34 @@ static int di_process_uninit(struct di_process_dev *dev)
 	return ret;
 }
 
+static int di_process_set_tvp(struct di_process_dev *dev, bool is_tvp)
+{
+	int ret = 0;
+
+	if (is_tvp)
+		dev->di_parm.output_format |= DI_OUTPUT_TVP;
+	else
+		dev->di_parm.output_format &= ~DI_OUTPUT_TVP;
+
+	if (dev->di_index >= 0) {
+		ret = di_destroy_instance(dev->di_index);
+		if (ret != 0)
+			dp_print(dev->index, PRINT_ERROR,
+				  "destroy di fail, di_index=%d\n",
+				  dev->di_index);
+	}
+
+	dev->di_index = di_create_instance(dev->di_parm);
+	if (dev->di_index < 0) {
+		dp_print(dev->index, PRINT_ERROR,
+			  "creat di fail, di_index=%d\n",
+			  dev->di_index);
+		return dev->di_index;
+	}
+	dev->di_is_tvp = is_tvp;
+	return 0;
+}
+
 static int di_process_set_frame(struct di_process_dev *dev, struct frame_info_t *frame_info)
 {
 	int i;
@@ -979,6 +1008,29 @@ static int di_process_set_frame(struct di_process_dev *dev, struct frame_info_t 
 		 kfifo_len(&dev->receive_q), frame_info->in_fd, vf->omx_index,
 		 file_vf, file_count(file_vf));
 
+	/*first vf need check tvp*/
+	if (dev->last_vf.type == 0) {
+		if ((vf->flag & VFRAME_FLAG_VIDEO_SECURE) && !dev->di_is_tvp) {
+			dp_print(dev->index, PRINT_OTHER, "need reinit to tvp");
+			di_process_set_tvp(dev, true);
+		} else if (!(vf->flag & VFRAME_FLAG_VIDEO_SECURE) && dev->di_is_tvp) {
+			dp_print(dev->index, PRINT_OTHER, "need reinit to non-tvp");
+			di_process_set_tvp(dev, false);
+		}
+	} else {
+		if ((vf->flag & VFRAME_FLAG_VIDEO_SECURE) && !dev->di_is_tvp) {
+			dp_print(dev->index, PRINT_ERROR, "need uplayer reinit to tvp");
+			dp_put_file(dev, file_vf);
+			frame_info->is_tvp = true;
+			return 1;
+		} else if (!(vf->flag & VFRAME_FLAG_VIDEO_SECURE) && dev->di_is_tvp) {
+			dp_print(dev->index, PRINT_ERROR, "need uplayer reinit to non-tvp");
+			dp_put_file(dev, file_vf);
+			frame_info->is_tvp = false;
+			return 1;
+		}
+	}
+
 	omx_index = vf->omx_index;
 
 	if (dev->last_vf.width != vf->width ||
@@ -993,6 +1045,11 @@ static int di_process_set_frame(struct di_process_dev *dev, struct frame_info_t 
 		}
 	}
 	dev->last_vf = *vf;
+
+	if (vf->flag & VFRAME_FLAG_VIDEO_SECURE)
+		frame_info->is_tvp = true;
+	else
+		frame_info->is_tvp = false;
 
 	if (!dev->first_out) {
 		dev->last_frame_bypass = true;

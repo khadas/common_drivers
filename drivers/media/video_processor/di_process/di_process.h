@@ -60,7 +60,8 @@ struct frame_info_t {
 	u32 is_i;
 	u32 omx_index;
 	u32 need_bypass;
-	u32 reserved[15];
+	u32 is_tvp;
+	u32 reserved[14];
 };
 
 struct received_frame_t {
@@ -108,6 +109,7 @@ struct di_process_dev {
 	struct vframe_s dummy_vf;
 	struct vframe_s dummy_vf1;
 	bool last_frame_bypass;
+	bool di_is_tvp;
 	struct vframe_s last_vf;
 };
 

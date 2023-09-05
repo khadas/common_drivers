@@ -424,78 +424,76 @@ void vdin_prob_set_xy_t3x(unsigned int offset,
  *	5.set VDIN_MEAS mux
  *	6.manual reset VDIN_MEAS & VPP_VDO_MEAS at the same time
  */
-static void vdin_set_meas_mux_t3x(unsigned int offset, enum tvin_port_e port_,
-			      enum bt_path_e bt_path)
+static void vdin_set_meas_mux_t3x(struct vdin_dev_s *devp)
 {
-	/* unsigned int offset = devp->addr_offset; */
 	unsigned int meas_mux = MEAS_MUX_NULL;
+	unsigned int wide_en_bit;
 
-	if (is_meson_t3x_cpu()) //lht todo
+	if (devp->index)
 		return;
 
-	switch ((port_) >> 8) {
+	switch (devp->parm.port >> 8) {
 	case 0x01: /* mpeg */
-		meas_mux = MEAS_MUX_NULL;
+		wide_en_bit = 27;
+		meas_mux = VDIN_VDI0_MPEG_T3X;
 		break;
-	case 0x02: /* bt656 , txl and txlx do not support bt656 */
-		if ((is_meson_gxbb_cpu() || is_meson_gxtvbb_cpu()) &&
-		    bt_path == BT_PATH_GPIO_B) {
-#ifndef CONFIG_AMLOGIC_REMOVE_OLD
-			meas_mux = MEAS_MUX_656_B;
-#endif
-		} else if ((is_meson_gxl_cpu() || is_meson_gxm_cpu() ||
-			cpu_after_eq(MESON_CPU_MAJOR_ID_G12A)) &&
-			(bt_path == BT_PATH_GPIO)) {
-			meas_mux = MEAS_MUX_656;
-		} else {
-			pr_info("cpu not define or do not support  bt656");
-		}
+	case 0x02: /* first bt656 */
+		wide_en_bit = 26;
+		meas_mux = VDIN_VDI1_BT656_T3X;
 		break;
-	case 0x04: /* VGA */
-		meas_mux = MEAS_MUX_TVFE;
-		break;
-	case 0x08: /* COMPONENT */
-		meas_mux = MEAS_MUX_TVFE;
+	case 0x04: /* reserved */
+		wide_en_bit = 25;
+		meas_mux = VDIN_VDI2_RESERVED_T3X;
 		break;
 	case 0x10: /* CVBS */
-		meas_mux = MEAS_MUX_CVD2;
+		wide_en_bit = 24;
+		meas_mux = VDIN_VDI3_TV_DECODE_IN_T3X;
 		break;
-	case 0x20: /* SVIDEO */
-		meas_mux = MEAS_MUX_CVD2;
+	case 0x20: /* hdmi rx vdi4b */
+		wide_en_bit = 22;
+		meas_mux = VDIN_VDI4B_HDMIRX_T3X;
 		break;
-	case 0x40: /* hdmi */
-		meas_mux = MEAS_MUX_HDMI;
+	case 0x40:
+		wide_en_bit = 23;
+		meas_mux = VDIN_VDI4A_HDMIRX_T3X;
 		break;
-	case 0x80: /* dvin */
-		meas_mux = MEAS_MUX_DVIN;
+	case 0x80: /* digital video */
+		wide_en_bit = 21;
+		meas_mux = VDIN_VDI5_DVI_T3X;
 		break;
-	case 0xa0:/* viu */
-		meas_mux = MEAS_MUX_VIU1;
+	case 0xa0:/* viu1 */
+		wide_en_bit = 18;
+		meas_mux = VDIN_VDI8_LOOPBACK_2_T3X;
 		break;
-	case 0xc0:/* viu */
-		meas_mux = MEAS_MUX_VIU2;
+	case 0xc0: /* viu2 */
+		wide_en_bit = 20;
+		meas_mux = VDIN_VDI6_LOOPBACK_1_T3X;
 		break;
-	case 0x100:/* dtv mipi */
-		meas_mux = MEAS_MUX_DTV;
+	case 0xe0: /* venc0 */
+		wide_en_bit = 20;
+		meas_mux = VDIN_VDI6_LOOPBACK_1_T3X;
 		break;
-	case 0x200:/* isp */
-		meas_mux = MEAS_MUX_ISP;
+	case 0x100: /* mipi-csi2 */
+		wide_en_bit = 19;
+		meas_mux = VDIN_VDI7_MIPI_CSI2_T3X;
 		break;
 	default:
-		meas_mux = MEAS_MUX_NULL;
+		wide_en_bit = 23;
+		meas_mux = VDIN_VDI4A_HDMIRX_T3X;
 		break;
 	}
+
 	/* set VDIN_MEAS in accumulation mode */
-	wr_bits(offset, VDIN_MEAS_CTRL0, 1,
+	wr_bits(0, VDIN_INTF_MEAS_CTRL, 1,
 		MEAS_VS_TOTAL_CNT_EN_BIT, MEAS_VS_TOTAL_CNT_EN_WID);
 	/* set VDIN_MEAS mux */
-	wr_bits(offset, VDIN_MEAS_CTRL0, meas_mux,
-		MEAS_HS_VS_SEL_BIT, MEAS_HS_VS_SEL_WID);
+	wr_bits(0, VDIN_INTF_MEAS_CTRL, meas_mux, 12, 4);
+	wr_bits(0, VDIN_INTF_MEAS_CTRL, 1, wide_en_bit, 1);
 	/* manual reset VDIN_MEAS,
 	 * rst = 1 & 0
 	 */
-	wr_bits(offset, VDIN_MEAS_CTRL0, 1, MEAS_RST_BIT, MEAS_RST_WID);
-	wr_bits(offset, VDIN_MEAS_CTRL0, 0, MEAS_RST_BIT, MEAS_RST_WID);
+	wr_bits(0, VDIN_INTF_MEAS_CTRL, 1, 29, 1);
+	wr_bits(0, VDIN_INTF_MEAS_CTRL, 0, 29, 1);
 }
 
 /*function:set VDIN_COM_CTRL0
@@ -1859,10 +1857,21 @@ unsigned int vdin_get_meas_h_cnt64_t3x(unsigned int offset)
 	return 0;
 }
 
-unsigned int vdin_get_meas_vstamp_t3x(unsigned int offset)
+unsigned int vdin_get_meas_v_stamp_t3x(struct vdin_dev_s *devp)
 {
-	//return rd(offset, VDIN_MEAS_VS_COUNT_LO);
-	return 0;
+	unsigned int low_cnt, high_cnt;
+
+	low_cnt  = rd(0, VDIN_INTF_MEAS_IND_TOTAL_COUNT0);
+	high_cnt = rd(0, VDIN_INTF_MEAS_IND_TOTAL_COUNT1);
+
+	if (vdin_isr_monitor & VDIN_ISR_MONITOR_CYCLE)
+		pr_info("low_cnt = %#x,high_cnt = %#x\n",
+			low_cnt, high_cnt);
+	/* [23:0] */
+	low_cnt  = low_cnt  & 0xffffff;
+	high_cnt = high_cnt & 0xffffff;
+
+	return ((high_cnt << 24) | low_cnt) / 2;
 }
 
 unsigned int vdin_get_active_h_t3x(unsigned int offset)
@@ -2321,8 +2330,7 @@ void vdin_set_all_regs_t3x(struct vdin_dev_s *devp)
 		     devp->prop.color_format,
 		     devp->bt_path);
 
-	vdin_set_meas_mux_t3x(devp->addr_offset, devp->parm.port,
-			  devp->bt_path);
+	vdin_set_meas_mux_t3x(devp);
 
 //	/* for t7 vdin2 write meta data */
 //	if (devp->dtdata->hw_ver == VDIN_HW_T7) {

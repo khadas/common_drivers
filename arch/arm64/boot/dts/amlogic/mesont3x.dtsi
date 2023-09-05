@@ -2618,16 +2618,16 @@
 		/*cma_size = <174>;*/
 		/*frame_buff_num = <6>;*/
 		interrupts = <0 118 1 /* vdin0 vsync */
-				0 121 1 /* vdin0 write_done_int */
+				/*0 121 1*/ /* vdin0 write_done_int */
 				/*0 206 1*/ /* mif2_meta_wr_done_int */
 				/*0 126 1*/>; /* vpu_crash_int */
-		interrupt-names = "vsync_int",
-				"write_done_int";
+		interrupt-names = "vsync_int";
+				/*"write_done_int";*/
 				/*"mif2_meta_wr_done_int"*/
 				/*"vpu_crash_int",*/
 		rdma-irq = <2>;
-//		clocks = <&clkc CLKID_FCLK_DIV5>, <&clkc CLKID_VDIN_MEAS_GATE>;
-//		clock-names = "fclk_div5", "cts_vdin_meas_clk";
+		clocks = <&clkc CLKID_FCLK_DIV5>, <&clkc CLKID_VDIN_MEAS>;
+		clock-names = "fclk_div5", "cts_vdin_meas_clk";
 		vdin_id = <0>;
 		/* s5:export vdin id to other module or app */
 		vdin_export_id = <0>;

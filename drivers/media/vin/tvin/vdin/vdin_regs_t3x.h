@@ -441,6 +441,8 @@ enum vdin_vdi_x_t3x_e {
 #define HSYNC_MASK_EN_WID	1
 #define VSYNC_MASK_EN_BIT	1			// unsigned ,    RW, default = 0
 #define VSYNC_MASK_EN_WID	1
+//Bit  2           reg_hsync_mask_en                    // unsigned ,    RW, default = 0
+//Bit  1           reg_vsync_mask_en                    // unsigned ,    RW, default = 0
 //Bit  0           reg_frm_rst_en                       // unsigned ,    RW, default = 1
 #define VDIN0_SYNC_CONVERT_SYNC_CTRL1              0x0153
 //Bit 31:16        reg_clk_cyc_line_widthm1             // unsigned ,    RW, default = 0

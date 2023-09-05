@@ -2905,7 +2905,7 @@ bool vdin_check_cycle_s5(struct vdin_dev_s *devp)
 	bool ret = false;
 	unsigned int stamp, cycle;
 
-	stamp = vdin_get_meas_v_stamp(devp->addr_offset);
+	stamp = vdin_get_meas_v_stamp(devp);
 
 	if (stamp < devp->stamp)
 		cycle = 0xffffffff - devp->stamp + stamp + 1;

@@ -2602,16 +2602,16 @@ unsigned int vdin_get_meas_h_cnt64(unsigned int offset)
 		       MEAS_HS_CNT_BIT, MEAS_HS_CNT_WID);
 }
 
-unsigned int vdin_get_meas_v_stamp(unsigned int offset)
+unsigned int vdin_get_meas_v_stamp(struct vdin_dev_s *devp)
 {
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu())
 		return 0;//rd(offset, VDIN_MEAS_VS_COUNT_LO);
 	else if (is_meson_t3x_cpu())
-		return 0;//rd(offset, VDIN_MEAS_VS_COUNT_LO);
+		return vdin_get_meas_v_stamp_t3x(devp);
 	else
 #endif
-		return rd(offset, VDIN_MEAS_VS_COUNT_LO);
+		return rd(devp->addr_offset, VDIN_MEAS_VS_COUNT_LO);
 }
 
 unsigned int vdin_get_active_h(struct vdin_dev_s *devp)
@@ -4240,12 +4240,16 @@ bool vdin_check_cycle(struct vdin_dev_s *devp)
 	u64 interval_value;
 
 	interval_value = vdin_calculate_isr_interval_value(devp);
-	stamp = vdin_get_meas_v_stamp(devp->addr_offset);
+	stamp = vdin_get_meas_v_stamp(devp);
 
 	if (stamp < devp->stamp)
 		cycle = 0xffffffff - devp->stamp + stamp + 1;
 	else
 		cycle = stamp - devp->stamp;
+
+	if (vdin_isr_monitor & VDIN_ISR_MONITOR_CYCLE)
+		pr_info("vdin%d,stamp=%#x - %#x = %u\n",
+			devp->index, stamp, devp->stamp, cycle);
 
 	devp->stamp = stamp;
 	devp->cycle  = cycle;

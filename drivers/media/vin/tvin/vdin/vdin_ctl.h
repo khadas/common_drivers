@@ -224,7 +224,7 @@ void vdin_set_cutwin(struct vdin_dev_s *devp);
 void vdin_set_decimation(struct vdin_dev_s *devp);
 void vdin_fix_nonstd_vsync(struct vdin_dev_s *devp);
 unsigned int vdin_get_meas_h_cnt64(unsigned int offset);
-unsigned int vdin_get_meas_v_stamp(unsigned int offset);
+unsigned int vdin_get_meas_v_stamp(struct vdin_dev_s *devp);
 unsigned int vdin_get_active_h(struct vdin_dev_s *devp);
 unsigned int vdin_get_active_v(struct vdin_dev_s *devp);
 unsigned int vdin_get_total_v(struct vdin_dev_s *devp);

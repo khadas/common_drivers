@@ -1404,7 +1404,7 @@ int vdin_start_dec(struct vdin_dev_s *devp)
 	phase_lock_flag = 0;
 	devp->ignore_frames = max_ignore_frame_cnt;
 	if (devp->parm.info.fps)
-		devp->vs_time_stamp = (1000 * 50000) / devp->parm.info.fps;
+		devp->vs_time_stamp = devp->msr_clk_val / devp->parm.info.fps;
 	else
 		devp->vs_time_stamp = sched_clock();
 	devp->unreliable_vs_cnt = 0;
@@ -2558,7 +2558,7 @@ int vdin_vs_duration_check(struct vdin_dev_s *devp)
 
 	/* In a duration 50M clk theory value */
 	if (devp->parm.info.fps)
-		devp->vs_time_stamp = (1000 * 50000) / devp->parm.info.fps;
+		devp->vs_time_stamp = devp->msr_clk_val / devp->parm.info.fps;
 	else
 		devp->vs_time_stamp = cur_time;
 
@@ -2932,7 +2932,6 @@ irqreturn_t vdin_isr(int irq, void *dev_id)
 	unsigned int last_field_type;
 	unsigned int last_dv_flag;
 	struct tvin_decoder_ops_s *dec_ops;
-	unsigned int stamp = 0;
 	struct tvin_state_machine_ops_s *sm_ops;
 	int vdin2nr = 0;
 	unsigned int offset = 0, vf_drop_cnt = 0;
@@ -3082,7 +3081,7 @@ irqreturn_t vdin_isr(int irq, void *dev_id)
 		vdin_drop_cnt++;
 		goto irq_handled;
 	}
-	stamp = vdin_get_meas_v_stamp(offset);
+
 	vdin_handle_game_mode_chg(devp);
 
 	if (!devp->curr_wr_vfe) {
@@ -3098,9 +3097,6 @@ irqreturn_t vdin_isr(int irq, void *dev_id)
 						  VDIN_FLAG_RDMA_ENABLE),
 						  devp->curr_wr_vfe);
 #endif
-
-		/*save the first field stamp*/
-		devp->stamp = stamp;
 		devp->vdin_irq_flag = VDIN_IRQ_FLG_NO_WR_FE;
 		vdin_drop_frame_info(devp, "no wr vfe");
 		goto irq_handled;
@@ -3655,7 +3651,7 @@ irqreturn_t vdin_v4l2_isr(int irq, void *dev_id)
 
 	if (devp)
 		/* avoid null pointer oops */
-		stamp  = vdin_get_meas_v_stamp(offset);
+		stamp  = vdin_get_meas_v_stamp(devp);
 
 	if (vdin0_devp) { /* May not probe vdin0 */
 		/* check input content is protected */
@@ -6325,12 +6321,16 @@ static int vdin_drv_probe(struct platform_device *pdev)
 		} else {
 			if (!IS_ERR(fclk_div5))
 				clk_set_parent(devp->msr_clk, fclk_div5);
-
-			clk_set_rate(devp->msr_clk, 50000000);
+			if (is_meson_t3x_cpu()) {
+				clk_set_rate(devp->msr_clk, 100000000);
+				devp->msr_clk_val = clk_get_rate(devp->msr_clk) / 2;
+			} else {
+				clk_set_rate(devp->msr_clk, 50000000);
+				devp->msr_clk_val = clk_get_rate(devp->msr_clk);
+			}
 			/* vdin clk is not enabled in probe by default */
 			//clk_prepare_enable(devp->msr_clk);
 			devp->vdin_clk_flag = 0;
-			devp->msr_clk_val = clk_get_rate(devp->msr_clk);
 			pr_info("%s: vdin[%d] clock is %d MHZ\n",
 				__func__, devp->index,
 				devp->msr_clk_val / 1000000);

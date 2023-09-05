@@ -11663,6 +11663,7 @@ void set_video_slice_policy(struct video_layer_s *layer,
 		if (n2m_setting == 2 &&
 			slice_num != layer->slice_num) {
 			layer->property_changed = true;
+			video_prop_status |= VIDEO_PROP_CHANGE_SLICE_NUM;
 			if (debug_flag)
 				pr_info("%s n2m_setting=%d, slice_num=%d-> %d\n",
 					__func__, n2m_setting, layer->slice_num, slice_num);

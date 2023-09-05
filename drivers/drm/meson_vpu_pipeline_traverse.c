@@ -47,11 +47,11 @@ static struct meson_vpu_block *neighbour(struct meson_vpu_block_state *mvbs,
 			continue;
 		next_state = meson_vpu_block_get_state(mvbl->link, state);
 		if (next_state->in_stack) {
-			DRM_DEBUG("%s already in stack.\n", mvbl->link->name);
+			MESON_DRM_TRAVERSE("%s already in stack.\n", mvbl->link->name);
 			continue;
 		}
 		if (!next_state->active) {
-			DRM_DEBUG("%s is not active.\n", mvbl->link->name);
+			MESON_DRM_TRAVERSE("%s is not active.\n", mvbl->link->name);
 			continue;
 		}
 		if (!mvbl->edges_active) {
@@ -104,18 +104,19 @@ static void pipeline_dfs(int osd_index, struct meson_vpu_pipeline_state *mvps,
 	stack_push(mvs, start);
 	mvt->num_path = 0;
 	j = 0;
-	DRM_DEBUG("start->id=%d,name=%s\n", start->id, start->name);
-	DRM_DEBUG("end->id=%d,name=%s\n", end->id, end->name);
+	MESON_DRM_TRAVERSE("start->id=%d,name=%s\n", start->id, start->name);
+	MESON_DRM_TRAVERSE("end->id=%d,name=%s\n", end->id, end->name);
 
 	while (mvs->top) {
 		if (mvs->stack[mvs->top - 1] == end) {
+			MESON_DRM_TRAVERSE("######path%d######\n", mvt->num_path);
 			for (i = 0; i < mvs->top; i++) {
 				mvt->path[j][i] = mvs->stack[i];
 				DRM_DEBUG("%s->\n", mvs->stack[i]->name);
 			}
 			j++;
 			mvt->num_path++;
-			DRM_DEBUG("\n");
+			MESON_DRM_TRAVERSE("\n");
 			prev = stack_pop(mvs);
 			prev_state = meson_vpu_block_get_state(prev, state);
 			prev_state->in_stack = 0;
@@ -125,7 +126,7 @@ static void pipeline_dfs(int osd_index, struct meson_vpu_pipeline_state *mvps,
 			next = neighbour(curr_state, &index, state);
 
 			if (next) {
-				DRM_DEBUG("next->id=%d,name=%s\n",
+				MESON_DRM_TRAVERSE("next->id=%d,name=%s\n",
 					  next->id, next->name);
 				curr_state->outputs[index].edges_visited = 1;
 				next_state =
@@ -479,7 +480,7 @@ int vpu_pipeline_check_block(int *combination, int num_planes,
 	osdblend = &mvps->pipeline->osdblend->base;
 	ret = vpu_pipeline_scaler_check(combination, num_planes, mvps);
 	if (ret) {
-		DRM_DEBUG("%s check scaler failed\n", __func__);
+		MESON_DRM_TRAVERSE("%s check scaler failed\n", __func__);
 		return -1;
 	}
 
@@ -499,7 +500,7 @@ int vpu_pipeline_check_block(int *combination, int num_planes,
 			if (block == osdblend) {
 				mvps->dout_index[i] =
 					find_out_port(block, mvb[j + 1]);
-				DRM_DEBUG("osd-%d blend out port: %d.\n",
+				MESON_DRM_TRAVERSE("osd-%d blend out port: %d.\n",
 					  i, mvps->dout_index[i]);
 				break;
 			}
@@ -522,7 +523,7 @@ int vpu_pipeline_check_block(int *combination, int num_planes,
 				in_port = find_in_port(mvb[j - 1], block);
 				out_port = find_out_port(block, mvb[j + 1]);
 				if (in_port != out_port) {
-					DRM_DEBUG("afbc prev next not match.\n");
+					MESON_DRM_TRAVERSE("afbc prev next not match.\n");
 					return -1;
 				}
 			}
@@ -625,7 +626,7 @@ int vpu_video_pipeline_check_block(struct meson_vpu_pipeline_state *mvps,
 	struct meson_vpu_block *block;
 	struct meson_vpu_block_state *mvbs;
 
-	DRM_DEBUG("mvps (%p), atomic-state(%p)\n", mvps, state);
+	MESON_DRM_TRAVERSE("mvps (%p), atomic-state(%p)\n", mvps, state);
 
 	for (i = 0; i < MESON_MAX_VIDEO; i++) {
 		if (!mvps->video_plane_info[i].enable)
@@ -669,6 +670,8 @@ void vpu_pipeline_enable_block(int *combination, int num_planes,
 		sub_state = &mvps->sub_states[crtc_index];
 		mvt = &mvps->osd_traverse[osd_index];
 		mvb = mvt->path[combination[i]];
+		MESON_DRM_TRAVERSE("OSD%d select path%d\n",
+			  (osd_index + 1), combination[i]);
 
 		for (j = 0; j < MESON_MAX_BLOCKS; j++) {
 			block = mvb[j];
@@ -967,7 +970,7 @@ int combine_layer_path(int *path_num_array, int num_planes,
 	}
 
 	do {
-		DRM_DEBUG("Comb check [%d-%d-%d-%d]\n",
+		MESON_DRM_TRAVERSE("Comb check [%d-%d-%d-%d]\n",
 			combination[0], combination[1], combination[2], combination[3]);
 		// sum the combination result to check osd blend block
 		ret = ops->check_pipeline_path(combination, num_planes, mvps,
@@ -1045,7 +1048,7 @@ int vpu_pipeline_traverse(struct meson_vpu_pipeline_state *mvps,
 	if (!num_planes)
 		return 0;
 
-	DRM_DEBUG("====> traverse start num: %d  %p.\n", num_planes, mvps);
+	MESON_DRM_TRAVERSE("====> traverse start num: %d  %p.\n", num_planes, mvps);
 	for (i = 0; i < MESON_MAX_OSDS; i++) {
 		if (!mvps->plane_info[i].enable)
 			continue;
@@ -1058,11 +1061,11 @@ int vpu_pipeline_traverse(struct meson_vpu_pipeline_state *mvps,
 
 		start = &mvp->osds[osd_index]->base;
 		end = &mvp->postblends[crtc_index]->base;
-		DRM_DEBUG("do pipeline_dfs: OSD%d.\n", (osd_index + 1));
+		MESON_DRM_TRAVERSE("do pipeline_dfs: OSD%d.\n", (osd_index + 1));
 		pipeline_dfs(osd_index, mvps, start, end, state);
 	}
 
-	DRM_DEBUG("==>pipeline_dfs end, start combine.\n");
+	MESON_DRM_TRAVERSE("==>pipeline_dfs end, start combine.\n");
 	// start to combination every layer case
 	for (i = 0; i < MESON_MAX_OSDS; i++) {
 		if (!mvps->plane_info[i].enable)
@@ -1077,7 +1080,7 @@ int vpu_pipeline_traverse(struct meson_vpu_pipeline_state *mvps,
 	if (ret)
 		DRM_ERROR("can't find a valid path.\n");
 
-	DRM_DEBUG("====> traverse end\n");
+	MESON_DRM_TRAVERSE("====> traverse end\n");
 	return ret;
 }
 

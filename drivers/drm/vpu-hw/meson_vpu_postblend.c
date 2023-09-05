@@ -286,19 +286,19 @@ static int postblend_check_state(struct meson_vpu_block *vblk,
 				bottom_flag++;
 		}
 		if (top_flag && bottom_flag) {
-			DRM_DEBUG("unsupported zorder\n");
+			MESON_DRM_BLOCK("unsupported zorder\n");
 			return -1;
 		} else if (top_flag) {
 			set_video_zorder(video_zorder +
 					 VPP_POST_BLEND_REF_ZORDER, i);
-			DRM_DEBUG("video on the top\n");
+			MESON_DRM_BLOCK("video on the top\n");
 		} else if (bottom_flag) {
 			set_video_zorder(video_zorder, i);
-			DRM_DEBUG("video on the bottom\n");
+			MESON_DRM_BLOCK("video on the bottom\n");
 		}
 	}
 
-	DRM_DEBUG("%s check_state called.\n", postblend->base.name);
+	MESON_DRM_BLOCK("%s check_state called.\n", postblend->base.name);
 	return 0;
 }
 
@@ -319,7 +319,7 @@ static void postblend_set_state(struct meson_vpu_block *vblk,
 	crtc_index = vblk->index;
 	amc = vblk->pipeline->priv->crtcs[crtc_index];
 
-	DRM_DEBUG("%s set_state called.\n", postblend->base.name);
+	MESON_DRM_BLOCK("%s set_state called.\n", postblend->base.name);
 	mvps = priv_to_pipeline_state(pipeline->obj.state);
 	scope.h_start = 0;
 	scope.h_end = mvps->scaler_param[0].output_width - 1;
@@ -353,7 +353,7 @@ static void postblend_set_state(struct meson_vpu_block *vblk,
 		osd1_blend_premult_set(vblk, reg_ops, reg);
 	}
 
-	DRM_DEBUG("scope h/v start/end [%d,%d,%d,%d].\n",
+	MESON_DRM_BLOCK("scope h/v start/end [%d,%d,%d,%d].\n",
 		  scope.h_start, scope.h_end, scope.v_start, scope.v_end);
 }
 
@@ -380,7 +380,7 @@ static void txhd2_postblend_set_state(struct meson_vpu_block *vblk,
 	crtc_index = vblk->index;
 	amc = vblk->pipeline->priv->crtcs[crtc_index];
 
-	DRM_DEBUG("%s set_state called.\n", postblend->base.name);
+	MESON_DRM_BLOCK("%s set_state called.\n", postblend->base.name);
 	mvps = priv_to_pipeline_state(pipeline->obj.state);
 	for (i = 0; i < MESON_MAX_OSDS; i++) {
 		if (mvps->plane_info[i].enable &&
@@ -392,8 +392,9 @@ static void txhd2_postblend_set_state(struct meson_vpu_block *vblk,
 			din[m].plane_index = mvps->plane_info[i].plane_index;
 			din[m].zorder = mvps->plane_info[i].zorder;
 			m++;
-			DRM_DEBUG("scope[%d] h/v start/end [%d,%d,%d,%d].\n", i, scope[i].h_start,
-					  scope[i].h_end, scope[i].v_start, scope[i].v_end);
+			MESON_DRM_BLOCK("scope[%d] h/v start/end [%d,%d,%d,%d].\n",
+				i, scope[i].h_start, scope[i].h_end,
+				scope[i].v_start, scope[i].v_end);
 		}
 	}
 
@@ -462,7 +463,7 @@ static void t7_postblend_set_state(struct meson_vpu_block *vblk,
 	amc = vblk->pipeline->priv->crtcs[crtc_index];
 	crtcmask_osd = amc->priv->of_conf.crtcmask_osd;
 
-	DRM_DEBUG("%s set_state called.\n", postblend->base.name);
+	MESON_DRM_BLOCK("%s set_state called.\n", postblend->base.name);
 	mvps = priv_to_pipeline_state(pipeline->obj.state);
 	scope.h_start = 0;
 	scope.h_end = mvps->scaler_param[0].output_width - 1;
@@ -548,7 +549,7 @@ static void t7_postblend_set_state(struct meson_vpu_block *vblk,
 		else if (crtc_index == 2)
 			osd_vpp2_bld_ctrl = val;
 		else
-			DRM_DEBUG("invalid crtc index\n");
+			MESON_DRM_BLOCK("invalid crtc index\n");
 
 		drm_postblend_notify_amvideo();
 
@@ -563,11 +564,11 @@ static void t7_postblend_set_state(struct meson_vpu_block *vblk,
 		} else if (bld_src2_sel == 3) {
 			reg_ops->rdma_write_reg(VPP_OSD4_SCALE_CTRL, 0x7);
 		} else {
-			DRM_DEBUG("invalid src2_sel %d\n", bld_src2_sel);
+			MESON_DRM_BLOCK("invalid src2_sel %d\n", bld_src2_sel);
 		}
 	}
 
-	DRM_DEBUG("scope h/v start/end [%d,%d,%d,%d].\n",
+	MESON_DRM_BLOCK("scope h/v start/end [%d,%d,%d,%d].\n",
 		  scope.h_start, scope.h_end, scope.v_start, scope.v_end);
 }
 
@@ -591,7 +592,7 @@ static void s5_postblend_set_state(struct meson_vpu_block *vblk,
 	amc = vblk->pipeline->priv->crtcs[crtc_index];
 	meson_crtc_state = to_am_meson_crtc_state(amc->base.state);
 
-	DRM_DEBUG("%s set_state called.\n", postblend->base.name);
+	MESON_DRM_BLOCK("%s set_state called.\n", postblend->base.name);
 	mvps = priv_to_pipeline_state(pipeline->obj.state);
 	mvsps = &mvps->sub_states[0];
 
@@ -617,7 +618,7 @@ static void s5_postblend_set_state(struct meson_vpu_block *vblk,
 	osd1_blend_premult_set(vblk, reg_ops, reg);
 	reg_ops->rdma_write_reg_bits(VPP_POSTBLND_CTRL_S5, 1, 8, 1);
 
-	DRM_DEBUG("scope h/v start/end [%d,%d,%d,%d].\n",
+	MESON_DRM_BLOCK("scope h/v start/end [%d,%d,%d,%d].\n",
 		  scope.h_start, scope.h_end, scope.v_start, scope.v_end);
 }
 
@@ -641,7 +642,7 @@ static void t3x_postblend_set_state(struct meson_vpu_block *vblk,
 	amc = vblk->pipeline->priv->crtcs[crtc_index];
 	meson_crtc_state = to_am_meson_crtc_state(amc->base.state);
 
-	DRM_DEBUG("%s set_state called.\n", postblend->base.name);
+	MESON_DRM_BLOCK("%s set_state called.\n", postblend->base.name);
 	mvps = priv_to_pipeline_state(pipeline->obj.state);
 	mvsps = &mvps->sub_states[0];
 	if (crtc_index == 0) {
@@ -667,7 +668,7 @@ static void t3x_postblend_set_state(struct meson_vpu_block *vblk,
 		osd1_blend_premult_set(vblk, reg_ops, reg);
 		reg_ops->rdma_write_reg_bits(VPP_POSTBLND_CTRL_S5, 1, 8, 1);
 
-		DRM_DEBUG("scope h/v start/end [%d,%d,%d,%d].\n",
+		MESON_DRM_BLOCK("scope h/v start/end [%d,%d,%d,%d].\n",
 			scope.h_start, scope.h_end, scope.v_start, scope.v_end);
 	}
 	if (crtc_index == 1) {
@@ -698,7 +699,7 @@ static void postblend_hw_enable(struct meson_vpu_block *vblk,
 {
 	struct meson_vpu_postblend *postblend = to_postblend_block(vblk);
 
-	DRM_DEBUG("%s enable called.\n", postblend->base.name);
+	MESON_DRM_BLOCK("%s enable called.\n", postblend->base.name);
 }
 
 static void postblend_hw_disable(struct meson_vpu_block *vblk,
@@ -720,12 +721,12 @@ static void postblend_hw_disable(struct meson_vpu_block *vblk,
 		else if (crtc_index == 2)
 			osd_vpp2_bld_ctrl = vppx_bld;
 		else
-			DRM_DEBUG("invalid crtc index\n");
+			MESON_DRM_BLOCK("invalid crtc index\n");
 
 		drm_postblend_notify_amvideo();
 	}
 
-	DRM_DEBUG("%s disable called.\n", postblend->base.name);
+	MESON_DRM_BLOCK("%s disable called.\n", postblend->base.name);
 }
 
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
@@ -737,7 +738,7 @@ static void g12b_postblend_hw_disable(struct meson_vpu_block *vblk,
 	if (vblk->index == 0)
 		vpp_osd1_postblend_mux_set(vblk, state->sub->reg_ops, postblend->reg, VPP_NULL);
 
-	DRM_DEBUG("%s disable called.\n", postblend->base.name);
+	MESON_DRM_BLOCK("%s disable called.\n", postblend->base.name);
 }
 
 static void s5_postblend_hw_disable(struct meson_vpu_block *vblk,
@@ -746,7 +747,7 @@ static void s5_postblend_hw_disable(struct meson_vpu_block *vblk,
 	struct meson_vpu_postblend *postblend = to_postblend_block(vblk);
 
 	vpp_osd1_postblend_5mux_set(vblk, state->sub->reg_ops, postblend->reg, VPP_NULL);
-	DRM_DEBUG("%s disable called.\n", postblend->base.name);
+	MESON_DRM_BLOCK("%s disable called.\n", postblend->base.name);
 }
 #endif
 
@@ -883,7 +884,7 @@ static void postblend_hw_init(struct meson_vpu_block *vblk)
 
 	postblend->reg = &postblend_reg;
 	postblend_osd2_def_conf(vblk);
-	DRM_DEBUG("%s hw_init called.\n", postblend->base.name);
+	MESON_DRM_BLOCK("%s hw_init called.\n", postblend->base.name);
 }
 
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
@@ -898,7 +899,7 @@ static void txhd2_postblend_hw_init(struct meson_vpu_block *vblk)
 	vpp_osd1_preblend_mux_set(vblk, vblk->pipeline->subs[0].reg_ops,
 							  postblend->reg, VPP_NULL);
 	osd1_blend_premult_set(vblk, vblk->pipeline->subs[0].reg_ops, postblend->reg);
-	DRM_DEBUG("%s hw_init called.\n", postblend->base.name);
+	MESON_DRM_BLOCK("%s hw_init called.\n", postblend->base.name);
 }
 
 static void t7_postblend_hw_init(struct meson_vpu_block *vblk)
@@ -908,7 +909,7 @@ static void t7_postblend_hw_init(struct meson_vpu_block *vblk)
 	postblend->reg = &postblend_reg;
 	postblend->reg1 = &postblend1_reg[vblk->index];
 
-	DRM_DEBUG("%s hw_init called.\n", postblend->base.name);
+	MESON_DRM_BLOCK("%s hw_init called.\n", postblend->base.name);
 }
 
 static void t3_postblend_hw_init(struct meson_vpu_block *vblk)
@@ -920,7 +921,7 @@ static void t3_postblend_hw_init(struct meson_vpu_block *vblk)
 	independ_path_default_regs(vblk, vblk->pipeline->subs[0].reg_ops);
 	/*t3 t5w t5m paht crtl flag*/
 	postblend->postblend_path_mask = true;
-	DRM_DEBUG("%s hw_init called.\n", postblend->base.name);
+	MESON_DRM_BLOCK("%s hw_init called.\n", postblend->base.name);
 }
 
 static void s5_postblend_hw_init(struct meson_vpu_block *vblk)

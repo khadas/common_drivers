@@ -707,7 +707,7 @@ static int meson_video_prepare_fence(struct drm_plane *plane,
 		return -ENOMEM;
 
 	mvv->fence = fence;
-	DRM_DEBUG("creat fence %s fence(%px) plane_index%d\n",
+	MESON_DRM_FENCE("creat fence %s fence(%px) plane_index%d\n",
 		__func__, fence, video_plane->plane_index);
 	return 0;
 }

@@ -1165,7 +1165,7 @@ static int osd_check_state(struct meson_vpu_block *vblk,
 		DRM_INFO("mvos is NULL!\n");
 		return -1;
 	}
-	DRM_DEBUG("%s - %d check_state called.\n", osd->base.name, vblk->index);
+	MESON_DRM_BLOCK("%s - %d check_state called.\n", osd->base.name, vblk->index);
 	plane_info = &mvps->plane_info[vblk->index];
 	mvos->src_x = plane_info->src_x;
 	mvos->src_y = plane_info->src_y;
@@ -1301,7 +1301,7 @@ static void osd_set_state(struct meson_vpu_block *vblk,
 	u16 global_alpha = 256; /*range 0~256*/
 
 	if (!vblk || !state) {
-		DRM_DEBUG("set_state break for NULL.\n");
+		MESON_DRM_BLOCK("set_state break for NULL.\n");
 		return;
 	}
 
@@ -1314,7 +1314,7 @@ static void osd_set_state(struct meson_vpu_block *vblk,
 	mvsps = &mvps->sub_states[0];
 	reg = osd->reg;
 	if (!reg) {
-		DRM_DEBUG("set_state break for NULL OSD mixer reg.\n");
+		MESON_DRM_BLOCK("set_state break for NULL OSD mixer reg.\n");
 		return;
 	}
 
@@ -1330,7 +1330,7 @@ static void osd_set_state(struct meson_vpu_block *vblk,
 		hold_line = osd_hold_line;
 
 	flush_reg = osd_check_config(mvos, old_mvos);
-	DRM_DEBUG("flush_reg-%d index-%d\n", flush_reg, vblk->index);
+	MESON_DRM_BLOCK("flush_reg-%d index-%d\n", flush_reg, vblk->index);
 	if (!flush_reg) {
 		/*after v7 chips, always linear addr*/
 		if (osd->mif_acc_mode == LINEAR_MIF)
@@ -1338,7 +1338,8 @@ static void osd_set_state(struct meson_vpu_block *vblk,
 
 		ods_hold_line_config(vblk, reg_ops, reg, hold_line);
 
-		DRM_DEBUG("%s-%d not need to flush mif register.\n", osd->base.name, vblk->index);
+		MESON_DRM_BLOCK("%s-%d not need to flush mif register.\n",
+			osd->base.name, vblk->index);
 		return;
 	}
 
@@ -1383,7 +1384,7 @@ static void osd_set_state(struct meson_vpu_block *vblk,
 	osd_reverse_y_enable(vblk, reg_ops, reg, reverse_y);
 	if (osd->mif_acc_mode == LINEAR_MIF) {
 		osd_linear_addr_config(vblk, reg_ops, reg, phy_addr, byte_stride);
-		DRM_DEBUG("byte stride=0x%x,phy_addr=0x%pa\n",
+		MESON_DRM_BLOCK("byte stride=0x%x,phy_addr=0x%pa\n",
 			  byte_stride, &phy_addr);
 	} else {
 		u32 canvas_index_idx = osd_canvas_index[vblk->index];
@@ -1392,7 +1393,7 @@ static void osd_set_state(struct meson_vpu_block *vblk,
 		canvas_config(canvas_index, phy_addr, byte_stride, src_h,
 				CANVAS_ADDR_NOWRAP, CANVAS_BLKMODE_LINEAR);
 		osd_canvas_config(vblk, reg_ops, reg, canvas_index);
-		DRM_DEBUG("canvas_index[%d]=0x%x,phy_addr=0x%pa\n",
+		MESON_DRM_BLOCK("canvas_index[%d]=0x%x,phy_addr=0x%pa\n",
 			  canvas_index_idx, canvas_index, &phy_addr);
 		osd_canvas_index[vblk->index] ^= 1;
 	}
@@ -1418,12 +1419,12 @@ static void osd_set_state(struct meson_vpu_block *vblk,
 	if (mvos->palette_arry)
 		osd_set_palette(reg, mvos->palette_arry);
 
-	DRM_DEBUG("plane_index=%d,HW-OSD=%d\n",
+	MESON_DRM_BLOCK("plane_index=%d,HW-OSD=%d\n",
 		  mvos->plane_index, vblk->index);
-	DRM_DEBUG("scope h/v start/end:[%d/%d/%d/%d]\n",
+	MESON_DRM_BLOCK("scope h/v start/end:[%d/%d/%d/%d]\n",
 		  scope_src.h_start, scope_src.h_end,
 		scope_src.v_start, scope_src.v_end);
-	DRM_DEBUG("%s set_state done.\n", osd->base.name);
+	MESON_DRM_BLOCK("%s set_state done.\n", osd->base.name);
 }
 
 static void osd_hw_enable(struct meson_vpu_block *vblk,
@@ -1433,11 +1434,11 @@ static void osd_hw_enable(struct meson_vpu_block *vblk,
 	struct osd_mif_reg_s *reg = osd->reg;
 
 	if (!vblk) {
-		DRM_DEBUG("enable break for NULL.\n");
+		MESON_DRM_BLOCK("enable break for NULL.\n");
 		return;
 	}
 	osd_block_enable(vblk, state->sub->reg_ops, reg, 1);
-	DRM_DEBUG("%s enable done.\n", osd->base.name);
+	MESON_DRM_BLOCK("%s enable done.\n", osd->base.name);
 }
 
 static void osd_hw_disable(struct meson_vpu_block *vblk,
@@ -1448,7 +1449,7 @@ static void osd_hw_disable(struct meson_vpu_block *vblk,
 	u8 version;
 
 	if (!vblk) {
-		DRM_DEBUG("disable break for NULL.\n");
+		MESON_DRM_BLOCK("disable break for NULL.\n");
 		return;
 	}
 
@@ -1459,7 +1460,7 @@ static void osd_hw_disable(struct meson_vpu_block *vblk,
 	/*G12B should always enable,avoid afbc decoder error*/
 	if (version != OSD_V2 && version != OSD_V3)
 		osd_block_enable(vblk, state->sub->reg_ops, reg, 0);
-	DRM_DEBUG("%s disable done.\n", osd->base.name);
+	MESON_DRM_BLOCK("%s disable done.\n", osd->base.name);
 }
 
 static void osd_dump_register(struct meson_vpu_block *vblk,
@@ -1538,13 +1539,13 @@ static void osd_hw_init(struct meson_vpu_block *vblk)
 	struct meson_vpu_osd *osd = to_osd_block(vblk);
 
 	if (!vblk || !osd) {
-		DRM_DEBUG("hw_init break for NULL.\n");
+		MESON_DRM_BLOCK("hw_init break for NULL.\n");
 		return;
 	}
 
 	pipeline = osd->base.pipeline;
 	if (!pipeline) {
-		DRM_DEBUG("hw_init break for NULL.\n");
+		MESON_DRM_BLOCK("hw_init break for NULL.\n");
 		return;
 	}
 
@@ -1554,7 +1555,7 @@ static void osd_hw_init(struct meson_vpu_block *vblk)
 	//osd_ctrl_init(vblk, pipeline->subs[0].reg_ops, osd->reg);
 	osd->mif_acc_mode = CANVAS_MODE;
 
-	DRM_DEBUG("%s hw_init done.\n", osd->base.name);
+	MESON_DRM_BLOCK("%s hw_init done.\n", osd->base.name);
 }
 
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
@@ -1567,13 +1568,13 @@ static void g12b_osd_hw_init(struct meson_vpu_block *vblk)
 	u32 data32;
 
 	if (!vblk || !osd) {
-		DRM_DEBUG("hw_init break for NULL.\n");
+		MESON_DRM_BLOCK("hw_init break for NULL.\n");
 		return;
 	}
 
 	pipeline = osd->base.pipeline;
 	if (!pipeline) {
-		DRM_DEBUG("hw_init break for NULL.\n");
+		MESON_DRM_BLOCK("hw_init break for NULL.\n");
 		return;
 	}
 
@@ -1628,7 +1629,7 @@ static void g12b_osd_hw_init(struct meson_vpu_block *vblk)
 		DRM_INFO("%s hw_init end for %s, index:%d.\n", __func__,
 				osd->base.name, vblk->index);
 	}
-	DRM_DEBUG("%s hw_init done.\n", osd->base.name);
+	MESON_DRM_BLOCK("%s hw_init done.\n", osd->base.name);
 }
 
 static void t7_osd_hw_init(struct meson_vpu_block *vblk)
@@ -1637,13 +1638,13 @@ static void t7_osd_hw_init(struct meson_vpu_block *vblk)
 	struct meson_vpu_osd *osd = to_osd_block(vblk);
 
 	if (!vblk || !osd) {
-		DRM_DEBUG("hw_init break for NULL.\n");
+		MESON_DRM_BLOCK("hw_init break for NULL.\n");
 		return;
 	}
 
 	pipeline = osd->base.pipeline;
 	if (!pipeline) {
-		DRM_DEBUG("hw_init break for NULL.\n");
+		MESON_DRM_BLOCK("hw_init break for NULL.\n");
 		return;
 	}
 
@@ -1656,7 +1657,7 @@ static void t7_osd_hw_init(struct meson_vpu_block *vblk)
 	secure_register(OSD_MODULE, 0, osd_secure_op, osd_secure_cb);
 #endif
 
-	DRM_DEBUG("%s hw_init done.\n", osd->base.name);
+	MESON_DRM_BLOCK("%s hw_init done.\n", osd->base.name);
 }
 
 static void s5_osd_hw_init(struct meson_vpu_block *vblk)
@@ -1665,13 +1666,13 @@ static void s5_osd_hw_init(struct meson_vpu_block *vblk)
 	struct meson_vpu_osd *osd = to_osd_block(vblk);
 
 	if (!vblk || !osd) {
-		DRM_DEBUG("hw_init break for NULL.\n");
+		MESON_DRM_BLOCK("hw_init break for NULL.\n");
 		return;
 	}
 
 	pipeline = osd->base.pipeline;
 	if (!pipeline) {
-		DRM_DEBUG("hw_init break for NULL.\n");
+		MESON_DRM_BLOCK("hw_init break for NULL.\n");
 		return;
 	}
 
@@ -1684,7 +1685,7 @@ static void s5_osd_hw_init(struct meson_vpu_block *vblk)
 	original_osd1_fifo_ctrl_stat_t3x =
 		pipeline->subs[0].reg_ops->rdma_read_reg(osd->reg->viu_osd_fifo_ctrl_stat);
 
-	DRM_DEBUG("%s hw_init done.\n", osd->base.name);
+	MESON_DRM_BLOCK("%s hw_init done.\n", osd->base.name);
 }
 #endif
 
@@ -1694,13 +1695,13 @@ static void osd_hw_fini(struct meson_vpu_block *vblk)
 	struct meson_vpu_pipeline *pipeline;
 
 	if (!vblk || !osd) {
-		DRM_DEBUG("hw_fini break for NULL.\n");
+		MESON_DRM_BLOCK("hw_fini break for NULL.\n");
 		return;
 	}
 
 	pipeline = osd->base.pipeline;
 	if (!pipeline) {
-		DRM_DEBUG("hw_fini break for NULL.\n");
+		MESON_DRM_BLOCK("hw_fini break for NULL.\n");
 		return;
 	}
 

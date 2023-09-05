@@ -926,6 +926,7 @@ struct vpp_post_blend_reg_s vpp_post_blend_reg_t3x = {
 	S5_VD2_POSTBLEND_ALPHA,
 	S5_VD3_POSTBLEND_ALPHA,
 	S5_VPP_POSTBLEND_CTRL,
+	VIU_VD3_MISC,
 };
 
 struct vpp_post_misc_reg_s vpp_post_misc_reg_s5 = {

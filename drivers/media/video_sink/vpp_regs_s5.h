@@ -3839,4 +3839,5 @@
 #define S5_VPU_RDARB_UGT_L2C1                         0x27c2
 #define S5_VPP_RDARB_MODE                             0x4120
 #define S5_VPU_RDARB_MODE_L2C1                        0x279d
+#define VIU_VD3_MISC                                  0x1a12
 #endif

@@ -548,6 +548,8 @@ static void vpp_post_blend_set(u32 vpp_index,
 
 	rdma_wr_bits(vpp_reg->vpp_postblend_ctrl,
 		vpp_blend->bld_out_en, 8, 1);
+	/* temply modify for vpp display err */
+	rdma_wr(vpp_reg->vpp_post_slice2ppc_v_size, vpp_blend->bld_out_h);
 	if (debug_flag_s5 & DEBUG_VPP_POST) {
 		pr_info("%s: vpp_postblend_h_v_size=%x\n",
 			__func__, vpp_blend->bld_out_w | vpp_blend->bld_out_h << 16);

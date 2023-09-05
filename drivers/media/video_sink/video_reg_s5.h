@@ -213,6 +213,7 @@ struct vpp_post_blend_reg_s {
 	u32 vd3_postblend_alpha;
 
 	u32 vpp_postblend_ctrl;
+	u32 vpp_post_slice2ppc_v_size;
 };
 
 struct vpp1_post_blend_reg_s {

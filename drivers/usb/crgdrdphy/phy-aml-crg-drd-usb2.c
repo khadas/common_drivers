@@ -23,7 +23,8 @@
 
 struct amlogic_usb_v2	*g_crg_drd_phy2[2];
 char name_crg[32];
-#define TUNING_CRG_DRD_DISCONNECT_THRESHOLD 0x3c
+#define TUNING_CRG_DRD_DISCONNECT_THRESHOLD 0x3f
+#define TUNING_CRG_DRD_DISCONNECT_THRESHOLD_22NM 0x7f
 
 static void usb_set_calibration_trim
 	(void __iomem *reg, struct amlogic_usb_v2 *phy)
@@ -188,6 +189,10 @@ __retry:
 	writel(phy->pll_setting[3], reg + 0x50);
 	// wait for 200us
 	usleep_range(199, 200);
+
+	writel(TUNING_CRG_DRD_DISCONNECT_THRESHOLD_22NM, reg + 0xC);
+	usleep_range(199, 200);
+
 	//check lock bit
 	if (readl(reg + 0x40) >> 31)
 		return;

@@ -167,6 +167,7 @@ struct meson_avin_data {
 	unsigned int vdc_level;
 	/*0:635mv; 1:686mv; 2:733mv; 3:776mv; 4:816mv; 5:853mv; 6:887mv; 7:919mv*/
 	unsigned int comp_level_adj;
+	unsigned int irq_filter;
 };
 
 void tvafe_cha1_SYNCTIP_close_config(void);

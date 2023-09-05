@@ -72,8 +72,6 @@ static unsigned int trigger_sel = 1;
 
 static unsigned int irq_edge_en = 1;
 
-static unsigned int irq_filter;
-
 static unsigned int irq_pol;
 
 static unsigned int avin_count_times = 5;
@@ -497,7 +495,7 @@ static void tvafe_avin_detect_anlog_config(void)
 			W_HIU_BIT(meson_data->detect_cntl, 1,
 				  AFE_T5_CH2_EN_DC_BIAS_BIT,
 				  AFE_T5_CH2_EN_DC_BIAS_WIDTH);
-			W_HIU_BIT(HHI_CVBS_DETECT_CNTL, meson_data->vdc_level,
+			W_HIU_BIT(meson_data->detect_cntl, meson_data->vdc_level,
 				AFE_DETECT_RSV_BIT, AFE_DETECT_RSV_WIDTH);
 		} else {
 			/*ch config*/
@@ -556,27 +554,37 @@ static void tvafe_avin_detect_anlog_config(void)
 
 static void tvafe_avin_detect_digital_config(void)
 {
-	if (!meson_data) {
-		tvafe_pr_info("%s: meson_data is null\n", __func__);
+	int i;
+	unsigned int device_mask;
+	unsigned int irq_cntl;
+
+	if (!meson_data || !av_dev) {
+		tvafe_pr_info("%s: meson_data or av_dev is null\n", __func__);
 		return;
 	}
 
-	tvafe_avin_irq_update_bit(meson_data->irq0_cntl,
-		CVBS_IRQ_MODE_MASK << CVBS_IRQ_MODE_BIT,
-		irq_mode << CVBS_IRQ_MODE_BIT);
+	device_mask = av_dev->dts_param.device_mask;
+	irq_cntl = meson_data->irq0_cntl;
+	for (i = 0; i < TVAFE_MAX_AVIN_DEVICE_NUM && (device_mask & BIT(0)); i++) {
+		tvafe_avin_irq_update_bit(irq_cntl,
+			CVBS_IRQ_MODE_MASK << CVBS_IRQ_MODE_BIT,
+			irq_mode << CVBS_IRQ_MODE_BIT);
+		tvafe_avin_irq_update_bit(irq_cntl,
+			CVBS_IRQ_TRIGGER_SEL_MASK << CVBS_IRQ_TRIGGER_SEL_BIT,
+			trigger_sel << CVBS_IRQ_TRIGGER_SEL_BIT);
+		tvafe_avin_irq_update_bit(irq_cntl,
+			CVBS_IRQ_EDGE_EN_MASK << CVBS_IRQ_EDGE_EN_BIT,
+			irq_edge_en << CVBS_IRQ_EDGE_EN_BIT);
+		tvafe_avin_irq_update_bit(irq_cntl,
+			CVBS_IRQ_FILTER_MASK << CVBS_IRQ_FILTER_BIT,
+			meson_data->irq_filter << CVBS_IRQ_FILTER_BIT);
+		tvafe_avin_irq_update_bit(irq_cntl,
+			CVBS_IRQ_POL_MASK << CVBS_IRQ_POL_BIT,
+			irq_pol << CVBS_IRQ_POL_BIT);
 
-	tvafe_avin_irq_update_bit(meson_data->irq0_cntl,
-		CVBS_IRQ_TRIGGER_SEL_MASK << CVBS_IRQ_TRIGGER_SEL_BIT,
-		trigger_sel << CVBS_IRQ_TRIGGER_SEL_BIT);
-	tvafe_avin_irq_update_bit(meson_data->irq0_cntl,
-		CVBS_IRQ_EDGE_EN_MASK << CVBS_IRQ_EDGE_EN_BIT,
-		irq_edge_en << CVBS_IRQ_EDGE_EN_BIT);
-	tvafe_avin_irq_update_bit(meson_data->irq0_cntl,
-		CVBS_IRQ_FILTER_MASK << CVBS_IRQ_FILTER_BIT,
-		irq_filter << CVBS_IRQ_FILTER_BIT);
-	tvafe_avin_irq_update_bit(meson_data->irq0_cntl,
-		CVBS_IRQ_POL_MASK << CVBS_IRQ_POL_BIT,
-		irq_pol << CVBS_IRQ_POL_BIT);
+		device_mask >>= 1;
+		irq_cntl = meson_data->irq1_cntl;
+	}
 }
 
 static int tvafe_avin_open(struct inode *inode, struct file *file)
@@ -714,7 +722,7 @@ static void tvafe_avin_detect_state(struct tvafe_avin_det_s *av_dev)
 	tvafe_pr_info("irq_mode: %d\n", irq_mode);
 	tvafe_pr_info("trigger_sel: %d\n", trigger_sel);
 	tvafe_pr_info("irq_edge_en: %d\n", irq_edge_en);
-	tvafe_pr_info("irq_filter: %d\n", irq_filter);
+	tvafe_pr_info("irq_filter: %d\n", meson_data->irq_filter);
 	tvafe_pr_info("irq_pol: %d\n", irq_pol);
 }
 
@@ -908,14 +916,14 @@ static ssize_t debug_store(struct device *dev,
 			__func__, irq_edge_en);
 	} else if (!strcmp(parm[0], "irq_filter")) {
 		if (parm[1]) {
-			if (kstrtouint(parm[1], 10, &irq_filter)) {
+			if (kstrtouint(parm[1], 10, &meson_data->irq_filter)) {
 				tvafe_pr_info("[%s]:invalid parameter\n",
 					__func__);
 				goto tvafe_avin_detect_store_err;
 			}
 		}
 		tvafe_pr_info("[%s]: irq_filter: %d\n",
-			__func__, irq_filter);
+			__func__, meson_data->irq_filter);
 	} else if (!strcmp(parm[0], "irq_pol")) {
 		if (parm[1]) {
 			if (kstrtouint(parm[1], 10, &irq_pol)) {
@@ -1034,7 +1042,7 @@ static void tvafe_avin_detect_timer_handler(struct timer_list *avin_detect_timer
 			goto TIMER;
 		}
 	} else if (av_dev->dts_param.device_mask == TVAFE_AVIN_CH2_MASK) {
-		av_dev->irq_counter[0] = aml_read_cbus(meson_data->irq1_cnt);
+		av_dev->irq_counter[0] = tvafe_avin_irq_reg_read(meson_data->irq1_cnt);
 		if (meson_data) {
 			if (!R_HIU_BIT(meson_data->detect_cntl,
 			AFE_TL_CH2_EN_DETECT_BIT, AFE_TL_CH2_EN_DETECT_WIDTH))
@@ -1045,8 +1053,8 @@ static void tvafe_avin_detect_timer_handler(struct timer_list *avin_detect_timer
 				goto TIMER;
 		}
 	} else if (av_dev->dts_param.device_mask == TVAFE_AVIN_MASK) {
-		av_dev->irq_counter[0] = aml_read_cbus(meson_data->irq0_cnt);
-		av_dev->irq_counter[1] = aml_read_cbus(meson_data->irq1_cnt);
+		av_dev->irq_counter[0] = tvafe_avin_irq_reg_read(meson_data->irq0_cnt);
+		av_dev->irq_counter[1] = tvafe_avin_irq_reg_read(meson_data->irq1_cnt);
 		if (meson_data) {
 			if (!R_HIU_BIT(meson_data->detect_cntl,
 			AFE_CH1_EN_DETECT_BIT, AFE_CH1_EN_DETECT_WIDTH) ||
@@ -1449,9 +1457,10 @@ struct meson_avin_data txhd2_data = {
 	.irq1_cntl = CVBS_IRQ1_CNTL,
 	.irq0_cnt  = CVBS_IRQ0_COUNTER,
 	.irq1_cnt  = CVBS_IRQ1_COUNTER,
-	.dc_level_adj = 3,
+	.dc_level_adj = 2,
 	.vdc_level = 3,
 	.comp_level_adj = 3,
+	.irq_filter = 1,
 };
 
 static const struct of_device_id tvafe_avin_dt_match[] = {

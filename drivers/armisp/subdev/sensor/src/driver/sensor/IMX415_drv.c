@@ -208,6 +208,8 @@ static int32_t sensor_ir_cut_set( void *ctx, int32_t ir_cut_state )
     int ret;
     sensor_bringup_t* sensor_bp = t_ctx->sbp;
 
+    return 0;
+
     LOG( LOG_ERR, "ir_cut_state = %d", ir_cut_state);
     LOG( LOG_INFO, "entry ir cut" );
 
@@ -588,24 +590,9 @@ static sensor_context_t *sensor_global_parameter(void* sbp)
     ret = gp_pl_am_enable(sensor_bp, "mclk_0", 24000000);
     if (ret < 0 )
         pr_err("set mclk fail\n");
-#elif PLATFORM_C308X
-    ret = pwr_am_enable(sensor_bp, pwr_dts_pin_name, config_sensor_idx, 0);
-    if (ret < 0 )
-        pr_err("set power fail\n");
-    mdelay(50);
-    ret = clk_am_enable(sensor_bp, "g12a_24m");
-    if (ret < 0 )
-        pr_err("set mclk fail\n");
-    write1_reg(0xfe000428, 0x11400400);
-#elif PLATFORM_C305X
-    ret = gp_pl_am_enable(sensor_bp, "mclk_0", 24000000);
-    if (ret < 0 )
-        pr_info("set mclk fail\n");
-#endif
 
     udelay(30);
 
-#if NEED_CONFIG_BSP
     ret = reset_am_enable(sensor_bp,pwr_dts_pin_name, config_sensor_idx, 1);
     if (ret < 0 )
        pr_info("set reset fail\n");
@@ -689,41 +676,63 @@ void sensor_init_imx415( void **ctx, sensor_control_t *ctrl, void* sbp)
 int sensor_detect_imx415( void* sbp)
 {
     int ret = 0;
+    int times = 5;
+    int retry = 5;
     sensor_ctx.sbp = sbp;
+
     sensor_bringup_t* sensor_bp = (sensor_bringup_t*) sbp;
+
+	while (retry--) {
+		times = 5;
 #if NEED_CONFIG_BSP
-    ret = gp_pl_am_enable(sensor_bp, "mclk_0", 24000000);
-    if (ret < 0 )
-        pr_err("set mclk fail\n");
-#elif PLATFORM_C308X
-    write1_reg(0xfe000428, 0x11400400);
-#elif PLATFORM_C305X
-    ret = gp_pl_am_enable(sensor_bp, "mclk_0", 24000000);
-    if (ret < 0 )
-        pr_info("set mclk fail\n");
+        ret = gp_pl_am_enable(sensor_bp, "mclk_0", 24000000);
+        if (ret < 0 )
+            pr_err("set mclk fail\n");
+
+        udelay(30);
+
+        ret = reset_am_enable(sensor_bp,pwr_dts_pin_name, config_sensor_idx, 1);
+        if (ret < 0 )
+            pr_err("set reset fail\n");
+
+        system_timer_usleep( 100000 );
+
+        ret = reset_am_enable(sensor_bp,pwr_dts_pin_name, config_sensor_idx, 0);
+        if (ret < 0 )
+            pr_err("set reset fail\n");
+
+        system_timer_usleep( 100000 );
+
+        ret = reset_am_enable(sensor_bp,pwr_dts_pin_name, config_sensor_idx, 1);
+        if (ret < 0 )
+           pr_err("set reset fail\n");
+
+        system_timer_usleep( 100000 );
 #endif
-    udelay(30);
 
-#if NEED_CONFIG_BSP
-    ret = reset_am_enable(sensor_bp,pwr_dts_pin_name, config_sensor_idx, 1);
-    if (ret < 0 )
-        pr_err("set reset fail\n");
-#endif
+        sensor_ctx.sbus.mask = SBUS_MASK_SAMPLE_8BITS | SBUS_MASK_ADDR_16BITS | SBUS_MASK_ADDR_SWAP_BYTES;
+        sensor_ctx.sbus.control = 0;
+        sensor_ctx.sbus.bus = 0;
+        sensor_ctx.sbus.device = SENSOR_DEV_ADDRESS;
+        acamera_sbus_init( &sensor_ctx.sbus, sbus_i2c );
 
-    sensor_ctx.sbus.mask = SBUS_MASK_SAMPLE_8BITS | SBUS_MASK_ADDR_16BITS | SBUS_MASK_ADDR_SWAP_BYTES;
-    sensor_ctx.sbus.control = 0;
-    sensor_ctx.sbus.bus = 0;
-    sensor_ctx.sbus.device = SENSOR_DEV_ADDRESS;
-    acamera_sbus_init( &sensor_ctx.sbus, sbus_i2c );
+        ret = 0;
+        while (times--) {
+            if (sensor_get_id(&sensor_ctx) == 0xFFFF)
+                ret = -1;
+            else {
+                pr_info("sensor_detect_imx415 id:%d\n", sensor_get_id(&sensor_ctx));
+				ret = 0;
+                break;
+            }
+        }
 
-    ret = 0;
-    if (sensor_get_id(&sensor_ctx) == 0xFFFF)
-        ret = -1;
-    else
-        pr_info("sensor_detect_imx415 id:%d\n", sensor_get_id(&sensor_ctx));
+        acamera_sbus_deinit(&sensor_ctx.sbus,  sbus_i2c);
+        gp_pl_am_disable(sensor_bp, "mclk_0");
 
-    acamera_sbus_deinit(&sensor_ctx.sbus,  sbus_i2c);
-    gp_pl_am_disable(sensor_bp, "mclk_0");
+		if (ret == 0)
+			break;
+	}
     return ret;
 }
 

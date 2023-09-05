@@ -925,11 +925,17 @@ static const struct of_device_id aml_dvb_dt_match[] = {
 };
 #endif /*CONFIG_OF */
 
+static void aml_dvb_shutdown(struct platform_device *dev)
+{
+	frontend_control_tsin_clk(0);
+}
+
 struct platform_driver aml_dvb_driver = {
 	.probe = aml_dvb_probe,
 	.remove = aml_dvb_remove,
 	.suspend = aml_dvb_suspend,
 	.resume = aml_dvb_resume,
+	.shutdown   = aml_dvb_shutdown,
 	.driver = {
 		   .name = "amlogic-dvb-demux",
 		   .owner = THIS_MODULE,

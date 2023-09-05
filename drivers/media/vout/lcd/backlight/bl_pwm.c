@@ -589,12 +589,15 @@ static unsigned int bl_pwm_set_mapping(struct bl_pwm_config_s *bl_pwm, unsigned 
 		BLERR("pwm mapping curve is out of pwm level range!!!");
 
 	if (tp[1] < p4) {
+		//remove pwm duty range limit
+		bl_pwm->pwm_duty_min = 1;
+		bl_pwm->pwm_min = 1;
+
 		if (tp[bl_pwm->index] == p4) { /*pdim*/
 			if (levelin >= tp[1] && levelin <= bl_pwm->level_max) {
 				levelout = p4;
 			} else {
-				levelout = bl_do_div(((levelin - bl_pwm->level_min) * (p4 - p0)),
-				(tp[1] - bl_pwm->level_min)) + p0;
+				levelout = bl_do_div((levelin * (p4 - p0)), tp[1]) + p0;
 			}
 		} else { /*adim*/
 			if (levelin < tp[1]) {

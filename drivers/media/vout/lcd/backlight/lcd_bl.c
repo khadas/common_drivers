@@ -1222,10 +1222,18 @@ static int bl_config_load_from_dts(struct aml_bl_drv_s *bdrv)
 			pwm_combo1->level_max = BL_LEVEL_MID;
 			pwm_combo1->level_min = BL_LEVEL_MIN;
 		} else {
-			pwm_combo0->level_max = para[0];
-			pwm_combo0->level_min = para[1];
-			pwm_combo1->level_max = para[2];
-			pwm_combo1->level_min = para[3];
+			if (bdrv->brightness_bypass) {
+				pwm_combo0->level_max = bconf->level_max;
+				pwm_combo0->level_min = bconf->level_min;
+				pwm_combo1->level_max = bconf->level_max;
+				pwm_combo1->level_min = bconf->level_min;
+
+			} else {
+				pwm_combo0->level_max = para[0];
+				pwm_combo0->level_min = para[1];
+				pwm_combo1->level_max = para[2];
+				pwm_combo1->level_min = para[3];
+			}
 		}
 		ret = of_property_read_u32_array(child, "bl_pwm_combo_attr", &para[0], 8);
 		if (ret) {
@@ -1555,15 +1563,21 @@ static int bl_config_load_from_unifykey(struct aml_bl_drv_s *bdrv, char *key_nam
 		pwm_combo1->pwm_duty_max = *(p + LCD_UKEY_BL_PWM2_DUTY_MAX);
 		pwm_combo1->pwm_duty_min = *(p + LCD_UKEY_BL_PWM2_DUTY_MIN);
 
-		pwm_combo0->level_max = (*(p + LCD_UKEY_BL_PWM_LEVEL_MAX) |
-			((*(p + LCD_UKEY_BL_PWM_LEVEL_MAX + 1)) << 8));
-		pwm_combo0->level_min = (*(p + LCD_UKEY_BL_PWM_LEVEL_MIN) |
-			((*(p + LCD_UKEY_BL_PWM_LEVEL_MIN + 1)) << 8));
-		pwm_combo1->level_max = (*(p + LCD_UKEY_BL_PWM2_LEVEL_MAX) |
-			((*(p + LCD_UKEY_BL_PWM2_LEVEL_MAX + 1)) << 8));
-		pwm_combo1->level_min = (*(p + LCD_UKEY_BL_PWM2_LEVEL_MIN) |
-			((*(p + LCD_UKEY_BL_PWM2_LEVEL_MIN + 1)) << 8));
-
+		if (bdrv->brightness_bypass) {
+			pwm_combo0->level_max = bconf->level_max;
+			pwm_combo0->level_min = bconf->level_min;
+			pwm_combo1->level_max = bconf->level_max;
+			pwm_combo1->level_min = bconf->level_min;
+		} else {
+			pwm_combo0->level_max = (*(p + LCD_UKEY_BL_PWM_LEVEL_MAX) |
+				((*(p + LCD_UKEY_BL_PWM_LEVEL_MAX + 1)) << 8));
+			pwm_combo0->level_min = (*(p + LCD_UKEY_BL_PWM_LEVEL_MIN) |
+				((*(p + LCD_UKEY_BL_PWM_LEVEL_MIN + 1)) << 8));
+			pwm_combo1->level_max = (*(p + LCD_UKEY_BL_PWM2_LEVEL_MAX) |
+				((*(p + LCD_UKEY_BL_PWM2_LEVEL_MAX + 1)) << 8));
+			pwm_combo1->level_min = (*(p + LCD_UKEY_BL_PWM2_LEVEL_MIN) |
+				((*(p + LCD_UKEY_BL_PWM2_LEVEL_MIN + 1)) << 8));
+		}
 		pwm_combo0->pwm_duty = pwm_combo0->pwm_duty_min;
 		pwm_combo1->pwm_duty = pwm_combo1->pwm_duty_min;
 		bl_pwm_config_init(pwm_combo0);

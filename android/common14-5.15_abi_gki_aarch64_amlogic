@@ -4,3 +4,7 @@
   kimage_vaddr
   sysfs_create_bin_file
   vabits_actual
+
+# amlogic-debug.ko
+  __tracepoint_android_rvh_do_undefinstr
+  __traceiter_android_rvh_do_undefinstr

@@ -24,6 +24,7 @@
 #include <linux/printk.h>
 #include <linux/amlogic/user_fault.h>
 #include <linux/amlogic/secmon.h>
+#include <linux/panic.h>
 #if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_TEST)
 #define KERNEL_ATRACE_TAG KERNEL_ATRACE_TAG_ALL
 #include <trace/events/meson_atrace.h>
@@ -37,6 +38,7 @@
 #include <trace/hooks/ftrace_dump.h>
 #include <linux/time.h>
 #include <linux/delay.h>
+#include <trace/hooks/traps.h>
 #if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_IOTRACE)
 #include <linux/amlogic/aml_iotrace.h>
 #endif
@@ -933,6 +935,44 @@ static void __maybe_unused ftrace_format_check_hook(void *data, bool *ftrace_che
 	*ftrace_check = 0;
 }
 
+#ifdef CONFIG_ARM64
+#ifdef CONFIG_PREEMPT
+#define S_PREEMPT " PREEMPT"
+#elif defined(CONFIG_PREEMPT_RT)
+#define S_PREEMPT " PREEMPT_RT"
+#else
+#define S_PREEMPT ""
+#endif
+
+#define S_SMP " SMP"
+
+static void do_undefinstr_hook(void *data, struct pt_regs *regs)
+{
+	static int die_counter;
+	const char *str;
+	int err = 0;
+
+	if (user_mode(regs))
+		return;
+
+	local_irq_disable();
+	str = "Oops - undefined instruction";
+
+	pr_emerg("Internal error: %s: %x [#%d]" S_PREEMPT S_SMP "\n",
+		 str, err, ++die_counter);
+
+	show_regs(regs);
+
+	/* Avoid to print call stack again when panic */
+	oops_in_progress = 2;
+
+	if (in_interrupt())
+		panic("%s: Fatal exception in interrupt", str);
+	else
+		panic("%s: Fatal exception", str);
+}
+#endif
+
 #if (defined CONFIG_ARM64) || (defined CONFIG_AMLOGIC_ARMV8_AARCH32)
 static void fiq_debug_addr_init(void)
 {
@@ -1000,6 +1040,10 @@ int debug_lockup_init(void)
 	register_trace_android_vh_dump_throttled_rt_tasks(rt_throttle_func, NULL);
 
 	register_trace_android_vh_ftrace_format_check(ftrace_format_check_hook, NULL);
+
+#ifdef CONFIG_ARM64
+	register_trace_android_rvh_do_undefinstr(do_undefinstr_hook, NULL);
+#endif
 #endif
 	initialized = 1;
 

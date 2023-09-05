@@ -20,6 +20,38 @@
 #define CMD_STAT_OFFSET         (0x15 << 24)
 
 /***********************************************************************
+ *             DDC CONTROL //cntlddc
+ **********************************************************************/
+#define DDC_RESET_EDID          (CMD_DDC_OFFSET + 0x00)
+#define DDC_RESET_HDCP          (CMD_DDC_OFFSET + 0x01)
+#define DDC_HDCP_OP             (CMD_DDC_OFFSET + 0x02)
+	#define HDCP14_ON	0x1
+	#define HDCP14_OFF	0x2
+	#define HDCP22_ON	0x3
+	#define HDCP22_OFF	0x4
+#define DDC_IS_HDCP_ON          (CMD_DDC_OFFSET + 0x04)
+#define DDC_HDCP_GET_AKSV       (CMD_DDC_OFFSET + 0x05)
+#define DDC_HDCP_GET_BKSV       (CMD_DDC_OFFSET + 0x06)
+#define DDC_HDCP_GET_AUTH       (CMD_DDC_OFFSET + 0x07)
+#define DDC_PIN_MUX_OP          (CMD_DDC_OFFSET + 0x08)
+	#define PIN_MUX             0x1
+	#define PIN_UNMUX           0x2
+#define DDC_EDID_READ_DATA      (CMD_DDC_OFFSET + 0x0a)
+#define DDC_IS_EDID_DATA_READY  (CMD_DDC_OFFSET + 0x0b)
+#define DDC_EDID_GET_DATA       (CMD_DDC_OFFSET + 0x0c)
+#define DDC_EDID_CLEAR_RAM      (CMD_DDC_OFFSET + 0x0d)
+#define DDC_HDCP_MUX_INIT       (CMD_DDC_OFFSET + 0x0e)
+#define DDC_HDCP_14_LSTORE      (CMD_DDC_OFFSET + 0x0f)
+#define DDC_HDCP_22_LSTORE      (CMD_DDC_OFFSET + 0x10)
+
+#define DDC_GLITCH_FILTER_RESET (CMD_DDC_OFFSET + 0x11)
+#define DDC_SCDC_DIV40_SCRAMB   (CMD_DDC_OFFSET + 0x20)
+#define DDC_HDCP14_GET_BCAPS_RP (CMD_DDC_OFFSET + 0x30)
+#define DDC_HDCP14_GET_TOPO_INFO (CMD_DDC_OFFSET + 0x31)
+#define DDC_HDCP_SET_TOPO_INFO  (CMD_DDC_OFFSET + 0x32)
+#define DDC_HDCP14_SAVE_OBS     (CMD_DDC_OFFSET + 0x40)
+
+/***********************************************************************
  *             MISC control, hpd, hpll //cntlmisc
  **********************************************************************/
 #define MISC_HPD_MUX_OP         (CMD_MISC_OFFSET + 0x00)
@@ -36,7 +68,7 @@
 #define MISC_VIID_IS_USING      (CMD_MISC_OFFSET + 0x05)
 #define MISC_CONF_MODE420       (CMD_MISC_OFFSET + 0x06)
 #define MISC_TMDS_CLK_DIV40     (CMD_MISC_OFFSET + 0x07)
-#define MISC_COMP_HPLL         (CMD_MISC_OFFSET + 0x08)
+#define MISC_COMP_HPLL          (CMD_MISC_OFFSET + 0x08)
 #define COMP_HPLL_SET_OPTIMISE_HPLL1    0x1
 #define COMP_HPLL_SET_OPTIMISE_HPLL2    0x2
 #define MISC_COMP_AUDIO         (CMD_MISC_OFFSET + 0x09)
@@ -49,20 +81,22 @@
 	#define SET_AVMUTE      0x2
 
 #define MISC_FINE_TUNE_HPLL     (CMD_MISC_OFFSET + 0x0b)
-#define MISC_HPLL_FAKE			(CMD_MISC_OFFSET + 0x0c)
-#define MISC_ESM_RESET		(CMD_MISC_OFFSET + 0x0d)
-#define MISC_HDCP_CLKDIS	(CMD_MISC_OFFSET + 0x0e)
-#define MISC_TMDS_RXSENSE	(CMD_MISC_OFFSET + 0x0f)
+#define MISC_HPLL_FAKE          (CMD_MISC_OFFSET + 0x0c)
+#define MISC_ESM_RESET          (CMD_MISC_OFFSET + 0x0d)
+#define MISC_HDCP_CLKDIS        (CMD_MISC_OFFSET + 0x0e)
+#define MISC_TMDS_RXSENSE       (CMD_MISC_OFFSET + 0x0f)
 #define MISC_I2C_REACTIVE       (CMD_MISC_OFFSET + 0x10) /* For gxl */
-#define MISC_I2C_RESET		(CMD_MISC_OFFSET + 0x11) /* For g12 */
+#define MISC_I2C_RESET          (CMD_MISC_OFFSET + 0x11) /* For g12 */
 #define MISC_READ_AVMUTE_OP     (CMD_MISC_OFFSET + 0x12)
-#define MISC_TMDS_CEDST		(CMD_MISC_OFFSET + 0x13)
+#define MISC_TMDS_CEDST         (CMD_MISC_OFFSET + 0x13)
 #define MISC_TRIGGER_HPD        (CMD_MISC_OFFSET + 0X14)
-#define MISC_SUSFLAG		(CMD_MISC_OFFSET + 0X15)
-#define MISC_AUDIO_RESET	(CMD_MISC_OFFSET + 0x16)
-#define MISC_DIS_HPLL		(CMD_MISC_OFFSET + 0x17)
+#define MISC_SUSFLAG            (CMD_MISC_OFFSET + 0X15)
+#define MISC_AUDIO_RESET        (CMD_MISC_OFFSET + 0x16)
+#define MISC_DIS_HPLL           (CMD_MISC_OFFSET + 0x17)
 #define MISC_AUDIO_ACR_CTRL     (CMD_MISC_OFFSET + 0x18)
+#define MISC_IS_FRL_MODE        (CMD_MISC_OFFSET + 0x19)
 #define MISC_AUDIO_PREPARE	(CMD_MISC_OFFSET + 0x1a)
+#define MISC_CLK_DIV_RST        (CMD_MISC_OFFSET + 0X20)
 
 /***********************************************************************
  *                          Get State //getstate
@@ -87,34 +121,34 @@
 	#define HDMI_MODE           0x1
 	#define DVI_MODE            0x2
 
-/* set value as COLORSPACE_RGB444, YUV422, YUV444, YUV420 */
-#define CONF_VIDEO_MUTE_OP		(CMD_CONF_OFFSET + 0x1000 + 0x04)
-	#define VIDEO_NONE_OP		0x0
-	#define VIDEO_MUTE			0x1
-	#define VIDEO_UNMUTE		0x2
-#define CONF_EMP_NUMBER			(CMD_CONF_OFFSET + 0x3000 + 0x00)
-#define CONF_EMP_PHY_ADDR		(CMD_CONF_OFFSET + 0x3000 + 0x01)
+#define CONF_VIDEO_MUTE_OP      (CMD_CONF_OFFSET + 0x1000 + 0x04)
+	#define VIDEO_NONE_OP       0x0
+	#define VIDEO_MUTE          0x1
+	#define VIDEO_UNMUTE        0x2
+#define CONF_EMP_NUMBER         (CMD_CONF_OFFSET + 0x3000 + 0x00)
+#define CONF_EMP_PHY_ADDR       (CMD_CONF_OFFSET + 0x3000 + 0x01)
 
-#define CONFIG_CSC (CMD_CONF_OFFSET + 0x1000 + 0x05)
-#define CSC_Y444_8BIT 0x1
-#define CSC_Y422_12BIT 0x2
-#define CSC_RGB_8BIT 0x3
-#define CSC_UPDATE_AVI_CS 0x10
+/* set value as COLORSPACE_RGB444, YUV422, YUV444, YUV420 */
+#define CONFIG_CSC              (CMD_CONF_OFFSET + 0x1000 + 0x05)
+	#define CSC_Y444_8BIT       0x1
+	#define CSC_Y422_12BIT      0x2
+	#define CSC_RGB_8BIT        0x3
+	#define CSC_UPDATE_AVI_CS   0x10
 
 /* Audio part */
-#define CONF_CLR_AVI_PACKET		(CMD_CONF_OFFSET + 0x04)
-#define CONF_CLR_VSDB_PACKET	(CMD_CONF_OFFSET + 0x05)
-#define CONF_VIDEO_MAPPING		(CMD_CONF_OFFSET + 0x06)
-#define CONF_GET_HDMI_DVI_MODE	(CMD_CONF_OFFSET + 0x07)
-#define CONF_CLR_DV_VS10_SIG	(CMD_CONF_OFFSET + 0x10)
+#define CONF_CLR_AVI_PACKET     (CMD_CONF_OFFSET + 0x04)
+#define CONF_CLR_VSDB_PACKET    (CMD_CONF_OFFSET + 0x05)
+#define CONF_VIDEO_MAPPING      (CMD_CONF_OFFSET + 0x06)
+#define CONF_GET_HDMI_DVI_MODE  (CMD_CONF_OFFSET + 0x07)
+#define CONF_CLR_DV_VS10_SIG    (CMD_CONF_OFFSET + 0x10)
 
-#define CONF_AUDIO_MUTE_OP		(CMD_CONF_OFFSET + 0x1000 + 0x00)
-	#define AUDIO_MUTE			0x1
-	#define AUDIO_UNMUTE		0x2
-#define CONF_CLR_AUDINFO_PACKET	(CMD_CONF_OFFSET + 0x1000 + 0x01)
-#define CONF_GET_AUDIO_MUTE_ST	(CMD_CONF_OFFSET + 0x1000 + 0x02)
+#define CONF_AUDIO_MUTE_OP      (CMD_CONF_OFFSET + 0x1000 + 0x00)
+	#define AUDIO_MUTE          0x1
+	#define AUDIO_UNMUTE        0x2
+#define CONF_CLR_AUDINFO_PACKET (CMD_CONF_OFFSET + 0x1000 + 0x01)
+#define CONF_GET_AUDIO_MUTE_ST  (CMD_CONF_OFFSET + 0x1000 + 0x02)
 
-#define CONF_ASPECT_RATIO		(CMD_CONF_OFFSET + 0x101a)
+#define CONF_ASPECT_RATIO       (CMD_CONF_OFFSET + 0x101a)
 
 enum avi_component_conf {
 	CONF_AVI_BT2020 = (CMD_CONF_OFFSET + 0X2000 + 0x00),
@@ -149,6 +183,8 @@ enum {
 	SET_CT_PHOTO = 3,
 	SET_CT_CINEMA = 4,
 };
+
+#define IT_CONTENT		1
 
 enum hdmi_ll_mode {
 	HDMI_LL_MODE_AUTO = 0,

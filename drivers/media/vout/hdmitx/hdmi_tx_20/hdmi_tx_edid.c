@@ -265,10 +265,10 @@ static void calc_timing(unsigned char *data, struct vesa_standard_timing *t)
 		struct rx_cap *prxcap = &hdev->tx_comm.rxcap;
 
 		/* prefer 16x9 mode */
-		if (timing->vic == HDMI_720x480i60_4x3 ||
-			timing->vic == HDMI_720x480p60_4x3 ||
-			timing->vic == HDMI_720x576i50_4x3 ||
-			timing->vic == HDMI_720x576p50_4x3)
+		if (timing->vic == HDMI_6_720x480i60_4x3 ||
+			timing->vic == HDMI_2_720x480p60_4x3 ||
+			timing->vic == HDMI_21_720x576i50_4x3 ||
+			timing->vic == HDMI_17_720x576p50_4x3)
 			t->vesa_timing = timing->vic + 1;
 		else
 			t->vesa_timing = timing->vic;
@@ -617,12 +617,12 @@ static bool Y420VicRight(unsigned int vic)
 	bool rtn_val;
 
 	rtn_val = false;
-	if (vic == HDMI_3840x2160p60_64x27 ||
-	    vic == HDMI_3840x2160p50_64x27 ||
-	    vic == HDMI_4096x2160p60_256x135 ||
-	    vic == HDMI_4096x2160p50_256x135 ||
-	    vic == HDMI_3840x2160p60_16x9 ||
-	    vic == HDMI_3840x2160p50_16x9)
+	if (vic == HDMI_107_3840x2160p60_64x27 ||
+	    vic == HDMI_106_3840x2160p50_64x27 ||
+	    vic == HDMI_102_4096x2160p60_256x135 ||
+	    vic == HDMI_101_4096x2160p50_256x135 ||
+	    vic == HDMI_97_3840x2160p60_16x9 ||
+	    vic == HDMI_96_3840x2160p50_16x9)
 		rtn_val = true;
 	return rtn_val;
 }
@@ -796,7 +796,7 @@ static int edid_parsedrmdb(struct rx_cap *prxcap,
 static int edid_parsingvfpdb(struct rx_cap *prxcap, unsigned char *buf)
 {
 	unsigned int len = buf[0] & 0x1f;
-	enum hdmi_vic svr = HDMI_UNKNOWN;
+	enum hdmi_vic svr = HDMI_0_UNKNOWN;
 
 	if (buf[1] != EXTENSION_VFPDB_TAG)
 		return 0;
@@ -1081,13 +1081,13 @@ static void hdmitx_edid_4k2k_parse(struct rx_cap *prxcap, unsigned char *dat,
 	}
 	while (size--) {
 		if (*dat == 1)
-			prxcap->VIC[prxcap->VIC_count] = HDMI_3840x2160p30_16x9;
+			prxcap->VIC[prxcap->VIC_count] = HDMI_95_3840x2160p30_16x9;
 		else if (*dat == 2)
-			prxcap->VIC[prxcap->VIC_count] = HDMI_3840x2160p25_16x9;
+			prxcap->VIC[prxcap->VIC_count] = HDMI_94_3840x2160p25_16x9;
 		else if (*dat == 3)
-			prxcap->VIC[prxcap->VIC_count] = HDMI_3840x2160p24_16x9;
+			prxcap->VIC[prxcap->VIC_count] = HDMI_93_3840x2160p24_16x9;
 		else if (*dat == 4)
-			prxcap->VIC[prxcap->VIC_count] = HDMI_4096x2160p24_256x135;
+			prxcap->VIC[prxcap->VIC_count] = HDMI_98_4096x2160p24_256x135;
 		else
 			;
 		dat++;
@@ -1534,11 +1534,11 @@ static void hdmitx_edid_set_default_vic(struct hdmitx_dev *hdmitx_device)
 	struct rx_cap *prxcap = &hdmitx_device->tx_comm.rxcap;
 
 	prxcap->VIC_count = 0x4;
-	prxcap->VIC[0] = HDMI_720x480p60_16x9;
-	prxcap->VIC[1] = HDMI_1280x720p60_16x9;
-	prxcap->VIC[2] = HDMI_1920x1080i60_16x9;
-	prxcap->VIC[3] = HDMI_1920x1080p60_16x9;
-	prxcap->native_vic = HDMI_720x480p60_16x9;
+	prxcap->VIC[0] = HDMI_3_720x480p60_16x9;
+	prxcap->VIC[1] = HDMI_4_1280x720p60_16x9;
+	prxcap->VIC[2] = HDMI_5_1920x1080i60_16x9;
+	prxcap->VIC[3] = HDMI_16_1920x1080p60_16x9;
+	prxcap->native_vic = HDMI_3_720x480p60_16x9;
 	hdmitx_device->vic_count = prxcap->VIC_count;
 	pr_debug(EDID "set default vic\n");
 }
@@ -1753,10 +1753,10 @@ next:
 	timing = hdmitx_mode_match_dtd_timing(t);
 	if (timing->vic != HDMI_0_UNKNOWN) {
 		/* diff 4x3 and 16x9 mode */
-		if (timing->vic == HDMI_720x480i60_4x3 ||
-			timing->vic == HDMI_720x480p60_4x3 ||
-			timing->vic == HDMI_720x576i50_4x3 ||
-			timing->vic == HDMI_720x576p50_4x3) {
+		if (timing->vic == HDMI_6_720x480i60_4x3 ||
+			timing->vic == HDMI_2_720x480p60_4x3 ||
+			timing->vic == HDMI_21_720x576i50_4x3 ||
+			timing->vic == HDMI_17_720x576p50_4x3) {
 			if (abs(t->v_image_size * 100 / t->h_image_size - 3 * 100 / 4) <= 2)
 				t->vic = timing->vic;
 			else
@@ -1814,8 +1814,8 @@ static bool is_4k60_supported(struct rx_cap *prxcap)
 		return false;
 
 	for (i = 0; (i < prxcap->VIC_count) && (i < VIC_MAX_NUM); i++) {
-		if (((prxcap->VIC[i] & 0xff) == HDMI_3840x2160p50_16x9) ||
-		    ((prxcap->VIC[i] & 0xff) == HDMI_3840x2160p60_16x9)) {
+		if (((prxcap->VIC[i] & 0xff) == HDMI_96_3840x2160p50_16x9) ||
+		    ((prxcap->VIC[i] & 0xff) == HDMI_97_3840x2160p60_16x9)) {
 			return true;
 		}
 	}
@@ -1835,7 +1835,7 @@ static void edid_descriptor_pmt(struct rx_cap *prxcap,
 	t->vblank = data[6] + ((data[7] & 0xf) << 8);
 
 	timing = hdmitx_mode_match_vesa_timing(t);
-	if (timing && (timing->vic < (HDMI_3840x2160p60_64x27 + 1))) {
+	if (timing && (timing->vic < (HDMI_107_3840x2160p60_64x27 + 1))) {
 		prxcap->native_vic = timing->vic;
 		pr_debug("hdmitx: get PMT vic: %d\n", timing->vic);
 	}
@@ -2021,10 +2021,10 @@ static void edid_set_fallback_mode(struct hdmitx_dev *hdev)
 	prxcap->native_Mode = 0; /* only RGB */
 	prxcap->dc_y444 = 0; /* only 8bit */
 	prxcap->VIC_count = 0x3;
-	prxcap->VIC[0] = HDMI_1920x1080p60_16x9;
-	prxcap->VIC[1] = HDMI_1280x720p60_16x9;
-	prxcap->VIC[2] = HDMI_720x480p60_16x9;
-	prxcap->native_vic = HDMI_1280x720p60_16x9;
+	prxcap->VIC[0] = HDMI_16_1920x1080p60_16x9;
+	prxcap->VIC[1] = HDMI_4_1280x720p60_16x9;
+	prxcap->VIC[2] = HDMI_3_720x480p60_16x9;
+	prxcap->native_vic = HDMI_4_1280x720p60_16x9;
 	hdev->vic_count = prxcap->VIC_count;
 	pr_info(EDID "set default vic 720p60hz\n");
 

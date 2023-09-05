@@ -15,67 +15,12 @@
 
 #define HDMI_PACKET_TYPE_GCP 0x3
 
-enum hdmi_hdr_status {
-	HDR10PLUS_VSIF = 0,
-	dolbyvision_std = 1,
-	dolbyvision_lowlatency = 2,
-	HDR10_GAMMA_ST2084 = 3,
-	HDR10_others,
-	HDR10_GAMMA_HLG,
-	SDR,
-};
-
 u32 calc_frl_bandwidth(u32 pixel_freq, enum hdmi_colorspace cs,
 	enum hdmi_color_depth cd);
 u32 calc_tmds_bandwidth(u32 pixel_freq, enum hdmi_colorspace cs,
 	enum hdmi_color_depth cd);
 
-enum hdmi_tf_type {
-	HDMI_NONE = 0,
-	/* HDMI_HDR_TYPE, HDMI_DV_TYPE, and HDMI_HDR10P_TYPE
-	 * should be mutexed with each other
-	 */
-	HDMI_HDR_TYPE = 0x10,
-	HDMI_HDR_SMPTE_2084	= HDMI_HDR_TYPE | 1,
-	HDMI_HDR_HLG		= HDMI_HDR_TYPE | 2,
-	HDMI_HDR_HDR		= HDMI_HDR_TYPE | 3,
-	HDMI_HDR_SDR		= HDMI_HDR_TYPE | 4,
-	HDMI_DV_TYPE = 0x20,
-	HDMI_DV_VSIF_STD	= HDMI_DV_TYPE | 1,
-	HDMI_DV_VSIF_LL		= HDMI_DV_TYPE | 2,
-	HDMI_HDR10P_TYPE = 0x30,
-	HDMI_HDR10P_DV_VSIF	= HDMI_HDR10P_TYPE | 1,
-};
-
-enum hdmi_phy_para {
-	HDMI_PHYPARA_6G = 1, /* 2160p60hz 444 8bit */
-	HDMI_PHYPARA_4p5G, /* 2160p50hz 420 12bit */
-	HDMI_PHYPARA_3p7G, /* 2160p30hz 444 10bit */
-	HDMI_PHYPARA_3G, /* 2160p24hz 444 8bit */
-	HDMI_PHYPARA_LT3G, /* 1080p60hz 444 12bit */
-	HDMI_PHYPARA_DEF = HDMI_PHYPARA_LT3G,
-	HDMI_PHYPARA_270M, /* 480p60hz 444 8bit */
-};
-
 enum hdmi_audio_fs;
-struct dtd;
-
-enum hdmi_3d_type {
-	T3D_FRAME_PACKING = 0,
-	T3D_FIELD_ALTER = 1,
-	T3D_LINE_ALTER = 2,
-	T3D_SBS_FULL = 3,
-	T3D_L_DEPTH = 4,
-	T3D_L_DEPTH_GRAPHICS = 5,
-	T3D_TAB = 6, /* Top and Buttom */
-	T3D_RSVD = 7,
-	T3D_SBS_HALF = 8,
-	T3D_DISABLE,
-};
-
-/* get hdmi cea timing */
-/* t: struct hdmi_cea_timing * */
-#define GET_TIMING(name)      (t->(name))
 
 struct hdmi_csc_coef_table {
 	u8 input_format;
@@ -86,37 +31,13 @@ struct hdmi_csc_coef_table {
 	const u8 *coef;
 };
 
-enum hdmi_audio_packet {
-	hdmi_audio_packet_SMP = 0x02,
-	hdmi_audio_packet_1BT = 0x07,
-	hdmi_audio_packet_DST = 0x08,
-	hdmi_audio_packet_HBR = 0x09,
-};
-
-enum hdmi_aspect_ratio {
-	ASPECT_RATIO_SAME_AS_SOURCE = 0x8,
-	TV_ASPECT_RATIO_4_3 = 0x9,
-	TV_ASPECT_RATIO_16_9 = 0xA,
-	TV_ASPECT_RATIO_14_9 = 0xB,
-	TV_ASPECT_RATIO_MAX
-};
-
-struct vesa_standard_timing;
-
 struct hdmi_format_para *hdmitx21_get_vesa_paras(struct vesa_standard_timing
 	*t);
-struct hdmi_format_para *hdmitx21_tst_fmt_name(const char *name,
-	const char *attr);
 int hdmi21_get_fmt_para(enum hdmi_vic vic, const char *attr,
 			struct hdmi_format_para *para);
 u32 hdmi21_get_aud_n_paras(enum hdmi_audio_fs fs,
 				  enum hdmi_color_depth cd,
 				  u32 tmds_clk);
-
-struct size_map {
-	u32 sample_bits;
-	enum hdmi_audio_sampsize ss;
-};
 
 /* FL-- Front Left */
 /* FC --Front Center */

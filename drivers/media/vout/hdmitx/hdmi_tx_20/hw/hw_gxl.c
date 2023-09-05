@@ -97,14 +97,14 @@ void set_gxl_hpll_clk_out(unsigned int frac_rate, unsigned int clk)
 void set_hpll_sspll_gxl(enum hdmi_vic vic)
 {
 	switch (vic) {
-	case HDMI_1920x1080p60_16x9:
-	case HDMI_1920x1080p50_16x9:
+	case HDMI_16_1920x1080p60_16x9:
+	case HDMI_31_1920x1080p50_16x9:
 		hd_set_reg_bits(P_HHI_HDMI_PLL_CNTL2, 0x68b48c4, 0, 30);
 		break;
-	case HDMI_1280x720p60_16x9:
-	case HDMI_1280x720p50_16x9:
-	case HDMI_1920x1080i60_16x9:
-	case HDMI_1920x1080i50_16x9:
+	case HDMI_4_1280x720p60_16x9:
+	case HDMI_19_1280x720p50_16x9:
+	case HDMI_5_1920x1080i60_16x9:
+	case HDMI_20_1920x1080i50_16x9:
 		hd_set_reg_bits(P_HHI_HDMI_PLL_CNTL2, 0x64348c4, 0, 30);
 		break;
 	default:

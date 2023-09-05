@@ -49,10 +49,10 @@ static bool set_hpll_hclk_v1(unsigned int m, unsigned int frac_val)
 	hd_write_reg(P_ANACTRL_HDMIPLL_CTRL2, 0x00000000);
 
 	if (frac_val == 0x8148) {
-		if ((para->vic == HDMI_3840x2160p50_16x9 ||
-		     para->vic == HDMI_3840x2160p60_16x9 ||
-		     para->vic == HDMI_3840x2160p50_64x27 ||
-		     para->vic == HDMI_3840x2160p60_64x27) &&
+		if ((para->vic == HDMI_96_3840x2160p50_16x9 ||
+		     para->vic == HDMI_97_3840x2160p60_16x9 ||
+		     para->vic == HDMI_106_3840x2160p50_64x27 ||
+		     para->vic == HDMI_107_3840x2160p60_64x27) &&
 		     para->cs != HDMI_COLORSPACE_YUV420) {
 			hd_write_reg(P_ANACTRL_HDMIPLL_CTRL3, 0x6a685c00);
 			hd_write_reg(P_ANACTRL_HDMIPLL_CTRL4, 0x11551293);
@@ -62,12 +62,12 @@ static bool set_hpll_hclk_v1(unsigned int m, unsigned int frac_val)
 		}
 	} else {
 		if (hdmitx_find_vendor_6g(hdev) &&
-		    (para->vic == HDMI_3840x2160p50_16x9 ||
-		    para->vic == HDMI_3840x2160p60_16x9 ||
-		    para->vic == HDMI_3840x2160p50_64x27 ||
-		    para->vic == HDMI_3840x2160p60_64x27 ||
-		    para->vic == HDMI_4096x2160p50_256x135 ||
-		    para->vic == HDMI_4096x2160p60_256x135) &&
+		    (para->vic == HDMI_96_3840x2160p50_16x9 ||
+		    para->vic == HDMI_97_3840x2160p60_16x9 ||
+		    para->vic == HDMI_106_3840x2160p50_64x27 ||
+		    para->vic == HDMI_107_3840x2160p60_64x27 ||
+		    para->vic == HDMI_101_4096x2160p50_256x135 ||
+		    para->vic == HDMI_102_4096x2160p60_256x135) &&
 		    para->cs != HDMI_COLORSPACE_YUV420) {
 			hd_write_reg(P_ANACTRL_HDMIPLL_CTRL3, 0x6a685c00);
 			hd_write_reg(P_ANACTRL_HDMIPLL_CTRL4, 0x11551293);
@@ -505,12 +505,12 @@ void set_hpll_sspll_sc2(enum hdmi_vic vic)
 	struct hdmitx_dev *hdev = get_hdmitx_device();
 
 	switch (vic) {
-	case HDMI_1920x1080p60_16x9:
-	case HDMI_1920x1080p50_16x9:
-	case HDMI_1280x720p60_16x9:
-	case HDMI_1280x720p50_16x9:
-	case HDMI_1920x1080i60_16x9:
-	case HDMI_1920x1080i50_16x9:
+	case HDMI_16_1920x1080p60_16x9:
+	case HDMI_31_1920x1080p50_16x9:
+	case HDMI_4_1280x720p60_16x9:
+	case HDMI_19_1280x720p50_16x9:
+	case HDMI_5_1920x1080i60_16x9:
+	case HDMI_20_1920x1080i50_16x9:
 		hd_set_reg_bits(P_ANACTRL_HDMIPLL_CTRL0, 1, 29, 1);
 		/* bit[22:20] hdmi_dpll_fref_sel
 		 * bit[8] hdmi_dpll_ssc_en

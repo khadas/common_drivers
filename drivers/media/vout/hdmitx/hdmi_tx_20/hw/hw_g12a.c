@@ -91,10 +91,10 @@ static bool set_hpll_hclk_v1(unsigned int m, unsigned int frac_val)
 	hd_write_reg(P_HHI_HDMI_PLL_CNTL2, 0x00000000);
 
 	if (frac_val == 0x8148) {
-		if ((para->vic == HDMI_3840x2160p50_16x9 ||
-		     para->vic == HDMI_3840x2160p60_16x9 ||
-		     para->vic == HDMI_3840x2160p50_64x27 ||
-		     para->vic == HDMI_3840x2160p60_64x27) &&
+		if ((para->vic == HDMI_96_3840x2160p50_16x9 ||
+		     para->vic == HDMI_97_3840x2160p60_16x9 ||
+		     para->vic == HDMI_106_3840x2160p50_64x27 ||
+		     para->vic == HDMI_107_3840x2160p60_64x27) &&
 		     para->cs != HDMI_COLORSPACE_YUV420) {
 			hd_write_reg(P_HHI_HDMI_PLL_CNTL3, 0x6a685c00);
 			hd_write_reg(P_HHI_HDMI_PLL_CNTL4, 0x11551293);
@@ -105,12 +105,12 @@ static bool set_hpll_hclk_v1(unsigned int m, unsigned int frac_val)
 	} else {
 		if (hdev->data->chip_type == MESON_CPU_ID_SM1 &&
 		    hdmitx_find_vendor_6g(hdev) &&
-		    (para->vic == HDMI_3840x2160p50_16x9 ||
-		    para->vic == HDMI_3840x2160p60_16x9 ||
-		    para->vic == HDMI_3840x2160p50_64x27 ||
-		    para->vic == HDMI_3840x2160p60_64x27 ||
-		    para->vic == HDMI_4096x2160p50_256x135 ||
-		    para->vic == HDMI_4096x2160p60_256x135) &&
+		    (para->vic == HDMI_96_3840x2160p50_16x9 ||
+		    para->vic == HDMI_97_3840x2160p60_16x9 ||
+		    para->vic == HDMI_106_3840x2160p50_64x27 ||
+		    para->vic == HDMI_107_3840x2160p60_64x27 ||
+		    para->vic == HDMI_101_4096x2160p50_256x135 ||
+		    para->vic == HDMI_102_4096x2160p60_256x135) &&
 		    para->cs != HDMI_COLORSPACE_YUV420) {
 			hd_write_reg(P_HHI_HDMI_PLL_CNTL3, 0x6a685c00);
 			hd_write_reg(P_HHI_HDMI_PLL_CNTL4, 0x11551293);
@@ -176,12 +176,12 @@ static inline int is_dongle_mode(struct hdmitx_dev *hdev)
 	return hdev->dongle_mode &&
 		(para->cs == HDMI_COLORSPACE_YUV422 ||
 		para->cd == COLORDEPTH_24B) &&
-		(hdev->tx_comm.cur_VIC == HDMI_1280x720p50_16x9 ||
-		 hdev->tx_comm.cur_VIC == HDMI_1280x720p60_16x9 ||
-		 hdev->tx_comm.cur_VIC == HDMI_1920x1080i60_16x9 ||
-		 hdev->tx_comm.cur_VIC == HDMI_1920x1080i50_16x9 ||
-		 hdev->tx_comm.cur_VIC == HDMI_1920x1080p60_16x9 ||
-		 hdev->tx_comm.cur_VIC == HDMI_1920x1080p50_16x9);
+		(hdev->tx_comm.cur_VIC == HDMI_19_1280x720p50_16x9 ||
+		 hdev->tx_comm.cur_VIC == HDMI_4_1280x720p60_16x9 ||
+		 hdev->tx_comm.cur_VIC == HDMI_5_1920x1080i60_16x9 ||
+		 hdev->tx_comm.cur_VIC == HDMI_20_1920x1080i50_16x9 ||
+		 hdev->tx_comm.cur_VIC == HDMI_16_1920x1080p60_16x9 ||
+		 hdev->tx_comm.cur_VIC == HDMI_31_1920x1080p50_16x9);
 }
 
 static void set_hpll_hclk_dongle_5940m(void)
@@ -586,12 +586,12 @@ void set_hpll_sspll_g12a(enum hdmi_vic vic)
 	struct hdmitx_dev *hdev = get_hdmitx_device();
 
 	switch (vic) {
-	case HDMI_1920x1080p60_16x9:
-	case HDMI_1920x1080p50_16x9:
-	case HDMI_1280x720p60_16x9:
-	case HDMI_1280x720p50_16x9:
-	case HDMI_1920x1080i60_16x9:
-	case HDMI_1920x1080i50_16x9:
+	case HDMI_16_1920x1080p60_16x9:
+	case HDMI_31_1920x1080p50_16x9:
+	case HDMI_4_1280x720p60_16x9:
+	case HDMI_19_1280x720p50_16x9:
+	case HDMI_5_1920x1080i60_16x9:
+	case HDMI_20_1920x1080i50_16x9:
 		hd_set_reg_bits(P_HHI_HDMI_PLL_CNTL0, 1, 29, 1);
 		/* bit[22:20] hdmi_dpll_fref_sel
 		 * bit[8] hdmi_dpll_ssc_en

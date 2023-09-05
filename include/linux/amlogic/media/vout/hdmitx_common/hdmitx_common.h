@@ -27,11 +27,9 @@ struct hdmitx_common {
 	char hdmichecksum[11];
 
 	char fmt_attr[16];
-	char backup_fmt_attr[16];
 
 	/* 0.1% clock shift, 1080p60hz->59.94hz */
 	u32 frac_rate_policy;
-	u32 backup_frac_rate_policy;
 
 	/*current mode vic.*/
 	u32 cur_VIC;

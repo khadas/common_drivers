@@ -43,10 +43,8 @@ int hdmitx_common_init(struct hdmitx_common *tx_comm, struct hdmitx_hw_common *h
 	memcpy(tx_comm->hdmichecksum, boot_param->edid_chksum, sizeof(tx_comm->hdmichecksum));
 
 	memcpy(tx_comm->fmt_attr, boot_param->color_attr, sizeof(tx_comm->fmt_attr));
-	memcpy(tx_comm->backup_fmt_attr, boot_param->color_attr, sizeof(tx_comm->fmt_attr));
 
 	tx_comm->frac_rate_policy = boot_param->fraction_refreshrate;
-	tx_comm->backup_frac_rate_policy = boot_param->fraction_refreshrate;
 	tx_comm->config_csc_en = boot_param->config_csc;
 
 	hdmitx_format_para_reset(&tx_comm->fmt_para);
@@ -76,7 +74,7 @@ int hdmitx_common_validate_vic(struct hdmitx_common *tx_comm, u32 vic)
 	/*soc level filter*/
 	/*filter 1080p max size.*/
 	if (tx_comm->res_1080p) {
-		/* if the vic equals to HDMI_UNKNOWN or VESA,
+		/* if the vic equals to HDMI_0_UNKNOWN or VESA,
 		 * then create it as over limited
 		 */
 		if (vic == HDMI_0_UNKNOWN || vic >= HDMITX_VESA_OFFSET)

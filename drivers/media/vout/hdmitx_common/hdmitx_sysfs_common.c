@@ -12,6 +12,8 @@
 static struct hdmitx_common *global_tx_common;
 static struct hdmitx_hw_common *global_tx_hw;
 
+const char *hdmitx_mode_get_timing_name(enum hdmi_vic vic);
+
 /************************common sysfs*************************/
 static ssize_t attr_show(struct device *dev,
 			 struct device_attribute *attr, char *buf)
@@ -610,6 +612,217 @@ static ssize_t contenttype_mode_store(struct device *dev,
 
 static DEVICE_ATTR_RW(contenttype_mode);
 
+static ssize_t disp_cap_show(struct device *dev,
+			     struct device_attribute *attr,
+			     char *buf)
+{
+	struct rx_cap *prxcap = &global_tx_common->rxcap;
+	const struct hdmi_timing *timing = NULL;
+	enum hdmi_vic vic;
+	const char *mode_name;
+	int i, pos = 0;
+	int vic_len = prxcap->VIC_count + VESA_MAX_TIMING;
+	int *edid_vics = vmalloc(vic_len * sizeof(int));
+
+	memset(edid_vics, 0, vic_len * sizeof(int));
+
+	/*copy edid vic list*/
+	if (prxcap->VIC_count > 0)
+		memcpy(edid_vics, prxcap->VIC, sizeof(int) * prxcap->VIC_count);
+	for (i = 0; i < VESA_MAX_TIMING && prxcap->vesa_timing[i]; i++)
+		edid_vics[prxcap->VIC_count + i] = prxcap->vesa_timing[i];
+
+	for (i = 0; i < vic_len; i++) {
+		vic = edid_vics[i];
+		if (vic == HDMI_0_UNKNOWN)
+			continue;
+
+		if (vic == HDMI_2_720x480p60_4x3 ||
+			vic == HDMI_6_720x480i60_4x3 ||
+			vic == HDMI_17_720x576p50_4x3 ||
+			vic == HDMI_21_720x576i50_4x3) {
+			if (hdmitx_edid_validate_mode(prxcap, vic + 1) == 0) {
+				/*pr_info("%s: check vic exist, handle [%d] later.\n",
+				 *	__func__, vic + 1);
+				 */
+				continue;
+			}
+		}
+
+		timing = hdmitx_mode_vic_to_hdmi_timing(vic);
+		if (!timing) {
+			//pr_err("%s: unsupport vic [%d]\n", __func__, vic);
+			continue;
+		}
+
+		if (hdmitx_common_validate_vic(global_tx_common, vic) != 0) {
+			//pr_err("%s: vic[%d] over range.\n", __func__, vic);
+			continue;
+		}
+
+		mode_name = timing->sname ? timing->sname : timing->name;
+
+		pos += snprintf(buf + pos, PAGE_SIZE, "%s", mode_name);
+		if (vic == prxcap->native_vic)
+			pos += snprintf(buf + pos, PAGE_SIZE, "*\n");
+		else
+			pos += snprintf(buf + pos, PAGE_SIZE, "\n");
+	}
+
+	vfree(edid_vics);
+	return pos;
+}
+
+static DEVICE_ATTR_RO(disp_cap);
+
+/* cea_cap, a clone of disp_cap */
+static ssize_t cea_cap_show(struct device *dev,
+			    struct device_attribute *attr,
+			    char *buf)
+{
+	return disp_cap_show(dev, attr, buf);
+}
+
+static DEVICE_ATTR_RO(cea_cap);
+
+static ssize_t vesa_cap_show(struct device *dev,
+			     struct device_attribute *attr,
+			     char *buf)
+{
+	int i;
+	enum hdmi_vic *vesa_t = &global_tx_common->rxcap.vesa_timing[0];
+	int pos = 0;
+
+	for (i = 0; vesa_t[i] && i < VESA_MAX_TIMING; i++) {
+		const struct hdmi_timing *timing = hdmitx_mode_vic_to_hdmi_timing(vesa_t[i]);
+
+		if (timing && timing->vic >= HDMITX_VESA_OFFSET)
+			pos += snprintf(buf + pos, PAGE_SIZE, "%s\n",
+					timing->name);
+	}
+	return pos;
+}
+
+static DEVICE_ATTR_RO(vesa_cap);
+
+static ssize_t preferred_mode_show(struct device *dev,
+				   struct device_attribute *attr,
+				   char *buf)
+{
+	int pos = 0;
+	struct rx_cap *prxcap = &global_tx_common->rxcap;
+	const char *modename =
+		hdmitx_mode_get_timing_name(prxcap->preferred_mode);
+
+	pos += snprintf(buf + pos, PAGE_SIZE, "%s\n", modename);
+
+	return pos;
+}
+
+static DEVICE_ATTR_RO(preferred_mode);
+
+static bool pre_process_str(const char *name, char *mode, char *attr)
+{
+	int i;
+	char *color_format[4] = {"444", "422", "420", "rgb"};
+	char *search_pos = 0;
+
+	if (!mode || !attr)
+		return false;
+
+	for (i = 0 ; i < 4 ; i++) {
+		search_pos = strstr(name, color_format[i]);
+		if (search_pos)
+			break;
+	}
+	/*no cs parsed, return error.*/
+	if (!search_pos)
+		return false;
+
+	/*search remaining color_formats, if have more than one cs string, return error.*/
+	i++;
+	for (; i < 4 ; i++) {
+		if (strstr(search_pos, color_format[i]))
+			return false;
+	}
+
+	/*copy mode name;*/
+	memcpy(mode, name, search_pos - name);
+	/*copy attr str;*/
+	memcpy(attr, search_pos, strlen(search_pos));
+
+	//pr_info("%s parse (%s,%s) from (%s)\n", __func__, mode, attr, name);
+
+	return true;
+}
+
+static ssize_t valid_mode_store(struct device *dev,
+				struct device_attribute *attr,
+				const char *buf, size_t count)
+{
+	int ret;
+	bool valid_mode = false;
+	char cvalid_mode[32];
+	char modename[32], attrstr[32];
+	struct hdmi_format_para tst_para;
+	enum hdmi_vic vic = HDMI_0_UNKNOWN;
+
+	memset(modename, 0, sizeof(modename));
+	memset(attrstr, 0, sizeof(attrstr));
+	memset(cvalid_mode, 0, sizeof(cvalid_mode));
+
+	strncpy(cvalid_mode, buf, sizeof(cvalid_mode));
+	cvalid_mode[31] = '\0';
+	if (cvalid_mode[0])
+		valid_mode = pre_process_str(cvalid_mode, modename, attrstr);
+
+	if (valid_mode) {
+		vic = hdmitx_common_parse_vic_in_edid(global_tx_common, modename);
+		if (vic == HDMI_0_UNKNOWN) {
+			//pr_err("parse vic fail %s\n", modename);
+			valid_mode = false;
+		} else {
+			ret = hdmitx_common_validate_vic(global_tx_common, vic);
+			if (ret != 0) {
+				//pr_err("validate vic %d failed ret %d\n", vic, ret);
+				valid_mode = false;
+			}
+		}
+	}
+
+	if (valid_mode) {
+		hdmitx_parse_color_attr(attrstr, &tst_para.cs, &tst_para.cd, &tst_para.cr);
+		//pr_err("parse cs %d cd %d\n", tst_para.cs, tst_para.cd);
+		ret = hdmitx_common_build_format_para(global_tx_common,
+			&tst_para, vic, global_tx_common->frac_rate_policy,
+			tst_para.cs, tst_para.cd, tst_para.cr);
+		if (ret != 0) {
+			//pr_err("build format para failed %d\n", ret);
+			hdmitx_format_para_reset(&tst_para);
+			valid_mode = false;
+		}
+	}
+
+	if (valid_mode) {
+		ret = hdmitx_common_validate_format_para(global_tx_common, &tst_para);
+		if (ret != 0) {
+			//pr_err("validate format para failed %d\n", ret);
+			valid_mode = false;
+		}
+	}
+
+	if (valid_mode) {
+		ret = count;
+	} else {
+		pr_err("hdmitx: valid_mode input:%s\n", cvalid_mode);
+		ret = -1;
+	}
+
+	return ret;
+}
+
+static DEVICE_ATTR_WO(valid_mode);
+
 /*************************tx20 sysfs*************************/
 
 /*************************tx21 sysfs*************************/
@@ -630,6 +843,12 @@ int hdmitx_sysfs_common_create(struct device *dev,
 	ret = device_create_file(dev, &dev_attr_rawedid);
 	ret = device_create_file(dev, &dev_attr_edid_parsing);
 	ret = device_create_file(dev, &dev_attr_edid);
+	ret = device_create_file(dev, &dev_attr_disp_cap);
+	ret = device_create_file(dev, &dev_attr_preferred_mode);
+	ret = device_create_file(dev, &dev_attr_cea_cap);
+	ret = device_create_file(dev, &dev_attr_vesa_cap);
+
+	ret = device_create_file(dev, &dev_attr_valid_mode);
 
 	ret = device_create_file(dev, &dev_attr_contenttype_cap);
 	ret = device_create_file(dev, &dev_attr_hdr_cap);
@@ -653,12 +872,18 @@ int hdmitx_sysfs_common_destroy(struct device *dev)
 	device_remove_file(dev, &dev_attr_rawedid);
 	device_remove_file(dev, &dev_attr_edid_parsing);
 	device_remove_file(dev, &dev_attr_edid);
+	device_remove_file(dev, &dev_attr_disp_cap);
+	device_remove_file(dev, &dev_attr_preferred_mode);
+	device_remove_file(dev, &dev_attr_cea_cap);
+	device_remove_file(dev, &dev_attr_vesa_cap);
 
 	device_remove_file(dev, &dev_attr_contenttype_cap);
 	device_remove_file(dev, &dev_attr_hdr_cap);
 	device_remove_file(dev, &dev_attr_hdr_cap2);
 	device_remove_file(dev, &dev_attr_dv_cap);
 	device_remove_file(dev, &dev_attr_dv_cap2);
+
+	device_remove_file(dev, &dev_attr_valid_mode);
 
 	device_remove_file(dev, &dev_attr_phy);
 

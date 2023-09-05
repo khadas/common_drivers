@@ -362,8 +362,6 @@ struct hdmitx_dev {
 	struct hdmitx_info hdmi_info;
 	unsigned int log;
 	unsigned int tx_aud_cfg; /* 0, off; 1, on */
-	/* For some un-well-known TVs, no edid at all */
-	unsigned int tv_no_edid;
 	unsigned int hpd_lock;
 	/* 0: RGB444  1: Y444  2: Y422  3: Y420 */
 	/* 4: 24bit  5: 30bit  6: 36bit  7: 48bit */
@@ -435,38 +433,6 @@ struct hdmitx_dev {
 	struct st_debug_param debug_param;
 	bool suspend_flag;
 };
-
-
-/***********************************************************************
- *             DDC CONTROL //cntlddc
- **********************************************************************/
-#define DDC_RESET_EDID          (CMD_DDC_OFFSET + 0x00)
-#define DDC_RESET_HDCP          (CMD_DDC_OFFSET + 0x01)
-#define DDC_HDCP_OP             (CMD_DDC_OFFSET + 0x02)
-	#define HDCP14_ON	0x1
-	#define HDCP14_OFF	0x2
-	#define HDCP22_ON	0x3
-	#define HDCP22_OFF	0x4
-#define DDC_IS_HDCP_ON          (CMD_DDC_OFFSET + 0x04)
-#define DDC_HDCP_GET_AKSV       (CMD_DDC_OFFSET + 0x05)
-#define DDC_HDCP_GET_BKSV       (CMD_DDC_OFFSET + 0x06)
-#define DDC_HDCP_GET_AUTH       (CMD_DDC_OFFSET + 0x07)
-#define DDC_PIN_MUX_OP          (CMD_DDC_OFFSET + 0x08)
-#define PIN_MUX             0x1
-#define PIN_UNMUX           0x2
-#define DDC_EDID_READ_DATA      (CMD_DDC_OFFSET + 0x0a)
-#define DDC_IS_EDID_DATA_READY  (CMD_DDC_OFFSET + 0x0b)
-#define DDC_EDID_GET_DATA       (CMD_DDC_OFFSET + 0x0c)
-#define DDC_EDID_CLEAR_RAM      (CMD_DDC_OFFSET + 0x0d)
-#define DDC_HDCP_MUX_INIT	(CMD_DDC_OFFSET + 0x0e)
-#define DDC_HDCP_14_LSTORE	(CMD_DDC_OFFSET + 0x0f)
-#define DDC_HDCP_22_LSTORE	(CMD_DDC_OFFSET + 0x10)
-#define DDC_GLITCH_FILTER_RESET	(CMD_DDC_OFFSET + 0x11)
-#define DDC_SCDC_DIV40_SCRAMB	(CMD_DDC_OFFSET + 0x20)
-#define DDC_HDCP14_GET_BCAPS_RP	(CMD_DDC_OFFSET + 0x30)
-#define DDC_HDCP14_GET_TOPO_INFO (CMD_DDC_OFFSET + 0x31)
-#define DDC_HDCP_SET_TOPO_INFO (CMD_DDC_OFFSET + 0x32)
-#define DDC_HDCP14_SAVE_OBS	(CMD_DDC_OFFSET + 0x40)
 
 /* HDMI LOG */
 #define HDMI_LOG_HDCP           BIT(0)
@@ -585,12 +551,9 @@ struct hdmitx_dev *get_hdmitx_device(void);
 /* for hdmitx internal usage */
 void hdmitx_hdcp_status(int hdmi_authenticated);
 void hdmitx_event_notify(unsigned long state, void *arg);
-void setup20_attr(const char *buf);
-void get20_attr(char attr[16]);
 void hdmitx20_video_mute_op(unsigned int flag);
 
 void hdmi_set_audio_para(int para);
-int get_cur_vout_index(void);
 void phy_pll_off(void);
 void hdmitx_hdcp_do_work(struct hdmitx_dev *hdev);
 
@@ -664,8 +627,6 @@ struct Hdcp_Sub {
 	unsigned int hdcp_sub_len;
 };
 
-void hdmi_tx_edid_proc(unsigned char *edid);
-
 unsigned int hd_read_reg(unsigned int addr);
 void hd_write_reg(unsigned int addr, unsigned int val);
 void hd_set_reg_bits(unsigned int addr, unsigned int value,
@@ -684,9 +645,6 @@ void vsem_init_cfg(struct hdmitx_dev *hdev);
 enum hdmi_tf_type hdmitx_get_cur_hdr_st(void);
 enum hdmi_tf_type hdmitx_get_cur_dv_st(void);
 enum hdmi_tf_type hdmitx_get_cur_hdr10p_st(void);
-bool hdmitx_hdr_en(void);
-bool hdmitx_dv_en(void);
-bool hdmitx_hdr10p_en(void);
 bool LGAVIErrorTV(struct rx_cap *prxcap);
 bool hdmitx_find_vendor_6g(struct hdmitx_dev *hdev);
 bool hdmitx_find_vendor_ratio(struct hdmitx_dev *hdev);

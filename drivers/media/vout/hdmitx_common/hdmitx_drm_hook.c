@@ -142,6 +142,148 @@ static int drm_hdmitx_set_contenttype(int content_type)
 	return ret;
 }
 
+static int drm_hdmitx_get_vic_list(int **vics)
+{
+	struct rx_cap *prxcap = &global_tx_base->rxcap;
+	enum hdmi_vic vic;
+	int len = prxcap->VIC_count + VESA_MAX_TIMING;
+	int i;
+	int count = 0;
+	int *viclist = 0;
+	int *edid_vics = 0;
+
+	viclist = kcalloc(len, sizeof(int),  GFP_KERNEL);
+	edid_vics = vmalloc(len * sizeof(int));
+	memset(edid_vics, 0, len * sizeof(int));
+
+	/*copy edid vic list*/
+	if (prxcap->VIC_count > 0)
+		memcpy(edid_vics, prxcap->VIC, sizeof(int) * prxcap->VIC_count);
+	for (i = 0; i < VESA_MAX_TIMING && prxcap->vesa_timing[i]; i++)
+		edid_vics[prxcap->VIC_count + i] = prxcap->vesa_timing[i];
+
+	for (i = 0; i < len; i++) {
+		vic = edid_vics[i];
+		if (vic == HDMI_0_UNKNOWN)
+			continue;
+
+		if (vic == HDMI_2_720x480p60_4x3 ||
+			vic == HDMI_6_720x480i60_4x3 ||
+			vic == HDMI_17_720x576p50_4x3 ||
+			vic == HDMI_21_720x576i50_4x3) {
+			if (hdmitx_edid_validate_mode(prxcap, vic + 1) == 0) {
+				//pr_info("%s: check vic exist, handle [%d] later.\n",
+				//	__func__, vic + 1);
+				continue;
+			}
+		}
+
+		if (hdmitx_common_validate_vic(global_tx_base, vic) != 0) {
+			//pr_err("%s: vic[%d] over range.\n", __func__, vic);
+			continue;
+		}
+
+		if (hdmitx_common_check_valid_para_of_vic(global_tx_base, vic) != 0) {
+			//pr_err("%s: vic[%d] check fmt attr failed.\n", __func__, vic);
+			continue;
+		}
+
+		viclist[count] = vic;
+		count++;
+	}
+
+	vfree(edid_vics);
+
+	if (count == 0)
+		kfree(viclist);
+	else
+		*vics = viclist;
+
+	return count;
+}
+
+bool drm_hdmitx_chk_mode_attr_sup(char *mode, char *attr)
+{
+	struct hdmi_format_para tst_para;
+	enum hdmi_vic vic = HDMI_0_UNKNOWN;
+	int ret = 0;
+
+	if (!mode || !attr)
+		return false;
+
+	vic = hdmitx_common_parse_vic_in_edid(global_tx_base, mode);
+	if (vic == HDMI_0_UNKNOWN) {
+		pr_err("%s: get vic from (%s) fail\n", __func__, mode);
+		return false;
+	}
+
+	ret = hdmitx_common_validate_vic(global_tx_base, vic);
+	if (ret != 0) {
+		pr_err("validate vic [%s,%s]-%d return error %d\n", mode, attr, vic, ret);
+		return false;
+	}
+
+	hdmitx_parse_color_attr(attr, &tst_para.cs, &tst_para.cd, &tst_para.cr);
+	ret = hdmitx_common_build_format_para(global_tx_base,
+		&tst_para, vic, global_tx_base->frac_rate_policy,
+		tst_para.cs, tst_para.cd, tst_para.cr);
+	if (ret != 0) {
+		hdmitx_format_para_reset(&tst_para);
+		pr_err("build formatpara [%s,%s] return error %d\n", mode, attr, ret);
+		return false;
+	}
+
+	if (true) {
+		pr_info("sname = %s\n", tst_para.sname);
+		pr_info("char_clk = %d\n", tst_para.tmds_clk);
+		pr_info("cd = %d\n", tst_para.cd);
+		pr_info("cs = %d\n", tst_para.cs);
+	}
+
+	ret = hdmitx_common_validate_format_para(global_tx_base, &tst_para);
+	if (ret != 0) {
+		pr_err("vlidate formatpara [%s,%s] return error %d\n", mode, attr, ret);
+		return false;
+	}
+
+	return true;
+}
+
+static int drm_hdmitx_get_timing_para(int vic, struct drm_hdmitx_timing_para *para)
+{
+	const struct hdmi_timing *timing;
+
+	timing = hdmitx_mode_vic_to_hdmi_timing(vic);
+	if (!timing)
+		return -1;
+
+	if (timing->sname) {
+		memcpy(para->name, timing->sname, DRM_DISPLAY_MODE_LEN);
+	} else if (timing->name) {
+		memcpy(para->name, timing->name, DRM_DISPLAY_MODE_LEN);
+	} else {
+		pr_err(" func %s get vic %d without name\n", __func__, vic);
+		return -1;
+	}
+
+	para->pi_mode = timing->pi_mode;
+	para->pix_repeat_factor = timing->pixel_repetition_factor;
+	para->h_pol = timing->h_pol;
+	para->v_pol = timing->v_pol;
+	para->pixel_freq = timing->pixel_freq;
+
+	para->h_active = timing->h_active;
+	para->h_front = timing->h_front;
+	para->h_sync = timing->h_sync;
+	para->h_total = timing->h_total;
+	para->v_active = timing->v_active;
+	para->v_front = timing->v_front;
+	para->v_sync = timing->v_sync;
+	para->v_total = timing->v_total;
+
+	return 0;
+}
+
 static int meson_hdmitx_bind(struct device *dev,
 			      struct device *master, void *data)
 {
@@ -208,10 +350,15 @@ int hdmitx_bind_meson_drm(struct device *device,
 	hdmitx_drm_instance.get_timing_by_name = drm_hdmitx_get_timing_by_name,
 
 	/*edid related.*/
+	hdmitx_drm_instance.get_vic_list = drm_hdmitx_get_vic_list;
 	hdmitx_drm_instance.get_raw_edid = drm_hdmitx_get_raw_edid;
 	hdmitx_drm_instance.get_content_types = drm_hdmitx_get_contenttypes;
 	hdmitx_drm_instance.get_dv_info = drm_hdmitx_get_dv_info;
 	hdmitx_drm_instance.get_hdr_info = drm_hdmitx_get_hdr_info;
+
+	/*validate mode*/
+	hdmitx_drm_instance.test_attr = drm_hdmitx_chk_mode_attr_sup;
+	hdmitx_drm_instance.get_timing_para_by_vic = drm_hdmitx_get_timing_para;
 
 	/*hw related*/
 	hdmitx_drm_instance.avmute = drm_hdmitx_avmute;

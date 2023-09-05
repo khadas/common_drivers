@@ -1414,7 +1414,7 @@ static void meson_hdmitx_cal_brr(struct am_hdmi_tx *hdmitx,
 	num_group = hdmitx->hdmitx_dev->get_vrr_mode_group(groups,
 							   MAX_VRR_MODE_GROUP);
 
-	vic = HDMI_UNKNOWN;
+	vic = HDMI_0_UNKNOWN;
 
 	for (i = 0; i < num_group; i++) {
 		group = &groups[i];

@@ -32,7 +32,7 @@ static void hdmi_set_vend_spec_infofram(struct hdmitx_dev *hdev,
 
 static struct hdmitx_vidpara hdmi_tx_video_params[] = {
 	{
-		.VIC		= HDMI_640x480p60,
+		.VIC		= HDMI_1_640x480p60_4x3,
 		.color_prefer   = HDMI_COLORSPACE_RGB,
 		.color_depth	= COLORDEPTH_24B,
 		.bar_info	= B_BAR_VERT_HORIZ,
@@ -43,7 +43,7 @@ static struct hdmitx_vidpara hdmi_tx_video_params[] = {
 		.sc		= SC_SCALE_HORIZ_VERT,
 	},
 	{
-		.VIC		= HDMI_480p60,
+		.VIC		= HDMI_2_720x480p60_4x3,
 		.color_prefer   = HDMI_COLORSPACE_RGB,
 		.color_depth	= COLORDEPTH_24B,
 		.bar_info	= B_BAR_VERT_HORIZ,
@@ -54,7 +54,7 @@ static struct hdmitx_vidpara hdmi_tx_video_params[] = {
 		.sc		= SC_SCALE_HORIZ_VERT,
 	},
 	{
-		.VIC		= HDMI_480p60_16x9,
+		.VIC		= HDMI_3_720x480p60_16x9,
 		.color_prefer   = HDMI_COLORSPACE_RGB,
 		.color_depth	= COLORDEPTH_24B,
 		.bar_info	= B_BAR_VERT_HORIZ,
@@ -65,7 +65,7 @@ static struct hdmitx_vidpara hdmi_tx_video_params[] = {
 		.sc		= SC_SCALE_HORIZ_VERT,
 	},
 	{
-		.VIC		= HDMI_480p60_16x9_rpt,
+		.VIC		= HDMI_36_2880x480p60_16x9,
 		.color_prefer   = HDMI_COLORSPACE_RGB,
 		.color_depth	= COLORDEPTH_24B,
 		.bar_info	= B_BAR_VERT_HORIZ,
@@ -76,7 +76,7 @@ static struct hdmitx_vidpara hdmi_tx_video_params[] = {
 		.sc		= SC_SCALE_HORIZ_VERT,
 	},
 	{
-		.VIC		= HDMI_720p60,
+		.VIC		= HDMI_4_1280x720p60_16x9,
 		.color_prefer   = HDMI_COLORSPACE_RGB,
 		.color_depth	= COLORDEPTH_24B,
 		.bar_info	= B_BAR_VERT_HORIZ,
@@ -87,7 +87,7 @@ static struct hdmitx_vidpara hdmi_tx_video_params[] = {
 		.sc		= SC_SCALE_HORIZ_VERT,
 	},
 	{
-		.VIC		= HDMI_1080i60,
+		.VIC		= HDMI_5_1920x1080i60_16x9,
 		.color_prefer   = HDMI_COLORSPACE_RGB,
 		.color_depth	= COLORDEPTH_24B,
 		.bar_info	= B_BAR_VERT_HORIZ,
@@ -98,7 +98,7 @@ static struct hdmitx_vidpara hdmi_tx_video_params[] = {
 		.sc		= SC_SCALE_HORIZ_VERT,
 	},
 	{
-		.VIC		= HDMI_480i60,
+		.VIC		= HDMI_6_720x480i60_4x3,
 		.color_prefer   = HDMI_COLORSPACE_RGB,
 		.color_depth	= COLORDEPTH_24B,
 		.bar_info	= B_BAR_VERT_HORIZ,
@@ -109,7 +109,7 @@ static struct hdmitx_vidpara hdmi_tx_video_params[] = {
 		.sc		= SC_SCALE_HORIZ_VERT,
 	},
 	{
-		.VIC		= HDMI_480i60_16x9,
+		.VIC		= HDMI_7_720x480i60_16x9,
 		.color_prefer   = HDMI_COLORSPACE_RGB,
 		.color_depth	= COLORDEPTH_24B,
 		.bar_info	= B_BAR_VERT_HORIZ,
@@ -120,7 +120,7 @@ static struct hdmitx_vidpara hdmi_tx_video_params[] = {
 		.sc		= SC_SCALE_HORIZ_VERT,
 	},
 	{
-		.VIC		= HDMI_480i60_16x9_rpt,
+		.VIC		= HDMI_11_2880x480i60_16x9,
 		.color_prefer   = HDMI_COLORSPACE_RGB,
 		.color_depth	= COLORDEPTH_24B,
 		.bar_info	= B_BAR_VERT_HORIZ,
@@ -131,7 +131,7 @@ static struct hdmitx_vidpara hdmi_tx_video_params[] = {
 		.sc		= SC_SCALE_HORIZ_VERT,
 	},
 	{
-		.VIC		= HDMI_1440x480p60,
+		.VIC		= HDMI_14_1440x480p60_4x3,
 		.color_prefer   = HDMI_COLORSPACE_RGB,
 		.color_depth	= COLORDEPTH_24B,
 		.bar_info	= B_BAR_VERT_HORIZ,
@@ -142,7 +142,7 @@ static struct hdmitx_vidpara hdmi_tx_video_params[] = {
 		.sc		= SC_SCALE_HORIZ_VERT,
 	},
 	{
-		.VIC		= HDMI_1080p60,
+		.VIC		= HDMI_16_1920x1080p60_16x9,
 		.color_prefer   = HDMI_COLORSPACE_RGB,
 		.color_depth	= COLORDEPTH_24B,
 		.bar_info	= B_BAR_VERT_HORIZ,
@@ -153,7 +153,7 @@ static struct hdmitx_vidpara hdmi_tx_video_params[] = {
 		.sc		= SC_SCALE_HORIZ_VERT,
 	},
 	{
-		.VIC		= HDMI_576p50,
+		.VIC		= HDMI_17_720x576p50_4x3,
 		.color_prefer   = HDMI_COLORSPACE_RGB,
 		.color_depth	= COLORDEPTH_24B,
 		.bar_info	= B_BAR_VERT_HORIZ,
@@ -164,7 +164,7 @@ static struct hdmitx_vidpara hdmi_tx_video_params[] = {
 		.sc		= SC_SCALE_HORIZ_VERT,
 	},
 	{
-		.VIC		= HDMI_576p50_16x9,
+		.VIC		= HDMI_18_720x576p50_16x9,
 		.color_prefer   = HDMI_COLORSPACE_RGB,
 		.color_depth	= COLORDEPTH_24B,
 		.bar_info	= B_BAR_VERT_HORIZ,
@@ -175,7 +175,7 @@ static struct hdmitx_vidpara hdmi_tx_video_params[] = {
 		.sc		= SC_SCALE_HORIZ_VERT,
 	},
 	{
-		.VIC		= HDMI_576p50_16x9_rpt,
+		.VIC		= HDMI_38_2880x576p50_16x9,
 		.color_prefer   = HDMI_COLORSPACE_RGB,
 		.color_depth	= COLORDEPTH_24B,
 		.bar_info	= B_BAR_VERT_HORIZ,
@@ -186,7 +186,7 @@ static struct hdmitx_vidpara hdmi_tx_video_params[] = {
 		.sc		= SC_SCALE_HORIZ_VERT,
 	},
 	{
-		.VIC		= HDMI_720p50,
+		.VIC		= HDMI_19_1280x720p50_16x9,
 		.color_prefer   = HDMI_COLORSPACE_RGB,
 		.color_depth	= COLORDEPTH_24B,
 		.bar_info	= B_BAR_VERT_HORIZ,
@@ -197,7 +197,7 @@ static struct hdmitx_vidpara hdmi_tx_video_params[] = {
 		.sc		= SC_SCALE_HORIZ_VERT,
 	},
 	{
-		.VIC		= HDMI_1080i50,
+		.VIC		= HDMI_20_1920x1080i50_16x9,
 		.color_prefer   = HDMI_COLORSPACE_RGB,
 		.color_depth	= COLORDEPTH_24B,
 		.bar_info	= B_BAR_VERT_HORIZ,
@@ -208,7 +208,7 @@ static struct hdmitx_vidpara hdmi_tx_video_params[] = {
 		.sc		= SC_SCALE_HORIZ_VERT,
 	},
 	{
-		.VIC		= HDMI_720x576i50_4x3,
+		.VIC		= HDMI_21_720x576i50_4x3,
 		.color_prefer   = HDMI_COLORSPACE_RGB,
 		.color_depth	= COLORDEPTH_24B,
 		.bar_info	= B_BAR_VERT_HORIZ,
@@ -219,7 +219,7 @@ static struct hdmitx_vidpara hdmi_tx_video_params[] = {
 		.sc		= SC_SCALE_HORIZ_VERT,
 	},
 	{
-		.VIC		= HDMI_720x576i50_16x9,
+		.VIC		= HDMI_22_720x576i50_16x9,
 		.color_prefer   = HDMI_COLORSPACE_RGB,
 		.color_depth	= COLORDEPTH_24B,
 		.bar_info	= B_BAR_VERT_HORIZ,
@@ -230,7 +230,7 @@ static struct hdmitx_vidpara hdmi_tx_video_params[] = {
 		.sc		= SC_SCALE_HORIZ_VERT,
 	},
 	{
-		.VIC		= HDMI_576i50_16x9_rpt,
+		.VIC		= HDMI_26_2880x576i50_16x9,
 		.color_prefer   = HDMI_COLORSPACE_RGB,
 		.color_depth	= COLORDEPTH_24B,
 		.bar_info	= B_BAR_VERT_HORIZ,
@@ -241,7 +241,7 @@ static struct hdmitx_vidpara hdmi_tx_video_params[] = {
 		.sc		= SC_SCALE_HORIZ_VERT,
 	},
 	{
-		.VIC		= HDMI_1080p50,
+		.VIC		= HDMI_31_1920x1080p50_16x9,
 		.color_prefer   = HDMI_COLORSPACE_RGB,
 		.color_depth	= COLORDEPTH_24B,
 		.bar_info	= B_BAR_VERT_HORIZ,
@@ -252,7 +252,7 @@ static struct hdmitx_vidpara hdmi_tx_video_params[] = {
 		.sc		= SC_SCALE_HORIZ_VERT,
 	},
 	{
-		.VIC		= HDMI_1080p24,
+		.VIC		= HDMI_32_1920x1080p24_16x9,
 		.color_prefer   = HDMI_COLORSPACE_RGB,
 		.color_depth	= COLORDEPTH_24B,
 		.bar_info	= B_BAR_VERT_HORIZ,
@@ -263,7 +263,7 @@ static struct hdmitx_vidpara hdmi_tx_video_params[] = {
 		.sc		= SC_SCALE_HORIZ_VERT,
 	},
 	{
-		.VIC		= HDMI_1080p25,
+		.VIC		= HDMI_33_1920x1080p25_16x9,
 		.color_prefer   = HDMI_COLORSPACE_RGB,
 		.color_depth	= COLORDEPTH_24B,
 		.bar_info	= B_BAR_VERT_HORIZ,
@@ -274,7 +274,7 @@ static struct hdmitx_vidpara hdmi_tx_video_params[] = {
 		.sc		= SC_SCALE_HORIZ_VERT,
 	},
 	{
-		.VIC		= HDMI_1080p30,
+		.VIC		= HDMI_34_1920x1080p30_16x9,
 		.color_prefer   = HDMI_COLORSPACE_RGB,
 		.color_depth	= COLORDEPTH_24B,
 		.bar_info	= B_BAR_VERT_HORIZ,
@@ -285,7 +285,7 @@ static struct hdmitx_vidpara hdmi_tx_video_params[] = {
 		.sc		= SC_SCALE_HORIZ_VERT,
 	},
 	{
-		.VIC		= HDMI_1080p120,
+		.VIC		= HDMI_63_1920x1080p120_16x9,
 		.color_prefer   = HDMI_COLORSPACE_RGB,
 		.color_depth	= COLORDEPTH_24B,
 		.bar_info	= B_BAR_VERT_HORIZ,
@@ -296,7 +296,7 @@ static struct hdmitx_vidpara hdmi_tx_video_params[] = {
 		.sc		= SC_SCALE_HORIZ_VERT,
 	},
 	{
-		.VIC		= HDMI_3840x2160p30_16x9,
+		.VIC		= HDMI_95_3840x2160p30_16x9,
 		.color_prefer   = HDMI_COLORSPACE_RGB,
 		.color_depth	= COLORDEPTH_24B,
 		.bar_info	= B_BAR_VERT_HORIZ,
@@ -307,7 +307,7 @@ static struct hdmitx_vidpara hdmi_tx_video_params[] = {
 		.sc		= SC_SCALE_HORIZ_VERT,
 	},
 	{
-		.VIC		= HDMI_3840x2160p25_16x9,
+		.VIC		= HDMI_94_3840x2160p25_16x9,
 		.color_prefer   = HDMI_COLORSPACE_RGB,
 		.color_depth	= COLORDEPTH_24B,
 		.bar_info	= B_BAR_VERT_HORIZ,
@@ -318,7 +318,7 @@ static struct hdmitx_vidpara hdmi_tx_video_params[] = {
 		.sc		= SC_SCALE_HORIZ_VERT,
 	},
 	{
-		.VIC		= HDMI_3840x2160p24_16x9,
+		.VIC		= HDMI_93_3840x2160p24_16x9,
 		.color_prefer   = HDMI_COLORSPACE_RGB,
 		.color_depth	= COLORDEPTH_24B,
 		.bar_info	= B_BAR_VERT_HORIZ,
@@ -329,7 +329,7 @@ static struct hdmitx_vidpara hdmi_tx_video_params[] = {
 		.sc		= SC_SCALE_HORIZ_VERT,
 	},
 	{
-		.VIC		= HDMI_4096x2160p24_256x135,
+		.VIC		= HDMI_98_4096x2160p24_256x135,
 		.color_prefer   = HDMI_COLORSPACE_RGB,
 		.color_depth	= COLORDEPTH_24B,
 		.bar_info	= B_BAR_VERT_HORIZ,
@@ -340,7 +340,7 @@ static struct hdmitx_vidpara hdmi_tx_video_params[] = {
 		.sc		= SC_SCALE_HORIZ_VERT,
 	},
 	{
-		.VIC		= HDMI_4096x2160p25_256x135,
+		.VIC		= HDMI_99_4096x2160p25_256x135,
 		.color_prefer   = HDMI_COLORSPACE_RGB,
 		.color_depth	= COLORDEPTH_24B,
 		.bar_info	= B_BAR_VERT_HORIZ,
@@ -351,7 +351,7 @@ static struct hdmitx_vidpara hdmi_tx_video_params[] = {
 		.sc		= SC_SCALE_HORIZ_VERT,
 	},
 	{
-		.VIC		= HDMI_4096x2160p30_256x135,
+		.VIC		= HDMI_100_4096x2160p30_256x135,
 		.color_prefer   = HDMI_COLORSPACE_RGB,
 		.color_depth	= COLORDEPTH_24B,
 		.bar_info	= B_BAR_VERT_HORIZ,
@@ -362,7 +362,7 @@ static struct hdmitx_vidpara hdmi_tx_video_params[] = {
 		.sc		= SC_SCALE_HORIZ_VERT,
 	},
 	{
-		.VIC		= HDMI_4096x2160p50_256x135,
+		.VIC		= HDMI_101_4096x2160p50_256x135,
 		.color_prefer   = HDMI_COLORSPACE_RGB,
 		.color_depth	= COLORDEPTH_24B,
 		.bar_info	= B_BAR_VERT_HORIZ,
@@ -373,7 +373,7 @@ static struct hdmitx_vidpara hdmi_tx_video_params[] = {
 		.sc		= SC_SCALE_HORIZ_VERT,
 	},
 	{
-		.VIC		= HDMI_4096x2160p60_256x135,
+		.VIC		= HDMI_102_4096x2160p60_256x135,
 		.color_prefer   = HDMI_COLORSPACE_RGB,
 		.color_depth	= COLORDEPTH_24B,
 		.bar_info	= B_BAR_VERT_HORIZ,
@@ -384,7 +384,7 @@ static struct hdmitx_vidpara hdmi_tx_video_params[] = {
 		.sc		= SC_SCALE_HORIZ_VERT,
 	},
 	{
-		.VIC		= HDMI_3840x2160p60_16x9,
+		.VIC		= HDMI_97_3840x2160p60_16x9,
 		.color_prefer   = HDMI_COLORSPACE_RGB,
 		.color_depth	= COLORDEPTH_24B,
 		.bar_info	= B_BAR_VERT_HORIZ,
@@ -395,7 +395,7 @@ static struct hdmitx_vidpara hdmi_tx_video_params[] = {
 		.sc		= SC_SCALE_HORIZ_VERT,
 	},
 	{
-		.VIC		= HDMI_3840x2160p50_16x9,
+		.VIC		= HDMI_96_3840x2160p50_16x9,
 		.color_prefer   = HDMI_COLORSPACE_RGB,
 		.color_depth	= COLORDEPTH_24B,
 		.bar_info	= B_BAR_VERT_HORIZ,
@@ -406,7 +406,7 @@ static struct hdmitx_vidpara hdmi_tx_video_params[] = {
 		.sc		= SC_SCALE_HORIZ_VERT,
 	},
 	{
-		.VIC		= HDMI_2560x1080p50_64x27,
+		.VIC		= HDMI_89_2560x1080p50_64x27,
 		.color_prefer	= HDMI_COLORSPACE_RGB,
 		.color_depth	= COLORDEPTH_24B,
 		.bar_info	= B_BAR_VERT_HORIZ,
@@ -417,7 +417,7 @@ static struct hdmitx_vidpara hdmi_tx_video_params[] = {
 		.sc = SC_SCALE_HORIZ_VERT,
 	},
 	{
-		.VIC		= HDMI_2560x1080p60_64x27,
+		.VIC		= HDMI_90_2560x1080p60_64x27,
 		.color_prefer	= HDMI_COLORSPACE_RGB,
 		.color_depth	= COLORDEPTH_24B,
 		.bar_info	= B_BAR_VERT_HORIZ,
@@ -815,10 +815,10 @@ static void hdmi_tx_construct_avi_packet(struct hdmitx_vidpara *video_param,
 	AVI_DB[2] = (sc) | (ec << 4);
 
 	AVI_DB[3] = video_param->VIC;
-	if (video_param->VIC == HDMI_3840x2160p30_16x9 ||
-	    video_param->VIC == HDMI_3840x2160p25_16x9 ||
-	    video_param->VIC == HDMI_3840x2160p24_16x9 ||
-	    video_param->VIC == HDMI_4096x2160p24_256x135)
+	if (video_param->VIC == HDMI_95_3840x2160p30_16x9 ||
+	    video_param->VIC == HDMI_94_3840x2160p25_16x9 ||
+	    video_param->VIC == HDMI_93_3840x2160p24_16x9 ||
+	    video_param->VIC == HDMI_98_4096x2160p24_256x135)
 		/*HDMI Spec V1.4b P151*/
 		AVI_DB[3] = 0;
 
@@ -890,10 +890,10 @@ int hdmitx_set_display(struct hdmitx_dev *hdev, enum hdmi_vic videocode)
 			}
 			hdmi_tx_construct_avi_packet(param, (char *)AVI_DB);
 
-			if (videocode == HDMI_3840x2160p30_16x9 ||
-			    videocode == HDMI_3840x2160p25_16x9 ||
-			    videocode == HDMI_3840x2160p24_16x9 ||
-			    videocode == HDMI_4096x2160p24_256x135)
+			if (videocode == HDMI_95_3840x2160p30_16x9 ||
+			    videocode == HDMI_94_3840x2160p25_16x9 ||
+			    videocode == HDMI_93_3840x2160p24_16x9 ||
+			    videocode == HDMI_98_4096x2160p24_256x135)
 				hdmi_set_vend_spec_infofram(hdev, videocode);
 			else if ((!hdev->flag_3dfp) && (!hdev->flag_3dtb) &&
 				 (!hdev->flag_3dss))
@@ -944,16 +944,16 @@ static void hdmi_set_vend_spec_infofram(struct hdmitx_dev *hdev,
 	VEN_DB[2] = GET_OUI_BYTE2(HDMI_IEEE_OUI);
 	VEN_DB[3] = 0x00;    /* 4k x 2k  Spec P156 */
 
-	if (videocode == HDMI_3840x2160p30_16x9) {
+	if (videocode == HDMI_95_3840x2160p30_16x9) {
 		VEN_DB[3] = 0x20;
 		VEN_DB[4] = 0x1;
-	} else if (videocode == HDMI_3840x2160p25_16x9) {
+	} else if (videocode == HDMI_94_3840x2160p25_16x9) {
 		VEN_DB[3] = 0x20;
 		VEN_DB[4] = 0x2;
-	} else if (videocode == HDMI_3840x2160p24_16x9) {
+	} else if (videocode == HDMI_93_3840x2160p24_16x9) {
 		VEN_DB[3] = 0x20;
 		VEN_DB[4] = 0x3;
-	} else if (videocode == HDMI_4096x2160p24_256x135) {
+	} else if (videocode == HDMI_98_4096x2160p24_256x135) {
 		VEN_DB[3] = 0x20;
 		VEN_DB[4] = 0x4;
 	} else {

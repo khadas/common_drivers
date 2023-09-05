@@ -429,10 +429,10 @@ bool is_hdmi14_4k(enum hdmi_vic vic)
 	bool ret = 0;
 
 	switch (vic) {
-	case HDMI_3840x2160p24_16x9:
-	case HDMI_3840x2160p25_16x9:
-	case HDMI_3840x2160p30_16x9:
-	case HDMI_4096x2160p24_256x135:
+	case HDMI_93_3840x2160p24_16x9:
+	case HDMI_94_3840x2160p25_16x9:
+	case HDMI_95_3840x2160p30_16x9:
+	case HDMI_98_4096x2160p24_256x135:
 		ret = 1;
 		break;
 	default:
@@ -445,10 +445,10 @@ bool is_hdmi14_4k(enum hdmi_vic vic)
 
 bool is_hdmi4k_support_420(enum hdmi_vic vic)
 {
-	if (vic == HDMI_4096x2160p60_256x135 ||
-		vic == HDMI_4096x2160p50_256x135 ||
-		vic == HDMI_3840x2160p60_16x9 ||
-		vic == HDMI_3840x2160p50_16x9)
+	if (vic == HDMI_102_4096x2160p60_256x135 ||
+		vic == HDMI_101_4096x2160p50_256x135 ||
+		vic == HDMI_97_3840x2160p60_16x9 ||
+		vic == HDMI_96_3840x2160p50_16x9)
 		return true;
 
 	return false;

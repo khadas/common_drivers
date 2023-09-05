@@ -83,7 +83,7 @@ void get_attr(char attr[16])
 {
 #if defined(CONFIG_AMLOGIC_HDMITX)
 	if (get_hdmitx20_init() == 1)
-		get20_attr(attr);
+		pr_err("Not support tx20 %s anymore.\n", __func__);
 #endif
 #if defined(CONFIG_AMLOGIC_HDMITX21)
 	if (get_hdmitx21_init() == 1)
@@ -96,7 +96,7 @@ void setup_attr(const char *buf)
 {
 #if defined(CONFIG_AMLOGIC_HDMITX)
 	if (get_hdmitx20_init() == 1)
-		setup20_attr(buf);
+		pr_err("Not support tx20 %s anymore.\n", __func__);
 #endif
 #if defined(CONFIG_AMLOGIC_HDMITX21)
 	if (get_hdmitx21_init() == 1)

@@ -64,6 +64,7 @@ obj-y                       += media_modules/
 obj-y                       += amlisp/
 obj-y                       += adla/
 obj-y                       += armisp/
+obj-y                       += armisp-g12b/
 
 KBUILD_CFLAGS_MODULE += $(GKI_EXT_KERNEL_MODULE_PREDEFINE)
 all:

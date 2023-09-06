@@ -1,0 +1,9 @@
+menu "Amlogic ISP Support for G12B"
+
+config AMLOGIC_ARM_ISP_G12B
+	tristate "amlogic ISP module for G12B"
+	default m
+	help
+	  Driver for ISP.
+
+endmenu

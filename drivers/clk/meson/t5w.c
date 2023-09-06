@@ -211,11 +211,6 @@ static struct clk_regmap t5w_fixed_pll_dco = {
 			.fw_name = "xtal",
 		},
 		.num_parents = 1,
-		/*
-		 * This clock feeds the CPU, avoid disabling it
-		 * Register has the risk of being directly operated
-		 */
-		.flags = CLK_IS_CRITICAL | CLK_GET_RATE_NOCACHE,
 	},
 };
 
@@ -233,12 +228,6 @@ static struct clk_regmap t5w_fixed_pll = {
 			&t5w_fixed_pll_dco.hw
 		},
 		.num_parents = 1,
-		/*
-		 * This clock won't ever change at runtime so
-		 * CLK_SET_RATE_PARENT is not required
-		 * Never close , Register may be rewritten
-		 */
-		.flags = CLK_IS_CRITICAL | CLK_GET_RATE_NOCACHE,
 	},
 };
 

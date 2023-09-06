@@ -76,10 +76,6 @@ static struct clk_regmap t5d_fixed_pll = {
 			&t5d_fixed_pll_dco.hw
 		},
 		.num_parents = 1,
-		/*
-		 * This clock won't ever change at runtime so
-		 * CLK_SET_RATE_PARENT is not required
-		 */
 	},
 };
 

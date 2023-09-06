@@ -63,7 +63,6 @@ static struct clk_regmap t7_fixed_pll_dco = {
 			.fw_name = "xtal",
 		},
 		.num_parents = 1,
-		.flags = CLK_IS_CRITICAL | CLK_GET_RATE_NOCACHE,
 	},
 };
 
@@ -81,11 +80,6 @@ static struct clk_regmap t7_fixed_pll = {
 			&t7_fixed_pll_dco.hw
 		},
 		.num_parents = 1,
-		/*
-		 * This clock won't ever change at runtime so
-		 * CLK_SET_RATE_PARENT is not required
-		 */
-		.flags = CLK_IS_CRITICAL | CLK_GET_RATE_NOCACHE,
 	},
 };
 
@@ -1313,7 +1307,6 @@ static struct clk_regmap t7_hdmi_pll_dco = {
 		 * NOCACHE to keep our view of the clock as accurate as
 		 * possible
 		 */
-		.flags = CLK_GET_RATE_NOCACHE,
 	},
 };
 
@@ -1331,7 +1324,6 @@ static struct clk_regmap t7_hdmi_pll_od = {
 			&t7_hdmi_pll_dco.hw
 		},
 		.num_parents = 1,
-		.flags = CLK_GET_RATE_NOCACHE | CLK_SET_RATE_PARENT,
 	},
 };
 
@@ -1349,7 +1341,6 @@ static struct clk_regmap t7_hdmi_pll = {
 			&t7_hdmi_pll_od.hw
 		},
 		.num_parents = 1,
-		.flags = CLK_GET_RATE_NOCACHE | CLK_SET_RATE_PARENT,
 	},
 };
 
@@ -1807,7 +1798,6 @@ static struct clk_regmap t7_sysclk_b_div = {
 			&t7_sysclk_b_sel.hw
 		},
 		.num_parents = 1,
-		.flags = CLK_SET_RATE_PARENT,
 	},
 };
 
@@ -1854,7 +1844,6 @@ static struct clk_regmap t7_sysclk_a_div = {
 			&t7_sysclk_a_sel.hw
 		},
 		.num_parents = 1,
-		.flags = CLK_SET_RATE_PARENT,
 	},
 };
 
@@ -2498,7 +2487,6 @@ static struct clk_regmap t7_vid_pll_div = {
 		.ops = &meson_vid_pll_div_ro_ops,
 		.parent_hws = (const struct clk_hw *[]) { &t7_hdmi_pll.hw },
 		.num_parents = 1,
-		.flags = CLK_SET_RATE_PARENT | CLK_GET_RATE_NOCACHE,
 	},
 };
 

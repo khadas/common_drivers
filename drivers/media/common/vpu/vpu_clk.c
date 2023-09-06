@@ -140,6 +140,7 @@ unsigned int vpu_clk_get(void)
 }
 EXPORT_SYMBOL(vpu_clk_get);
 
+#ifdef remove
 static int switch_gp_pll(int flag, unsigned int clk_level)
 {
 	unsigned int clk;
@@ -170,6 +171,7 @@ static int switch_gp_pll(int flag, unsigned int clk_level)
 
 	return 0;
 }
+#endif
 
 int vpu_clk_apply_dft(unsigned int clk_level)
 {
@@ -185,6 +187,7 @@ int vpu_clk_apply_dft(unsigned int clk_level)
 		return -1;
 	}
 
+#ifdef remove
 	if (vpu_conf.data->clk_table[vpu_conf.clk_level].mux == GPLL_CLK) {
 		if (vpu_conf.data->gp_pll_valid == 0) {
 			VPUERR("gp_pll is invalid\n");
@@ -207,6 +210,7 @@ int vpu_clk_apply_dft(unsigned int clk_level)
 			}
 		}
 	}
+#endif
 
 	if ((IS_ERR_OR_NULL(vpu_conf.vpu_clk0)) ||
 	    (IS_ERR_OR_NULL(vpu_conf.vpu_clk1)) ||
@@ -234,6 +238,7 @@ int vpu_clk_apply_dft(unsigned int clk_level)
 	ret = clk_set_parent(vpu_conf.vpu_clk, vpu_conf.vpu_clk0);
 	if (ret)
 		VPUERR("%s: %d clk_set_parent error\n", __func__, __LINE__);
+#ifdef remove
 	if (vpu_conf.switch_gpl) {
 		if (vpu_conf.vpu_clk_en) {
 			clk_disable_unprepare(vpu_conf.vpu_clk);
@@ -241,7 +246,7 @@ int vpu_clk_apply_dft(unsigned int clk_level)
 			vpu_conf.vpu_clk_en = false;
 		}
 	}
-
+#endif
 	clk = clk_get_rate(vpu_conf.vpu_clk);
 	VPUPR("set vpu clk: %uHz(%d), readback: %uHz(0x%x)\n",
 	      vpu_conf.data->clk_table[clk_level].freq, clk_level,

@@ -729,59 +729,62 @@ void sensor_init_ov08a10( void **ctx, sensor_control_t *ctrl, void *sbp )
 int sensor_detect_ov08a10( void* sbp)
 {
     int ret = 0;
-    int times = 10;
+    int times = 5;
+    int retry = 5;
     sensor_ctx.sbp = sbp;
     sensor_bringup_t* sensor_bp = (sensor_bringup_t*) sbp;
 
-    ret = gp_pl_am_enable(sensor_bp, "mclk_0", 24000000);
-    if (ret < 0 )
-        pr_info("set mclk fail\n");
+    while (retry--) {
+		times = 5;
+        ret = gp_pl_am_enable(sensor_bp, "mclk_0", 24000000);
+        if (ret < 0 )
+            pr_info("set mclk fail\n");
 
 #if NEED_CONFIG_BSP
-//    ret = pwr_am_enable(sensor_bp, pwr_dts_pin_name, config_sensor_idx, 1);
-//    if (ret < 0 )
-//        pr_err("set pwr fail\n");
-//    else
-//        pr_err("set pwr 1\n");
+        ret = reset_am_enable(sensor_bp, reset_dts_pin_name, config_sensor_idx, 1);
+        if (ret < 0 )
+            pr_err("set reset fail\n");
 
-    ret = reset_am_enable(sensor_bp, reset_dts_pin_name, config_sensor_idx, 1);
-    if (ret < 0 )
-        pr_err("set reset fail\n");
+        system_timer_usleep( 100000 );
 
-    system_timer_usleep( 10000 );
+        ret = reset_am_enable(sensor_bp, reset_dts_pin_name, config_sensor_idx, 0);
+        if (ret < 0 )
+            pr_err("set reset fail\n");
 
-    ret = reset_am_enable(sensor_bp, reset_dts_pin_name, config_sensor_idx, 0);
-    if (ret < 0 )
-        pr_err("set reset fail\n");
+        system_timer_usleep( 100000 );
 
-    system_timer_usleep( 100000 );
+        ret = reset_am_enable(sensor_bp, reset_dts_pin_name, config_sensor_idx, 1);
+        if (ret < 0 )
+            pr_err("set reset fail\n");
 
-    ret = reset_am_enable(sensor_bp, reset_dts_pin_name, config_sensor_idx, 1);
-    if (ret < 0 )
-        pr_err("set reset fail\n");
-
-    system_timer_usleep( 5000 );
+        system_timer_usleep( 100000 );
 #endif
 
-    sensor_ctx.sbus.mask = SBUS_MASK_SAMPLE_8BITS | SBUS_MASK_ADDR_16BITS | SBUS_MASK_ADDR_SWAP_BYTES;
-    sensor_ctx.sbus.control = 0;
-    sensor_ctx.sbus.bus = 0;
-    sensor_ctx.sbus.device = SENSOR_DEV_ADDRESS;
-    acamera_sbus_init( &sensor_ctx.sbus, sbus_i2c );
+        sensor_ctx.sbus.mask = SBUS_MASK_SAMPLE_8BITS | SBUS_MASK_ADDR_16BITS | SBUS_MASK_ADDR_SWAP_BYTES;
+        sensor_ctx.sbus.control = 0;
+        sensor_ctx.sbus.bus = 0;
+        sensor_ctx.sbus.device = SENSOR_DEV_ADDRESS;
+        acamera_sbus_init( &sensor_ctx.sbus, sbus_i2c );
 
-    ret = 0;
-    while(times--) {
-        if (sensor_get_id(&sensor_ctx) == 0xFFFF) {
-            ret = -1;
-        } else {
-            pr_info("sensor_detect_os08a10:%d\n", ret);
-            break;
+        ret = 0;
+        while (times--) {
+            if (sensor_get_id(&sensor_ctx) == 0xFFFF) {
+                ret = -1;
+            } else {
+                pr_info("sensor_detect_os08a10:%d\n", ret);
+                ret = 0;
+                break;
+            }
         }
+
+        acamera_sbus_deinit(&sensor_ctx.sbus,  sbus_i2c);
+        reset_am_disable(sensor_bp, config_sensor_idx);
+        gp_pl_am_disable(sensor_bp, "mclk_0");
+
+        if (ret == 0)
+			break;
     }
 
-    acamera_sbus_deinit(&sensor_ctx.sbus,  sbus_i2c);
-    reset_am_disable(sensor_bp, config_sensor_idx);
-    gp_pl_am_disable(sensor_bp, "mclk_0");
     return ret;
 }
 //*************************************************************************************

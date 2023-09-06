@@ -500,7 +500,7 @@ const struct vb2_mem_ops vb2_cmalloc_memops = {
 	.mmap = vb2_cmalloc_mmap,
 	.num_users = vb2_cmalloc_num_users,
 };
-EXPORT_SYMBOL_GPL(vb2_cmalloc_memops);
+//EXPORT_SYMBOL_GPL(vb2_cmalloc_memops);
 
 MODULE_DESCRIPTION("cmalloc memory handling routines for videobuf2");
 MODULE_AUTHOR("Keke Li<keke.li@amlogic.com>");

@@ -147,6 +147,7 @@ struct aml_tdm {
 	unsigned char *temp_buffer;
 	unsigned int vol_index;
 #endif
+	int tdmout_lane_mute_status[LANE_MAX3];
 };
 
 #define to_aml_tdm(x)   container_of(x, struct aml_tdm, clk_nb)
@@ -844,7 +845,7 @@ static int tdmout_get_mute_enum(struct snd_kcontrol *kcontrol,
 	struct snd_soc_dai *cpu_dai = snd_kcontrol_chip(kcontrol);
 	struct aml_tdm *p_tdm = snd_soc_dai_get_drvdata(cpu_dai);
 
-	ucontrol->value.enumerated.item[0] = aml_tdmout_get_mute(p_tdm->id);
+	ucontrol->value.enumerated.item[0] = aml_tdmout_get_mute(p_tdm->actrl, p_tdm->id);
 
 	return 0;
 }
@@ -854,10 +855,43 @@ static int tdmout_set_mute_enum(struct snd_kcontrol *kcontrol,
 {
 	struct snd_soc_dai *cpu_dai = snd_kcontrol_chip(kcontrol);
 	struct aml_tdm *p_tdm = snd_soc_dai_get_drvdata(cpu_dai);
+	int value = ucontrol->value.enumerated.item[0];
+	int i = 0;
+
+	for (i = 0; i < p_tdm->lane_cnt; i++) {
+		aml_tdm_mute_playback(p_tdm->actrl, p_tdm->id, (bool)value, i);
+		p_tdm->tdmout_lane_mute_status[i] = value;
+	}
+	return 0;
+}
+
+static int tdmout_get_lane_mute_enum(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_dai *cpu_dai = snd_kcontrol_chip(kcontrol);
+	struct aml_tdm *p_tdm = snd_soc_dai_get_drvdata(cpu_dai);
+	struct soc_mixer_control *mc =
+			(struct soc_mixer_control *)kcontrol->private_value;
+	unsigned int reg = mc->reg;
+
+	ucontrol->value.enumerated.item[0] = p_tdm->tdmout_lane_mute_status[reg];
+
+	return 0;
+}
+
+static int tdmout_set_lane_mute_enum(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_dai *cpu_dai = snd_kcontrol_chip(kcontrol);
+	struct aml_tdm *p_tdm = snd_soc_dai_get_drvdata(cpu_dai);
+	struct soc_mixer_control *mc =
+			(struct soc_mixer_control *)kcontrol->private_value;
+	unsigned int reg = mc->reg;
 
 	int value = ucontrol->value.enumerated.item[0];
 
-	aml_tdmout_set_mute(p_tdm->id, value);
+	aml_tdm_mute_playback(p_tdm->actrl, p_tdm->id, (bool)value, reg);
+	p_tdm->tdmout_lane_mute_status[reg] = value;
 
 	return 0;
 }
@@ -872,18 +906,18 @@ static const struct snd_kcontrol_new snd_tdm_clk_controls[] = {
 static const struct snd_kcontrol_new snd_tdm_a_controls[] = {
 	/*TDMOUT_A gain, enable data * gain*/
 	SOC_SINGLE_EXT("TDMOUT_A GAIN",
-		       0, 0, 255, 0,
-		       tdmout_gain_get,
-		       tdmout_gain_set),
+				0, 0, 255, 0,
+				tdmout_gain_get,
+				tdmout_gain_set),
 	SOC_SINGLE_BOOL_EXT("TDMOUT_A Mute",
-			    0,
-			    tdmout_get_mute_enum,
-			    tdmout_set_mute_enum),
+				0,
+				tdmout_get_mute_enum,
+				tdmout_set_mute_enum),
 #ifdef CONFIG_AMLOGIC_ZAPPER_CUT
 	SOC_SINGLE_EXT("TDMOUT_A Software Gain",
-		       0, 0, 100, 0,
-		       tdmout_softgain_get,
-		       tdmout_softgain_set),
+				0, 0, 100, 0,
+				tdmout_softgain_get,
+				tdmout_softgain_set),
 #endif
 };
 
@@ -975,60 +1009,76 @@ static int tdm_port_pcpd_detect_set(struct snd_kcontrol *kcontrol,
 static const struct snd_kcontrol_new snd_tdm_b_controls[] = {
 	/*TDMOUT_B gain, enable data * gain*/
 	SOC_SINGLE_EXT("TDMOUT_B GAIN",
-		       0, 0, 255, 0,
-		       tdmout_gain_get,
-		       tdmout_gain_set),
+				0, 0, 255, 0,
+				tdmout_gain_get,
+				tdmout_gain_set),
 	SOC_SINGLE_BOOL_EXT("TDMOUT_B Mute",
-			    0,
-			    tdmout_get_mute_enum,
-			    tdmout_set_mute_enum),
+				0,
+				tdmout_get_mute_enum,
+				tdmout_set_mute_enum),
 	SOC_ENUM_EXT("TDMIN_B source select",
 				tdmin_source_enum,
 				tdmin_src_enum_get,
 				tdmin_src_enum_put),
+	SOC_SINGLE_EXT("TDMOUT_B Lane0 Mute",
+				0, 0, 1, 0,
+				tdmout_get_lane_mute_enum,
+				tdmout_set_lane_mute_enum),
+	SOC_SINGLE_EXT("TDMOUT_B Lane1 Mute",
+				1, 0, 1, 0,
+				tdmout_get_lane_mute_enum,
+				tdmout_set_lane_mute_enum),
+	SOC_SINGLE_EXT("TDMOUT_B Lane2 Mute",
+				2, 0, 1, 0,
+				tdmout_get_lane_mute_enum,
+				tdmout_set_lane_mute_enum),
+	SOC_SINGLE_EXT("TDMOUT_B Lane3 Mute",
+				3, 0, 1, 0,
+				tdmout_get_lane_mute_enum,
+				tdmout_set_lane_mute_enum),
 #ifdef CONFIG_AMLOGIC_ZAPPER_CUT
 	SOC_SINGLE_EXT("TDMOUT_B Software Gain",
-		       0, 0, 100, 0,
-		       tdmout_softgain_get,
-		       tdmout_softgain_set),
+				0, 0, 100, 0,
+				tdmout_softgain_get,
+				tdmout_softgain_set),
 #endif
 };
 
 static const struct snd_kcontrol_new snd_tdm_c_controls[] = {
 	/*TDMOUT_C gain, enable data * gain*/
 	SOC_SINGLE_EXT("TDMOUT_C GAIN",
-		       0, 0, 255, 0,
-		       tdmout_gain_get,
-		       tdmout_gain_set),
+				0, 0, 255, 0,
+				tdmout_gain_get,
+				tdmout_gain_set),
 	SOC_SINGLE_BOOL_EXT("TDMOUT_C Mute",
-			    0,
-			    tdmout_get_mute_enum,
-			    tdmout_set_mute_enum),
+				0,
+				tdmout_get_mute_enum,
+				tdmout_set_mute_enum),
 };
 
 static const struct snd_kcontrol_new snd_tdm_d_controls[] = {
 	/*TDMOUT_C gain, enable data * gain*/
 	SOC_SINGLE_EXT("TDMOUT_D GAIN",
-		       0, 0, 255, 0,
-		       tdmout_gain_get,
-		       tdmout_gain_set),
+				0, 0, 255, 0,
+				tdmout_gain_get,
+				tdmout_gain_set),
 	SOC_SINGLE_BOOL_EXT("TDMOUT_D Mute",
-			    0,
-			    tdmout_get_mute_enum,
-			    tdmout_set_mute_enum),
+				0,
+				tdmout_get_mute_enum,
+				tdmout_set_mute_enum),
 };
 
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static const struct snd_kcontrol_new snd_pcpd_controls[] = {
 	SOC_SINGLE_EXT("Pc_Pd_Monitor_A Detect enable",
-		       0, 0, 1, 0,
-		       tdm_port_pcpd_detect_get,
-		       tdm_port_pcpd_detect_set),
+				0, 0, 1, 0,
+				tdm_port_pcpd_detect_get,
+				tdm_port_pcpd_detect_set),
 
 	SOC_SINGLE_EXT("Pc_Pd_Monitor_B Detect enable",
-		       0, 0, 1, 0,
-		       tdm_port_pcpd_detect_get,
-		       tdm_port_pcpd_detect_set),
+				0, 0, 1, 0,
+				tdm_port_pcpd_detect_get,
+				tdm_port_pcpd_detect_set),
 
 };
 
@@ -1777,6 +1827,7 @@ static int aml_soc_tdm_trigger(struct snd_soc_component *component,
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	struct aml_tdm *p_tdm = runtime->private_data;
+	int i;
 
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
@@ -1826,10 +1877,14 @@ static int aml_soc_tdm_trigger(struct snd_soc_component *component,
 			udelay(100);
 			if (!p_tdm->tdm_fade_out_enable)
 				aml_tdmout_enable_gain(p_tdm->id, false,
-						p_tdm->chipinfo->gain_ver);
-			if (p_tdm->chipinfo->need_mute_tdm)
-				aml_tdm_mute_playback(p_tdm->actrl, p_tdm->id,
-					false, p_tdm->lane_cnt);
+					p_tdm->chipinfo->gain_ver);
+			if (p_tdm->chipinfo->need_mute_tdm) {
+				for (i = 0; i < p_tdm->lane_cnt; i++) {
+					if (!p_tdm->tdmout_lane_mute_status[i])
+						aml_tdm_mute_playback(p_tdm->actrl, p_tdm->id,
+							false, i);
+				}
+			}
 			if (p_tdm->samesource_sel != SHAREBUFFER_NONE)
 				tdm_sharebuffer_mute(p_tdm, false);
 		} else {
@@ -1868,12 +1923,16 @@ static int aml_soc_tdm_trigger(struct snd_soc_component *component,
 			dev_info(substream->pcm->card->dev,
 				 "TDM[%d] Playback stop\n",
 				 p_tdm->id);
+			if (p_tdm->chipinfo->need_mute_tdm) {
+				for (i = 0; i < p_tdm->lane_cnt; i++) {
+					if (!p_tdm->tdmout_lane_mute_status[i])
+						aml_tdm_mute_playback(p_tdm->actrl, p_tdm->id,
+							true, i);
+				}
+			}
 			if (!p_tdm->tdm_fade_out_enable)
 				aml_tdmout_enable_gain(p_tdm->id, true,
 						p_tdm->chipinfo->gain_ver);
-			if (p_tdm->chipinfo->need_mute_tdm)
-				aml_tdm_mute_playback(p_tdm->actrl, p_tdm->id,
-					true, p_tdm->lane_cnt);
 			if (p_tdm->samesource_sel != SHAREBUFFER_NONE)
 				tdm_sharebuffer_mute(p_tdm, true);
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT

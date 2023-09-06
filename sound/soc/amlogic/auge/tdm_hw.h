@@ -138,30 +138,19 @@ void aml_tdm_sclk_pad_select(struct aml_audio_controller *actrl,
 void i2s_to_hdmitx_ctrl(int i2s_tohdmitxen_separated, int tdm_index,
 		int mclk_sel);
 void aml_tdm_mute_playback(struct aml_audio_controller *actrl,
-		int index,
-		bool mute,
-		int lane_cnt);
+		int tdm_index, bool mute, int lane_index);
 void aml_tdm_mute_capture(struct aml_audio_controller *actrl,
-		int tdm_index,
-		bool mute,
-		int lane_cnt,
-		bool use_vadtop);
+		int tdm_index, bool mute, int lane_cnt, bool use_vadtop);
 void aml_tdm_set_oe_v1(struct aml_audio_controller *actrl,
-	int index,
-	int force_oe,
-	int oe_val);
+		int index, int force_oe, int oe_val);
 void aml_tdm_set_oe_v2(struct aml_audio_controller *actrl,
-	int index,
-	int force_oe,
-	int oe_val);
+		int index, int force_oe, int oe_val);
 void aml_tdmout_auto_gain_enable(unsigned int tdm_id);
 void aml_tdmout_set_gain(int tdmout_id, int value);
 int aml_tdmout_get_gain(int tdmout_id);
-void aml_tdmout_set_mute(int tdmout_id, int mute);
-int aml_tdmout_get_mute(int tdmout_id);
+int aml_tdmout_get_mute(struct aml_audio_controller *actrl, int tdmout_id);
 int aml_tdmin_get_status(int tdm_id, bool use_vadtop);
 void aml_tdmin_set_slot_num(struct aml_audio_controller *actrl,
 			    int index, int slot_num, bool use_vadtop);
 void aml_tdmout_gain_step(int index, int enable);
-void aml_tdmout_mute_speaker(int tdmout_id, bool mute);
 #endif

@@ -492,11 +492,6 @@ static void jack_work_func(struct work_struct *work)
 				flag = (flag) ? 0 : 1;
 
 			if (flag) {
-				/*
-				 * pr_info("headphone is pluged, mute speaker!\n");
-				 * aml_tdmout_mute_speaker(TDM_A, 1);
-				 * aml_tdmout_mute_speaker(TDM_B, 1);
-				 */
 				extcon_set_state_sync(audio_extcon_headphone,
 					EXTCON_JACK_HEADPHONE, 1);
 				snd_soc_jack_report(&card_data->hp_jack.jack,
@@ -506,11 +501,6 @@ static void jack_work_func(struct work_struct *work)
 					EXTCON_JACK_HEADPHONE, 0);
 				snd_soc_jack_report(&card_data->hp_jack.jack,
 					0, SND_JACK_HEADPHONE);
-				/*
-				 * pr_info("headphone is unpluged, unmute speaker!\n");
-				 * aml_tdmout_mute_speaker(TDM_A, 0);
-				 * aml_tdmout_mute_speaker(TDM_B, 0);
-				 */
 			}
 		}
 	}

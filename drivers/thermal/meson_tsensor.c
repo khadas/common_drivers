@@ -651,6 +651,8 @@ static int meson_map_dt_data(struct platform_device *pdev)
 	data->rst = devm_reset_control_get(&pdev->dev, "ts_rst");
 	if (IS_ERR(data->rst))
 		dev_warn(&pdev->dev, "Does not support reset func..\n");
+	else
+		reset_control_deassert(data->rst);
 
 	if (of_address_to_resource(pdev->dev.of_node, 0, &res)) {
 		dev_err(&pdev->dev, "failed to get Resource 0\n");

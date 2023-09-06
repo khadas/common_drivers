@@ -31,7 +31,9 @@ static u32 osd_vpp2_bld_ctrl;
 static u32 osd_vpp2_bld_ctrl_mask = 0x30;
 /* indicates whether vpp1&vpp2 has been notified or not */
 static u32 osd_vpp_bld_ctrl_update_mask = 0x80000000;
-
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+static struct osd_scope_s vpp_osd1_scope;
+#endif
 static struct postblend_reg_s postblend_reg = {
 	VPP_OSD1_BLD_H_SCOPE,
 	VPP_OSD1_BLD_V_SCOPE,
@@ -301,6 +303,7 @@ static void postblend_set_state(struct meson_vpu_block *vblk,
 
 	MESON_DRM_BLOCK("%s set_state called.\n", postblend->base.name);
 	mvps = priv_to_pipeline_state(pipeline->obj.state);
+
 	scope.h_start = 0;
 	scope.h_end = mvps->scaler_param[0].output_width - 1;
 	scope.v_start = 0;
@@ -633,7 +636,7 @@ static void t3x_postblend_set_state(struct meson_vpu_block *vblk,
 			scope.v_end = mvsps->blend_dout_vsize[0] - 1;
 		}
 
-		vpp_osd1_blend_scope_set(vblk, reg_ops, reg, scope);
+		memcpy(&vpp_osd1_scope, &scope, sizeof(struct osd_scope_s));
 
 		if (amc->blank_enable) {
 			vpp_osd1_postblend_5mux_set(vblk, reg_ops, reg, VPP_NULL);
@@ -843,6 +846,18 @@ static void independ_path_default_regs(struct meson_vpu_block *vblk,
 }
 #endif
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+#ifdef CONFIG_AMLOGIC_MEDIA_VIDEO
+static void get_postblend_osd1_scope(struct vpp_postblend_scope_s *scope)
+{
+	scope->h_start = vpp_osd1_scope.h_start;
+	scope->v_start = vpp_osd1_scope.v_start;
+	scope->h_end = vpp_osd1_scope.h_end;
+	scope->v_end = vpp_osd1_scope.v_end;
+}
+#endif
+#endif
+
 static void postblend_hw_init(struct meson_vpu_block *vblk)
 {
 	struct meson_vpu_postblend *postblend = to_postblend_block(vblk);
@@ -893,22 +908,18 @@ static void s5_postblend_hw_init(struct meson_vpu_block *vblk)
 
 	postblend->reg = &s5_postblend_reg;
 
-	/* default: osd byp dolby */
-	/*core2a core2c dv init in uboot*/
-	/*reg_ops->rdma_write_reg_bits(OSD_DOLBY_BYPASS_EN, 0x1, 0, 1);*/
-	/*reg_ops->rdma_write_reg_bits(OSD_DOLBY_BYPASS_EN, 0x1, 2, 1);*/
-	/*reg_ops->rdma_write_reg_bits(OSD_DOLBY_BYPASS_EN, 0x1, 4, 1);*/
-	/*reg_ops->rdma_write_reg_bits(OSD_DOLBY_BYPASS_EN, 0x1, 6, 1);*/
-
-	/* default: osd 12bit path */
-	/*reg_ops->rdma_write_reg_bits(OSD_DOLBY_BYPASS_EN, 0x0, 1, 1);*/
-	/*reg_ops->rdma_write_reg_bits(OSD_DOLBY_BYPASS_EN, 0x0, 3, 1);*/
-	/*reg_ops->rdma_write_reg_bits(OSD_DOLBY_BYPASS_EN, 0x0, 5, 1);*/
-	/*reg_ops->rdma_write_reg_bits(OSD_DOLBY_BYPASS_EN, 0x0, 7, 1);*/
-
 	reg_ops->rdma_write_reg_bits(VPP_INTF_OSD3_CTRL, 0, 1, 1);
 	reg_ops->rdma_write_reg(VPP_MISC_T3X, 0);
 }
+
+static void t3x_postblend_hw_init(struct meson_vpu_block *vblk)
+{
+	s5_postblend_hw_init(vblk);
+#ifdef CONFIG_AMLOGIC_MEDIA_VIDEO
+	register_vpp_postblend_info_func(get_postblend_osd1_scope);
+#endif
+}
+
 #endif
 
 struct meson_vpu_block_ops postblend_ops = {
@@ -963,7 +974,7 @@ struct meson_vpu_block_ops t3x_postblend_ops = {
 	.enable = postblend_hw_enable,
 	.disable = s5_postblend_hw_disable,
 	.dump_register = postblend_dump_register,
-	.init = s5_postblend_hw_init,
+	.init = t3x_postblend_hw_init,
 };
 
 struct meson_vpu_block_ops txhd2_postblend_ops = {

@@ -12591,9 +12591,9 @@ int video_early_init_s5(struct amvideo_device_data_s *p_amvideo)
 		memcpy(&vpp_post_reg.vpp1_post_blend_reg,
 		   &vpp1_post_blend_reg_t3x,
 		   sizeof(struct vpp1_post_blend_reg_s));
-		memcpy(&vpp_post_reg.vpp_post_in_pad_reg,
-			&vpp_post_in_pad_regs,
-			sizeof(struct vpp_post_in_pad_reg_s) * 5);
+		memcpy(&vpp_post_reg.vpp_post_in_padcut_reg,
+			&vpp_post_in_padcut_regs,
+			sizeof(struct vpp_post_in_padcut_reg_s));
 	}
 	if (is_meson_s5_cpu()) {
 		memcpy(&venc_regs[0], &venc_regs_t7[0],

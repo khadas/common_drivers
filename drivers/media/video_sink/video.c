@@ -12535,7 +12535,7 @@ static ssize_t vpp_in_padding_enable_show(struct class *cla,
 	int padding_enable, h_padding, v_padding;
 
 	get_vpp_in_padding_axis(&padding_enable, &h_padding, &v_padding);
-	return snprintf(buf, 40, "vpp_in_padding_enable:%d, h/v padding: %d, %d\n",
+	return snprintf(buf, 80, "vpp_in_padding_enable:%d, h/v padding: %d, %d\n",
 		padding_enable,
 		h_padding, v_padding);
 }

@@ -967,42 +967,15 @@ struct vpp_post_misc_reg_s vpp_post_misc_reg_t3x = {
 	S5_VPP_CLIP_MISC1
 };
 
-struct vpp_post_in_pad_reg_s vpp_post_in_pad_regs[5] = {
-	{
-		T3X_VPP_POST_VD1_PAD_CTRL,
-		T3X_VPP_POST_VD1_PAD_H,
-		T3X_VPP_POST_VD1_PAD_V,
-		T3X_VPP_POST_VD1_DUMMY_DATA,
-		T3X_VPP_POST_VD1_WIN_CUT_CTRL,
-	},
-	{
-		T3X_VPP_POST_VD2_PAD_CTRL,
-		T3X_VPP_POST_VD2_PAD_H,
-		T3X_VPP_POST_VD2_PAD_V,
-		T3X_VPP_POST_VD2_DUMMY_DATA,
-		T3X_VPP_POST_VD2_WIN_CUT_CTRL,
-	},
-	{
-		T3X_VPP_POST_VD3_PAD_CTRL,
-		T3X_VPP_POST_VD3_PAD_H,
-		T3X_VPP_POST_VD3_PAD_V,
-		T3X_VPP_POST_VD3_DUMMY_DATA,
-		T3X_VPP_POST_VD3_WIN_CUT_CTRL,
-	},
-	{
-		T3X_VPP_POST_OSD1_PAD_CTRL,
-		T3X_VPP_POST_OSD1_PAD_H,
-		T3X_VPP_POST_OSD1_PAD_V,
-		T3X_VPP_POST_OSD1_DUMMY_DATA,
-		T3X_VPP_POST_OSD1_WIN_CUT_CTRL,
-	},
-	{
-		T3X_VPP_POST_OSD2_PAD_CTRL,
-		T3X_VPP_POST_OSD2_PAD_H,
-		T3X_VPP_POST_OSD2_PAD_V,
-		T3X_VPP_POST_OSD2_DUMMY_DATA,
-		T3X_VPP_POST_OSD2_WIN_CUT_CTRL,
-	},
+struct vpp_post_in_padcut_reg_s vpp_post_in_padcut_regs = {
+	/* cut in put size */
+	T3X_VPP_POST_VD1_PAD_CTRL,
+	/* not really work, must equal h_in_size*/
+	T3X_VPP_POST_VD1_PAD_H,
+	/* v_pad_cut */
+	T3X_VPP_POST_VD1_PAD_V,
+	/* h_pad_cut */
+	S5_VPP_POST_WIN_CUT_CTRL,
 };
 
 struct vd_proc_blend_reg_s vd_proc_blend_reg_s5 = {

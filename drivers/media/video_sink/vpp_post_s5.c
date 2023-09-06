@@ -107,6 +107,8 @@ u32 g_vpp1_bypass_slice1;
 MODULE_PARM_DESC(g_vpp1_bypass_slice1, "\n g_vpp1_bypass_slice1\n");
 module_param(g_vpp1_bypass_slice1, uint, 0664);
 
+void (*get_vpp_din3_scope)(struct vpp_postblend_scope_s *scope);
+
 static u32 get_reg_slice_vpost(int reg_addr, int slice_idx)
 {
 	u32 reg_offset;
@@ -384,66 +386,28 @@ static void wr_reg_bits_slice_vpost(u8 vpp_index,
 };
 
 /* hw reg info set */
-static void vpp_post_in_pad_set(u32 vpp_index,
+static void vpp_post_in_padcut_set(u32 vpp_index,
 	struct vpp0_post_s *vpp_post)
 {
 	rdma_wr_op rdma_wr = cur_dev->rdma_func[vpp_index].rdma_wr;
-	struct vpp_post_in_pad_reg_s *vpp_reg = NULL;
+	struct vpp_post_in_padcut_reg_s *vpp_reg = NULL;
 	u32 slice_num;
-	int i;
 
 	slice_num = vpp_post->slice_num;
 
-	for (i = 0; i < VPP_POST_VD_NUM; i++) {
-		vpp_reg = &vpp_post_reg.vpp_post_in_pad_reg[i];
-		vpp_post->vd_pad[i].pad_rpt_lcol  = 1;
-		rdma_wr(vpp_reg->vpp_post_pad_ctrl,
-			(vpp_post->vd_pad[i].pad_en & 1) << 31 |
-			(vpp_post->vd_pad[i].pad_rpt_lcol & 1) << 30 |
-			(vpp_post->vd_pad[i].pad_vsize & 0x1fff) << 16 |
-			(((vpp_post->vd_pad[i].pad_hsize + slice_num - 1) /
-			slice_num) & 0x1ffff) << 0);
-		if (vpp_post->vd_pad[i].pad_en) {
-			rdma_wr(vpp_reg->vpp_post_pad_hsize,
-				(((vpp_post->vd_pad[i].pad_h_end + 1 + slice_num - 1) /
-				slice_num) & 0x1ffff) << 16 |
-				(((vpp_post->vd_pad[i].pad_h_bgn + slice_num - 1) /
-				slice_num) & 0x1ffff) << 0);
-			rdma_wr(vpp_reg->vpp_post_pad_vsize,
-				(vpp_post->vd_pad[i].pad_v_end & 0x1ffff) << 16 |
-					(vpp_post->vd_pad[i].pad_v_bgn & 0x1ffff) << 0);
-		}
-		rdma_wr(vpp_reg->vpp_post_win_cut_ctrl,
-			vpp_post->vd_cut[i].win_en << 31 |
-			(vpp_post->vd_cut[i].win_in_vsize & 0x1fff) << 16 |
-			(((vpp_post->vd_cut[i].win_in_hsize + slice_num - 1) /
-			slice_num) & 0x1ffff) << 0);
-	}
-	for (i = 0; i < VPP_POST_OSD_NUM; i++) {
-		vpp_reg = &vpp_post_reg.vpp_post_in_pad_reg[i + VPP_POST_VD_NUM];
-		vpp_post->osd_pad[i].pad_rpt_lcol = 1;
-		rdma_wr(vpp_reg->vpp_post_pad_ctrl,
-			(vpp_post->osd_pad[i].pad_en & 1) << 31 |
-			(vpp_post->osd_pad[i].pad_rpt_lcol & 1) << 30 |
-			(vpp_post->osd_pad[i].pad_vsize & 0x1fff) << 16 |
-			(((vpp_post->osd_pad[i].pad_hsize + slice_num - 1) /
-			slice_num) & 0x1ffff) << 0);
-		if (vpp_post->osd_pad[i].pad_en) {
-			rdma_wr(vpp_reg->vpp_post_pad_hsize,
-				(((vpp_post->osd_pad[i].pad_h_end + 1 + slice_num - 1) /
-					slice_num) & 0x1ffff) << 16 |
-				(((vpp_post->osd_pad[i].pad_h_bgn  + slice_num - 1) /
-					slice_num) & 0x1ffff) << 0);
-			rdma_wr(vpp_reg->vpp_post_pad_vsize,
-				(vpp_post->osd_pad[i].pad_v_end & 0x1ffff) << 16 |
-				(vpp_post->osd_pad[i].pad_v_bgn & 0x1ffff) << 0);
-		}
-		rdma_wr(vpp_reg->vpp_post_win_cut_ctrl,
-			vpp_post->osd_cut[i].win_en << 31 |
-			(vpp_post->osd_cut[i].win_in_vsize & 0x1fff) << 16 |
-			(((vpp_post->osd_cut[i].win_in_hsize + slice_num - 1) /
-			slice_num) & 0x1ffff) << 0);
-	}
+	vpp_reg = &vpp_post_reg.vpp_post_in_padcut_reg;
+	rdma_wr(vpp_reg->vpp_post_padcut_ctrl,
+		(vpp_post->vpp_pad_cut.cut_en & 1) << 31 |
+		(vpp_post->vpp_pad_cut.cut_in_vsize & 0x1fff) << 16 |
+		((vpp_post->vpp_pad_cut.cut_in_hsize /
+			slice_num) & 0x1fff) << 0);
+	rdma_wr(vpp_reg->vpp_post_padcut_vsize,
+		(vpp_post->vpp_pad_cut.cut_v_end & 0x1fff) << 16 |
+		(vpp_post->vpp_pad_cut.cut_v_bgn & 0x1fff) << 0);
+
+	rdma_wr(vpp_reg->vpp_post_padcut_hsize,
+		(((vpp_post->vpp_pad_cut.cut_h_end + 1) / slice_num - 1) & 0x1fff) << 16 |
+		((vpp_post->vpp_pad_cut.cut_h_bgn / slice_num) & 0x1fff) << 0);
 }
 
 static void vpp_post_blend_set(u32 vpp_index,
@@ -482,8 +446,17 @@ static void vpp_post_blend_set(u32 vpp_index,
 			(vpp_blend->bld_din2_v_start << 16) |
 			vpp_blend->bld_din2_v_end, 0, 32);
 	}
+	if (cur_dev->vpp_in_padding_support) {
+		/* for t3x vpp padding */
+		rdma_wr_bits(vpp_reg->vpp_osd1_bld_h_scope,
+			(vpp_blend->bld_din3_h_start << 16) |
+			vpp_blend->bld_din3_h_end, 0, 32);
+		rdma_wr_bits(vpp_reg->vpp_osd1_bld_v_scope,
+			(vpp_blend->bld_din3_v_start << 16) |
+			vpp_blend->bld_din3_v_end, 0, 32);
+	}
 	rdma_wr(vpp_reg->vpp_postblend_h_v_size,
-		vpp_blend->bld_out_w | vpp_blend->bld_out_h << 16);
+		vpp_blend->bld_out_padding_w | vpp_blend->bld_out_padding_h << 16);
 	rdma_wr(vpp_reg->vpp_post_blend_blend_dummy_data,
 		vpp_blend->bld_dummy_data);
 	rdma_wr_bits(vpp_reg->vpp_post_blend_dummy_alpha,
@@ -548,11 +521,12 @@ static void vpp_post_blend_set(u32 vpp_index,
 
 	rdma_wr_bits(vpp_reg->vpp_postblend_ctrl,
 		vpp_blend->bld_out_en, 8, 1);
-	/* temply modify for vpp display err */
+	/* vpp postblend v size after vpp in padding v cut module */
 	rdma_wr(vpp_reg->vpp_post_slice2ppc_v_size, vpp_blend->bld_out_h);
 	if (debug_flag_s5 & DEBUG_VPP_POST) {
 		pr_info("%s: vpp_postblend_h_v_size=%x\n",
-			__func__, vpp_blend->bld_out_w | vpp_blend->bld_out_h << 16);
+			__func__, vpp_blend->bld_out_padding_w |
+			vpp_blend->bld_out_padding_h << 16);
 		pr_info("%s: vpp_postblend_vd1_h_start_end=%x\n",
 			__func__, vpp_blend->bld_din0_h_start << 16 |
 			vpp_blend->bld_din0_h_end);
@@ -663,8 +637,11 @@ static void vpp_vd1_hwin_set(u32 vpp_index,
 	u32 vd1_win_in_hsize = 0, vd1_slice_num = 0;
 
 	/* t3x vpp_in_padding_support skip this */
-	if (cur_dev->vpp_in_padding_support && vpp_post->vd_pad[0].pad_en)
+	if (cur_dev->vpp_in_padding_support && vpp_post->vpp_pad_cut.h_cut_en) {
+		pr_err("%s: hwin used padding cut, skip\n",
+			__func__);
 		return;
+	}
 	if (vpp_post->vd1_hwin.vd1_hwin_en) {
 		vd1_slice_num = vpp_post->vd1_hwin.slice_num;
 		vd1_win_in_hsize = (vpp_post->vd1_hwin.vd1_hwin_in_hsize +
@@ -768,7 +745,7 @@ void vpp_post_set(u32 vpp_index, struct vpp_post_s *vpp_post)
 
 		vpp0_post = &vpp_post->vpp0_post;
 		/* vpp post in padding for oled */
-		vpp_post_in_pad_set(vpp_index, vpp0_post);
+		vpp_post_in_padcut_set(vpp_index, vpp0_post);
 		/* cfg slice mode */
 		vpp_post_slice_set(vpp_index, vpp0_post);
 		/* cfg vd1 hwin cut */
@@ -807,150 +784,64 @@ void vpp_post_set(u32 vpp_index, struct vpp_post_s *vpp_post)
 	}
 }
 
-static void vpp_post_get_osd_insize(u32 index, u32 *h_size, u32 *v_size)
-{
-	struct vpp_post_blend_reg_s *vpp_post_blend_reg = NULL;
-	u32 h_begin, h_end, v_begin, v_end;
-	u32 osd_bld_h_scope = 0, osd_bld_v_scope = 0;
-
-	vpp_post_blend_reg = &vpp_post_reg.vpp_post_blend_reg;
-	if (index == 0) {
-		osd_bld_h_scope = vpp_post_blend_reg->vpp_osd1_bld_h_scope;
-		osd_bld_v_scope = vpp_post_blend_reg->vpp_osd1_bld_v_scope;
-	} else if (index == 1) {
-		osd_bld_h_scope = vpp_post_blend_reg->vpp_osd2_bld_h_scope;
-		osd_bld_v_scope = vpp_post_blend_reg->vpp_osd2_bld_v_scope;
-	}
-	h_end = READ_VCBUS_REG(osd_bld_h_scope) & 0x1fff;
-	h_begin = (READ_VCBUS_REG(osd_bld_h_scope) >> 16) & 0x1fff;
-
-	v_end = READ_VCBUS_REG(osd_bld_v_scope) & 0x1fff;
-	v_begin = (READ_VCBUS_REG(osd_bld_v_scope) >> 16) & 0x1fff;
-
-	*h_size = h_end - h_begin + 1;
-	*v_size = v_end - v_begin + 1;
-	if (debug_flag_s5 & DEBUG_VPP_POST)
-		pr_info("index = %d, reg: %x, %x, h: %d, %d, v=%d, %d\n",
-			index, osd_bld_h_scope, osd_bld_v_scope,
-			h_end, h_begin, v_end, v_begin);
-}
-
 /* hw reg param info set */
-static int vpp_post_in_pad_param_set(struct vpp_post_input_s *vpp_input,
+static int vpp_post_in_padcut_param_set(struct vpp_post_input_s *vpp_input,
 	struct vpp0_post_s *vpp_post)
 {
-	u32 osd_h_size, osd_v_size;
-	int i;
-
 	if (!vpp_input || !vpp_post)
 		return -1;
 	/* need check padding or not */
 	if (vd_layer[0].vpp_index == VPP0) {
-		if (vd_layer[0].post_blend_en) {
-			vpp_post->vd_pad[0].pad_en = vpp_input->vpp_post_in_pad_en;
-			vpp_post->vd_cut[0].win_en = vpp_input->vpp_post_in_pad_en;
-		} else {
-			vpp_post->vd_pad[0].pad_en = 0;
-			vpp_post->vd_cut[0].win_en = 0;
-		}
-		if (vd_layer[1].post_blend_en) {
-			vpp_post->vd_pad[2].pad_en = vpp_input->vpp_post_in_pad_en;
-			vpp_post->vd_cut[2].win_en = vpp_input->vpp_post_in_pad_en;
-		} else {
-			vpp_post->vd_pad[2].pad_en = 0;
-			vpp_post->vd_cut[2].win_en = 0;
-		}
-		vpp_post->vd_pad[1].pad_en = vpp_input->vpp_post_in_pad_en;
-		vpp_post->vd_cut[1].win_en = vpp_input->vpp_post_in_pad_en;
-		if (vpp_input->vpp_post_in_pad_hsize >= 0) {
-			vpp_post->vd_pad[0].pad_h_bgn = vpp_input->vpp_post_in_pad_hsize;
-			vpp_post->vd_pad[2].pad_h_bgn = vpp_input->vpp_post_in_pad_hsize;
-		} else {
-			vpp_post->vd_pad[0].pad_h_bgn = 0;
-			vpp_post->vd_pad[2].pad_h_bgn = 0;
-		}
-		vpp_post->vd_pad[0].pad_hsize =
-			vpp_input->din_hsize[0] + vpp_input->vpp_post_in_pad_hsize;
-		vpp_post->vd_pad[0].pad_h_end = vpp_post->vd_pad[0].pad_hsize - 1;
-		vpp_post->vd_pad[2].pad_hsize =
-			vpp_input->din_hsize[2] + vpp_input->vpp_post_in_pad_hsize;
-		vpp_post->vd_pad[2].pad_h_end = vpp_post->vd_pad[2].pad_hsize - 1;
+		if (vpp_input->vpp_post_in_pad_en)
+			vpp_post->vpp_pad_cut.cut_en = 1;
+		else
+			vpp_post->vpp_pad_cut.cut_en = 0;
 
-		vpp_post->vd_cut[0].win_in_hsize = vpp_post->vd_pad[0].pad_hsize;
-		vpp_post->vd_cut[2].win_in_hsize = vpp_post->vd_pad[2].pad_hsize;
-		if (vpp_input->vpp_post_in_pad_vsize >= 0) {
-			vpp_post->vd_pad[0].pad_v_bgn = vpp_input->vpp_post_in_pad_vsize;
-			vpp_post->vd_pad[2].pad_v_bgn = vpp_input->vpp_post_in_pad_vsize;
+		if (vpp_input->vpp_post_in_pad_en &&
+			vpp_input->vpp_post_in_pad_hsize > 0)
+			vpp_post->vpp_pad_cut.h_cut_en = 1;
+		else
+			vpp_post->vpp_pad_cut.h_cut_en = 0;
+
+		if (vpp_input->vpp_post_in_pad_en &&
+			vpp_input->vpp_post_in_pad_vsize > 0)
+			vpp_post->vpp_pad_cut.v_cut_en = 1;
+		else
+			vpp_post->vpp_pad_cut.v_cut_en = 0;
+
+		vpp_post->vpp_pad_cut.cut_in_hsize = vpp_input->bld_out_hsize +
+			vpp_input->vpp_post_in_pad_hsize;
+		vpp_post->vpp_pad_cut.cut_in_vsize = vpp_input->bld_out_vsize +
+			vpp_input->vpp_post_in_pad_vsize;
+
+		if (vpp_input->down_move) {
+			vpp_post->vpp_pad_cut.cut_v_bgn = 0;
+			vpp_post->vpp_pad_cut.cut_v_end = vpp_input->bld_out_vsize - 1;
 		} else {
-			vpp_post->vd_pad[0].pad_v_bgn = 0;
-			vpp_post->vd_pad[2].pad_v_bgn = 0;
+			vpp_post->vpp_pad_cut.cut_v_bgn = vpp_input->vpp_post_in_pad_vsize;
+			vpp_post->vpp_pad_cut.cut_v_end = vpp_post->vpp_pad_cut.cut_in_vsize - 1;
 		}
-		vpp_post->vd_pad[0].pad_vsize =
-			vpp_input->din_vsize[0] + vpp_input->vpp_post_in_pad_vsize;
-		vpp_post->vd_pad[0].pad_v_end = vpp_post->vd_pad[0].pad_vsize - 1;
-		vpp_post->vd_pad[2].pad_vsize =
-			vpp_input->din_vsize[2] + vpp_input->vpp_post_in_pad_vsize;
-		vpp_post->vd_pad[2].pad_v_end = vpp_post->vd_pad[2].pad_vsize - 1;
 
-		vpp_post->vd_cut[0].win_in_vsize = vpp_post->vd_pad[0].pad_vsize;
-		vpp_post->vd_cut[2].win_in_vsize = vpp_post->vd_pad[2].pad_vsize;
-
-		for (i = 0; i < VPP_POST_VD_NUM; i++)
-			if (debug_flag_s5 & DEBUG_VPP_POST) {
-				pr_info("vpp_post_in_padd vd_pad(%d):en: %d,pad_h/vsize: %d, %d, pad_axis: %d, %d, %d, %d\n",
-					i,
-					vpp_post->vd_pad[i].pad_en,
-					vpp_post->vd_pad[i].pad_hsize,
-					vpp_post->vd_pad[i].pad_vsize,
-					vpp_post->vd_pad[i].pad_h_bgn,
-					vpp_post->vd_pad[i].pad_h_end,
-					vpp_post->vd_pad[i].pad_v_bgn,
-					vpp_post->vd_pad[i].pad_v_end);
-				pr_info("vpp_post_in_padd vd_cut(%d):en: %d,win_in_hsize: %d, %d\n",
-					i,
-					vpp_post->vd_cut[i].win_en,
-					vpp_post->vd_cut[i].win_in_hsize,
-					vpp_post->vd_cut[i].win_in_vsize);
-			}
-
-		for (i = 0; i < VPP_POST_OSD_NUM; i++) {
-			vpp_post_get_osd_insize(i, &osd_h_size, &osd_v_size);
-			vpp_post->osd_pad[i].pad_en = vpp_input->vpp_post_in_pad_en;
-			vpp_post->osd_cut[i].win_en = vpp_input->vpp_post_in_pad_en;
-			if (vpp_input->vpp_post_in_pad_hsize >= 0)
-				vpp_post->osd_pad[i].pad_h_bgn = vpp_input->vpp_post_in_pad_hsize;
-			else
-				vpp_post->osd_pad[i].pad_h_bgn = 0;
-			if (vpp_input->vpp_post_in_pad_vsize >= 0)
-				vpp_post->osd_pad[i].pad_v_bgn = vpp_input->vpp_post_in_pad_vsize;
-			else
-				vpp_post->osd_pad[i].pad_v_bgn = 0;
-			vpp_post->osd_pad[i].pad_hsize = osd_h_size +
-				vpp_input->vpp_post_in_pad_hsize;
-			vpp_post->osd_pad[i].pad_h_end = vpp_post->osd_pad[i].pad_hsize - 1;
-			vpp_post->osd_pad[i].pad_vsize = osd_v_size +
-				vpp_input->vpp_post_in_pad_vsize;
-			vpp_post->osd_pad[i].pad_v_end = vpp_post->osd_pad[i].pad_vsize - 1;
-			vpp_post->osd_cut[i].win_in_hsize = vpp_post->osd_pad[i].pad_hsize;
-			vpp_post->osd_cut[i].win_in_vsize = vpp_post->osd_pad[i].pad_vsize;
-			if (debug_flag_s5 & DEBUG_VPP_POST) {
-				pr_info("vpp_post_in_padd osd_pad(%d) %d, %d:en: %d,pad_h/vsize: %d, %d, pad_axis: %d, %d, %d, %d\n",
-					i,
-					osd_h_size,
-					osd_v_size,
-					vpp_post->osd_pad[i].pad_en,
-					vpp_post->osd_pad[i].pad_hsize,
-					vpp_post->osd_pad[i].pad_vsize,
-					vpp_post->osd_pad[i].pad_h_bgn,
-					vpp_post->osd_pad[i].pad_h_end,
-					vpp_post->osd_pad[i].pad_v_bgn,
-					vpp_post->osd_pad[i].pad_v_end);
-				pr_info("vpp_post_in_padd osd_cut(%d):en: %d,win_in_hsize: %d, %d\n",
-					i,
-					vpp_post->osd_cut[i].win_en,
-					vpp_post->osd_cut[i].win_in_hsize,
-					vpp_post->osd_cut[i].win_in_vsize);
-			}
+		if (vpp_input->right_move) {
+			vpp_post->vpp_pad_cut.cut_h_bgn = 0;
+			vpp_post->vpp_pad_cut.cut_h_end = vpp_input->bld_out_hsize - 1;
+		} else {
+			vpp_post->vpp_pad_cut.cut_h_bgn = vpp_input->vpp_post_in_pad_hsize;
+			vpp_post->vpp_pad_cut.cut_h_end = vpp_post->vpp_pad_cut.cut_in_hsize - 1;
+		}
+		if (debug_flag_s5 & DEBUG_VPP_POST) {
+			pr_info("%s :cut_in h/v: %d, %d, vcut_en:%d, dir:%d, vcut pos: %d, %d hcut_en:%d, dir: %d, hcut pos: %d, %d\n",
+				__func__,
+				vpp_post->vpp_pad_cut.cut_in_hsize,
+				vpp_post->vpp_pad_cut.cut_in_vsize,
+				vpp_post->vpp_pad_cut.v_cut_en,
+				vpp_input->down_move,
+				vpp_post->vpp_pad_cut.cut_v_bgn,
+				vpp_post->vpp_pad_cut.cut_v_end,
+				vpp_input->right_move,
+				vpp_post->vpp_pad_cut.h_cut_en,
+				vpp_post->vpp_pad_cut.cut_h_bgn,
+				vpp_post->vpp_pad_cut.cut_h_end);
 		}
 	}
 	return 0;
@@ -981,6 +872,8 @@ static int vpp_post_hwincut_param_set(struct vpp_post_input_s *vpp_input,
 static int vpp_blend_param_set(struct vpp_post_input_s *vpp_input,
 	struct vpp_post_blend_s *vpp_post_blend)
 {
+	u32 padding_h_bgn = 0, padding_v_bgn = 0;
+
 	if (!vpp_input || !vpp_post_blend)
 		return -1;
 	vpp_post_blend->bld_dummy_data = 0x008080;
@@ -1010,37 +903,51 @@ static int vpp_blend_param_set(struct vpp_post_input_s *vpp_input,
 	vpp_post_blend->bld_out_w = vpp_input->bld_out_hsize;
 	vpp_post_blend->bld_out_h = vpp_input->bld_out_vsize;
 
-	vpp_post_blend->bld_din0_h_start = vpp_input->din_x_start[0];
+	if (vpp_input->vpp_post_in_pad_en) {
+		vpp_post_blend->bld_out_padding_w = vpp_post_blend->bld_out_w +
+			vpp_input->vpp_post_in_pad_hsize;
+		vpp_post_blend->bld_out_padding_h = vpp_post_blend->bld_out_h +
+			vpp_input->vpp_post_in_pad_vsize;
+
+		if (vpp_input->right_move)
+			padding_h_bgn = vpp_input->vpp_post_in_pad_hsize;
+		if (vpp_input->down_move)
+			padding_v_bgn = vpp_input->vpp_post_in_pad_vsize;
+	} else {
+		vpp_post_blend->bld_out_padding_w = vpp_post_blend->bld_out_w;
+		vpp_post_blend->bld_out_padding_h = vpp_post_blend->bld_out_h;
+	}
+	vpp_post_blend->bld_din0_h_start = vpp_input->din_x_start[0] + padding_h_bgn;
 	vpp_post_blend->bld_din0_h_end = vpp_post_blend->bld_din0_h_start +
 		vpp_input->din_hsize[0] - 1;
-	vpp_post_blend->bld_din0_v_start = vpp_input->din_y_start[0];
+	vpp_post_blend->bld_din0_v_start = vpp_input->din_y_start[0] + padding_v_bgn;
 	vpp_post_blend->bld_din0_v_end = vpp_post_blend->bld_din0_v_start +
 		vpp_input->din_vsize[0] - 1;
 	vpp_post_blend->bld_din0_alpha = 0x100;
 	vpp_post_blend->bld_din0_premult_en	= 1;
 
-	vpp_post_blend->bld_din1_h_start = vpp_input->din_x_start[1];
+	vpp_post_blend->bld_din1_h_start = vpp_input->din_x_start[1] + padding_h_bgn;
 	vpp_post_blend->bld_din1_h_end = vpp_post_blend->bld_din1_h_start +
 		vpp_input->din_hsize[1] - 1;
-	vpp_post_blend->bld_din1_v_start = vpp_input->din_y_start[1];
+	vpp_post_blend->bld_din1_v_start = vpp_input->din_y_start[1] + padding_v_bgn;
 	vpp_post_blend->bld_din1_v_end = vpp_post_blend->bld_din1_v_start +
 		vpp_input->din_vsize[1] - 1;
 	vpp_post_blend->bld_din1_alpha = 0x100;
 	vpp_post_blend->bld_din1_premult_en	= 0;
 
-	vpp_post_blend->bld_din2_h_start = vpp_input->din_x_start[2];
+	vpp_post_blend->bld_din2_h_start = vpp_input->din_x_start[2] + padding_h_bgn;
 	vpp_post_blend->bld_din2_h_end = vpp_post_blend->bld_din2_h_start +
 		vpp_input->din_hsize[2] - 1;
-	vpp_post_blend->bld_din2_v_start = vpp_input->din_y_start[2];
+	vpp_post_blend->bld_din2_v_start = vpp_input->din_y_start[2] + padding_v_bgn;
 	vpp_post_blend->bld_din2_v_end = vpp_post_blend->bld_din2_v_start +
 		vpp_input->din_vsize[2] - 1;
 	vpp_post_blend->bld_din2_alpha = 0x100;
 	vpp_post_blend->bld_din2_premult_en	= 0;
 
-	vpp_post_blend->bld_din3_h_start = vpp_input->din_x_start[3];
+	vpp_post_blend->bld_din3_h_start = vpp_input->din_x_start[3] + padding_h_bgn;
 	vpp_post_blend->bld_din3_h_end = vpp_post_blend->bld_din3_h_start +
 		vpp_input->din_hsize[3] - 1;
-	vpp_post_blend->bld_din3_v_start = vpp_input->din_x_start[3];
+	vpp_post_blend->bld_din3_v_start = vpp_input->din_x_start[3] + padding_v_bgn;
 	vpp_post_blend->bld_din3_v_end = vpp_post_blend->bld_din3_v_start +
 		vpp_input->din_vsize[3] - 1;
 	vpp_post_blend->bld_din3_premult_en	= 0;
@@ -1051,9 +958,11 @@ static int vpp_blend_param_set(struct vpp_post_input_s *vpp_input,
 	vpp_post_blend->bld_din4_v_end = vpp_input->din_vsize[4] - 1;
 	vpp_post_blend->bld_din4_premult_en	= 0;
 	if (debug_flag_s5 & DEBUG_VPP_POST)
-		pr_info("vpp_post_blend:bld_out: %d, %d,bld_din0: %d, %d, %d, %d, bld_din1: %d, %d, %d, %d\n",
+		pr_info("vpp_post_blend:bld_out: %d, %d, after padding(%d, %d), bld_din0: %d, %d, %d, %d, bld_din1: %d, %d, %d, %d, bld_din3: %d, %d, %d, %d\n",
 			vpp_post_blend->bld_out_w,
 			vpp_post_blend->bld_out_h,
+			vpp_post_blend->bld_out_padding_w,
+			vpp_post_blend->bld_out_padding_h,
 			vpp_post_blend->bld_din0_h_start,
 			vpp_post_blend->bld_din0_h_end,
 			vpp_post_blend->bld_din0_v_start,
@@ -1061,7 +970,11 @@ static int vpp_blend_param_set(struct vpp_post_input_s *vpp_input,
 			vpp_post_blend->bld_din1_h_start,
 			vpp_post_blend->bld_din1_h_end,
 			vpp_post_blend->bld_din1_v_start,
-			vpp_post_blend->bld_din1_v_end);
+			vpp_post_blend->bld_din1_v_end,
+			vpp_post_blend->bld_din3_h_start,
+			vpp_post_blend->bld_din3_h_end,
+			vpp_post_blend->bld_din3_v_start,
+			vpp_post_blend->bld_din3_v_end);
 	return 0;
 }
 
@@ -1131,34 +1044,39 @@ static int vpp_post_padding_param_set(struct vpp0_post_s *vpp_post)
 
 	/* need check post blend out hsize */
 	bld_out_w = vpp_post->vpp_post_blend.bld_out_w;
-	switch (vpp_post->slice_num) {
-	case 4:
-		/* bld out need 32 aligned if 4 slices */
-		if (bld_out_w % 32) {
-			padding_en = 1;
-			pad_hsize = ALIGN(bld_out_w, 32);
-		} else {
-			padding_en = 0;
-			pad_hsize = bld_out_w;
-		}
-		break;
-	case 2:
-		/* bld out need 8 aligned if 2 slices */
-		if (bld_out_w % 8) {
-			padding_en = 1;
-			pad_hsize = ALIGN(bld_out_w, 8);
-		} else {
-			padding_en = 0;
-			pad_hsize = bld_out_w;
-		}
-		break;
-	case 1:
-		padding_en = 0;
+	if (cur_dev->vpp_in_padding_support) {
+		padding_en = 1;
 		pad_hsize = bld_out_w;
-		break;
-	default:
-		pr_err("invalid slice_num[%d] number\n", vpp_post->slice_num);
-		return -1;
+	} else {
+		switch (vpp_post->slice_num) {
+		case 4:
+			/* bld out need 32 aligned if 4 slices */
+			if (bld_out_w % 32) {
+				padding_en = 1;
+				pad_hsize = ALIGN(bld_out_w, 32);
+			} else {
+				padding_en = 0;
+				pad_hsize = bld_out_w;
+			}
+			break;
+		case 2:
+			/* bld out need 8 aligned if 2 slices */
+			if (bld_out_w % 8) {
+				padding_en = 1;
+				pad_hsize = ALIGN(bld_out_w, 8);
+			} else {
+				padding_en = 0;
+				pad_hsize = bld_out_w;
+			}
+			break;
+		case 1:
+			padding_en = 0;
+			pad_hsize = bld_out_w;
+			break;
+		default:
+			pr_err("invalid slice_num[%d] number\n", vpp_post->slice_num);
+			return -1;
+		}
 	}
 	vpp_post->vpp_post_pad.vpp_post_pad_en = padding_en;
 	vpp_post->vpp_post_pad.vpp_post_pad_hsize = pad_hsize;
@@ -1166,7 +1084,8 @@ static int vpp_post_padding_param_set(struct vpp0_post_s *vpp_post)
 	return 0;
 }
 
-static int vpp_post_proc_slice_param_set(struct vpp0_post_s *vpp_post)
+static int vpp_post_proc_slice_param_set(struct vpp_post_input_s *vpp_input,
+	struct vpp0_post_s *vpp_post)
 {
 	u32 frm_hsize, frm_vsize;
 	u32 slice_num, overlap_hsize;
@@ -1178,7 +1097,7 @@ static int vpp_post_proc_slice_param_set(struct vpp0_post_s *vpp_post)
 
 	vpp_post_proc_slice = &vpp_post->vpp_post_proc.vpp_post_proc_slice;
 	frm_hsize = vpp_post->vpp_post_pad.vpp_post_pad_hsize;
-	frm_vsize = vpp_post->vpp_post_blend.bld_out_h;
+	frm_vsize = vpp_post->vpp_post_blend.bld_out_padding_h;
 	slice_num = vpp_post->slice_num;
 	overlap_hsize = vpp_post->overlap_hsize;
 	switch (slice_num) {
@@ -1193,6 +1112,12 @@ static int vpp_post_proc_slice_param_set(struct vpp0_post_s *vpp_post)
 					(frm_hsize + POST_SLICE_NUM - 1) /
 					POST_SLICE_NUM + overlap_hsize * 2;
 			vpp_post_proc_slice->vsize[i] = frm_vsize;
+			if (debug_flag_s5 & DEBUG_VPP_POST)
+				pr_info("%s: slice(%d), slice hsize: %d, vsize:%d\n",
+					__func__,
+					i,
+					vpp_post_proc_slice->hsize[i],
+					vpp_post_proc_slice->vsize[i]);
 		}
 		break;
 	case 2:
@@ -1202,6 +1127,12 @@ static int vpp_post_proc_slice_param_set(struct vpp0_post_s *vpp_post)
 					(frm_hsize + 2 - 1) /
 					2 + overlap_hsize;
 				vpp_post_proc_slice->vsize[i] = frm_vsize;
+				if (debug_flag_s5 & DEBUG_VPP_POST)
+					pr_info("%s: slice(%d), slice hsize: %d, vsize:%d\n",
+						__func__,
+						i,
+						vpp_post_proc_slice->hsize[i],
+						vpp_post_proc_slice->vsize[i]);
 			} else {
 				vpp_post_proc_slice->hsize[i] = 0;
 				vpp_post_proc_slice->vsize[i] = 0;
@@ -1213,6 +1144,12 @@ static int vpp_post_proc_slice_param_set(struct vpp0_post_s *vpp_post)
 			if (i == 0) {
 				vpp_post_proc_slice->hsize[i] = frm_hsize;
 				vpp_post_proc_slice->vsize[i] = frm_vsize;
+				if (debug_flag_s5 & DEBUG_VPP_POST)
+					pr_info("%s: slice(%d), slice hsize: %d, vsize:%d\n",
+						__func__,
+						i,
+						vpp_post_proc_slice->hsize[i],
+						vpp_post_proc_slice->vsize[i]);
 			} else {
 				vpp_post_proc_slice->hsize[i] = 0;
 				vpp_post_proc_slice->vsize[i] = 0;
@@ -1294,12 +1231,13 @@ static int vpp_post_proc_hwin_param_set(struct vpp0_post_s *vpp_post)
 	return 0;
 }
 
-static int vpp_post_proc_param_set(struct vpp0_post_s *vpp_post)
+static int vpp_post_proc_param_set(struct vpp_post_input_s *vpp_input,
+	struct vpp0_post_s *vpp_post)
 {
 	struct vpp_post_proc_s *vpp_post_proc = NULL;
 
 	vpp_post_proc = &vpp_post->vpp_post_proc;
-	vpp_post_proc_slice_param_set(vpp_post);
+	vpp_post_proc_slice_param_set(vpp_input, vpp_post);
 	vpp_post_proc_hwin_param_set(vpp_post);
 	vpp_post_proc->align_fifo_size[0] = 2048;
 	vpp_post_proc->align_fifo_size[1] = 1536;
@@ -1330,10 +1268,10 @@ int vpp_post_param_set(struct vpp_post_input_s *vpp_input,
 	if (ret < 0)
 		return ret;
 
-	ret = vpp_post_proc_param_set(vpp_post);
+	ret = vpp_post_proc_param_set(vpp_input, vpp_post);
 	if (ret < 0)
 		return ret;
-	vpp_post_in_pad_param_set(vpp_input, vpp_post);
+	vpp_post_in_padcut_param_set(vpp_input, vpp_post);
 
 	return 0;
 }
@@ -1392,7 +1330,7 @@ static int check_vpp_info_changed(struct vpp_post_input_s *vpp_input)
 	int i = 0, changed = 0;
 
 	/* check input param */
-	for (i = 0; i < 3; i++) {
+	for (i = 0; i < 4; i++) {
 		if (vpp_input->din_hsize[i] != g_vpp_input_pre.din_hsize[i] ||
 			vpp_input->din_vsize[i] != g_vpp_input_pre.din_vsize[i] ||
 			vpp_input->din_x_start[i] != g_vpp_input_pre.din_x_start[i] ||
@@ -1434,7 +1372,9 @@ static int check_vpp_info_changed(struct vpp_post_input_s *vpp_input)
 			vpp_input->vpp_post_in_pad_hsize !=
 			g_vpp_input_pre.vpp_post_in_pad_hsize ||
 			vpp_input->vpp_post_in_pad_vsize !=
-			g_vpp_input_pre.vpp_post_in_pad_vsize) {
+			g_vpp_input_pre.vpp_post_in_pad_vsize ||
+			g_vpp_input_pre.down_move != vpp_input->down_move ||
+			g_vpp_input_pre.right_move != vpp_input->right_move) {
 			changed = 1;
 			if (debug_flag_s5 & DEBUG_VPP_POST)
 				pr_info("hit vpp_input->vpp_post_in_pad_en=%d, %d, %d, %d, %d, %d\n",
@@ -1463,9 +1403,11 @@ int update_vpp_input_info(const struct vinfo_s *info)
 	struct vpp_post_input_s vpp_input;
 	struct vd_proc_vd1_info_s *vd_proc_vd1_info;
 	struct vd_proc_vd2_info_s *vd_proc_vd2_info;
+	struct vpp_postblend_scope_s scope;
 
 	if (!info)
 		return 0;
+	memset(&scope, 0, sizeof(scope));
 	memset(&vpp_input, 0, sizeof(vpp_input));
 	vpp_input.slice_num = get_vpp_slice_num(info);
 	vpp_input.overlap_hsize = g_post_overlap_size;
@@ -1519,8 +1461,29 @@ int update_vpp_input_info(const struct vinfo_s *info)
 	vpp_input.din_vsize[2] = 0;
 
 	/* osd1 */
-	vpp_input.din_hsize[3] = 0;
-	vpp_input.din_vsize[3] = 0;
+	if (cur_dev->vpp_in_padding_support) {
+		if (get_vpp_din3_scope) {
+			get_vpp_din3_scope(&scope);
+			vpp_input.din_x_start[3] = scope.h_start;
+			vpp_input.din_y_start[3] = scope.v_start;
+			vpp_input.din_hsize[3] = scope.h_end - scope.h_start + 1;
+			vpp_input.din_vsize[3] = scope.v_end - scope.v_start + 1;
+		} else {
+			vpp_input.din_x_start[3] = 0;
+			vpp_input.din_y_start[3] = 0;
+			vpp_input.din_hsize[3] = vpp_input.bld_out_hsize;
+			vpp_input.din_vsize[3] = vpp_input.bld_out_vsize;
+		}
+		if (debug_flag_s5 & DEBUG_VPP1_POST)
+			pr_info("%s:%d, %d, %d, %d\n", __func__,
+				vpp_input.din_x_start[3],
+				vpp_input.din_y_start[3],
+				vpp_input.din_hsize[3],
+				vpp_input.din_vsize[3]);
+	} else {
+		vpp_input.din_hsize[3] = 0;
+		vpp_input.din_vsize[3] = 0;
+	}
 	/* osd2 */
 	vpp_input.din_hsize[4] = 0;
 	vpp_input.din_vsize[4] = 0;
@@ -1553,6 +1516,8 @@ int update_vpp_input_info(const struct vinfo_s *info)
 	vpp_input.vpp_post_in_pad_en = g_vpp_in_padding.vpp_post_in_pad_en;
 	vpp_input.vpp_post_in_pad_hsize = g_vpp_in_padding.vpp_post_in_pad_hsize;
 	vpp_input.vpp_post_in_pad_vsize = g_vpp_in_padding.vpp_post_in_pad_vsize;
+	vpp_input.down_move = g_vpp_in_padding.down_move;
+	vpp_input.right_move = g_vpp_in_padding.right_move;
 	update = check_vpp_info_changed(&vpp_input);
 	return update;
 }
@@ -1642,16 +1607,56 @@ int update_vpp1_input_info(const struct vinfo_s *info)
 
 void get_vpp_in_padding_axis(u32 *enable, int *h_padding, int *v_padding)
 {
-	*enable = g_vpp_in_padding.vpp_post_in_pad_en;
-	*h_padding = g_vpp_in_padding.vpp_post_in_pad_hsize;
-	*v_padding = g_vpp_in_padding.vpp_post_in_pad_vsize;
+	if (cur_dev->vpp_in_padding_support) {
+		*enable = g_vpp_in_padding.vpp_post_in_pad_en;
+		*h_padding = g_vpp_in_padding.h_padding;
+		*v_padding = g_vpp_in_padding.v_padding;
+	} else {
+		*enable = 0;
+		*h_padding = 0;
+		*v_padding = 0;
+	}
 }
 
 void set_vpp_in_padding_axis(u32 enable, int h_padding, int v_padding)
 {
-	g_vpp_in_padding.vpp_post_in_pad_en = enable;
-	g_vpp_in_padding.vpp_post_in_pad_hsize = h_padding;
-	g_vpp_in_padding.vpp_post_in_pad_vsize = v_padding;
+	if (cur_dev->vpp_in_padding_support) {
+		g_vpp_in_padding.vpp_post_in_pad_en = enable;
+		g_vpp_in_padding.h_padding = h_padding;
+		g_vpp_in_padding.v_padding = v_padding;
+
+		if (h_padding > 0) {
+			g_vpp_in_padding.right_move = 1;
+			g_vpp_in_padding.vpp_post_in_pad_hsize = roundup(h_padding, 2);
+		} else {
+			g_vpp_in_padding.right_move = 0;
+			g_vpp_in_padding.vpp_post_in_pad_hsize = -roundup(h_padding, 2);
+		}
+		if (v_padding > 0) {
+			g_vpp_in_padding.down_move = 1;
+			if (v_padding > 16) {
+				pr_err("%s: v_padding=%d > 16(max)\n",
+					__func__, v_padding);
+				v_padding = 16;
+			}
+			g_vpp_in_padding.vpp_post_in_pad_vsize = v_padding;
+		} else {
+			g_vpp_in_padding.down_move = 0;
+			if (v_padding < -16) {
+				pr_err("%s: v_padding=%d < -16(min)\n",
+					__func__, v_padding);
+				v_padding = -16;
+			}
+
+			g_vpp_in_padding.vpp_post_in_pad_vsize = -v_padding;
+		}
+		if (debug_flag_s5 & DEBUG_VPP_POST)
+			pr_info("right_move:%d, pad_hsize:%d, down_move:%d, pad_vsize:%d\n",
+				g_vpp_in_padding.right_move,
+				g_vpp_in_padding.vpp_post_in_pad_hsize,
+				g_vpp_in_padding.down_move,
+				g_vpp_in_padding.vpp_post_in_pad_vsize);
+	}
 }
 
 void vpp_clip_setting_s5(u8 vpp_index, struct clip_setting_s *setting)
@@ -1677,3 +1682,12 @@ void vpp_clip_setting_s5(u8 vpp_index, struct clip_setting_s *setting)
 		}
 	}
 }
+
+int register_vpp_postblend_info_func(void (*get_vpp_osd1_scope)
+	(struct vpp_postblend_scope_s *scope))
+{
+	get_vpp_din3_scope = get_vpp_osd1_scope;
+	return 0;
+}
+EXPORT_SYMBOL(register_vpp_postblend_info_func);
+

@@ -424,6 +424,13 @@ struct video_input_info {
 	u32 crop_bottom;
 };
 
+struct vpp_postblend_scope_s {
+	u32 h_start;
+	u32 h_end;
+	u32 v_start;
+	u32 v_end;
+};
+
 void set_video_mute(bool on);
 int get_video_mute(void);
 void set_output_mute(bool on);
@@ -540,4 +547,6 @@ u32 get_slice_num(u32 layer_id);
 void get_vysnc_pts_in_scale(u32 *vsync_inc_scale,
 	u32 *vsync_inc_scale_base);
 int register_mediasync_funcs(struct mediasync_ptr *func_ptr, char *version);
+int register_vpp_postblend_info_func(void (*get_vpp_osd1_scope)
+	(struct vpp_postblend_scope_s *scope));
 #endif /* VIDEO_H */

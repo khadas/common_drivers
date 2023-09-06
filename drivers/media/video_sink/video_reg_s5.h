@@ -318,11 +318,10 @@ struct vpp_post_misc_reg_s {
 	u32 vpp_clip_misc1;
 };
 
-struct vpp_post_in_pad_reg_s {
-	u32 vpp_post_pad_ctrl;
-	u32 vpp_post_pad_hsize;
-	u32 vpp_post_pad_vsize;
-	u32 vpp_post_dummy_data;
+struct vpp_post_in_padcut_reg_s {
+	u32 vpp_post_padcut_ctrl;
+	u32 vpp_post_padcut_hsize;
+	u32 vpp_post_padcut_vsize;
 	u32 vpp_post_win_cut_ctrl;
 };
 
@@ -332,7 +331,7 @@ extern struct vpp_post_blend_reg_s vpp_post_blend_reg_t3x;
 extern struct vpp_post_misc_reg_s vpp_post_misc_reg_s5;
 extern struct vpp_post_misc_reg_s vpp_post_misc_reg_t3x;
 extern struct vpp1_post_blend_reg_s vpp1_post_blend_reg_t3x;
-extern struct vpp_post_in_pad_reg_s vpp_post_in_pad_regs[5];
+extern struct vpp_post_in_padcut_reg_s vpp_post_in_padcut_regs;
 
 extern struct vd_proc_reg_s vd_proc_reg;
 extern struct vd_pps_reg_s pps_reg_s5_array[MAX_VD_LAYER_S5 + 1];

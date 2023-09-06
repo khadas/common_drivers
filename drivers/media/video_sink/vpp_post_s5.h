@@ -19,6 +19,7 @@
 #ifndef VPP_POST_S5_HH
 #define VPP_POST_S5_HH
 #include "video_reg_s5.h"
+#include <linux/amlogic/media/video_sink/video.h>
 
 extern u32 g_vpp1_bypass_slice1;
 /* VPP POST input src: 3VD, 2 OSD */
@@ -32,6 +33,8 @@ struct vpp_post_blend_s {
 	u32 bld_out_en;
 	u32 bld_out_w;
 	u32 bld_out_h;
+	u32 bld_out_padding_w;
+	u32 bld_out_padding_h;
 	u32 bld_out_premult;
 
 	u32 bld_src1_sel;	  //1:din0	2:din1 3:din2 4:din3 5:din4 else :close
@@ -140,27 +143,17 @@ struct vpp_post_hwin_s {
 	u32 vpp_post_dout_vsize;
 };
 
-struct vpp_post_in_pad_s {
-	u32 pad_en;
-	/* padding out size */
-	u32 pad_hsize;
-	u32 pad_vsize;
-	u32 pad_h_bgn;
-	u32 pad_h_end;
-	u32 pad_v_bgn;
-	u32 pad_v_end;
-	u32 pad_dummy;
-	/* 1: padding with last colum */
-	/* 0: padding with vpp_post_pad_dummy val */
-	u32 pad_rpt_lcol;
-};
-
-struct vpp_post_in_wincut_s {
-	u32 win_en;
-	u32 win_in_hsize;
-	u32 win_in_vsize;
-	u32 win_out_hsize;
-	u32 win_out_vsize;
+/* v cut module and h cut module is independ */
+struct vpp_post_in_pad_cut_s {
+	u32 cut_en;
+	u32 h_cut_en;
+	u32 v_cut_en;
+	u32 cut_in_hsize;
+	u32 cut_in_vsize;
+	u32 cut_h_bgn;
+	u32 cut_h_end;
+	u32 cut_v_bgn;
+	u32 cut_v_end;
 };
 
 struct vpp_post_proc_slice_s {
@@ -189,11 +182,8 @@ struct vpp_post_proc_s {
 struct vpp0_post_s {
 	u32 slice_num;
 	u32 overlap_hsize;
-	/* pad before to vpp post blend */
-	struct vpp_post_in_pad_s vd_pad[VPP_POST_VD_NUM];
-	struct vpp_post_in_pad_s osd_pad[VPP_POST_OSD_NUM];
-	struct vpp_post_in_wincut_s vd_cut[VPP_POST_VD_NUM];
-	struct vpp_post_in_wincut_s osd_cut[VPP_POST_OSD_NUM];
+	/* padding is include vpp post blendn, cut after to vpp post blend */
+	struct vpp_post_in_pad_cut_s vpp_pad_cut;
 	struct vd1_hwin_s vd1_hwin;
 	struct vpp_post_blend_s vpp_post_blend;
 	struct vpp_post_pad_s vpp_post_pad;
@@ -228,6 +218,8 @@ struct vpp_post_input_s {
 	/* > 0 right padding, < 0 left padding */
 	int vpp_post_in_pad_hsize;
 	int vpp_post_in_pad_vsize;
+	bool down_move;
+	bool right_move;
 	/* means vd1 4s4p padding */
 	u32 vd1_padding_en;
 	u32 vd1_size_before_padding;
@@ -238,12 +230,16 @@ struct vpp_post_input_s {
 struct vpp_post_in_padding_s {
 	u32 vpp_post_in_pad_en;
 	/* > 0 right padding, < 0 left padding */
-	int vpp_post_in_pad_hsize;
-	int vpp_post_in_pad_vsize;
+	int h_padding;
+	int v_padding;
+	u32 vpp_post_in_pad_hsize;
+	u32 vpp_post_in_pad_vsize;
+	bool down_move;
+	bool right_move;
 };
 
 struct vpp_post_reg_s {
-	struct vpp_post_in_pad_reg_s vpp_post_in_pad_reg[5];
+	struct vpp_post_in_padcut_reg_s vpp_post_in_padcut_reg;
 	struct vpp_post_blend_reg_s vpp_post_blend_reg;
 	struct vpp_post_misc_reg_s vpp_post_misc_reg;
 	struct vpp1_post_blend_reg_s vpp1_post_blend_reg;

@@ -30,7 +30,7 @@ ifeq ($(FW_SRC_OBJ),)
 endif
 
 iv009_isp_iq-objs += $(FW_SRC_OBJ)
-$(warning iv009_isp_iq-objs=$(iv009_isp_iq-objs))
+#$(warning iv009_isp_iq-objs=$(iv009_isp_iq-objs))
 LOCAL_INCLUDES := -I$(M_PATH)/app -I$(M_PATH)/inc -I$(M_PATH)/app/control \
                 -I$(M_PATH)/inc/api -I$(M_PATH)/inc/isp -I$(M_PATH)/inc/sys \
                 -I$(M_PATH)/src/platform -I$(M_PATH)/src/fw \

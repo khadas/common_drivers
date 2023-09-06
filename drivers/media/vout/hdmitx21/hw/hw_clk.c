@@ -634,6 +634,9 @@ static struct hw_enc_clk_val_group setting_enc_clk_val_24[] = {
 	{{HDMIV_2400x1200p90hz,
 	  HDMI_VIC_END},
 		5600000, 2, 1, 1, VID_PLL_DIV_5, 2, 1, 1, 1, 1},
+	{{HDMI_1_640x480p60_4x3,
+	  HDMI_VIC_END},
+		4028000, 4, 4, 2, VID_PLL_DIV_5, 1, 1, 1, 1, 1},
 };
 
 /* For colordepth 10bits */
@@ -684,6 +687,9 @@ static struct hw_enc_clk_val_group setting_enc_clk_val_30[] = {
 	  HDMI_101_4096x2160p50_256x135,
 	  HDMI_VIC_END},
 		3712500, 1, 1, 2, VID_PLL_DIV_6p25, 1, 1, 1, 1, 1},
+	{{HDMI_1_640x480p60_4x3,
+	  HDMI_VIC_END},
+		5035000, 4, 4, 2, VID_PLL_DIV_6p25, 1, 1, 1, 1, 1},
 	{{HDMI_VIC_FAKE,
 	  HDMI_VIC_END},
 		3450000, 1, 2, 2, VID_PLL_DIV_5, 1, 1, 1, 1, 1},
@@ -737,6 +743,9 @@ static struct hw_enc_clk_val_group setting_enc_clk_val_36[] = {
 	  HDMI_96_3840x2160p50_16x9,
 	  HDMI_VIC_END},
 		4455000, 1, 1, 2, VID_PLL_DIV_7p5, 1, 1, 1, 1, 1},
+	{{HDMI_1_640x480p60_4x3,
+	  HDMI_VIC_END},
+		3021000, 2, 4, 2, VID_PLL_DIV_7p5, 1, 1, 1, 1, 1},
 	{{HDMI_VIC_FAKE,
 	  HDMI_VIC_END},
 		3450000, 1, 2, 2, VID_PLL_DIV_5, 1, 1, 1, 1, 1},

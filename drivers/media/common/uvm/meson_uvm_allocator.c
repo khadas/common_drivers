@@ -128,11 +128,10 @@ size_t mua_calc_real_dmabuf_size(struct mua_buffer *buffer)
 
 	if (buffer)
 		size = byte_stride * height * 3 / 2;
-	if (realloc_size > 0) {
+	if (realloc_size > 0)
 		size = realloc_size;
-		MUA_PRINTK(MUA_INFO, "%s. align=%d height=%d byte_stride=%d in_size:%d\n",
-			__func__, align, height, byte_stride, realloc_size);
-	}
+	MUA_PRINTK(MUA_INFO, "%s. align=%d byte_stride=%d height=%d size:%zu\n",
+			__func__, align, byte_stride, height, size);
 	return size;
 }
 
@@ -296,7 +295,7 @@ static int mua_process_gpu_realloc(struct dma_buf *dmabuf,
 
 	//start to filldata
 	if (skip_fill_buf) {
-		size_t buf_size = new_size * 2 / 3;
+		size_t buf_size = mua_calc_real_dmabuf_size(buffer) * 2 / 3;
 
 		MUA_PRINTK(MUA_INFO, "%s buf size=%zu\n", __func__, buf_size);
 		memset(vaddr, 0x15, buf_size);

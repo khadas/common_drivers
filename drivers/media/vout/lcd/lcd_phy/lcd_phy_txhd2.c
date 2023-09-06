@@ -112,6 +112,9 @@ static void lcd_lvds_phy_set(struct aml_lcd_drv_s *pdrv, int status)
 	struct phy_config_s *phy = &pdrv->config.phy_cfg;
 	unsigned int cntl14 = 0;
 
+	if (status == LCD_PHY_LOCK_LANE)
+		return;
+
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
 		LCDPR("%s: %d\n", __func__, status);
 
@@ -193,6 +196,9 @@ static void lcd_mlvds_phy_set(struct aml_lcd_drv_s *pdrv, int status)
 	struct phy_config_s *phy = &pdrv->config.phy_cfg;
 	unsigned int cntl14 = 0;
 
+	if (status == LCD_PHY_LOCK_LANE)
+		return;
+
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
 		LCDPR("%s: %d\n", __func__, status);
 
@@ -237,6 +243,9 @@ static void lcd_phy_cntl_mipi_set(struct aml_lcd_drv_s *pdrv, struct phy_config_
 static void lcd_mipi_phy_set(struct aml_lcd_drv_s *pdrv, int status)
 {
 	struct phy_config_s *phy = &pdrv->config.phy_cfg;
+
+	if (status == LCD_PHY_LOCK_LANE)
+		return;
 
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
 		LCDPR("%s: %d\n", __func__, status);

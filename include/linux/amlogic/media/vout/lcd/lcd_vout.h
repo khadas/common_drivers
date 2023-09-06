@@ -105,7 +105,7 @@ enum lcd_chip_e {
 	LCD_CHIP_C3,	/* 12 */
 	LCD_CHIP_T5M,	/* 13 */
 	LCD_CHIP_T3X,	/* 14 */
-	LCD_CHIP_TXHD2,	/* 14 */
+	LCD_CHIP_TXHD2,	/* 15 */
 	LCD_CHIP_MAX,
 };
 
@@ -162,6 +162,9 @@ struct lcd_timing_s {
 	unsigned int pll_ctrl;  /* pll settings */
 	unsigned int div_ctrl;  /* divider settings */
 	unsigned int clk_ctrl;  /* clock settings */
+	unsigned int pll_ctrl2;  /* pll settings */
+	unsigned int div_ctrl2;  /* divider settings */
+	unsigned int clk_ctrl2; /* clock2 settings */
 	unsigned int ss_level;
 	unsigned int ss_freq;
 	unsigned int ss_mode;
@@ -681,6 +684,7 @@ struct aml_lcd_drv_s {
 	unsigned char projection_en;
 	unsigned char vsync_none_timer_flag;
 	signed char lcd_cma_ready;
+	unsigned char clk_conf_num;
 	char vsync_isr_name[3][15];
 	char vbyone_isr_name[10];
 	char output_name[30];

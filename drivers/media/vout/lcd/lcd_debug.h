@@ -38,6 +38,7 @@ struct lcd_debug_info_s {
 	unsigned int *reg_pll_table;
 	unsigned int *reg_clk_table;
 	unsigned int *reg_clk_hiu_table;
+	unsigned int *reg_clk_combo_dphy_table;
 	unsigned int *reg_encl_table;
 	unsigned int *reg_pinmux_table;
 
@@ -184,6 +185,21 @@ static unsigned int lcd_reg_dump_clk_t7_2[] = {
 	LCD_DEBUG_REG_END
 };
 
+static unsigned int lcd_reg_dump_clk_combo_dphy_t7_0[] = {
+	COMBO_DPHY_VID_PLL0_DIV,
+	LCD_DEBUG_REG_END
+};
+
+static unsigned int lcd_reg_dump_clk_combo_dphy_t7_1[] = {
+	COMBO_DPHY_VID_PLL1_DIV,
+	LCD_DEBUG_REG_END
+};
+
+static unsigned int lcd_reg_dump_clk_combo_dphy_t7_2[] = {
+	COMBO_DPHY_VID_PLL2_DIV,
+	LCD_DEBUG_REG_END
+};
+
 static unsigned int lcd_reg_dump_pll_t3_0[] = {
 	ANACTRL_TCON_PLL0_CNTL0,
 	ANACTRL_TCON_PLL0_CNTL1,
@@ -213,6 +229,28 @@ static unsigned int lcd_reg_dump_clk_c3[] = {
 	LCD_DEBUG_REG_END
 };
 
+static unsigned int lcd_reg_dump_pll_t3x_independence[] = {
+	ANACTRL_TCON_PLL0_CNTL0,
+	ANACTRL_TCON_PLL0_CNTL1,
+	ANACTRL_TCON_PLL0_CNTL2,
+	ANACTRL_TCON_PLL0_CNTL3,
+	ANACTRL_TCON_PLL0_CNTL4,
+	ANACTRL_TCON_PLL0_STS,
+	ANACTRL_TCON_PLL1_CNTL0,
+	ANACTRL_TCON_PLL1_CNTL1,
+	ANACTRL_TCON_PLL1_CNTL2,
+	ANACTRL_TCON_PLL1_CNTL3,
+	ANACTRL_TCON_PLL1_CNTL4,
+	ANACTRL_TCON_PLL1_STS,
+	LCD_DEBUG_REG_END
+};
+
+static unsigned int lcd_reg_dump_clk_combo_dphy_t3x_independence[] = {
+	COMBO_DPHY_VID_PLL0_DIV,
+	COMBO_DPHY_VID_PLL1_DIV,
+	LCD_DEBUG_REG_END
+};
+
 static unsigned int lcd_reg_dump_pll_txhd2[] = {
 	HHI_TCON_PLL_CNTL0,
 	HHI_TCON_PLL_CNTL1,
@@ -230,6 +268,11 @@ static unsigned int lcd_reg_dump_clk_txhd2[] = {
 	HHI_VID_CLK_CNTL2,
 	HHI_TCON_CLK_CNTL,
 	HHI_MIPIDSI_PHY_CLK_CNTL,
+	LCD_DEBUG_REG_END
+};
+
+static unsigned int lcd_reg_dump_clk_combo_dphy_txhd2[] = {
+	COMBO_DPHY_VID_PLL0_DIV_TXHD2,
 	LCD_DEBUG_REG_END
 };
 

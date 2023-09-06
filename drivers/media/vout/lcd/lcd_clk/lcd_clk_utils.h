@@ -30,8 +30,7 @@ int lcd_pll_get_frac(struct lcd_clk_config_s *cconf, unsigned long long pll_fvco
 int check_pll_3od(struct lcd_clk_config_s *cconf, unsigned long long pll_fout);
 int check_pll_1od(struct lcd_clk_config_s *cconf, unsigned long long pll_fout);
 int check_vco(struct lcd_clk_config_s *cconf, unsigned long long pll_fvco);
-int check_od(struct lcd_clk_config_s *cconf, unsigned long long pll_fout);
-int edp_div_check(struct lcd_clk_config_s *cconf, unsigned long long bit_rate);
+int check_3od(struct lcd_clk_config_s *cconf, unsigned long long pll_fout);
 
 /* ****************************************************
  * lcd clk chip default func
@@ -39,13 +38,11 @@ int edp_div_check(struct lcd_clk_config_s *cconf, unsigned long long bit_rate);
  */
 int lcd_clk_config_print_dft(struct aml_lcd_drv_s *pdrv, char *buf, int offset);
 void lcd_pll_frac_generate_dft(struct aml_lcd_drv_s *pdrv);
-void lcd_clk_disable_dft(struct aml_lcd_drv_s *pdrv);
 void lcd_clk_gate_switch_dft(struct aml_lcd_drv_s *pdrv, int status);
 void lcd_clk_config_init_print_dft(struct aml_lcd_drv_s *pdrv);
 void lcd_clk_generate_dft(struct aml_lcd_drv_s *pdrv);
 void lcd_clk_gate_optional_switch_dft(struct aml_lcd_drv_s *pdrv, int status);
 void lcd_set_vid_pll_div_dft(struct aml_lcd_drv_s *pdrv);
-void lcd_set_vid_pll_div_txhd2(struct aml_lcd_drv_s *pdrv);
 
 /* ****************************************************
  * lcd clk chip init help func

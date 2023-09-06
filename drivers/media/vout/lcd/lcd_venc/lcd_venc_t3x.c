@@ -551,7 +551,9 @@ int lcd_venc_op_init_t3x(struct aml_lcd_drv_s *pdrv, struct lcd_venc_op_s *venc_
 	if (!venc_op)
 		return -1;
 
-	LCDPR("%s %d\n", __func__, __LINE__);
+	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+		LCDPR("%s %d\n", __func__, __LINE__);
+
 	venc_op->wait_vsync = lcd_venc_wait_vsync;
 	venc_op->get_max_lcnt = lcd_venc_get_max_lint_cnt;
 	venc_op->gamma_test_en = lcd_venc_gamma_debug_test_en;

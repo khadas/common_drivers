@@ -39,11 +39,11 @@
 #ifdef CONFIG_AMLOGIC_LCD_EXTERN
 #include <linux/amlogic/media/vout/lcd/lcd_extern.h>
 #endif
-#include "lcd_reg.h"
-#include "lcd_common.h"
 #ifdef CONFIG_AMLOGIC_VPU
 #include <linux/amlogic/media/vpu/vpu.h>
 #endif
+#include "lcd_reg.h"
+#include "lcd_common.h"
 
 #include <linux/amlogic/gki_module.h>
 
@@ -1512,7 +1512,7 @@ static int lcd_global_init_once(struct platform_device *pdev)
 
 	mutex_init(&lcd_vout_mutex);
 	mutex_init(&lcd_power_mutex);
-	lcd_clk_config_init();
+	lcd_clk_init();
 
 	lcd_notifier_init();
 #ifdef CONFIG_AMLOGIC_LCD_EXTERN

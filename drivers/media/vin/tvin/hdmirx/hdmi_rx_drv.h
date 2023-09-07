@@ -51,7 +51,8 @@
 //2023.8.18 fix no sound when no aif pkt
 //2023.8.25 fix t3x port4 get spd info err
 //2023.8.29 hdcp cts
-#define RX_VER0 "ver.2023/08/18"
+//2023 9.8 t3x reb bring up
+#define RX_VER0 "ver.2023/09/08"
 
 /*print type*/
 #define COR1_LOG	0x10000
@@ -391,6 +392,7 @@ struct rx_aml_phy {
 	int vga_dbg_delay;
 	u8 eq_fix_val;
 	int cdr_fr_en;
+	int vga_tune;
 	u32 force_sqo;
 	/* add for t5 */
 	int os_rate;

@@ -853,6 +853,23 @@ void hdmirx_wr_bits_cor(u32 addr, u32 mask, u8 value, u8 port)
 	hdmirx_wr_cor(addr, rx_set_bits(hdmirx_rd_cor(addr, port), mask, value), port);
 }
 
+bool hdmirx_flt_update_cleared_wait(u32 addr, u8 port)
+{
+	unsigned long timeout = jiffies + 8 * HZ;
+
+	if (log_level & FRL_LOG)
+		rx_pr("before flt cor = 0x%x\n", hdmirx_rd_cor(addr, port));
+	while (time_before(jiffies, timeout)) {
+		if (hdmirx_rd_bits_cor(addr, _BIT(5), port) == 0)
+			break;
+	}
+	if (log_level & FRL_LOG)
+		rx_pr("after flt cor = 0x%x\n", hdmirx_rd_cor(addr, port));
+	if (hdmirx_rd_bits_cor(addr, _BIT(5), port) == 0)
+		return true;
+	return false;
+}
+
 bool hdmirx_poll_cor(u32 addr, u8 exp_data, u8 mask, u32 max_try, u8 port)
 {
 	u8 rd_data;
@@ -2644,6 +2661,8 @@ bool rx_clr_tmds_valid(u8 port)
 {
 	bool ret = false;
 
+	if (rx_info.chip_id == CHIP_ID_T3X)
+		return ret;
 	if (rx[port].state >= FSM_SIG_STABLE) {
 		rx[port].state = FSM_WAIT_CLK_STABLE;
 		if (vpp_mute_enable) {

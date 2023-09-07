@@ -159,6 +159,7 @@ extern int rlevel_t3x_21;
 extern int rterm_trim_val_t3x_21;
 extern int rterm_trim_flag_t3x_21;
 extern int phy_term_lel_t3x_21;
+extern int tuning_cnt;
 
 /*--------------------------function declare------------------*/
 /* T3X */
@@ -210,6 +211,9 @@ void aml_phy_init_t3x_21(u8 port);
 void rx_lts_3_err_detect(u8 port);
 void RX_LTS_P_FRL_START(u8 port);
 bool s_tmds_transmission_detected(u8 port);
+bool hdmirx_flt_update_cleared_wait(u32 addr, u8 port);
+void hdmirx_vga_gain_tuning(u8 port);
+void rx_set_term_value_t3x(unsigned char port, bool value);
 
 //void reset_pcs(void);
 

@@ -51,6 +51,7 @@ u32 ext_cnt = 2000;
 int tr_delay0 = 10;
 int tr_delay1 = 10;
 int frate_cnt = 100;
+int tuning_cnt = 20;
 int fpll_sel = 1;
 /* bit'0 clk_ready, bit'1 overlap */
 int fpll_chk_lvl = 0x1;
@@ -2021,6 +2022,8 @@ void rx_21_eq_cfg(int f_rate, u8 port)
 	rx_21_eq_retry(port);
 	if (rx_info.aml_phy_21.dfe_en)
 		rx_21_dfe_en(port);
+	if (rx_info.aml_phy_21.vga_tune && rx[port].var.frl_rate == FRL_12G_4LANE)
+		hdmirx_vga_gain_tuning(port);
 	hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX21PHY_DCHD_CDR, CDR_LKDET_EN, 0x1, port);
 	hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX21PHY_DCHD_CDR, MUX_EYE_EN, 0x0, port);
 	hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX21PHY_DCHD_EQ, MUX_BLOCK_SEL, 0x2, port);
@@ -3080,6 +3083,7 @@ void comb_val_21(char *type, unsigned int val_0, unsigned int val_1,
 void dump_aml_phy_sts_t3x_21(u8 port)
 {
 	u32 data32;
+	u32 vga_ch0, vga_ch1, vga_ch2, vga_ch3;
 	u32 ch0_eq_boost1, ch1_eq_boost1, ch2_eq_boost1, ch3_eq_boost1;
 	u32 ch0_eq_err, ch1_eq_err, ch2_eq_err, ch3_eq_err;
 	u32 dfe0_tap0, dfe1_tap0, dfe2_tap0, dfe3_tap0;
@@ -3095,7 +3099,6 @@ void dump_aml_phy_sts_t3x_21(u8 port)
 	u32 cdr0_lock, cdr1_lock, cdr2_lock, cdr3_lock;
 	u32 cdr0_int, cdr1_int, cdr2_int, cdr3_int;
 	u32 cdr0_code, cdr1_code, cdr2_code, cdr3_code;
-
 	bool pll_lock, lan0_lock, lan1_lock, lan2_lock, lan3_lock;
 	bool squelch;
 
@@ -3121,6 +3124,14 @@ void dump_aml_phy_sts_t3x_21(u8 port)
 	ch3_eq_boost1 = (data32 >> 24) & 0x1f;
 	ch3_eq_err = (data32 >> 29) & 0x3;
 
+	vga_ch0 = graytodecimal_t3x(hdmirx_rd_bits_amlphy_t3x(T3X_HDMIRX21PHY_DCHA_AFE,
+		MSK(4, 0), port));
+	vga_ch1 = graytodecimal_t3x(hdmirx_rd_bits_amlphy_t3x(T3X_HDMIRX21PHY_DCHA_AFE,
+		MSK(4, 4), port));
+	vga_ch2 = graytodecimal_t3x(hdmirx_rd_bits_amlphy_t3x(T3X_HDMIRX21PHY_DCHA_AFE,
+		MSK(4, 8), port));
+	vga_ch3 = graytodecimal_t3x(hdmirx_rd_bits_amlphy_t3x(T3X_HDMIRX21PHY_DCHA_AFE,
+		MSK(4, 12), port));
 	/* dfe tap0 sts */
 	hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX21PHY_DCHD_CDR, MUX_EYE_EN, 0x0, port);
 	hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX21PHY_DCHD_EQ, MUX_BLOCK_SEL, 0x0, port);
@@ -3323,6 +3334,9 @@ void dump_aml_phy_sts_t3x_21(u8 port)
 	else if (rx[port].var.frl_rate == FRL_12G_4LANE)
 		rx_pr("data_rate=FRL_12G_4LANE\n");
 	rx_pr("pll_lock=%d, squelch=%d\n", pll_lock, squelch);
+
+	rx_pr("vga_gain =[%d,%d,%d,%d]\n",
+	      vga_ch0, vga_ch1, vga_ch2, vga_ch3);
 	rx_pr("eq_boost1=[%d,%d,%d,%d]\n",
 	      ch0_eq_boost1, ch1_eq_boost1, ch2_eq_boost1, ch3_eq_boost1);
 	rx_pr("eq_err=[%d,%d,%d,%d]\n",
@@ -4736,10 +4750,10 @@ void hdmirx_frl_config(u8 port)
 	/* new for t3x */
 	data32  = 0;
 	data32 |= (0 << 31); //[   31] update_man
-	data32 |= (1 << 30); //[30] load reverse
-	data32 |= (7 << 27); //[29:27] delay cycle of update
-	data32 |= (1 << 13); //[26:13] update wide
-	data32 |= (1500 << 0); //[12:0]  update hold width
+	data32 |= (0 << 30); //[30] load reverse
+	data32 |= (2 << 27); //[29:27] delay cycle of update
+	data32 |= (50 << 13); //[26:13] update wide
+	data32 |= (200 << 0); //[12:0]  update hold width
 	hdmirx_wr_top(TOP_TCR_CNTL, data32, port);
 
 	hdmirx_wr_cor(DPLL_CFG6_DPLL_IVCRX, 0x0, port);
@@ -5548,8 +5562,8 @@ void frate_monitor1(void)
 					hdmirx_wr_cor(RX_H21_CTRL_PWD_IVCRX, 0x0, port);
 				}
 			}
-			if (rx[port].state > FSM_FRL_TRN)
-				rx[port].state = FSM_FRL_TRN;
+			if (rx[port].state > FSM_FRL_FLT_READY)
+				rx[port].state = FSM_FRL_FLT_READY;
 		}
 		if (log_level & FRL_LOG)
 			rx_pr("port-%d frate change to %d\n", port, rx[port].var.frl_rate);
@@ -5640,5 +5654,167 @@ void rx_dig_clk_en_t3x(bool en)
 	hdmirx_wr_bits_clk_ctl(RX_CLK_CTRL3, METER_CLK_EN, en);
 	/* added for t3x emp */
 	hdmirx_wr_bits_clk_ctl(RX_CLK_CTRL4, AXI_CLK_EN, en);
+}
+
+void hdmirx_vga_gain_tuning(u8 port)
+{
+	//T3X_HDMIRX21PHY_DCHA_AFE
+	u32 data32;
+	u32 dfe0_tap0, dfe1_tap0, dfe2_tap0, dfe3_tap0;
+	u32 tap0_0_def, tap0_1_def, tap0_2_def, tap0_3_def;
+	u32 tap0_0_dec, tap0_1_dec, tap0_2_dec, tap0_3_dec;
+	bool tap0_0_done, tap0_1_done, tap0_2_done, tap0_3_done;
+	static int tap0_0_cnt, tap0_1_cnt, tap0_2_cnt, tap0_3_cnt;
+	//int i;
+	unsigned long timeout = jiffies + HZ / 100;
+	//bool b_time_out;
+
+	hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX21PHY_DCHD_CDR, MUX_EYE_EN, 0x0, port);
+	hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX21PHY_DCHD_EQ, MUX_BLOCK_SEL, 0x0, port);
+	hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX21PHY_DCHD_CDR, MUX_DFE_OFST_EYE, 0x0, port);
+	usleep_range(100, 110);
+	data32 = hdmirx_rd_amlphy_t3x(T3X_HDMIRX21PHY_DCH_STAT, port);
+	dfe0_tap0 = data32 & 0x7f;
+	dfe1_tap0 = (data32 >> 8) & 0x7f;
+	dfe2_tap0 = (data32 >> 16) & 0x7f;
+	dfe3_tap0 = (data32 >> 24) & 0x7f;
+	tap0_0_done = 0;
+	tap0_1_done = 0;
+	tap0_2_done = 0;
+	tap0_3_done = 0;
+	while (time_before(jiffies, timeout)) {
+		if (!tap0_0_done || !tap0_1_done || !tap0_2_done || !tap0_3_done) {
+			hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX21PHY_DCHD_CDR,
+				MUX_EYE_EN, 0x0, port);
+			hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX21PHY_DCHD_EQ,
+				MUX_BLOCK_SEL, 0x0, port);
+			hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX21PHY_DCHD_CDR,
+				MUX_DFE_OFST_EYE, 0x0, port);
+			usleep_range(100, 110);
+			data32 = hdmirx_rd_amlphy_t3x(T3X_HDMIRX21PHY_DCH_STAT, port);
+			dfe0_tap0 = data32 & 0x7f;
+			dfe1_tap0 = (data32 >> 8) & 0x7f;
+			dfe2_tap0 = (data32 >> 16) & 0x7f;
+			dfe3_tap0 = (data32 >> 24) & 0x7f;
+
+			tap0_0_def = hdmirx_rd_bits_amlphy_t3x(T3X_HDMIRX21PHY_DCHA_AFE,
+				MSK(4, 0), port);
+			if (dfe0_tap0 < 0x23 && !tap0_0_done) {
+				tap0_0_dec = graytodecimal_t3x(tap0_0_def);
+				tap0_0_dec += 1;
+				hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX21PHY_DCHA_AFE,
+					MSK(4, 0), decimaltogray_t3x(tap0_0_dec), port);
+				if (tap0_0_dec == 15)
+					tap0_0_done = 1;
+			} else if (dfe0_tap0 > 0x28 && !tap0_0_done) {
+				tap0_0_dec = graytodecimal_t3x(tap0_0_def);
+				tap0_0_dec -= 1;
+				hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX21PHY_DCHA_AFE,
+					MSK(4, 0), decimaltogray_t3x(tap0_0_dec), port);
+				dfe0_tap0 = data32 & 0x7f;
+				if (tap0_0_dec == 0)
+					tap0_0_done = 1;
+			} else {
+				tap0_0_cnt++;
+				if (tap0_0_cnt == 3) {
+					tap0_0_done = 1;
+					tap0_0_cnt = 0;
+				}
+			}
+			tap0_1_def = hdmirx_rd_bits_amlphy_t3x(T3X_HDMIRX21PHY_DCHA_AFE,
+			MSK(4, 4), port);
+			if (dfe1_tap0 < 0x23 && !tap0_1_done) {
+				tap0_1_dec = graytodecimal_t3x(tap0_1_def);
+				tap0_1_dec += 1;
+				hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX21PHY_DCHA_AFE, MSK(4, 4),
+				    decimaltogray_t3x(tap0_1_dec), port);
+				if (tap0_1_dec == 15)
+					tap0_1_done = 1;
+			} else if (dfe1_tap0 > 0x28 && !tap0_1_done) {
+				tap0_1_dec = graytodecimal_t3x(tap0_1_def);
+				tap0_1_dec -= 1;
+				hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX21PHY_DCHA_AFE, MSK(4, 4),
+				    decimaltogray_t3x(tap0_1_dec), port);
+				if (tap0_1_dec == 0)
+					tap0_1_done = 1;
+			} else {
+				tap0_1_cnt++;
+				if (tap0_1_cnt == 3) {
+					tap0_1_done = 1;
+					tap0_1_cnt = 0;
+				}
+			}
+			tap0_2_def = hdmirx_rd_bits_amlphy_t3x(T3X_HDMIRX21PHY_DCHA_AFE,
+			MSK(4, 8), port);
+			if (dfe2_tap0 < 0x23 && !tap0_2_done) {
+				tap0_2_dec = graytodecimal_t3x(tap0_2_def);
+				tap0_2_dec += 1;
+				hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX21PHY_DCHA_AFE, MSK(4, 8),
+				    decimaltogray_t3x(tap0_2_dec), port);
+				if (tap0_2_dec == 15)
+					tap0_2_done = 1;
+			} else if (dfe2_tap0 > 0x28 && !tap0_2_done) {
+				tap0_2_dec = graytodecimal_t3x(tap0_2_def);
+				tap0_2_dec -= 1;
+				hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX21PHY_DCHA_AFE,
+					MSK(4, 8), decimaltogray_t3x(tap0_2_dec), port);
+				if (tap0_2_dec == 0)
+					tap0_2_done = 1;
+			} else {
+				tap0_2_cnt++;
+				if (tap0_2_cnt == 3) {
+					tap0_2_done = 1;
+					tap0_2_cnt = 0;
+				}
+			}
+			tap0_3_def = hdmirx_rd_bits_amlphy_t3x(T3X_HDMIRX21PHY_DCHA_AFE,
+			MSK(4, 12), port);
+			if (dfe3_tap0 < 0x23 && !tap0_3_done) {
+				tap0_3_dec = graytodecimal_t3x(tap0_3_def);
+				tap0_3_dec += 1;
+				hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX21PHY_DCHA_AFE, MSK(4, 12),
+					decimaltogray_t3x(tap0_3_dec), port);
+				if (tap0_3_dec == 15)
+					tap0_3_done = 1;
+			} else if (dfe3_tap0 > 0x28 && !tap0_3_done) {
+				tap0_3_dec = graytodecimal_t3x(tap0_3_def);
+				tap0_3_dec -= 1;
+				hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX21PHY_DCHA_AFE, MSK(4, 12),
+				    decimaltogray_t3x(tap0_3_dec), port);
+				dfe3_tap0 = (data32 >> 24) & 0x7f;
+				if (tap0_3_dec == 0)
+					tap0_3_done = 1;
+			} else {
+				tap0_3_cnt++;
+				if (tap0_3_cnt == 3) {
+					tap0_3_done = 1;
+					tap0_3_cnt = 0;
+				}
+			}
+		} else {
+			if (log_level & FRL_LOG) {
+				rx_pr("tuning dfe0_tap0 = 0x%x\n", dfe0_tap0);
+				rx_pr("tuning dfe1_tap0 = 0x%x\n", dfe1_tap0);
+				rx_pr("tuning dfe2_tap0 = 0x%x\n", dfe2_tap0);
+				rx_pr("tuning dfe3_tap0 = 0x%x\n", dfe3_tap0);
+			}
+			break;
+		}
+	}
+	if (!tap0_0_done || !tap0_1_done || !tap0_2_done || !tap0_3_done) {
+		if (log_level & FRL_LOG) {
+			rx_pr("vga gain timeout\n");
+			rx_pr("tuning dfe0_tap0 = 0x%x\n", dfe0_tap0);
+			rx_pr("tuning dfe1_tap0 = 0x%x\n", dfe1_tap0);
+			rx_pr("tuning dfe2_tap0 = 0x%x\n", dfe2_tap0);
+			rx_pr("tuning dfe3_tap0 = 0x%x\n", dfe3_tap0);
+		}
+	}
+	tap0_0_cnt = 0;
+	tap0_1_cnt = 0;
+	tap0_2_cnt = 0;
+	tap0_3_cnt = 0;
+	if (log_level & FRL_LOG)
+		rx_pr("vga tuning done\n");
 }
 

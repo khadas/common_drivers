@@ -554,6 +554,11 @@ int process_empty_done_buf(struct di_process_dev *dev, struct di_buffer *buf)
 			"%s: put di_input_free_q fail\n", __func__);
 
 	if (!dropped) {
+		ret = di_processed_checkin(file_vf);
+		if (ret)
+			dp_print(dev->index, PRINT_ERROR,
+				"%s: processed_checkin fail\n", __func__);
+
 		/*bypass and di vf include dec vf, need put dec file after displayed*/
 		if (!(buf->flag & DI_FLAG_BUF_BY_PASS) &&
 			!(buf->vf->flag & VFRAME_FLAG_DOUBLE_FRAM)) {
@@ -562,11 +567,6 @@ int process_empty_done_buf(struct di_process_dev *dev, struct di_buffer *buf)
 			dp_print(dev->index, PRINT_OTHER, "bypass or double vf, not put %px\n",
 				file_vf);
 		}
-
-		ret = di_processed_checkin(file_vf);
-		if (ret)
-			dp_print(dev->index, PRINT_ERROR,
-				"%s: processed_checkin fail\n", __func__);
 	}
 	return ret;
 }

@@ -576,6 +576,7 @@ struct dp_buf_mgr_t *buf_mgr_creat(int dec_type, int id, void *caller_data,
 	dp_buf_print(buf_mgr, PRINT_OTHER, "buf mgr creat\n");
 	buf_mgr_get(buf_mgr);
 	mutex_init(&buf_mgr->ref_count_mutex);
+	mutex_init(&buf_mgr->file_mutex);
 	return buf_mgr;
 }
 EXPORT_SYMBOL(buf_mgr_creat);
@@ -772,7 +773,9 @@ int buf_mgr_free_checkin(struct dp_buf_mgr_t *buf_mgr, struct file *file)
 		return -1;
 	}
 
+	mutex_lock(&buf_mgr->file_mutex);
 	pop_from_ref_list(buf_mgr, vf_ref);
+	mutex_unlock(&buf_mgr->file_mutex);
 
 	return 0;
 }
@@ -844,9 +847,12 @@ int di_processed_checkin(struct file *file)
 	if (vf_ref->ref_other_number > 2)
 		need_dec_two = true;
 
+	mutex_lock(&buf_mgr->file_mutex);
+
 	if (vf_ref->ref_other_number > 1) {
 		vf_ref1 = get_ref1_from_list(buf_mgr, vf_ref);
 		if (!vf_ref1) {
+			mutex_unlock(&buf_mgr->file_mutex);
 			dp_buf_print(buf_mgr, PRINT_ERROR,
 				"processed: ref1 dec fail, omx_index=%d\n", vf->omx_index);
 			return -1;
@@ -858,6 +864,7 @@ int di_processed_checkin(struct file *file)
 	if (need_dec_two) {
 		vf_ref2 = get_ref1_from_list(buf_mgr, vf_ref1);
 		if (!vf_ref2) {
+			mutex_unlock(&buf_mgr->file_mutex);
 			dp_buf_print(buf_mgr, PRINT_ERROR,
 				"processed: ref2 dec fail, omx_index=%d\n", vf->omx_index);
 			return -1;
@@ -872,6 +879,7 @@ int di_processed_checkin(struct file *file)
 
 	/*if index = N processes, force release all frame that < N*/
 	print_all_in_ref_list(buf_mgr);
+	mutex_unlock(&buf_mgr->file_mutex);
 	return 0;
 }
 

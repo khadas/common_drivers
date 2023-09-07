@@ -52,6 +52,7 @@ struct dp_buf_mgr_t {
 	void *caller_data;
 	void (*recycle_buffer_cb)(void *caller_data, struct file *file, int instance_id);
 	struct mutex ref_count_mutex; /*for ref_count*/
+	struct mutex file_mutex; /*for file release mutex*/
 	int reset_id;
 	int receive_count;
 };

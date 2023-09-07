@@ -110,6 +110,14 @@ config AMLOGIC_ENV_DEBUG
 	help
 	  support amlogic env debug function
 
+config AMLOGIC_ZAPPER_NET_CUT
+	bool "zapper cut network"
+	depends on AMLOGIC_DEBUG
+	depends on AMLOGIC_BREAK_GKI
+	default n
+	help
+	  remove more for zapper network
+
 config AMLOGIC_ZAPPER_CUT
 	bool "zapper cut"
 	depends on AMLOGIC_DEBUG

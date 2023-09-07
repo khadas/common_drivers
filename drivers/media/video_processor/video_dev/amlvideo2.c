@@ -180,9 +180,10 @@ static struct v4l2_frmivalenum amlvideo2_frmivalenum[] = {{
 	.index = 1, .pixel_format = V4L2_PIX_FMT_NV21, .width = 1600, .height =
 		1200, .type = V4L2_FRMIVAL_TYPE_DISCRETE, {.discrete = {
 		.numerator = 1, .denominator = 5, } } }, {
-	.index = 1, .pixel_format = V4L2_PIX_FMT_NV21, .width = 3840, .height =
+	.index = 2, .pixel_format = V4L2_PIX_FMT_NV21, .width = 3840, .height =
 		2160, .type = V4L2_FRMIVAL_TYPE_DISCRETE, {.discrete = {
 		.numerator = 1, .denominator = 5, } } }};
+
 #define dpr_err(dev, level, fmt, arg...) \
 	v4l2_dbg((level), debug, &(dev)->v4l2_dev, fmt, ## arg)
 
@@ -4868,6 +4869,19 @@ static int vidioc_enum_fmt_vid_cap(struct file *file, void *priv,
 	return 0;
 }
 
+static inline u32 get_bytesperline(struct amlvideo2_fmt *fmt, u32 width)
+{
+	switch (fmt->fourcc) {
+	case V4L2_PIX_FMT_YUV420:
+	case V4L2_PIX_FMT_YVU420:
+	case V4L2_PIX_FMT_NV12:
+	case V4L2_PIX_FMT_NV21:
+		return width;
+	default:
+		return (width * fmt->depth) >> 3;
+	}
+}
+
 static int vidioc_g_fmt_vid_cap(struct file *file, void *priv,
 				struct v4l2_format *f)
 {
@@ -4878,10 +4892,9 @@ static int vidioc_g_fmt_vid_cap(struct file *file, void *priv,
 		f->fmt.pix.height = fh->height;
 		f->fmt.pix.field = fh->vb_vidq.field;
 		f->fmt.pix.pixelformat = fh->fmt->fourcc;
-		f->fmt.pix.bytesperline =
-		(f->fmt.pix.width * fh->fmt->depth) >> 3;
+		f->fmt.pix.bytesperline = get_bytesperline(fh->fmt, f->fmt.pix.width);
 		f->fmt.pix.sizeimage =
-		f->fmt.pix.height * f->fmt.pix.bytesperline;
+			(f->fmt.pix.height * f->fmt.pix.width * fh->fmt->depth) >> 3;
 	} else {
 		if (fh->node->start_vdin_flag && fh->node->provide_ready)  {
 			const struct vinfo_s *vinfo;
@@ -4938,8 +4951,9 @@ static int vidioc_try_fmt_vid_cap(struct file *file, void *priv,
 	v4l_bound_align_image(&f->fmt.pix.width, 16,
 			      maxw, 2, &f->fmt.pix.height, 16,
 			      maxh, 0, 0);
-	f->fmt.pix.bytesperline = (f->fmt.pix.width * fmt->depth) >> 3;
-	f->fmt.pix.sizeimage = f->fmt.pix.height * f->fmt.pix.bytesperline;
+	f->fmt.pix.bytesperline = get_bytesperline(fmt, f->fmt.pix.width);
+	f->fmt.pix.sizeimage =
+		(f->fmt.pix.height * f->fmt.pix.width * fmt->depth) >> 3;
 	return 0;
 }
 
@@ -5757,7 +5771,10 @@ static int vidioc_enum_framesizes(struct file *file, void *fh,
 	if (fmt->fourcc == V4L2_PIX_FMT_NV21 ||
 	    fmt->fourcc == V4L2_PIX_FMT_NV12 ||
 	    fmt->fourcc == V4L2_PIX_FMT_YUV420 ||
-	    fmt->fourcc == V4L2_PIX_FMT_YVU420) {
+	    fmt->fourcc == V4L2_PIX_FMT_YVU420 ||
+	    fmt->fourcc == V4L2_PIX_FMT_BGR24 ||
+	    fmt->fourcc == V4L2_PIX_FMT_RGB565X ||
+	    fmt->fourcc == V4L2_PIX_FMT_RGB24) {
 		if (fsize->index >= ARRAY_SIZE(amlvideo2_prev_resolution))
 			return -EINVAL;
 		frmsize = &amlvideo2_prev_resolution[fsize->index];
@@ -5767,8 +5784,7 @@ static int vidioc_enum_framesizes(struct file *file, void *fh,
 		fsize->type = V4L2_FRMSIZE_TYPE_DISCRETE;
 		fsize->discrete.width = frmsize->width;
 		fsize->discrete.height = frmsize->height;
-	} else if ((fmt->fourcc == V4L2_PIX_FMT_RGB24) ||
-			(fmt->fourcc == V4L2_PIX_FMT_RGB32)) {
+	} else if (fmt->fourcc == V4L2_PIX_FMT_RGB32) {
 		if (fsize->index >= ARRAY_SIZE(amlvideo2_pic_resolution))
 			return -EINVAL;
 		frmsize = &amlvideo2_pic_resolution[fsize->index];

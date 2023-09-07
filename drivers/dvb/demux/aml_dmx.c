@@ -842,6 +842,7 @@ static int _dmx_ts_feed_set(struct dmx_ts_feed *ts_feed, u16 pid, int ts_type,
 	}
 
 	is_temi = ((filter->params.pes.flags >> 18) & 0x01);
+	pr_dbg("%s %d is_temi=%d\n", __func__, __LINE__, is_temi);
 	if (!get_demux_feature(SUPPORT_TEMI) && is_temi == 1) {
 		dprint("no support temi\n");
 		mutex_unlock(demux->pmutex);
@@ -860,6 +861,8 @@ static int _dmx_ts_feed_set(struct dmx_ts_feed *ts_feed, u16 pid, int ts_type,
 			feed->format = TEMI_FORMAT;
 			feed->ts_out_elem = ts_output_find_temi_pcr(sid, pid, &pcr_index,
 									&feed->temi_index);
+			pr_dbg("%s %d index=%d temi_index=%d\n", __func__, __LINE__, pcr_index,
+										feed->temi_index);
 			if (feed->ts_out_elem && pcr_index < MAX_PCR_NUM) {
 				ret = ts_output_add_temi_pid(feed->ts_out_elem, feed->pid,
 						demux->id, &cb_id, &feed->temi_index,
@@ -930,6 +933,7 @@ static int _dmx_ts_feed_set(struct dmx_ts_feed *ts_feed, u16 pid, int ts_type,
 
 		} else {
 			feed->ts_out_elem = ts_output_find_temi_pcr(sid, pid, &pcr_index, NULL);
+			pr_dbg("%s %d index=%d\n", __func__, __LINE__, pcr_index);
 			if (pcr_index < MAX_PCR_NUM) {
 				pcr_num = pcr_type_to_index(pes_type);
 				demux->pcr_index[pcr_num] = pcr_index;
@@ -941,6 +945,7 @@ static int _dmx_ts_feed_set(struct dmx_ts_feed *ts_feed, u16 pid, int ts_type,
 			}
 
 			pcr_index = ts_output_alloc_pcr_temi_entry(pid, sid, PCR_TYPE);
+			pr_dbg("%s %d pcr_index=%d\n", __func__, __LINE__, pcr_index);
 			if (pcr_index >= MAX_PCR_NUM) {
 				dprint("%s error pcr full\n", __func__);
 				mutex_unlock(demux->pmutex);
@@ -967,6 +972,7 @@ static int _dmx_ts_feed_set(struct dmx_ts_feed *ts_feed, u16 pid, int ts_type,
 		feed->format = TEMI_FORMAT;
 
 		feed->ts_out_elem = ts_output_find_temi_pcr(sid, pid, NULL, &feed->temi_index);
+		pr_dbg("%s %d temi_index=%d\n", __func__, __LINE__, feed->temi_index);
 		if (feed->ts_out_elem && feed->temi_index < MAX_PCR_NUM) {
 			ret = ts_output_add_temi_pid(feed->ts_out_elem, feed->pid,
 					demux->id, &cb_id, &feed->temi_index, TEMI_TYPE);
@@ -999,6 +1005,7 @@ static int _dmx_ts_feed_set(struct dmx_ts_feed *ts_feed, u16 pid, int ts_type,
 
 		ret = ts_output_add_temi_pid(feed->ts_out_elem, feed->pid,
 					demux->id, &cb_id, &feed->temi_index, TEMI_TYPE);
+		pr_dbg("%s %d temi_index=%d\n", __func__, __LINE__, feed->temi_index);
 		if (ret) {
 			dprint("%s add temi pid fail\n", __func__);
 			ts_output_close(feed->ts_out_elem);
@@ -1792,6 +1799,8 @@ static int _dmx_release_ts_feed(struct dmx_demux *dmx,
 		else
 			pcr_num = 3;
 
+		pr_dbg("%s %d dmx_id=%d pcr_index=%d\n", __func__, __LINE__, demux->id,
+								demux->pcr_index[pcr_num]);
 		pcr_index = demux->pcr_index[pcr_num];
 		if (pcr_index >= 0 && pcr_index < MAX_PCR_NUM) {
 			ts_output_free_pcr_temi_entry(pcr_index, PCR_TYPE);

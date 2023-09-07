@@ -2945,13 +2945,15 @@ int ts_output_alloc_pcr_temi_entry(int pid, int sid, int type)
 	break;
 	}
 
-	return 0;
+	return index;
 }
 
 int ts_output_free_pcr_temi_entry(int index, int type)
 {
 	if (index < 0 || index >= MAX_PCR_NUM)
 		return -1;
+
+	pr_dbg("%s %d index=%d turn_on=%d\n", __func__, __LINE__, index, pcr_table[index].turn_on);
 
 	pcr_table[index].ref -= 1;
 	if (type == PCR_TYPE)

@@ -140,6 +140,7 @@
 /*  V3.5.013 fix r842 dvbt/t2 LTE interferer test fail */
 /*  V3.5.014 Support ignoring common plp in dvbt2 */
 /*  V3.5.015 remove unused macro and code */
+/*  V3.5.016 optimize dvbs rssi for rt720 */
 /****************************************************/
 /****************************************************************/
 /*               AMLDTVDEMOD_VER  Description:                  */
@@ -156,8 +157,8 @@
 /*->The last four digits indicate the release time              */
 /****************************************************************/
 #define KERNEL_4_9_EN		1
-#define AMLDTVDEMOD_VER "V3.5.015"
-#define DTVDEMOD_VER	"2023/10/24: remove unused macro and code"
+#define AMLDTVDEMOD_VER "V3.5.16"
+#define DTVDEMOD_VER	"2023/10/27: optimize dvbs rssi for rt720"
 #define AMLDTVDEMOD_T2_FW_VER "V1558.20230628"
 #define DEMOD_DEVICE_NAME  "dtvdemod"
 

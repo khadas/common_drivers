@@ -61,6 +61,8 @@ int dtvdemod_dvbs_read_signal_strength(struct dvb_frontend *fe, s16 *strength)
 {
 	struct aml_dtvdemod *demod = (struct aml_dtvdemod *)fe->demodulator_priv;
 	unsigned int agc_level = 0;
+	unsigned int i = 0, if_agc_value = 0;
+	u16 rf_strength = 0;
 
 	if (demod->last_status != 0x1F) {
 		*strength = -100;
@@ -86,8 +88,21 @@ int dtvdemod_dvbs_read_signal_strength(struct dvb_frontend *fe, s16 *strength)
 			if (agc_level == 0)
 				*strength = -95;
 		}
+	} else if (tuner_find_by_name(fe, "rt710") ||
+			tuner_find_by_name(fe, "rt720")) {
+		for (i = 0; i < 10; i++)
+			//IF AGC1 integrator value
+			if_agc_value +=
+				(unsigned int)MAKEWORD(dvbs_rd_byte(0x91a), dvbs_rd_byte(0x91b));
+
+		if_agc_value /= 10;
+		rf_strength = (u16)if_agc_value;
+		if (fe->ops.tuner_ops.get_rf_strength)
+			fe->ops.tuner_ops.get_rf_strength(fe, &rf_strength);
+		PR_DBGL("if_agc_code %d\n", if_agc_value);
+
+		*strength = (s16)tuner_get_ch_power(fe);
 	} else {
-		// rt710/720.
 		*strength = (s16)tuner_get_ch_power(fe);
 		if (*strength <= -57)
 			*strength += (s16)dvbs_get_signal_strength_off();

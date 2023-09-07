@@ -3079,12 +3079,12 @@ static int aml_dtvdm_get_property(struct dvb_frontend *fe,
 	case DTV_STAT_CNR:
 		tvp->u.st.len = 1;
 		tvp->u.st.stat[0].scale = FE_SCALE_DECIBEL;
-		tvp->u.st.stat[0].uvalue = demod->real_para.snr * 10;
+		tvp->u.st.stat[0].uvalue = demod->real_para.snr * 100;
 
 		c->cnr = tvp->u.st;
 
 		PR_DBG("demod id [%d] [cnr %d dBx1000].\n",
-				demod->id, demod->real_para.snr * 1000);
+				demod->id, demod->real_para.snr * 100);
 		break;
 
 	case DTV_TS_INPUT:
@@ -3153,12 +3153,12 @@ static int aml_dtvdm_get_property(struct dvb_frontend *fe,
 
 		tvp->u.st.len = 1;
 		tvp->u.st.stat[0].scale = FE_SCALE_DECIBEL;
-		tvp->u.st.stat[0].uvalue = (109 + strength) * 1000;
+		tvp->u.st.stat[0].svalue = strength * 1000;
 
 		c->strength = tvp->u.st;
 
-		PR_DBG("demod id [%d] [strength %llu dBx1000].\n",
-				demod->id, tvp->u.st.stat[0].uvalue);
+		PR_DBG("demod id [%d] [strength %lld dBx1000].\n",
+				demod->id, tvp->u.st.stat[0].svalue);
 
 		break;
 

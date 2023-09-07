@@ -1769,7 +1769,7 @@ int dvbs_get_signal_strength_off(void)
 			break;
 	}
 
-	PR_DVBS("average value level val=0x%x\n", val);
+	PR_DVBS("average value level val=0x%x offset %d\n", val, -i);
 
 	return -i;
 }

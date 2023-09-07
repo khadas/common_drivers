@@ -3878,7 +3878,7 @@ static struct kprobe kp_lookup_name = {
 };
 #endif
 
-void __nocfi get_mte_sync_tags_hook(void)
+int __nocfi get_mte_sync_tags_hook_kprobe(void *data)
 {
 	static DEFINE_MUTEX(lock);
 	struct cma *cma = NULL;
@@ -3889,28 +3889,28 @@ void __nocfi get_mte_sync_tags_hook(void)
 	ret = register_kprobe(&kp_lookup_name);
 	if (ret < 0) {
 		pr_err("register_kprobe failed, returned %d\n", ret);
-		return;
+		return -1;
 	}
-	pr_info("kprobe lookup offset at %px\n", kp_lookup_name.addr);
+	pr_debug("kprobe lookup offset at %px\n", kp_lookup_name.addr);
 
 	aml_syms_lookup = (unsigned long (*)(const char *name))kp_lookup_name.addr;
 
 	aml_init_mm = (struct mm_struct *)aml_syms_lookup("init_mm");
 	aml_mte_sync_tags = (void (*)(pte_t old_pte, pte_t pte))aml_syms_lookup("mte_sync_tags");
-	pr_info("aml_init_mm: %px, aml_mte_sync_tags: %px\n", aml_init_mm, aml_mte_sync_tags);
+	pr_debug("aml_init_mm: %px, aml_mte_sync_tags: %px\n", aml_init_mm, aml_mte_sync_tags);
 #endif
 
 	cma = dev_get_cma_area(codec_dev);
 	if (!cma) {
 		pr_err("CMA:  NO CMA region\n");
-		return;
+		return -1;
 	}
-	pr_info("%s, %s, %lx, %lx\n", __func__, cma_get_name(cma), cma->base_pfn, cma->count);
+	pr_debug("%s, %s, %lx, %lx\n", __func__, cma_get_name(cma), cma->base_pfn, cma->count);
 	/* spin_lock_irqsave(&cma->lock, flags); */
 	page = cma_alloc(cma, cma->count, 0, 0);
 	if (!page) {
 		pr_err("cma alloc failed.\n");
-		return;
+		return -1;
 	}
 	mutex_lock(&lock);
 	if (aml_init_mm)
@@ -3918,6 +3918,7 @@ void __nocfi get_mte_sync_tags_hook(void)
 	/* spin_unlock_irqrestore(&cma->lock, flags); */
 	mutex_unlock(&lock);
 	cma_release(cma, page, cma->count);
+	return 0;
 }
 #endif
 
@@ -3980,7 +3981,7 @@ static int codec_mm_probe(struct platform_device *pdev)
 				  "trigger", codec_mm_trigger,
 				  CONFIG_FOR_RW | CONFIG_FOR_T);
 #if IS_MODULE(CONFIG_AMLOGIC_MEDIA_MODULE) && IS_ENABLED(CONFIG_KALLSYMS_ALL)
-	get_mte_sync_tags_hook();
+	kthread_run(get_mte_sync_tags_hook_kprobe, NULL, "AML_CODEC_MM");
 #endif
 	return 0;
 }

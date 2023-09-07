@@ -22,6 +22,9 @@
 #define MESON_USE_VIDEO_PLANE           (1ull << 18)
 #define MESON_USE_VIDEO_AFBC            (1ull << 19)
 
+#define FBIOPUT_OSD_WINDOW_AXIS          0x4513
+#define FBIOGET_DISPLAY_MODE             0x4580
+
 /**
  * User-desired buffer creation information structure.
  *
@@ -34,6 +37,20 @@ struct drm_meson_gem_create {
 	__u64 size;
 	__u32 flags;
 	__u32 handle;
+};
+
+struct drm_mode_test_attr {
+	char modename[32];
+	char attr[32];
+	__u32 valid;
+};
+
+struct drm_meson_fbdev_rect {
+	__u32 xstart;
+	__u32 ystart;
+	__u32 width;
+	__u32 height;
+	__u32 mask;
 };
 
 /**
@@ -76,21 +93,19 @@ struct drm_meson_present_fence {
 	__u32 fd;
 };
 
-struct drm_mode_test_attr {
-	char modename[32];
-	char attr[32];
-	__u32 valid;
-};
-
 /*Memory related.*/
 #define DRM_IOCTL_MESON_GEM_CREATE	DRM_IOWR(DRM_COMMAND_BASE + \
 		0x00, struct drm_meson_gem_create)
 #define DRM_IOCTL_MESON_DMABUF_EXPORT_SYNC_FILE	DRM_IOWR(DRM_COMMAND_BASE + \
 		0x02, struct drm_meson_dma_buf_export_sync_file)
+#define DRM_IOCTL_MESON_RMFB	DRM_IOWR(DRM_COMMAND_BASE + \
+		0x01, unsigned int)
 
 /*KMS related.*/
 #define DRM_IOCTL_MESON_ASYNC_ATOMIC    DRM_IOWR(DRM_COMMAND_BASE + \
 		0x10, struct drm_mode_atomic)
+
+/*present fence*/
 #define DRM_IOCTL_MESON_CREAT_PRESENT_FENCE	DRM_IOWR(DRM_COMMAND_BASE + \
 		0x20, struct drm_meson_present_fence)
 

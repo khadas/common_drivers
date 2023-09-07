@@ -103,7 +103,6 @@
 /* debug only for fg */
 static bool dim_trig_fg;
 module_param_named(dim_trig_fg, dim_trig_fg, bool, 0664);
-
 static bool fg_bypass;
 
 #undef module_param
@@ -4052,7 +4051,9 @@ void dim_pre_de_process(unsigned int channel)
 	dimh_txl_patch_prog(ppre->cur_prog_flag,
 			    ppre->field_count_for_cont,
 			    dimp_get(edi_mp_mcpre_en));
-
+	/****************value from pq****************/
+	if (IS_IC(dil_get_cpuver_flag(), S4) && cfgg(SUB_V))
+		DIM_DI_WR(DI_NR_CTRL2, 0x3f3f4040);
 	if (ppre->di_wr_buf->en_hf	&&
 	    ppre->di_wr_buf->hf_adr	&&
 	    di_hf_size_check(&ppre->di_nrwr_mif) &&
@@ -6777,7 +6778,10 @@ unsigned char dim_pre_de_buf_config(unsigned int channel)
 	} else {
 		ppre->combing_fix_en = di_mpr(combing_fix_en);
 	}
-
+	if (IS_IC(dil_get_cpuver_flag(), S4) && !flg_1080i) {
+		ppre->combing_fix_en = false;
+		get_ops_mtn()->fix_s1a_576i_patch_sel();
+	}
 	if (ppre->combing_fix_en) {
 		if (flg_1080i)
 			get_ops_mtn()->com_patch_pre_sw_set(1);

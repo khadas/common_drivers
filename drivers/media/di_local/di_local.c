@@ -328,6 +328,14 @@ bool dim_config_crc_ic(void)
 }
 EXPORT_SYMBOL(dim_config_crc_ic);
 
+unsigned int dim_ic_sub(void)
+{
+	if (dil_api && dil_api->dim_ic_sub)
+		return dil_api->dim_ic_sub();
+	return 0;
+}
+EXPORT_SYMBOL(dim_ic_sub);
+
 unsigned int dim_get_vpuclkb_ext(void)
 {
 	if (dil_api && dil_api->get_vpu_clkb_ext)

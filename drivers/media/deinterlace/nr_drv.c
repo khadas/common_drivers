@@ -43,16 +43,16 @@ static bool dnr_dm_en;
 module_param(dnr_dm_en, bool, 0644);
 MODULE_PARM_DESC(dnr_dm_en, "/n dnr dm enable debug /n");
 
-static bool dnr_en;
+static bool dnr_en = true;
 module_param_named(dnr_en, dnr_en, bool, 0644);
 
 static unsigned int nr2_en = 0x1;
 module_param_named(nr2_en, nr2_en, uint, 0644);
 
-static bool dynamic_dm_chk;
+static bool dynamic_dm_chk = true;
 module_param_named(dynamic_dm_chk, dynamic_dm_chk, bool, 0644);
 
-static unsigned int autonr_en;
+static unsigned int autonr_en = 0x1;
 module_param_named(autonr_en, autonr_en, uint, 0644);
 
 static bool nr4ne_en;
@@ -431,6 +431,8 @@ static void nr4_config_op(struct NR4_PARM_s *nr4_parm_p,
 	op->bwr(NR4_TOP_CTRL, 1, 16, 1);
 	op->bwr(NR4_TOP_CTRL, 1, 18, 1);
 	op->bwr(NR4_TOP_CTRL, 1, 3, 1);
+	if (IS_IC(dil_get_cpuver_flag(), S4) && dim_ic_sub() == 1)
+		op->bwr(NR4_TOP_CTRL, 0, 3, 1);
 	op->bwr(NR4_TOP_CTRL, 1, 5, 1);
 	//add for crc @2k22-0102
 	if (dim_config_crc_ic())
@@ -488,6 +490,11 @@ static void nr2_config_op(unsigned short width, unsigned short height,
 		IS_IC(dil_get_cpuver_flag(), T5D)	||
 		IS_IC(dil_get_cpuver_flag(), T5DB)	||
 		cpu_after_eq(MESON_CPU_MAJOR_ID_SC2)) {
+		if (IS_IC(dil_get_cpuver_flag(), S4) && dim_ic_sub() == 1) {
+			op->wr(NR2_FRM_SIZE, (height << 16) |  width);
+			op->wr(NR2_SW_EN, 0x70);
+			op->wr(NR4_TOP_CTRL, 0xf8ff4);
+		}
 		op->bwr(NR4_TOP_CTRL, nr2_en, 2, 1);
 		op->bwr(NR4_TOP_CTRL, nr2_en, 15, 1);
 		op->bwr(NR4_TOP_CTRL, nr2_en, 17, 1);
@@ -2305,6 +2312,13 @@ static void nr_all_ctrl(bool enable, const struct reg_acc *op)
 	} else {
 		op->bwr(NR2_SW_EN, value, 4, 1);
 	}
+
+	if (IS_IC(dil_get_cpuver_flag(), S4) && dim_ic_sub() == 1) {
+		op->bwr(NR4_TOP_CTRL, value, 1, 1);
+		op->bwr(NR2_SW_EN, value, 4, 2);
+		op->bwr(NR2_SW_EN, value, 3, 1);
+		op->bwr(NR2_SW_EN, value, 7, 1);
+	}
 	op->bwr(DNR_CTRL, value, 16, 1);
 
 }
@@ -2553,6 +2567,11 @@ void nr_drv_init(struct device *dev)
 		dnr_dm_en = true;
 	else
 		dnr_dm_en = false;
+	if (IS_IC(dil_get_cpuver_flag(), S4) && dim_ic_sub() == 1) {
+		dnr_en = false;
+		dynamic_dm_chk = false;
+		autonr_en = 0x0;
+	}
 }
 
 static void nr_hw_init(void)

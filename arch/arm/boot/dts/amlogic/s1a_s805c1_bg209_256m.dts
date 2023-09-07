@@ -409,6 +409,7 @@
 		nrds-enable = <1>;
 		pps-enable = <1>;
 		post_nub = <5>;
+		sub_v = <1>;
 	};
 
 	aml_dtv_demod {

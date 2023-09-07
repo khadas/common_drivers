@@ -595,9 +595,9 @@ do { \
 
 	if (hdev->tx_comm.fmt_para.tmds_clk > 450000)
 		set_phy_by_mode(HDMI_PHYPARA_6G);
-	else if (hdev->tx_comm.fmt_para.tmds_clk > 370000)
+	else if (hdev->tx_comm.fmt_para.tmds_clk > 380000)
 		set_phy_by_mode(HDMI_PHYPARA_4p5G);
-	else if (hdev->tx_comm.fmt_para.tmds_clk > 290000)
+	else if (hdev->tx_comm.fmt_para.tmds_clk > 300000)
 		set_phy_by_mode(HDMI_PHYPARA_3p7G);
 	else if (hdev->tx_comm.fmt_para.tmds_clk > 150000)
 		set_phy_by_mode(HDMI_PHYPARA_3G);

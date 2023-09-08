@@ -494,6 +494,15 @@ static int hdmitx21_calc_formatpara(struct hdmi_format_para *para)
 	return 0;
 }
 
+static void hdmitx_set_packet(int type,
+	unsigned char *DB, unsigned char *HB)
+{
+	if (type == HDMI_INFOFRAME_TYPE_VENDOR2)
+		hdmi_vend_infoframe2_rawset(HB, DB);
+	else
+		hdmi_vend_infoframe_rawset(HB, DB);
+}
+
 void hdmitx21_meson_init(struct hdmitx_dev *hdev)
 {
 	/*TODO: move to hdmitx_hw struct*/
@@ -515,6 +524,7 @@ void hdmitx21_meson_init(struct hdmitx_dev *hdev)
 	hdev->tx_hw.cntlmisc = hdmitx_cntl_misc;
 	hdev->tx_hw.validatemode = hdmitx21_validate_mode;
 	hdev->tx_hw.calcformatpara = hdmitx21_calc_formatpara;
+	hdev->tx_hw.setpacket = hdmitx_set_packet;
 	hdmi_hwp_init(hdev, 0);
 	hdmitx21_debugfs_init();
 	hdev->tx_hw.cntlmisc(&hdev->tx_hw, MISC_AVMUTE_OP, CLR_AVMUTE);

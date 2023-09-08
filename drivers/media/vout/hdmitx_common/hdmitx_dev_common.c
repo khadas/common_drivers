@@ -26,15 +26,16 @@ int hdmitx_dev_setup_vsif_packet(struct hdmitx_common *tx_comm,
 	case VT_HDMI14_4K:
 		ieeeoui = HDMI_IEEE_OUI;
 		len = 5;
-		hb[2] = len;
-		db[0] = GET_OUI_BYTE0(ieeeoui);
-		db[1] = GET_OUI_BYTE1(ieeeoui);
-		db[2] = GET_OUI_BYTE2(ieeeoui);
 		vic = hdmitx_edid_get_hdmi14_4k_vic(tx_comm->cur_VIC);
 		if (vic > 0) {
+			hb[2] = len;
+			db[0] = GET_OUI_BYTE0(ieeeoui);
+			db[1] = GET_OUI_BYTE1(ieeeoui);
+			db[2] = GET_OUI_BYTE2(ieeeoui);
 			db[4] = vic & 0xf;
 			db[3] = 0x20;
 			tx_hw->cntlconfig(tx_hw, CONF_AVI_VIC, 0);
+			tx_hw->setpacket(HDMI_PACKET_VEND, db, hb);
 		} else {
 			pr_info("skip vsif for non-4k mode.\n");
 			return -EINVAL;
@@ -45,10 +46,15 @@ int hdmitx_dev_setup_vsif_packet(struct hdmitx_common *tx_comm,
 		len = 5;
 		db[3] = 0x1; /* Fixed value */
 		if (on) {
+			hb[2] = len;
+			db[0] = GET_OUI_BYTE0(ieeeoui);
+			db[1] = GET_OUI_BYTE1(ieeeoui);
+			db[2] = GET_OUI_BYTE2(ieeeoui);
 			db[4] |= 1 << 1; /* set bit1, ALLM_MODE */
 			/*reset vic which may be reset by VT_HDMI14_4K.*/
 			if (hdmitx_edid_get_hdmi14_4k_vic(tx_comm->cur_VIC) > 0)
 				tx_hw->cntlconfig(tx_hw, CONF_AVI_VIC, tx_comm->cur_VIC);
+			tx_hw->setpacket(HDMI_INFOFRAME_TYPE_VENDOR2, db, hb);
 		} else {
 			db[4] &= ~(1 << 1); /* clear bit1, ALLM_MODE */
 			/* 1.When the Source stops transmitting the HF-VSIF,
@@ -66,12 +72,13 @@ int hdmitx_dev_setup_vsif_packet(struct hdmitx_common *tx_comm,
 			 */
 			/* hdmi_vend_infoframe2_rawset(hb, vsif_db); */
 			/* wait for 4frames ~ 1S, then stop send HF-VSIF */
-			hdmi_vend_infoframe2_rawset(NULL, NULL);
+			tx_hw->setpacket(HDMI_INFOFRAME_TYPE_VENDOR2, NULL, NULL);
 		}
 		break;
 	default:
 		break;
 	}
+
 	return 1;
 }
 

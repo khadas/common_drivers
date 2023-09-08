@@ -2804,15 +2804,15 @@ static ssize_t allm_mode_store(struct device *dev,
 	if (com_str(buf, "0")) {
 		// disable ALLM
 		tx_comm->allm_mode = 0;
-		hdmitx21_construct_vsif(hdev, VT_ALLM, 0, NULL);
+		hdmitx21_construct_vsif(tx_comm, VT_ALLM, 0, NULL);
 		if (hdmitx_edid_get_hdmi14_4k_vic(tx_comm->cur_VIC) > 0 &&
 			!hdmitx21_dv_en() &&
 			!hdmitx21_hdr10p_en())
-			hdmitx21_construct_vsif(hdev, VT_HDMI14_4K, 1, NULL);
+			hdmitx21_construct_vsif(tx_comm, VT_HDMI14_4K, 1, NULL);
 	}
 	if (com_str(buf, "1")) {
 		tx_comm->allm_mode = 1;
-		hdmitx21_construct_vsif(hdev, VT_ALLM, 1, NULL);
+		hdmitx21_construct_vsif(tx_comm, VT_ALLM, 1, NULL);
 		tx_comm->ct_mode = 0;
 		hdev->tx_hw.cntlconfig(&hdev->tx_hw, CONF_CT_MODE, SET_CT_OFF);
 	}
@@ -2847,7 +2847,7 @@ static void hdmi_tx_enable_ll_mode(bool enable)
 			tx_comm->allm_mode = 1;
 			pr_info("%s: enabling ALLM, enable:%d, allm:%d, cnc3:%d\n",
 				__func__, enable, tx_comm->rxcap.allm, tx_comm->rxcap.cnc3);
-			hdmitx21_construct_vsif(hdev, VT_ALLM, 1, NULL);
+			hdmitx21_construct_vsif(tx_comm, VT_ALLM, 1, NULL);
 			tx_comm->ct_mode = 0;
 			hdev->it_content = 0;
 			hdev->tx_hw.cntlconfig(&hdev->tx_hw, CONF_CT_MODE, SET_CT_OFF);
@@ -2857,9 +2857,9 @@ static void hdmi_tx_enable_ll_mode(bool enable)
 				tx_comm->allm_mode = 0;
 				pr_info("%s: disabling ALLM before enabling game mode, enable:%d, allm:%d, cnc3:%d\n",
 					__func__, enable, tx_comm->rxcap.allm, tx_comm->rxcap.cnc3);
-				hdmitx21_construct_vsif(hdev, VT_ALLM, 0, NULL);
+				hdmitx21_construct_vsif(tx_comm, VT_ALLM, 0, NULL);
 				if (hdmitx_edid_get_hdmi14_4k_vic(tx_comm->cur_VIC) > 0)
-					hdmitx21_construct_vsif(hdev, VT_HDMI14_4K, 1, NULL);
+					hdmitx21_construct_vsif(tx_comm, VT_HDMI14_4K, 1, NULL);
 				/* if not hdmi1.4 4k, need to sent > 4 frames and shorter than 1S
 				 * HF-VSIF with allm_mode = 0, and then disable HF-VSIF according
 				 * 10.2.1 HF-VSIF Transitions in hdmi2.1a. TODO:
@@ -2878,11 +2878,11 @@ static void hdmi_tx_enable_ll_mode(bool enable)
 				tx_comm->allm_mode = 0;
 				pr_info("%s: disabling ALLM, enable:%d, allm:%d, cnc3:%d\n",
 					__func__, enable, tx_comm->rxcap.allm, tx_comm->rxcap.cnc3);
-				hdmitx21_construct_vsif(hdev, VT_ALLM, 0, NULL);
+				hdmitx21_construct_vsif(tx_comm, VT_ALLM, 0, NULL);
 				if (hdmitx_edid_get_hdmi14_4k_vic(tx_comm->cur_VIC) > 0 &&
 					!hdmitx21_dv_en() &&
 					!hdmitx21_hdr10p_en())
-					hdmitx21_construct_vsif(hdev, VT_HDMI14_4K, 1, NULL);
+					hdmitx21_construct_vsif(tx_comm, VT_HDMI14_4K, 1, NULL);
 			}
 			/* clear content type */
 			if (tx_comm->ct_mode == 1) {
@@ -2899,11 +2899,11 @@ static void hdmi_tx_enable_ll_mode(bool enable)
 			tx_comm->allm_mode = 0;
 			pr_info("%s: disabling ALLM, enable:%d, allm:%d, cnc3:%d\n",
 				__func__, enable, tx_comm->rxcap.allm, tx_comm->rxcap.cnc3);
-			hdmitx21_construct_vsif(hdev, VT_ALLM, 0, NULL);
+			hdmitx21_construct_vsif(tx_comm, VT_ALLM, 0, NULL);
 			if (hdmitx_edid_get_hdmi14_4k_vic(tx_comm->cur_VIC) > 0 &&
 				!hdmitx21_dv_en() &&
 				!hdmitx21_hdr10p_en())
-				hdmitx21_construct_vsif(hdev, VT_HDMI14_4K, 1, NULL);
+				hdmitx21_construct_vsif(tx_comm, VT_HDMI14_4K, 1, NULL);
 		}
 		/* clear content type */
 		if (tx_comm->ct_mode == 1) {
@@ -2924,15 +2924,15 @@ static void drm_set_allm_mode(int mode)
 	if (mode == 0) {
 		// disable ALLM
 		tx_comm->allm_mode = 0;
-		hdmitx21_construct_vsif(hdev, VT_ALLM, 0, NULL);
+		hdmitx21_construct_vsif(tx_comm, VT_ALLM, 0, NULL);
 		if (hdmitx_edid_get_hdmi14_4k_vic(tx_comm->cur_VIC) > 0 &&
 			!hdmitx21_dv_en() &&
 			!hdmitx21_hdr10p_en())
-			hdmitx21_construct_vsif(hdev, VT_HDMI14_4K, 1, NULL);
+			hdmitx21_construct_vsif(tx_comm, VT_HDMI14_4K, 1, NULL);
 	}
 	if (mode == 1) {
 		tx_comm->allm_mode = 1;
-		hdmitx21_construct_vsif(hdev, VT_ALLM, 1, NULL);
+		hdmitx21_construct_vsif(tx_comm, VT_ALLM, 1, NULL);
 		tx_comm->ct_mode = 0;
 		hdev->tx_hw.cntlconfig(&hdev->tx_hw, CONF_CT_MODE, SET_CT_OFF);
 	}
@@ -3110,7 +3110,7 @@ bool hdmitx_update_latency_info(struct tvin_latency_s *latency_info)
 			}
 			tx_comm->allm_mode = 1;
 			pr_info("%s: enabling ALLM\n", __func__);
-			hdmitx21_construct_vsif(hdev, VT_ALLM, 1, NULL);
+			hdmitx21_construct_vsif(tx_comm, VT_ALLM, 1, NULL);
 			tx_comm->ct_mode = 0;
 			hdev->it_content = 0;
 			hdev->tx_hw.cntlconfig(&hdev->tx_hw, CONF_CT_MODE, SET_CT_OFF);
@@ -3125,11 +3125,11 @@ bool hdmitx_update_latency_info(struct tvin_latency_s *latency_info)
 		if (tx_comm->allm_mode == 1) {
 			tx_comm->allm_mode = 0;
 			pr_info("%s: disabling ALLM before enable/disable game mode\n", __func__);
-			hdmitx21_construct_vsif(hdev, VT_ALLM, 0, NULL);
+			hdmitx21_construct_vsif(tx_comm, VT_ALLM, 0, NULL);
 			if (hdmitx_edid_get_hdmi14_4k_vic(tx_comm->cur_VIC) > 0 &&
 				!hdmitx21_dv_en() &&
 				!hdmitx21_hdr10p_en())
-				hdmitx21_construct_vsif(hdev, VT_HDMI14_4K, 1, NULL);
+				hdmitx21_construct_vsif(tx_comm, VT_HDMI14_4K, 1, NULL);
 		}
 		hdev->it_content = latency_info->it_content;
 		it_content = hdev->it_content;

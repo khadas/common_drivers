@@ -215,7 +215,7 @@ struct hdmitx_hw_common {
 	 *	if ((DB[4] >> 4) == T3D_FRAME_PACKING)
 	 * Need a only pure data packet to call
 	 */
-	void (*setdatapacket)(int type, unsigned char *DB,
+	void (*setpacket)(int type, unsigned char *DB,
 			unsigned char *HB);
 	/* Audio/Video/System Status */
 	int (*getstate)(struct hdmitx_hw_common *tx_hw,

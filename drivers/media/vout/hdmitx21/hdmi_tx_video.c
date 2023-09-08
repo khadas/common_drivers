@@ -23,6 +23,8 @@
 
 #include "hw/common.h"
 
+#define to_hdmitx21_dev(x)	container_of(x, struct hdmitx_dev, tx_comm)
+
 static void hdmitx_set_spd_info(struct hdmitx_dev *hdmitx_device);
 static void hdmi_set_vend_spec_infofram(struct hdmitx_dev *hdev,
 					enum hdmi_vic videocode);
@@ -161,7 +163,7 @@ int hdmitx21_set_display(struct hdmitx_dev *hdev, enum hdmi_vic videocode)
 			;
 
 		if (hdev->tx_comm.allm_mode) {
-			hdmitx21_construct_vsif(hdev, VT_ALLM, 1, NULL);
+			hdmitx21_construct_vsif(&hdev->tx_comm, VT_ALLM, 1, NULL);
 			hdev->tx_hw.cntlconfig(&hdev->tx_hw, CONF_CT_MODE,
 				SET_CT_OFF);
 		} else {
@@ -279,91 +281,10 @@ static void hdmitx_set_spd_info(struct hdmitx_dev *hdev)
 	// TODO hdev->hwop.setinfoframe(HDMI_INFOFRAME_TYPE_SPD, SPD_HB);
 }
 
-static void fill_hdmi4k_vsif_data(enum hdmi_vic vic, u8 *db,
-				  u8 *hb)
+int hdmitx21_construct_vsif(struct hdmitx_common *tx_comm,
+	enum vsif_type type, int on, void *param)
 {
-	if (!db || !hb)
-		return;
+	struct hdmitx_dev *hdev = to_hdmitx21_dev(tx_comm);
 
-	if (vic == HDMI_95_3840x2160p30_16x9)
-		db[4] = 0x1;
-	else if (vic == HDMI_94_3840x2160p25_16x9)
-		db[4] = 0x2;
-	else if (vic == HDMI_93_3840x2160p24_16x9)
-		db[4] = 0x3;
-	else if (vic == HDMI_98_4096x2160p24_256x135)
-		db[4] = 0x4;
-	else
-		return;
-	hb[0] = 0x81;
-	hb[1] = 0x01;
-	hb[2] = 0x5;
-	db[3] = 0x20;
-}
-
-int hdmitx21_construct_vsif(struct hdmitx_dev *hdev, enum vsif_type type,
-			  int on, void *param)
-{
-	u8 hb[3] = {0x81, 0x1, 0};
-	u8 len = 0; /* hb[2] = len */
-	u8 vsif_db[28] = {0}; /* to be fulfilled */
-	u8 *db = &vsif_db[1]; /* to be fulfilled */
-	u32 ieeeoui = 0;
-
-	if (!hdev || type >= VT_MAX)
-		return 0;
-
-	switch (type) {
-	case VT_DEFAULT:
-		break;
-	case VT_HDMI14_4K:
-		ieeeoui = HDMI_IEEE_OUI;
-		len = 5;
-		hb[2] = len;
-		db[0] = GET_OUI_BYTE0(ieeeoui);
-		db[1] = GET_OUI_BYTE1(ieeeoui);
-		db[2] = GET_OUI_BYTE2(ieeeoui);
-		if (hdmitx_edid_get_hdmi14_4k_vic(hdev->tx_comm.cur_VIC) > 0) {
-			fill_hdmi4k_vsif_data(hdev->tx_comm.cur_VIC, db, hb);
-			hdmitx21_set_avi_vic(0);
-			hdmi_vend_infoframe_rawset(hb, vsif_db);
-		}
-		break;
-	case VT_ALLM:
-		ieeeoui = HDMI_FORUM_IEEE_OUI;
-		len = 5;
-		hb[2] = len;
-		db[0] = GET_OUI_BYTE0(ieeeoui);
-		db[1] = GET_OUI_BYTE1(ieeeoui);
-		db[2] = GET_OUI_BYTE2(ieeeoui);
-		db[3] = 0x1; /* Fixed value */
-		if (on) {
-			db[4] |= 1 << 1; /* set bit1, ALLM_MODE */
-			if (hdmitx_edid_get_hdmi14_4k_vic(hdev->tx_comm.cur_VIC) > 0)
-				hdmitx21_set_avi_vic(hdev->tx_comm.cur_VIC);
-			hdmi_vend_infoframe2_rawset(hb, vsif_db);
-		} else {
-			db[4] &= ~(1 << 1); /* clear bit1, ALLM_MODE */
-			/* 1.When the Source stops transmitting the HF-VSIF,
-			 * the Sink shall interpret this as an indication
-			 * that transmission offeatures described in this
-			 * Infoframe has stopped
-			 * 2.When a Source is utilizing the HF-VSIF for ALLM
-			 * signaling only and indicates the Sink should
-			 * revert fromow-latency Mode to its previous mode,
-			 * the Source should send ALLM Mode = 0 to quickly
-			 * and reliably request the change. If a Source
-			 * indicates ALLM Mode = 0 in this manner , the
-			 * Source should transmit an HF-VSIF with ALLM Mode = 0
-			 * for at least 4 frames but for not more than 1 second.
-			 */
-			/* hdmi_vend_infoframe2_rawset(hb, vsif_db); */
-			/* wait for 4frames ~ 1S, then stop send HF-VSIF */
-			hdmi_vend_infoframe2_rawset(NULL, NULL);
-		}
-		break;
-	default:
-		break;
-	}
-	return 1;
+	return hdmitx_dev_setup_vsif_packet(tx_comm, &hdev->tx_hw, type, on, param);
 }

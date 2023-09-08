@@ -333,7 +333,7 @@ struct hdmitx_dev {
 };
 
 struct hdmitx_dev *get_hdmitx21_device(void);
-int hdmitx21_construct_vsif(struct hdmitx_dev *hdev,
+int hdmitx21_construct_vsif(struct hdmitx_common *tx_comm,
 	enum vsif_type type, int on, void *param);
 
 /***********************************************************************

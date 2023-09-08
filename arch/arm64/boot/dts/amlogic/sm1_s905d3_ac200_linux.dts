@@ -1230,6 +1230,10 @@
 	pxp_mode = <0>; /** 0:normal mode 1:pxp mode */
 };
 
+&drm_subsystem {
+	dummyl_from_hdmitx = /bits/ 8  <1>;
+};
+
 &amhdmitx {
 	status = "okay";
 	hdcp_ctl_lvl = <1>;

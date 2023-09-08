@@ -1542,6 +1542,10 @@
 	pxp_mode = <0>; /** 0:normal mode 1:pxp mode */
 };
 
+&drm_subsystem {
+	dummyl_from_hdmitx = /bits/ 8  <1>;
+};
+
 &drm_vpu {
 	status = "okay";
 	logo_addr = "0x7f800000";

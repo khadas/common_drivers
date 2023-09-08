@@ -1237,6 +1237,12 @@
 		interrupt-names = "vsync";
 	};
 
+	video_composer {
+		compatible = "amlogic, video_composer";
+		dev_name = "video_composer";
+		status = "okay";
+	};
+
 	codec_io: codec_io {
 		compatible = "amlogic, meson-g12a, codec-io";
 		status = "okay";

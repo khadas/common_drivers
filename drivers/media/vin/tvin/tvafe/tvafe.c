@@ -664,6 +664,8 @@ static void tvafe_dec_close(struct tvin_frontend_s *fe)
 		return;
 	}
 	tvafe_clk_status = false;
+	devp->flags &= (~TVAFE_FLAG_DEV_STARTED);
+	devp->flags &= (~TVAFE_FLAG_DEV_OPENED);
 	/*del_timer_sync(&devp->timer);*/
 #ifdef CONFIG_AMLOGIC_ATV_DEMOD
 	g_tvafe_info = NULL;
@@ -721,10 +723,6 @@ static void tvafe_dec_close(struct tvin_frontend_s *fe)
 #endif
 	/* init variable */
 	memset(tvafe, 0, sizeof(struct tvafe_info_s));
-
-	devp->flags &= (~TVAFE_FLAG_DEV_STARTED);
-	devp->flags &= (~TVAFE_FLAG_DEV_OPENED);
-
 	tvafe_pr_info("%s close afe ok.\n", __func__);
 
 	mutex_unlock(&devp->afe_mutex);

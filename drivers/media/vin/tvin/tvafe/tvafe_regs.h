@@ -345,8 +345,10 @@
 #define AML_ADDR_VS_EN_WID             1
 #define AML_FLUSH_IN_EN_BIT            26
 #define AML_FLUSH_IN_EN_WID            1
-#define AML_DISAGENT_BIT               24
-#define AML_DISAGENT_WID               2
+#define AML_DISAGENT_VBI_BIT           25
+#define AML_DISAGENT_VBI_WID           1
+#define AML_DISAGENT_CVD2_BIT          24
+#define AML_DISAGENT_CVD2_WID          1
 #define AML_VBIDATA_SEL_BIT            23
 #define AML_VBIDATA_SEL_WID            1
 #define AML_VBI_TH_BIT                 16
@@ -665,6 +667,14 @@
 #define  REG_K9_P0N_P625N_BIT           0
 #define  REG_K9_P0N_P625N_WID          8
 
+#define ACD_REG_5C		    ((ACD_BASE_ADD + 0x5C) << 2)
+#define  REG_AXIRD_UGT_BIT		3
+#define  REG_AXIRD_UGT_WID		1
+#define  REG_AXIWR_UGT_BIT		2
+#define  REG_AXIWR_UGT_WID		1
+#define  REG_ENABLE_MEM_BIT		0
+#define  REG_ENABLE_MEM_WID		1
+
 #define ACD_REG_5D                    ((ACD_BASE_ADD + 0x5D) << 2)
 #define CHROMA_PEAK_TAP_SEL_BIT       0
 #define CHROMA_PEAK_TAP_SEL_WID     3
@@ -975,7 +985,6 @@
 #define ACD_REG_50				((ACD_BASE_ADD + 0x50) << 2)
 #define ACD_REG_51				((ACD_BASE_ADD + 0x51) << 2)
 #define ACD_REG_52				((ACD_BASE_ADD + 0x52) << 2)
-#define ACD_REG_5C				((ACD_BASE_ADD + 0x5C) << 2)
 #define ACD_REG_5E				((ACD_BASE_ADD + 0x5E) << 2)
 #define ACD_REG_5F				((ACD_BASE_ADD + 0x5F) << 2)
 #define ACD_REG_60				((ACD_BASE_ADD + 0x60) << 2)

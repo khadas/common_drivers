@@ -560,8 +560,8 @@ void tvafe_set_apb_bus_err_ctrl(void)
 static void tvafe_reset_module(void)
 {
 	pr_info("%s: reset module\n", __func__);
-	W_APB_BIT(TVFE_RST_CTRL, 1, ALL_CLK_RST_BIT, ALL_CLK_RST_WID);
-	W_APB_BIT(TVFE_RST_CTRL, 0, ALL_CLK_RST_BIT, ALL_CLK_RST_WID);
+	W_APB_BIT(TVFE_RST_CTRL, 1, DCLK_RST_BIT, DCLK_RST_WID);
+	W_APB_BIT(TVFE_RST_CTRL, 0, DCLK_RST_BIT, DCLK_RST_WID);
 	/*reset vdin asynchronous fifo*/
 	/*for greenscreen on repeatedly power on/off*/
 	W_APB_BIT(TVFE_RST_CTRL, 1, SAMPLE_OUT_RST_BIT, SAMPLE_OUT_RST_WID);
@@ -603,7 +603,7 @@ void tvafe_enable_module(bool enable)
 	}
 
 	/* T5W add 3d comb clk */
-	if (tvafe_cpu_type() >= TVAFE_CPU_TYPE_T5W) {
+	if (tvafe_cpu_type() == TVAFE_CPU_TYPE_T5W) {
 		vclk_clk_reg_setb(HHI_TVFE_CLK_CNTL, 1, TVFE_CLK_GATE,
 				  TVFE_CLK_GATE_WIDTH);
 		vclk_clk_reg_setb(HHI_TVFE_CLK_CNTL, 1, TVFE_CLK_SEL,
@@ -632,7 +632,7 @@ void tvafe_enable_module(bool enable)
 			TVFE_ADC_CLK_DIV_WID);
 
 		/* T5W add 3d comb clk */
-		if (tvafe_cpu_type() >= TVAFE_CPU_TYPE_T5W) {
+		if (tvafe_cpu_type() == TVAFE_CPU_TYPE_T5W) {
 			vclk_clk_reg_setb(HHI_TVFE_CLK_CNTL, 0, TVFE_CLK_GATE,
 					  TVFE_CLK_GATE_WIDTH);
 			vclk_clk_reg_setb(HHI_TVFE_CLK_CNTL, 0, TVFE_CLK_SEL,

@@ -3078,21 +3078,23 @@ inline void tvafe_cvd2_check_3d_comb(struct tvafe_cvd2_s *cvd2)
 	}
 }
 
-/* tvafe cvd2 set reset*/
-/* vbi disable*/
-/* vbi disagent*/
-/* 3dcomb disagent*/
-/* ddr rw disable*/
+/* tvafe_cvd2_hold_rst: in this function 3dcomb and vbi working */
+/* if system crash, maybe axi not clear */
+/* 1.close vbi disagent */
+/* 2.close 3dcomb disagent */
+/* 3.close vbi function enable */
+/* 4.hold rst lbadrgen */
+/* 5.disable mem */
+/* 6.hold soft rst */
 void tvafe_cvd2_hold_rst(void)
 {
 	pr_info("[tvafe..] %s.\n", __func__);
-
-	W_APB_BIT(ACD_REG_22, 1, 25, 1);
-	W_APB_BIT(CVD2_VBI_FRAME_CODE_CTL, 0, 0, 1);
-	W_APB_BIT(CVD2_REG_B2, 1, 7, 1);
-	msleep(30);
-	W_APB_BIT(ACD_REG_22, 1, 24, 1);
-	W_APB_BIT(ACD_REG_5C, 0, 0, 1);
+	W_APB_BIT(ACD_REG_22, 1, AML_DISAGENT_VBI_BIT, AML_DISAGENT_VBI_WID);
+	W_APB_BIT(ACD_REG_22, 1, AML_DISAGENT_CVD2_BIT, AML_DISAGENT_CVD2_WID);
+	W_APB_BIT(CVD2_VBI_FRAME_CODE_CTL, 0, VBI_EN_BIT, VBI_EN_WID);
+	usleep_range(30, 40);
+	W_APB_BIT(CVD2_REG_B2, 1, LBADRGEN_RST_BIT, LBADRGEN_RST_WID);
+	W_APB_BIT(ACD_REG_5C, 0, REG_ENABLE_MEM_BIT, REG_ENABLE_MEM_WID);
 	W_APB_BIT(CVD2_RESET_REGISTER, 1, SOFT_RST_BIT, SOFT_RST_WID);
 }
 

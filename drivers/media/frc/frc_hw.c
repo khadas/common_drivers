@@ -506,11 +506,11 @@ void inp_undone_read(struct frc_dev_s *frc_devp)
 		frc_devp->ud_dbg.inp_undone_err++;
 		frc_devp->frc_sts.inp_undone_cnt++;
 		if (frc_devp->ud_dbg.inp_ud_dbg_en != 0) {
-			// if (frc_devp->frc_sts.inp_undone_cnt % 0x30 == 0) {
-			PR_ERR("inp_ud_err=0x%x, vs_cnt=%d\n",
+			PR_ERR("inp_ud_err=0x%x, isr_cnt=(%d,%d), vd_vs_cnt=%d\n",
 				inp_ud_flag,
-				frc_devp->in_sts.vs_cnt);
-			// }
+				frc_devp->in_sts.vs_cnt,
+				frc_devp->out_sts.vs_cnt,
+				frc_devp->frc_sts.vs_cnt);
 		}
 		timeout = 0;
 		do {
@@ -544,10 +544,12 @@ void me_undone_read(struct frc_dev_s *frc_devp)
 			WRITE_FRC_BITS(FRC_MEVP_CTRL0, 1, 31, 1);
 			WRITE_FRC_BITS(FRC_MEVP_CTRL0, 0, 31, 1);
 			if (frc_devp->ud_dbg.me_undone_err == 0) {
-				pr_frc(0, "me_ud_err=%d,cnt=%d, outvs_cnt=%d\n",
+				PR_ERR("me_ud_err=%d, cnt=%d, isr_cnt=(%d,%d), vd_vs_cnt=%d\n",
 					me_ud_flag,
 					frc_devp->frc_sts.me_undone_cnt,
-					frc_devp->out_sts.vs_cnt);
+					frc_devp->in_sts.vs_cnt,
+					frc_devp->out_sts.vs_cnt,
+					frc_devp->frc_sts.vs_cnt);
 				frc_devp->ud_dbg.me_undone_err = 1;
 			}
 		} else {
@@ -568,6 +570,7 @@ void mc_undone_read(struct frc_dev_s *frc_devp)
 		val = READ_FRC_REG(FRC_RO_MC_STAT);
 		mc_ud_flag = (val >> 12) & 0x1;
 		if (mc_ud_flag != 0) {
+			PR_ERR("FRC_RO_MC_STAT= 0x%08X", val);
 			frc_devp->frc_sts.mc_undone_cnt += (val >> 16) & 0xfff;
 			frc_devp->ud_dbg.mc_undone_err = 1;
 			WRITE_FRC_BITS(FRC_MC_HW_CTRL0, 1, 21, 1);
@@ -576,9 +579,11 @@ void mc_undone_read(struct frc_dev_s *frc_devp)
 			frc_devp->ud_dbg.mc_undone_err = 0;
 		}
 		if (frc_devp->ud_dbg.mc_undone_err == 1)
-			pr_frc(0, "mc_undo_vcnt= %d, outvs_cnt = %d\n",
+			PR_ERR("mc_undo_vcnt= %d, isr_cnt=(%d,%d), vd_vs_cnt=%d\n",
 				frc_devp->frc_sts.mc_undone_cnt,
-				frc_devp->out_sts.vs_cnt);
+				frc_devp->in_sts.vs_cnt,
+				frc_devp->out_sts.vs_cnt,
+				frc_devp->frc_sts.vs_cnt);
 	}
 }
 
@@ -601,10 +606,11 @@ void vp_undone_read(struct frc_dev_s *frc_devp)
 			frc_devp->ud_dbg.vp_undone_err = 0;
 		}
 		if (frc_devp->ud_dbg.vp_undone_err != 0)
-			pr_frc(0, "vp_err=%x, cnt=%d, outvs_cnt=%d\n",
+			PR_ERR("vp_err=%x, cnt=%d, outvs_cnt=%d, vd_vs_cnt:%d\n",
 				frc_devp->ud_dbg.vp_undone_err,
 				frc_devp->frc_sts.vp_undone_cnt,
-				frc_devp->out_sts.vs_cnt);
+				frc_devp->out_sts.vs_cnt,
+				frc_devp->frc_sts.vs_cnt);
 	}
 }
 
@@ -624,16 +630,23 @@ const char * const csc_str[] = {
 	"PAT_BLUE",
 	"PAT_WHITE",
 	"PAT_BLACK",
+	"RETORE_DEF",
 };
 
 void frc_mtx_cfg(enum frc_mtx_e mtx_sel, enum frc_mtx_csc_e mtx_csc)
 {
 	unsigned int pre_offset01 = 0;
 	unsigned int pre_offset2 = 0;
-	unsigned int pst_offset01, pst_offset2;
-	unsigned int coef00_01, coef02_10, coef11_12, coef20_21, coef22;
+	unsigned int pst_offset01 = 0x0200, pst_offset2 = 0x0200;
+	unsigned int coef00_01 = 0, coef02_10 = 0, coef11_12 = 0;
+	unsigned int coef20_21 = 0, coef22 = 0;
 	unsigned int en = 1;
+	struct frc_dev_s *devp = get_frc_devp();
 
+	if (!devp->probe_ok || !devp->power_on_flag)
+		return;
+	if (devp->clk_state == FRC_CLOCK_OFF)
+		return;
 	switch (mtx_csc) {
 	case CSC_OFF:
 		en = 0;
@@ -727,78 +740,110 @@ void frc_mtx_cfg(enum frc_mtx_e mtx_sel, enum frc_mtx_csc_e mtx_csc)
 		pst_offset01 = 0x0200;
 		pst_offset2 = 0x0200;
 		break;
+	case DEFAULT:
+		if (mtx_sel == FRC_INPUT_CSC) {
+			coef00_01 = devp->init_csc[0].coef00_01;
+			coef02_10 = devp->init_csc[0].coef02_10;
+			coef11_12 = devp->init_csc[0].coef11_12;
+			coef20_21 = devp->init_csc[0].coef20_21;
+			coef22 = devp->init_csc[0].coef22;
+			pre_offset01 = devp->init_csc[0].pre_offset01;
+			pre_offset2 = devp->init_csc[0].pre_offset2;
+			pst_offset01 = devp->init_csc[0].pst_offset01;
+			pst_offset2 = devp->init_csc[0].pst_offset2;
+			en = devp->init_csc[0].enable;
+		} else {
+			coef00_01 = devp->init_csc[1].coef00_01;
+			coef02_10 = devp->init_csc[1].coef02_10;
+			coef11_12 = devp->init_csc[1].coef11_12;
+			coef20_21 = devp->init_csc[1].coef20_21;
+			coef22 = devp->init_csc[1].coef22;
+			pre_offset01 = devp->init_csc[1].pre_offset01;
+			pre_offset2 = devp->init_csc[1].pre_offset2;
+			pst_offset01 = devp->init_csc[1].pst_offset01;
+			pst_offset2 = devp->init_csc[1].pst_offset2;
+			en = devp->init_csc[1].enable;
+		}
+		break;
 	default:
+		coef00_01 = 0x0;
+		coef02_10 = 0x0;
+		coef11_12 = 0x0;
+		coef20_21 = 0x0;
+		coef22 = 0x0;
+		pst_offset01 = 0x0200;
+		pst_offset2 = 0x0200;
 		en = 0;  // invalid case
 		break;
 	}
 
-	if (!en) {
-		if (mtx_sel == FRC_INPUT_CSC)
-			WRITE_FRC_BITS(FRC_INP_CSC_CTRL, en, 3, 1);
-		else if (mtx_sel == FRC_OUTPUT_CSC)
-			WRITE_FRC_BITS(FRC_MC_CSC_CTRL, en, 3, 1);
-		return;
-	} else {
-		switch (mtx_sel) {
-		case FRC_INPUT_CSC:
-			WRITE_FRC_REG(FRC_INP_CSC_OFFSET_INP01, pre_offset01);
-			WRITE_FRC_REG(FRC_INP_CSC_OFFSET_INP2, pre_offset2);
-			WRITE_FRC_REG(FRC_INP_CSC_COEF_00_01, coef00_01);
-			WRITE_FRC_REG(FRC_INP_CSC_COEF_02_10, coef02_10);
-			WRITE_FRC_REG(FRC_INP_CSC_COEF_11_12, coef11_12);
-			WRITE_FRC_REG(FRC_INP_CSC_COEF_20_21, coef20_21);
-			WRITE_FRC_REG(FRC_INP_CSC_COEF_22, coef22);
-			WRITE_FRC_REG(FRC_INP_CSC_OFFSET_OUP01, pst_offset01);
-			WRITE_FRC_REG(FRC_INP_CSC_OFFSET_OUP2, pst_offset2);
-			WRITE_FRC_BITS(FRC_INP_CSC_CTRL, en, 3, 1);
-			break;
-		case FRC_OUTPUT_CSC:
-			WRITE_FRC_REG(FRC_MC_CSC_OFFSET_INP01, pre_offset01);
-			WRITE_FRC_REG(FRC_MC_CSC_OFFSET_INP2, pre_offset2);
-			WRITE_FRC_REG(FRC_MC_CSC_COEF_00_01, coef00_01);
-			WRITE_FRC_REG(FRC_MC_CSC_COEF_02_10, coef02_10);
-			WRITE_FRC_REG(FRC_MC_CSC_COEF_11_12, coef11_12);
-			WRITE_FRC_REG(FRC_MC_CSC_COEF_20_21, coef20_21);
-			WRITE_FRC_REG(FRC_MC_CSC_COEF_22, coef22);
-			WRITE_FRC_REG(FRC_MC_CSC_OFFSET_OUP01, pst_offset01);
-			WRITE_FRC_REG(FRC_MC_CSC_OFFSET_OUP2, pst_offset2);
-			WRITE_FRC_BITS(FRC_MC_CSC_CTRL, en, 3, 1);
-			break;
-		default:
-			break;
-		}
-	}
-
 	switch (mtx_sel) {
 	case FRC_INPUT_CSC:
-		WRITE_FRC_REG_BY_CPU(FRC_INP_CSC_OFFSET_INP01, pre_offset01);
-		WRITE_FRC_REG_BY_CPU(FRC_INP_CSC_OFFSET_INP2, pre_offset2);
-		WRITE_FRC_REG_BY_CPU(FRC_INP_CSC_COEF_00_01, coef00_01);
-		WRITE_FRC_REG_BY_CPU(FRC_INP_CSC_COEF_02_10, coef02_10);
-		WRITE_FRC_REG_BY_CPU(FRC_INP_CSC_COEF_11_12, coef11_12);
-		WRITE_FRC_REG_BY_CPU(FRC_INP_CSC_COEF_20_21, coef20_21);
-		WRITE_FRC_REG_BY_CPU(FRC_INP_CSC_COEF_22, coef22);
-		WRITE_FRC_REG_BY_CPU(FRC_INP_CSC_OFFSET_OUP01, pst_offset01);
-		WRITE_FRC_REG_BY_CPU(FRC_INP_CSC_OFFSET_OUP2, pst_offset2);
+		WRITE_FRC_REG(FRC_INP_CSC_OFFSET_INP01, pre_offset01);
+		WRITE_FRC_REG(FRC_INP_CSC_OFFSET_INP2, pre_offset2);
+		WRITE_FRC_REG(FRC_INP_CSC_COEF_00_01, coef00_01);
+		WRITE_FRC_REG(FRC_INP_CSC_COEF_02_10, coef02_10);
+		WRITE_FRC_REG(FRC_INP_CSC_COEF_11_12, coef11_12);
+		WRITE_FRC_REG(FRC_INP_CSC_COEF_20_21, coef20_21);
+		WRITE_FRC_REG(FRC_INP_CSC_COEF_22, coef22);
+		WRITE_FRC_REG(FRC_INP_CSC_OFFSET_OUP01, pst_offset01);
+		WRITE_FRC_REG(FRC_INP_CSC_OFFSET_OUP2, pst_offset2);
 		WRITE_FRC_BITS(FRC_INP_CSC_CTRL, en, 3, 1);
 		break;
 	case FRC_OUTPUT_CSC:
-		WRITE_FRC_REG_BY_CPU(FRC_MC_CSC_OFFSET_INP01, pre_offset01);
-		WRITE_FRC_REG_BY_CPU(FRC_MC_CSC_OFFSET_INP2, pre_offset2);
-		WRITE_FRC_REG_BY_CPU(FRC_MC_CSC_COEF_00_01, coef00_01);
-		WRITE_FRC_REG_BY_CPU(FRC_MC_CSC_COEF_02_10, coef02_10);
-		WRITE_FRC_REG_BY_CPU(FRC_MC_CSC_COEF_11_12, coef11_12);
-		WRITE_FRC_REG_BY_CPU(FRC_MC_CSC_COEF_20_21, coef20_21);
-		WRITE_FRC_REG_BY_CPU(FRC_MC_CSC_COEF_22, coef22);
-		WRITE_FRC_REG_BY_CPU(FRC_MC_CSC_OFFSET_OUP01, pst_offset01);
-		WRITE_FRC_REG_BY_CPU(FRC_MC_CSC_OFFSET_OUP2, pst_offset2);
+		WRITE_FRC_REG(FRC_MC_CSC_OFFSET_INP01, pre_offset01);
+		WRITE_FRC_REG(FRC_MC_CSC_OFFSET_INP2, pre_offset2);
+		WRITE_FRC_REG(FRC_MC_CSC_COEF_00_01, coef00_01);
+		WRITE_FRC_REG(FRC_MC_CSC_COEF_02_10, coef02_10);
+		WRITE_FRC_REG(FRC_MC_CSC_COEF_11_12, coef11_12);
+		WRITE_FRC_REG(FRC_MC_CSC_COEF_20_21, coef20_21);
+		WRITE_FRC_REG(FRC_MC_CSC_COEF_22, coef22);
+		WRITE_FRC_REG(FRC_MC_CSC_OFFSET_OUP01, pst_offset01);
+		WRITE_FRC_REG(FRC_MC_CSC_OFFSET_OUP2, pst_offset2);
 		WRITE_FRC_BITS(FRC_MC_CSC_CTRL, en, 3, 1);
 		break;
 	default:
 		break;
 	}
-	pr_frc(1, "%s, mtx sel: %s,  mtx csc : %s\n",
-		__func__, mtx_str[mtx_sel - 1], csc_str[mtx_csc]);
+	pr_frc(1, "%s, mtx sel: %s, en:%d, mtx csc : %s\n",
+		__func__, mtx_str[mtx_sel - 1], en, csc_str[mtx_csc]);
+}
+
+void frc_get_init_csc(struct frc_dev_s *frc_devp)
+{
+	frc_devp->init_csc[0].coef00_01 = READ_FRC_REG(FRC_INP_CSC_COEF_00_01);
+	frc_devp->init_csc[0].coef02_10 = READ_FRC_REG(FRC_INP_CSC_COEF_02_10);
+	frc_devp->init_csc[0].coef11_12 = READ_FRC_REG(FRC_INP_CSC_COEF_11_12);
+	frc_devp->init_csc[0].coef20_21 = READ_FRC_REG(FRC_INP_CSC_COEF_20_21);
+	frc_devp->init_csc[0].coef22 = READ_FRC_REG(FRC_INP_CSC_COEF_22);
+	frc_devp->init_csc[0].pre_offset01 = READ_FRC_REG(FRC_INP_CSC_OFFSET_INP01);
+	frc_devp->init_csc[0].pre_offset2 = READ_FRC_REG(FRC_INP_CSC_OFFSET_INP2);
+	frc_devp->init_csc[0].pst_offset01 = READ_FRC_REG(FRC_INP_CSC_OFFSET_OUP01);
+	frc_devp->init_csc[0].pst_offset2 = READ_FRC_REG(FRC_INP_CSC_OFFSET_OUP2);
+	frc_devp->init_csc[0].enable =
+			(READ_FRC_REG(FRC_INP_CSC_CTRL) >> 3) & BIT_0;
+
+	frc_devp->init_csc[1].coef00_01 = READ_FRC_REG(FRC_MC_CSC_COEF_00_01);
+	frc_devp->init_csc[1].coef02_10 = READ_FRC_REG(FRC_MC_CSC_COEF_02_10);
+	frc_devp->init_csc[1].coef11_12 = READ_FRC_REG(FRC_MC_CSC_COEF_11_12);
+	frc_devp->init_csc[1].coef20_21 = READ_FRC_REG(FRC_MC_CSC_COEF_20_21);
+	frc_devp->init_csc[1].coef22 = READ_FRC_REG(FRC_MC_CSC_COEF_22);
+	frc_devp->init_csc[1].pre_offset01 = READ_FRC_REG(FRC_MC_CSC_OFFSET_INP01);
+	frc_devp->init_csc[1].pre_offset2 = READ_FRC_REG(FRC_MC_CSC_OFFSET_INP2);
+	frc_devp->init_csc[1].pst_offset01 = READ_FRC_REG(FRC_MC_CSC_OFFSET_OUP01);
+	frc_devp->init_csc[1].pst_offset2 = READ_FRC_REG(FRC_MC_CSC_OFFSET_OUP2);
+	frc_devp->init_csc[1].enable =
+			(READ_FRC_REG(FRC_MC_CSC_CTRL) >> 3) & BIT_0;
+
+	pr_frc(1, "%s, inp_csc_en:%d mtx(%x-%x-%x), mc_csc_en:%d mtx(%x-%x-%x)\n",
+		__func__,  frc_devp->init_csc[0].enable,
+		frc_devp->init_csc[0].coef00_01,
+		frc_devp->init_csc[0].pre_offset01,
+		frc_devp->init_csc[0].pre_offset01,
+		frc_devp->init_csc[1].enable,
+		frc_devp->init_csc[1].coef00_01,
+		frc_devp->init_csc[1].pre_offset01,
+		frc_devp->init_csc[1].pre_offset01);
 }
 
 void frc_mtx_set(struct frc_dev_s *frc_devp)
@@ -816,6 +861,7 @@ void frc_mtx_set(struct frc_dev_s *frc_devp)
 		frc_mtx_cfg(FRC_INPUT_CSC, CSC_OFF);
 		frc_mtx_cfg(FRC_OUTPUT_CSC, CSC_OFF);
 	}
+	frc_get_init_csc(frc_devp);
 }
 
 static void set_vd1_out_size(struct frc_dev_s *frc_devp)
@@ -864,8 +910,8 @@ void frc_pattern_on(u32 en)
 		frc_mtx_cfg(FRC_OUTPUT_CSC, CSC_OFF);
 
 	} else {
-		frc_mtx_cfg(FRC_INPUT_CSC, CSC_OFF);
-		frc_mtx_cfg(FRC_OUTPUT_CSC, CSC_OFF);
+		frc_mtx_cfg(FRC_INPUT_CSC, DEFAULT);
+		frc_mtx_cfg(FRC_OUTPUT_CSC, DEFAULT);
 	}
 }
 
@@ -1482,6 +1528,10 @@ void frc_top_init(struct frc_dev_s *frc_devp)
 	mc_hold_line = (regdata_outholdctl_0003 >> 8) & 0xff;
 	inp_hold_line = regdata_inpholdctl_0002 & 0x1fff;
 
+	fw_data->holdline_parm.me_hold_line = me_hold_line;
+	fw_data->holdline_parm.mc_hold_line = mc_hold_line;
+	fw_data->holdline_parm.inp_hold_line = inp_hold_line;
+
 	reg_post_dly_vofst = fw_data->holdline_parm.reg_post_dly_vofst;
 	reg_mc_dly_vofst0 = fw_data->holdline_parm.reg_mc_dly_vofst0;
 	chip = get_chip_type();
@@ -1538,12 +1588,12 @@ void frc_top_init(struct frc_dev_s *frc_devp)
 		if (frc_top->hsize < WIDTH_2K && frc_top->out_hsize == WIDTH_4K)
 			frc_devp->little_win = 1;
 	} else if (chip == ID_T3X) {
-		if (frc_devp->out_sts.out_framerate > 80)
-			frc_devp->ud_dbg.res2_dbg_en = 0;
-		else
-			frc_devp->ud_dbg.res2_dbg_en = 1;
+		//if (frc_devp->out_sts.out_framerate > 80)
+		//	frc_devp->ud_dbg.res2_dbg_en = 0;
+		//else
+		//	frc_devp->ud_dbg.res2_dbg_en = 1;
 	} else {
-		frc_devp->ud_dbg.res2_dbg_en = 1;
+		frc_devp->ud_dbg.res2_dbg_en = 3;
 	}
 	/*The resolution of the input is not standard for test
 	 * input size adjust within 8 lines and output size > 1920 * 1080
@@ -2656,17 +2706,22 @@ void frc_internal_initial(struct frc_dev_s *frc_devp)
 	// config_phs_regs(frc_top->frc_ratio_mode, frc_top->film_mode);
 	config_me_top_hw_reg();
 	if (chip >= ID_T3X) {
-		frc_top->memc_loss_en = 0x12;
+		frc_top->memc_loss_en = 0x13;
 		frc_cfg_memc_loss(frc_top->memc_loss_en & 0x3);
 		frc_cfg_mcdw_loss((frc_top->memc_loss_en >> 4) & 0x01);
 		out_frm_dly_num = 0x0;
-		WRITE_FRC_BITS(FRC_REG_TOP_RESERVE0, 0x17, 0, 8);
-		frc_memc_120hz_patch_1(frc_devp);
+		// WRITE_FRC_BITS(FRC_REG_TOP_RESERVE0, 0x17, 0, 8); // rev.A
+		WRITE_FRC_BITS(FRC_REG_TOP_RESERVE0, 0x46, 0, 8); // rev.B
+		// frc_memc_120hz_patch_1(frc_devp);
 	} else {
 		frc_top->memc_loss_en = 0x03;
 		frc_cfg_memc_loss(frc_top->memc_loss_en & 0x3);
 		out_frm_dly_num = 0x03000000;
 		WRITE_FRC_BITS(FRC_REG_TOP_RESERVE0, 0x14, 0, 8);
+	}
+	if (frc_devp->ud_dbg.res2_dbg_en == 3) {
+		t3x_eco_initial();
+		t3x_eco_qp_cfg(2);
 	}
 	// protect mode, enable: memc delay 2 frame
 	if (frc_devp->prot_mode) {
@@ -2684,7 +2739,8 @@ void frc_internal_initial(struct frc_dev_s *frc_devp)
 	WRITE_FRC_REG_BY_CPU(FRC_PROC_SIZE,
 			(frc_devp->out_sts.vout_height & 0x3fff) << 16 |
 			(frc_devp->out_sts.vout_width & 0x3fff));
-	pr_frc(0, "%s\n", __func__);
+
+	pr_frc(0, "%s done\n ", __func__);
 	return;
 }
 
@@ -2844,7 +2900,7 @@ void frc_set_output_pattern(u8 enpat)
 			realpattern = 9;
 		frc_mtx_cfg(FRC_OUTPUT_CSC, realpattern);
 	} else {
-		frc_mtx_cfg(FRC_OUTPUT_CSC, CSC_OFF);
+		frc_mtx_cfg(FRC_OUTPUT_CSC, DEFAULT);
 	}
 }
 
@@ -2858,7 +2914,7 @@ void frc_set_input_pattern(u8 enpat)
 			realpattern = 9;
 		frc_mtx_cfg(FRC_INPUT_CSC, realpattern);
 	} else {
-		frc_mtx_cfg(FRC_INPUT_CSC, CSC_OFF);
+		frc_mtx_cfg(FRC_INPUT_CSC, DEFAULT);
 	}
 }
 
@@ -3436,12 +3492,6 @@ void frc_chg_loss_slice_num(u8 num)
 {
 	enum chip_id chip;
 	u32  tmp_value, tmp_value2;
-	struct frc_dev_s *devp = get_frc_devp();
-
-	if (!devp->probe_ok || !devp->power_on_flag)
-		return;
-	if (devp->clk_state == FRC_CLOCK_OFF)
-		return;
 
 	chip = get_chip_type();
 	if (chip != ID_T3X)
@@ -3462,4 +3512,235 @@ void frc_chg_loss_slice_num(u8 num)
 			READ_FRC_REG(FRC_REG_TOP_CTRL11));
 	pr_frc(1, "FRC_INP_MCDW_CTRL=0x%x\n",
 			READ_FRC_REG(FRC_INP_MCDW_CTRL));
+}
+
+void t3x_eco_initial(void)
+{
+	enum chip_id chip;
+	u32  tmp_value;
+	int log = 0;
+
+	chip = get_chip_type();
+	if (chip != ID_T3X)
+		return;
+	// reg_mc_nr_en
+	//tmp_value = READ_FRC_REG(FRC_REG_INP_MODULE_EN);
+	//tmp_value |= BIT_9;
+	//WRITE_FRC_REG_BY_CPU(FRC_REG_INP_MODULE_EN, tmp_value);
+	//reg_nr_misc 32bits
+	WRITE_FRC_REG_BY_CPU(FRC_NR_MISC, 0x801);
+
+	//Close Nr/bbd/mcwr opt for prefetch phase
+	tmp_value = READ_FRC_REG(FRC_INP_PATH_OPT);
+	tmp_value |= BIT_0 + BIT_1 + BIT_3 + BIT_4;
+	WRITE_FRC_REG_BY_CPU(FRC_INP_PATH_OPT, tmp_value);
+
+	//Use h2v2 pic in prefetch phase
+	tmp_value = READ_FRC_REG(FRC_BYP_PATH_CTRL);
+	tmp_value |= BIT_0 + BIT_4;
+	WRITE_FRC_REG_BY_CPU(FRC_BYP_PATH_CTRL, tmp_value);
+
+	// h2v2 setting force luma&chroma, h2+v2 downsample 20230907 add
+	tmp_value = READ_FRC_REG(FRC_MC_H2V2_SETTING);
+	tmp_value |= 0x5E000000;
+	tmp_value |= 0x01780000;
+	WRITE_FRC_REG_BY_CPU(FRC_MC_H2V2_SETTING, tmp_value);
+
+	WRITE_FRC_REG_BY_CPU(FRC_SRCH_RNG_MODE, 0x77); // add 20230907
+
+	//Use h2v2 pic in prefetch phase
+	tmp_value = READ_FRC_REG(FRC_MCDW_PATH_CTRL);
+	// reg_frc_mcdw_path_en  reg_frc_mcdw_v2_en reg_frc_mcdw_h2_en
+	// tmp_value |= BIT_0 + BIT_1 + BIT_4;
+	tmp_value &= 0xFFFFFFFC;
+	tmp_value |= BIT_1 + BIT_4;
+	WRITE_FRC_REG_BY_CPU(FRC_MCDW_PATH_CTRL, tmp_value);
+
+	//generate h2v2 pic in prefetch phase
+	tmp_value = READ_FRC_REG(FRC_INP_MCDW_CTRL);
+	// reg_mcdw_lpf_mode  reg_mcdw_ds_mode_hv
+	// reg_mcdw_loss_en reg_mcdw_path_en
+	// tmp_value |= BIT_0 + BIT_4 + BIT_24 + BIT_25 + BIT_28;
+	tmp_value &= 0xFC000000; // bit24,25  set 01
+	tmp_value |= BIT_0 + BIT_4 + BIT_24 + BIT_25 + BIT_28;
+	WRITE_FRC_REG_BY_CPU(FRC_INP_MCDW_CTRL, tmp_value);
+
+	//slice_num == 1
+	frc_chg_loss_slice_num(1);
+
+	//CLOSS_MISC:encoder+decoder reg_use_sw_preslc_fifolevel == 0
+	tmp_value = READ_FRC_REG(0x0C00);
+	// reg_use_sw_preslc_fifolevel
+	tmp_value &= 0xFFFFFFF7;
+	WRITE_FRC_REG_BY_CPU(0x0C00, tmp_value);
+	tmp_value = READ_FRC_REG(0x0D00);
+	// reg_use_sw_preslc_fifolevel
+	tmp_value &= 0xFFFFFFF7;
+	WRITE_FRC_REG_BY_CPU(0x0D00, tmp_value);
+	tmp_value = READ_FRC_REG(0x3500);
+	// reg_use_sw_preslc_fifolevel
+	tmp_value &= 0xFFFFFFF7;
+	WRITE_FRC_REG_BY_CPU(0x3500, tmp_value);
+	tmp_value = READ_FRC_REG(0x3700);
+	// reg_use_sw_preslc_fifolevel
+	tmp_value &= 0xFFFFFFF7;
+	WRITE_FRC_REG_BY_CPU(0x3700, tmp_value);
+
+	//CLOSS_DEBUG_MODE:encoder reg_force_qp_0 ==0x80~0x87
+	tmp_value = READ_FRC_REG(0x0c0b);
+	tmp_value &= 0xFFFFFF00;
+	tmp_value |= 0x82;
+	WRITE_FRC_REG_BY_CPU(0x0c0b, tmp_value);
+	//CLOSS0_RATIO_0: encoder QP Value //reg_ratio_bppx16_0_3
+	tmp_value = READ_FRC_REG(0x0c59);
+	tmp_value &= 0x00FFFFFF;
+	tmp_value |= 0x82000000;
+	WRITE_FRC_REG_BY_CPU(0x0c59, tmp_value);
+
+	//CLOSS_DEBUG_MODE:decoder reg_force_qp_0 ==0x80~0x87
+	tmp_value = READ_FRC_REG(0x0d0b);
+	tmp_value &= 0xFFFFFF00;
+	tmp_value |= 0x80;
+	WRITE_FRC_REG_BY_CPU(0x0d0b, tmp_value);
+	tmp_value = READ_FRC_REG(0x350b);
+	tmp_value &= 0xFFFFFF00;
+	tmp_value |= 0x80;
+	WRITE_FRC_REG_BY_CPU(0x350b, tmp_value);
+	tmp_value = READ_FRC_REG(0x370b);
+	tmp_value &= 0xFFFFFF00;
+	tmp_value |= 0x80;
+	WRITE_FRC_REG_BY_CPU(0x370b, tmp_value);
+
+	//CLOSS_MISC:decoder reg_misc[1]
+	tmp_value = READ_FRC_REG(0x0d00);
+	tmp_value &= 0xFFFFDFFF;
+	WRITE_FRC_REG_BY_CPU(0x0d00, tmp_value);
+	tmp_value = READ_FRC_REG(0x3500);
+	tmp_value &= 0xFFFFDFFF;
+	WRITE_FRC_REG_BY_CPU(0x3500, tmp_value);
+	tmp_value = READ_FRC_REG(0x3700);
+	tmp_value &= 0xFFFFDFFF;
+	WRITE_FRC_REG_BY_CPU(0x3700, tmp_value);
+
+	// print setting
+	pr_frc(log, "%s set\n", __func__);
+	pr_frc(log, "FRC_REG_INP_MODULE_EN=0x%x\n",
+				READ_FRC_REG(FRC_REG_INP_MODULE_EN));
+	pr_frc(log, "FRC_NR_MISC=0x%x\n",
+				READ_FRC_REG(FRC_NR_MISC));
+	pr_frc(log, "FRC_INP_PATH_OPT=0x%x\n",
+				READ_FRC_REG(FRC_INP_PATH_OPT));
+	pr_frc(log, "FRC_BYP_PATH_CTRL=0x%x\n",
+				READ_FRC_REG(FRC_BYP_PATH_CTRL));
+	pr_frc(log, "FRC_MCDW_PATH_CTRL=0x%x\n",
+				READ_FRC_REG(FRC_MCDW_PATH_CTRL));
+	pr_frc(log, "FRC_INP_MCDW_CTRL=0x%x\n",
+				READ_FRC_REG(FRC_INP_MCDW_CTRL));
+	pr_frc(log, "FRC_REG_TOP_CTRL11=0x%x\n",
+				READ_FRC_REG(FRC_REG_TOP_CTRL11));
+	pr_frc(log, "0xc00=0x%x, 0xd00=0x%x, 0xc0b=0x%x, 0xc59=0x%x,0xd0b=0x%x\n",
+		READ_FRC_REG(0x0c00), READ_FRC_REG(0x0d00),
+		READ_FRC_REG(0x0c0b), READ_FRC_REG(0x0c59),
+		READ_FRC_REG(0x0d0b));
+	pr_frc(log, "0x3500=0x%x, 0x3700=0x%x, 0x350b=0x%x, 0x370b=0x%x\n",
+		READ_FRC_REG(0x3500), READ_FRC_REG(0x3700),
+		READ_FRC_REG(0x350b), READ_FRC_REG(0x370b));
+}
+
+void t3x_eco_qp_cfg(u32 qp)
+{
+	enum chip_id chip;
+	u32  tmp_value;
+	int log = 0;
+
+	chip = get_chip_type();
+	if (chip != ID_T3X)
+		return;
+
+	//CLOSS_DEBUG_MODE:encoder reg_force_qp_0 ==0x80~0x87
+	tmp_value = READ_FRC_REG(0x0c0b);
+	tmp_value &= 0xFFFFFF80;
+	tmp_value |= (qp & 0x7F);
+	WRITE_FRC_REG_BY_CPU(0x0c0b, tmp_value);
+
+	//CLOSS0_RATIO_0: encoder QP Value
+	tmp_value = READ_FRC_REG(0x0c59);
+	tmp_value &= 0x80FFFFFF;
+	tmp_value |= (qp & 0x7F) << 24;
+	WRITE_FRC_REG_BY_CPU(0x0c59, tmp_value);
+
+	pr_frc(log, "%s set\n", __func__);
+	pr_frc(log, "0x0c0b=0x%x, 0x0c59=0x%x\n",
+		READ_FRC_REG(0x0c0b), READ_FRC_REG(0x0c59));
+}
+
+void t3x_revB_patch_apply(void)
+{
+	enum chip_id chip;
+	struct frc_dev_s *devp = get_frc_devp();
+
+	if (!devp->probe_ok || !devp->power_on_flag)
+		return;
+	chip = get_chip_type();
+	if (chip != ID_T3X)
+		return;
+	if (devp->ud_dbg.res2_dbg_en == 3) {
+		t3x_eco_initial();
+		t3x_eco_qp_cfg(2);
+	}
+}
+
+void t3x_verB_set_cfg(u8 flag)
+{
+	enum chip_id chip;
+	struct frc_dev_s *devp = get_frc_devp();
+	u32 tmp_isr_cnt; // tmp_value;
+
+	if (!devp->probe_ok || !devp->power_on_flag)
+		return;
+	chip = get_chip_type();
+	if (chip != ID_T3X)
+		return;
+	if (flag == 0) {   //  set before frc enable
+		WRITE_FRC_BITS(FRC_INP_MCDW_CTRL, 3, 24, 2);
+		WRITE_FRC_BITS(FRC_MCDW_PATH_CTRL, 3, 0, 2);
+		WRITE_FRC_REG_BY_CPU(FRC_SRCH_RNG_MODE, 0x77);
+		// tmp_value = READ_FRC_REG(FRC_MC_H2V2_SETTING);
+		// tmp_value |= 0x20800000;
+		// WRITE_FRC_REG_BY_CPU(FRC_MC_H2V2_SETTING, tmp_value);
+		devp->ud_dbg.other1_err = 1;
+		pr_frc(0, "%s set:%d INP_MCDW_CTRL=0x%x, H2V2=0x%x, MCDW_CTRL=0x%x vs_cnt=%d\n",
+			__func__,
+			flag,
+			READ_FRC_REG(FRC_INP_MCDW_CTRL),
+			READ_FRC_REG(FRC_MC_H2V2_SETTING),
+			READ_FRC_REG(FRC_MCDW_PATH_CTRL),
+			devp->frc_sts.vs_cnt);
+	} else {  //   restore after frc enable
+		if (devp->ud_dbg.other1_err == 1) {
+			tmp_isr_cnt = READ_FRC_REG(FRC_RO_INT_CNT);
+			// tmp_value = READ_FRC_REG(FRC_REG_INP_INT_FLAG);
+			pr_frc(0, "%s set:%d ro_isr_cnt=(%d,%d), isr_cnt=(%d,%d)\n",
+				__func__,
+				flag,
+				tmp_isr_cnt & 0xFFF,
+				tmp_isr_cnt >> 16,
+				devp->in_sts.vs_cnt,
+				devp->out_sts.vs_cnt);
+				// if (1){  // ((tmp_value & BIT_4) == 0)
+				WRITE_FRC_BITS(FRC_INP_MCDW_CTRL, 2, 24, 2);
+				WRITE_FRC_BITS(FRC_MCDW_PATH_CTRL, 0, 0, 1);
+				WRITE_FRC_REG_BY_CPU(FRC_SRCH_RNG_MODE, 0x00);
+				// tmp_value = READ_FRC_REG(FRC_MC_H2V2_SETTING);
+				//  tmp_value &= 0xDF7FFFFF;
+				// WRITE_FRC_REG_BY_CPU(FRC_MC_H2V2_SETTING, tmp_value);
+				pr_frc(0, "%s set INP_MCDW=0x%x, H2V2_SET=0x%x,MCDW_CTRL=0x%x\n",
+				__func__,
+				READ_FRC_REG(FRC_INP_MCDW_CTRL),
+				READ_FRC_REG(FRC_MC_H2V2_SETTING),
+				READ_FRC_REG(FRC_MCDW_PATH_CTRL));
+				devp->ud_dbg.other1_err = 0;
+				// }
+		}
+	}
 }

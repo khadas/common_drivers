@@ -93,7 +93,7 @@ const struct frm_dly_dat_s chip_frc_frame_dly[3][4] = {
 		{130, 11},
 		{120, 14},
 		{266, 28},
-		{240, 15},
+		{220, 20},  // {240, 15},
 	},
 };
 
@@ -1086,6 +1086,7 @@ static void frc_drv_initial(struct frc_dev_s *devp)
 	memset(&devp->ud_dbg, 0, sizeof(struct frc_ud_s));
 	/*used for force in/out size for frc process*/
 	memset(&devp->force_size, 0, sizeof(struct frc_force_size_s));
+	devp->ud_dbg.res2_dbg_en = 3;  // t3x_revB test
 }
 
 void get_vout_info(struct frc_dev_s *frc_devp)

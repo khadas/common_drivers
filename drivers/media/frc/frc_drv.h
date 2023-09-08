@@ -97,8 +97,9 @@
 // frc_20230706 frc clk new flow
 // frc_20230724 optimize frc seamless mode
 // frc_20230802 adjust loss num
+// frc_20230828 init vlock in bootup
 
-#define FRC_FW_VER			"2023-0828 init vlock in bootup"
+#define FRC_FW_VER			"2023-0908 t3x revB configure set_2"
 #define FRC_KERDRV_VER                  2976
 
 #define FRC_DEVNO	1
@@ -124,14 +125,14 @@ extern int frc_dbg_en;
 // mc-y 48%  mc-c 39%  me 60%
 #define FRC_COMPRESS_RATE_MC_Y		48
 #define FRC_COMPRESS_RATE_MC_C		39
-#define FRC_COMPRESS_RATE_MC_Y_T3X	100
-#define FRC_COMPRESS_RATE_MC_C_T3X	0
+#define FRC_COMPRESS_RATE_MC_Y_T3X	80 // 48 // 100
+#define FRC_COMPRESS_RATE_MC_C_T3X	39 // 80 // 0
 
 #define FRC_COMPRESS_RATE_ME_T3		60
 #define FRC_COMPRESS_RATE_ME_T5M	100
 
-#define FRC_COMPRESS_RATE_MCDW_Y	48
-#define FRC_COMPRESS_RATE_MCDW_C	39
+#define FRC_COMPRESS_RATE_MCDW_Y	80 // 48
+#define FRC_COMPRESS_RATE_MCDW_C	39 // 80 // 39
 
 #define FRC_INFO_BUF_FACTOR_T3		2
 #define FRC_INFO_BUF_FACTOR_T5M		2
@@ -145,8 +146,8 @@ extern int frc_dbg_en;
 #define FRC_SLICER_NUM			4
 
 /* mcdw setting */
-#define FRC_MCDW_H_SIZE_RATE		1
-#define FRC_MCDW_V_SIZE_RATE		2
+#define FRC_MCDW_H_SIZE_RATE		2 // 1
+#define FRC_MCDW_V_SIZE_RATE		1
 
 /*down scaler config*/
 #define FRC_ME_SD_RATE_HD		2
@@ -418,6 +419,7 @@ struct st_frc_in_sts {
 
 	u32 have_vf_cnt;
 	u32 no_vf_cnt;
+	u32 vf_index;
 
 	u32 secure_mode;
 	u32 st_flag;
@@ -483,6 +485,20 @@ enum frc_mtx_csc_e {
 	PAT_BU,
 	PAT_WT,
 	PAT_BK,
+	DEFAULT,
+};
+
+struct frc_csc_set_s {
+	u32 enable;
+	u32 coef00_01;
+	u32 coef02_10;
+	u32 coef11_12;
+	u32 coef20_21;
+	u32 coef22;
+	u32 pre_offset01;
+	u32 pre_offset2;
+	u32 pst_offset01;
+	u32 pst_offset2;
 };
 
 struct crc_parm_s {
@@ -674,6 +690,7 @@ struct frc_dev_s {
 	struct frc_force_size_s force_size;
 	struct frc_hw_stats_s hw_stats;
 	struct frc_dmc_cfg_s  dmc_cfg[3];
+	struct frc_csc_set_s init_csc[2];
 };
 
 struct frc_dev_s *get_frc_devp(void);

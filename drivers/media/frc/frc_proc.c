@@ -99,11 +99,12 @@ void frc_hw_initial(struct frc_dev_s *devp)
 	frc_fw_initial(devp);
 	frc_mtx_set(devp);
 	frc_top_init(devp);
+	t3x_verB_set_cfg(0);
 	frc_input_size_align_check(devp);
-	if (devp->ud_dbg.res2_dbg_en == 1)
-		frc_memc_120hz_patch(devp);
-	else
-		frc_memc_120hz_patch_1(devp);
+	//if (devp->ud_dbg.res2_dbg_en == 1)
+		// frc_memc_120hz_patch(devp);
+	//else
+		// frc_memc_120hz_patch_1(devp);
 	return;
 }
 
@@ -230,6 +231,7 @@ void frc_isr_print_zero(struct frc_dev_s *devp)
 irqreturn_t frc_input_isr(int irq, void *dev_id)
 {
 	struct frc_dev_s *devp = (struct frc_dev_s *)dev_id;
+
 	if (!devp->probe_ok || !devp->power_on_flag)
 		return IRQ_HANDLED;
 	if (devp->clk_state == FRC_CLOCK_OFF)
@@ -248,6 +250,7 @@ irqreturn_t frc_input_isr(int irq, void *dev_id)
 	devp->in_sts.vs_duration = timestamp - devp->in_sts.vs_timestamp;
 	devp->in_sts.vs_timestamp = timestamp;
 
+	// t3x_verB_set_cfg(1);
 	inp_undone_read(devp);
 	if (devp->dbg_reg_monitor_i)
 		frc_in_reg_monitor(devp);
@@ -1412,7 +1415,11 @@ void frc_state_handle_new(struct frc_dev_s *devp)
 					devp->frc_sts.frame_cnt++;
 				}
 				off2on_cnt++;
-			} else if (devp->frc_sts.frame_cnt < bypasscnt + 1) {
+			} else if (devp->frc_sts.frame_cnt < bypasscnt) {
+				devp->frc_sts.frame_cnt++;
+				off2on_cnt++;
+			} else if (devp->frc_sts.frame_cnt == bypasscnt) {
+				t3x_verB_set_cfg(1);
 				devp->frc_sts.frame_cnt++;
 				off2on_cnt++;
 			} else if (devp->frc_sts.frame_cnt == bypasscnt + 1) {
@@ -1568,9 +1575,13 @@ void frc_state_handle_new(struct frc_dev_s *devp)
 						bypasscnt, freezecnt);
 				devp->frc_sts.frame_cnt++;
 				off2on_cnt++;
-			} else if (devp->frc_sts.frame_cnt < bypasscnt + 2) {
+			} else if (devp->frc_sts.frame_cnt < bypasscnt + 1) {
 				pr_frc(log, "b-e_bypassing frm:%d\n",
 					devp->frc_sts.frame_cnt);
+				devp->frc_sts.frame_cnt++;
+				off2on_cnt++;
+			} else if (devp->frc_sts.frame_cnt == bypasscnt + 1) {
+				t3x_verB_set_cfg(1);
 				devp->frc_sts.frame_cnt++;
 				off2on_cnt++;
 			} else if (devp->frc_sts.frame_cnt == bypasscnt + 2) {

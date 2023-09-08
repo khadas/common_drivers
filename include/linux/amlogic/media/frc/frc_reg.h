@@ -1967,6 +1967,10 @@
 //Bit 28:16         reg_mc_probe_pt_y         // unsigned ,    RW, default = 100  reg_mc_probe_pt_y
 //Bit 15:13         reserved
 //Bit 12:0          reg_mc_probe_pt_x         // unsigned ,    RW, default = 100  reg_mc_probe_pt_x
+#define FRC_SRCH_RNG_MODE                          0x3003
+//Bit 31: 8        reserved
+//Bit  7: 4        reg_mc_luma_srch_rng_mode // unsigned ,    RW, default = 0  search range mode
+//Bit  3: 0        reg_mc_chrm_srch_rng_mode // unsigned ,    RW, default = 0  search range mode
 #define FRC_MC_H2V2_SETTING                        0x3098
 //Bit 31           reg_mc_get_lbuf_wrap_lpf_mode get lbuf warp lpf mode: 0, [0 4 0],  1, [1 2 1];
 //Bit 30           reg_mc_srch_rng_luma_scale_en // unsigned , RW, default = 1  h2v2 luma en

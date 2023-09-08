@@ -123,4 +123,8 @@ void frc_memc_clr_vbuffer(struct frc_dev_s *frc_devp, u8 flag);
 void frc_load_reg_table(struct frc_dev_s *frc_devp, u8 flag);
 void frc_in_sts_init(struct st_frc_in_sts *sts);
 void frc_chg_loss_slice_num(u8 num);
+void t3x_eco_initial(void);
+void t3x_eco_qp_cfg(u32 qp);
+void t3x_revB_patch_apply(void);
+void t3x_verB_set_cfg(u8 flag);
 #endif

@@ -236,6 +236,7 @@ void frc_status(struct frc_dev_s *devp)
 			devp->buf.me_comprate, devp->buf.mc_y_comprate,
 			devp->buf.mc_c_comprate, devp->buf.mcdw_y_comprate,
 			devp->buf.mcdw_c_comprate, devp->buf.real_total_size);
+	pr_frc(0, "mcdw_ratio= 0x%x\n", devp->buf.mcdw_size_rate);
 	pr_frc(0, "memc(mcdw)_loss_en=0x%x\n",
 			fw_data->frc_top_type.memc_loss_en);
 	pr_frc(0, "prot_mode= %d\n", devp->prot_mode);
@@ -496,7 +497,6 @@ exit:
 ssize_t frc_debug_buf_if_help(struct frc_dev_s *devp, char *buf)
 {
 	ssize_t len = 0;
-
 	len += sprintf(buf + len, "dump_bufcfg\t: dump buf address, size\n");
 	len += sprintf(buf + len, "dump_linkbuf\t: dump link buffer data\n");
 	len += sprintf(buf + len, "dump_init_reg\t: dump initial table\n");
@@ -508,8 +508,10 @@ ssize_t frc_debug_buf_if_help(struct frc_dev_s *devp, char *buf)
 	len += sprintf(buf + len,
 		"dc_set\t: x x x(me:mc_y:mc_c) set frc me,mc_y and mc_c comprate\n");
 	len += sprintf(buf + len,
-		"dc_mcdw_set\t: x x(mc_y:mc_c) set mcdw mc_y and mc_c comprate\n");
-	len += sprintf(buf + len, "dc_apply\t: reset buffer when frc bypass\n");
+		"dc_mcdw_set\t: x x(mcdw_y:mcdw_c) set mcdw_y and mcdw_c comprate\n");
+	len += sprintf(buf + len,
+		"mcdw_ratio\t: 0xXX  set mcdw mc_y and mc_c ratio\n");
+	len += sprintf(buf + len, "dc_apply\t: reset buffer when frc disable\n");
 	return len;
 }
 
@@ -578,6 +580,11 @@ void frc_debug_buf_if(struct frc_dev_s *devp, const char *buf, size_t count)
 			devp->buf.mcdw_y_comprate = val1;
 		if (kstrtoint(parm[2], 10, &val1) == 0)
 			devp->buf.mcdw_c_comprate = val1;
+	} else if (!strcmp(parm[0], "mcdw_ratio")) {
+		if (!parm[1])
+			goto exit;
+		if (kstrtoint(parm[1], 10, &val1) == 0)
+			frc_set_mcdw_buffer_ratio(val1);
 	} else if (!strcmp(parm[0], "dc_apply")) {
 		if (devp->frc_sts.state == FRC_STATE_BYPASS) {
 			frc_buf_release(devp);
@@ -681,7 +688,6 @@ ssize_t frc_debug_param_if_help(struct frc_dev_s *devp, char *buf)
 					(fw_data->frc_top_type.vfp & BIT_7));
 	len += sprintf(buf + len, "frc_dp [0-5]\t=1:red 5:black display pattern\n");
 	len += sprintf(buf + len, "frc_ip [0-5]\t=1:red 5:black input pattern\n");
-	len += sprintf(buf + len, "mcdw_ratio\t=0x%x\n", devp->buf.mcdw_size_rate);
 	len += sprintf(buf + len, "chg_patch\t=%d\n", devp->ud_dbg.res2_time_en);
 	len += sprintf(buf + len, "osdbit_fcolr\t=(read reg check)\n");
 	len += sprintf(buf + len, "prot_mode\t=%d\n", devp->prot_mode);
@@ -846,11 +852,6 @@ void frc_debug_param_if(struct frc_dev_s *devp, const char *buf, size_t count)
 			goto exit;
 		if (kstrtoint(parm[1], 10, &val1) == 0)
 			frc_set_seamless_proc(val1);
-	} else if (!strcmp(parm[0], "mcdw_ratio")) {
-		if (!parm[1])
-			goto exit;
-		if (kstrtoint(parm[1], 10, &val1) == 0)
-			frc_set_mcdw_buffer_ratio(val1);
 	} else if (!strcmp(parm[0], "chg_patch")) {
 		if (!parm[1])
 			goto exit;
@@ -975,8 +976,10 @@ void frc_debug_other_if(struct frc_dev_s *devp, const char *buf, size_t count)
 	} else if (!strcmp(parm[0], "del_120_pth")) {
 		if (!parm[1])
 			goto exit;
-		if (kstrtoint(parm[1], 10, &val1) == 0)
+		if (kstrtoint(parm[1], 10, &val1) == 0) {
 			devp->ud_dbg.res2_dbg_en = val1;
+			t3x_revB_patch_apply();
+		}
 	} else if (!strcmp(parm[0], "pr_dbg")) {
 		if (!parm[1])
 			goto exit;

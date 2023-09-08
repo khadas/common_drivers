@@ -730,7 +730,8 @@ static void am_meson_crtc_atomic_disable(struct drm_crtc *crtc,
 	}
 	disable_irq(amcrtc->irq);
 
-	if ((meson_crtc_state->vmode & VMODE_MASK) == VMODE_LCD) {
+	if ((meson_crtc_state->vmode & VMODE_MASK) == VMODE_LCD &&
+		!strstr(old_mode->name, "panel")) {
 		DRM_INFO("%s[%d], lcd skip setting null vmode\n", __func__,
 			 meson_crtc_state->vmode);
 		return;

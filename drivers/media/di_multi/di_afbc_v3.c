@@ -1097,7 +1097,8 @@ static bool afbc_is_supported(void)
 	bool ret = false;
 	struct afbcd_ctr_s *pafd_ctr = di_get_afd_ctr();
 
-	if (!pafd_ctr || is_cfg(EAFBC_CFG_DISABLE)) {
+	/* TXHD2 not support afbc input with post write mode */
+	if (!pafd_ctr || is_cfg(EAFBC_CFG_DISABLE) || DIM_IS_IC_TXHD2) {
 #ifdef PRINT_BASIC
 		dim_print("%s:false\n", __func__);
 #endif

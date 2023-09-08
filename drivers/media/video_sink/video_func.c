@@ -70,6 +70,7 @@
 #endif
 #include <linux/amlogic/media/video_processor/video_pp_common.h>
 #include "video_common.h"
+#include "video_hw.h"
 #include "video_hw_s5.h"
 #include "vpp_post_s5.h"
 #include "video_receiver.h"
@@ -117,7 +118,7 @@ struct vd_func_s vd_fake_func[MAX_VIDEO_FAKE];
 #ifdef CONFIG_AMLOGIC_MEDIA_VSYNC_RDMA
 static bool first_irq = true;
 #endif
-static struct cur_line_info_t g_cur_line_info;
+static struct cur_line_info_t g_cur_line_info[2];
 static u8 new_frame_mask;
 static bool need_force_black;
 static u32 always_new_vf_cnt;
@@ -2467,9 +2468,9 @@ static void check_src_fmt_change(void)
 	}
 }
 
-static void set_cur_line_info(void)
+static void set_cur_line_info(u8 index)
 {
-	struct cur_line_info_t *cur_line_info = &g_cur_line_info;
+	struct cur_line_info_t *cur_line_info = &g_cur_line_info[index];
 	struct timeval start;
 
 	do_gettimeofday(&start);
@@ -2481,9 +2482,9 @@ static void set_cur_line_info(void)
 	cur_line_info->end4 = start;
 }
 
-struct cur_line_info_t *get_cur_line_info(void)
+struct cur_line_info_t *get_cur_line_info(u8 index)
 {
-	return &g_cur_line_info;
+	return &g_cur_line_info[index];
 }
 
 static inline void trace_performance(struct cur_line_info_t *cur_line_info,
@@ -2555,7 +2556,7 @@ static void over_field_info_record(void)
 	bool valid_mode = false;
 	u32 timeinfo_th = 0;
 	u32 enc_num = get_cur_enc_num();
-	struct cur_line_info_t *cur_line_info = get_cur_line_info();
+	struct cur_line_info_t *cur_line_info = get_cur_line_info(0);
 	struct timeval *start;
 
 	start = &cur_line_info->start;
@@ -2733,7 +2734,7 @@ static inline int recvx_early_proc(u8 path_index)
 		if (gvideo_recv[path_index]) {
 			/* normal mode: true; lowlatency mode: false */
 			gvideo_recv[path_index]->irq_mode = true;
-			gvideo_recv[path_index]->func->early_proc(gvideo_recv[path_index],
+			gvideo_recv[path_index]->func->early_proc(gvideo_recv[path_index], //0);
 							    over_field ? 1 : 0);
 		}
 	}
@@ -2747,7 +2748,7 @@ static int amvideo_early_proc(u8 layer_id)
 	struct vframe_s *vf;
 	struct vframe_s *vf_tmp;
 	s32 vd1_path_id = glayer_info[0].display_path_id;
-	struct cur_line_info_t *cur_line_info = get_cur_line_info();
+	struct cur_line_info_t *cur_line_info = get_cur_line_info(0);
 
 	vd_dispbuf_to_put(layer_id);
 	get_count_pip[0] = 0;
@@ -2975,19 +2976,26 @@ static int vdx_misc_early_proc(u8 layer_id,
 #endif
 	/* prevsync + postvsync case */
 	if (cur_dev->pre_vsync_enable) {
-		if (layer_id == 0 && frc_n2m_worked()) {
+		if (layer_id == 0) {
+			u32 pts_inc_scale_base = 0;
+
+			if (frc_n2m_worked())
+				pts_inc_scale_base = vsync_pts_inc_scale_base / 2;
+			else
+				pts_inc_scale_base = vsync_pts_inc_scale_base;
 #ifdef CONFIG_AMLOGIC_VIDEO_COMPOSER
 			vsync_notify_video_composer(layer_id,
 				vsync_pts_inc_scale,
-				vsync_pts_inc_scale_base / 2);
+				pts_inc_scale_base);
 #endif
 #ifdef CONFIG_AMLOGIC_VIDEOQUEUE
 			vsync_notify_videoqueue(layer_id,
 				vsync_pts_inc_scale,
-				vsync_pts_inc_scale_base / 2);
+				pts_inc_scale_base);
 #endif
 			pre_vsync_notify = true;
 		}
+
 		if (layer_id != 0 && !post_vsync_notify) {
 #ifdef CONFIG_AMLOGIC_VIDEO_COMPOSER
 			vsync_notify_video_composer(layer_id,
@@ -4080,7 +4088,7 @@ RUN_FIRST_RDMA:
 	vsync_rdma_process();
 	set_vd_pi_input_size();
 	enc_line = get_cur_enc_line();
-	cur_line_info = get_cur_line_info();
+	cur_line_info = get_cur_line_info(0);
 	vpp_trace_encline("AFTER-RDMA", cur_line_info->enc_line_start, enc_line);
 
 	trace_performance(cur_line_info, enc_line);
@@ -4640,6 +4648,8 @@ void pre_vsync_process(void)
 	struct vd_func_s *cur_pre_func = NULL;
 	s32 vd_path_id[MAX_VD_LAYER] = {0};
 	struct path_id_s path_id;
+	struct cur_line_info_t *cur_line_info = NULL;
+	int enc_line;
 
 	if (cur_dev->vsync_2to1_enable && frc_n2m_worked()) {
 #ifdef CONFIG_AMLOGIC_VIDEO_COMPOSER
@@ -4653,7 +4663,12 @@ void pre_vsync_process(void)
 			vsync_pts_inc_scale_base / 2);
 #endif
 	}
-	set_cur_line_info();
+
+	set_cur_line_info(1);
+	enc_line = get_cur_enc_line();
+	cur_line_info = get_cur_line_info(1);
+	vpp_trace_encline("ENTER-PRE-VSYNC", cur_line_info->enc_line_start, enc_line);
+
 	for (i = 0; i < MAX_VD_LAYER; i++)
 		vd_path_id[i] = glayer_info[i].display_path_id;
 	path_id.vd1_path_id = vd_path_id[0];
@@ -4665,7 +4680,7 @@ void pre_vsync_process(void)
 	vd_layer[0].cur_pre_func = vd_layer[0].next_pre_func;
 	cur_pre_func = vd_layer[0].cur_pre_func;
 	if (!cur_pre_func)
-		return;
+		goto pre_exit_1;
 
 #ifdef CONFIG_AMLOGIC_MEDIA_VSYNC_RDMA
 	pre_vsync_rdma_config_pre();
@@ -4677,13 +4692,13 @@ void pre_vsync_process(void)
 		ret = cur_pre_func->vd_misc_early_proc
 			(0, rdma_enable, _rdma_enable_pre);
 		if (ret < 0)
-			goto pre_exit;
+			goto pre_exit_2;
 	}
 	/* early process */
 	if (cur_pre_func->vd_early_process) {
 		ret = cur_pre_func->vd_early_process(0, 0);
 		if (ret < 0)
-			goto pre_exit;
+			goto pre_exit_2;
 	}
 
 	if (cur_pre_func->vd_toggle_frame) {
@@ -4709,7 +4724,7 @@ void pre_vsync_process(void)
 	/* filter setting management */
 	if (cur_pre_func->vd_render_frame)
 		cur_pre_func->vd_render_frame(&vd_layer[0], vinfo);
-pre_exit:
+pre_exit_2:
 	if (cur_pre_func->vd_late_process)
 		cur_pre_func->vd_late_process(0, 0);
 
@@ -4721,6 +4736,10 @@ pre_exit:
 	pre_vsync_rdma_enable_pre = is_pre_vsync_rdma_enable();
 #endif
 	cur_vd1_path_id = vd_path_id[0];
+pre_exit_1:
+	//trace_for_pre_vsync();
+	enc_line = get_cur_enc_line();
+	vpp_trace_encline("AFTER-PRE-VSYNC-RDMA", cur_line_info->enc_line_start, enc_line);
 }
 #endif
 
@@ -4737,13 +4756,18 @@ void post_vsync_process(void)
 	bool path_switch = false;
 	u32 path_frame_index;
 	struct path_id_s path_id;
+	struct cur_line_info_t *cur_line_info = NULL;
+	int enc_line;
 
 #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
 	if (is_amdv_on())
 		print_dv_ro();
 #endif
 
-	set_cur_line_info();
+	set_cur_line_info(0);
+	enc_line = get_cur_enc_line();
+	cur_line_info = get_cur_line_info(0);
+	vpp_trace_encline("ENTER-VSYNC", cur_line_info->enc_line_start, enc_line);
 
 	if (cur_dev->display_module != S5_DISPLAY_MODULE)
 		blend_reg_conflict_detect();
@@ -5856,6 +5880,15 @@ void set_vsync_2to1_mode(u8 enable)
 		cur_dev->vsync_2to1_enable = enable;
 }
 EXPORT_SYMBOL(set_vsync_2to1_mode);
+
+void set_pre_vsync_mode(u8 enable)
+{
+	if (cur_dev->prevsync_support) {
+		cur_dev->pre_vsync_enable = enable;
+		vd1_set_go_field();
+	}
+}
+EXPORT_SYMBOL(set_pre_vsync_mode);
 
 /*********************************************************
  * Utilities

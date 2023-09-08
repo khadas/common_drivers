@@ -419,4 +419,5 @@ u32 get_pps_data(int slice);
 u32 get_vpu_venc_error_status(void);
 void clear_vpu_venc_error(void);
 void update_frc_in_size(struct video_layer_s *layer);
+void vd1_set_go_field_s5(void);
 #endif

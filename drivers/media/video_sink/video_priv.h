@@ -971,6 +971,7 @@ bool video_is_meson_t3_cpu(void);
 bool video_is_meson_c3_cpu(void);
 bool video_is_meson_t5w_cpu(void);
 bool video_is_meson_s5_cpu(void);
+bool video_is_meson_t3x_cpu(void);
 bool video_is_meson_t5m_cpu(void);
 bool video_is_meson_txhd2_cpu(void);
 bool video_is_meson_s1a_cpu(void);

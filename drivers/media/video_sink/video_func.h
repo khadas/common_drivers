@@ -162,7 +162,7 @@ int  get_display_info(void *data);
 struct vframe_s *amvideo_toggle_frame
 	(s32 *vd_path_id);
 struct vframe_s *get_dispbuf(u8 layer_id);
-struct cur_line_info_t *get_cur_line_info(void);
+struct cur_line_info_t *get_cur_line_info(u8 index);
 inline bool is_tunnel_mode(const char *receiver_name);
 
 void post_vsync_process(void);

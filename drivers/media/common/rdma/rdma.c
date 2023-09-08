@@ -33,6 +33,7 @@
 #ifdef CONFIG_AMLOGIC_MEDIA_VIDEO
 #include <linux/amlogic/media/video_sink/video.h>
 #endif
+#include <linux/amlogic/cpu_version.h>
 
 #define Wr(adr, val) WRITE_VCBUS_REG(adr, val)
 #define Rd(adr)     READ_VCBUS_REG(adr)
@@ -212,8 +213,12 @@ int _vsync_rdma_config(int rdma_type)
 					iret = rdma_config(vsync_rdma_handle[rdma_type],
 							  RDMA_TRIGGER_VPP2_VSYNC_INPUT);
 				} else if (rdma_type == PRE_VSYNC_RDMA) {
-					iret = rdma_config(vsync_rdma_handle[rdma_type],
-							  RDMA_TRIGGER_PRE_VSYNC_INPUT);
+					if (is_meson_t3x_cpu())
+						iret = rdma_config(vsync_rdma_handle[rdma_type],
+							RDMA_TRIGGER_PRE_VSYNC_INPUT_T3X);
+					else
+						iret = rdma_config(vsync_rdma_handle[rdma_type],
+							RDMA_TRIGGER_PRE_VSYNC_INPUT);
 				} else if (rdma_type == EX_VSYNC_RDMA) {
 					iret = rdma_config(vsync_rdma_handle[rdma_type],
 						RDMA_TRIGGER_VSYNC_INPUT |
@@ -449,8 +454,12 @@ static void pre_vsync_rdma_irq(void *arg)
 	int enable_ = cur_enable[PRE_VSYNC_RDMA] & 0xf;
 
 	if (enable_ == 1) {
-		iret = rdma_config(vsync_rdma_handle[PRE_VSYNC_RDMA],
-				   RDMA_TRIGGER_PRE_VSYNC_INPUT);
+		if (is_meson_t3x_cpu())
+			iret = rdma_config(vsync_rdma_handle[PRE_VSYNC_RDMA],
+				RDMA_TRIGGER_PRE_VSYNC_INPUT_T3X);
+		else
+			iret = rdma_config(vsync_rdma_handle[PRE_VSYNC_RDMA],
+				RDMA_TRIGGER_PRE_VSYNC_INPUT);
 		if (iret)
 			vsync_cfg_count[PRE_VSYNC_RDMA]++;
 	} else {

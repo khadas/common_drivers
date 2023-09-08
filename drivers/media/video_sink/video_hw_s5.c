@@ -11469,6 +11469,12 @@ void vd_set_alpha_s5(struct video_layer_s *layer,
 		return;
 	vd_pip_alpha_reg = &vd_proc_reg.vd_pip_alpha_reg[layer_id];
 	vpp_index = layer->vpp_index;
+	/* for vd1 pip alpha, always after memc, need used post vsync */
+	if (layer_id == 0 &&
+		cur_dev->pre_vsync_enable &&
+		vpp_index == PRE_VSYNC)
+		vpp_index = VPP0;
+
 	if (!win_en)
 		alph_gen_byps = 1;
 	cur_dev->rdma_func[vpp_index].rdma_wr(vd_pip_alpha_reg->vd_pip_alph_ctrl,
@@ -12174,6 +12180,23 @@ void update_frc_in_size(struct video_layer_s *layer)
 	else
 		layer->next_frame_par->frc_h_size = layer->next_frame_par->nnhf_input_w;
 	layer->next_frame_par->frc_v_size = layer->next_frame_par->nnhf_input_h;
+}
+
+void vd1_set_go_field_s5(void)
+{
+	if (cur_dev->prevsync_support) {
+		if (video_is_meson_t3x_cpu()) {
+			if (cur_dev->pre_vsync_enable) {
+				/* set vd1 vpp0_pre_go_field if it is vpp0 */
+				WRITE_VCBUS_REG_BITS(S5_VIU_VD1_MISC, 3, 0, 2);
+				WRITE_VCBUS_REG_BITS(S5_VIU_VD2_MISC, 3, 0, 2);
+			} else {
+				/* set vd1 vpp0_post_go_field if it is vpp0 */
+				WRITE_VCBUS_REG_BITS(S5_VIU_VD1_MISC, 0, 0, 2);
+				WRITE_VCBUS_REG_BITS(S5_VIU_VD2_MISC, 0, 0, 2);
+			}
+		}
+	}
 }
 
 static void save_vd_pps_reg(void)

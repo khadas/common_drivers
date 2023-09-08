@@ -510,6 +510,7 @@ u32 get_tvin_delay_min_ms(void);
 u32 get_tvin_dv_flag(void);
 void clear_vsync_2to1_info(void);
 void set_vsync_2to1_mode(u8 enable);
+void set_pre_vsync_mode(u8 enable);
 void get_vdx_axis(u32 index, int *buf);
 
 void vpu_module_clk_enable(u32 vpp_index, u32 module, bool async);

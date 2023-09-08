@@ -9467,8 +9467,9 @@ int set_layer_slice_display_canvas_s5(struct video_layer_s *layer,
 			struct canvas_s tmp;
 
 			canvas_read(cur_canvas_tbl[0], &tmp);
-			pr_info("%s %d: vf:%px, y:%02x, adr:0x%lx, canvas0Addr:%x, pnum:%d, type:%x, flag:%x, afbc:0x%lx-0x%lx, vf->vf_ext:%px, line:%d\n",
+			pr_info("%s %d: vf:%p, omx_index=%d, y:%02x, adr:0x%lx, canvas0Addr:%x, pnum:%d, type:%x, flag:%x, afbc:0x%lx-0x%lx, vf->vf_ext:%px, line:%d\n",
 				__func__, layer_id, vf,
+				vf->omx_index,
 				cur_canvas_tbl[0], tmp.addr,
 				vf->canvas0Addr, vf->plane_num,
 				vf->type, vf->flag,
@@ -9691,9 +9692,10 @@ int set_layer_display_canvas(struct video_layer_s *layer,
 		struct canvas_s tmp;
 
 		canvas_read(cur_canvas_tbl[0], &tmp);
-		pr_info("%s %d: update_mif %d: vf:%px, y:%02x, adr:0x%lx (0x%lx), canvas0:%x, pnum:%d, type:%x, flag:%x, afbc:0x%lx-0x%lx, vf_ext:%px uvm_vf:%px di_flag:%x size:%d %d, vframe size:%d line:%d\n",
+		pr_info("%s %d: update_mif %d: vf:%p, omx_index=%d, y:%02x, adr:0x%lx (0x%lx), canvas0:%x, pnum:%d, type:%x, flag:%x, afbc:0x%lx-0x%lx, vf_ext:%px uvm_vf:%px di_flag:%x size:%d %d, vframe size:%d line:%d\n",
 			__func__, layer_id, update_mif ? 1 : 0,
-			vf, cur_canvas_tbl[0], tmp.addr, vf->canvas0_config[0].phy_addr,
+			vf, vf->omx_index, cur_canvas_tbl[0],
+			tmp.addr, vf->canvas0_config[0].phy_addr,
 			vf->canvas0Addr, vf->plane_num,
 			vf->type, vf->flag,
 			vf->compHeadAddr, vf->compBodyAddr,
@@ -10438,6 +10440,12 @@ static void vd_set_alpha(struct video_layer_s *layer,
 	u32 win_en = alpha_win->win_en;
 
 	vpp_index = layer->vpp_index;
+	/* for vd1 pip alpha, always after memc, need used post vsync */
+	if (layer->layer_id == 0 &&
+		cur_dev->pre_vsync_enable &&
+		vpp_index == PRE_VSYNC)
+		vpp_index = VPP0;
+
 	if (!win_en)
 		alph_gen_byps = 1;
 	cur_dev->rdma_func[vpp_index].rdma_wr(vpp_blend_reg->vd_pip_alph_ctrl,
@@ -13166,12 +13174,16 @@ static void vd_set_go_field_default(void)
 void vd1_set_go_field(void)
 {
 	if (cur_dev->prevsync_support) {
-		if (cur_dev->pre_vsync_enable)
-			/* set vd1 vpp0_pre_go_field if it is vpp0 */
-			WRITE_VCBUS_REG_BITS(PATH_START_SEL, 0, 0, 2);
-		else
-			/* set vd1 vpp0_post_go_field if it is vpp0 */
-			WRITE_VCBUS_REG_BITS(PATH_START_SEL, 3, 0, 2);
+		if (cur_dev->display_module == S5_DISPLAY_MODULE) {
+			vd1_set_go_field_s5();
+		} else {
+			if (cur_dev->pre_vsync_enable)
+				/* set vd1 vpp0_pre_go_field if it is vpp0 */
+				WRITE_VCBUS_REG_BITS(PATH_START_SEL, 0, 0, 2);
+			else
+				/* set vd1 vpp0_post_go_field if it is vpp0 */
+				WRITE_VCBUS_REG_BITS(PATH_START_SEL, 3, 0, 2);
+		}
 	}
 }
 

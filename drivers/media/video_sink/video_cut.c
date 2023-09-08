@@ -2319,7 +2319,7 @@ struct vframe_s *amvideo_toggle_frame(s32 *vd_path_id)
 	struct vframe_s *vf;
 	struct vframe_s *cur_dispbuf_back = cur_dispbuf[0];
 	int toggle_cnt;
-	struct cur_line_info_t *cur_line_info = get_cur_line_info();
+	struct cur_line_info_t *cur_line_info = get_cur_line_info(0);
 
 	toggle_cnt = 0;
 

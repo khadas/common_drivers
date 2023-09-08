@@ -3720,7 +3720,7 @@ struct vframe_s *amvideo_toggle_frame(s32 *vd_path_id)
 	struct vframe_s *cur_dispbuf_back = cur_dispbuf[0];
 	int toggle_cnt;
 	bool show_nosync = false;
-	struct cur_line_info_t *cur_line_info = get_cur_line_info();
+	struct cur_line_info_t *cur_line_info = get_cur_line_info(0);
 
 	toggle_cnt = 0;
 
@@ -12449,10 +12449,7 @@ static ssize_t pre_vsync_enable_store(struct class *cla,
 		pr_err("kstrtoint err\n");
 		return -EINVAL;
 	}
-	if (cur_dev->prevsync_support) {
-		cur_dev->pre_vsync_enable = res;
-		vd1_set_go_field();
-	}
+	set_pre_vsync_mode(res);
 	return count;
 }
 

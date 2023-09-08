@@ -921,6 +921,7 @@ ssize_t frc_debug_other_if_help(struct frc_dev_s *devp, char *buf)
 	len += sprintf(buf + len, "crash_int_en\t=(check log)\n");
 	len += sprintf(buf + len, "del_120_pth\t=%d\n", devp->ud_dbg.res2_dbg_en);
 	len += sprintf(buf + len, "pr_dbg\t\t=%d\n", devp->ud_dbg.pr_dbg);
+	len += sprintf(buf + len, "pre_vsync\t=%d\n", devp->use_pre_vsync);
 	return len;
 }
 
@@ -994,6 +995,11 @@ void frc_debug_other_if(struct frc_dev_s *devp, const char *buf, size_t count)
 			goto exit;
 		if (kstrtoint(parm[1], 10, &val1) == 0)
 			devp->other1_flag = val1;
+	} else if (!strcmp(parm[0], "pre_vsync")) {
+		if (!parm[1])
+			goto exit;
+		if (kstrtoint(parm[1], 10, &val1) == 0)
+			devp->use_pre_vsync = val1;
 	}
 exit:
 	kfree(buf_orig);

@@ -98,8 +98,9 @@
 // frc_20230724 optimize frc seamless mode
 // frc_20230802 adjust loss num
 // frc_20230828 init vlock in bootup
+// frc_20230908 t3x revB configure set_2
 
-#define FRC_FW_VER			"2023-0908 t3x revB configure set_2"
+#define FRC_FW_VER			"2023-0918 t3x revB use pre_vsync from vpu"
 #define FRC_KERDRV_VER                  2976
 
 #define FRC_DEVNO	1
@@ -239,6 +240,9 @@ extern int frc_dbg_en;
 #define FRC_RES_4K2K	2
 #define FRC_RES_4K1K	3
 #define FRC_RES__MAX	4
+
+#define PRE_VSYNC_120HZ   BIT_0
+#define PRE_VSYNC_060HZ   BIT_1
 
 enum chip_id {
 	ID_NULL = 0,
@@ -655,9 +659,9 @@ struct frc_dev_s {
 
 	u8  little_win;
 	u8  vlock_flag;
-	u16 test2;
+	u8  use_pre_vsync; /* bit_0:120hz_enable , bit_1: 60hz enable */
+	u8  test2;
 
-	// u32 prot_mode;/*0:memc prefetch acorrding mode frame 1:memc prefetch 1 frame*/
 	u8  prot_mode;
 	u8  no_ko_mode;
 	u8  other1_flag;
@@ -697,5 +701,6 @@ struct frc_dev_s *get_frc_devp(void);
 void get_vout_info(struct frc_dev_s *frc_devp);
 int frc_buf_set(struct frc_dev_s *frc_devp);
 void set_vsync_2to1_mode(u8 enable);
+void set_pre_vsync_mode(u8 enable);
 struct frc_fw_data_s *get_fw_data(void);
 #endif

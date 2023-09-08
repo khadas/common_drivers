@@ -1031,8 +1031,8 @@ static void frc_drv_initial(struct frc_dev_s *devp)
 	devp->in_sts.have_vf_cnt = 0;
 	devp->in_sts.no_vf_cnt = 0;
 
-	devp->dbg_in_out_ratio = FRC_RATIO_1_1;/*enum frc_ratio_mode_type frc_ratio_mode*/
-	// devp->dbg_in_out_ratio = FRC_RATIO_2_5;/*enum frc_ratio_mode_type frc_ratio_mode*/
+	devp->dbg_in_out_ratio = FRC_RATIO_1_1;
+	// devp->dbg_in_out_ratio = FRC_RATIO_2_5;
 	// devp->dbg_in_out_ratio = FRC_RATIO_1_2;
 	devp->dbg_input_hsize = vinfo->width;
 	devp->dbg_input_vsize = vinfo->height;
@@ -1044,9 +1044,8 @@ static void frc_drv_initial(struct frc_dev_s *devp)
 		devp->dbg_out_reg[i] = 0;
 	}
 	devp->dbg_buf_len = 0;
-
-	// devp->loss_ratio = 0;
 	devp->prot_mode = true;
+	devp->use_pre_vsync = PRE_VSYNC_120HZ;
 
 	devp->in_out_ratio = FRC_RATIO_1_1;
 	// devp->in_out_ratio = FRC_RATIO_2_5;
@@ -1116,10 +1115,26 @@ void get_vout_info(struct frc_dev_s *frc_devp)
 		if (frc_devp->auto_n2m == 1) {
 			if (frc_devp->out_sts.out_framerate > 90) {
 				frc_set_n2m(FRC_RATIO_1_2);
-				set_vsync_2to1_mode(1);
+				if ((frc_devp->use_pre_vsync & PRE_VSYNC_120HZ) ==
+					PRE_VSYNC_120HZ) {
+					set_vsync_2to1_mode(0);
+					set_pre_vsync_mode(1);
+				} else {
+					set_vsync_2to1_mode(1);
+					set_pre_vsync_mode(0);
+				}
 			} else if (frc_devp->out_sts.out_framerate < 70) {
-				frc_set_n2m(FRC_RATIO_1_1);
-				set_vsync_2to1_mode(0);
+				if ((frc_devp->use_pre_vsync & PRE_VSYNC_060HZ) ==
+					PRE_VSYNC_060HZ) {
+					frc_set_n2m(FRC_RATIO_1_2);
+					set_vsync_2to1_mode(0);
+					set_pre_vsync_mode(1);
+				} else {
+					frc_set_n2m(FRC_RATIO_1_1);
+					set_vsync_2to1_mode(0);
+					set_pre_vsync_mode(0);
+				}
+
 			}
 		}
 		pr_frc(0, "vout:w-%d,h-%d,rate-%d\n",

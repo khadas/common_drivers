@@ -2711,7 +2711,8 @@ void frc_internal_initial(struct frc_dev_s *frc_devp)
 		frc_cfg_mcdw_loss((frc_top->memc_loss_en >> 4) & 0x01);
 		out_frm_dly_num = 0x0;
 		// WRITE_FRC_BITS(FRC_REG_TOP_RESERVE0, 0x17, 0, 8); // rev.A
-		WRITE_FRC_BITS(FRC_REG_TOP_RESERVE0, 0x46, 0, 8); // rev.B
+		// WRITE_FRC_BITS(FRC_REG_TOP_RESERVE0, 0x46, 0, 8); // rev.B
+		WRITE_FRC_BITS(FRC_REG_TOP_RESERVE0, 0x68, 0, 8); // rev.B + prevsync
 		// frc_memc_120hz_patch_1(frc_devp);
 	} else {
 		frc_top->memc_loss_en = 0x03;
@@ -2965,7 +2966,18 @@ void frc_set_n2m(u8 ratio_value)
 		return;
 	if (ratio_value <= (u8)FRC_RATIO_1_1) {
 		devp->in_out_ratio = (enum frc_ratio_mode_type)ratio_value;
-		set_vsync_2to1_mode((ratio_value > 0) ? 0 : 1);
+		if ((devp->use_pre_vsync & PRE_VSYNC_120HZ) ==
+			PRE_VSYNC_120HZ) {
+			set_vsync_2to1_mode(0);
+			set_pre_vsync_mode(1);
+		} else if ((devp->use_pre_vsync & PRE_VSYNC_060HZ) ==
+			PRE_VSYNC_060HZ) {
+			set_vsync_2to1_mode(0);
+			set_pre_vsync_mode(1);
+		} else {
+			set_vsync_2to1_mode((ratio_value > 0) ? 0 : 1);
+			set_pre_vsync_mode(0);
+		}
 		if (ratio_value == FRC_RATIO_1_1)
 			devp->ud_dbg.res2_time_en = 3;
 		else

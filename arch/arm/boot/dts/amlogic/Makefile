@@ -58,6 +58,7 @@ dtb-y += txhd2_t950s_be311_T.dtb
 dtb-y += txhd2_t950s_be319_T.dtb
 dtb-y += txhd2_t950s_be311_512m_T.dtb
 dtb-y += txhd2_t950s_be319_512m_T.dtb
+dtb-y += txhd2_t950s_be312_T.dtb
 dtb-y += txhd2_reva_t950s_be301.dtb
 dtb-y += txhd2_reva_t950s_be309.dtb
 dtb-y += txhd2_reva_t950s_be311.dtb

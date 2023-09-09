@@ -240,7 +240,7 @@ static int dsc_dec_probe(struct platform_device *pdev)
 	dsc_dec_debug_file_create(dsc_dec_drv);
 
 	dsc_dec_ioremap(pdev, dsc_dec_drv);
-	init_pps_data(dsc_dec_drv);
+	init_pps_data_4k_120hz(dsc_dec_drv);
 	DSC_DEC_PR("%s ok, init_state\n", __func__);
 
 	return 0;

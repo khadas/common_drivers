@@ -21,7 +21,9 @@ void W_DSC_DEC_BIT(u32 reg, const u32 value, const u32 start, const u32 len);
 
 void dsc_dec_config_pll_clk(unsigned int od, unsigned int dpll_m,
 				unsigned int dpll_n, unsigned int div_frac);
+void dsc_dec_config_fix_pll_clk(unsigned int value);
 void dsc_dec_config_register(struct aml_dsc_dec_drv_s *dsc_dec_drv);
 void set_dsc_dec_en(unsigned int enable);
+void dsc_dec_config_vpu_mux(struct aml_dsc_dec_drv_s *dsc_dec_drv);
 #endif
 

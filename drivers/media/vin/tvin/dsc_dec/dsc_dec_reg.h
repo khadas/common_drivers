@@ -7,11 +7,34 @@
 #define __DSC_REG_H__
 
 //pll clk register
+#define CLKCTRL_DSC_CLK_CTRL			0x0040
 #define CLKCTRL_PIX_PLL_CTRL0			0x02f0
 #define CLKCTRL_PIX_PLL_CTRL1			0x02f1
 #define CLKCTRL_PIX_PLL_CTRL2			0x02f2
 #define CLKCTRL_PIX_PLL_CTRL3			0x02f3
 #define CLKCTRL_PIX_PLL_STS			0x02f4
+
+#define VPU_VDIN_HDMI0_CTRL0			0x272c
+// Bit0:reg_hdmi_en Bit1:reg_dsc_en
+#define HDMI_OR_DSC_EN_BIT		0
+#define HDMI_OR_DSC_EN_WID		2
+// Bit 3:2 reg_in_ppc 0:hdmi_rx 1:dsc_1ppc 2:dsc_2ppc 3:dsc_4ppc
+#define IN_PPC_BIT			2
+#define IN_PPC_WID			2
+// Bit 5:4 reg_out_ppc: 0:1ppc 1:2ppc
+#define OUT_PPC_BIT			4
+#define OUT_PPC_WID			2
+// Bit 7:6 reg_dsc_ppc: 0:rgb 1:422 2:444  3:420
+#define DSC_PPC_BIT			6
+#define OUT_PPC_WID			2
+// Bit 8        reg_fmt_set     :
+// 1: when hdmi rx input (not dsc), use register instead of hdmi rx input signals
+// Bit 15:12    wr_rate_pre
+// Bit 19:16    rd_rate_dcp
+// Bit 21:20    reg_din_mux
+// Bit 26:24    reg_din_swap
+// Bit 27       reg_dis_auto    :   //disable auto
+// Bit 29:28    reg_cd_cnt_max  :   slow down speed de out
 
 //dsc dec register
 #define DSC_COMP_CTRL				0x0

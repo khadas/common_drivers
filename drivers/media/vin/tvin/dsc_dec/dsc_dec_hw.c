@@ -8,6 +8,7 @@
 #include <linux/delay.h>
 #include <linux/amlogic/media/vpu/vpu.h>
 #include <linux/amlogic/media/vout/dsc.h>
+#include "../tvin_global.h"
 #include "dsc_dec_reg.h"
 #include "dsc_dec_drv.h"
 #include "dsc_dec_debug.h"
@@ -296,6 +297,34 @@ void dsc_dec_config_register(struct aml_dsc_dec_drv_s *dsc_dec_drv)
 	W_DSC_DEC_BIT(DSC_ASIC_CTRL14, dsc_dec_drv->dbg_hcnt, DBG_HCNT, DBG_HCNT_WID);
 }
 
+void dsc_dec_config_fix_pll_clk(unsigned int value)
+{
+	if (value == 297) {
+		W_DSC_DEC_CLKCTRL_REG(CLKCTRL_PIX_PLL_CTRL0, 0x20020cc6);
+		W_DSC_DEC_CLKCTRL_REG(CLKCTRL_PIX_PLL_CTRL0, 0x30020cc6);
+		usleep_range(20, 30);
+		W_DSC_DEC_CLKCTRL_REG(CLKCTRL_PIX_PLL_CTRL1, 0x03a00000);
+		W_DSC_DEC_CLKCTRL_REG(CLKCTRL_PIX_PLL_CTRL2, 0x00040000);
+		W_DSC_DEC_CLKCTRL_REG(CLKCTRL_PIX_PLL_CTRL3, 0x090da000);
+		usleep_range(20, 30);
+		W_DSC_DEC_CLKCTRL_REG(CLKCTRL_PIX_PLL_CTRL0, 0x10020cc6);
+		usleep_range(20, 30);
+		W_DSC_DEC_CLKCTRL_REG(CLKCTRL_PIX_PLL_CTRL3, 0x090da200);
+	} else if (value == 594) {
+		W_DSC_DEC_CLKCTRL_REG(CLKCTRL_PIX_PLL_CTRL0, 0x20010cc6);
+		W_DSC_DEC_CLKCTRL_REG(CLKCTRL_PIX_PLL_CTRL0, 0x30010cc6);
+		usleep_range(20, 30);
+		W_DSC_DEC_CLKCTRL_REG(CLKCTRL_PIX_PLL_CTRL1, 0x03a00000);
+		W_DSC_DEC_CLKCTRL_REG(CLKCTRL_PIX_PLL_CTRL2, 0x00040000);
+		W_DSC_DEC_CLKCTRL_REG(CLKCTRL_PIX_PLL_CTRL3, 0x090da000);
+		usleep_range(20, 30);
+		W_DSC_DEC_CLKCTRL_REG(CLKCTRL_PIX_PLL_CTRL0, 0x10010cc6);
+		usleep_range(20, 30);
+		W_DSC_DEC_CLKCTRL_REG(CLKCTRL_PIX_PLL_CTRL3, 0x090da200);
+	}
+	W_DSC_DEC_CLKCTRL_REG(CLKCTRL_DSC_CLK_CTRL, 0x1c0);
+}
+
 void dsc_dec_config_pll_clk(unsigned int od, unsigned int dpll_m,
 				unsigned int dpll_n, unsigned int div_frac)
 {
@@ -312,5 +341,21 @@ void dsc_dec_config_pll_clk(unsigned int od, unsigned int dpll_m,
 	usleep_range(20, 30);
 	W_DSC_DEC_CLKCTRL_REG(CLKCTRL_PIX_PLL_CTRL3, 0x090da200);
 	usleep_range(20, 30);
+}
+
+void dsc_dec_config_vpu_mux(struct aml_dsc_dec_drv_s *dsc_dec_drv)
+{
+	wr_bits(0, VPU_VDIN_HDMI0_CTRL0, 2, HDMI_OR_DSC_EN_BIT, HDMI_OR_DSC_EN_WID);
+	wr_bits(0, VPU_VDIN_HDMI0_CTRL0, dsc_dec_drv->pix_per_clk + 1, IN_PPC_BIT, IN_PPC_WID);
+	wr_bits(0, VPU_VDIN_HDMI0_CTRL0, 1, OUT_PPC_BIT, OUT_PPC_BIT);
+
+	if (dsc_dec_drv->pps_data.convert_rgb)
+		wr_bits(0, VPU_VDIN_HDMI0_CTRL0, 0, DSC_PPC_BIT, DSC_PPC_BIT);
+	else if (dsc_dec_drv->pps_data.native_422)
+		wr_bits(0, VPU_VDIN_HDMI0_CTRL0, 1, DSC_PPC_BIT, DSC_PPC_BIT);
+	else if (dsc_dec_drv->pps_data.native_420)
+		wr_bits(0, VPU_VDIN_HDMI0_CTRL0, 3, DSC_PPC_BIT, DSC_PPC_BIT);
+	else
+		wr_bits(0, VPU_VDIN_HDMI0_CTRL0, 2, DSC_PPC_BIT, DSC_PPC_BIT);
 }
 

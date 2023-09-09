@@ -30,7 +30,7 @@ struct dsc_dec_data_s {
 struct dsc_timing_gen_ctrl {
 	unsigned int tmg_havon_begin;//avon=active
 	unsigned int tmg_hso_begin;//hso=hsync
-	unsigned int tmg_hso_end;
+	unsigned int tmg_hso_end; //havon_begin - hback/2
 	unsigned int tmg_vso_begin;
 	unsigned int tmg_vso_end;
 	unsigned int tmg_vso_bline;
@@ -62,7 +62,7 @@ struct aml_dsc_dec_drv_s {
 	unsigned int slice_num_m1;//pic_width/slice_width;
 	unsigned int dsc_dec_en;
 	unsigned int dsc_dec_frm_latch_en;// need to check ucode
-	unsigned int pix_per_clk;// input 4*36 config 2^2
+	unsigned int pix_per_clk;//input 0:1pix 1:2pix 2:4pix
 	bool c3_clk_en;
 	bool c2_clk_en;
 	bool c1_clk_en;
@@ -85,12 +85,12 @@ struct aml_dsc_dec_drv_s {
 	unsigned int c3s1_cb_ovfl_th;
 	unsigned int c3s0_cb_ovfl_th;
 	unsigned int s0_de_dly;
-	unsigned int s1_de_dly;
-	unsigned int tmg_cb_von_bline;
-	unsigned int tmg_cb_von_eline;
+	unsigned int s1_de_dly; //use constant 33
+	unsigned int tmg_cb_von_bline; //vsync + vbackporch + a little delay
+	unsigned int tmg_cb_von_eline; //cb_von_bline + vactive_number
 	unsigned int hc_htotal_offs_oddline;
 	unsigned int hc_htotal_offs_evenline;
-	unsigned int hc_htotal_m1;
+	unsigned int hc_htotal_m1; //compress htotal from HDMI RX (hc_active+hc_blank)/2 - 1
 	unsigned int pix_out_swap0;
 	unsigned int intr_maskn;
 	unsigned int pix_out_swap1;

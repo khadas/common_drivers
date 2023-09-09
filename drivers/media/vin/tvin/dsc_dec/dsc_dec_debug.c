@@ -9,6 +9,7 @@
 #include <linux/device.h>
 #include <linux/io.h>
 #include <linux/delay.h>
+#include "../tvin_global.h"
 #include "dsc_dec_reg.h"
 #include "dsc_dec_hw.h"
 #include "dsc_dec_drv.h"
@@ -390,6 +391,8 @@ static inline void dsc_dec_dump_regs(struct aml_dsc_dec_drv_s *dsc_dec_drv)
 	for (reg = DSC_COMP_CTRL; reg <= DSC_ASIC_CTRL18; reg++)
 		DSC_DEC_PR("0x%04x = 0x%08x\n", reg, R_DSC_DEC_REG(reg));
 	DSC_DEC_PR("dsc_dec regs end----\n\n");
+	DSC_DEC_PR("VPU register config----\n\n");
+	DSC_DEC_PR("0x%04x = 0x%08x\n", VPU_VDIN_HDMI0_CTRL0, rd(0, VPU_VDIN_HDMI0_CTRL0));
 }
 
 static inline void dsc_dec_clk_dump_regs(struct aml_dsc_dec_drv_s *dsc_dec_drv)
@@ -534,15 +537,22 @@ static ssize_t dsc_dec_debug_store(struct device *dev,
 			}
 		} else { //dsc dec register
 			dsc_dec_dump_regs(dsc_dec_drv);
+			dsc_dec_clk_dump_regs(dsc_dec_drv);
 		}
 	} else if (!strcmp(parm[0], "get_reg_config")) {
 		dsc_dec_print_reg_value(dsc_dec_drv);
 	} else if (!strcmp(parm[0], "get_pps_para")) {
 		//TODO
-	} else if (!strcmp(parm[0], "config_m41h_value_120hz")) {
-		init_pps_data(dsc_dec_drv);
-	} else if (!strcmp(parm[0], "config_m41h_value_60hz")) {
-		init_pps_data_v1(dsc_dec_drv);
+	} else if (!strcmp(parm[0], "config_m41h_value_4k120hz")) {
+		init_pps_data_4k_120hz(dsc_dec_drv);
+	} else if (!strcmp(parm[0], "config_m41h_value_4k60hz")) {
+		init_pps_data_4k_60hz(dsc_dec_drv);
+	} else if (!strcmp(parm[0], "config_m41h_value_8k30hz")) {
+		init_pps_data_8k_30hz(dsc_dec_drv);
+	} else if (!strcmp(parm[0], "config_m41h_value_8k60hz_8bpc")) {
+		init_pps_data_8k_60hz_8bpc(dsc_dec_drv);
+	} else if (!strcmp(parm[0], "config_m41h_value_8k60hz_10bpc")) {
+		init_pps_data_8k_60hz_10bpc(dsc_dec_drv);
 	} else if (!strcmp(parm[0], "is_enable_dsc_dec")) {
 		if (parm[1] && (kstrtouint(parm[1], 10, &temp) == 0))
 			set_dsc_dec_en(temp);

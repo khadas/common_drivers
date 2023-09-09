@@ -6,8 +6,11 @@
 #ifndef __DSC_DEC_CONFIG_H__
 #define __DSC_DEC_CONFIG_H__
 
-void init_pps_data(struct aml_dsc_dec_drv_s *dsc_dec_drv);
-void init_pps_data_v1(struct aml_dsc_dec_drv_s *dsc_dec_drv);
+void init_pps_data_4k_120hz(struct aml_dsc_dec_drv_s *dsc_dec_drv);
+void init_pps_data_4k_60hz(struct aml_dsc_dec_drv_s *dsc_dec_drv);
+void init_pps_data_8k_30hz(struct aml_dsc_dec_drv_s *dsc_dec_drv);
+void init_pps_data_8k_60hz_8bpc(struct aml_dsc_dec_drv_s *dsc_dec_drv);
+void init_pps_data_8k_60hz_10bpc(struct aml_dsc_dec_drv_s *dsc_dec_drv);
 void dsc_dec_clk_calculate(unsigned int integer, unsigned int frac);
 
 #endif

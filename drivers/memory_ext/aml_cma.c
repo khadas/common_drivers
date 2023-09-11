@@ -1789,6 +1789,54 @@ struct kprobe kp_cma_release = {
 	.pre_handler = cma_release_pre_handler,
 };
 
+/* Returns true if the page is within a block suitable for migration to */
+static bool aml_suitable_migration(struct compact_control *cc,
+							struct page *page)
+{
+	int migrate_type = 0;
+	/* If the page is a large free page, then disallow migration */
+	if (PageBuddy(page)) {
+		/*
+		 * We are checking page_order without zone->lock taken. But
+		 * the only small danger is that we skip a potentially suitable
+		 * pageblock, so it's not worth to check order for valid range.
+		 */
+		if (buddy_order_unsafe(page) >= pageblock_order)
+			return false;
+	}
+
+	/* avoid compact to cma area */
+	migrate_type = get_pageblock_migratetype(page);
+	if (is_migrate_isolate(migrate_type))
+		return false;
+	if (is_migrate_cma(migrate_type))
+		return false;
+
+	if (cc->ignore_block_suitable)
+		return true;
+
+	/* If the block is MIGRATE_MOVABLE or MIGRATE_CMA, allow migration */
+	if (is_migrate_movable(migrate_type))
+		return true;
+
+	/* Otherwise skip the block */
+	return false;
+}
+
+static int __nocfi __kprobes suitable_migration_pre_handler(struct kprobe *p, struct pt_regs *regs)
+{
+	//restore to origin context
+	instruction_pointer_set(regs, (unsigned long)aml_suitable_migration);
+
+	//no need continue do single-step
+	return 1;
+}
+
+struct kprobe kp_suitable_migration = {
+	.symbol_name  = "suitable_migration_target",
+	.pre_handler = suitable_migration_pre_handler,
+};
+
 static void *get_symbol_addr(const char *symbol_name)
 {
 	struct kprobe kp;
@@ -1859,6 +1907,13 @@ static int __nocfi common_symbol_init(void *data)
 	if (ret < 0) {
 		pr_err("register_kprobe:%s failed, returned %d\n",
 		       kp_cma_release.symbol_name, ret);
+		return 1;
+	}
+
+	ret = register_kprobe(&kp_suitable_migration);
+	if (ret < 0) {
+		pr_err("register_kprobe:%s failed, returned %d\n",
+		       kp_suitable_migration.symbol_name, ret);
 		return 1;
 	}
 

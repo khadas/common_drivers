@@ -821,7 +821,7 @@
 		channel_mask = <0x3>;
 	};
 	auge_sound {
-		compatible = "amlogic, g12a-sound-card";
+		compatible = "amlogic, auge-sound-card";
 		aml-audio-card,name = "AML-AUGESOUND";
 
 		aml-audio-card,aux-devs = <&amlogic_codec>;
@@ -1356,17 +1356,17 @@
 &pinctrl_periphs {
 	tdmout_a: tdmout_a {
 		mux { /* GPIOX_11, GPIOX_10, GPIOX_9 */
-			groups = "tdma_sclk",
-				"tdma_fs",
-				"tdma_dout0";
-			function = "tdma_out";
+			groups = "tdm_a_sclk",
+				"tdm_a_fs",
+				"tdm_a_dout0";
+			function = "tdm_a";
 		};
 	};
 
 	tdmin_a: tdmin_a {
 		mux { /* GPIOX_8 */
-			groups = "tdma_din1";
-			function = "tdma_in";
+			groups = "tdm_a_din1";
+			function = "tdm_a";
 		};
 	};
 
@@ -1379,19 +1379,19 @@
 	};
 	tdmout_b: tdmout_b {
 		mux { /* GPIOA_1, GPIOA_2, GPIOA_3 */
-			groups = "tdmb_sclk",
-				"tdmb_fs",
-				"tdmb_dout0";
-			function = "tdmb_out";
+			groups = "tdm_b_sclk",
+				"tdm_b_fs",
+				"tdm_b_dout0";
+			function = "tdm_b";
 			drive-strength = <2>;
 		};
 	};
 
 	tdmin_b:tdmin_b {
 		mux { /* GPIOA_4 */
-			groups = "tdmb_din1"
+			groups = "tdm_b_din1"
 				/*,"tdmb_slv_sclk", "tdmb_slv_fs"*/;
-			function = "tdmb_in";
+			function = "tdm_b";
 			drive-strength = <2>;
 		};
 	};
@@ -1405,20 +1405,20 @@
 
 	tdmout_c:tdmout_c {
 		mux { /* GPIOA_12, GPIOA_13, GPIOA_10, GPIOA_8, GPIOA_7*/
-			groups = "tdmc_sclk_a",
-				"tdmc_fs_a",
-				"tdmc_dout0_a"
+			groups = "tdm_c_sclk_a",
+				"tdm_c_fs_a",
+				"tdm_c_dout0_a"
 				/*,	"tdmc_dout2",
 				 * "tdmc_dout3"
 				 */;
-			function = "tdmc_out";
+			function = "tdm_c";
 		};
 	};
 
 	tdmin_c:tdmin_c {
 		mux { /* GPIOA_9 */
-			groups = "tdmc_din1_a";
-			function = "tdmc_in";
+			groups = "tdm_c_din1_a";
+			function = "tdm_c";
 		};
 	};
 

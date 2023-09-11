@@ -645,6 +645,8 @@ ulong lowlatency_vsync_count;
 bool overrun_flag;
 
 static void update_mediasync_param(u32 vsync_period, s64 vsync_timestamp);
+static void modify_line_n_num(u32 line_num);
+static u32 get_line_n_num(void);
 
 static irqreturn_t line_n_isr(int irq, void *dev_id)
 {
@@ -8572,6 +8574,35 @@ static ssize_t tvin_source_type_store(struct class *cla,
 	return count;
 }
 
+ssize_t line_n_num_show(struct class *cla, struct class_attribute *attr,
+		    char *buf)
+{
+	ssize_t len = 0;
+
+	len += sprintf(buf + len, "current line_n setting: %d\n",
+		       get_line_n_num());
+
+	return len;
+}
+
+ssize_t line_n_num_store(struct class *cla, struct class_attribute *attr,
+		     const char *buf, size_t count)
+{
+	int ret;
+	u32 val = 0, cur_line = 0, new_line = 0;
+
+	ret = kstrtoint(buf, 0, &val);
+	if (ret < 0)
+		return -EINVAL;
+
+	cur_line = get_line_n_num();
+	modify_line_n_num(val);
+	new_line = get_line_n_num();
+	pr_info("line_n setting: %d -> %d\n", cur_line, get_line_n_num());
+
+	return count;
+}
+
 static struct class_attribute amvideo_class_attrs[] = {
 	__ATTR(axis,
 	       0664,
@@ -8957,6 +8988,10 @@ static struct class_attribute amvideo_class_attrs[] = {
 		0664,
 		tvin_source_type_show,
 		tvin_source_type_store),
+	__ATTR(line_n_num,
+		0664,
+		line_n_num_show,
+		line_n_num_store),
 };
 
 static struct class_attribute amvideo_poll_class_attrs[] = {
@@ -9077,6 +9112,16 @@ struct vframe_s *get_cur_dispbuf(void)
 	return cur_dispbuf[0];
 }
 
+static void modify_line_n_num(u32 line_num)
+{
+	WRITE_VCBUS_REG(VPP_INT_LINE_NUM, line_num);
+}
+
+static u32 get_line_n_num(void)
+{
+	return READ_VCBUS_REG(VPP_INT_LINE_NUM);
+}
+
 static void set_line_n_num(void)
 {
 	const struct vinfo_s *info = get_current_vinfo();
@@ -9088,10 +9133,11 @@ static void set_line_n_num(void)
 		return;
 	}
 
-	WRITE_VCBUS_REG(VPP_INT_LINE_NUM, info->height * 2 / 3);
+	WRITE_VCBUS_REG(VPP_INT_LINE_NUM, info->field_height * 2 / 3);
 	if (debug_flag & DEBUG_FLAG_BASIC_INFO)
-		pr_info("%s info->height:%d VPP_INT_LINE_NUM:%d\n", __func__,
-			info->height, READ_VCBUS_REG(VPP_INT_LINE_NUM));
+		pr_info("%s info->field_height:%d VPP_INT_LINE_NUM:%d\n",
+			__func__, info->height,
+			READ_VCBUS_REG(VPP_INT_LINE_NUM));
 }
 
 #ifdef CONFIG_AM_VOUT

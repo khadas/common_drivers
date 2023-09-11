@@ -641,6 +641,9 @@ static void meson_clk_pll_disable(struct clk_hw *hw)
 	struct clk_regmap *clk = to_clk_regmap(hw);
 	struct meson_clk_pll_data *pll = meson_clk_pll_data(clk);
 
+	if (bypass_clk_disable)
+		return;
+
 	/* Put the pll is in reset */
 	meson_parm_write(clk->map, &pll->rst, 1);
 
@@ -758,6 +761,9 @@ static void meson_secure_pll_v2_disable(struct clk_hw *hw)
 	struct clk_regmap *clk = to_clk_regmap(hw);
 	struct meson_clk_pll_data *pll = meson_clk_pll_data(clk);
 	struct arm_smccc_res res;
+
+	if (bypass_clk_disable)
+		return;
 
 	arm_smccc_smc(pll->smc_id, pll->secid_disable,
 		      0, 0, 0, 0, 0, 0, &res);

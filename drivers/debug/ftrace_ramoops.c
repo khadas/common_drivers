@@ -240,49 +240,6 @@ static void schedule_hook(void *data, struct task_struct *prev, struct task_stru
 }
 #endif
 
-static struct kprobe clk_disable_kp = {
-	.symbol_name = "clk_core_disable",
-};
-
-static struct kprobe clk_unprepare_kp = {
-	.symbol_name = "clk_core_unprepare",
-};
-
-static struct kprobe power_off_kp = {
-	.symbol_name = "_genpd_power_off",
-};
-
-static int clk_handler_pre(struct kprobe *p, struct pt_regs *regs)
-{
-	/*
-	 * set clk_core_disable/clk_core_unprepare x0 to 0, do not disable clk
-	 */
-#if defined(CONFIG_ARM64)
-	regs->regs[0] = 0;
-#elif defined(CONFIG_ARM)
-	regs->ARM_r0 = 0;
-#endif
-
-	return 0;
-}
-
-static int power_handler_pre(struct kprobe *p, struct pt_regs *regs)
-{
-	/*
-	 * set _genpd_power_off (struct _genpd_power_off *)x0->power_off to 0, do not power_off
-	 */
-#if defined(CONFIG_ARM64)
-	((struct generic_pm_domain *)regs->regs[0])->power_off = 0;
-	pr_info("skip all pd power_off,%s pd will not power_off\n",
-		((struct generic_pm_domain *)regs->regs[0])->name);
-#elif defined(CONFIG_ARM)
-	((struct generic_pm_domain *)regs->ARM_r0)->power_off = 0;
-	pr_info("skip all pd power_off,%s pd will not power_off\n",
-		((struct generic_pm_domain *)regs->ARM_r0)->name);
-#endif
-	return 0;
-}
-
 #if IS_MODULE(CONFIG_AMLOGIC_DEBUG_IOTRACE)
 /*
  * struct regmap_mmio_context sync from common/drivers/base/regmap/regmap-mmio.c
@@ -401,7 +358,9 @@ static struct kretprobe regmap_mmio_write_krp = {
 
 int ftrace_ramoops_init(void)
 {
+#if IS_MODULE(CONFIG_AMLOGIC_DEBUG_IOTRACE)
 	int ret;
+#endif
 
 	if (!ramoops_io_en)
 		return 0;
@@ -425,31 +384,6 @@ int ftrace_ramoops_init(void)
 		return ret;
 	}
 #endif
-
-	if (meson_clk_debug) {
-		clk_disable_kp.pre_handler = clk_handler_pre;
-		ret = register_kprobe(&clk_disable_kp);
-		if (ret < 0) {
-			pr_err("register 'clk_core_disable' failed, returned %d\n", ret);
-			return ret;
-		}
-
-		clk_unprepare_kp.pre_handler = clk_handler_pre;
-		ret = register_kprobe(&clk_unprepare_kp);
-		if (ret < 0) {
-			pr_err("register 'clk_core_unprepare' failed, returned %d\n", ret);
-			return ret;
-		}
-	}
-
-	if (meson_pd_debug) {
-		power_off_kp.pre_handler = power_handler_pre;
-		ret = register_kprobe(&power_off_kp);
-		if (ret < 0) {
-			pr_err("register '_genpd_power_off' failed, returned %d\n", ret);
-			return ret;
-		}
-	}
 
 	return 0;
 }

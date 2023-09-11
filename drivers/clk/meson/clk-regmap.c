@@ -27,6 +27,9 @@ static int clk_regmap_gate_enable(struct clk_hw *hw)
 
 static void clk_regmap_gate_disable(struct clk_hw *hw)
 {
+	if (bypass_clk_disable)
+		return;
+
 	clk_regmap_gate_endisable(hw, 0);
 }
 

@@ -745,7 +745,12 @@ static int sec_pd_probe(struct platform_device *pdev)
 
 		pd[i].base.name = private_pd->name;
 		pd[i].base.power_on = sec_pm_domain_power_on;
-		pd[i].base.power_off = sec_pm_domain_power_off;
+
+		if (!bypass_power_off)
+			pd[i].base.power_off = sec_pm_domain_power_off;
+		else
+			pr_info_once("blacklist pd power off operation\n");
+
 		pd[i].base.flags = private_pd->flags;
 		pd[i].private_domain = &pri_pd[i];
 		pri_pd[i].pd_index = private_pd->pd_index;

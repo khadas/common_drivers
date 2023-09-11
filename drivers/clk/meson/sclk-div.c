@@ -202,6 +202,9 @@ static void sclk_div_disable(struct clk_hw *hw)
 	struct clk_regmap *clk = to_clk_regmap(hw);
 	struct meson_sclk_div_data *sclk = meson_sclk_div_data(clk);
 
+	if (bypass_clk_disable)
+		return;
+
 	meson_parm_write(clk->map, &sclk->div, 0);
 }
 

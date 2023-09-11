@@ -19,6 +19,8 @@
  */
 #define GENPD_FLAG_IGNORE_UNUSED BIT(7)
 
+extern int bypass_power_off;
+
 int get_max_id(void);
 unsigned long pwr_ctrl_psci_smc(int power_domain, bool power_control);
 unsigned long pwr_ctrl_status_psci_smc(int power_domain);

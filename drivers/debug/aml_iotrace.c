@@ -101,38 +101,6 @@ static int ramoops_io_dump_setup(char *buf)
 }
 __setup("ramoops_io_dump=", ramoops_io_dump_setup);
 
-int meson_clk_debug;
-
-static int meson_clk_debug_setup(char *buf)
-{
-	if (!buf)
-		return -EINVAL;
-
-	if (kstrtoint(buf, 0, &meson_clk_debug)) {
-		pr_err("meson_clk_debug error: %s\n", buf);
-		return -EINVAL;
-	}
-
-	return 0;
-}
-__setup("meson_clk_debug=", meson_clk_debug_setup);
-
-int meson_pd_debug;
-
-static int meson_pd_debug_setup(char *buf)
-{
-	if (!buf)
-		return -EINVAL;
-
-	if (kstrtoint(buf, 0, &meson_pd_debug)) {
-		pr_err("meson_pd_debug error: %s\n", buf);
-		return -EINVAL;
-	}
-
-	return 0;
-}
-__setup("meson_pd_debug=", meson_pd_debug_setup);
-
 /* ramoops_io_dump_delay_secs : iotrace dump delayed time, s */
 static int ramoops_io_dump_delay_secs = 10; /* default : 10s */
 

@@ -9,8 +9,6 @@
 extern int ramoops_io_skip;
 extern int ramoops_io_en;
 extern int ramoops_trace_mask;
-extern int meson_clk_debug;
-extern int meson_pd_debug;
 
 void notrace __nocfi pstore_io_save(unsigned long reg, unsigned long val, unsigned int flag,
 							unsigned long *irq_flags);

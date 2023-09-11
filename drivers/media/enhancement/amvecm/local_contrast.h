@@ -127,8 +127,9 @@ void lc_process(struct vframe_s *vf,
 		unsigned int sps_h_in);
 void lc_free(void);
 void lc_read_region(int blk_vnum, int blk_hnum, int slice);
-void lc_disable(void);
+void lc_disable(int rdma_mode);
 bool lc_curve_ctrl_reg_set_flag(unsigned int addr);
+void lc_prt_curve(void);
 
 #endif
 #endif

@@ -13,6 +13,7 @@
 //#include "amcsc.h"
 #include "set_hdr2_v0.h"
 
+/*extern u32 s5_hdr_hist_vd2[NUM_HDR_HIST][128];*/
 extern u32 s5_hdr_hist[NUM_HDR_HIST][128];
 extern u32 s5_percentile[9];
 

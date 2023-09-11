@@ -7,6 +7,7 @@
 #ifndef AMVE_V2_H
 #define AMVE_V2_H
 
+extern int multi_picture_case;
 extern int multi_slice_case;
 extern int hist_dma_case;
 
@@ -56,7 +57,9 @@ void vpp_luma_hist_init(void);
 void get_luma_hist(struct vframe_s *vf);
 void cm_top_ctl(enum wr_md_e mode, int en);
 
-void ve_multi_slice_case_set(int enable);
+void ve_multi_picture_case_set(int enable);
+int ve_multi_picture_case_get(void);
+
 int ve_multi_slice_case_get(void);
 
 void ve_vadj_misc_set(int val,
@@ -73,21 +76,21 @@ void ve_dnlp_ctl(int enable);
 void ve_dnlp_sat_set(unsigned int value);
 
 void ve_lc_stts_blk_cfg(unsigned int height,
-	unsigned int width, int h_num, int v_num);
+	unsigned int width, int h_num, int v_num, int rdma_mode);
 void ve_lc_stts_en(int enable,
 	unsigned int height, unsigned int width,
 	int pix_drop_mode, int eol_en, int hist_mode,
 	int lpf_en, int din_sel, int bitdepth,
-	int flag, int flag_full, int thd_black);
+	int flag, int flag_full, int thd_black, int rdma_mode);
 void ve_lc_blk_num_get(int *h_num, int *v_num,
 	int slice);
-void ve_lc_disable(void);
+void ve_lc_disable(int rdma_mode);
 void ve_lc_curve_ctrl_cfg(int enable,
 	unsigned int height, unsigned int width,
-	int h_num, int v_num);
+	int h_num, int v_num, int rdma_mode);
 void ve_lc_top_cfg(int enable, int h_num, int v_num,
 	unsigned int height, unsigned int width, int bitdepth,
-	int flag, int flag_full);
+	int flag, int flag_full, int rdma_mode);
 void ve_lc_sat_lut_set(int *data);
 void ve_lc_ymin_lmt_set(int *data);
 void ve_lc_ymax_lmt_set(int *data);
@@ -101,6 +104,8 @@ void ve_lc_base_init(void);
 void ve_lc_region_read(int blk_vnum, int blk_hnum,
 	int slice, int *black_count,
 	int *curve_data, int *hist_data);
+void dump_lc_reg(void);
+void dump_dnlp_reg(void);
 
 void post_lut3d_ctl(enum wr_md_e mode, int en);
 void post_lut3d_update(unsigned int *lut3d_data);

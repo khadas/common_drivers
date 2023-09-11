@@ -54,10 +54,16 @@ MODULE_PARM_DESC(amlc_debug, "\n amlc_debug\n");
 int lc_en = 1;
 int lc_bitdepth = 10;
 int lc_curve_isr_defined;
+module_param(lc_curve_isr_defined, int, 0664);
+MODULE_PARM_DESC(lc_curve_isr_defined, "\n lc_curve_isr_defined\n");
 
 int use_lc_curve_isr = 1;
 module_param(use_lc_curve_isr, int, 0664);
 MODULE_PARM_DESC(use_lc_curve_isr, "\n use_lc_curve_isr\n");
+
+int lc_rdma_mode;
+module_param(lc_rdma_mode, int, 0664);
+MODULE_PARM_DESC(lc_rdma_mode, "\n lc_rdma_mode\n");
 
 int lc_demo_mode;
 int lc_en_chflg = 0xff;
@@ -228,11 +234,11 @@ static void lc_mtx_set(enum lc_mtx_sel_e mtx_sel,
 	switch (mtx_csc) {
 	case LC_MTX_RGB_YUV601L:
 		if (mtx_sel & (INP_MTX | OUTP_MTX)) {
-			WRITE_VPP_REG(matrix_coef00_01, 0x1070204);
-			WRITE_VPP_REG(matrix_coef02_10, 0x640f68);
-			WRITE_VPP_REG(matrix_coef11_12, 0xed601c2);
-			WRITE_VPP_REG(matrix_coef20_21, 0x01c20e87);
-			WRITE_VPP_REG(matrix_coef22, 0x0000fb7);
+			WRITE_VPP_REG(matrix_coef00_01, 0x01070204);
+			WRITE_VPP_REG(matrix_coef02_10, 0x00641f68);
+			WRITE_VPP_REG(matrix_coef11_12, 0x1ed601c2);
+			WRITE_VPP_REG(matrix_coef20_21, 0x01c21e87);
+			WRITE_VPP_REG(matrix_coef22, 0x00001fb7);
 			if (bitdepth == 10) {
 				WRITE_VPP_REG(matrix_offset0_1, 0x00400200);
 				WRITE_VPP_REG(matrix_clip, 0x3ff);
@@ -752,7 +758,7 @@ static void lc_blk_bdry_config(unsigned int height, unsigned int width)
 
 static void lc_top_config(int enable, int h_num, int v_num,
 	unsigned int height, unsigned int width, int bitdepth,
-	int flag, int flag_full)
+	int flag, int flag_full, int rdma_mode)
 {
 	pr_amlc_dbg("enable/h_num/v_num/height/width: %d/%d/%d/%d/%d\n",
 		enable, h_num, v_num, height, width);
@@ -797,15 +803,13 @@ static void lc_top_config(int enable, int h_num, int v_num,
 				lc_mtx_set(OUTP_MTX, LC_MTX_RGB_YUV709L, 1, bitdepth);
 			}
 		}
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	} else {
 		ve_lc_top_cfg(enable, h_num, v_num,
-			height, width, bitdepth, 1, 0);
-#endif
+			height, width, bitdepth, 1, 0, rdma_mode);
 	}
 }
 
-void lc_disable(void)
+void lc_disable(int rdma_mode)
 {
 	if (chip_type_id != chip_t3x) {
 		/*lc enable need set at last*/
@@ -814,10 +818,8 @@ void lc_disable(void)
 		WRITE_VPP_REG_BITS(LC_CURVE_RAM_CTRL, 0, 0, 1);
 		/*lc hist stts enable*/
 		WRITE_VPP_REG_BITS(LC_STTS_HIST_REGION_IDX, 0, 31, 1);
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	} else {
-		ve_lc_disable();
-#endif
+		ve_lc_disable(rdma_mode);
 	}
 
 	if (!lc_malloc_ok) {
@@ -831,12 +833,10 @@ void lc_disable(void)
 	memset(curve_nodes_pre, 0, LC_CURV_SIZE * sizeof(int));
 	memset(curve_nodes_pre_raw, 0, LC_CURV_SIZE * sizeof(int64_t));
 
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (chip_type_id == chip_t3x) {
 		memset(lc_hist_slice1, 0, LC_HIST_SIZE * sizeof(int));
 		memset(lc_szcurve_slice1, 0, LC_CURV_SIZE * sizeof(int));
 	}
-#endif
 
 	lc_en_chflg = 0x0;
 }
@@ -887,6 +887,12 @@ static void lc_config(int enable,
 		pr_amlc_dbg("%s: vf is NULL!\n", __func__);
 		return;
 	}
+
+	pr_amlc_dbg("sps_h_en/v_en/h_in/w_in: %d/%d/%d/%d\n",
+		sps_h_en,
+		sps_v_en,
+		sps_h_in,
+		sps_w_in);
 
 	/* try to detect out of spec signal level */
 	flag_full = 0;
@@ -949,7 +955,7 @@ static void lc_config(int enable,
 		flag = 0x1;
 
 	lc_top_config(enable, h_num, v_num, height,
-		width, bitdepth, flag, flag_full);
+		width, bitdepth, flag, flag_full, lc_rdma_mode);
 
 	width = sps_w_in;
 	height = sps_h_in;
@@ -963,13 +969,13 @@ static void lc_config(int enable,
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	} else {
 		ve_lc_curve_ctrl_cfg(enable,
-			height, width, h_num, v_num);
+			height, width, h_num, v_num, lc_rdma_mode);
 		ve_lc_stts_blk_cfg(height, width,
-			h_num, v_num);
+			h_num, v_num, lc_rdma_mode);
 		ve_lc_stts_en(enable, height, width,
 			0, 0, 1, 1, 0,
 			bitdepth, flag, flag_full,
-			lc_tune_curve.lc_reg_thd_black);
+			lc_tune_curve.lc_reg_thd_black, lc_rdma_mode);
 #endif
 	}
 }
@@ -1830,11 +1836,9 @@ void lc_read_region(int blk_vnum, int blk_hnum,
 	int slice)
 {
 	int i;
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	int j;
 	unsigned int cur_block;
 	int *data_curve;
-#endif
 	int *data_hist;
 
 	pr_amlc_dbg("%s: slice = %d", __func__, slice);
@@ -1842,7 +1846,6 @@ void lc_read_region(int blk_vnum, int blk_hnum,
 	if (chip_type_id != chip_t3x) {
 		_read_region(blk_vnum, blk_hnum);
 		data_hist = lc_hist;
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	} else {
 		if (slice == 0) {
 			data_curve = lc_szcurve;
@@ -1855,6 +1858,12 @@ void lc_read_region(int blk_vnum, int blk_hnum,
 		ve_lc_region_read(blk_vnum, blk_hnum, slice,
 			&lc_tune_curve.lc_reg_black_count,
 			data_curve, data_hist);
+
+		if (amlc_debug == 0x80 && lc_hist_prcnt) {/*print curve data*/
+			pr_info("curve slice = %d\n", slice);
+			for (i = 0; i < 8 * 12 * 6; i++)
+				pr_info("[%d] %x\n", i, data_curve[i]);
+		}
 
 		/*part3: add tune curve node patch--by vlsi-guopan*/
 		for (i = 0; i < blk_vnum; i++) {
@@ -1871,7 +1880,6 @@ void lc_read_region(int blk_vnum, int blk_hnum,
 				}
 			}
 		}
-#endif
 	}
 
 	if (amlc_debug == 0x8 && lc_hist_prcnt) {/*print all hist data*/
@@ -1884,32 +1892,30 @@ void lc_read_region(int blk_vnum, int blk_hnum,
 		lc_hist_prcnt--;
 }
 
-static void lc_prt_curve(void)
+void lc_prt_curve(void)
 {/*print curve node*/
 	int i, j;
-	int dwtemp, blk_hnum, blk_vnum;
 
-	dwtemp = READ_VPP_REG(LC_CURVE_HV_NUM);
-	blk_hnum = (dwtemp >> 8) & 0x1f;
-	blk_vnum = (dwtemp) & 0x1f;
+	if (!lc_szcurve)
+		return;
+
 	pr_amlc_dbg("======lc_prt curve node=======\n");
-	for (i = 0; i < blk_hnum * blk_vnum; i++) {
+	for (i = 0; i < 12 * 8; i++) {
 		for (j = 0; j < 6 ; j++)
-			pr_amlc_dbg("%d\n", lc_szcurve[i * 6 + j]);
+			pr_amlc_dbg("[%d]%d\n",
+				i * 6 + j, lc_szcurve[i * 6 + j]);
 		pr_amlc_dbg("\n");
 	}
 
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
-	if (chip_type_id == chip_t3x &&
-		ve_multi_slice_case_get()) {
-		for (i = 0; i < blk_hnum * blk_vnum; i++) {
+	if (chip_type_id == chip_t3x && lc_szcurve_slice1) {
+		pr_amlc_dbg("======lc_szcurve_slice1=======\n");
+		for (i = 0; i < 12 * 8; i++) {
 			for (j = 0; j < 6 ; j++)
-				pr_amlc_dbg("%d\n",
-					lc_szcurve_slice1[i * 6 + j]);
+				pr_amlc_dbg("[%d]%d\n",
+					i * 6 + j, lc_szcurve_slice1[i * 6 + j]);
 			pr_amlc_dbg("\n");
 		}
 	}
-#endif
 }
 
 void lc_init(int bitdepth)
@@ -1967,7 +1973,6 @@ void lc_init(int bitdepth)
 		return;
 	}
 
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (chip_type_id == chip_t3x) {
 		if (!lc_szcurve_slice1)
 			lc_szcurve_slice1 = kcalloc(LC_CURV_SIZE,
@@ -1994,14 +1999,13 @@ void lc_init(int bitdepth)
 			return;
 		}
 	}
-#endif
 
 	lc_malloc_ok = 1;
 	if (!lc_en)
 		return;
 
 	lc_top_config(0, h_num, v_num,
-		height, width, bitdepth, 1, 0);
+		height, width, bitdepth, 1, 0, 0);
 
 	if (chip_type_id != chip_t3x) {
 		WRITE_VPP_REG_BITS(LC_CURVE_RAM_CTRL, 0, 0, 1);
@@ -2095,13 +2099,11 @@ void lc_init(int bitdepth)
 
 		if (set_lc_curve(1, 0))
 			pr_info("%s: init fail", __func__);
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	} else {
 		ve_lc_base_init();
 		ve_lc_sat_lut_set(lc_satur_off);
 		ve_lc_curve_set(1, 0, NULL, 0);
 		ve_lc_curve_set(1, 0, NULL, 1);
-#endif
 	}
 }
 
@@ -2142,14 +2144,14 @@ void lc_process(struct vframe_s *vf,
 	}
 
 	if (!lc_en) {
-		lc_disable();
+		lc_disable(lc_rdma_mode);
 		pr_amlc_dbg("%s: lc_en = %d\n", __func__, lc_en);
 		return;
 	}
 
 	if (!vf) {
 		if (lc_flag == 0xff) {
-			lc_disable();
+			lc_disable(lc_rdma_mode);
 			lc_flag = 0x0;
 			lc_bypass_flag = 0x0;
 		}
@@ -2169,12 +2171,10 @@ void lc_process(struct vframe_s *vf,
 	if (lc_bypass_flag <= 0) {
 		if (chip_type_id != chip_t3x) {
 			set_lc_curve(1, 0);
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		} else {
 			ve_lc_curve_set(1, 0, lc_szcurve, 0);
-			if (ve_multi_slice_case_get())
+			if (ve_multi_picture_case_get())
 				ve_lc_curve_set(1, 0, lc_szcurve_slice1, 1);
-#endif
 		}
 
 		lc_bypass_flag++;
@@ -2207,14 +2207,14 @@ void lc_process(struct vframe_s *vf,
 			__func__, use_lc_curve_isr, lc_curve_isr_defined);
 		if (!use_lc_curve_isr || !lc_curve_isr_defined) {
 			lc_read_region(blk_vnum, blk_hnum, 0);
-			if (ve_multi_slice_case_get())
+			if (ve_multi_picture_case_get())
 				lc_read_region(blk_vnum, blk_hnum, 1);
 		}
 
 		/*do time domain iir*/
 		lc_fw_curve_iir(vf, lc_hist,
 			lc_szcurve, blk_vnum, blk_hnum);
-		if (ve_multi_slice_case_get())
+		if (ve_multi_picture_case_get())
 			lc_fw_curve_iir(vf, lc_hist_slice1,
 				lc_szcurve_slice1, blk_vnum, blk_hnum);
 
@@ -2223,7 +2223,7 @@ void lc_process(struct vframe_s *vf,
 			lc_curve_prcnt--;
 		}
 
-		if (!ve_multi_slice_case_get()) {
+		if (!ve_multi_picture_case_get()) {
 			ve_lc_curve_set(0, lc_demo_mode, lc_szcurve, 0);
 		} else {
 			ve_lc_curve_set(0, 0, lc_szcurve, 0);

@@ -713,13 +713,11 @@ static void amvecm_size_patch(struct vframe_s *vf,
 {
 	unsigned int hs, he, vs, ve;
 
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (chip_type_id == chip_s5 ||
 		chip_type_id == chip_t3x) {
 		cm2_frame_size_patch(vf, cm_in_w, cm_in_h);
 		return;
 	}
-#endif
 
 	if (!vf)
 		return;
@@ -1187,20 +1185,17 @@ static void vpp_backup_histgram(struct vframe_s *vf)
 
 	for (i = 0; i < 64; i++) {
 		vpp_hist_param.vpp_histgram[i] = vf->prop.hist.vpp_gamma[i];
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+
 		if (chip_type_id == chip_t5m ||
 			chip_type_id == chip_t3x)
 			vpp_hist_param.vpp_dark_hist[i] =
 				vf->prop.hist.vpp_dark_hist[i];
-#endif
 	}
 
 	for (i = 0; i < 128; i++) {
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		if (chip_type_id == chip_t3x)
 			vpp_hist_param.hdr_histgram[i] = s5_hdr_hist[NUM_HDR_HIST - 1][i];
 		else
-#endif
 			vpp_hist_param.hdr_histgram[i] = hdr_hist[NUM_HDR_HIST - 1][i];
 	}
 
@@ -1248,7 +1243,6 @@ static void vpp_dump_histgram(void)
 	}
 	pr_info("\t dump_dnlp_hist done\n");
 
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (chip_type_id == chip_t5m ||
 		chip_type_id == chip_t3x) {
 		pr_info("\n\t dump vpp dark hist\n");
@@ -1260,32 +1254,40 @@ static void vpp_dump_histgram(void)
 		}
 		pr_info("\n\t dump vpp dark hist done\n");
 	}
-#endif
 
 	pr_info("\t dump_hdr_hist begin\n");
 	for (i = 0; i < 128; i++) {
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		if (chip_type_id == chip_t3x)
 			tmp = s5_hdr_hist[NUM_HDR_HIST - 1][i];
 		else
-#endif
 			tmp = hdr_hist[NUM_HDR_HIST - 1][i];
 		pr_info("[%d]0x%-8x\t", i, tmp);
 		if ((i + 1) % 8 == 0)
 			pr_info("\n");
 	}
 	pr_info("\t dump_hdr_hist done\n");
+
+	/*
+	 *if (chip_type_id == chip_t3x) {
+	 *	pr_info("\t dump_hdr_hist_vd2 begin\n");
+	 *	for (i = 0; i < 128; i++) {
+	 *		pr_info("[%d]0x%-8x\t", i,
+	 *			s5_hdr_hist_vd2[NUM_HDR_HIST - 1][i]);
+	 *		if ((i + 1) % 8 == 0)
+	 *			pr_info("\n");
+	 *	}
+	 *	pr_info("\t dump_hdr_hist_vd2 done\n");
+	 *}
+	 */
 }
 
 void vpp_get_hist_en(void)
 {
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (chip_type_id == chip_s5 ||
 		chip_type_id == chip_t3x) {
 		vpp_luma_hist_init();
 		return;
 	}
-#endif
 
 	if (hist_chl)
 		WRITE_VPP_REG_BITS(VI_HIST_CTRL, 0x2, 11, 3);
@@ -1301,7 +1303,6 @@ static unsigned int vpp_luma_max;
 
 void get_dark_luma_hist(struct vframe_s *vf)
 {
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	int i;
 	int hist_idx;
 
@@ -1311,7 +1312,6 @@ void get_dark_luma_hist(struct vframe_s *vf)
 		for (i = 0; i < 64; i++)
 			vf->prop.hist.vpp_dark_hist[i] = READ_VPP_REG(VI_RO_HIST_LOW);
 	}
-#endif
 }
 
 void get_cm_hist(struct vframe_s *vf)
@@ -1342,23 +1342,19 @@ void get_cm_hist(struct vframe_s *vf)
 				vf->prop.hist.vpp_sat_gamma[i] =
 					READ_VPP_REG(data_port);
 			}
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		} else {
 			cm_hist_get(vf, RO_CM_HUE_HIST_BIN0,
 				RO_CM_SAT_HIST_BIN0);
-#endif
 		}
 	}
 }
 
 void refresh_hist_info(struct vframe_s *vf)
 {
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (chip_type_id == chip_t3x) {
 		get_luma_hist(vf);
 		s5_get_hist(VD1_PATH, HIST_E_RGBMAX);
 	}
-#endif
 }
 
 void vpp_get_vframe_hist_info(struct vframe_s *vf)
@@ -1366,13 +1362,11 @@ void vpp_get_vframe_hist_info(struct vframe_s *vf)
 	unsigned int hist_height, hist_width;
 	u64 divid;
 
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (chip_type_id == chip_s5 ||
 		chip_type_id == chip_t3x) {
 		get_luma_hist(vf);
 		return;
 	}
-#endif
 
 	if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A) {
 		/*TL1 remove VPP_IN_H_V_SIZE register*/
@@ -1610,7 +1604,6 @@ void vpp_get_vframe_hist_info(struct vframe_s *vf)
 	READ_VPP_REG_BITS(VI_DNLP_HIST31,
 			  VI_HIST_ON_BIN_63_BIT, VI_HIST_ON_BIN_63_WID);
 
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (get_cpu_type() == MESON_CPU_MAJOR_ID_T3 ||
 		get_cpu_type() == MESON_CPU_MAJOR_ID_T5W ||
 		chip_type_id == chip_t5m) {
@@ -1637,7 +1630,6 @@ void vpp_get_vframe_hist_info(struct vframe_s *vf)
 		vf->fmeter1_score = FMETER_SCORE(vf->fmeter1_hcnt[0],
 			vf->fmeter1_hcnt[1], vf->fmeter1_hcnt[2]);
 	}
-#endif
 
 	get_cm_hist(vf);
 	get_dark_luma_hist(vf);
@@ -2464,7 +2456,6 @@ int amvecm_on_vs(struct vframe_s *vf,
 			pr_amvecm_bringup_dbg("[on_vs] lc_proc done.\n");
 			/*1080i pulldown combing workaround*/
 			amvecm_dejaggy_patch(toggle_vf);
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 			pr_amvecm_bringup_dbg("[on_vs] dejaggy_patch done.\n");
 			if ((get_cpu_type() == MESON_CPU_MAJOR_ID_T3) ||
 				(get_cpu_type() == MESON_CPU_MAJOR_ID_T5W) ||
@@ -2474,7 +2465,6 @@ int amvecm_on_vs(struct vframe_s *vf,
 					sps_w_in, sps_h_in);
 				amvecm_fmeter_process(toggle_vf);
 			}
-#endif
 		}
 		/*refresh vframe*/
 		if (!toggle_vf && vf) {
@@ -2592,17 +2582,8 @@ static irqreturn_t amvecm_viu2_vsync_isr(int irq, void *dev_id)
 
 static irqreturn_t amvecm_lc_curve_isr(int irq, void *dev_id)
 {
-	if (debug_amvecm == 88)
-		pr_info("[irq] lc_curve_isr in.\n");
-
-	if (use_lc_curve_isr) {
-		if (ve_multi_slice_case_get()) {
-			lc_read_region(8, 6, 0);
-			lc_read_region(8, 6, 1);
-		} else {
-			lc_read_region(8, 12, 0);
-		}
-	}
+	if (use_lc_curve_isr)
+		lc_read_region(8, 12, 0);
 
 	return IRQ_HANDLED;
 }
@@ -2667,7 +2648,7 @@ static int parse_para_pq(const char *para, int para_num, int *result)
 	return count;
 }
 
-int amvecm_set_saturation_hue(int mab)
+int amvecm_set_saturation_hue(int mab, enum wr_md_e mode)
 {
 	s16 mc = 0, md = 0;
 	s16 ma, mb;
@@ -2694,14 +2675,24 @@ int amvecm_set_saturation_hue(int mab)
 
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (chip_type_id == chip_s5 ||
-		chip_type_id == chip_t3x)
-		ve_color_mab_set(mab, VE_VADJ1, WR_DMA);
-	else
+		chip_type_id == chip_t3x) {
+		ve_color_mab_set(mab, VE_VADJ1, mode);
+	} else {
 #endif
-	if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A)
-		WRITE_VPP_REG(VPP_VADJ1_MA_MB_2, mab);
-	else
-		WRITE_VPP_REG(VPP_VADJ1_MA_MB, mab);
+		if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A) {
+			if (mode == WR_VCB)
+				WRITE_VPP_REG(VPP_VADJ1_MA_MB_2, mab);
+			else
+				VSYNC_WRITE_VPP_REG(VPP_VADJ1_MA_MB_2, mab);
+		} else {
+			if (mode == WR_VCB)
+				WRITE_VPP_REG(VPP_VADJ1_MA_MB, mab);
+			else
+				VSYNC_WRITE_VPP_REG(VPP_VADJ1_MA_MB, mab);
+		}
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+	}
+#endif
 
 	mc = (s16)((mab << 22) >> 22); /* mc = -mb */
 	mc = 0 - mc;
@@ -2715,22 +2706,36 @@ int amvecm_set_saturation_hue(int mab)
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (chip_type_id == chip_s5 ||
 		chip_type_id == chip_t3x) {
-		ve_color_mcd_set(mab, VE_VADJ1, WR_DMA);
-	} else
-#endif
-	if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A) {
-		WRITE_VPP_REG(VPP_VADJ1_MC_MD_2, mab);
-		WRITE_VPP_REG_BITS(VPP_VADJ1_MISC, 1, 0, 1);
+		ve_color_mcd_set(mab, VE_VADJ1, mode);
 	} else {
-		WRITE_VPP_REG(VPP_VADJ1_MC_MD, mab);
-		WRITE_VPP_REG_BITS(VPP_VADJ_CTRL, 1, 0, 1);
+#endif
+		if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A) {
+			if (mode == WR_VCB) {
+				WRITE_VPP_REG(VPP_VADJ1_MC_MD_2, mab);
+				WRITE_VPP_REG_BITS(VPP_VADJ1_MISC, 1, 0, 1);
+			} else {
+				VSYNC_WRITE_VPP_REG(VPP_VADJ1_MC_MD_2, mab);
+				VSYNC_WRITE_VPP_REG_BITS(VPP_VADJ1_MISC, 1, 0, 1);
+			}
+		} else {
+			if (mode == WR_VCB) {
+				WRITE_VPP_REG(VPP_VADJ1_MC_MD, mab);
+				WRITE_VPP_REG_BITS(VPP_VADJ_CTRL, 1, 0, 1);
+			} else {
+				VSYNC_WRITE_VPP_REG(VPP_VADJ1_MC_MD, mab);
+				VSYNC_WRITE_VPP_REG_BITS(VPP_VADJ_CTRL, 1, 0, 1);
+			}
+		}
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	}
+#endif
+
 	pr_amvecm_dbg("%s set video_saturation_hue OK!!!\n", __func__);
 	return 0;
 }
 
 static int amvecm_set_saturation_hue_post(int val1,
-					  int val2)
+	int val2)
 {
 	int i, ma, mb, mab, mc, md;
 	int hue_cos_len, hue_sin_len;
@@ -2908,7 +2913,6 @@ static void hdr_tone_mapping_get(enum lut_type_e lut_type,
 static int parse_aipq_ofst_table(int *table_ptr,
 				 unsigned int height, unsigned int width)
 {
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	unsigned int i;
 	unsigned int size = 0;
 
@@ -2918,7 +2922,6 @@ static int parse_aipq_ofst_table(int *table_ptr,
 
 #ifdef CONFIG_AMLOGIC_MEDIA_VIDEO
 	update_aipq_data();
-#endif
 #endif
 	return 0;
 }
@@ -3469,17 +3472,17 @@ static long amvecm_ioctl(struct file *file,
 			}
 			ret = amvecm_set_brightness2(vdj_mode_s.brightness2);
 		}
-		if (vdj_mode_flg & VDJ_FLAG_SAT_HUE)	{ /*saturation_hue*/
+		if (vdj_mode_flg & VDJ_FLAG_SAT_HUE) { /*saturation_hue*/
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 			/*ai pq get saturation*/
 			aipq_base_satur_param(vdj_mode_s.saturation_hue);
 			//ret =
-			//amvecm_set_saturation_hue(vdj_mode_s.saturation_hue);
+			//amvecm_set_saturation_hue(vdj_mode_s.saturation_hue, WR_VCB);
 			pq_user_latch_flag |= PQ_USER_CMS_SAT_HUE;
 			pr_amvecm_dbg("vdj_mode_s.saturation_hue:%d\n",
 				vdj_mode_s.saturation_hue);
 #else
-		ret = amvecm_set_saturation_hue(vdj_mode_s.saturation_hue);
+		ret = amvecm_set_saturation_hue(vdj_mode_s.saturation_hue, WR_VCB);
 #endif
 		}
 		if (vdj_mode_flg & VDJ_FLAG_SAT_HUE_POST) {
@@ -4783,6 +4786,8 @@ static ssize_t amvecm_dnlp_debug_store(struct class *cla,
 
 		*dnlp_printk_copy = val;
 		pr_info("dnlp_print = %x\n", *dnlp_printk_copy);
+	} else if (!strcmp(parm[0], "dnlp_dump_reg")) {
+		dump_dnlp_reg();
 	}
 
 	kfree(buf_orig);
@@ -4895,7 +4900,7 @@ static ssize_t amvecm_saturation_hue_store(struct class *cla,
 	r = sscanf(buf, "0x%x", &mab);
 	if (r != 1 || (mab & 0xfc00fc00))
 		return -EINVAL;
-	amvecm_set_saturation_hue(mab);
+	amvecm_set_saturation_hue(mab, WR_VCB);
 	return count;
 }
 
@@ -7538,7 +7543,7 @@ void pq_user_latch_process(void)
 #else
 		sat_hue_val = sat_hue_offset_val;
 #endif
-		amvecm_set_saturation_hue(sat_hue_val);
+		amvecm_set_saturation_hue(sat_hue_val, WR_DMA);
 	}
 
 	if (pq_user_latch_flag & PQ_USER_PQ_MODULE_CTL) {
@@ -9326,6 +9331,7 @@ static ssize_t amvecm_debug_store(struct class *cla,
 	unsigned int mode_sel, color, color_mode;
 	struct vinfo_s *vinfo = get_current_vinfo();
 	enum vd_path_e vd_path = VD1_PATH;
+	enum lut_dma_wr_id_e dma_wr_id = EN_DMA_WR_ID_LC_STTS_0;
 #endif
 
 	if (!buf)
@@ -9339,6 +9345,54 @@ static ssize_t amvecm_debug_store(struct class *cla,
 	} else if (!strncmp(parm[0], "vpp_state", 9)) {
 		pr_info("amvecm driver version :  %s\n", AMVECM_VER);
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+	} else if (!strncmp(parm[0], "dma_ctrl", 8)) {
+		if (chip_type_id == chip_t3x) {
+			if (kstrtoul(parm[1], 10, &val) < 0)
+				goto free_buf;
+
+			switch (val) {
+			case 0:
+				dma_wr_id = EN_DMA_WR_ID_LC_STTS_0;
+				break;
+			case 1:
+				dma_wr_id = EN_DMA_WR_ID_LC_STTS_1;
+				break;
+			case 2:
+				dma_wr_id = EN_DMA_WR_ID_VI_HIST_SPL_0;
+				break;
+			case 3:
+				dma_wr_id = EN_DMA_WR_ID_VI_HIST_SPL_1;
+				break;
+			case 4:
+				dma_wr_id = EN_DMA_WR_ID_CM2_HIST_0;
+				break;
+			case 5:
+				dma_wr_id = EN_DMA_WR_ID_CM2_HIST_1;
+				break;
+			case 6:
+				dma_wr_id = EN_DMA_WR_ID_VD1_HDR_0;
+				break;
+			case 7:
+				dma_wr_id = EN_DMA_WR_ID_VD1_HDR_1;
+				break;
+			case 8:
+				dma_wr_id = EN_DMA_WR_ID_VD2_HDR;
+				break;
+			default:
+				break;
+			}
+
+			if (!strncmp(parm[2], "enable", 6)) {
+				am_dma_set_mif_wr(dma_wr_id, 1);
+				pr_info("dma enable %d\n", dma_wr_id);
+			} else if (!strncmp(parm[2], "disable", 7)) {
+				am_dma_set_mif_wr(dma_wr_id, 0);
+				pr_info("dma disable %d\n", dma_wr_id);
+			}
+		}
+	} else if (!strncmp(parm[0], "update_vd2_hdr_hist", 20)) {
+		/*s5_get_hist(VD2_PATH, HIST_E_RGBMAX);*/
+		pr_info("amvecm update_vd2_hdr_hist path %d\n", VD2_PATH);
 	} else if (!strncmp(parm[0], "refresh_hdr_hist", 16)) {
 		if (kstrtoul(parm[1], 10, &val) < 0)
 			goto free_buf;
@@ -10996,6 +11050,8 @@ static ssize_t amvecm_lc_store(struct class *cls,
 			lc_en = 0;
 		else
 			pr_info("unsupport cmd!\n");
+	} else if (!strcmp(parm[0], "lc_dump_reg")) {
+		dump_lc_reg();
 	} else if (!strcmp(parm[0], "lc_version")) {
 		pr_info("lc driver version :  %s\n", LC_VER);
 	} else if (!strcmp(parm[0], "lc_dbg")) {
@@ -11065,10 +11121,28 @@ static ssize_t amvecm_lc_store(struct class *cls,
 			lc_wr_reg(reg_lut, CNTST_LMT);
 		else
 			pr_info("unsupport cmd!\n");
+	} else if (!strcmp(parm[0], "dump_lc_curve")) {
+		if (!strcmp(parm[1], "all")) {
+			/*dump curve of one frame*/
+			if (ve_multi_picture_case_get() > 0)
+				lc_hist_prcnt = 2;
+			else
+				lc_hist_prcnt = 1;
+			amlc_debug = 0x80;
+		} else if (!strcmp(parm[1], "slice0")) {
+			lc_read_region(8, 12, 0);
+			lc_prt_curve();
+		} else if (!strcmp(parm[1], "slice1")) {
+			lc_read_region(8, 12, 1);
+			lc_prt_curve();
+		}
 	} else if (!strcmp(parm[0], "dump_hist")) {
 		if (!strcmp(parm[1], "all")) {
 			/*dump all hist of one frame*/
-			lc_hist_prcnt = 1;
+			if (ve_multi_picture_case_get() > 0)
+				lc_hist_prcnt = 2;
+			else
+				lc_hist_prcnt = 1;
 			amlc_debug = 0x8;
 		} else if (!strcmp(parm[1], "chosen")) {
 			/*dump multiple frames in selected area*/
@@ -11343,10 +11417,8 @@ void hdr_hist_config_int(void)
 			WRITE_VPP_REG(OSD1_HDR2_HIST_H_START_END, 0x10000);
 			WRITE_VPP_REG(OSD1_HDR2_HIST_V_START_END, 0x0);
 		}
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	} else {
 		s5_hdr_hist_config_int();
-#endif
 	}
 }
 #endif
@@ -11597,6 +11669,7 @@ tvchip_pq_setting:
 		am_dma_set_mif_wr(EN_DMA_WR_ID_LC_STTS_1, 1);
 		/*am_dma_set_mif_wr(EN_DMA_WR_ID_CM2_HIST_0, 1);*/
 		/*am_dma_set_mif_wr(EN_DMA_WR_ID_CM2_HIST_1, 0);*/
+		/*am_dma_set_mif_wr(EN_DMA_WR_ID_VD2_HDR, 1);*/
 	}
 #endif
 
@@ -12693,6 +12766,7 @@ static int aml_vecm_probe(struct platform_device *pdev)
 		/*am_dma_buffer_malloc(pdev, EN_DMA_WR_ID_CM2_HIST_1);*/
 		am_dma_buffer_malloc(pdev, EN_DMA_WR_ID_VD1_HDR_0);
 		am_dma_buffer_malloc(pdev, EN_DMA_WR_ID_VD1_HDR_1);
+		/*am_dma_buffer_malloc(pdev, EN_DMA_WR_ID_VD2_HDR);*/
 		am_dma_init();
 	}
 
@@ -12763,7 +12837,6 @@ static int __exit aml_vecm_remove(struct platform_device *pdev)
 
 	hdr_lut_buffer_free(pdev);
 
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (chip_type_id == chip_t3x) {
 		am_dma_set_mif_wr_status(0);
 		am_dma_buffer_free(pdev, EN_DMA_WR_ID_LC_STTS_0);
@@ -12774,8 +12847,8 @@ static int __exit aml_vecm_remove(struct platform_device *pdev)
 		/*am_dma_buffer_free(pdev, EN_DMA_WR_ID_CM2_HIST_1);*/
 		am_dma_buffer_free(pdev, EN_DMA_WR_ID_VD1_HDR_0);
 		am_dma_buffer_free(pdev, EN_DMA_WR_ID_VD1_HDR_1);
+		/*am_dma_buffer_free(pdev, EN_DMA_WR_ID_VD2_HDR);*/
 	}
-#endif
 
 	hdr_exit();
 #endif
@@ -12877,7 +12950,7 @@ int __init aml_vecm_init(void)
 {
 	/*unsigned int hiu_reg_base;*/
 
-	pr_info("%s:module init_20230615-0\n", __func__);
+	pr_info("%s:module init_20230911-0\n", __func__);
 
 	if (platform_driver_register(&aml_vecm_driver)) {
 		pr_err("failed to register bl driver module\n");

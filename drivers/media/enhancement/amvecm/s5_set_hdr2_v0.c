@@ -27,7 +27,6 @@
 #include "am_dma_ctrl.h"
 #include "color/ai_color.h"
 
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static uint cpu_write_lut = 1;
 module_param(cpu_write_lut, uint, 0664);
 MODULE_PARM_DESC(cpu_write_lut, "\n cpu_write_lut\n");
@@ -1567,6 +1566,7 @@ void s5_set_c_gain(enum hdr_module_sel module_sel,
 	}
 }
 
+/*u32 s5_hdr_hist_vd2[NUM_HDR_HIST][128];*/
 u32 s5_hdr_hist[NUM_HDR_HIST][128];
 static u32 hdr_max_rgb;
 static u8 percentile_percent[9] = {
@@ -1627,6 +1627,10 @@ void s5_set_hist(enum hdr_module_sel module_sel, int enable,
 		hist_ctrl_port = S5_VD1_SLICE1_HDR2_HIST_CTRL;
 		hist_hs_he = S5_VD1_SLICE1_HDR2_HIST_H_START_END;
 		hist_vs_ve = S5_VD1_SLICE1_HDR2_HIST_V_START_END;
+	} else if (module_sel == VD2_HDR) {
+		hist_ctrl_port = S5_VD2_HDR2_HIST_CTRL;
+		hist_hs_he = S5_VD2_HDR2_HIST_H_START_END;
+		hist_vs_ve = S5_VD2_HDR2_HIST_V_START_END;
 	} else {
 		return;
 	}
@@ -1654,6 +1658,17 @@ void s5_get_hist(enum vd_path_e vd_path, enum hdr_hist_sel hist_sel)
 	int k = 0;
 	enum hdr_module_sel module_sel = VD1_HDR;
 	unsigned int hdr2_hist_rd = 0;
+	unsigned int overlap = 64;
+	int slice_case;
+	int enable;
+
+	if (chip_type_id == chip_t3x) {
+		vd_proc_info = get_vd_proc_amvecm_info();
+		if (vd_proc_info->slice_num > 1)
+			slice_case = 1;
+		else
+			slice_case = 0;
+	}
 
 	hist_width = 0;
 	hist_height = 0;
@@ -1673,32 +1688,52 @@ void s5_get_hist(enum vd_path_e vd_path, enum hdr_hist_sel hist_sel)
 
 	if (module_sel == VD1_HDR) {
 		if (chip_type_id == chip_t3x) {
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
-			vd_proc_info = get_vd_proc_amvecm_info();
-#endif
-			hist_width = vd_proc_info->slice[0].hsize;
+			if (slice_case)
+				overlap = 64;
+			else
+				overlap = 0;
+
+			hist_width = vd_proc_info->slice[0].hsize - overlap;
 			hist_height = vd_proc_info->slice[0].vsize;
 		} else {
 			hist_width = READ_VPP_REG_BITS(VPP_PREBLEND_H_SIZE, 0, 13);
 			hist_height = READ_VPP_REG_BITS(VPP_PREBLEND_H_SIZE, 16, 13);
 		}
 	} else if (module_sel == VD2_HDR) {
-		hist_width = READ_VPP_REG_BITS(VPP_VD2_HDR_IN_SIZE, 0, 13);
-		hist_height = READ_VPP_REG_BITS(VPP_VD2_HDR_IN_SIZE, 16, 13);
+		if (chip_type_id == chip_t3x) {
+			hist_width = vd_proc_info->vd2_in_hsize;
+			hist_height = vd_proc_info->vd2_in_vsize;
+		} else {
+			hist_width = READ_VPP_REG_BITS(VPP_VD2_HDR_IN_SIZE, 0, 13);
+			hist_height = READ_VPP_REG_BITS(VPP_VD2_HDR_IN_SIZE, 16, 13);
+		}
 	}
 
-	if (!hist_width || !hist_height)
+	if (!hist_width || !hist_height) {
+		pr_csc(96, "%s: module_sel = %d, hist_w = %d, hist_h= %d\n",
+			__func__, module_sel, hist_width, hist_height);
 		return;
+	}
 
 	if ((hist_height != READ_VPP_REG(hist_ctrl_port + 2) + 1) ||
 		(hist_width != READ_VPP_REG(hist_ctrl_port + 1) + 1) ||
 		/*(READ_VPP_REG_BITS(hist_ctrl_port, 4, 1) == 0) ||*/
 		(READ_VPP_REG_BITS(hist_ctrl_port, 0, 3) != hist_sel)) {
 		s5_set_hist(module_sel, 1, hist_sel, hist_width, hist_height);
-		if (chip_type_id == chip_t3x && multi_slice_case)
-			s5_set_hist(S5_VD1_SLICE1, 1, hist_sel, hist_width, hist_height);
 		pr_csc(96, "%s: module_sel = %d, hist_sel = %d, hist_w = %d, hist_h= %d\n",
 			__func__, module_sel, hist_sel, hist_width, hist_height);
+		if (chip_type_id == chip_t3x) {
+			if (slice_case)
+				enable = 1;
+			else
+				enable = 0;
+			s5_set_hist(S5_VD1_SLICE1, enable, hist_sel,
+				hist_width, hist_height);
+			pr_csc(96, "%s: module_sel = %d, hist_sel = %d, enable = %d\n",
+				__func__, S5_VD1_SLICE1, hist_sel, enable);
+			pr_csc(96, "%s: hist_w = %d, hist_h= %d\n",
+				__func__, hist_width, hist_height);
+		}
 		return;
 	}
 
@@ -1709,9 +1744,22 @@ void s5_get_hist(enum vd_path_e vd_path, enum hdr_hist_sel hist_sel)
 	total_pixel = 0;
 
 	if (chip_type_id == chip_t3x && hist_dma_case) {
-		if (!multi_slice_case)
+		if (!slice_case)
 			am_dma_get_mif_data_hdr2_hist(0,
 				s5_hdr_hist[NUM_HDR_HIST - 1], 128);
+		else
+			am_dma_get_blend_hdr2_hist(s5_hdr_hist[NUM_HDR_HIST - 1],
+				128);
+
+		/*
+		 *if (module_sel == VD2_HDR) {
+		 *	for (i = 0; i < NUM_HDR_HIST - 1; i++)
+		 *		memcpy(s5_hdr_hist_vd2[i], s5_hdr_hist_vd2[i + 1],
+		 *			128 * sizeof(u32));
+		 *	am_dma_get_mif_data_hdr2_hist(2,
+		 *		s5_hdr_hist_vd2[NUM_HDR_HIST - 1], 128);
+		 *}
+		 */
 
 		for (i = 0; i < 128; i++)
 			total_pixel += s5_hdr_hist[NUM_HDR_HIST - 1][i];
@@ -2198,7 +2246,6 @@ struct dma_lut_address {
 	struct ootf_lut_s ootf_lut[19];
 	struct cgain_lut_s cgain_lut[7];
 };
-#endif
 
 enum dma_lut_off_enum {
 	OFFSET_VD1S0 = 0,
@@ -2231,7 +2278,6 @@ static dma_addr_t dma_paddr;
 #define DMA_SIZE_SINGLE_HDR (DMA_COUNT_SINGLE_HDR * 128 / 8)
 #define DMA_SIZE_TOTAL_HDR (DMA_SIZE_SINGLE_HDR * DMA_HDR_COUNT)
 
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 /*vd1s0+vd1s1+vd1s2+vd1s3+vd2+osd1+osd2+osd3*/
 /*each dma 128bit*/
 /*2 dma header + 65 body + 1 dma tail*/
@@ -2576,7 +2622,6 @@ void fill_dma_tail(void *p_dma_vaddr, enum hdr_module_sel module_sel)
 		   module_sel, b[offset + 3], b[offset + 2],
 		   b[offset + 1], b[offset + 0], &b[offset]);
 }
-#endif
 
 //static struct platform_device vecm_pdev;
 struct device vecm_dev;
@@ -2597,7 +2642,6 @@ void hdr_lut_buffer_free(struct platform_device *pdev)
 	dma_free_coherent(&vecm_dev, alloc_size, dma_vaddr, dma_paddr);
 }
 
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 void vpu_lut_dma(enum hdr_module_sel module_sel,
 	struct hdr_proc_lut_param_s *hdr_lut_param, enum LUT_DMA_ID_e dma_id)
 {
@@ -2808,7 +2852,6 @@ void s5_hdr_reg_dump(unsigned int offset)
 	pr_info("DMA_RDMIF7_BADR2[2776] 0x%x\n", READ_VPP_REG_S5(VPU_DMA_RDMIF7_BADR2));
 	pr_info("DMA_RDMIF7_BADR3[2777] 0x%x\n", READ_VPP_REG_S5(VPU_DMA_RDMIF7_BADR3));
 }
-#endif
 
 void read_dma_buf(void)
 {

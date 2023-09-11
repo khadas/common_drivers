@@ -523,7 +523,7 @@ bool di_api_mov_sel(unsigned int mode,
 enum hdr_type_e get_cur_source_type(enum vd_path_e vd_path,
 	enum vpp_index_e vpp_index);
 
-int amvecm_set_saturation_hue(int mab);
+int amvecm_set_saturation_hue(int mab, enum wr_md_e mode);
 void amvecm_saturation_hue_update(int offset_val);
 
 #ifdef CONFIG_AMLOGIC_MEDIA_FRC

@@ -17,9 +17,29 @@ MODULE_PARM_DESC(am_dma_ctrl_dbg, "am_dma_ctrl_dbg after t3x");
 
 #define pr_am_dma(fmt, args...)\
 	do {\
-		if (am_dma_ctrl_dbg) {\
+		if (am_dma_ctrl_dbg == 0x1) {\
 			pr_info("am_dma_ctrl: " fmt, ## args);\
-			am_dma_ctrl_dbg--;\
+		} \
+	} while (0)\
+
+#define pr_am_dma_vi(fmt, args...)\
+	do {\
+		if (am_dma_ctrl_dbg == 0x2) {\
+			pr_info("am_dma_ctrl: " fmt, ## args);\
+		} \
+	} while (0)\
+
+#define pr_am_dma_hdr2(fmt, args...)\
+	do {\
+		if (am_dma_ctrl_dbg == 0x3) {\
+			pr_info("am_dma_ctrl: " fmt, ## args);\
+		} \
+	} while (0)\
+
+#define pr_am_dma_lc(fmt, args...)\
+	do {\
+		if (am_dma_ctrl_dbg == 0x4) {\
+			pr_info("am_dma_ctrl: " fmt, ## args);\
 		} \
 	} while (0)\
 
@@ -117,6 +137,9 @@ static void _set_vpu_lut_dma_mif_wr_unit(int enable,
 	val = 0xff0 + wr_sel;
 	WRITE_VPP_REG_S5(addr, val);
 
+	pr_am_dma("%s: addr = %x, val = %x\n",
+		__func__, addr, val);
+
 	/*
 	 * Bit 31 reserved
 	 * Bit 30 reg_wr0_clr_fcnt unsigned, RW, default = 0
@@ -141,9 +164,13 @@ static void _set_vpu_lut_dma_mif_wr_unit(int enable,
 		(cfg_data->stride & 0x1fff);
 	WRITE_VPP_REG_S5(addr, val);
 
+	pr_am_dma("%s: addr = %x, val = %x\n",
+		__func__, addr, val);
+
 	addr = ADDR_PARAM(dma_reg_cfg.page,
 		dma_reg_cfg.reg_wrmif0_badr0) + (offset << 1);
 	WRITE_VPP_REG_S5(addr, cfg_data->baddr0);
+
 	addr = ADDR_PARAM(dma_reg_cfg.page,
 		dma_reg_cfg.reg_wrmif0_badr1) + (offset << 1);
 	WRITE_VPP_REG_S5(addr, cfg_data->baddr1);
@@ -255,6 +282,9 @@ void am_dma_set_mif_wr_status(int enable)
 	addr = ADDR_PARAM(dma_reg_cfg.page,
 		dma_reg_cfg.reg_wrmif_ctrl);
 	WRITE_VPP_REG_BITS_S5(addr, enable, 13, 1);
+
+	pr_am_dma("%s: addr = %x, enable = %d\n",
+		__func__, addr, enable);
 }
 
 void am_dma_set_mif_wr(enum lut_dma_wr_id_e dma_wr_id,
@@ -306,11 +336,15 @@ void am_dma_get_mif_data_lc_stts(int index,
 	}
 
 	val = (unsigned int *)dma_vaddr[EN_DMA_WR_ID_LC_STTS_0 + index];
+	pr_am_dma_lc("%s: index =  %d\n", __func__, index);
 
 	for (i = 0; i < 12 * 8; i++) {
 		for (j = 0; j < 16; j++) {
 			data[k] = val[i * 16 + j] & 0xffffff;
 			k++;
+
+			pr_am_dma_lc("%s: dma_data[%d] = %x\n",
+				__func__, i * 16 + j, val[i * 16 + j]);
 
 			if (j == 3 || j == 7 || j == 11 || j == 15) {
 				tmp = (val[i * 16 + j] >> 24) & 0x1f;
@@ -361,7 +395,7 @@ void am_dma_get_mif_data_vi_hist(int index,
 
 	for (i = 0; i < size; i++) {
 		data[i] = val[i];
-		pr_am_dma("%s: val[%d] is %d.\n",
+		pr_am_dma_vi("%s: val[%d] is %d.\n",
 			__func__, i, val[i]);
 	}
 }
@@ -555,8 +589,11 @@ void am_dma_get_blend_vi_hist(unsigned short *data,
 	val_0 = (unsigned short *)dma_vaddr[EN_DMA_WR_ID_VI_HIST_SPL_0];
 	val_1 = (unsigned short *)dma_vaddr[EN_DMA_WR_ID_VI_HIST_SPL_1];
 
-	for (i = 0; i < size; i++)
-		data[i] = (val_0[i] + val_1[i]) >> 1;
+	for (i = 0; i < size; i++) {
+		data[i] = val_0[i] + val_1[i];
+		pr_am_dma_vi("%s: dma_val_0/1[%d] = %d/%d\n",
+			__func__, i, val_0[i], val_1[i]);
+	}
 }
 
 void am_dma_get_blend_vi_hist_low(unsigned short *data,
@@ -608,7 +645,9 @@ void am_dma_get_blend_vi_hist_low(unsigned short *data,
 		/*tmp = tmp << 16;*/
 		/*tmp_1 |= tmp;*/
 
-		data[i] = (tmp_0 + tmp_1) >> 1;
+		data[i] = tmp_0 + tmp_1;
+		pr_am_dma_vi("%s: val_0/1[%d] = %d/%d\n",
+			__func__, i, tmp_0, tmp_1);
 	}
 }
 
@@ -659,7 +698,7 @@ void am_dma_get_blend_cm2_hist_hue(unsigned int *data,
 		tmp = tmp << 16;
 		tmp_1 |= tmp;
 
-		data[i] = (tmp_0 + tmp_1) >> 1;
+		data[i] = tmp_0 + tmp_1;
 	}
 }
 
@@ -712,7 +751,7 @@ void am_dma_get_blend_cm2_hist_sat(unsigned int *data,
 		tmp = tmp << 16;
 		tmp_1 |= tmp;
 
-		data[i] = (tmp_0 + tmp_1) >> 1;
+		data[i] = tmp_0 + tmp_1;
 	}
 }
 
@@ -768,8 +807,11 @@ void am_dma_get_blend_hdr2_hist(unsigned int *data,
 			tmp = tmp << 16;
 			tmp_1 |= tmp;
 
-			data[k] = (tmp_0 + tmp_1) >> 1;
+			data[k] = tmp_0 + tmp_1;
 			k++;
+
+			pr_am_dma_hdr2("%s: val_0/1[%d] = %d/%d\n",
+				__func__, i, tmp_0, tmp_1);
 
 			if (k == size)
 				break;

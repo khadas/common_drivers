@@ -3099,7 +3099,7 @@ int vpp_pq_ctrl_config(struct pq_ctrl_s pq_cfg, enum wr_md_e md)
 				lc_en = 0;
 				if (is_meson_tl1_cpu() ||
 					is_meson_tm2_cpu())
-					lc_disable();
+					lc_disable(0);
 			}
 
 			WRITE_VPP_REG_BITS(VPP_VE_ENABLE_CTRL,
@@ -3213,7 +3213,7 @@ int vpp_pq_ctrl_config(struct pq_ctrl_s pq_cfg, enum wr_md_e md)
 				lc_en = 0;
 				if (is_meson_tl1_cpu() ||
 					is_meson_tm2_cpu())
-					lc_disable();
+					lc_disable(0);
 			}
 
 			VSYNC_WRITE_VPP_REG_BITS(VPP_VE_ENABLE_CTRL,

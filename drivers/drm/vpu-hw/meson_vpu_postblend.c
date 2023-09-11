@@ -91,8 +91,6 @@ static void fix_vpu_clk2_default_regs(struct meson_vpu_block *vblk,
 				struct rdma_reg_ops *reg_ops, int crtc_index, u32 *crtcmask_osd);
 #endif
 
-static void postblend_osd2_def_conf(struct meson_vpu_block *vblk);
-
 /*vpp post&post blend for osd1 premult flag config as 0 default*/
 static void osd1_blend_premult_set(struct meson_vpu_block *vblk,
 				   struct rdma_reg_ops *reg_ops,
@@ -101,17 +99,6 @@ static void osd1_blend_premult_set(struct meson_vpu_block *vblk,
 	reg_ops->rdma_write_reg_bits(reg->osd1_blend_src_ctrl, 0, 4, 1);
 	reg_ops->rdma_write_reg_bits(reg->osd1_blend_src_ctrl, 0, 16, 1);
 }
-
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
-/*vpp post&post blend for osd1 premult flag config as 0 default*/
-static void osd2_blend_premult_set(struct meson_vpu_block *vblk,
-				   struct rdma_reg_ops *reg_ops,
-				   struct postblend_reg_s *reg)
-{
-	reg_ops->rdma_write_reg_bits(reg->osd2_blend_src_ctrl, 0, 4, 1);
-	reg_ops->rdma_write_reg_bits(reg->osd2_blend_src_ctrl, 0, 16, 1);
-}
-#endif
 
 /*vpp osd1 blend sel*/
 static void osd1_blend_switch_set(struct meson_vpu_block *vblk,
@@ -122,6 +109,7 @@ static void osd1_blend_switch_set(struct meson_vpu_block *vblk,
 	reg_ops->rdma_write_reg_bits(reg->osd1_blend_src_ctrl, blend_sel, 20, 1);
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 /*vpp osd2 blend sel*/
 static void osd2_blend_switch_set(struct meson_vpu_block *vblk,
 				  struct rdma_reg_ops *reg_ops,
@@ -130,6 +118,7 @@ static void osd2_blend_switch_set(struct meson_vpu_block *vblk,
 {
 	reg_ops->rdma_write_reg_bits(reg->osd2_blend_src_ctrl, blend_sel, 20, 1);
 }
+#endif
 
 /*vpp osd1 preblend mux sel*/
 static void vpp_osd1_preblend_mux_set(struct meson_vpu_block *vblk,
@@ -138,15 +127,6 @@ static void vpp_osd1_preblend_mux_set(struct meson_vpu_block *vblk,
 				      enum vpp_blend_src_e src_sel)
 {
 	reg_ops->rdma_write_reg_bits(reg->osd1_blend_src_ctrl, src_sel, 0, 4);
-}
-
-/*vpp osd2 preblend mux sel*/
-static void vpp_osd2_preblend_mux_set(struct meson_vpu_block *vblk,
-				      struct rdma_reg_ops *reg_ops,
-				      struct postblend_reg_s *reg,
-				      enum vpp_blend_src_e src_sel)
-{
-	reg_ops->rdma_write_reg_bits(reg->osd2_blend_src_ctrl, src_sel, 0, 4);
 }
 
 /*vpp osd1 postblend mux sel*/
@@ -166,7 +146,6 @@ static void vpp_osd1_postblend_5mux_set(struct meson_vpu_block *vblk,
 {
 	reg_ops->rdma_write_reg_bits(reg->osd1_blend_src_ctrl, src_sel, 0, 4);
 }
-#endif
 
 /*vpp osd2 postblend mux sel*/
 static void vpp_osd2_postblend_mux_set(struct meson_vpu_block *vblk,
@@ -176,6 +155,7 @@ static void vpp_osd2_postblend_mux_set(struct meson_vpu_block *vblk,
 {
 	reg_ops->rdma_write_reg_bits(reg->osd2_blend_src_ctrl, src_sel, 8, 4);
 }
+#endif
 
 /*vpp osd1 blend scope set*/
 static void vpp_osd1_blend_scope_set(struct meson_vpu_block *vblk,
@@ -475,9 +455,6 @@ static void t7_postblend_set_state(struct meson_vpu_block *vblk,
 #endif
 
 	if (!vblk->init_done) {
-		if (crtc_index == 0)
-			postblend_osd2_def_conf(vblk);
-
 		if (!postblend->postblend_path_mask)
 			fix_vpu_clk2_default_regs(vblk, reg_ops, crtc_index,
 						  crtcmask_osd);
@@ -866,24 +843,11 @@ static void independ_path_default_regs(struct meson_vpu_block *vblk,
 }
 #endif
 
-static void postblend_osd2_def_conf(struct meson_vpu_block *vblk)
-{
-	struct meson_vpu_postblend *postblend = to_postblend_block(vblk);
-
-	osd2_blend_switch_set(vblk, vblk->pipeline->subs[0].reg_ops,
-			      postblend->reg, VPP_POSTBLEND);
-	vpp_osd2_preblend_mux_set(vblk, vblk->pipeline->subs[0].reg_ops,
-				  postblend->reg, VPP_NULL);
-	vpp_osd2_postblend_mux_set(vblk, vblk->pipeline->subs[0].reg_ops,
-				   postblend->reg, VPP_NULL);
-}
-
 static void postblend_hw_init(struct meson_vpu_block *vblk)
 {
 	struct meson_vpu_postblend *postblend = to_postblend_block(vblk);
 
 	postblend->reg = &postblend_reg;
-	postblend_osd2_def_conf(vblk);
 	MESON_DRM_BLOCK("%s hw_init called.\n", postblend->base.name);
 }
 
@@ -893,9 +857,7 @@ static void txhd2_postblend_hw_init(struct meson_vpu_block *vblk)
 	struct meson_vpu_postblend *postblend = to_postblend_block(vblk);
 
 	postblend->reg = &postblend_reg;
-	postblend_osd2_def_conf(vblk);
-	osd2_blend_premult_set(vblk, vblk->pipeline->subs[0].reg_ops, postblend->reg);
-
+	//osd2_blend_premult_set(vblk, vblk->pipeline->subs[0].reg_ops, postblend->reg);
 	vpp_osd1_preblend_mux_set(vblk, vblk->pipeline->subs[0].reg_ops,
 							  postblend->reg, VPP_NULL);
 	osd1_blend_premult_set(vblk, vblk->pipeline->subs[0].reg_ops, postblend->reg);

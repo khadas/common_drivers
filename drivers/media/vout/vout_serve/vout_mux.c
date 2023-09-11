@@ -17,6 +17,7 @@
 #include <linux/delay.h>
 #include <linux/of_device.h>
 #include <linux/amlogic/clk_measure.h>
+#include <linux/amlogic/media/registers/cpu_version.h>
 
 /* Local Headers */
 #include "vout_func.h"
@@ -25,7 +26,9 @@
 /* must be last include file */
 #include <linux/amlogic/gki_module.h>
 
-#define VDIN_MEAS_CLK_FREQ    50000000  //50MHz
+#define VDIN_MEAS_CLK_FREQ	50000000   //50MHz
+#define VDIN_MEAS_CLK_FREQ_T3X	100000000  //100MHz
+
 struct vout_mux_data_s {
 	struct clk *msr_clk;
 	unsigned int (*vs_measure)(int index);
@@ -37,6 +40,7 @@ struct vout_mux_data_s {
 
 static struct vout_mux_data_s *vout_mux_data;
 static int vout_vdo_meas_init;
+static int vdin_meas_clk_val = VDIN_MEAS_CLK_FREQ;
 
 /* **********************************************************
  * vout vsync measure
@@ -63,7 +67,7 @@ static void vout_meas_ctrl_init_dft(struct platform_device *pdev, struct vout_mu
 	}
 
 	clk_set_parent(vdata->msr_clk, fclk_div5);
-	clk_set_rate(vdata->msr_clk, VDIN_MEAS_CLK_FREQ);
+	clk_set_rate(vdata->msr_clk, vdin_meas_clk_val);
 	clk_prepare_enable(vdata->msr_clk);
 	clk_msr_val = clk_get_rate(vdata->msr_clk);
 	VOUTPR("%s: vdin_meas_clk %dHZ\n", __func__, clk_msr_val);
@@ -94,7 +98,7 @@ static void vout_meas_ctrl_init_s5(struct platform_device *pdev, struct vout_mux
 	}
 
 	clk_set_parent(vdata->msr_clk, fclk_div5);
-	clk_set_rate(vdata->msr_clk, VDIN_MEAS_CLK_FREQ);
+	clk_set_rate(vdata->msr_clk, vdin_meas_clk_val);
 	clk_prepare_enable(vdata->msr_clk);
 	clk_msr_val = clk_get_rate(vdata->msr_clk);
 	VOUTPR("%s: vdin_meas_clk %dHZ\n", __func__, clk_msr_val);
@@ -119,13 +123,14 @@ static inline unsigned int vout_do_div(unsigned long long num, unsigned int den)
 static unsigned int vout_vs_measure_dft(int index)
 {
 	unsigned int val, fr = 0;
-	unsigned long long clk_msr = VDIN_MEAS_CLK_FREQ;
+	unsigned long long clk_msr;
 
 	if (index > 1)
 		return 0;
 	if (vout_vdo_meas_init == 0)
 		return 0;
 
+	clk_msr  = vdin_meas_clk_val;
 	clk_msr *= 1000;
 	val = vout_vcbus_read(VPP_VDO_MEAS_VS_COUNT_LO);
 	fr = vout_do_div(clk_msr, val);
@@ -143,7 +148,7 @@ static unsigned int vout_vs_measure_high_res_dft(int index)
 	if (vout_vdo_meas_init == 0)
 		return 0;
 
-	clk_msr = VDIN_MEAS_CLK_FREQ;
+	clk_msr = vdin_meas_clk_val;
 
 	val[0] = vout_vcbus_read(VPP_VDO_MEAS_VS_COUNT_HI);
 	val[1] = vout_vcbus_read(VPP_VDO_MEAS_VS_COUNT_LO);
@@ -166,7 +171,7 @@ static unsigned int vout_vs_measure_s5(int index)
 {
 	struct vinfo_s *vinfo = NULL;
 	unsigned int venc_index, val, fr;
-	unsigned long long clk_msr = VDIN_MEAS_CLK_FREQ;
+	unsigned long long clk_msr;
 
 	if (vout_vdo_meas_init == 0)
 		return 0;
@@ -186,6 +191,7 @@ static unsigned int vout_vs_measure_s5(int index)
 	if (venc_index >= 1)
 		return 0;
 
+	clk_msr  = vdin_meas_clk_val;
 	clk_msr *= 1000;
 	val = vout_vcbus_read(VPU_VENC_RO_MEAS0);
 	fr = vout_do_div(clk_msr, val);
@@ -197,7 +203,7 @@ static unsigned int vout_vs_measure_high_res_s5(int index)
 {
 	struct vinfo_s *vinfo = NULL;
 	unsigned int venc_index, val, fr;
-	unsigned long long clk_msr = VDIN_MEAS_CLK_FREQ;
+	unsigned long long clk_msr;
 
 	if (vout_vdo_meas_init == 0)
 		return 0;
@@ -217,6 +223,7 @@ static unsigned int vout_vs_measure_high_res_s5(int index)
 	if (venc_index >= 1)
 		return 0;
 
+	clk_msr  = vdin_meas_clk_val;
 	clk_msr *= 1000000;
 	val = vout_vcbus_read(VPU_VENC_RO_MEAS0);
 	fr = vout_do_div(clk_msr, val);
@@ -546,6 +553,9 @@ static int vout_mux_probe(struct platform_device *pdev)
 
 	if (vout_mux_data->msr_ctrl_init)
 		vout_mux_data->msr_ctrl_init(pdev, vout_mux_data);
+
+	if (is_meson_t3x_cpu())
+		vdin_meas_clk_val = VDIN_MEAS_CLK_FREQ_T3X;
 
 	VOUTPR("%s OK\n", __func__);
 

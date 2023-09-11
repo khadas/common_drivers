@@ -498,7 +498,7 @@ static void meson_v2_pwm_get_state(struct pwm_chip *chip, struct pwm_device *pwm
 	case 3:
 		en_mask = MISC_B2_EN;
 		constant_mask = MISC_B_CONSTANT;
-
+		break;
 	default:
 		return;
 	}

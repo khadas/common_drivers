@@ -6434,6 +6434,12 @@ static inline bool is_tv_panel(void)
 		return false;
 }
 
+bool is_panel_output(void)
+{
+	return is_tv_panel();
+}
+EXPORT_SYMBOL(is_panel_output);
+
 void rx_mute_vpp(void)
 {
 	u32 black_val;

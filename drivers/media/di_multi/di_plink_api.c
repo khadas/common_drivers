@@ -6310,7 +6310,8 @@ void dpvpph_unreg_setting(void)
 	if (DIM_IS_IC(T5)	||
 	    DIM_IS_IC(T5DB)	||
 	    DIM_IS_IC(T5D)	||
-	    DIM_IS_IC(T3)) {
+	    DIM_IS_IC(T3)	||
+	    DIM_IS_IC(T3X)) {
 		#ifdef CLK_TREE_SUPPORT
 		if (dimp_get(edi_mp_clock_low_ratio))
 			clk_set_rate(de_devp->vpu_clkb,

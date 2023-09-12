@@ -47,7 +47,8 @@
 /* 20230824: support high resolution vsync measure debug*/
 /* 20230906: support pdf action */
 /* 20230907: t3x revB OD secure support*/
-#define LCD_DRV_VERSION    "20230907"
+/* 20230912: bypass phy data buffer */
+#define LCD_DRV_VERSION    "20230912"
 
 extern struct mutex lcd_vout_mutex;
 extern spinlock_t lcd_reg_spinlock;

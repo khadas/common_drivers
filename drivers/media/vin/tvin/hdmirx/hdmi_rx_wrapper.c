@@ -54,6 +54,8 @@ static int err_cnt_sum_max;
 static int hpd_wait_max;
 static int sig_unstable_max;
 static int sig_unready_max;
+static int fps_unready_max;
+
 //int rgb_quant_range;
 //int yuv_quant_range;
 //int it_content;
@@ -411,6 +413,7 @@ void hdmirx_fsm_var_init(void)
 		aud_sr_stb_max = 30;
 		clk_stable_max = 3;
 		rx_phy_level = 5;
+		fps_unready_max = 3;
 		break;
 	case CHIP_ID_T3X:
 		hbr_force_8ch = 1; //use it to enable hdr2spdif
@@ -3214,6 +3217,22 @@ static bool rx_is_timing_stable(u8 port)
 	return ret;
 }
 
+static bool rx_fps_is_changed(u8 port)
+{
+	bool ret = true;
+
+	if (abs(rx[port].pre.frame_rate -
+		rx[port].cur.frame_rate)
+		> diff_frame_th) {
+		ret = false;
+		if (log_level & VIDEO_LOG)
+			rx_pr("frame_rate(%d=>%d),",
+			rx[port].pre.frame_rate,
+			rx[port].cur.frame_rate);
+	}
+	return false;
+}
+
 static int get_timing_fmt(u8 port)
 {
 	int i;
@@ -3897,6 +3916,8 @@ void rx_get_global_variable(const char *buf)
 	pr_var(flt_ready_max, i++);
 	pr_var(frl_debug_en, i++);
 	pr_var(vpp_mute_cnt, i++);
+	pr_var(gcp_mute_cnt, i++);
+	pr_var(fps_unready_max, i++);
 }
 
 bool str_cmp(unsigned char *buff, unsigned char *str)
@@ -4475,6 +4496,12 @@ int rx_set_global_variable(const char *buf, int size)
 	if (set_pr_var(tmpbuf, var_to_str(vpp_mute_cnt),
 		&vpp_mute_cnt, value))
 		return pr_var(vpp_mute_cnt, index);
+	if (set_pr_var(tmpbuf, var_to_str(gcp_mute_cnt),
+		&gcp_mute_cnt, value))
+		return pr_var(gcp_mute_cnt, index);
+	if (set_pr_var(tmpbuf, var_to_str(fps_unready_max),
+		&fps_unready_max, value))
+		return pr_var(fps_unready_max, index);
 	return 0;
 }
 
@@ -5269,12 +5296,25 @@ void rx_main_state_machine(void)
 				rx[port].state = FSM_SIG_WAIT_STABLE;
 				break;
 			}
+		} else if (!rx_fps_is_changed(port) && gcp_mute_flag &&
+		!rx[port].free_sync_sts && !rx[port].vtem_info.vrr_en) {
+			if (++rx[port].var.fps_unready_cnt >= fps_unready_max) {
+				rx[port].gcp_mute_cnt = gcp_mute_cnt;
+				rx[port].pre.frame_rate = rx[port].cur.frame_rate;
+				rx[port].var.fps_unready_cnt = 0;
+				gcp_mute_flag = 0;
+				break;
+			}
 		} else {
 			rx[port].var.sig_unready_cnt = 0;
 			one_frame_cnt = (1000 * 100 / rx[port].pre.frame_rate / 12) + 1;
 			if (rx[port].skip > 0) {
 				rx[port].skip--;
 			} else if (vpp_mute_enable) {
+				if (rx[port].gcp_mute_cnt > 0) {
+					rx[port].gcp_mute_cnt--;
+					break;
+				}
 				if (rx[port].vpp_mute_cnt > 0) {
 					rx[port].vpp_mute_cnt--;
 					break;

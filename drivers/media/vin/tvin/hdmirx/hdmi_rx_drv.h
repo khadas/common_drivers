@@ -52,6 +52,7 @@
 //2023.8.25 fix t3x port4 get spd info err
 //2023.8.29 hdcp cts
 //2023 9.8 t3x reb bring up
+//2023 9.13 add gcp mute cnt when fps change
 #define RX_VER0 "ver.2023/09/08"
 
 /*print type*/
@@ -316,6 +317,8 @@ struct rx_var_param {
 	bool dvi_check_en;
 	int sig_unready_cnt;
 	int sig_unready_max;
+	int fps_unready_cnt;
+	int fps_unready_max;
 	int diff_pixel_th;
 	int diff_line_th;
 	int diff_frame_th;
@@ -853,6 +856,7 @@ struct rx_s {
 	u8 free_sync_sts;
 	u8 afifo_sts;
 	u8 vpp_mute_cnt;
+	u8 gcp_mute_cnt;
 	u32 ecc_err;
 	u32 ecc_pkt_cnt;
 	u32 ecc_err_frames_cnt;
@@ -979,6 +983,8 @@ extern int vdin_reset_pcs_en;
 extern int rx_5v_wake_up_en;
 extern char edid_cur[EDID_SIZE];
 extern int vpp_mute_cnt;
+extern int gcp_mute_cnt;
+extern int gcp_mute_flag;
 #ifdef CONFIG_AMLOGIC_MEDIA_VRR
 extern struct notifier_block vrr_notify;
 #endif

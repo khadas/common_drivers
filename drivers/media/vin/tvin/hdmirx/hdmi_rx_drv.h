@@ -759,6 +759,17 @@ struct spkts_rcvd_sts {
 	u32 rsvd:28;
 };
 
+struct edid_capacity {
+	bool vrr;
+	bool allm;
+	bool hf_db;
+	bool dv_db;
+	bool hdr10p_db;
+	bool hdr_static_db;
+	bool hdr_dynamic_db;
+	bool freesync_db;
+};
+
 enum e_colorimetry {
 	E_NULL = 0,
 	E_SMPTE_ST_170,
@@ -808,6 +819,7 @@ struct rx_info_s {
 	struct rx_aml_phy aml_phy_21;
 	struct emp_info_s emp_buff_a; //for vid0
 	struct emp_info_s emp_buff_b; //for vid1
+	struct edid_capacity edid_cap;
 };
 
 struct rx_s {
@@ -934,6 +946,8 @@ extern struct tvin_latency_s latency_info;
 extern struct reg_map rx_reg_maps[MAP_ADDR_MODULE_NUM];
 extern bool downstream_repeat_support;
 extern int vrr_range_dynamic_update_en;
+extern int allm_update_en;
+
 void rx_tasklet_handler(unsigned long arg);
 void skip_frame(unsigned int cnt, u8 port, char *str);
 
@@ -975,6 +989,7 @@ extern int vdin_drop_frame_cnt;
 extern int rpt_edid_selection;
 extern int rpt_only_mode;
 extern u32 vrr_func_en;
+extern u32 allm_func_en;
 /* debug */
 extern bool hdcp_enable;
 extern int log_level;

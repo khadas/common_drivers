@@ -201,6 +201,7 @@ int disable_hdr;
 
 //vrr field VRRmin/max dynamic update enable
 int vrr_range_dynamic_update_en;
+int allm_update_en;
 int rx_phy_level = 1;
 
 static struct notifier_block aml_hdcp22_pm_notifier = {
@@ -2652,6 +2653,30 @@ static ssize_t vrr_func_ctrl_store(struct device *dev,
 	return count;
 }
 
+static ssize_t allm_func_ctrl_show(struct device *dev,
+				struct device_attribute *attr,
+				char *buf)
+{
+	return sprintf(buf, "allm func: %d\n", allm_func_en);
+}
+
+static ssize_t allm_func_ctrl_store(struct device *dev,
+				 struct device_attribute *attr,
+				 const char *buf,
+				 size_t count)
+{
+	int ret;
+	unsigned int tmp;
+
+	ret = kstrtouint(buf, 16, &tmp);
+	if (ret)
+		return -EINVAL;
+
+	allm_func_en = tmp;
+	rx_pr("set allm_func_en to: %d\n", allm_func_en);
+	return count;
+}
+
 static ssize_t audio_blk_show(struct device *dev,
 			      struct device_attribute *attr,
 			      char *buf)
@@ -2835,6 +2860,7 @@ static DEVICE_ATTR_RW(audio_blk);
 static DEVICE_ATTR_RO(scan_mode);
 static DEVICE_ATTR_RW(edid_with_port);
 static DEVICE_ATTR_RW(vrr_func_ctrl);
+static DEVICE_ATTR_RW(allm_func_ctrl);
 static DEVICE_ATTR_RO(hdcp14_onoff);
 static DEVICE_ATTR_RO(hdcp22_onoff);
 static DEVICE_ATTR_RO(mode);
@@ -3482,6 +3508,11 @@ static int hdmirx_probe(struct platform_device *pdev)
 		rx_pr("hdmirx: fail to create vrr_func_ctrl file\n");
 		goto fail_create_vrr_func_ctrl;
 	}
+	ret = device_create_file(hdevp->dev, &dev_attr_allm_func_ctrl);
+	if (ret < 0) {
+		rx_pr("hdmirx: fail to create allm_func_ctrl file\n");
+		goto fail_create_allm_func_ctrl;
+	}
 	ret = device_create_file(hdevp->dev, &dev_attr_audio_blk);
 	if (ret < 0) {
 		rx_pr("hdmirx: fail to create audio_blk file\n");
@@ -3777,6 +3808,12 @@ static int hdmirx_probe(struct platform_device *pdev)
 		rx_pr("vrr_range_dynamic_update_en not found.\n");
 	}
 	ret = of_property_read_u32(pdev->dev.of_node,
+				   "allm_update_en", &allm_update_en);
+	if (ret) {
+		allm_update_en = 0;
+		rx_pr("allm_update_en not found.\n");
+	}
+	ret = of_property_read_u32(pdev->dev.of_node,
 				   "hpd_low_cec_off", &hpd_low_cec_off);
 	if (ret)
 		hpd_low_cec_off = 1;
@@ -3924,6 +3961,8 @@ fail_create_audio_blk:
 	device_remove_file(hdevp->dev, &dev_attr_audio_blk);
 fail_create_edid_select:
 	device_remove_file(hdevp->dev, &dev_attr_edid_select);
+fail_create_allm_func_ctrl:
+	device_remove_file(hdevp->dev, &dev_attr_allm_func_ctrl);
 fail_create_vrr_func_ctrl:
 	device_remove_file(hdevp->dev, &dev_attr_vrr_func_ctrl);
 fail_create_earc_cap_ds:

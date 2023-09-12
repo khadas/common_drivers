@@ -672,6 +672,35 @@ void rx_edid_update_vrr_info(unsigned char *p_edid)
 	}
 }
 
+void rx_edid_update_allm_info(unsigned char *p_edid)
+{
+	u_int hf_vsdb_start = 0;
+	u8 tag_len;
+
+	if (!p_edid)
+		return;
+	hf_vsdb_start = rx_get_cea_tag_offset(p_edid, HF_VENDOR_DB_TAG);
+	if (!hf_vsdb_start)
+		return;
+	tag_len = p_edid[hf_vsdb_start] & 0xf;
+	if (tag_len < 8 || allm_func_en == 0xff)
+		return;
+	if (log_level & EDID_LOG)
+		rx_pr("tag_len = %d", tag_len);
+
+	if (allm_func_en == 1) {
+		p_edid[hf_vsdb_start + 8] |= 0x2;
+		if (log_level & EDID_LOG)
+			rx_pr("enable allm.\n");
+	} else if (allm_func_en == 0) {
+		p_edid[hf_vsdb_start + 8] &= ~0x2;
+		if (log_level & EDID_LOG)
+			rx_pr("disable allm.\n");
+	} else {
+		rx_pr("invalid allm_func_en: %d.\n", allm_func_en);
+	}
+}
+
 unsigned int rx_exchange_bits(unsigned int value)
 {
 	unsigned int temp;
@@ -704,6 +733,10 @@ u16 rx_get_tag_code(u_char *edid_data)
 				tag_code = VSVDB_DV_TAG;
 			else if (ieee_oui == 0x90848B)
 				tag_code = VSVDB_HDR10P_TAG;
+		} else if (edid_data[1] == HDR_STATIC_TAG) {
+			tag_code = HDR_STATIC_TAG;
+		} else if (edid_data[1] == HDR_DYNAMIC_TAG) {
+			tag_code = HDR_DYNAMIC_TAG;
 		} else {
 			tag_code =
 				(USE_EXTENDED_TAG << 8) | edid_data[1];
@@ -1196,7 +1229,7 @@ static void rx_edid_update_vsvdb(u_char *pedid,
 		edid_rm_db_by_tag(pedid, VSVDB_DV_TAG);
 	else
 		splice_tag_db_to_edid(pedid, add_data,
-				      len, VSVDB_DV_TAG);
+				      VSVDB_DV_TAG);
 }
 
 bool need_update_edid(u8 port)
@@ -3239,15 +3272,16 @@ EXPORT_SYMBOL(rx_update_tx_edid_with_audio_block);
 #endif
 
 /* extract data block with certain tag from block buf */
-u8 *data_blk_extract(u8 *p_buf, unsigned int buf_len, u16 tagid)
+u8 *data_blk_extract(u8 *p_buf, u16 tagid)
 {
 	unsigned int index = 0;
 	u8 tag_length;
 	u16 tag_code;
 
-	if (!p_buf || buf_len > 256 || buf_len == 0)
+	if (!p_buf)
 		return NULL;
-	while (index < buf_len) {
+	//TODO: for 512byte edid
+	while (index < EDID_BLK_SIZE) {
 		/* Get the tag and length */
 		tag_code = rx_get_tag_code(p_buf + index);
 		tag_length = BLK_LENGTH(p_buf[index]);
@@ -3256,6 +3290,64 @@ u8 *data_blk_extract(u8 *p_buf, unsigned int buf_len, u16 tagid)
 		index += tag_length + 1;
 	}
 	return NULL;
+}
+
+bool get_edid_support(u8 port, enum edid_support_e func)
+{
+	u32 hf_vsdb_start = 0;
+	u8 tag_len = 0;
+	u_char *edid_buf = NULL;
+
+	edid_buf = rx_get_cur_used_edid(port);
+	if (!edid_buf)
+		return false;
+	if (func < HF_DB) {
+		hf_vsdb_start = rx_get_cea_tag_offset(edid_buf, HF_VENDOR_DB_TAG);
+		if (!hf_vsdb_start)
+			return false;
+		tag_len = edid_buf[hf_vsdb_start] & 0x1f;
+	}
+	switch (func) {
+	case HF_VRR:
+		if (tag_len < 9)
+			return false;
+		else
+			return true;
+		break;
+	case HF_ALLM:
+		if (tag_len < 8)
+			return false;
+		if (edid_buf[hf_vsdb_start  + 8] & 0x2)
+			return true;
+		break;
+	case HF_DB:
+		if (data_blk_extract(edid_buf + EDID_BLK_SIZE + 4, HF_VENDOR_DB_TAG))
+			return true;
+		break;
+	case DV_DB:
+		if (data_blk_extract(edid_buf + EDID_BLK_SIZE + 4, VSVDB_DV_TAG))
+			return true;
+		break;
+	case HDR10P_DB:
+		if (data_blk_extract(edid_buf + EDID_BLK_SIZE + 4, VSVDB_HDR10P_TAG))
+			return true;
+		break;
+	case HDR_STATIC_DB:
+		if (data_blk_extract(edid_buf + EDID_BLK_SIZE + 4, HDR_STATIC_TAG))
+			return true;
+		break;
+	case HDR_DYNAMIC_DB:
+		if (data_blk_extract(edid_buf + EDID_BLK_SIZE + 4, HDR_DYNAMIC_TAG))
+			return true;
+		break;
+	case FREESYNC_DB:
+		if (data_blk_extract(edid_buf + EDID_BLK_SIZE + 4, VSDB_FREESYNC_TAG))
+			return true;
+		break;
+	default:
+		break;
+	}
+	return false;
 }
 
 /* combine short audio descriptors,
@@ -3512,14 +3604,14 @@ void splice_data_blk_to_edid(u_char *p_edid, u_char *add_buf,
  * splice it with edid
  */
 void splice_tag_db_to_edid(u8 *p_edid, u8 *add_buf,
-			   u8 buf_len, u16 tagid)
+			   u16 tagid)
 {
 	u8 *tag_data_blk = NULL;
 	unsigned int i;
 
 	if (!p_edid || !add_buf)
 		return;
-	tag_data_blk = data_blk_extract(add_buf, buf_len, tagid);
+	tag_data_blk = data_blk_extract(add_buf, tagid);
 	if (!tag_data_blk) {
 		rx_pr("no this data blk in add buf\n");
 		return;
@@ -4770,6 +4862,31 @@ u_char *rx_get_cur_used_edid(u_char port)
 	return &edid_cur[0];
 }
 
+void rx_pirnt_edid_support(void)
+{
+	rx_pr("****Capacity info****\n");
+	rx_pr("support vrr: %d\n", rx_info.edid_cap.vrr);
+	rx_pr("support allm: %d\n", rx_info.edid_cap.allm);
+	rx_pr("support HF_DB: %d\n", rx_info.edid_cap.hf_db);
+	rx_pr("support DV_DB: %d\n", rx_info.edid_cap.dv_db);
+	rx_pr("support HDR10P_DB: %d\n", rx_info.edid_cap.hdr10p_db);
+	rx_pr("support HDR_STATIC_DB: %d\n", rx_info.edid_cap.hdr_static_db);
+	rx_pr("support HDR_DYNAMIC_DB: %d\n", rx_info.edid_cap.hdr_dynamic_db);
+	rx_pr("support FREESYNC_DB: %d\n", rx_info.edid_cap.freesync_db);
+}
+
+void rx_get_edid_support(u8 port)
+{
+	rx_info.edid_cap.vrr |= get_edid_support(port, HF_VRR);
+	rx_info.edid_cap.allm |= get_edid_support(port, HF_ALLM);
+	rx_info.edid_cap.hf_db |= get_edid_support(port, HF_DB);
+	rx_info.edid_cap.dv_db |= get_edid_support(port, DV_DB);
+	rx_info.edid_cap.hdr10p_db |= get_edid_support(port, HDR10P_DB);
+	rx_info.edid_cap.hdr_static_db |= get_edid_support(port, HDR_STATIC_DB);
+	rx_info.edid_cap.hdr_dynamic_db |= get_edid_support(port, HDR_DYNAMIC_DB);
+	rx_info.edid_cap.freesync_db |= get_edid_support(port, FREESYNC_DB);
+}
+
 bool hdmi_rx_top_edid_update(void)
 {
 	u_char *pedid = NULL;
@@ -4778,6 +4895,7 @@ bool hdmi_rx_top_edid_update(void)
 	static int edid_reset_cnt;
 
 	rx_edid_module_reset();
+	memset(&rx_info.edid_cap, 0, sizeof(struct edid_capacity));
 	while (edid_reset_cnt <= edid_reset_max)
 		edid_reset_cnt++;
 	edid_reset_cnt = 0;
@@ -4793,11 +4911,16 @@ bool hdmi_rx_top_edid_update(void)
 		rx_edid_update_vsvdb(pedid, recv_vsvdb, recv_vsvdb_len);
 		if (vrr_range_dynamic_update_en)
 			rx_edid_update_vrr_info(pedid);
+		if (allm_update_en)
+			rx_edid_update_allm_info(pedid);
 		rpt_edid_extraction(pedid);
 		pedid[0xff] = rx_edid_calc_cksum(pedid);
 		for (j = 0; j < EDID_SIZE; j++)
 			hdmirx_wr_top(edid_addr[i] + j, pedid[j], i);
+		rx_get_edid_support(i);
 	}
+	if (log_level & EDID_LOG)
+		rx_pirnt_edid_support();
 	return true;
 }
 

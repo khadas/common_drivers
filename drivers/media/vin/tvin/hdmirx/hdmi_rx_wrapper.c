@@ -74,6 +74,7 @@ static int unnormal_wait_max = 200;
 static int wait_no_sig_max = 600;
 static int fpll_stable_max = 50;
 u32 vrr_func_en = 1;
+u32 allm_func_en = 0xff;
 
 typedef void (*pf_callback)(int earc_port, bool st);
 static pf_callback earc_hdmirx_hpdst;
@@ -3767,6 +3768,7 @@ void rx_get_global_variable(const char *buf)
 	pr_var(clk_stable_max, i++);
 	pr_var(wait_no_sig_max, i++);
 	pr_var(vrr_func_en, i++);
+	pr_var(allm_func_en, i++);
 	pr_var(receive_edid_len, i++);
 	//pr_var(hdcp_array_len, i++);
 	pr_var(hdcp_len, i++);
@@ -3836,6 +3838,7 @@ void rx_get_global_variable(const char *buf)
 	pr_var(dbg_pkt, i++);
 	pr_var(rpt_edid_selection, i++);
 	pr_var(vrr_range_dynamic_update_en, i++);
+	pr_var(allm_update_en, i++);
 	pr_var(phy_term_lel, i++);
 	pr_var(vpcore_debug, i++);
 	pr_var(rx[E_PORT0].var.force_pattern, i++);
@@ -4057,6 +4060,8 @@ int rx_set_global_variable(const char *buf, int size)
 		return pr_var(wait_no_sig_max, index);
 	if (set_pr_var(tmpbuf, var_to_str(vrr_func_en), &vrr_func_en, value))
 		return pr_var(vrr_func_en, index);
+	if (set_pr_var(tmpbuf, var_to_str(allm_func_en), &allm_func_en, value))
+		return pr_var(allm_func_en, index);
 	if (set_pr_var(tmpbuf, var_to_str(receive_edid_len), &receive_edid_len, value))
 		return pr_var(receive_edid_len, index);
 	if (set_pr_var(tmpbuf, var_to_str(hdcp_len), &hdcp_len, value))
@@ -4243,6 +4248,9 @@ int rx_set_global_variable(const char *buf, int size)
 	if (set_pr_var(tmpbuf, var_to_str(vrr_range_dynamic_update_en),
 	    &vrr_range_dynamic_update_en, value))
 		return pr_var(vrr_range_dynamic_update_en, index);
+	if (set_pr_var(tmpbuf, var_to_str(allm_update_en),
+	    &allm_update_en, value))
+		return pr_var(allm_update_en, index);
 	if (set_pr_var(tmpbuf, var_to_str(rx_phy_level),
 	    &rx_phy_level, value))
 		return pr_var(rx_phy_level, index);
@@ -7618,6 +7626,26 @@ unsigned int hdmirx_show_info(unsigned char *buf, int size, u8 port)
 		"HDCP14 state: %d\n", rx[port].cur.hdcp14_state);
 	pos += snprintf(buf + pos, size - pos,
 		"HDCP22 state: %d\n", rx[port].cur.hdcp22_state);
+
+	pos += snprintf(buf + pos, size - pos,
+		"\n\nCapacity info\n\n");
+	pos += snprintf(buf + pos, size - pos,
+		"support vrr: %d\n", rx_info.edid_cap.vrr);
+	pos += snprintf(buf + pos, size - pos,
+		"support allm: %d\n", rx_info.edid_cap.allm);
+	pos += snprintf(buf + pos, size - pos,
+		"support HF_DB: %d\n", rx_info.edid_cap.hf_db);
+	pos += snprintf(buf + pos, size - pos,
+		"support DV_DB: %d\n", rx_info.edid_cap.dv_db);
+	pos += snprintf(buf + pos, size - pos,
+		"support HDR10P_DB: %d\n", rx_info.edid_cap.hdr10p_db);
+	pos += snprintf(buf + pos, size - pos,
+		"support HDR_STATIC_DB: %d\n", rx_info.edid_cap.hdr_static_db);
+	pos += snprintf(buf + pos, size - pos,
+		"support HDR_DYNAMIC_DB: %d\n", rx_info.edid_cap.hdr_dynamic_db);
+	pos += snprintf(buf + pos, size - pos,
+		"support FREESYNC_DB: %d\n", rx_info.edid_cap.freesync_db);
+
 	if (port == E_PORT0)
 		pos += snprintf(buf + pos, size - pos,
 			"Source Physical address: %d.0.0.0\n", 1);
@@ -7744,6 +7772,7 @@ void dump_video_status(u8 port)
 	      "auto" : (edid_slt == EDID_V20 ? "2.0" : "1.4"));
 	rx_pr("edid_parse_ver: %s\n",
 	      edid_ver == EDID_V20 ? "2.0" : "1.4");
+	rx_pirnt_edid_support();
 }
 
 static void dump_audio_status(u8 port)

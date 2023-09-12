@@ -7,6 +7,7 @@
 #define _HDMI_RX_EDID_H_
 
 #define EDID_EXT_BLK_OFF	128
+#define EDID_BLK_SIZE		128
 #define EDID_SIZE			512
 #define EDID_TOTAL_SIZE		1536
 #define EDID_BUF_SIZE	(EDID_SIZE * 2)
@@ -183,6 +184,18 @@ enum edid_ver_e {
 	EDID_V14,
 	EDID_V20,
 	EDID_AUTO
+};
+
+enum edid_support_e {
+	HF_VRR,
+	HF_ALLM,
+	HF_DB,
+	DV_DB,
+	HDR10P_DB,
+	HDR_STATIC_DB,
+	HDR_DYNAMIC_DB,
+	FREESYNC_DB,
+	SUP_MAX
 };
 
 struct detailed_timing_desc {
@@ -836,12 +849,13 @@ void rx_prase_earc_capds_dbg(void);
 void edid_splice_earc_capds(unsigned char *p_edid,
 			    unsigned char *earc_cap_ds,
 			    unsigned int len);
+bool get_edid_support(u8 port, enum edid_support_e func);
 void edid_splice_earc_capds_dbg(u8 *p_edid);
 void edid_splice_data_blk_dbg(u8 *p_edid, u8 idx);
 void edid_rm_db_by_tag(u8 *p_edid, u16 tagid);
 void edid_rm_db_by_idx(u8 *p_edid, u8 blk_idx);
 void splice_tag_db_to_edid(u8 *p_edid, u8 *add_buf,
-			   u8 buf_len, u16 tagid);
+			   u16 tagid);
 void splice_data_blk_to_edid(u_char *p_edid, u_char *add_buf,
 			     u_char blk_idx);
 void rx_modify_edid(unsigned char *buffer,
@@ -875,6 +889,8 @@ void rpt_edid_colorimetry_db_extraction(unsigned char *p_edid);
 void rpt_edid_420_vdb_extraction(unsigned char *p_edid);
 void rpt_edid_hdr_static_db_extraction(unsigned char *p_edid);
 void rpt_edid_extraction(unsigned char *p_edid);
+void rx_get_edid_support(u8 port);
+void rx_pirnt_edid_support(void);
 bool is_valid_edid_data(unsigned char *p_edid);
 #endif
 #endif

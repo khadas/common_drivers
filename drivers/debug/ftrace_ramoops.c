@@ -38,6 +38,7 @@ static unsigned int *virt_addr[MAX_DETECT_REG];
 unsigned long old_val_reg[MAX_DETECT_REG];
 
 int reg_check_panic;
+bool reg_check_flag;
 
 static int reg_check_panic_setup(char *buf)
 {
@@ -135,7 +136,7 @@ static int check_reg_setup(char *ptr)
 		}
 	} while (str_entry && i < MAX_DETECT_REG);
 
-	reg_check_init();
+	reg_check_flag = true;
 
 	return 0;
 }
@@ -364,6 +365,9 @@ int ftrace_ramoops_init(void)
 
 	if (!ramoops_io_en)
 		return 0;
+
+	if (reg_check_flag)
+		reg_check_init();
 
 #ifdef CONFIG_ANDROID_VENDOR_HOOKS
 	register_trace_android_rvh_schedule(schedule_hook, NULL);

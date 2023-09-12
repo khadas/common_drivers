@@ -1442,7 +1442,7 @@ void rmap_walk_vma(struct page *page)
 #endif
 }
 
-void show_page(struct page *page)
+void __nocfi show_page(struct page *page)
 {
 	unsigned long trace = 0;
 	unsigned long map_flag = -1UL;
@@ -1525,17 +1525,18 @@ static ssize_t cma_debug_write(struct file *file, const char __user *buffer,
 			goto exit;
 
 		cma_alloc_trace = arg ? 1 : 0;
+		ok = 1;
 		goto exit;
 	}
 
-	if (kstrtoint(buf, 10, &arg))
-		goto exit;
+	if (!kstrtoint(buf, 10, &arg)) {
+		if (arg > MAX_DEBUG_LEVEL)
+			goto exit;
 
-	if (arg > MAX_DEBUG_LEVEL)
+		ok = 1;
+		cma_debug_level = arg;
 		goto exit;
-
-	ok = 1;
-	cma_debug_level = arg;
+	}
 exit:
 	kfree(buf);
 	if (ok)

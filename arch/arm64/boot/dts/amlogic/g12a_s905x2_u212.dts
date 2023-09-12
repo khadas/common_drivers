@@ -17,7 +17,7 @@
 /dts-v1/;
 
 #include "mesong12a.dtsi"
-#include "partition_mbox_normal_P_32.dtsi"
+#include "partition_mbox_normal_dynamic.dtsi"
 #include "mesong12a_drm.dtsi"
 / {
 	model = "Amlogic";
@@ -86,7 +86,6 @@
 
 		logo_reserved:linux,meson-fb {
 			compatible = "amlogic, meson-fb";
-			size = <0x0 0x800000>;
 			alignment = <0x0 0x400000>;
 			reg = <0x0 0x7f800000 0x0 0x800000>;
 		};
@@ -102,17 +101,23 @@
 			size = <0x0 0x0>;
 			alignment = <0x0 0x400000>;
 		};
-		dmaheap_cma_reserved:heap-gfx {
-			compatible = "shared-dma-pool";
-			reusable;
-			size = <0x0 0x0>;
-			alignment = <0x0 0x400000>;
-		};
 		dmaheap_fb_reserved:heap-fb {
 			compatible = "shared-dma-pool";
 			reusable;
 			/* 1080p STB androidT size 56M */
 			size = <0x0 0x3800000>;
+			alignment = <0x0 0x400000>;
+		};
+		dmaheap_cma_reserved:heap-gfx {
+			compatible = "shared-dma-pool";
+			reusable;
+			size = <0x0 0x5800000>;
+			alignment = <0x0 0x400000>;
+		};
+		dmaheap_secure_reserved:heap-secure {
+			compatible = "amlogic, heap-secure-mem";
+			no-map;
+			size = <0x0 0x0>;
 			alignment = <0x0 0x400000>;
 		};
 		//di_reserved:linux,di {

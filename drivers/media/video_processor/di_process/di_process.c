@@ -1033,11 +1033,8 @@ static int di_process_set_frame(struct di_process_dev *dev, struct frame_info_t 
 
 	omx_index = vf->omx_index;
 
-	if (dev->last_vf.width != vf->width ||
-		dev->last_vf.height != vf->height ||
-		dev->last_vf.compWidth != vf->compWidth ||
-		dev->last_vf.compHeight != vf->compHeight ||
-		(dev->last_vf.type & VIDTYPE_INTERLACE) != (vf->type & VIDTYPE_INTERLACE)) {
+	/*1080p->1080i; 4k->1080i*/
+	if (!(dev->last_vf.type & VIDTYPE_INTERLACE) && (vf->type & VIDTYPE_INTERLACE)) {
 		dp_print(dev->index, PRINT_OTHER, "fmt change\n");
 		if (dev->first_out) {
 			dev->first_out = false;
@@ -1094,6 +1091,9 @@ static int di_process_set_frame(struct di_process_dev *dev, struct frame_info_t 
 			i = get_received_frame_free_index(dev);
 
 			memcpy(&dev->dummy_vf1, &dev->dummy_vf, sizeof(struct vframe_s));
+			dev->dummy_vf1.type &= ~VIDTYPE_TYPEMASK;
+			dev->dummy_vf1.height >>= 1;
+			dev->dummy_vf1.compHeight >>= 1;
 			dev->received_frame[i].file_vf = NULL;
 			dev->received_frame[i].vf = &dev->dummy_vf1;
 			dev->received_frame[i].dummy = true;

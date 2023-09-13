@@ -1507,6 +1507,15 @@ static int meson_spicc_remove(struct platform_device *pdev)
 	return 0;
 }
 
+static void meson_spicc_shutdown(struct platform_device *pdev)
+{
+	struct spicc_device *spicc = platform_get_drvdata(pdev);
+
+	if (spicc->sys_clk)
+		clk_disable_unprepare(spicc->sys_clk);
+	clk_disable_unprepare(spicc->spi_clk);
+}
+
 static int meson_spicc_suspend(struct device *dev)
 {
 	struct spicc_device *spicc = dev_get_drvdata(dev);
@@ -1546,6 +1555,7 @@ MODULE_DEVICE_TABLE(of, meson_spicc_v2_of_match);
 struct platform_driver meson_spicc_v2_driver = {
 	.probe   = meson_spicc_probe,
 	.remove  = meson_spicc_remove,
+	.shutdown = meson_spicc_shutdown,
 	.driver  = {
 		.name = "meson-spicc-v2",
 		.of_match_table = of_match_ptr(meson_spicc_v2_of_match),

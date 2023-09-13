@@ -2637,7 +2637,7 @@ static void hdmi_phy_suspend(void)
 	 * supply module still need to work, otherwise
 	 * hdmi arc disables, no audio during HEACT 5-18
 	 */
-	if (!hdev->suspend_flag && hdev->arc_rx_en)
+	if (!hdev->tx_comm.suspend_flag && hdev->arc_rx_en)
 		hd21_write_reg(phy_cntl0, 0x10000);
 	else
 		hd21_write_reg(phy_cntl0, 0x0);

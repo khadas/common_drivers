@@ -80,8 +80,9 @@
 #define HDMI_TX_RESOURCE_NUM 4
 #define HDMI_TX_PWR_CTRL_NUM	6
 
+#define to_hdmitx20_dev(x)	container_of(x, struct hdmitx_dev, tx_comm)
+
 static struct class *hdmitx_class;
-static int set_disp_mode_auto(void);
 static void hdmitx_get_edid(struct hdmitx_dev *hdev);
 static void hdmitx_set_drm_pkt(struct master_display_info_s *data);
 static void hdmitx_set_vsif_pkt(enum eotf_type type, enum mode_type
@@ -98,8 +99,6 @@ static void hdmitx_fmt_attr(struct hdmitx_dev *hdev);
 static void edidinfo_attach_to_vinfo(struct hdmitx_dev *hdev);
 static void edidinfo_detach_to_vinfo(struct hdmitx_dev *hdev);
 static void update_vinfo_from_formatpara(void);
-static void update_para_from_mode(struct hdmitx_dev *hdev,
-	const char *name, const char *fmt_attr, struct hdmi_format_para *update_para);
 static bool is_cur_tmds_div40(struct hdmitx_dev *hdev);
 static void hdmitx_resend_div40(struct hdmitx_dev *hdev);
 static unsigned int hdmitx_get_frame_duration(void);
@@ -344,7 +343,7 @@ static void hdmitx_early_suspend(struct early_suspend *h)
 	 * priority, though there's protection in system control,
 	 * driver still need protection in case of old android version
 	 */
-	hdev->suspend_flag = true;
+	hdev->tx_comm.suspend_flag = true;
 	if (hdev->cedst_policy)
 		cancel_delayed_work(&hdev->work_cedst);
 	hdev->ready = 0;
@@ -446,7 +445,7 @@ static void hdmitx_late_resume(struct early_suspend *h)
 		hdmitx_set_uevent_state(HDMITX_AUDIO_EVENT, 1);
 		extcon_set_state(hdmitx_extcon_hdmi, EXTCON_DISP_HDMI, 1);
 	}
-	hdev->suspend_flag = false;
+	hdev->tx_comm.suspend_flag = false;
 
 	extcon_set_state_sync(hdmitx_extcon_hdmi, EXTCON_DISP_HDMI,
 		hdev->tx_comm.hpd_state);
@@ -635,123 +634,6 @@ static void edidinfo_detach_to_vinfo(struct hdmitx_dev *hdev)
 
 	info->screen_real_width = 0;
 	info->screen_real_height = 0;
-}
-
-static int set_disp_mode_auto(void)
-{
-	int ret =  -1;
-
-	struct vinfo_s *info = NULL;
-	struct hdmitx_dev *hdev = &hdmitx_device;
-	struct hdmitx_common *tx_comm = &hdev->tx_comm;
-	unsigned char mode[32];
-	enum hdmi_vic vic = HDMI_0_UNKNOWN;
-	struct hdmi_format_para *para = &tx_comm->fmt_para;
-
-	mutex_lock(&hdmimode_mutex);
-
-	if (hdev->tx_comm.hpd_state == 0) {
-		pr_info("current hpd_state0, exit %s\n", __func__);
-		mutex_unlock(&hdmimode_mutex);
-		return -1;
-	}
-	/* some apk will do frame rate auto switch, and will switch mode
-	 * (exit auto frame rate) after enter suspend, this should be
-	 * prevented
-	 */
-	if (hdev->suspend_flag) {
-		pr_info("currently under suspend, exit %s\n", __func__);
-		mutex_unlock(&hdmimode_mutex);
-		return -1;
-	}
-
-	memset(mode, 0, sizeof(mode));
-	hdev->ready = 0;
-
-	/* get current vinfo */
-	info = hdmitx_get_current_vinfo(NULL);
-	if (!info || !info->name) {
-		mutex_unlock(&hdmimode_mutex);
-		return -1;
-	}
-
-	pr_info(SYS "get current mode: %s\n", info->name);
-
-	/* If info->name equals to cvbs, then set mode to I mode to hdmi
-	 */
-	if ((strncmp(info->name, "480cvbs", 7) == 0) ||
-	    (strncmp(info->name, "576cvbs", 7) == 0) ||
-	    (strncmp(info->name, "ntsc_m", 6) == 0) ||
-	    (strncmp(info->name, "pal_m", 5) == 0) ||
-	    (strncmp(info->name, "pal_n", 5) == 0) ||
-	    (strncmp(info->name, "panel", 5) == 0) ||
-	    (strncmp(info->name, "null", 4) == 0)) {
-		pr_info(SYS "%s not valid hdmi mode\n", info->name);
-		hdev->tx_hw.cntlconfig(&hdev->tx_hw, CONF_CLR_AVI_PACKET, 0);
-		hdev->tx_hw.cntlconfig(&hdev->tx_hw, CONF_CLR_VSDB_PACKET, 0);
-		hdev->tx_hw.cntlmisc(&hdev->tx_hw, MISC_TMDS_PHY_OP, TMDS_PHY_DISABLE);
-
-		hdmitx_format_para_reset(&hdev->tx_comm.fmt_para);
-
-		if (hdev->cedst_policy)
-			cancel_delayed_work(&hdev->work_cedst);
-		mutex_unlock(&hdmimode_mutex);
-		return -1;
-	}
-
-	strncpy(mode, info->name, sizeof(mode));
-	mode[31] = '\0';
-
-	update_para_from_mode(hdev, mode,
-		hdev->tx_comm.fmt_attr, &hdev->tx_comm.fmt_para);
-	if (hdmitx_common_validate_format_para(&hdev->tx_comm, para) != 0) {
-		pr_err("check failed vic: %d\n", para->vic);
-		mutex_unlock(&hdmimode_mutex);
-		return -1;
-	}
-
-	vic = para->vic;
-
-	hdmitx_pre_display_init();
-
-	hdev->tx_comm.cur_VIC = HDMI_0_UNKNOWN;
-	/* if vic is HDMI_0_UNKNOWN, hdmitx_set_display will disable HDMI */
-	ret = hdmitx_set_display(hdev, vic);
-
-	if (ret >= 0) {
-		hdev->hwop.cntl(hdev, HDMITX_AVMUTE_CNTL, AVMUTE_CLEAR);
-		hdev->tx_comm.cur_VIC = vic;
-		hdev->audio_param_update_flag = 1;
-		hdev->auth_process_timer = AUTH_PROCESS_TIME;
-	}
-	if (hdev->tx_comm.cur_VIC == HDMI_0_UNKNOWN) {
-		if (hdev->hpdmode == 2) {
-			/* edid will be read again when hpd is muxed
-			 * and it is high
-			 */
-			hdmitx_edid_clear(hdev);
-			hdev->mux_hpd_if_pin_high_flag = 0;
-		}
-		/* If current display is NOT panel, needn't TURNOFF_HDMIHW */
-		if (strncmp(mode, "panel", 5) == 0) {
-			hdev->hwop.cntl(hdev, HDMITX_HWCMD_TURNOFF_HDMIHW,
-				(hdev->hpdmode == 2) ? 1 : 0);
-		}
-	}
-	hdmitx_set_audio(hdev, &hdev->cur_audio_param);
-	if (hdev->cedst_policy) {
-		cancel_delayed_work(&hdev->work_cedst);
-		queue_delayed_work(hdev->cedst_wq, &hdev->work_cedst, 0);
-	}
-	hdev->output_blank_flag = 1;
-	hdev->ready = 1;
-	/*update vinfo*/
-	edidinfo_attach_to_vinfo(hdev);
-	update_vinfo_from_formatpara();
-
-	/* backup values need to be updated to latest values */
-	mutex_unlock(&hdmimode_mutex);
-	return ret;
 }
 
 /*disp_mode attr*/
@@ -1702,35 +1584,6 @@ static void update_vinfo_from_formatpara(void)
 	/*dynamic info, always need set.*/
 	vinfo->cs = fmtpara->cs;
 	vinfo->cd = fmtpara->cd;
-}
-
-static void update_para_from_mode(struct hdmitx_dev *hdev,
-	const char *name, const char *fmt_attr,
-	struct hdmi_format_para *update_para)
-{
-	enum hdmi_vic vic = HDMI_0_UNKNOWN;
-
-	vic = hdmitx_common_parse_vic_in_edid(&hdev->tx_comm, name);
-	if (vic == HDMI_0_UNKNOWN) {
-		pr_err("%s: get vic from (%s) fail\n", __func__, name);
-		return;
-	}
-
-	if (hdmitx_common_validate_vic(&hdev->tx_comm, vic) != 0)
-		return;
-
-	hdmitx_parse_color_attr(fmt_attr, &update_para->cs,
-		&update_para->cd, &update_para->cr);
-
-	if (hdmitx_common_build_format_para(&hdev->tx_comm,
-		update_para, vic, hdev->tx_comm.frac_rate_policy,
-		update_para->cs, update_para->cd, update_para->cr) != 0) {
-		pr_err("init format para failed (%s,%s)\n", name, fmt_attr);
-		hdmitx_format_para_reset(update_para);
-	}
-
-	pr_info("fmt_para from %s,%s -> %d,%s\n", name, fmt_attr, update_para->vic,
-		update_para->sname ? update_para->sname : update_para->name);
 }
 
 struct vsif_debug_save vsif_debug_info;
@@ -5238,6 +5091,80 @@ static DEVICE_ATTR_RO(dump_debug_reg);
 static DEVICE_ATTR_RW(hdr_priority_mode);
 static DEVICE_ATTR_WO(hdcp22_top_reset);
 
+static int hdmitx20_pre_enable_mode(struct hdmitx_common *tx_comm, struct hdmi_format_para *para)
+{
+	struct hdmitx_dev *hdev = to_hdmitx20_dev(tx_comm);
+	struct hdmi_format_para *dev_para = &tx_comm->fmt_para;
+
+	hdev->ready = 0;
+	//TODO format para will be moved
+	memcpy(dev_para, para, sizeof(struct hdmi_format_para));
+
+	hdmitx_pre_display_init();
+	return 0;
+}
+
+static int hdmitx20_enable_mode(struct hdmitx_common *tx_comm, struct hdmi_format_para *para)
+{
+	int ret;
+	struct hdmitx_dev *hdev = to_hdmitx20_dev(tx_comm);
+
+	/* if vic is HDMI_UNKNOWN, hdmitx_set_display will disable HDMI */
+	tx_comm->cur_VIC = HDMI_0_UNKNOWN;
+	ret = hdmitx_set_display(hdev, para->vic);
+
+	if (ret >= 0) {
+		hdev->hwop.cntl(hdev, HDMITX_AVMUTE_CNTL, AVMUTE_CLEAR);
+		hdev->tx_comm.cur_VIC = para->vic;
+		hdev->audio_param_update_flag = 1;
+		hdev->auth_process_timer = AUTH_PROCESS_TIME;
+	}
+	if (hdev->tx_comm.cur_VIC == HDMI_0_UNKNOWN) {
+		if (hdev->hpdmode == 2) {
+			/* edid will be read again when hpd is muxed
+			 * and it is high
+			 */
+			hdmitx_edid_clear(hdev);
+			hdev->mux_hpd_if_pin_high_flag = 0;
+		}
+		/* If current display is NOT panel, needn't TURNOFF_HDMIHW */
+		if (strncmp(para->name, "panel", 5) == 0) {
+			hdev->hwop.cntl(hdev, HDMITX_HWCMD_TURNOFF_HDMIHW,
+				(hdev->hpdmode == 2) ? 1 : 0);
+		}
+	}
+	hdmitx_set_audio(hdev, &hdev->cur_audio_param);
+
+	return 0;
+}
+
+static int hdmitx20_post_enable_mode(struct hdmitx_common *tx_comm, struct hdmi_format_para *para)
+{
+	struct hdmitx_dev *hdev = to_hdmitx20_dev(tx_comm);
+
+	if (hdev->cedst_policy) {
+		cancel_delayed_work(&hdev->work_cedst);
+		queue_delayed_work(hdev->cedst_wq, &hdev->work_cedst, 0);
+	}
+	hdev->output_blank_flag = 1;
+	hdev->ready = 1;
+	edidinfo_attach_to_vinfo(hdev);
+	update_vinfo_from_formatpara();
+	return 0;
+}
+
+static int hdmitx20_disable_mode(struct hdmitx_common *tx_comm, struct hdmi_format_para *para)
+{
+	return 0;
+}
+
+static struct hdmitx_ctrl_ops tx20_ctrl_ops = {
+	.pre_enable_mode = hdmitx20_pre_enable_mode,
+	.enable_mode = hdmitx20_enable_mode,
+	.post_enable_mode = hdmitx20_post_enable_mode,
+	.disable_mode = hdmitx20_disable_mode,
+};
+
 #ifdef CONFIG_AMLOGIC_VOUT_SERVE
 static struct vinfo_s *hdmitx_get_current_vinfo(void *data)
 {
@@ -5251,7 +5178,7 @@ static int hdmitx_set_current_vmode(enum vmode_e mode, void *data)
 	pr_info("%s[%d]\n", __func__, __LINE__);
 
 	if (!(mode & VMODE_INIT_BIT_MASK)) {
-		set_disp_mode_auto();
+		pr_err("warning, echo /sys/class/display/mode is disabled\n");
 	} else {
 		pr_info("alread display in uboot\n");
 		edidinfo_attach_to_vinfo(hdev);
@@ -5840,7 +5767,7 @@ static void hdmitx_hpd_plugin_handler(struct work_struct *work)
 	 * set hdmi mode, 2.audio server and audio_hal will
 	 * start run, increase power consumption
 	 */
-	if (hdev->suspend_flag) {
+	if (hdev->tx_comm.suspend_flag) {
 		hdmitx_set_uevent_state(HDMITX_HPD_EVENT, 1);
 		extcon_set_state(hdmitx_extcon_hdmi, EXTCON_DISP_HDMI, 1);
 		hdmitx_set_uevent_state(HDMITX_AUDIO_EVENT, 1);
@@ -5860,7 +5787,7 @@ static void hdmitx_hpd_plugin_handler(struct work_struct *work)
 	mutex_unlock(&setclk_mutex);
 
 	/*notify to drm hdmi*/
-	if (!hdev->suspend_flag)
+	if (!hdev->tx_comm.suspend_flag)
 		hdmitx_hpd_notify_unlocked(&hdev->tx_comm);
 }
 
@@ -5958,7 +5885,7 @@ static void hdmitx_hpd_plugout_handler(struct work_struct *work)
 	/* under early suspend, only update uevent state, not
 	 * post to system
 	 */
-	if (hdev->suspend_flag) {
+	if (hdev->tx_comm.suspend_flag) {
 		hdmitx_set_uevent_state(HDMITX_HPD_EVENT, 0);
 		hdmitx_set_uevent_state(HDMITX_AUDIO_EVENT, 0);
 		extcon_set_state(hdmitx_extcon_hdmi, EXTCON_DISP_HDMI, 0);
@@ -6403,6 +6330,7 @@ static int amhdmitx_device_init(struct hdmitx_dev *hdmi_dev)
 	hdmitx_device.log_level = LOG_EN;
 	/* init debug param */
 	hdmitx_device.debug_param.avmute_frame = 0;
+	hdmitx_device.tx_comm.ctrl_ops = &tx20_ctrl_ops;
 	return 0;
 }
 

@@ -9,4 +9,5 @@ $(MEDIA_MODULE_NAME)-$(CONFIG_AMLOGIC_HDMITX_COMMON) += \
 							vout/hdmitx_common/hdmitx_hw_common.o \
 							vout/hdmitx_common/hdmitx_dev_common.o \
 							vout/hdmitx_common/hdmitx_mode.o \
-							vout/hdmitx_common/hdmitx_format_para.o
+							vout/hdmitx_common/hdmitx_format_para.o \
+							vout/hdmitx_common/hdmitx_mode_set.o

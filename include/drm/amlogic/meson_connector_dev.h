@@ -8,6 +8,7 @@
 #include <drm/drm_connector.h>
 #include <drm/drm_modes.h>
 #include <linux/amlogic/media/vout/vout_notify.h>
+#include <linux/amlogic/media/vout/hdmitx_common/hdmitx_format_para.h>
 
 #define MESON_CONNECTOR_TYPE_PROP_NAME "meson.connector_type"
 
@@ -54,6 +55,7 @@ struct hdmitx_timing_state {
 
 struct hdmitx_binding_state {
 	struct hdmitx_timing_state hts;
+	struct hdmi_format_para para;
 };
 
 struct meson_connector_dev {

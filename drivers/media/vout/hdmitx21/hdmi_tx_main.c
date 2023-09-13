@@ -74,9 +74,9 @@ unsigned int rx_hdcp2_ver;
 //static unsigned int hdcp_ctl_lvl;
 
 #define TEE_HDCP_IOC_START _IOW('P', 0, int)
+#define to_hdmitx21_dev(x)	container_of(x, struct hdmitx_dev, tx_comm)
 
 static struct class *hdmitx_class;
-static int set_disp_mode_auto(void);
 static void hdmitx_get_edid(struct hdmitx_dev *hdev);
 static void hdmitx_set_drm_pkt(struct master_display_info_s *data);
 static void hdmitx_set_vsif_pkt(enum eotf_type type, enum mode_type
@@ -352,7 +352,7 @@ static void hdmitx_early_suspend(struct early_suspend *h)
 	 * priority, though there's protection in system control,
 	 * driver still need protection in case of old android version
 	 */
-	hdev->suspend_flag = true;
+	hdev->tx_comm.suspend_flag = true;
 	rx_hdcp2_ver = 0;
 	hdev->ready = 0;
 	hdmitx_vrr_disable();
@@ -449,7 +449,7 @@ static void hdmitx_late_resume(struct early_suspend *h)
 		hdmitx21_set_uevent_state(HDMITX_AUDIO_EVENT, 1);
 	}
 
-	hdev->suspend_flag = false;
+	hdev->tx_comm.suspend_flag = false;
 	extcon_set_state_sync(hdmitx_extcon_hdmi, EXTCON_DISP_HDMI,
 			hdev->tx_comm.hpd_state);
 	hdmitx21_set_uevent(HDMITX_HPD_EVENT, hdev->tx_comm.hpd_state);
@@ -844,158 +844,6 @@ bool hdmitx21_is_vic_over_limited_1080p(enum hdmi_vic vic)
 bool hdmitx21_limited_1080p(void)
 {
 	return res_1080p;
-}
-
-static int set_disp_mode_auto(void)
-{
-	int ret =  -1;
-
-	struct vinfo_s *info = NULL;
-	struct hdmitx_dev *hdev = get_hdmitx21_device();
-	struct hdmitx_common *tx_comm = &hdev->tx_comm;
-	struct hdmi_format_para *para = &hdev->tx_comm.fmt_para;
-	u8 mode[32];
-	enum hdmi_vic vic = HDMI_0_UNKNOWN;
-
-	mutex_lock(&hdev->hdmimode_mutex);
-
-	if (tx_comm->hpd_state == 0) {
-		pr_info("current hpd_state0, exit %s\n", __func__);
-		mutex_unlock(&hdev->hdmimode_mutex);
-		return -1;
-	}
-	if (hdev->suspend_flag) {
-		pr_info("currently under suspend, exit %s\n", __func__);
-		mutex_unlock(&hdev->hdmimode_mutex);
-		return -1;
-	}
-	memset(mode, 0, sizeof(mode));
-	hdev->ready = 0;
-
-	/* get current vinfo */
-	info = hdmitx_get_current_vinfo(NULL);
-	if (!info || !info->name) {
-		mutex_unlock(&hdev->hdmimode_mutex);
-		return -1;
-	}
-	pr_info("hdmitx: get current mode: %s\n", info->name);
-	hdmitx_vrr_disable();
-	if (strncmp(info->name, "invalid", strlen("invalid")) == 0) {
-		hdmitx21_disable_hdcp(hdev);
-		mutex_unlock(&hdev->hdmimode_mutex);
-		return -1;
-	}
-	/*update hdmi checksum to vout*/
-	memcpy(info->hdmichecksum, hdev->tx_comm.rxcap.chksum, 10);
-
-	hdmi_physical_size_update(hdev);
-
-	strncpy(mode, info->name, sizeof(mode));
-	mode[31] = '\0';
-	if (strstr(mode, "fp")) {
-		int i = 0;
-
-		for (; mode[i]; i++) {
-			if ((mode[i] == 'f') && (mode[i + 1] == 'p')) {
-				/* skip "f", 1080fp60hz -> 1080p60hz */
-				do {
-					mode[i] = mode[i + 1];
-					i++;
-				} while (mode[i]);
-				break;
-			}
-		}
-	}
-
-	if (hdmi21_get_valid_fmt_para(hdev, mode, tx_comm->fmt_attr, para) < 0) {
-		pr_info("%s[%d] %s %s\n", __func__, __LINE__, mode,
-			tx_comm->fmt_attr);
-		mutex_unlock(&hdev->hdmimode_mutex);
-		return -1;
-	}
-	/* disable hdcp before set mode if hdcp enabled.
-	 * normally hdcp is disabled before setting mode
-	 * when disable phy, but for special case of bootup,
-	 * if mode changed as it's different with uboot mode,
-	 * hdcp is not stopped firstly, and may hdcp fail
-	 */
-	if (!hdcp_need_control_by_upstream(hdev))
-		hdmitx21_disable_hdcp(hdev);
-	pr_info("setting hdmi mode %s %s\n", mode, tx_comm->fmt_attr);
-	pr_info("cd/cs/cr: %d/%d/%d\n", para->cd, para->cs, para->cr);
-	vic = hdmitx21_edid_get_VIC(hdev, mode, 1);
-	if (strncmp(info->name, "2160p30hz", strlen("2160p30hz")) == 0) {
-		vic = HDMI_95_3840x2160p30_16x9;
-	} else if (strncmp(info->name, "2160p25hz",
-		strlen("2160p25hz")) == 0) {
-		vic = HDMI_94_3840x2160p25_16x9;
-	} else if (strncmp(info->name, "2160p24hz",
-		strlen("2160p24hz")) == 0) {
-		vic = HDMI_93_3840x2160p24_16x9;
-	} else if (strncmp(info->name, "smpte24hz",
-		strlen("smpte24hz")) == 0) {
-		vic = HDMI_98_4096x2160p24_256x135;
-	} else {
-	/* nothing */
-	}
-
-	if (tx_comm->rxcap.max_frl_rate) {
-		hdev->frl_rate = hdmitx21_select_frl_rate(hdev->dsc_en, vic,
-			para->cs, para->cd);
-		if (hdev->frl_rate > hdev->tx_max_frl_rate)
-			pr_info("Current frl_rate %d is larger than tx_max_frl_rate %d\n",
-				hdev->frl_rate, hdev->tx_max_frl_rate);
-	}
-	/* if manual_frl_rate is true, set to force frl_rate */
-	if (hdev->manual_frl_rate)
-		hdev->frl_rate = hdev->manual_frl_rate;
-	hdev->tx_comm.cur_VIC = HDMI_0_UNKNOWN;
-/* if vic is HDMI_0_UNKNOWN, hdmitx21_set_display will disable HDMI */
-	edidinfo_detach_to_vinfo(hdev);
-	vic = check_vic_4x3_and_16x9(hdev, vic);
-	ret = hdmitx21_set_display(hdev, vic);
-
-	if (ret >= 0) {
-		hdev->hwop.cntl(hdev, HDMITX_AVMUTE_CNTL, AVMUTE_CLEAR);
-		hdev->tx_comm.cur_VIC = vic;
-		hdev->audio_param_update_flag = 1;
-		restore_mute();
-	}
-	if (hdev->tx_comm.cur_VIC == HDMI_0_UNKNOWN) {
-		if (hdev->hpdmode == 2) {
-			/* edid will be read again when hpd is muxed
-			 * and it is high
-			 */
-			hdmitx21_edid_clear(hdev);
-			hdev->mux_hpd_if_pin_high_flag = 0;
-		}
-		/* If current display is NOT panel, needn't TURNOFF_HDMIHW */
-		if (strncmp(mode, "panel", 5) == 0) {
-			hdev->hwop.cntl(hdev, HDMITX_HWCMD_TURNOFF_HDMIHW,
-				(hdev->hpdmode == 2) ? 1 : 0);
-		}
-	}
-	hdmitx21_set_audio(hdev, &hdev->cur_audio_param);
-	if (hdev->cedst_policy) {
-		cancel_delayed_work(&hdev->work_cedst);
-		queue_delayed_work(hdev->cedst_wq, &hdev->work_cedst, 0);
-	}
-	hdev->output_blank_flag = 1;
-	edidinfo_attach_to_vinfo(hdev);
-	/* wait for TV detect signal stable,
-	 * otherwise hdcp may easily auth fail
-	 */
-	hdev->ready = 1;
-	if (hdev->not_restart_hdcp) {
-		/* self clear */
-		hdev->not_restart_hdcp = 0;
-		pr_info("special mode switch, not start hdcp\n");
-	} else {
-		queue_delayed_work(hdev->hdmi_wq, &hdev->work_start_hdcp, HZ / 4);
-	}
-	mutex_unlock(&hdev->hdmimode_mutex);
-
-	return ret;
 }
 
 /*disp_mode attr*/
@@ -4675,6 +4523,111 @@ static DEVICE_ATTR_RW(not_restart_hdcp);
 static DEVICE_ATTR_RW(frl_rate);
 static DEVICE_ATTR_RW(dsc_en);
 
+static int hdmitx21_pre_enable_mode(struct hdmitx_common *tx_comm, struct hdmi_format_para *para)
+{
+	struct hdmitx_dev *hdev = to_hdmitx21_dev(tx_comm);
+
+	hdmitx_vrr_disable();
+
+	memcpy(&tx_comm->fmt_para, para, sizeof(struct hdmi_format_para));
+
+	/* disable hdcp before set mode if hdcp enabled.
+	 * normally hdcp is disabled before setting mode
+	 * when disable phy, but for special case of bootup,
+	 * if mode changed as it's different with uboot mode,
+	 * hdcp is not stopped firstly, and may hdcp fail
+	 */
+	if (!hdcp_need_control_by_upstream(hdev))
+		hdmitx21_disable_hdcp(hdev);
+
+	if (tx_comm->rxcap.max_frl_rate) {
+		hdev->frl_rate = hdmitx21_select_frl_rate(hdev->dsc_en, para->vic,
+			para->cs, para->cd);
+		if (hdev->frl_rate > hdev->tx_max_frl_rate)
+			pr_info("Current frl_rate %d is larger than tx_max_frl_rate %d\n",
+				hdev->frl_rate, hdev->tx_max_frl_rate);
+	}
+	/* if manual_frl_rate is true, set to force frl_rate */
+	if (hdev->manual_frl_rate)
+		hdev->frl_rate = hdev->manual_frl_rate;
+
+	return 0;
+}
+
+static int hdmitx21_enable_mode(struct hdmitx_common *tx_comm, struct hdmi_format_para *para)
+{
+	int ret;
+	enum hdmi_vic vic;
+	struct hdmitx_dev *hdev = to_hdmitx21_dev(tx_comm);
+
+	edidinfo_detach_to_vinfo(hdev);
+	vic = check_vic_4x3_and_16x9(hdev, para->vic);
+
+	tx_comm->cur_VIC = HDMI_0_UNKNOWN;
+	ret = hdmitx21_set_display(hdev, vic);
+
+	if (ret >= 0) {
+		hdev->hwop.cntl(hdev, HDMITX_AVMUTE_CNTL, AVMUTE_CLEAR);
+		tx_comm->cur_VIC = vic;
+		hdev->audio_param_update_flag = 1;
+		restore_mute();
+	}
+	if (tx_comm->cur_VIC == HDMI_0_UNKNOWN) {
+		if (hdev->hpdmode == 2) {
+			/* edid will be read again when hpd is muxed
+			 * and it is high
+			 */
+			hdmitx21_edid_clear(hdev);
+			hdev->mux_hpd_if_pin_high_flag = 0;
+		}
+		/* If current display is NOT panel, needn't TURNOFF_HDMIHW */
+		if (strncmp(para->sname, "panel", 5) == 0) {
+			hdev->hwop.cntl(hdev, HDMITX_HWCMD_TURNOFF_HDMIHW,
+				(hdev->hpdmode == 2) ? 1 : 0);
+		}
+	}
+	hdmitx21_set_audio(hdev, &hdev->cur_audio_param);
+
+	return 0;
+}
+
+static int hdmitx21_post_enable_mode(struct hdmitx_common *tx_comm, struct hdmi_format_para *para)
+{
+	struct hdmitx_dev *hdev = to_hdmitx21_dev(tx_comm);
+
+	if (hdev->cedst_policy) {
+		cancel_delayed_work(&hdev->work_cedst);
+		queue_delayed_work(hdev->cedst_wq, &hdev->work_cedst, 0);
+	}
+	hdev->output_blank_flag = 1;
+	edidinfo_attach_to_vinfo(hdev);
+	/* wait for TV detect signal stable,
+	 * otherwise hdcp may easily auth fail
+	 */
+	hdev->ready = 1;
+	if (hdev->not_restart_hdcp) {
+		/* self clear */
+		hdev->not_restart_hdcp = 0;
+		pr_info("special mode switch, not start hdcp\n");
+	} else {
+		queue_delayed_work(hdev->hdmi_wq, &hdev->work_start_hdcp, HZ / 4);
+	}
+
+	return 0;
+}
+
+static int hdmitx21_disable_mode(struct hdmitx_common *tx_comm, struct hdmi_format_para *para)
+{
+	return 0;
+}
+
+static struct hdmitx_ctrl_ops tx21_ctrl_ops = {
+	.pre_enable_mode = hdmitx21_pre_enable_mode,
+	.enable_mode = hdmitx21_enable_mode,
+	.post_enable_mode = hdmitx21_post_enable_mode,
+	.disable_mode = hdmitx21_disable_mode,
+};
+
 #ifdef CONFIG_AMLOGIC_VOUT_SERVE
 static struct vinfo_s *hdmitx_get_current_vinfo(void *data)
 {
@@ -4691,7 +4644,7 @@ static int hdmitx_set_current_vmode(enum vmode_e mode, void *data)
 
 	hdmitx_register_vrr(hdev);
 	if (!(mode & VMODE_INIT_BIT_MASK)) {
-		set_disp_mode_auto();
+		pr_err("warning, echo /sys/class/display/mode is disabled\n");
 	} else {
 		pr_info("already display in uboot\n");
 		hdev->ready = 1;
@@ -5375,7 +5328,7 @@ static void hdmitx_hpd_plugin_handler(struct work_struct *work)
 	 * post to system, in case old android system will
 	 * set hdmi mode
 	 */
-	if (hdev->suspend_flag) {
+	if (hdev->tx_comm.suspend_flag) {
 		extcon_set_state(hdmitx_extcon_hdmi, EXTCON_DISP_HDMI, 1);
 		hdmitx21_set_uevent_state(HDMITX_HPD_EVENT, 1);
 		hdmitx21_set_uevent_state(HDMITX_AUDIO_EVENT, 1);
@@ -5391,7 +5344,7 @@ static void hdmitx_hpd_plugin_handler(struct work_struct *work)
 	mutex_unlock(&hdev->hdmimode_mutex);
 	mutex_unlock(&hdev->tx_comm.setclk_mutex);
 	/*notify to drm hdmi*/
-	if (!hdev->suspend_flag)
+	if (!hdev->tx_comm.suspend_flag)
 		hdmitx_hpd_notify_unlocked(&hdev->tx_comm);
 }
 
@@ -5507,7 +5460,7 @@ static void hdmitx_hpd_plugout_handler(struct work_struct *work)
 	 * post to system, in case old android system will
 	 * set hdmi mode
 	 */
-	if (hdev->suspend_flag) {
+	if (hdev->tx_comm.suspend_flag) {
 		extcon_set_state(hdmitx_extcon_hdmi, EXTCON_DISP_HDMI, 0);
 		hdmitx21_set_uevent_state(HDMITX_HPD_EVENT, 0);
 		hdmitx21_set_uevent_state(HDMITX_AUDIO_EVENT, 0);
@@ -5519,7 +5472,7 @@ static void hdmitx_hpd_plugout_handler(struct work_struct *work)
 	mutex_unlock(&hdev->hdmimode_mutex);
 	mutex_unlock(&hdev->tx_comm.setclk_mutex);
 	/*notify to drm hdmi*/
-	if (!hdev->suspend_flag)
+	if (!hdev->tx_comm.suspend_flag)
 		hdmitx_hpd_notify_unlocked(&hdev->tx_comm);
 }
 
@@ -5878,6 +5831,7 @@ static int amhdmitx21_device_init(struct hdmitx_dev *hdmi_dev)
 	/* wait for upstream start hdcp auth 5S */
 	hdev->up_hdcp_timeout_sec = 5;
 	hdev->debug_param.avmute_frame = 0;
+	hdev->tx_comm.ctrl_ops = &tx21_ctrl_ops;
 
 	return 0;
 }

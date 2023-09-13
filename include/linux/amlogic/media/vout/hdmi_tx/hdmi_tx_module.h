@@ -147,14 +147,6 @@ struct audcts_log {
 	unsigned int stable:1;
 };
 
-struct frac_rate_table {
-	char *hz;
-	u32 sync_num_int;
-	u32 sync_den_int;
-	u32 sync_num_dec;
-	u32 sync_den_dec;
-};
-
 struct ced_cnt {
 	bool ch0_valid;
 	u16 ch0_cnt:15;
@@ -431,7 +423,6 @@ struct hdmitx_dev {
 	struct vpu_dev_s *hdmi_vpu_dev;
 #endif
 	struct st_debug_param debug_param;
-	bool suspend_flag;
 };
 
 /* HDMI LOG */

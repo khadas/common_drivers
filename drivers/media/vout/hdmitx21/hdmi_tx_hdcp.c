@@ -720,7 +720,7 @@ static void hdcp_req_reauth_whandler(struct work_struct *work)
 	/* if signal not ready, means hdmitx is setting mode, delay 1S */
 	/* note: for CTS, it should not delay */
 	mutex_lock(&hdev->hdmimode_mutex);
-	if (hdev->suspend_flag) {
+	if (hdev->tx_comm.suspend_flag) {
 		pr_hdcp_info(L_1, "suspend, no need re-auth\n");
 		mutex_unlock(&hdev->hdmimode_mutex);
 		return;
@@ -874,7 +874,7 @@ static void hdmitx_propagate_stream_type(struct work_struct *work)
 	} else if (update_scene == UPSTREAM_INACTIVE) {
 		/* update upstream type firstly */
 		p_hdcp->saved_upstream_type = 0;
-		if (hdev->suspend_flag) {
+		if (hdev->tx_comm.suspend_flag) {
 			pr_hdcp_info(L_1, "%s exit hdmirx, enter suspend, no need respond\n",
 				__func__);
 			mutex_unlock(&stream_type_mutex);

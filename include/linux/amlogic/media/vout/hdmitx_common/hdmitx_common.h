@@ -17,6 +17,21 @@
 
 #define HDMI_INFOFRAME_TYPE_VENDOR2 (0x81 | 0x100)
 
+struct frac_rate_table {
+	char *hz;
+	u32 sync_num_int;
+	u32 sync_den_int;
+	u32 sync_num_dec;
+	u32 sync_den_dec;
+};
+
+struct hdmitx_ctrl_ops {
+	int (*pre_enable_mode)(struct hdmitx_common *tx_comm, struct hdmi_format_para *para);
+	int (*enable_mode)(struct hdmitx_common *tx_comm, struct hdmi_format_para *para);
+	int (*post_enable_mode)(struct hdmitx_common *tx_comm, struct hdmi_format_para *para);
+	int (*disable_mode)(struct hdmitx_common *tx_comm, struct hdmi_format_para *para);
+};
+
 struct hdmitx_common {
 	/* When hdr_priority is 1, then dv_info will be all 0;
 	 * when hdr_priority is 2, then dv_info/hdr_info will be all 0
@@ -63,6 +78,7 @@ struct hdmitx_common {
 //	struct connector_hdcp_cb drm_hdcp_cb;
 	/*for color space conversion*/
 	bool config_csc_en;
+	bool suspend_flag;
 
 	struct hdmitx_base_state *states[HDMITX_MAX_MODULE];
 	struct hdmitx_base_state *old_states[HDMITX_MAX_MODULE];
@@ -72,6 +88,11 @@ struct hdmitx_common {
 	int max_refreshrate;
 
 	struct hdmitx_hw_common *tx_hw;
+
+	struct hdmitx_ctrl_ops *ctrl_ops;
+
+	/*protect set mode flow*/
+	struct mutex hdmimode_mutex;
 };
 
 struct hdmitx_base_state *hdmitx_get_mod_state(struct hdmitx_common *tx_common,
@@ -132,5 +153,8 @@ int hdmitx_update_edid_chksum(u8 *buf, u32 block_cnt, struct rx_cap *rxcap);
 int hdmitx_load_edid_file(char *path);
 int hdmitx_save_edid_file(unsigned char *rawedid, char *path);
 int hdmitx_print_sink_cap(struct hdmitx_common *tx_comm, char *buffer, int buffer_len);
+
+/*modesetting function*/
+int hdmitx_common_do_mode_setting(struct hdmitx_common *tx_comm, struct hdmitx_binding_state *new);
 
 #endif

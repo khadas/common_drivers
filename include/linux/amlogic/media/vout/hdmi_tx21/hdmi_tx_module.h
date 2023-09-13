@@ -91,14 +91,6 @@ struct audcts_log {
 	u32 stable:1;
 };
 
-struct frac_rate_table {
-	char *hz;
-	u32 sync_num_int;
-	u32 sync_den_int;
-	u32 sync_num_dec;
-	u32 sync_den_dec;
-};
-
 struct ced_cnt {
 	bool ch0_valid;
 	u16 ch0_cnt:15;
@@ -335,7 +327,6 @@ struct hdmitx_dev {
 	u8 def_stream_type;
 	u8 tv_usage;
 	bool systemcontrol_on;
-	bool suspend_flag;
 	u32 arc_rx_en;
 	bool need_filter_hdcp_off;
 	u32 filter_hdcp_off_period;

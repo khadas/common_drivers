@@ -56,6 +56,7 @@ int hdmitx_common_init(struct hdmitx_common *tx_comm, struct hdmitx_hw_common *h
 
 	/*mutex init*/
 	mutex_init(&tx_comm->setclk_mutex);
+	mutex_init(&tx_comm->hdmimode_mutex);
 	return 0;
 }
 
@@ -127,6 +128,7 @@ int hdmitx_common_validate_format_para(struct hdmitx_common *tx_comm,
 
 	return ret;
 }
+EXPORT_SYMBOL(hdmitx_common_validate_format_para);
 
 int hdmitx_common_build_format_para(struct hdmitx_common *tx_comm,
 		struct hdmi_format_para *para, enum hdmi_vic vic, u32 frac_rate_policy,
@@ -142,6 +144,7 @@ int hdmitx_common_build_format_para(struct hdmitx_common *tx_comm,
 
 	return ret;
 }
+EXPORT_SYMBOL(hdmitx_common_build_format_para);
 
 int hdmitx_common_init_bootup_format_para(struct hdmitx_common *tx_comm,
 		struct hdmi_format_para *para)
@@ -212,6 +215,7 @@ int hdmitx_get_attr(struct hdmitx_common *tx_comm, char attr[16])
 	memcpy(attr, tx_comm->fmt_attr, sizeof(tx_comm->fmt_attr));
 	return 0;
 }
+EXPORT_SYMBOL(hdmitx_get_attr);
 
 int hdmitx_get_hdrinfo(struct hdmitx_common *tx_comm, struct hdr_info *hdrinfo)
 {
@@ -333,6 +337,7 @@ int hdmitx_common_check_valid_para_of_vic(struct hdmitx_common *tx_comm, enum hd
 
 	return -EPERM;
 }
+EXPORT_SYMBOL(hdmitx_common_check_valid_para_of_vic);
 
 int hdmitx_common_parse_vic_in_edid(struct hdmitx_common *tx_comm, const char *mode)
 {
@@ -380,6 +385,7 @@ int hdmitx_common_parse_vic_in_edid(struct hdmitx_common *tx_comm, const char *m
 
 	return vic;
 }
+EXPORT_SYMBOL(hdmitx_common_parse_vic_in_edid);
 
 /********************************Debug function***********************************/
 int hdmitx_load_edid_file(char *path)

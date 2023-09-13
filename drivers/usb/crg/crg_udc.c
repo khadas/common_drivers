@@ -265,7 +265,10 @@ struct crg_udc_request {
 	atomic_t used;
 };
 
-#define CRE_REQ_NUM 100
+/* Besides adb, the mtp server needs 128 requests in the worst case and around 20 requests
+ * are reserved by the gadget driver in the android config.
+ */
+#define CRE_REQ_NUM 200
 struct crg_udc_request g_udc_req_ptr[CRE_REQ_NUM];
 
 struct crg_udc_ep {
@@ -2010,6 +2013,10 @@ crg_udc_alloc_request(struct usb_ep *_ep, gfp_t gfp_flags)
 	for (i = 0; i < CRE_REQ_NUM; i++) {
 		if (atomic_xchg(&g_udc_req_ptr[i].used, 1) == 0) {
 			udc_req_ptr = &g_udc_req_ptr[i];
+			/* Only clear the request after acquired. other fields
+			 * are cleared when enqueued and req_done().
+			 */
+			memset(&udc_req_ptr->usb_req, 0x00, sizeof(struct usb_request));
 			break;
 		}
 	}
@@ -2038,6 +2045,7 @@ static void crg_udc_free_request(struct usb_ep *_ep, struct usb_request *_req)
 		return;
 
 	udc_req_ptr = container_of(_req, struct crg_udc_request, usb_req);
+
 	WARN_ON(!atomic_xchg(&udc_req_ptr->used, 0));
 	//kfree(udc_req_ptr);
 }
@@ -4740,11 +4748,11 @@ static int crg_udc_remove(struct platform_device *pdev)
 	 */
 	platform_set_drvdata(pdev, 0);
 
-	CRG_DEBUG("%s %d gadget remove\n", __func__, __LINE__);
-
 	for (i = 0; i < CRE_REQ_NUM; i++)
 		atomic_set(&g_udc_req_ptr[i].used, 0);
 	memset(&crg_udc_dev, 0, sizeof(struct crg_gadget_dev));
+
+	CRG_DEBUG("%s %d gadget remove\n", __func__, __LINE__);
 
 	return 0;
 }

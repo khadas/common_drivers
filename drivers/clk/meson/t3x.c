@@ -173,6 +173,18 @@ static struct clk_regmap t3x_sys1_pll_dco = {
 	},
 };
 
+#ifdef CONFIG_ARM
+static const struct pll_params_table t3x_sys2_pll_params_table[] = {
+		PLL_PARAMS(71, 1, 1),
+		{ /* sentinel */ }
+};
+#else
+static const struct pll_params_table t3x_sys2_pll_params_table[] = {
+		PLL_PARAMS(71, 1),
+		{ /* sentinel */ }
+};
+#endif
+
 static struct clk_regmap t3x_sys2_pll_dco = {
 	.data = &(struct meson_clk_pll_data){
 		.en = {
@@ -197,7 +209,7 @@ static struct clk_regmap t3x_sys2_pll_dco = {
 			.shift	 = 12,
 			.width	 = 3,
 		},
-		.range = &t3x_pll_mult_range,
+		.table = t3x_sys2_pll_params_table,
 		.l = {
 			.reg_off = CLKCTRL_SYS2PLL_CTRL0,
 			.shift   = 31,
@@ -3257,7 +3269,7 @@ static struct clk_regmap t3x_mali_0_sel = {
 		.ops = &clk_regmap_mux_ops,
 		.parent_data = t3x_mali_0_1_parent_data,
 		.num_parents = ARRAY_SIZE(t3x_mali_0_1_parent_data),
-		.flags = CLK_GET_RATE_NOCACHE,
+		.flags = CLK_SET_RATE_PARENT,
 	},
 };
 

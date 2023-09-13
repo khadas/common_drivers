@@ -2583,7 +2583,7 @@ static const struct freq_ref_s freq_ref[] = {
 	{1,	0,	0,	1920,	1103,	HDMI_1080i_ALTERNATIVE},
 	{1,	0,	0,	1920,	2228,	HDMI_1080i_FRAMEPACKING},
 	{0,	0,	0,	1440,	240,	HDMI_1440x240p60},
-	{0,	0,	0,	720,	240,	HDMI_1440x240p60},
+	{0, 0,	0,	720,	240,	HDMI_720X240},
 	{0,	0,	0,	2880,	240,	HDMI_2880x240p60},
 	{0,	0,	0,	1440,	288,	HDMI_1440x288p50},
 	{0,	0,	0,	2880,	288,	HDMI_2880x288p50},
@@ -3041,6 +3041,8 @@ enum tvin_sig_fmt_e hdmirx_hw_get_fmt(u8 port)
 	case HDMI_960x540:
 		fmt = TVIN_SIG_FMT_HDMI_960X540_60HZ;
 		break;
+	case HDMI_720X240:
+		return TVIN_SIG_FMT_HDMI_720X240;
 	default:
 		break;
 	}

@@ -105,7 +105,8 @@
 /* 2023.8.25 fix 40M 192k 176k no sound */
 /* 2023.08.28 support FRL 3G3L & 6G3L */
 /* 2023.08.31 add vpp mute cnt */
-#define RX_VER1 "ver.2023/8/31"
+/* 2023.9.14 add support for 240p */
+#define RX_VER1 "ver.2023/9/14"
 
 /* 50ms timer for hdmirx main loop (HDMI_STATE_CHECK_FREQ is 20) */
 

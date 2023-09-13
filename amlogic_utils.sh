@@ -1,11 +1,11 @@
 #!/bin/bash
 
 function real_path() {
-if [[ "${FULL_KERNEL_VERSION}" == "common13-5.15" ]]; then
-	rel_path $@
-else
-	realpath $1 --relative-to $2
-fi
+	if [[ "${FULL_KERNEL_VERSION}" == "common13-5.15" ]]; then
+		rel_path $@
+	else
+		realpath $1 --relative-to $2
+	fi
 }
 
 function pre_defconfig_cmds() {
@@ -353,27 +353,53 @@ function bazel_extra_cmds() {
 		rm -rf ${DIST_DIR}/system_dlkm_gki10
 	fi
 }
-
 export -f bazel_extra_cmds
 
+#$1 dep_file
+#$2 ko
+#$3 install_sh
 function mod_probe() {
-	local ko=$1
+	local dep_file=$1
+	local ko=$2
+	local install_sh=$3
 	local loop
-	for loop in `grep "^$ko:" modules.dep | sed 's/.*://'`; do
-		[[ `grep $loop __install.sh` ]] && continue
-		mod_probe $loop
-		echo insmod $loop >> __install.sh
+	for loop in `grep "^${ko}:" ${dep_file} | sed 's/.*://'`; do
+		[[ `grep ${loop} ${install_sh}` ]] && continue
+		mod_probe ${dep_file} ${loop} ${install_sh}
+		echo insmod ${loop} >> ${install_sh}
 	done
 }
 
-function mod_probe_recovery() {
-	local ko=$1
+function create_install_and_order_filles() {
+	local modules_dep_file=$1
+	local install_file=$2
+	local modules_order_file=$3
 	local loop
-	for loop in `grep "^$ko:" modules_recovery.dep | sed 's/.*://'`; do
-		[[ `grep $loop __install_recovery.sh` ]] && continue
-		mod_probe_recovery $loop
-		echo insmod $loop >> __install_recovery.sh
+
+	[[ -f ${install_file} ]] && rm -f ${install_file}
+	touch ${install_file}
+	[[ -f ${install_file}.tmp ]] && rm -f ${install_file}.tmp
+	touch ${install_file}.tmp
+	[[ -f ${modules_order_file} ]] && rm -f ${modules_order_file}
+	touch ${modules_order_file}
+	[[ -f ${modules_order_file}.tmp ]] && rm -f ${modules_order_file}.tmp
+	touch ${modules_order_file}.tmp
+
+	for loop in `cat ${modules_dep_file} | sed 's/:.*//'`; do
+		echo ${loop} >> ${modules_order_file}.tmp
+		[[ `grep ${loop} ${install_file}.tmp` ]] && continue
+		mod_probe ${modules_dep_file} ${loop} ${install_file}.tmp
+		echo insmod ${loop} >> ${install_file}.tmp
 	done
+
+	cat ${install_file}.tmp  | awk ' {
+		if (!cnt[$2]) {
+			print $0;
+			cnt[$2]++;
+		}
+	}' > ${install_file}
+
+	cut -d ' ' -f 2 ${install_file} > ${modules_order_file}
 }
 
 function adjust_sequence_modules_loading() {
@@ -505,7 +531,6 @@ function adjust_sequence_modules_loading() {
 
 	GKI_MODULES_LOAD_BLACK_LIST=()
 	if [[ "${FULL_KERNEL_VERSION}" != "common13-5.15" && "${ARCH}" == "arm64" ]]; then
-	#if [[ "${FULL_KERNEL_VERSION}" != "common13-5.15" ]]; then
 		gki_modules_temp_file=`mktemp /tmp/config.XXXXXXXXXXXX`
 		if [[ ${BAZEL} == "1" ]]; then
 			cp $DIST_DIR/system_dlkm.modules.load ${gki_modules_temp_file}
@@ -574,6 +599,19 @@ function adjust_sequence_modules_loading() {
 	if [[ -n ${ANDROID_PROJECT} ]]; then
 		cp modules.dep.temp modules_recovery.dep.temp
 		cp modules.dep.temp1 modules_recovery.dep.temp1
+		for module in ${RECOVERY_MODULES_LOAD_LIST[@]}; do
+			echo RECOVERY_MODULES_LOAD_LIST: $module
+			sed -n "/${module}:/p" modules_recovery.dep.temp
+			sed -n "/${module}:/p" modules_recovery.dep.temp >> modules_recovery.dep.temp1
+			sed -i "/${module}:/d" modules_recovery.dep.temp
+			sed -n "/${module}.*\.ko:/p" modules_recovery.dep.temp
+			sed -n "/${module}.*\.ko:/p" modules_recovery.dep.temp >> modules_recovery.dep.temp1
+			sed -i "/${module}.*\.ko:/d" modules_recovery.dep.temp
+		done
+		cat modules_recovery.dep.temp >> modules_recovery.dep.temp1
+		cp modules_recovery.dep.temp1 modules_recovery.dep
+		rm modules_recovery.dep.temp
+		rm modules_recovery.dep.temp1
 	fi
 
 	for module in ${VENDOR_MODULES_LOAD_FIRST_LIST[@]}; do
@@ -586,10 +624,7 @@ function adjust_sequence_modules_loading() {
 		sed -i "/${module}.*\.ko:/d" modules.dep.temp
 	done
 
-	if [ -f modules.dep.temp2 ]; then
-		rm modules.dep.temp2
-	fi
-	touch modules.dep.temp2
+	: > modules.dep.temp2
 	for module in ${VENDOR_MODULES_LOAD_LAST_LIST[@]}; do
 		echo VENDOR_MODULES_LOAD_FIRST_LIST: $module
 		sed -n "/${module}:/p" modules.dep.temp
@@ -599,123 +634,99 @@ function adjust_sequence_modules_loading() {
 		sed -n "/${module}.*\.ko:/p" modules.dep.temp >> modules.dep.temp2
 		sed -i "/${module}.*\.ko:/d" modules.dep.temp
 	done
-
 	cat modules.dep.temp >> modules.dep.temp1
 	cat modules.dep.temp2 >> modules.dep.temp1
-
 	cp modules.dep.temp1 modules.dep
 	rm modules.dep.temp
 	rm modules.dep.temp1
 	rm modules.dep.temp2
-
-	if [[ -n ${ANDROID_PROJECT} ]]; then
-		for module in ${RECOVERY_MODULES_LOAD_LIST[@]}; do
-			echo RECOVERY_MODULES_LOAD_LIST: $module
-			sed -n "/${module}:/p" modules_recovery.dep.temp
-			sed -n "/${module}:/p" modules_recovery.dep.temp >> modules_recovery.dep.temp1
-			sed -i "/${module}:/d" modules_recovery.dep.temp
-			sed -n "/${module}.*\.ko:/p" modules_recovery.dep.temp
-			sed -n "/${module}.*\.ko:/p" modules_recovery.dep.temp >> modules_recovery.dep.temp1
-			sed -i "/${module}.*\.ko:/d" modules_recovery.dep.temp
-		done
-
-		cat modules_recovery.dep.temp >> modules_recovery.dep.temp1
-
-		cp modules_recovery.dep.temp1 modules_recovery.dep
-		rm modules_recovery.dep.temp
-		rm modules_recovery.dep.temp1
-	fi
 }
 
-create_ramdisk_vendor_recovery() {
-	install_temp=$1
-	if [[ -n ${ANDROID_PROJECT} ]]; then
-		recovery_install_temp=$2
-	fi
-	ramdisk_module_i=${#RAMDISK_MODULES_LOAD_LIST[@]}
-	while [ ${ramdisk_module_i} -gt 0 ]; do
-		let ramdisk_module_i--
-		echo ramdisk_module_i=$ramdisk_module_i ${RAMDISK_MODULES_LOAD_LIST[${ramdisk_module_i}]}
-		if [[ `grep "${RAMDISK_MODULES_LOAD_LIST[${ramdisk_module_i}]}" ${install_temp}` ]]; then
-			last_ramdisk_module=${RAMDISK_MODULES_LOAD_LIST[${ramdisk_module_i}]}
-			break;
-		fi
+function calculate_first_line() {
+	local modules_order_file=$1
+	local modules_list=($2)
+	local module
+	local module_lines=()
+	local lines
+	local first_line
+
+	for module in ${modules_list[@]}; do
+		module_lines[${#module_lines[@]}]=`sed -n "/${module}/=" ${modules_order_file}`
 	done
-	# last_ramdisk_module=${RAMDISK_MODULES_LOAD_LIST[${#RAMDISK_MODULES_LOAD_LIST[@]}-1]}
-	if [[ -n ${last_ramdisk_module} ]]; then
-		last_ramdisk_module_line=`sed -n "/${last_ramdisk_module}/=" ${install_temp}`
-		for line in ${last_ramdisk_module_line}; do
-			ramdisk_last_line=${line}
-		done
-	else
-		ramdisk_last_line=1
+	lines=`echo ${module_lines[*]} | tr ' ' '\n' | sort -n`
+	first_line=`echo ${lines} | cut -d ' ' -f 1`
+	echo ${first_line}
+}
+
+function calculate_last_line() {
+	local modules_order_file=$1
+	local modules_list=($2)
+	local module
+	local module_lines=()
+	local lines
+	local last_line
+
+	for module in ${modules_list[@]}; do
+		module_lines[${#module_lines[@]}]=`sed -n "/${module}/=" ${modules_order_file}`
+	done
+	lines=`echo ${module_lines[*]} | tr ' ' '\n' | sort -n -r`
+	last_line=`echo ${lines} | cut -d ' ' -f 1`
+	[[ -z ${last_line} ]] && last_line=0
+	echo ${last_line}
+}
+
+function create_ramdisk_vendor_recovery() {
+	modules_order=$1
+	if [[ -n ${ANDROID_PROJECT} ]]; then
+		modules_recovery_order=$2
 	fi
-	export ramdisk_last_line
+	local modules_list
+
+	modules_list=`echo ${RAMDISK_MODULES_LOAD_LIST[@]}`
+	export ramdisk_last_line=`calculate_last_line ${modules_order} "${modules_list}"`
+	export ramdisk_last_line_add_1=${ramdisk_last_line}
+	let ramdisk_last_line_add_1+=1
+	echo ramdisk_last_line=${ramdisk_last_line}
 
 	if [[ -n ${ANDROID_PROJECT} ]]; then
-		recovery_module_i=${#RECOVERY_MODULES_LOAD_LIST[@]}
-		#when RECOVERY_MODULES_LOAD_LIST is NULL
-		if [ ${#RECOVERY_MODULES_LOAD_LIST[@]}  -eq  0 ]; then
-			last_recovery_module=${last_ramdisk_module}
-		fi
-		while [ ${recovery_module_i} -gt 0 ]; do
-			let recovery_module_i--
-			echo recovery_module_i=$recovery_module_i ${RECOVERY_MODULES_LOAD_LIST[${recovery_module_i}]}
-			if [[ `grep "${RECOVERY_MODULES_LOAD_LIST[${recovery_module_i}]}" ${recovery_install_temp}` ]]; then
-				last_recovery_module=${RECOVERY_MODULES_LOAD_LIST[${recovery_module_i}]}
-				break;
-			fi
-		done
-		# last_recovery_module=${RECOVERY_MODULES_LOAD_LIST[${#RECOVERY_MODULES_LOAD_LIST[@]}-1]}
-		if [[ -n ${last_recovery_module} ]]; then
-			last_recovery_module_line=`sed -n "/${last_recovery_module}/=" ${recovery_install_temp}`
-			for line in ${last_recovery_module_line}; do
-				recovery_last_line=${line}
-			done
-		else
-			recovery_last_line=1
-		fi
-		sed -n "${ramdisk_last_line},${recovery_last_line}p" ${recovery_install_temp} > recovery_install.sh
-		if [[ -n ${last_ramdisk_module} ]]; then
-			sed -i "1d" recovery_install.sh
-		fi
+		modules_list=`echo ${RECOVERY_MODULES_LOAD_LIST[@]}`
+		recovery_last_line=`calculate_last_line ${modules_recovery_order} "${modules_list}"`
+		echo recovery_last_line=${recovery_last_line}
 		mkdir recovery
-		cat recovery_install.sh | cut -d ' ' -f 2 > recovery/recovery_modules.order
-		if [ ${#RECOVERY_MODULES_LOAD_LIST[@]} -ne 0 ]; then
-			cat recovery_install.sh | cut -d ' ' -f 2 | xargs cp -t recovery/
+		if [[ ${recovery_last_line} == 0 ]]; then
+			: > recovery/recovery_modules.order
+			: > recovery_install.sh
+		else
+			sed -n "${ramdisk_last_line_add_1},${recovery_last_line}p" ${modules_recovery_order} > recovery/recovery_modules.order
+			cat recovery/recovery_modules.order | xargs cp -t recovery/
+			cat recovery/recovery_modules.order | sed "s/^/insmod &/" > recovery_install.sh
 		fi
+
 		sed -i '1s/^/#!\/bin\/sh\n\nset -x\n/' recovery_install.sh
 		echo "echo Install recovery modules success!" >> recovery_install.sh
 		chmod 755 recovery_install.sh
 		mv recovery_install.sh recovery/
 	fi
 
-	head -n ${ramdisk_last_line} ${install_temp} > ramdisk_install.sh
 	mkdir ramdisk
-	if [[ -n ${last_ramdisk_module} ]]; then
-		cat ramdisk_install.sh | cut -d ' ' -f 2 | xargs mv -t ramdisk/
-	else
-		sed -i "${ramdisk_last_line}d" ramdisk_install.sh
-		ramdisk_last_line=0
+	head -n ${ramdisk_last_line} ${modules_order} > ramdisk/ramdisk_modules.order
+	echo -e "#!/bin/sh\n\nset -x" > ramdisk/ramdisk_install.sh
+	if [[ ${ramdisk_last_line} != 0 ]]; then
+		cat ramdisk/ramdisk_modules.order | xargs mv -t ramdisk/
+		cat ramdisk/ramdisk_modules.order | sed "s/^/insmod &/" >> ramdisk/ramdisk_install.sh
 	fi
-	cat ramdisk_install.sh | cut -d ' ' -f 2 > ramdisk/ramdisk_modules.order
+	echo "echo Install ramdisk modules success!" >> ramdisk/ramdisk_install.sh
+	chmod 755 ramdisk/ramdisk_install.sh
 
-	sed -i '1s/^/#!\/bin\/sh\n\nset -x\n/' ramdisk_install.sh
-	echo "echo Install ramdisk modules success!" >> ramdisk_install.sh
-	chmod 755 ramdisk_install.sh
-	mv ramdisk_install.sh ramdisk/
-
-	file_last_line=`sed -n "$=" ${install_temp}`
-	let line=${file_last_line}-${ramdisk_last_line}
-	tail -n ${line} ${install_temp} > vendor_install.sh
 	mkdir vendor
-	cat vendor_install.sh | cut -d ' ' -f 2 > vendor/vendor_modules.order
-	cat vendor_install.sh | cut -d ' ' -f 2 | xargs mv -t vendor/
-
-	sed -i '1s/^/#!\/bin\/sh\n\nset -x\n/' vendor_install.sh
-	echo "echo Install vendor modules success!" >> vendor_install.sh
-	chmod 755 vendor_install.sh
-	mv vendor_install.sh vendor/
+	sed -n "${ramdisk_last_line_add_1},$$p" ${modules_order} > vendor/vendor_modules.order
+	echo -e "#!/bin/sh\n\nset -x" > vendor/vendor_install.sh
+	if [[ -s vendor/vendor_modules.order ]]; then
+		cat vendor/vendor_modules.order | xargs mv -t vendor/
+		cat vendor/vendor_modules.order | sed "s/^/insmod &/" >> vendor/vendor_install.sh
+	fi
+	echo "echo Install vendor modules success!" >> vendor/vendor_install.sh
+	chmod 755 vendor/vendor_install.sh
 }
 
 function modules_install() {
@@ -832,48 +843,18 @@ function modules_install() {
 	pushd ${OUT_AMLOGIC_DIR}/modules
 	sed -i 's#[^ ]*/##g' modules.dep
 
+	echo adjust_sequence_modules_loading
 	adjust_sequence_modules_loading "${arg1[*]}"
 
-	touch __install.sh
-	touch modules.order
-	for loop in `cat modules.dep | sed 's/:.*//'`; do
-		echo $loop >> modules.order
-		[[ `grep $loop __install.sh` ]] && continue
-	        mod_probe $loop
-	        echo insmod $loop >> __install.sh
-	done
-
-	cat __install.sh  | awk ' {
-		if (!cnt[$2]) {
-			print $0;
-			cnt[$2]++;
-		}
-	}' > __install.sh.tmp
-
-	cp modules.order modules.order.back
-	cut -d ' ' -f 2 __install.sh.tmp > modules.order
+	echo create_install_and_order_filles modules.order
+	create_install_and_order_filles modules.dep __install.sh modules.order
 
 	if [[ -n ${ANDROID_PROJECT} ]]; then
-		touch __install_recovery.sh
-		touch modules_recovery.order
-		for loop in `cat modules_recovery.dep | sed 's/:.*//'`; do
-			echo $loop >> modules_recovery.order
-			[[ `grep $loop __install_recovery.sh` ]] && continue
-		        mod_probe_recovery $loop
-		        echo insmod $loop >> __install_recovery.sh
-		done
-
-		cat __install_recovery.sh  | awk ' {
-			if (!cnt[$2]) {
-				print $0;
-				cnt[$2]++;
-			}
-		}' > __install_recovery.sh.tmp
-
-		cp modules_recovery.order modules_recovery.order.back
-		cut -d ' ' -f 2 __install_recovery.sh.tmp > modules_recovery.order
+		echo create_install_and_order_filles modules_recovery.order
+		create_install_and_order_filles modules_recovery.dep __install_recovery.sh modules_recovery.order
 	fi
-	create_ramdisk_vendor_recovery __install.sh.tmp __install_recovery.sh.tmp
+
+	create_ramdisk_vendor_recovery modules.order modules_recovery.order
 
 	if [[ -n ${MANUAL_INSMOD_MODULE} ]]; then
 		install_file=manual_install.sh
@@ -889,7 +870,6 @@ function modules_install() {
 	chmod 755 ${install_file}
 
 	echo "/modules/: all `wc -l modules.dep | awk '{print $1}'` modules."
-	rm __install.sh __install.sh.tmp
 
 	if [[ -n ${ANDROID_PROJECT} ]]; then
 		rm __install_recovery.sh __install_recovery.sh.tmp
@@ -1001,9 +981,7 @@ function check_undefined_symbol() {
 		echo "can't find compile tool"
 	fi
 	${compile_tool}nm ${DIST_DIR}/vmlinux | grep -E " T | D | B | R | W "> vmlinux_T.txt
-	# cat __install.sh | grep "insmod" | cut -d ' ' -f 2 > module_list.txt
-	cat ramdisk/ramdisk_install.sh | grep "insmod" | cut -d ' ' -f 2 > module_list.txt
-	cat vendor/vendor_install.sh | grep "insmod" | cut -d ' ' -f 2 >> module_list.txt
+	cp modules.order module_list.txt
 	cp ramdisk/*.ko .
 	cp vendor/*.ko .
 	while read LINE

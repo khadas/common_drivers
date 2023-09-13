@@ -4802,21 +4802,23 @@ static long vdin_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
 		memset(&param, 0, sizeof(struct vdin_parm_s));
 
+		param.h_active = vdin_v4l2_param.width;
+		param.v_active = vdin_v4l2_param.height;
+		param.dest_h_active = vdin_v4l2_param.dst_width;
+		param.dest_v_active = vdin_v4l2_param.dst_height;
+
 		if (is_meson_txhd2_cpu() && devp->set_canvas_manual == 1 &&
 		    devp->dts_config.kestone_sel) {
 			param.port = TVIN_PORT_VIU1_WB0_POST_BLEND;
 			devp->flags |= VDIN_FLAG_MANUAL_CONVERSION;
 			devp->debug.dest_cfmt = TVIN_RGB444;
+			devp->debug.scaling4w = param.dest_h_active;
+			devp->debug.scaling4h = param.dest_v_active;
 		} else if (cpu_after_eq(MESON_CPU_MAJOR_ID_SM1)) {
 			param.port = TVIN_PORT_VIU1_WB0_VPP;
 		} else {
 			param.port = TVIN_PORT_VIU1;
 		}
-
-		param.h_active = vdin_v4l2_param.width;
-		param.v_active = vdin_v4l2_param.height;
-		param.dest_h_active = vdin_v4l2_param.dst_width;
-		param.dest_v_active = vdin_v4l2_param.dst_height;
 
 		if (devp->set_canvas_manual != 1) {
 			param.reserved |= PARAM_STATE_HISTGRAM;

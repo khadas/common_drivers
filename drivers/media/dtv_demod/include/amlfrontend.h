@@ -133,6 +133,7 @@
 /*  V3.5.006 fix j83b qam setting when auto qam */
 /*  V3.5.007 improve the accuracy of dvbs cn value */
 /*  V3.5.008 fix discarding signal when dvbt2 level is very low */
+/*  V3.5.009 fix s1a dvbc dvbs efuse bit */
 /****************************************************/
 /****************************************************************/
 /*               AMLDTVDEMOD_VER  Description:                  */
@@ -150,7 +151,7 @@
 /****************************************************************/
 #define KERNEL_4_9_EN		1
 #define AMLDTVDEMOD_VER "V3.5.009"
-#define DTVDEMOD_VER	"2023/09/14: fix discarding signal when dvbt2 level is very low"
+#define DTVDEMOD_VER	"2023/10/07: fix s1a dvbc dvbs efuse bit"
 #define AMLDTVDEMOD_T2_FW_VER "V1558.20230628"
 #define DEMOD_DEVICE_NAME  "dtvdemod"
 

@@ -666,6 +666,7 @@ struct fe_l2a_internal_param {
 };
 
 int is_s1a_dvbs_disabled(void);
+int is_s1a_dvbc_disabled(void);
 void st_dvbs2_init(void);
 bool tuner_find_by_name(struct dvb_frontend *fe, const char *name);
 void tuner_set_params(struct dvb_frontend *fe);

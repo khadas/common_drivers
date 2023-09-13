@@ -3378,7 +3378,14 @@ struct dvb_frontend *aml_dtvdm_attach(const struct demod_config *config)
 			strcpy(aml_dtvdm_ops.info.name, "amlogic DVB-C/DVB-S dtv demod s4d");
 			break;
 		case DTVDEMOD_HW_S1A:
-			if (is_s1a_dvbs_disabled()) {
+			if (!(is_s1a_dvbs_disabled()) && !(is_s1a_dvbc_disabled())) {
+				aml_dtvdm_ops.delsys[0] = SYS_DVBC_ANNEX_A;
+				aml_dtvdm_ops.delsys[1] = SYS_DVBC_ANNEX_B;
+				aml_dtvdm_ops.delsys[2] = SYS_DVBS;
+				aml_dtvdm_ops.delsys[3] = SYS_DVBS2;
+				aml_dtvdm_ops.delsys[4] = SYS_ANALOG;
+				strcpy(aml_dtvdm_ops.info.name, "amlogic DVB-C/S dtv demod s1a");
+			} else if (is_s1a_dvbs_disabled()) {
 				aml_dtvdm_ops.delsys[0] = SYS_DVBC_ANNEX_A;
 				aml_dtvdm_ops.delsys[1] = SYS_DVBC_ANNEX_B;
 				aml_dtvdm_ops.delsys[2] = SYS_ANALOG;

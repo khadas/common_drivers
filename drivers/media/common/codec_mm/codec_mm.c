@@ -103,7 +103,9 @@ u32 tee_register_mem(u32 type, phys_addr_t pa, size_t size)
 }
 #endif
 
-#if IS_MODULE(CONFIG_AMLOGIC_MEDIA_MODULE) && IS_ENABLED(CONFIG_KALLSYMS_ALL)
+#if IS_MODULE(CONFIG_AMLOGIC_MEDIA_MODULE) && \
+	IS_ENABLED(CONFIG_KALLSYMS_ALL) && \
+	!IS_ENABLED(CONFIG_DEBUG_SPINLOCK)
 /* aml_media is ko can't use cma_mmu_op() func */
 void (*aml_mte_sync_tags)(pte_t old_pte, pte_t pte);
 
@@ -3796,7 +3798,9 @@ static struct mconfig codec_mm_trigger[] = {
 	MC_FUN("debug", codec_mm_trigger_help_fun, codec_mm_trigger_fun),
 };
 
-#if IS_MODULE(CONFIG_AMLOGIC_MEDIA_MODULE) && IS_ENABLED(CONFIG_KALLSYMS_ALL)
+#if IS_MODULE(CONFIG_AMLOGIC_MEDIA_MODULE) && \
+	IS_ENABLED(CONFIG_KALLSYMS_ALL) && \
+	!IS_ENABLED(CONFIG_DEBUG_SPINLOCK)
 #ifdef CONFIG_ARM64
 static int tvp_clear_cma_pagemap(unsigned long pfn, unsigned long count)
 {
@@ -3969,7 +3973,9 @@ static int codec_mm_probe(struct platform_device *pdev)
 
 	pr_info("%s ok\n", __func__);
 
-#if IS_MODULE(CONFIG_AMLOGIC_MEDIA_MODULE) && IS_ENABLED(CONFIG_KALLSYMS_ALL)
+#if IS_MODULE(CONFIG_AMLOGIC_MEDIA_MODULE) && \
+	IS_ENABLED(CONFIG_KALLSYMS_ALL) && \
+	!IS_ENABLED(CONFIG_DEBUG_SPINLOCK)
 	codec_dev = &pdev->dev;
 #endif
 	codec_mm_scatter_mgt_init(&pdev->dev);
@@ -3980,7 +3986,9 @@ static int codec_mm_probe(struct platform_device *pdev)
 	INIT_REG_NODE_CONFIGS(CONFIG_PATH, &codec_mm_trigger_node,
 				  "trigger", codec_mm_trigger,
 				  CONFIG_FOR_RW | CONFIG_FOR_T);
-#if IS_MODULE(CONFIG_AMLOGIC_MEDIA_MODULE) && IS_ENABLED(CONFIG_KALLSYMS_ALL)
+#if IS_MODULE(CONFIG_AMLOGIC_MEDIA_MODULE) && \
+	IS_ENABLED(CONFIG_KALLSYMS_ALL) && \
+	!IS_ENABLED(CONFIG_DEBUG_SPINLOCK)
 	kthread_run(get_mte_sync_tags_hook_kprobe, NULL, "AML_CODEC_MM");
 #endif
 	return 0;

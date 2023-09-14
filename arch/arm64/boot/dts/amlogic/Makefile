@@ -19,6 +19,7 @@ dtb-y += t7c_a311d2_an400_debian.dtb
 dtb-y += t7_a311d2_an400_debian.dtb
 dtb-y += s4_s805x2_aq222_drm_1.5g.dtb
 dtb-y += s4_s905y4_ap222_drm.dtb
+dtb-y += s4_s905y4_ap222_debian.dtb
 dtb-y += sc2_s905x4_ah212_mxl258c_drm.dtb
 dtb-y += sc2_s905x4_ah212_linux.dtb
 dtb-y += sc2_s905c2l_ah221_drm.dtb

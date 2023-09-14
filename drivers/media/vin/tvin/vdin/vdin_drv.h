@@ -658,7 +658,7 @@ struct vdin_dts_config_s {
 	bool chk_write_done_en;
 	bool urgent_en;
 	bool v4l_en;
-	bool kestone_sel;
+	bool keystone_sel;
 	unsigned int afbce_flag_cfg;
 };
 

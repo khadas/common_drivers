@@ -97,9 +97,7 @@ static struct am_regs_s amregs3;
 static struct am_regs_s amregs4;
 static struct am_regs_s amregs5;
 #if CONFIG_AMLOGIC_MEDIA_VIDEO
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static struct vd_proc_amvecm_info_t *vd_size_info;
-#endif
 #endif
 
 /* extern unsigned int vecm_latch_flag; */
@@ -109,7 +107,6 @@ void cm_wr_api(unsigned int addr, unsigned int data,
 	unsigned int temp;
 	int addr_port;
 	int data_port;
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	struct cm_port_s cm_port;
 	int i;
 	int slice_max;
@@ -156,11 +153,10 @@ void cm_wr_api(unsigned int addr, unsigned int data,
 		default:
 			break;
 		}
-	} else
-#endif
-	{
+	} else {
 		addr_port = VPP_CHROMA_ADDR_PORT;
 		data_port = VPP_CHROMA_DATA_PORT;
+
 		switch (md) {
 		case WR_VCB:
 			if (mask == 0xffffffff) {
@@ -294,10 +290,8 @@ void am_set_regmap(struct am_regs_s *p)
 					if (get_cpu_type() >=
 						MESON_CPU_MAJOR_ID_G12A)
 						val = val & 0xfffffffc;
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 					else
 						val = val & 0xfffffff9;
-#endif
 				}
 				pr_amcm_dbg("[amcm]:%s %s addr:0x%x",
 					"REG_TYPE_INDEX_VPPCHROMA",
@@ -310,20 +304,18 @@ void am_set_regmap(struct am_regs_s *p)
 						cm_dis_flag = false;
 					else
 						cm_dis_flag = true;
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 				} else {
 					val = val & 0xfffffffb;
 					if (val & 0x2)
 						cm_dis_flag = false;
 					else
 						cm_dis_flag = true;
-#endif
 				}
 			}
 
-			if (pq_reg_wr_rdma)
-				cm_wr_api(addr, val, mask, WR_DMA);
-			else
+			/*if (pq_reg_wr_rdma)*/
+			/*	cm_wr_api(addr, val, mask, WR_DMA);*/
+			/*else*/
 				cm_wr_api(addr, val, mask, WR_VCB);
 
 			default_sat_param(addr, val);
@@ -825,7 +817,6 @@ int size_changed_state(struct vframe_s *vf)
 	int i;
 
 #if CONFIG_AMLOGIC_MEDIA_VIDEO
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	vd_size_info = get_vd_proc_amvecm_info();
 	slice_num = vd_size_info->slice_num;
 	if (slice_num > 0) {
@@ -837,7 +828,6 @@ int size_changed_state(struct vframe_s *vf)
 					i, hsize[i], vsize[i]);
 		}
 	}
-#endif
 #endif
 
 	if (slice_num != pre_slice_num) {
@@ -864,7 +854,6 @@ int cm_force_update_flag(void)
 	return cm_force_flag;
 }
 
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 void cm_frame_size_s5(struct vframe_s *vf)
 {
 	unsigned int vpp_size, width, height;
@@ -969,7 +958,6 @@ void cm_frame_size_s5(struct vframe_s *vf)
 		en_flag = 1;
 	}
 }
-#endif
 
 void cm2_frame_size_patch(struct vframe_s *vf,
 	unsigned int width, unsigned int height)
@@ -979,13 +967,11 @@ void cm2_frame_size_patch(struct vframe_s *vf,
 	int data_port;
 
 #if CONFIG_AMLOGIC_MEDIA_VIDEO
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (chip_type_id == chip_s5 ||
 		chip_type_id == chip_t3x) {
 		cm_frame_size_s5(vf);
 		return;
 	}
-#endif
 #endif
 
 	addr_port = VPP_CHROMA_ADDR_PORT;
@@ -994,9 +980,10 @@ void cm2_frame_size_patch(struct vframe_s *vf,
 	if (!cm_en)
 		return;
 	else if (width < cm_width_limit)
-		amcm_disable(WR_DMA);
-	else if ((!cm_en_flag) && (!cm_dis_flag))
+		amcm_disable(WR_VCB);/*(WR_DMA);*/
+	else if (!cm_en_flag && !cm_dis_flag)
 		amcm_enable(WR_DMA);
+
 	vpp_size = width | (height << 16);
 	if (cm_size != vpp_size) {
 		VSYNC_WRITE_VPP_REG(addr_port, 0x205);
@@ -1012,7 +999,7 @@ void cm2_frame_size_patch(struct vframe_s *vf,
 		VSYNC_WRITE_VPP_REG(data_port, 0 | (height << 16));
 		cm_size =  vpp_size;
 		pr_amcm_dbg("\n[amcm..]set cm size from scaler: %x, ",
-			    vpp_size);
+			vpp_size);
 		pr_amcm_dbg("set demo mode  %x\n", cm2_patch_flag);
 	}
 }
@@ -1022,7 +1009,6 @@ void cm2_frame_switch_patch(void)
 {
 	int addr_port;
 	int data_port;
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	struct cm_port_s cm_port;
 
 	if (chip_type_id == chip_s5 ||
@@ -1030,9 +1016,7 @@ void cm2_frame_switch_patch(void)
 		cm_port = get_cm_port();
 		addr_port = cm_port.cm_addr_port[SLICE0];
 		data_port = cm_port.cm_data_port[SLICE0];
-	} else
-#endif
-	{
+	} else {
 		addr_port = VPP_CHROMA_ADDR_PORT;
 		data_port = VPP_CHROMA_DATA_PORT;
 	}
@@ -1065,6 +1049,7 @@ void cm_latch_process(void)
 		if ((cm2_patch_flag & 0xff) > 0)
 			cm2_frame_switch_patch();
 	} while (0);
+
 	if (cm_en && cm_level_last != cm_level) {
 		cm_level_last = cm_level;
 		amcm_enable(WR_DMA);

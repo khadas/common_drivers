@@ -67,8 +67,9 @@ static int register_cool_dev(struct platform_device *pdev,
 	struct meson_cooldev *mcooldev = platform_get_drvdata(pdev);
 	struct cool_dev *cool = &mcooldev->cool_devs[index];
 	struct device_node *node;
-	int c_id, pp, coeff;
+	int c_id, pp, coeff, i;
 	const char *node_name;
+	char *ddrdata_name[2] = {"ddr_data", "gpu_data"};
 
 	pr_debug("meson_cdev index: %d\n", index);
 
@@ -100,11 +101,18 @@ static int register_cool_dev(struct platform_device *pdev,
 			return -EINVAL;
 		}
 		cool->np = node;
-
-		if (of_property_read_u32(child, "ddr_reg", &cool->ddr_reg)) {
-			pr_err("thermal: read ddr reg_addr failed\n");
+		cool->ddr_reg_cnt = of_property_count_u32_elems(child, "ddr_reg");
+		if (cool->ddr_reg_cnt < 1)
 			return -EINVAL;
-		}
+		cool->ddr_reg = devm_kzalloc(&pdev->dev, sizeof(u32) * cool->ddr_reg_cnt,
+			GFP_KERNEL);
+		cool->ddr_bits = devm_kzalloc(&pdev->dev, sizeof(u32) * 2 * cool->ddr_reg_cnt,
+			GFP_KERNEL);
+		cool->ddr_data = devm_kzalloc(&pdev->dev, sizeof(u32) * 20 * cool->ddr_reg_cnt,
+			GFP_KERNEL);
+
+		if (of_property_read_u32_array(child, "ddr_reg", cool->ddr_reg, cool->ddr_reg_cnt))
+			return -EINVAL;
 
 		if (of_property_read_u32(child, "ddr_status", &cool->ddr_status)) {
 			pr_err("thermal: read ddr reg_status failed\n");
@@ -112,15 +120,17 @@ static int register_cool_dev(struct platform_device *pdev,
 		}
 
 		if (of_property_read_u32_array(child, "ddr_bits",
-					       &cool->ddr_bits[0], 2)) {
+					       cool->ddr_bits[0], 2 * cool->ddr_reg_cnt)) {
 			pr_err("thermal: read ddr_bits failed\n");
 			return -EINVAL;
 		}
 
-		if (of_property_read_u32_array(child, "ddr_data",
-					       &cool->ddr_data[0], cool->ddr_status)) {
-			pr_err("thermal: read ddr_data failed\n");
-			return -EINVAL;
+		for (i = 0; i < cool->ddr_reg_cnt; i++) {
+			if (of_property_read_u32_array(child, ddrdata_name[i],
+						       cool->ddr_data[i], cool->ddr_status)) {
+				pr_err("thermal: read ddr_data failed\n");
+				return -EINVAL;
+			}
 		}
 
 		cool->cooling_dev = ddr_cooling_register(cool->np, cool);

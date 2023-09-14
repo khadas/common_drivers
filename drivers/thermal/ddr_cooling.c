@@ -48,14 +48,14 @@ static int ddr_get_cur_state(struct thermal_cooling_device *cdev,
 	u32 start_bit, end_bit;
 	int i;
 
-	start_bit = ddr_device->ddr_bits[0];
-	end_bit = ddr_device->ddr_bits[1];
+	start_bit = ddr_device->ddr_bits[0][0];
+	end_bit = ddr_device->ddr_bits[0][1];
 	mask = GENMASK(end_bit, start_bit);
-	val = readl_relaxed(ddr_device->vddr_reg);
+	val = readl_relaxed(ddr_device->vddr_reg[0]);
 	val = (val & mask) >> start_bit;
 
 	for (i = 0; i < ddr_device->ddr_status; i++) {
-		if (val == ddr_device->ddr_data[i])
+		if (val == ddr_device->ddr_data[0][i])
 			break;
 	}
 
@@ -76,6 +76,7 @@ static int ddr_set_cur_state(struct thermal_cooling_device *cdev,
 	struct ddr_cooling_device *ddr_device = cdev->devdata;
 	u32 val, mask;
 	u32 start_bit, end_bit;
+	int i;
 
 	if (!(state < ddr_device->ddr_status)) {
 		dev_warn(&ddr_device->cool_dev->device,
@@ -83,13 +84,15 @@ static int ddr_set_cur_state(struct thermal_cooling_device *cdev,
 		return -EINVAL;
 	}
 
-	start_bit = ddr_device->ddr_bits[0];
-	end_bit = ddr_device->ddr_bits[1];
-	mask = GENMASK(end_bit, start_bit);
-	val = readl_relaxed(ddr_device->vddr_reg);
-	val = (val & (~mask)) | (ddr_device->ddr_data[state] << start_bit);
+	for (i = 0; i < ddr_device->ddr_reg_cnt; i++) {
+		start_bit = ddr_device->ddr_bits[i][0];
+		end_bit = ddr_device->ddr_bits[i][1];
+		mask = GENMASK(end_bit, start_bit);
+		val = readl_relaxed(ddr_device->vddr_reg[i]);
+		val = (val & (~mask)) | (ddr_device->ddr_data[i][state] << start_bit);
 
-	writel_relaxed(val, ddr_device->vddr_reg);
+		writel_relaxed(val, ddr_device->vddr_reg[i]);
+	}
 
 	return 0;
 }
@@ -180,36 +183,35 @@ ddr_cooling_register(struct device_node *np, struct cool_dev *cool)
 		return ERR_PTR(-ENOMEM);
 
 	ddr_coolingdevice_id_get(&ddr_dev->id);
-
-	ddr_dev->vddr_reg = ioremap(cool->ddr_reg, 4);
-	if (!ddr_dev->vddr_reg) {
-		pr_err("thermal ddr cdev: ddr reg0 ioremap fail.\n");
-		ddr_coolingdevice_id_put();
-		kfree(ddr_dev);
-		return ERR_PTR(-EINVAL);
-	}
-
-	snprintf(dev_name, sizeof(dev_name), "thermal-ddr-%d",
-		 ddr_dev->id);
+	ddr_dev->vddr_reg = kmalloc_array(cool->ddr_reg_cnt, sizeof(void *), GFP_KERNEL);
+	ddr_dev->ddr_bits_keep = kmalloc_array(cool->ddr_reg_cnt, sizeof(u32), GFP_KERNEL);
+	if (!ddr_dev->vddr_reg || !ddr_dev->ddr_bits_keep)
+		goto out;
 
 	ddr_dev->ddr_reg = cool->ddr_reg;
+	ddr_dev->ddr_reg_cnt = cool->ddr_reg_cnt;
 	ddr_dev->ddr_status = cool->ddr_status;
-	for (i = 0; i < 2; i++)
-		ddr_dev->ddr_bits[i] = cool->ddr_bits[i];
-	ddr_dev->ddr_bits_keep = ~(0xffffffff << (ddr_dev->ddr_bits[1] + 1));
-	ddr_dev->ddr_bits_keep = ~((ddr_dev->ddr_bits_keep >> ddr_dev->ddr_bits[0])
-				   << ddr_dev->ddr_bits[0]);
-	for (i = 0; i < cool->ddr_status; i++)
-		ddr_dev->ddr_data[i] = cool->ddr_data[i];
+	ddr_dev->ddr_bits = cool->ddr_bits;
+	ddr_dev->ddr_data = cool->ddr_data;
 
+	for (i = 0; i < cool->ddr_reg_cnt; i++) {
+		ddr_dev->vddr_reg[i] = ioremap(cool->ddr_reg[i], 4);
+		if (!ddr_dev->vddr_reg[i]) {
+			pr_err("thermal ddr cdev: ddr reg ioremap fail.\n");
+			goto out;
+		}
+		ddr_dev->ddr_bits_keep[i] = ~(0xffffffff << (ddr_dev->ddr_bits[i][1] + 1));
+		ddr_dev->ddr_bits_keep[i] = ~((ddr_dev->ddr_bits_keep[i] >> ddr_dev->ddr_bits[i][0])
+				   << ddr_dev->ddr_bits[i][0]);
+	}
+
+	snprintf(dev_name, sizeof(dev_name), "thermal-ddr-%d", ddr_dev->id);
 	cool_dev = thermal_of_cooling_device_register(np, dev_name, ddr_dev,
 						      &ddr_cooling_ops);
 
-	if (!cool_dev) {
-		ddr_coolingdevice_id_put();
-		kfree(ddr_dev);
-		return ERR_PTR(-EINVAL);
-	}
+	if (!cool_dev)
+		goto out;
+
 	ddr_dev->cool_dev = cool_dev;
 
 	list_for_each_entry(pos, &cool_dev->thermal_instances, cdev_node) {
@@ -224,6 +226,12 @@ ddr_cooling_register(struct device_node *np, struct cool_dev *cool)
 	mutex_unlock(&cooling_list_lock);
 
 	return cool_dev;
+out:
+	ddr_coolingdevice_id_put();
+	kfree(ddr_dev->vddr_reg);
+	kfree(ddr_dev->ddr_bits_keep);
+	kfree(ddr_dev);
+	return ERR_PTR(-EINVAL);
 }
 EXPORT_SYMBOL_GPL(ddr_cooling_register);
 

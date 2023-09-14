@@ -2633,7 +2633,7 @@ void hdr_lut_buffer_malloc(struct platform_device *pdev)
 	alloc_size = DMA_SIZE_TOTAL_HDR;
 	dma_vaddr = dma_alloc_coherent(&vecm_dev,
 		alloc_size, &dma_paddr, GFP_KERNEL);
-	pr_info("hdr dma_vaddr: %px\n", (u32 *)(dma_vaddr));
+	/*pr_info("hdr dma_vaddr: %px\n", (u32 *)(dma_vaddr));*/
 }
 
 void hdr_lut_buffer_free(struct platform_device *pdev)

@@ -827,6 +827,25 @@ void amve_write_gamma_table(u16 *data, u32 rgb_mask)
 
 	spin_unlock_irqrestore(&vpp_lcd_gamma_lock, flags);
 }
+
+void amve_write_gamma_table_sub(u16 *data, u32 rgb_mask)
+{
+	if (is_meson_t7_cpu()) {
+		lcd_gamma_api(gamma_index_sub,
+			gamma_data_r, gamma_data_g, gamma_data_b, 0, 1);
+
+		if (rgb_mask == H_SEL_R)
+			memcpy(gamma_data_r, data, sizeof(u16) * 256);
+		else if (rgb_mask == H_SEL_G)
+			memcpy(gamma_data_g, data, sizeof(u16) * 256);
+		else if (rgb_mask == H_SEL_B)
+			memcpy(gamma_data_b, data, sizeof(u16) * 256);
+
+		lcd_gamma_api(gamma_index_sub,
+			gamma_data_r, gamma_data_g, gamma_data_b, 0, 0);
+	}
+}
+
 #endif
 
 #define COEFF_NORM(a) ((int)((((a) * 2048.0) + 1) / 2))
@@ -866,28 +885,6 @@ static int matrix_yuv_bypass_coef[MATRIX_3x3_COEF_SIZE] = {
 	MTX_RS,
 	MTX_ENABLE
 };
-
-void vpp_set_rgb_ogo_sub(struct tcon_rgb_ogo_s *p)
-{
-	/*for t7 vpp1 go*/
-	if (is_meson_t7_cpu()) {
-		WRITE_VPP_REG(VPP1_GAINOFF_CTRL0,
-			((p->en << 31) & 0x80000000) |
-			((p->r_gain << 16) & 0x07ff0000) |
-			((p->g_gain << 0) & 0x000007ff));
-		WRITE_VPP_REG(VPP1_GAINOFF_CTRL1,
-			((p->b_gain << 16) & 0x07ff0000) |
-			((p->r_post_offset << 0) & 0x00001fff));
-		WRITE_VPP_REG(VPP1_GAINOFF_CTRL2,
-			((p->g_post_offset << 16) & 0x1fff0000) |
-			((p->b_post_offset << 0) & 0x00001fff));
-		WRITE_VPP_REG(VPP1_GAINOFF_CTRL3,
-			((p->r_pre_offset << 16) & 0x1fff0000) |
-			((p->g_pre_offset << 0) & 0x00001fff));
-		WRITE_VPP_REG(VPP1_GAINOFF_CTRL4,
-			((p->b_pre_offset << 0) & 0x00001fff));
-	}
-}
 
 void vpp_set_rgb_ogo(struct tcon_rgb_ogo_s *p)
 {
@@ -1076,6 +1073,28 @@ void vpp_set_rgb_ogo(struct tcon_rgb_ogo_s *p)
 }
 
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+void vpp_set_rgb_ogo_sub(struct tcon_rgb_ogo_s *p)
+{
+	/*for t7 vpp1 go*/
+	if (is_meson_t7_cpu()) {
+		WRITE_VPP_REG(VPP1_GAINOFF_CTRL0,
+			((p->en << 31) & 0x80000000) |
+			((p->r_gain << 16) & 0x07ff0000) |
+			((p->g_gain << 0) & 0x000007ff));
+		WRITE_VPP_REG(VPP1_GAINOFF_CTRL1,
+			((p->b_gain << 16) & 0x07ff0000) |
+			((p->r_post_offset << 0) & 0x00001fff));
+		WRITE_VPP_REG(VPP1_GAINOFF_CTRL2,
+			((p->g_post_offset << 16) & 0x1fff0000) |
+			((p->b_post_offset << 0) & 0x00001fff));
+		WRITE_VPP_REG(VPP1_GAINOFF_CTRL3,
+			((p->r_pre_offset << 16) & 0x1fff0000) |
+			((p->g_pre_offset << 0) & 0x00001fff));
+		WRITE_VPP_REG(VPP1_GAINOFF_CTRL4,
+			((p->b_pre_offset << 0) & 0x00001fff));
+	}
+}
+
 void ve_enable_dnlp(void)
 {
 	unsigned int reg_ctrl = SRSHARP1_DNLP_EN;
@@ -1405,13 +1424,13 @@ void ve_lcd_gamma_process(void)
 	if (is_meson_t7_cpu()) {
 		if (vecm_latch_flag2 & FLAG_GAMMA_TABLE_EN_SUB) {
 			vecm_latch_flag2 &= ~FLAG_GAMMA_TABLE_EN_SUB;
-			vpp_enable_lcd_gamma_table(gamma_index_sub, 0);
+			vpp_enable_lcd_gamma_table(gamma_index_sub, 1);
 			pr_amve_dbg("\n[amve..] set enable_lcd_gamma_sub OK!!!\n");
 		}
 
 		if (vecm_latch_flag2 & FLAG_GAMMA_TABLE_DIS_SUB) {
 			vecm_latch_flag2 &= ~FLAG_GAMMA_TABLE_DIS_SUB;
-			vpp_disable_lcd_gamma_table(gamma_index_sub, 0);
+			vpp_disable_lcd_gamma_table(gamma_index_sub, 1);
 			pr_amve_dbg("\n[amve..] set disable_lcd_gamma_sub OK!!!\n");
 		}
 
@@ -1548,7 +1567,7 @@ static void video_set_rgb_ogo(void)
 		video_gamma_table_b_adj.data[i] = b;
 	}
 }
-#endif
+
 
 void ve_ogo_param_update_sub(void)
 {
@@ -1587,6 +1606,7 @@ void ve_ogo_param_update_sub(void)
 
 	vecm_latch_flag |= FLAG_RGB_OGO;
 }
+#endif
 
 void ve_ogo_param_update(void)
 {
@@ -2532,18 +2552,22 @@ void lut3d_update(unsigned int p3dlut_in[][3])
 {
 	int d0, d1, d2, index0;
 	int i;
+	int offset = 0;
 
 	if (p3dlut_in) {
+		if (is_meson_t7_cpu())
+			offset = 2;
+
 		for (d0 = 0; d0 < 17; d0++) {
 			for (d1 = 0; d1 < 17; d1++) {
 				for (d2 = 0; d2 < 17; d2++) {
 					index0 = d0 * 289 + d1 * 17 + d2;
 					plut3d[index0 * 3 + 0] =
-					p3dlut_in[index0][0] & 0xfff;
+					(p3dlut_in[index0][0] << offset) & 0xfff;
 					plut3d[index0 * 3 + 1] =
-					p3dlut_in[index0][1] & 0xfff;
+					(p3dlut_in[index0][1] << offset) & 0xfff;
 					plut3d[index0 * 3 + 2] =
-					p3dlut_in[index0][2] & 0xfff;
+					(p3dlut_in[index0][2] << offset) & 0xfff;
 				}
 			}
 		}
@@ -2921,6 +2945,15 @@ void amvecm_wb_enable(int enable)
 }
 
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+
+void amvecm_wb_enable_sub(int enable)
+{
+	if (enable)
+		WRITE_VPP_REG_BITS(0x59a1, 1, 31, 1);
+	else
+		WRITE_VPP_REG_BITS(0x59a1, 0, 31, 1);
+}
+
 /*frequence meter init*/
 void amve_fmeter_init(int enable)
 {

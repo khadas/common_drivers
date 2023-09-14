@@ -284,8 +284,8 @@ int vlock_init_reg_map(struct device *dev, struct stvlock_sig_sts *pvlock)
 				return -ENOMEM;
 			}
 		}
-		pr_info("ID:0x%x map phy: 0x%x 0x%p\n", i, vlock_reg_maps[i].phy_addr,
-			vlock_reg_maps[i].p);
+		/*pr_info("ID:0x%x map phy: 0x%x 0x%p\n", i, vlock_reg_maps[i].phy_addr,*/
+		/*	vlock_reg_maps[i].p);*/
 	}
 
 	return 0;
@@ -2282,12 +2282,12 @@ void vlock_status_init(void)
 			pvlock->enc_frc_max_line = pvlock->org_enc_line_num;
 			pvlock->enc_frc_max_pixel = pvlock->org_enc_pixel_num;
 		}
-		pr_info("vlock: enc org Line addr:0x%x org_enc_line_num val: %d\n",
-			pvlock->enc_max_line_addr + offset_enc,
-			pvlock->org_enc_line_num);
-		pr_info("vlock: enc org Pixel addr:0x%x val: %d\n",
-			pvlock->enc_max_pixel_addr + offset_enc,
-			pvlock->org_enc_pixel_num);
+		/*pr_info("vlock: enc org Line addr:0x%x org_enc_line_num val: %d\n",*/
+		/*	pvlock->enc_max_line_addr + offset_enc,*/
+		/*	pvlock->org_enc_line_num);*/
+		/*pr_info("vlock: enc org Pixel addr:0x%x val: %d\n",*/
+		/*	pvlock->enc_max_pixel_addr + offset_enc,*/
+		/*	pvlock->org_enc_pixel_num);*/
 		pvlock->fsm_sts = VLOCK_STATE_NULL;
 		pvlock->fsm_prests = VLOCK_STATE_NULL;
 		pvlock->vf_sts = false;
@@ -2327,10 +2327,10 @@ void vlock_status_init(void)
 		msleep(2);
 		vlock_disable_step2(pvlock);
 
-		pr_info("%s vlock_en:%d\n", __func__, vlock_en);
+		/*pr_info("%s vlock_en:%d\n", __func__, vlock_en);*/
 	}
-	pr_info("%s vlock_en:%d adj_type:%d mode:%d\n", __func__, vlock_en,
-		vinfo->fr_adj_type, vinfo->mode);
+	/*pr_info("%s vlock_en:%d adj_type:%d mode:%d\n", __func__, vlock_en,*/
+	/*	vinfo->fr_adj_type, vinfo->mode);*/
 }
 
 void vlock_dt_match_init(struct vecm_match_data_s *pdata)

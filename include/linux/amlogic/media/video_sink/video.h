@@ -562,4 +562,7 @@ void get_vysnc_pts_in_scale(u32 *vsync_inc_scale,
 int register_mediasync_funcs(struct mediasync_ptr *func_ptr, char *version);
 int register_vpp_postblend_info_func(void (*get_vpp_osd1_scope)
 	(struct vpp_postblend_scope_s *scope));
+#ifndef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
+int get_amdv_mode(void);
+#endif
 #endif /* VIDEO_H */

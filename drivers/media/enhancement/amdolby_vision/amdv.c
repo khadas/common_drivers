@@ -622,6 +622,7 @@ int force_top1_enable;
 module_param(force_top1_enable, int, 0664);
 MODULE_PARM_DESC(force_top1_enable,    "\n force_top1_enable\n");
 
+static int sdr_transition_delay;
 static int dv_core1_detunnel = 1;
 static bool update_control_path_flag;
 
@@ -3915,22 +3916,26 @@ static int amdv_policy_process_v1(struct vframe_s *vf,
 			}
 		} else if (force_mode == AMDV_OUTPUT_MODE_SDR8) {
 			*mode = AMDV_OUTPUT_MODE_SDR8;
-			if (dolby_vision_mode != *mode) {
-				if (dolby_vision_mode != *mode)
-					mode_change = 1;
-				else
-					mode_change = 0;
-				pr_dv_dbg("src=%d, force output mode %d -> %d\n",
-					src_format, dolby_vision_mode, *mode);
-			}
+			if (dolby_vision_mode != *mode)
+				mode_change = 1;
+			else
+				mode_change = 0;
+			pr_dv_dbg("src=%d, force output mode %d -> %d\n",
+				src_format, dolby_vision_mode, *mode);
+		} else if (force_mode == AMDV_OUTPUT_MODE_BYPASS) {
+			*mode = AMDV_OUTPUT_MODE_BYPASS;
+			if (dolby_vision_mode != *mode)
+				mode_change = 1;
+			else
+				mode_change = 0;
+			pr_dv_dbg("src=%d, force output mode %d -> %d\n",
+				src_format, dolby_vision_mode, *mode);
 		} else {
 			*mode = AMDV_OUTPUT_MODE_SDR8;
-			if (dolby_vision_mode != *mode) {
-				if (dolby_vision_mode != *mode)
-					mode_change = 1;
-				else
-					mode_change = 0;
-			}
+			if (dolby_vision_mode != *mode)
+				mode_change = 1;
+			else
+				mode_change = 0;
 			pr_dv_dbg("warning: dolby does not support output %d, force output sdr\n, ",
 				force_mode);
 		}
@@ -4346,22 +4351,26 @@ static int amdv_policy_process_v2_stb(struct vframe_s *vf,
 			}
 		} else if (force_mode == AMDV_OUTPUT_MODE_SDR8) {
 			*mode = AMDV_OUTPUT_MODE_SDR8;
-			if (dolby_vision_mode != *mode) {
-				if (dolby_vision_mode != *mode)
-					mode_change = 1;
-				else
-					mode_change = 0;
-				pr_dv_dbg("src=%d, force output mode %d -> %d\n",
-					src_format, dolby_vision_mode, *mode);
-			}
+			if (dolby_vision_mode != *mode)
+				mode_change = 1;
+			else
+				mode_change = 0;
+			pr_dv_dbg("src=%d, force output mode %d -> %d\n",
+				src_format, dolby_vision_mode, *mode);
+		} else if (force_mode == AMDV_OUTPUT_MODE_BYPASS) {
+			*mode = AMDV_OUTPUT_MODE_BYPASS;
+			if (dolby_vision_mode != *mode)
+				mode_change = 1;
+			else
+				mode_change = 0;
+			pr_dv_dbg("src=%d, force output mode %d -> %d\n",
+				src_format, dolby_vision_mode, *mode);
 		} else {
 			*mode = AMDV_OUTPUT_MODE_SDR8;
-			if (dolby_vision_mode != *mode) {
-				if (dolby_vision_mode != *mode)
-					mode_change = 1;
-				else
-					mode_change = 0;
-			}
+			if (dolby_vision_mode != *mode)
+				mode_change = 1;
+			else
+				mode_change = 0;
 			pr_dv_dbg("warning: dolby does not support output %d, force output sdr\n, ",
 				force_mode);
 		}
@@ -6488,7 +6497,6 @@ static bool send_hdmi_pkt
 	struct hdr10_infoframe *p_hdr;
 	int i;
 	bool flag = false;
-	static int sdr_transition_delay;
 	struct vd_signal_info_s vd_signal;
 	bool dovi_ll_enable = false;
 	bool diagnostic_enable = false;
@@ -11946,7 +11954,8 @@ int amdolby_vision_process_v1(struct vframe_s *vf,
 				}
 			}
 		}
-		dolby_vision_flags &= ~FLAG_TOGGLE_FRAME;
+		if (sdr_transition_delay == 0)
+			dolby_vision_flags &= ~FLAG_TOGGLE_FRAME;
 	} else if (amdv_core1_on &&
 		!(dolby_vision_flags & FLAG_CERTIFICATION)) {
 		bool reset_flag =
@@ -12844,7 +12853,8 @@ static int amdolby_vision_process_v2_stb
 					 vinfo, vf);
 			}
 		}
-		dolby_vision_flags &= ~FLAG_TOGGLE_FRAME;
+		if (sdr_transition_delay == 0)
+			dolby_vision_flags &= ~FLAG_TOGGLE_FRAME;
 	} else if ((dv_core1[0].core1_on ||
 		   dv_core1[1].core1_on) &&
 		!(dolby_vision_flags & FLAG_CERTIFICATION)) {

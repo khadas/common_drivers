@@ -168,6 +168,7 @@ struct aml_card_data {
 	int ai_sort_ret;
 #ifdef CONFIG_AMLOGIC_ZAPPER_CUT
 	enum audio_digital_mode dgt_mod;
+	int drc_control;
 #endif
 	struct task_struct *thread;
 	int gpio_set_flag;
@@ -292,6 +293,35 @@ static int aml_audio_digital_mode_set_enum(struct snd_kcontrol *kcontrol,
 
 	return 0;
 }
+
+static int aml_audio_drc_control_get(struct snd_kcontrol *kcontrol,
+	struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_card *card = snd_kcontrol_chip(kcontrol);
+	struct aml_card_data *p_aml_audio;
+
+	p_aml_audio = snd_soc_card_get_drvdata(card);
+	ucontrol->value.integer.value[0] = p_aml_audio->drc_control;
+
+	return 0;
+}
+
+static int aml_audio_drc_control_set(struct snd_kcontrol *kcontrol,
+	struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_card *card = snd_kcontrol_chip(kcontrol);
+	struct aml_card_data *p_aml_audio;
+	int drc_control = ucontrol->value.integer.value[0];
+
+	p_aml_audio = snd_soc_card_get_drvdata(card);
+	pr_debug("update audio drc mode! drc_control = %d.\n", drc_control);
+
+	if (p_aml_audio->drc_control != drc_control)
+		p_aml_audio->drc_control = drc_control;
+
+	return 0;
+}
+
 #endif
 
 static int aml_chip_id_get(struct snd_kcontrol *kcontrol,
@@ -429,6 +459,12 @@ static const struct snd_kcontrol_new snd_user_controls[] = {
 			audio_digital_mode_enum,
 			aml_audio_digital_mode_get_enum,
 			aml_audio_digital_mode_set_enum),
+
+	SOC_SINGLE_EXT("Audio DRC Control",
+			0, 0, 6554402, 0,
+			aml_audio_drc_control_get,
+			aml_audio_drc_control_set),
+
 #endif
 
 	SND_SOC_BYTES_EXT("AML chip id", 1,
@@ -1491,7 +1527,9 @@ static int aml_card_probe(struct platform_device *pdev)
 
 	snd_soc_add_card_controls(&priv->snd_card, snd_user_controls,
 				  ARRAY_SIZE(snd_user_controls));
-
+#ifdef CONFIG_AMLOGIC_ZAPPER_CUT
+	priv->drc_control = 0x3; //RF mode
+#endif
 	priv->av_mute_enable = 0;
 	priv->spk_mute_enable = 0;
 	priv->thread = NULL;

@@ -440,7 +440,8 @@ EQ_RUN:
 			//wr_reg_hhi_bits(TM2_HHI_HDMIRX_PHY_DCHD_CNTL2, TM2_DFE_RSTB, 0);
 			wr_reg_hhi_bits(TM2_HHI_HDMIRX_PHY_DCHA_CNTL0,
 					MSK(15, 0), 0x7ff);
-			rx_pr("dfe err. set default vga.\n");
+			if (log_level & PHY_LOG)
+				rx_pr("dfe err. set default vga.\n");
 		}
 
 		wr_reg_hhi_bits(TM2_HHI_HDMIRX_PHY_DCHD_CNTL3, TM2_DBG_STS_SEL, 0x3);
@@ -1305,7 +1306,7 @@ bool aml_get_tmds_valid_tm2(void)
 			rx_pr("sqo:%x,tmdsclk_valid:%x,align:%x\n",
 			      sqofclk, tmdsclk_valid, tmds_align);
 			rx_pr("cable clk0:%d\n", rx[port].clk.cable_clk);
-			rx_pr("cable clk1:%d\n", rx_get_clock(TOP_HDMI_CABLECLK, port));
+			//rx_pr("cable clk1:%d\n", rx_get_clock(TOP_HDMI_CABLECLK, port));
 		}
 		ret = 0;
 	}

@@ -622,7 +622,8 @@ void aml_dfe_en_txhd2(void)
 		if (rx_info.aml_phy.dfe_hold)
 			hdmirx_wr_bits_amlphy(TXHD2_HDMIRX20PHY_DCHD_EQ,
 					      TXHD2_DFE_HOLD_EN, 1);
-		rx_pr("dfe\n");
+		if (log_level & PHY_LOG)
+			rx_pr("dfe\n");
 	}
 }
 
@@ -666,7 +667,8 @@ void aml_phy_offset_cal_txhd2(void)
 	usleep_range(200, 210);
 	hdmirx_wr_bits_amlphy(TXHD2_HDMIRX20PHY_DCHD_CDR, _BIT(27), 0);
 	hdmirx_wr_bits_amlphy(TXHD2_HDMIRX20PHY_DCHA_DFE, _BIT(13), 0);
-	rx_pr("ofst cal\n");
+	if (log_level & PHY_LOG)
+		rx_pr("ofst cal\n");
 }
 
 u32 min_ch_txhd2(u32 a, u32 b, u32 c)
@@ -1727,7 +1729,7 @@ bool aml_get_tmds_valid_txhd2(void)
 			rx_pr("sqo:%x,tmdsclk_valid:%x,align:%x\n",
 			      sqofclk, tmdsclk_valid, tmds_align);
 			rx_pr("cable clk0:%d\n", rx[port].clk.cable_clk);
-		rx_pr("cable clk1:%d\n", rx_get_clock(TOP_HDMI_CABLECLK, port));
+			//rx_pr("cable clk1:%d\n", rx_get_clock(TOP_HDMI_CABLECLK, port));
 		}
 		ret = 0;
 	}

@@ -621,7 +621,8 @@ void aml_dfe_en_t5m(void)
 		if (rx_info.aml_phy.dfe_hold)
 			hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_EQ,
 					      T5M_DFE_HOLD_EN, 1);
-		rx_pr("dfe\n");
+		if (log_level & PHY_LOG)
+			rx_pr("dfe\n");
 	}
 }
 
@@ -672,7 +673,8 @@ void aml_phy_offset_cal_t5m(void)
 	usleep_range(200, 210);
 	hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_CDR, _BIT(27), 0);
 	hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHA_DFE, _BIT(13), 0);
-	rx_pr("ofst cal\n");
+	if (log_level & PHY_LOG)
+		rx_pr("ofst cal\n");
 }
 
 u32 min_ch(u32 a, u32 b, u32 c)
@@ -1682,7 +1684,7 @@ bool aml_get_tmds_valid_t5m(void)
 			rx_pr("sqo:%x,tmdsclk_valid:%x,align:%x\n",
 			      sqofclk, tmdsclk_valid, tmds_align);
 			rx_pr("cable clk0:%d\n", rx[port].clk.cable_clk);
-		rx_pr("cable clk1:%d\n", rx_get_clock(TOP_HDMI_CABLECLK, port));
+			//rx_pr("cable clk1:%d\n", rx_get_clock(TOP_HDMI_CABLECLK, port));
 		}
 		ret = 0;
 	}
@@ -2237,7 +2239,6 @@ void clk_init_cor_t5m(void)
 	u32 data32;
 	u8 port = rx_info.main_port;
 
-	rx_pr("\n clk_init\n");
 	/* Turn on clk_hdmirx_pclk, also = sysclk */
 	wr_reg_clk_ctl(CLKCTRL_SYS_CLK_EN0_REG2,
 		       rd_reg_clk_ctl(CLKCTRL_SYS_CLK_EN0_REG2) | (1 << 9));

@@ -4600,7 +4600,7 @@ void hdmirx_open_port(enum tvin_port_e port)
 	if (rx_info.phy_ver >= PHY_VER_TM2)
 		//rx_info.aml_phy.pre_int = 1;
 		hdmirx_phy_var_init();
-	rx_pr("%s:%d\n", __func__, rx_info.main_port);
+	//rx_pr("%s:%d\n", __func__, rx_info.main_port);
 }
 
 void hdmirx_close_port(void)
@@ -6402,8 +6402,6 @@ void rx_port2_main_state_machine(void)
 		rx[port].state = FSM_FRL_FLT_READY;
 		break;
 	case FSM_FRL_FLT_READY:
-		if (rx[port].var.flt_ready_cnt++ <= flt_ready_max)
-			break;
 		hdmirx_wr_cor(DPLL_CFG6_DPLL_IVCRX, 0x0, port);
 		hdmirx_frl_config(port);
 		rx_lts_2_flt_ready(port);
@@ -6421,40 +6419,16 @@ void rx_port2_main_state_machine(void)
 		rx[port].state = FLT_RX_LTS_3;
 		break;
 	case FLT_RX_LTS_3:
-		hdmirx_wr_cor(SCDCS_UPD_FLAGS_SCDC_IVCRX, 0x0, port);//sink clear(=0) FRL_START
-		rx[port].var.frl_rate = hdmirx_rd_cor(SCDCS_CONFIG1_SCDC_IVCRX, port) & 0xf;
-		if (s_tmds_transmission_detected(port))
+		if (s_tmds_transmission_detected(port)) {
 			rx[port].state = FSM_WAIT_CLK_STABLE;
-		hdmirx_wr_cor(SCDCS_STATUS_FLAGS1_SCDC_IVCRX, 0x65, port); //
-		hdmirx_wr_cor(SCDCS_STATUS_FLAGS2_SCDC_IVCRX, 0x87, port); //
-		hal_flt_update_set(port);
-		if (!hdmirx_flt_update_cleared_wait(SCDCS_UPD_FLAGS_SCDC_IVCRX, port)) {
-			if (log_level & FRL_LOG)
-				rx_pr("polling time out a\n");
+			break;
 		}
-		rx[port].state = FLT_RX_LTS_3_PHY_INIT;
+		rx_frl_train();
+		rx[port].state = FSM_FRL_TRN;
 		break;
-	case FLT_RX_LTS_3_PHY_INIT:
-		hdmirx_phy_init(port);
-		rx_lts_3_err_detect(port);
-		rx[port].state = FLT_RX_LTS_3_LPT;
-		rx[port].var.frl_rate =
-			hdmirx_rd_cor(SCDCS_CONFIG1_SCDC_IVCRX, port) & 0xf;
-		if (s_tmds_transmission_detected(port))
-			rx[port].state = FSM_WAIT_CLK_STABLE;
-		break;
-	case FLT_RX_LTS_3_LPT:
-		RX_LTS_3_LTP_REQ_SEND_0000(port);
-		hal_flt_update_set(port);
-		if (!hdmirx_flt_update_cleared_wait(SCDCS_UPD_FLAGS_SCDC_IVCRX, port)) {
-			if (log_level & FRL_LOG)
-				rx_pr("polling time out b\n");
-		}
-		rx[port].var.frl_rate =
-		hdmirx_rd_cor(SCDCS_CONFIG1_SCDC_IVCRX, port) & 0xf;
-		if (rx[port].var.frl_rate == 0)
-			rx[port].state = FSM_WAIT_CLK_STABLE;
-		rx[port].state = FLT_RX_LTS_P;
+	case FSM_FRL_TRN:
+		if (is_frl_train_finished())
+			rx[port].state = FLT_RX_LTS_P;
 		break;
 	case FLT_RX_LTS_P:
 		rx_lts_p_syn_detect(rx[port].var.frl_rate, port);
@@ -6959,48 +6933,27 @@ void rx_port3_main_state_machine(void)
 		if (rx[port].var.flt_ready_cnt++ <= flt_ready_max)
 			break;
 		rx[port].var.flt_ready_cnt = 0;
-		rx[port].var.frl_rate = hdmirx_rd_cor(SCDCS_CONFIG1_SCDC_IVCRX, port) & 0xf;
+		rx[port].var.frl_rate =
+		hdmirx_rd_cor(SCDCS_CONFIG1_SCDC_IVCRX, port) & 0xf;
 		if (rx[port].var.frl_rate == 0) {
 			rx[port].state = FSM_WAIT_CLK_STABLE;
-				if (log_level & FRL_LOG)
-					rx_pr("Sink FRL LTS:2 - TMDS detected");
+			if (log_level & FRL_LOG)
+				rx_pr("Sink FRL LTS:2 - TMDS detected");
 			break;
 		}
 		rx[port].state = FLT_RX_LTS_3;
 		break;
 	case FLT_RX_LTS_3:
-		hdmirx_wr_cor(SCDCS_UPD_FLAGS_SCDC_IVCRX, 0x0, port);//sink clear(=0) FRL_START
-		rx[port].var.frl_rate = hdmirx_rd_cor(SCDCS_CONFIG1_SCDC_IVCRX, port) & 0xf;
-		if (s_tmds_transmission_detected(port))
+		if (s_tmds_transmission_detected(port)) {
 			rx[port].state = FSM_WAIT_CLK_STABLE;
-		hdmirx_wr_cor(SCDCS_STATUS_FLAGS1_SCDC_IVCRX, 0x65, port); //
-		hdmirx_wr_cor(SCDCS_STATUS_FLAGS2_SCDC_IVCRX, 0x87, port); //
-		hal_flt_update_set(port);
-		if (!hdmirx_flt_update_cleared_wait(SCDCS_UPD_FLAGS_SCDC_IVCRX, port)) {
-			if (log_level & FRL_LOG)
-				rx_pr("polling time out a\n");
+			break;
 		}
-		rx[port].state = FLT_RX_LTS_3_PHY_INIT;
+		rx_frl_train();
+		rx[port].state = FSM_FRL_TRN;
 		break;
-	case FLT_RX_LTS_3_PHY_INIT:
-		hdmirx_phy_init(port);
-		rx_lts_3_err_detect(port);
-		rx[port].state = FLT_RX_LTS_3_LPT;
-		rx[port].var.frl_rate = hdmirx_rd_cor(SCDCS_CONFIG1_SCDC_IVCRX, port) & 0xf;
-		if (s_tmds_transmission_detected(port))
-			rx[port].state = FSM_WAIT_CLK_STABLE;
-		break;
-	case FLT_RX_LTS_3_LPT:
-		RX_LTS_3_LTP_REQ_SEND_0000(port);
-		hal_flt_update_set(port);
-		if (!hdmirx_flt_update_cleared_wait(SCDCS_UPD_FLAGS_SCDC_IVCRX, port)) {
-			if (log_level & FRL_LOG)
-				rx_pr("polling time out b\n");
-		}
-		rx[port].var.frl_rate = hdmirx_rd_cor(SCDCS_CONFIG1_SCDC_IVCRX, port) & 0xf;
-		if (rx[port].var.frl_rate == 0)
-			rx[port].state = FSM_WAIT_CLK_STABLE;
-		rx[port].state = FLT_RX_LTS_P;
+	case FSM_FRL_TRN:
+		if (is_frl_train_finished())
+			rx[port].state = FLT_RX_LTS_P;
 		break;
 	case FLT_RX_LTS_P:
 		rx_lts_p_syn_detect(rx[port].var.frl_rate, port);
@@ -8015,6 +7968,11 @@ int hdmirx_debug(const char *buf, int size)
 		hdmirx_wr_bits_top_common(TOP_EDID_RAM_OVR0_DATA, _BIT(0), 1);
 	} else if (strncmp(tmpbuf, "aud_cal", 7) == 0) {
 		txhd2_aud_clk_cal();
+	} else if (strncmp(tmpbuf, "reg_map", 7) == 0) {
+		for (i = 0; i < MAP_ADDR_MODULE_NUM; i++) {
+			rx_pr("phy_addr = 0x%x, size = 0x%x, maped:%px\n",
+				rx_reg_maps[i].phy_addr, size, rx_reg_maps[i].p);
+		}
 	}
 	return 0;
 }

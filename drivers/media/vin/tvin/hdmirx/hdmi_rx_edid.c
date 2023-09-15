@@ -504,14 +504,10 @@ void hdmirx_fill_edid_with_port_buf(const char *buf, int size)
 	u32 k = 0;
 	unsigned char buff[512] = {0};
 
-	if (edid_delivery_mothed == EDID_DELIVERY_ALL_PORT)
-		rx_pr("!!Error, use 2 methods to delivery edid\n");
-
-	edid_delivery_mothed = EDID_DELIVERY_ONE_PORT;
-	rx_pr("%s edid size %d", __func__, size);
-
 	port_num = (buf[0] & 0x0f) - 1;
 	edid_type = buf[0] >> 0x4;
+	rx_pr("port%d edid size %d\n", port_num, size);
+
 	if (hdmi_cec_en) {
 		port_hpd_rst_flag |= 1 << port_num;
 		rx_set_port_hpd(port_num, 0);

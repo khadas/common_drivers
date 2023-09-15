@@ -656,8 +656,8 @@ void aml_phy_offset_cal_t7(void)
 	hdmirx_wr_bits_amlphy(T7_HHI_RX_PHY_DCHD_CNTL0,
 		T7_CDR_EQ_RSTB, 3);
 	usleep_range(10, 20);
-
-	rx_pr("ofst cal\n");
+	if (log_level & PHY_LOG)
+		rx_pr("ofst cal\n");
 }
 
 /* hardware eye monitor */
@@ -1909,7 +1909,7 @@ bool aml_get_tmds_valid_t7(void)
 			rx_pr("sqo:%x,tmdsclk_valid:%x,align:%x\n",
 			      sqofclk, tmdsclk_valid, tmds_align);
 			rx_pr("cable clk0:%d\n", rx[port].clk.cable_clk);
-			rx_pr("cable clk1:%d\n", rx_get_clock(TOP_HDMI_CABLECLK, port));
+			//rx_pr("cable clk1:%d\n", rx_get_clock(TOP_HDMI_CABLECLK, port));
 		}
 		ret = 0;
 	}

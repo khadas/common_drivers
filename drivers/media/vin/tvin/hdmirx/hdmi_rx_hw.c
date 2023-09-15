@@ -126,7 +126,6 @@ u32 phy_trim_val;
  */
 int phy_term_lel;
 bool phy_tdr_en;
-int hdcp_tee_path;
 int kill_esm_fail;
 int dbg_port;
 /* emp buffer */
@@ -2861,7 +2860,7 @@ int rx_set_port_hpd(u8 port_id, bool val)
  */
 void rx_set_cur_hpd(u8 val, u8 func, u8 port)
 {
-	rx_pr("func-%d to", func);
+	rx_pr("func-%d\n", func);
 	rx_set_port_hpd(port, val);
 	port_hpd_rst_flag |= (1 << port);
 }
@@ -4388,7 +4387,6 @@ void hdmirx_hw_probe(void)
 	hdmirx_wr_top(TOP_INTR_STAT_CLR, ~0, port);//to do
 	//if (rx_info.chip_id < CHIP_ID_T7)
 		//hdmirx_top_irq_en(1, 2);
-	rx_pr("%s Done!\n", __func__);
 }
 
 /*

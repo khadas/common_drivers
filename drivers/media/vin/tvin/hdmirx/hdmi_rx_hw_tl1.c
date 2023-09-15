@@ -764,7 +764,7 @@ bool aml_get_tmds_valid_tl1(void)
 			rx_pr("sqo:%x,tmdsclk_valid:%x,align:%x\n",
 			      sqofclk, tmdsclk_valid, tmds_align);
 			rx_pr("cable clk0:%d\n", rx[port].clk.cable_clk);
-			rx_pr("cable clk1:%d\n", rx_get_clock(TOP_HDMI_CABLECLK, port));
+			//rx_pr("cable clk1:%d\n", rx_get_clock(TOP_HDMI_CABLECLK, port));
 		}
 		ret = 0;
 	}

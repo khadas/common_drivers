@@ -632,7 +632,8 @@ void aml_dfe_en_t3x_20(u8 port)
 		if (rx_info.aml_phy.dfe_hold)
 			hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX20PHY_DCHD_EQ,
 					      T3X_20_DFE_HOLD_EN, 1, port);
-		rx_pr("dfe\n");
+		if (log_level & PHY_LOG)
+			rx_pr("dfe\n");
 	}
 }
 
@@ -676,7 +677,8 @@ void aml_phy_offset_cal_t3x_20(u8 port)
 	usleep_range(200, 210);
 	hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX20PHY_DCHD_CDR, _BIT(27), 0, port);
 	hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX20PHY_DCHA_DFE, _BIT(13), 0, port);
-	rx_pr("ofst cal\n");
+	if (log_level & PHY_LOG)
+		rx_pr("ofst cal\n");
 }
 
 u32 min_ch_t3x_20(u32 a, u32 b, u32 c)
@@ -1285,18 +1287,19 @@ void aml_eq_cfg_t3x_20(u8 port)
 		aml_enhance_dfe_new_t3x_20(port);
 	if (rx[port].phy.phy_bw >= PHY_BW_2 && rx_info.aml_phy.enhance_eq)
 		aml_enhance_eq_t3x_20(port);
-	rx_pr("%s,%s,%s\n", rx_info.aml_phy.enhance_dfe_en_new ? "new dfe" : "old dfe",
-	rx_info.aml_phy.enhance_eq ? "eq en" : "no eq",
-	rx_info.aml_phy.eq_en ? "eq triger" : "eq no triger");
-	rx_pr("2.0 PHY Register:\n");
-	rx_pr("dchd_eq-0x14=0x%x\n", hdmirx_rd_amlphy_t3x(T3X_HDMIRX20PHY_DCHD_EQ, port));
-	rx_pr("dchd_cdr-0x10=0x%x\n", hdmirx_rd_amlphy_t3x(T3X_HDMIRX20PHY_DCHD_CDR, port));
-	rx_pr("dcha_dfe-0xc=0x%x\n", hdmirx_rd_amlphy_t3x(T3X_HDMIRX20PHY_DCHA_DFE, port));
-	rx_pr("dcha_afe-0x8=0x%x\n", hdmirx_rd_amlphy_t3x(T3X_HDMIRX20PHY_DCHA_AFE, port));
-	rx_pr("misc2-0x1c=0x%x\n", hdmirx_rd_amlphy_t3x(T3X_HDMIRX20PHY_DCHA_MISC2, port));
-	rx_pr("misc1-0x18=0x%x\n", hdmirx_rd_amlphy_t3x(T3X_HDMIRX20PHY_DCHA_MISC1, port));
-	if (log_level & PHY_LOG)
+	if (log_level & PHY_LOG) {
+		rx_pr("%s,%s,%s\n", rx_info.aml_phy.enhance_dfe_en_new ? "new dfe" : "old dfe",
+		rx_info.aml_phy.enhance_eq ? "eq en" : "no eq",
+		rx_info.aml_phy.eq_en ? "eq triger" : "eq no triger");
+		rx_pr("2.0 PHY Register:\n");
+		rx_pr("dchd_eq-0x14=0x%x\n", hdmirx_rd_amlphy_t3x(T3X_HDMIRX20PHY_DCHD_EQ, port));
+		rx_pr("dchd_cdr-0x10=0x%x\n", hdmirx_rd_amlphy_t3x(T3X_HDMIRX20PHY_DCHD_CDR, port));
+		rx_pr("dcha_dfe-0xc=0x%x\n", hdmirx_rd_amlphy_t3x(T3X_HDMIRX20PHY_DCHA_DFE, port));
+		rx_pr("dcha_afe-0x8=0x%x\n", hdmirx_rd_amlphy_t3x(T3X_HDMIRX20PHY_DCHA_AFE, port));
+		rx_pr("misc2-0x1c=0x%x\n", hdmirx_rd_amlphy_t3x(T3X_HDMIRX20PHY_DCHA_MISC2, port));
+		rx_pr("misc1-0x18=0x%x\n", hdmirx_rd_amlphy_t3x(T3X_HDMIRX20PHY_DCHA_MISC1, port));
 		rx_pr("phy end\n");
+	}
 }
 
 void aml_phy_get_trim_val_t3x(void)
@@ -1582,7 +1585,8 @@ void aml_phy_offset_cal_t3x_21(int port)
 	hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX21PHY_DCHD_CDR, OFST_CAL_START, 0x1, port);
 	usleep_range(100, 110);
 	hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX21PHY_DCHD_CDR, CDR_RSTB, 0x1, port);
-	rx_pr("h21 ofst cal\n");
+	if (log_level & PHY_LOG)
+		rx_pr("h21 ofst cal\n");
 }
 
 void rx_21_frl_phy_cfg(u8 port)
@@ -1630,7 +1634,8 @@ void rx_21_frl_phy_cfg(u8 port)
 	hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX21PHY_DCHD_EQ, EQ_RSTB, 0x0, port);
 	hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX21PHY_DCHD_EQ, DFE_RSTB, 0x0, port);
 	hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX21PHY_DCHD_EQ, DFE_HOLD, 0x0, port);
-	rx_pr("rx_21_phy_cfg\n");
+	if (log_level & PHY_LOG)
+		rx_pr("rx_21_phy_cfg\n");
 }
 
 void t3x_480p_pll_cfg_21(u8 port)
@@ -1778,14 +1783,17 @@ void aml_pll_bw_cfg_t3x_21(int f_rate, u8 port)
 			(data32 >> 5) & 0x1, port);
 		hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX21PHY_DCHD_EQ, DFE_TAPS_DISABLE,
 			(data32 >> 19) & 0x1, port);
-		rx_pr("phy bwth\n");
+		if (log_level & FRL_LOG)
+			rx_pr("phy bwth\n");
 	}
 	//config pll
 	clk_rate = rx_get_scdc_clkrate_sts(port);
-	rx_pr("clk rate = %d\n", clk_rate);
+	if (log_level & PHY_LOG)
+		rx_pr("clk rate = %d\n", clk_rate);
 	//rx_clkmsr_handler();
 	idx = aml_phy_pll_band(rx[port].clk.cable_clk, clk_rate);
-	rx_pr("idx = %d\n", idx);
+	if (log_level & PHY_LOG)
+		rx_pr("idx = %d\n", idx);
 	if (f_rate == FRL_OFF) {
 		do {
 			if (idx == PLL_BW_0)
@@ -1801,11 +1809,11 @@ void aml_pll_bw_cfg_t3x_21(int f_rate, u8 port)
 			if (log_level & PHY_LOG)
 				rx_pr("PLL0=0x%x\n", hdmirx_rd_amlphy_t3x(T3X_RG_RX20PLL_0, port));
 			if (pll_rst_cnt++ > pll_rst_max) {
-				if (log_level & VIDEO_LOG)
+				if (log_level & PHY_LOG)
 					rx_pr("pll rst error\n");
 				break;
 			}
-			if (log_level & VIDEO_LOG) {
+			if (log_level & PHY_LOG) {
 				rx_pr("sq=%d,pll_lock=%d",
 					hdmirx_rd_top(TOP_MISC_STAT0_T3X, port) & 0x1,
 					is_pll_lock_t3x(port));
@@ -1834,7 +1842,8 @@ void aml_pll_bw_cfg_t3x_21(int f_rate, u8 port)
 
 void rx_21_frl_pll_cfg(int f_rate, u8 port)
 {
-	rx_pr("port-%d f_rate=%d\n", port, f_rate);
+	if (log_level & FRL_LOG)
+		rx_pr("port-%d f_rate=%d\n", port, f_rate);
 	if (f_rate == FRL_3G_3LANE) {
 		hdmirx_wr_amlphy_t3x(T3X_HDMIRX21PLL_CTRL0, 0x05007d00, port);
 		hdmirx_wr_amlphy_t3x(T3X_HDMIRX21PLL_CTRL1, 0x014810e6, port);
@@ -1992,7 +2001,8 @@ void rx_21_dfe_en(u8 port)
 		usleep_range(1000, 1100);
 		hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX21PHY_DCHD_EQ, DFE_HOLD, 0x1, port);
 	}
-	rx_pr("dfe en\n");
+	if (log_level & PHY_LOG)
+		rx_pr("dfe en\n");
 }
 
 void rx_21_eq_cfg(int f_rate, u8 port)
@@ -2034,7 +2044,8 @@ void rx_21_eq_cfg(int f_rate, u8 port)
 	cdr1_int = (data32 >> 8) & 0x7f;
 	cdr2_int = (data32 >> 16) & 0x7f;
 	cdr3_int = (data32 >> 24) & 0x7f;
-	rx_pr("cdr int=0x%x-0x%x-0x%x-0x%x\n", cdr0_int, cdr1_int, cdr2_int, cdr3_int);
+	if (log_level & FRL_LOG)
+		rx_pr("cdr int=0x%x-0x%x-0x%x-0x%x\n", cdr0_int, cdr1_int, cdr2_int, cdr3_int);
 }
 
 void rx_21_dump_fpll_0(void)
@@ -2569,7 +2580,8 @@ void rx_21_fpll_cfg_0(int f_rate, u8 port)
 			break;
 		//rx_pr("fpll lock=%x\n", is_fpll0_locked());
 	} while (!is_fpll0_locked());
-	rx_pr("%s-%d\n", __func__, f_rate);
+	if (log_level & FRL_LOG)
+		rx_pr("%s-%d\n", __func__, f_rate);
 }
 
 void rx_21_fpll_cfg_1(int f_rate, u8 port)
@@ -2631,7 +2643,8 @@ void rx_21_fpll_cfg_1(int f_rate, u8 port)
 			break;
 		//rx_pr("fpll lock=%x\n", is_fpll0_locked());
 	} while (!is_fpll0_locked());
-	rx_pr("%s-%d\n", __func__, f_rate);
+	if (log_level & FRL_LOG)
+		rx_pr("%s-%d\n", __func__, f_rate);
 }
 
 void rx_21_fpll_cfg(int f_rate, u8 port)
@@ -3392,7 +3405,7 @@ bool aml_get_tmds_valid_t3x_20(u8 port)
 			rx_pr("sqo:%x,tmdsclk_valid:%x,align:%x\n",
 			      sqofclk, tmdsclk_valid, tmds_align);
 			rx_pr("cable clk0:%d\n", rx[port].clk.cable_clk);
-			rx_pr("cable clk1:%d\n", rx_get_clock(TOP_HDMI_CABLECLK, port));
+			//rx_pr("cable clk1:%d\n", rx_get_clock(TOP_HDMI_CABLECLK, port));
 		}
 		ret = 0;
 	}
@@ -3423,7 +3436,7 @@ bool aml_get_tmds_valid_t3x_21(u8 port)
 			rx_pr("sqo:%x,tmdsclk_valid:%x,align:%x\n",
 			      sqofclk, tmdsclk_valid, tmds_align);
 			rx_pr("cable clk0:%d\n", rx[port].clk.cable_clk);
-			rx_pr("cable clk1:%d\n", rx_get_clock(TOP_HDMI_CABLECLK, port));
+			//rx_pr("cable clk1:%d\n", rx_get_clock(TOP_HDMI_CABLECLK, port));
 		}
 		ret = 0;
 	}
@@ -4634,81 +4647,29 @@ void hal_flt_update_set(u8 port)
 	u8 data8;
 
 	data8 = hdmirx_rd_cor(SCDCS_UPD_FLAGS_SCDC_IVCRX, port);
-	rx_pr("upd flg=0x%x\n", data8);
-	hdmirx_wr_cor(SCDCS_UPD_FLAGS_SCDC_IVCRX, (data8 | 0x20), port);//
-	rx_pr("upd flg-1=0x%x\n", hdmirx_rd_cor(SCDCS_UPD_FLAGS_SCDC_IVCRX, port));
+	hdmirx_wr_cor(SCDCS_UPD_FLAGS_SCDC_IVCRX, (data8 | 0x20), port);
 }
 
 void hdmi_tx_rx_frl_training_main(u8 port)
 {
-	//uint16_t ltp0123 = 0xAAAA;//reserved LTP
-	//rx_pr("[FRL TRAINING] ************** TX_LTS_1_HDMI21_CONFIG************\n");
-	//TX_LTS_1_HDMI21_CONFIG(frl_rate);
-	if (log_level & FRL_LOG)
-		rx_pr("[FRL TRAINING] ** RX_LTS_2_FLT_READY,port-%d**\n", port);
-	//rx_pr("[FRL TRAINING] ************** TX_LTS_2_POLL_READY************\n");
-	//TX_LTS_2_POLL_READY();
-	//rx_pr("[FRL TRAINING] ************** TX_LTS_2_SETTING************\n");
-	//TX_LTS_2_SETTING(frl_rate);
-	//frl_debug
 	rx[port].var.frl_rate = hdmirx_rd_cor(SCDCS_CONFIG1_SCDC_IVCRX, port) & 0xf;
-	if (!rx[port].var.frl_rate) {
-		hdmirx_wr_cor(RX_H21_CTRL_PWD_IVCRX, 0, port);//related to DE status
-		rx_pr("frl not support\n");
-		return;
+	hdmirx_wr_cor(SCDCS_UPD_FLAGS_SCDC_IVCRX, 0x0, port);//sink clear(=0) FRL_START
+	hdmirx_wr_cor(SCDCS_STATUS_FLAGS1_SCDC_IVCRX, 0x65, port); //
+	hdmirx_wr_cor(SCDCS_STATUS_FLAGS2_SCDC_IVCRX, 0x87, port); //
+	hal_flt_update_set(port);
+	if (!hdmirx_flt_update_cleared_wait(SCDCS_UPD_FLAGS_SCDC_IVCRX, port)) {
+		if (log_level & FRL_LOG)
+			rx_pr("polling time out a\n");
 	}
-	//frl_debug todo
-	hdmirx_wr_cor(DPLL_CFG6_DPLL_IVCRX, 0x0, port);
-	hdmirx_frl_config(port);
-	//frl_debug no_timeout
-	//hdmirx_wr_bits_cor(SCDCS_SRC_TEST_CONFIG_SCDC_IVCRX, _BIT(5), 1, port);
-	//rx_pr("[FRL TRAINING] ************** RX_LTS_3_LTP_REQ_SEND_1111************\n");
-	//RX_LTS_3_LTP_REQ_SEND_1111(port);
-	//st_printf("[FRL TRAINING] ************** TX_LTS_3_POLL_FLT_UPDATE************\n");
-	//TX_LTS_3_POLL_FLT_UPDATE(int_ext);
-	//st_printf("[FRL TRAINING] ************** TX_LTS_3_READ_LTP_REQ************\n");
-	//TX_LTS_3_READ_LTP_REQ(int_ext);
-	//st_printf("[FRL TRAINING] ************** TX_FLT_UPDATE_CLEAR************\n");
-	//TX_FLT_UPDATE_CLEAR(int_ext);
-	//rx_pr("[FRL TRAINING] ************** RX_WAIT_FLT_UPDATE_CLEAR************\n");
-	//RX_WAIT_FLT_UPDATE_CLEAR(port);
-	//rx_pr("[FRL TRAINING] ************** RX_LTS_3_FRL_CONFIG************\n");
-	//RX_LTS_3_FRL_CONFIG(frl_rate, port);//dont need config digital phy
-	//rx_pr("[FRL TRAINING] ************** RX_LTS_3_LTP_REQ_SEND_5678************\n");
-	//RX_LTS_3_LTP_REQ_SEND_5678(port);
-	RX_LTS_3_LTP_REQ_SEND_1111(port);
-	//st_printf("[FRL TRAINING] ************** TX_LTS_3_POLL_FLT_UPDATE************\n");
-	//TX_LTS_3_POLL_FLT_UPDATE(int_ext);
-	//st_printf("[FRL TRAINING] ************** TX_LTS_3_READ_LTP_REQ************\n");
-	//TX_LTS_3_READ_LTP_REQ(int_ext);
-	//st_printf("[FRL TRAINING] ************** TX_FLT_UPDATE_CLEAR************\n");
-	//TX_FLT_UPDATE_CLEAR(int_ext);
-	//rx_pr("[FRL TRAINING] ************** RX_WAIT_FLT_UPDATE_CLEAR************\n");
-	RX_WAIT_FLT_UPDATE_CLEAR(port);
-	//rx_pr("[FRL TRAINING] ************** aml_phy_init_t3x************\n");
-	mdelay(tr_delay0);
-	aml_phy_init_t3x_21(port);
-	mdelay(tr_delay1);
-	//rx_pr("[FRL TRAINING] ************** RX_LTS_3_ERR_DETECT************\n");
+	aml_phy_init_t3x(port);
 	rx_lts_3_err_detect(port);
-	//rx_pr("[FRL TRAINING] ************** RX_LTS_3_LTP_REQ_SEND_0000************\n");
 	RX_LTS_3_LTP_REQ_SEND_0000(port);
-	//st_printf("[FRL TRAINING] ************** TX_LTS_3_POLL_FLT_UPDATE************\n");
-	//TX_LTS_3_POLL_FLT_UPDATE(int_ext);
-	//st_printf("[FRL TRAINING] ************** TX_LTS_3_FRL_PASS************\n");
-	//TX_LTS_3_FRL_PASS(int_ext,frl_rate);
-	//rx_pr("[FRL TRAINING] ************** TX_LTS_P_SEND_ONLY_GAP************\n");
-	//TX_LTS_P_SEND_ONLY_GAP(frl_rate);
-	//st_printf("[FRL TRAINING] ************** TX_FLT_UPDATE_CLEAR************\n");
-	//TX_FLT_UPDATE_CLEAR(int_ext);
-	//rx_pr("[FRL TRAINING] ************** RX_WAIT_FLT_UPDATE_CLEAR************\n");
-	RX_WAIT_FLT_UPDATE_CLEAR(port);
-	//rx_pr("[FRL TRAINING] ************** RX_LTS_P_SYN_DETECT************\n");
-	rx_lts_p_syn_detect(rx[port].var.frl_rate, port);
-	//rx_pr("[FRL TRAINING] ************** RX_LTS_P_FRL_START************\n");
-	RX_LTS_P_FRL_START(port);
-	//st_printf("[FRL TRAINING] ************** TX_LTS_P_POLL_FRL_START************\n");
-	//TX_LTS_P_POLL_FRL_START(int_ext);
+	hal_flt_update_set(port);
+	if (!hdmirx_flt_update_cleared_wait(SCDCS_UPD_FLAGS_SCDC_IVCRX, port)) {
+		if (log_level & FRL_LOG)
+			rx_pr("polling time out b\n");
+	}
+	rx_set_frl_train_sts(E_FRL_TRAIN_FINISH);
 }
 
 enum frl_train_sts_e rx_get_frl_train_sts(void)
@@ -5527,6 +5488,9 @@ void frate_monitor(void)
 			}
 			if (rx[port].state > FSM_FRL_FLT_READY)
 				rx[port].state = FSM_FRL_FLT_READY;
+		} else {
+			if (rx[port].state > FSM_FRL_FLT_READY)
+				rx[port].state = FSM_WAIT_CLK_STABLE;
 		}
 		if (log_level & FRL_LOG)
 			rx_pr("port-%d frate change to %d\n", port, rx[port].var.frl_rate);
@@ -5564,6 +5528,9 @@ void frate_monitor1(void)
 			}
 			if (rx[port].state > FSM_FRL_FLT_READY)
 				rx[port].state = FSM_FRL_FLT_READY;
+		} else {
+			if (rx[port].state > FSM_FRL_FLT_READY)
+				rx[port].state = FSM_WAIT_CLK_STABLE;
 		}
 		if (log_level & FRL_LOG)
 			rx_pr("port-%d frate change to %d\n", port, rx[port].var.frl_rate);

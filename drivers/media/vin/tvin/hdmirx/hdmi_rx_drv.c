@@ -386,8 +386,10 @@ int rx_init_reg_map(struct platform_device *pdev)
 		rx_reg_maps[i].p = devm_ioremap(&pdev->dev,
 						     res->start, size);
 		rx_reg_maps[i].size = size;
-		rx_pr("phy_addr = 0x%x, size = 0x%x, maped:%px\n",
-		      rx_reg_maps[i].phy_addr, size, rx_reg_maps[i].p);
+
+		//remove to echo reg_map > /sys/class/hdmirx/hdmirx0/debug;
+		//rx_pr("phy_addr = 0x%x, size = 0x%x, maped:%px\n",
+		      //rx_reg_maps[i].phy_addr, size, rx_reg_maps[i].p);
 	}
 	return ret;
 }
@@ -3777,17 +3779,7 @@ static int hdmirx_probe(struct platform_device *pdev)
 		rx_info.arc_port = 0x1;
 		rx_pr("not find arc_port, portB by default\n");
 	}
-	ret = of_property_read_u32(pdev->dev.of_node,
-				   "hdcp_tee_path",
-						&hdcp_tee_path);
-	if (ret) {
-		hdcp_tee_path = 0;
-		rx_pr("not find hdcp_tee_path, hdcp normal path\n");
-	}
-	/*if (hdcp_tee_path)*/
-		/*hdcp22_on = 1;*/
-	/*else*/
-	rx_is_hdcp22_support();
+
 	ret = of_property_read_u32(pdev->dev.of_node,
 				   "aud_compose_type",
 				   &rpt_edid_selection);
@@ -3826,6 +3818,7 @@ static int hdmirx_probe(struct platform_device *pdev)
 	ret = of_reserved_mem_device_init(&pdev->dev);
 	if (ret != 0)
 		rx_pr("warning: no rev cmd mem\n");
+	rx_is_hdcp22_support();
 	hdmirx_wr_bits_top_common(TOP_EDID_RAM_OVR0_DATA, _BIT(0), 0);
 	if (rx_5v_wake_up_en)
 		hdmirx_wr_bits_top_common(TOP_EDID_RAM_OVR0_DATA, _BIT(0), 1);
@@ -4222,8 +4215,6 @@ int __init hdmirx_init(void)
 		ret = -ENODEV;
 		goto fail_pdrv_register;
 	}
-	rx_pr("%s\n", __func__);
-
 	return 0;
 
 fail_pdrv_register:

@@ -25,7 +25,7 @@
 		reg = <0xff64c000 0x400 /* dsi_host */
 			0xff648000 0x80    /* dsi_phy */
 			0xff660000 0xd000  /* tcon */
-			0xff634400 0x70    /* periphs */
+			0xff634400 0x300    /* periphs */
 			0xffd01000 0xa0    /* reset */
 			0xff648000 0x100>;  /* combo_dphy */
 		interrupts = <0 3 1

@@ -48,7 +48,8 @@
 /* 20230906: support pdf action */
 /* 20230907: t3x revB OD secure support*/
 /* 20230912: bypass phy data buffer */
-#define LCD_DRV_VERSION    "20230912"
+/* 20230915: update phy setting for txhd2 */
+#define LCD_DRV_VERSION    "20230915"
 
 extern struct mutex lcd_vout_mutex;
 extern spinlock_t lcd_reg_spinlock;

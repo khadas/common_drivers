@@ -213,6 +213,26 @@ static unsigned int lcd_reg_dump_clk_c3[] = {
 	LCD_DEBUG_REG_END
 };
 
+static unsigned int lcd_reg_dump_pll_txhd2[] = {
+	HHI_TCON_PLL_CNTL0,
+	HHI_TCON_PLL_CNTL1,
+	HHI_TCON_PLL_CNTL2,
+	HHI_TCON_PLL_CNTL3,
+	HHI_TCON_PLL_CNTL4,
+	HHI_TCON_PLL_CNTL5,
+	HHI_TCON_PLL_CNTL6,
+	LCD_DEBUG_REG_END
+};
+
+static unsigned int lcd_reg_dump_clk_txhd2[] = {
+	HHI_VIID_CLK_DIV,
+	HHI_VIID_CLK_CNTL,
+	HHI_VID_CLK_CNTL2,
+	HHI_TCON_CLK_CNTL,
+	HHI_MIPIDSI_PHY_CLK_CNTL,
+	LCD_DEBUG_REG_END
+};
+
 static unsigned int lcd_reg_dump_encl_dft[] = {
 	VPU_VIU_VENC_MUX_CTRL,
 	ENCL_VIDEO_EN,

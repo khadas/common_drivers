@@ -34,7 +34,6 @@ static struct ldim_fw_s ldim_fw = {
 	.func_en = 1,
 	.remap_en = 0,
 	.res_update = 0,
-	.level_index = 0,
 	.fw_ctrl = 0,
 	.fw_state = 0,
 

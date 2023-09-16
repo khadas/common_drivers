@@ -1287,7 +1287,7 @@ ldim_dev_get_config_from_dts_next:
 				i, i);
 			i = 32;
 		} else {
-			if (fw_cus->fw_alg_frm) {
+			if (fw_cus) {
 				fw_cus->param[i] = val;
 				LDIMPR("param[%d] = %d\n",
 					i, fw_cus->param[i]);
@@ -1625,7 +1625,7 @@ ldim_dev_get_config_from_ukey_next:
 			+ 4 * i + 2)) << 16) |
 			((*(p + LCD_UKEY_LDIM_DEV_CUST_PARAM
 			+ 4 * i + 3)) << 24));
-		if (fw_cus->fw_alg_frm)	{
+		if (fw_cus) {
 			fw_cus->param[i] = temp_val;
 			LDIMPR("fw_cus->param[%d] = %d =  0x%x\n",
 			i, fw_cus->param[i],

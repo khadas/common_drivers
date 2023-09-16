@@ -24,7 +24,8 @@
 /*20230619: optimize reserved memory alloc and vaddr usage */
 /*20230620: add t3x support */
 /*20230710: add power on/off state protect */
-#define LDIM_DRV_VER    "20230710"
+/*20230915: add cus_fw set pq */
+#define LDIM_DRV_VER    "20230915"
 
 extern unsigned char ldim_debug_print;
 
@@ -32,6 +33,8 @@ extern int ld_remap_lut[16][32];
 extern unsigned int ldc_gain_lut_array[16][64];
 extern unsigned int ldc_min_gain_lut[64];
 extern unsigned int ldc_dither_lut[32][16];
+extern struct fw_pqdata_s ldim_pq;
+extern struct fw_pq_s fw_pq;
 
 #define AML_LDIM_MODULE_NAME "aml_ldim"
 #define AML_LDIM_DRIVER_NAME "aml_ldim"

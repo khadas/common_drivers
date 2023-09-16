@@ -81,6 +81,9 @@ static void ldim_ld_sel_ctrl(int flag);
 static void ldim_pwm_vs_update(void);
 static void ldim_config_print(void);
 
+struct fw_pqdata_s ldim_pq;
+struct fw_pq_s fw_pq;
+
 static struct ldim_config_s ldim_config = {
 	.hsize = 3840,
 	.vsize = 2160,
@@ -103,6 +106,7 @@ static struct aml_ldim_driver_s ldim_driver = {
 	.duty_update_flag = 0,
 	.switch_ld_cnt = 1,
 	.in_vsync_flag = 0,
+	.spiout_mode = 0,
 
 	.init_on_flag = 0,
 	.func_en = 0,
@@ -284,7 +288,6 @@ static void ldim_fw_vsync_update(void)
 	if (fw->conf->func_en != ldim_driver.func_en ||
 		fw->conf->hsize != ldim_driver.conf->hsize ||
 		fw->conf->vsize != ldim_driver.conf->vsize ||
-		fw->conf->level_index != ldim_driver.level_idx ||
 		fw->res_update != ldim_driver.resolution_update) {
 		if (ldim_driver.func_en == 0 && fw->conf->func_en == 1)
 			current_switch_cnt = ldim_driver.switch_ld_cnt;
@@ -292,7 +295,6 @@ static void ldim_fw_vsync_update(void)
 		fw->conf->func_en = ldim_driver.func_en;
 		fw->conf->hsize = ldim_driver.conf->hsize;
 		fw->conf->vsize = ldim_driver.conf->vsize;
-		fw->conf->level_index = ldim_driver.level_idx;
 		fw->res_update = ldim_driver.resolution_update;
 
 		if (fw->fw_info_update)
@@ -331,8 +333,12 @@ void ldim_vs_arithmetic(struct aml_ldim_driver_s *ldim_drv)
 			memcpy(cus_fw->bl_matrix, fw->bl_matrix, size * (sizeof(unsigned int)));
 			if (cus_fw->fw_alg_frm)
 				cus_fw->fw_alg_frm(cus_fw, fw->stts);
-			if (fw->fw_rmem_duty_set)
+			if (fw->fw_rmem_duty_set && cus_fw->comp_en)
 				fw->fw_rmem_duty_set(cus_fw->bl_matrix);
+			if (fw->fw_pq_set && cus_fw->pq_update && cus_fw->pq_update) {
+				fw->fw_pq_set(&fw_pq);
+				cus_fw->pq_update = 0;
+			}
 			memcpy(ldim_drv->local_bl_matrix, cus_fw->bl_matrix,
 			size * (sizeof(unsigned int)));
 		}
@@ -372,6 +378,18 @@ int is_in_ldim_vsync_isr(void)
 }
 EXPORT_SYMBOL(is_in_ldim_vsync_isr);
 
+void ldim_vs_brightness(void)
+{
+	if ((ldim_driver.func_en && ldim_driver.ld_sel) ||
+		current_switch_cnt) {
+		ldim_on_vs_brightness();
+		current_switch_cnt--;
+
+	} else {
+		ldim_off_vs_brightness();
+	}
+}
+
 static irqreturn_t ldim_vsync_isr(int irq, void *dev_id)
 {
 	unsigned long long local_time[3];
@@ -400,6 +418,9 @@ static irqreturn_t ldim_vsync_isr(int irq, void *dev_id)
 	local_time[1] = sched_clock();
 	local_time[2] = local_time[1] - local_time[0];
 	ldim_time_sort_save(ldim_driver.arithmetic_time, local_time[2]);
+
+	if (ldim_driver.spiout_mode == 1)
+		ldim_vs_brightness();
 
 	ldim_driver.irq_cnt++;
 	if (ldim_driver.irq_cnt > 0xfffffff)
@@ -430,14 +451,8 @@ static irqreturn_t ldim_pwm_vs_isr(int irq, void *dev_id)
 	if (ldim_debug_print == 7)
 		LDIMPR("%s: pwm_vs_irq_cnt = %d\n", __func__, ldim_driver.pwm_vs_irq_cnt);
 
-	if ((ldim_driver.func_en && ldim_driver.ld_sel) ||
-		current_switch_cnt) {
-		ldim_on_vs_brightness();
-		current_switch_cnt--;
-
-	} else {
-		ldim_off_vs_brightness();
-	}
+	if (ldim_driver.spiout_mode == 0)
+		ldim_vs_brightness();
 
 	spin_unlock_irqrestore(&ldim_pwm_vs_isr_lock, flags);
 
@@ -660,26 +675,16 @@ static long ldim_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		}
 		argp = (void __user *)ldim_buff.ptr;
 		LDIMPR("index =  0x%x, len=  0x%x\n", ldim_buff.index, ldim_buff.len);
-		//ldim_buff.len must > sizeof(fw_pqdata_s)
-		if (ldim_buff.len == 0 || ldim_buff.len > 0x8000) {
-			LDIMERR("ldim buf len = %d is invalid!!\n", ldim_buff.len);
-			return -EFAULT;
-		}
-		buf = vmalloc(ldim_buff.len);
-		if (!buf) {
-			LDIMERR("%s vmalloc buf for receive pq_init.bin failed\n", __func__);
-			vfree(buf);
-			return -EFAULT;
-		}
-		if (copy_from_user((void *)buf, argp, ldim_buff.len)) {
-			LDIMERR("cp pq_init.bin to buf fail\n");
-			vfree(buf);
+
+		if (ldim_buff.len != sizeof(struct fw_pqdata_s)) {
+			LDIMPR("len=  0x%x is not match of fw_pqdata_s\n", ldim_buff.len);
 			return -EFAULT;
 		}
 
-		if (ldim_driver.fw->fw_pq_set)
-			ldim_driver.fw->fw_pq_set(buf, ldim_buff.len);
-		vfree(buf);
+		if (copy_from_user(&ldim_pq, argp, ldim_buff.len)) {
+			LDIMERR("cp pq_init.bin to buf fail\n");
+			return -EFAULT;
+		}
 		break;
 	case AML_LDIM_IOC_NR_GET_LEVEL_IDX:
 		if (copy_to_user(argp, &ldim_driver.level_idx, sizeof(unsigned char)))
@@ -690,6 +695,16 @@ static long ldim_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 				   sizeof(unsigned char))) {
 			ret = -EFAULT;
 		}
+		if (ldim_driver.level_idx > 3) {
+			LDIMPR("level_idx = %d is over range!!, do nothing!\n",
+			ldim_driver.level_idx);
+			return -EFAULT;
+		}
+
+		fw_pq = ldim_pq.pqdata[ldim_driver.level_idx];
+		if (ldim_driver.fw->fw_pq_set)
+			ldim_driver.fw->fw_pq_set(&fw_pq);
+
 		if (ldim_driver.level_idx)
 			ldim_driver.func_en = 1;
 		else
@@ -944,6 +959,7 @@ static int aml_ldim_malloc(struct platform_device *pdev, struct ldim_drv_data_s 
 	unsigned int zone_num = row * col;
 	unsigned int mem_size;
 	int i, ret = 0;
+	struct ldim_fw_custom_s *fw_cus = aml_ldim_get_fw_cus();
 
 	/* init reserved memory */
 	ret = of_reserved_mem_device_init(&pdev->dev);
@@ -986,8 +1002,16 @@ static int aml_ldim_malloc(struct platform_device *pdev, struct ldim_drv_data_s 
 	for (i = 0; i < zone_num; i++)
 		ldim_driver.test_matrix[i] = 2048;
 
+	if (fw_cus) {
+		fw_cus->param = kcalloc(32, sizeof(unsigned int), GFP_KERNEL);
+		if (!fw_cus->param)
+			goto ldim_malloc_t7_err4;
+	}
+
 	return 0;
 
+ldim_malloc_t7_err4:
+	kfree(ldim_driver.test_matrix);
 ldim_malloc_t7_err3:
 	kfree(ldim_driver.bl_matrix_pre);
 ldim_malloc_t7_err2:
@@ -1150,6 +1174,9 @@ int aml_ldim_probe(struct platform_device *pdev)
 		ldim_driver.cus_fw->seg_row = ldim_config.seg_row;
 		ldim_driver.cus_fw->seg_col = ldim_config.seg_col;
 		ldim_driver.cus_fw->valid = 1;
+		ldim_driver.cus_fw->pqdata = &fw_pq;
+		ldim_driver.cus_fw->comp_en = 0;
+		ldim_driver.cus_fw->pq_update = 0;
 	}
 
 	ret = alloc_chrdev_region(&devp->aml_ldim_devno, 0, 1, AML_LDIM_DEVICE_NAME);
@@ -1249,6 +1276,7 @@ int aml_ldim_remove(void)
 	kfree(ldim_driver.bl_matrix_cur);
 	kfree(ldim_driver.test_matrix);
 	kfree(ldim_driver.local_bl_matrix);
+	kfree(ldim_driver.cus_fw->param);
 
 	free_irq(bdrv->res_ldim_vsync_irq->start, (void *)"ldim_vsync");
 

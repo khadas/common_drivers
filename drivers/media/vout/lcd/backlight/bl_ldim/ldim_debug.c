@@ -602,12 +602,24 @@ static ssize_t ldim_attr_store(struct class *cla, struct class_attribute *attr,
 			if (kstrtoul(parm[1], 10, &val1) < 0)
 				goto ldim_attr_store_err;
 			ldim_drv->level_idx = (unsigned char)val1;
+
+			fw_pq = ldim_pq.pqdata[ldim_drv->level_idx];
+			if (ldim_drv->fw->fw_pq_set)
+				ldim_drv->fw->fw_pq_set(&fw_pq);
+
 			if (ldim_drv->level_idx)
 				ldim_drv->func_en = 1;
 			else
 				ldim_drv->func_en = 0;
 		}
 		pr_info("level_idx = %d\n", ldim_drv->level_idx);
+	} else if (!strcmp(parm[0], "spiout_mode")) {
+		if (parm[1]) {
+			if (kstrtoul(parm[1], 10, &val1) < 0)
+				goto ldim_attr_store_err;
+			ldim_drv->spiout_mode = (unsigned char)val1;
+		}
+		pr_info("spiout_mode = %d\n", ldim_drv->spiout_mode);
 	} else if (!strcmp(parm[0], "fw")) {
 		if (fw->fw_alg_para_print)
 			fw->fw_alg_para_print(fw);

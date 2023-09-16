@@ -28,6 +28,7 @@
 #define DCT_PRE_LS_MEM	DI_BIT29
 
 static DEFINE_SPINLOCK(dct_pre);
+static void dct_unreg_all(void);
 
 static void ini_dcntr_pre(int hsize, int vsize, int grd_num_mode, u32 ratio)
 {
@@ -831,6 +832,7 @@ static void decontour_uninit(struct di_ch_s *pch)
 {
 	struct di_pre_dct_s *pdct = dim_pdct_alloc(pch);
 	struct di_hdct_s  *dct;
+	bool pre_link = false;
 
 	if (!pdct)
 		return;
@@ -839,6 +841,7 @@ static void decontour_uninit(struct di_ch_s *pch)
 		/* TODO: need check to add lock_pvpp->spin_lock_irqsave */
 		dpvpp_dct_mem_unreg(pch);
 		pdct->plink = false;
+		pre_link = true;
 	} else {
 		if (pdct->decontour_addr)
 			codec_mm_free_for_dma("di-decontour",
@@ -851,7 +854,9 @@ static void decontour_uninit(struct di_ch_s *pch)
 	dct->statusx[pch->ch_id] &= (~DCT_PRE_LS_CH);
 	dct->src_cnt--;
 	dct->statusx[pch->ch_id] &= (~DCT_PRE_LS_ACT);
-	PR_INF("ch[%d]decontour: uninit %px\n", pch->ch_id, pdct);
+	if (!dct->src_cnt && pre_link)
+		dct_unreg_all();
+	PR_INF("ch[%d]decontour: uninit %px pre-link:%d\n", pch->ch_id, pdct, pre_link);
 }
 
 void dct_pre_plink_unreg_mem(struct di_ch_s *pch)

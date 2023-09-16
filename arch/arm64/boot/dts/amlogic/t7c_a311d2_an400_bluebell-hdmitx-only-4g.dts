@@ -1897,6 +1897,7 @@
 &vdin1 {
 	memory-region = <&vdin1_cma_reserved>;
 	status = "okay";
+	vdin_function_sel = <0x400>;
 };
 
 &periphs_pinctrl {

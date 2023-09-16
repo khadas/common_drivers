@@ -1760,6 +1760,7 @@
 	memory-region = <&vdin1_cma_reserved>;
 	status = "okay";
 	rdma_not_register;
+	vdin_function_sel = <0x400>;
 };
 
 &periphs_pinctrl {

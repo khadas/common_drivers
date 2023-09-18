@@ -325,10 +325,8 @@ static void dummy_panel_clear_mute(struct dummy_venc_driver_s *venc_drv)
 {
 	if (venc_drv->viu_sel == 1) {
 #ifdef CONFIG_AMLOGIC_MEDIA_VIDEO
-		if (get_output_mute()) {
-			set_output_mute(false);
-			VOUTPR("%s: clr mute for dummy_panel\n", __func__);
-		}
+		set_output_mute(false);
+		VOUTPR("%s: clr mute for dummy_panel\n", __func__);
 #endif
 	}
 }
@@ -509,6 +507,8 @@ static int dummy_encp_set_current_vmode(enum vmode_e mode, void *data)
 			dummy_panel_clear_mute(venc_drv);
 	} else {
 		vout_vcbus_setb(VPP_MISC_TXHD2, 1, 27, 1);
+		if (venc_drv->vinfo_index == 1)
+			dummy_panel_clear_mute(venc_drv);
 		VOUTPR("%s txhd2 enable keystone\n", __func__);
 	}
 

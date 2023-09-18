@@ -735,6 +735,9 @@ static int meson_plane_atomic_get_property(struct drm_plane *plane,
 	} else if (property == osd_plane->palette) {
 		*val = osd_plane->palette_id;
 		ret = 0;
+	} else if (property == osd_plane->rotation_reflect_property) {
+		*val = osd_plane->osd_reverse;
+		ret = 0;
 	}
 
 	return ret;
@@ -765,6 +768,9 @@ static int meson_plane_atomic_set_property(struct drm_plane *plane,
 			return ret;
 		osd_plane->receive_palette = new_blob->data;
 		drm_property_blob_put(new_blob);
+		ret = 0;
+	} else if (property == osd_plane->rotation_reflect_property) {
+		osd_plane->osd_reverse = val;
 		ret = 0;
 	}
 
@@ -1644,6 +1650,29 @@ static void meson_plane_add_max_fb_property(struct drm_device *drm_dev,
 	}
 }
 
+static const struct drm_prop_enum_list osd_rotation_reflect_list[] = {
+	{ DRM_MODE_ROTATE_0, "reflect-0" },
+	{ DRM_MODE_REFLECT_X, "reflect-x" },
+	{ DRM_MODE_REFLECT_Y, "reflect-y" },
+	{ DRM_MODE_REFLECT_MASK, "reflect-all" },
+};
+
+static void meson_plane_add_rotation_reflect_property(struct drm_device *drm_dev,
+					    struct am_osd_plane *osd_plane)
+{
+	struct drm_property *prop;
+
+	prop = drm_property_create_enum(drm_dev, 0, "rotation_reflect",
+					osd_rotation_reflect_list,
+					ARRAY_SIZE(osd_rotation_reflect_list));
+	if (prop) {
+		osd_plane->rotation_reflect_property = prop;
+		drm_object_attach_property(&osd_plane->base.base, prop, DRM_MODE_ROTATE_0);
+	} else {
+		DRM_ERROR("Failed to create rotation reflect property\n");
+	}
+}
+
 static void meson_plane_get_primary_plane(struct meson_drm *priv,
 			enum drm_plane_type *type)
 {
@@ -1675,7 +1704,7 @@ static struct am_osd_plane *am_osd_plane_create(struct meson_drm *priv,
 	struct am_osd_plane *osd_plane;
 	struct meson_of_conf *conf;
 	struct drm_plane *plane;
-	u32  zpos, min_zpos, max_zpos, osd_index;
+	u32  zpos, min_zpos, max_zpos, index, osd_reverse;
 	char plane_name[8];
 	const u32 *formats_group;
 	int num_formats;
@@ -1693,25 +1722,29 @@ static struct am_osd_plane *am_osd_plane_create(struct meson_drm *priv,
 	osd_plane->plane_index = i;
 	osd_plane->plane_type = OSD_PLANE;
 	conf = &priv->of_conf;
+	osd_reverse = DRM_MODE_ROTATE_0;
+	index = 0;
 
 #ifdef CONFIG_AMLOGIC_MEDIA_FB
-	get_logo_osd_reverse(&osd_index, &logo.osd_reverse);
+	get_logo_osd_reverse(&index, &osd_reverse);
 #else
-	drm_logo_get_osd_reverse(&osd_index, &logo.osd_reverse);
+	drm_logo_get_osd_reverse(&index, &osd_reverse);
 #endif
-	switch (logo.osd_reverse) {
-	case 1:
-		osd_plane->osd_reverse = DRM_MODE_REFLECT_MASK;
-		break;
-	case 2:
-		osd_plane->osd_reverse = DRM_MODE_REFLECT_X;
-		break;
-	case 3:
-		osd_plane->osd_reverse = DRM_MODE_REFLECT_Y;
-		break;
-	default:
-		osd_plane->osd_reverse = DRM_MODE_ROTATE_0;
-		break;
+	if (index ==  osd_plane->plane_index || index == DEV_ALL) {
+		switch (osd_reverse) {
+		case 1:
+			osd_plane->osd_reverse = DRM_MODE_REFLECT_MASK;
+			break;
+		case 2:
+			osd_plane->osd_reverse = DRM_MODE_REFLECT_X;
+			break;
+		case 3:
+			osd_plane->osd_reverse = DRM_MODE_REFLECT_Y;
+			break;
+		default:
+			osd_plane->osd_reverse = DRM_MODE_ROTATE_0;
+			break;
+		}
 	}
 
 	zpos = osd_plane->plane_index + min_zpos;
@@ -1784,8 +1817,9 @@ static struct am_osd_plane *am_osd_plane_create(struct meson_drm *priv,
 				BIT(DRM_SCALING_FILTER_REPEATE));
 	meson_plane_add_occupied_property(priv->drm, osd_plane);
 	meson_plane_add_max_fb_property(priv->drm, osd_plane);
-	DRM_INFO("osd plane %d create done, occupied-%d crtc_mask-%d type-%d\n",
-		i, osd_plane->osd_occupied, crtc_mask, type);
+	meson_plane_add_rotation_reflect_property(priv->drm, osd_plane);
+	DRM_INFO("osd plane %d create done, occupied-%d crtc_mask-%d type-%d osd_reverse-%d\n",
+		i, osd_plane->osd_occupied, crtc_mask, type, osd_reverse);
 	meson_plane_create_security_en_property(priv->drm, osd_plane);
 	meson_plane_add_palette_property(priv->drm, osd_plane);
 	return osd_plane;

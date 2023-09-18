@@ -33,6 +33,15 @@ struct am_meson_logo {
 	char outputmode[VMODE_NAME_LEN_MAX];
 };
 
+enum osd_dev_e {
+	DEV_OSD0 = 0,
+	DEV_OSD1,
+	DEV_OSD2,
+	DEV_OSD3,
+	DEV_ALL,
+	DEV_MAX
+};
+
 #ifndef CONFIG_AMLOGIC_MEDIA_FB
 struct osd_info_s {
 	u32 index;
@@ -46,15 +55,6 @@ struct para_osd_info_s {
 	u32 next_idx;
 	u32 cur_group_start;
 	u32 cur_group_end;
-};
-
-enum osd_dev_e {
-	DEV_OSD0 = 0,
-	DEV_OSD1,
-	DEV_OSD2,
-	DEV_OSD3,
-	DEV_ALL,
-	DEV_MAX
 };
 
 enum reverse_info_e {

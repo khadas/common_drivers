@@ -51,6 +51,7 @@ struct am_osd_plane {
 	u32 palette_id;
 	/*max fb property*/
 	struct drm_property *max_fb_property;
+	struct drm_property *rotation_reflect_property;
 
 	/*osd extend*/
 	u32 osd_reverse;

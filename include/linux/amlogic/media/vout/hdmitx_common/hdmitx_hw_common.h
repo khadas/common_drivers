@@ -110,6 +110,9 @@
 #define STAT_AUDIO_CLK_STABLE	(CMD_STAT_OFFSET + 0x12)
 #define STAT_AUDIO_PACK			(CMD_STAT_OFFSET + 0x13)
 #define STAT_HDR_TYPE			(CMD_STAT_OFFSET + 0x20)
+#define STAT_TX_HDR				(CMD_STAT_OFFSET + 0x21) /*hdmitx_get_cur_hdr_st*/
+#define STAT_TX_DV				(CMD_STAT_OFFSET + 0x22) /*hdmitx_get_cur_dv_st*/
+#define STAT_TX_HDR10P			(CMD_STAT_OFFSET + 0x23) /*hdmitx_get_cur_hdr10p_st*/
 #define STAT_TX_PHY				(CMD_STAT_OFFSET + 0x30)
 #define STAT_TX_OUTPUT			(CMD_STAT_OFFSET + 0x31) /*if hdmitx have output*/
 
@@ -202,6 +205,31 @@ enum hdmi_ll_mode {
 #define HDMI_PACKET_HBR         6
 #define HDMI_PACKET_DRM		0x86
 
+#define HDMITX_HWCMD_MUX_HPD_IF_PIN_HIGH       0x3
+#define HDMITX_HWCMD_TURNOFF_HDMIHW           0x4
+#define HDMITX_HWCMD_MUX_HPD                0x5
+#define HDMITX_HWCMD_PLL_MODE                0x6
+#define HDMITX_HWCMD_TURN_ON_PRBS           0x7
+#define HDMITX_FORCE_480P_CLK                0x8
+#define HDMITX_GET_AUTHENTICATE_STATE        0xa
+#define HDMITX_SW_INTERNAL_HPD_TRIG          0xb
+#define HDMITX_HWCMD_OSD_ENABLE              0xf
+
+#define HDMITX_EARLY_SUSPEND_RESUME_CNTL     0x14
+	#define HDMITX_EARLY_SUSPEND             0x1
+	#define HDMITX_LATE_RESUME               0x2
+
+/* Refer to HDMI_OTHER_CTRL0 in hdmi_tx_reg.h */
+#define HDMITX_AVMUTE_CNTL                   0x19
+	#define AVMUTE_SET          0   /* set AVMUTE to 1 */
+	#define AVMUTE_CLEAR        1   /* set AVunMUTE to 1 */
+	#define AVMUTE_OFF          2   /* set both AVMUTE and AVunMUTE to 0 */
+#define HDMITX_CBUS_RST                      0x1A
+#define HDMITX_INTR_MASKN_CNTL               0x1B
+	#define INTR_MASKN_ENABLE   0
+	#define INTR_MASKN_DISABLE  1
+	#define INTR_CLEAR          2
+
 /***********************************************************************
  *             HDMITX COMMON STRUCT & API
  **********************************************************************/
@@ -217,19 +245,40 @@ struct hdmitx_hw_common {
 	 */
 	void (*setpacket)(int type, unsigned char *DB,
 			unsigned char *HB);
+	void (*disablepacket)(int type);
 	/* Audio/Video/System Status */
 	int (*getstate)(struct hdmitx_hw_common *tx_hw,
 			u32 cmd, u32 arg);
-
 	/*validate if vic is supported by hw ip/phy*/
-	int (*validatemode)(u32 vic);
+	int (*validatemode)(struct hdmitx_hw_common *tx_hw, u32 vic);
 	/*calc formatpara hw info config*/
-	int (*calcformatpara)(struct hdmi_format_para *para);
+	int (*calcformatpara)(struct hdmitx_hw_common *tx_hw, struct hdmi_format_para *para);
 };
 
+int hdmitx_hw_cntl_config(struct hdmitx_hw_common *tx_hw,
+	u32 cmd, u32 arg);
+int hdmitx_hw_cntl_misc(struct hdmitx_hw_common *tx_hw,
+	u32 cmd, u32 arg);
+int hdmitx_hw_get_state(struct hdmitx_hw_common *tx_hw,
+	u32 cmd, u32 arg);
+int hdmitx_hw_validate_mode(struct hdmitx_hw_common *tx_hw,
+	u32 vic);
+int hdmitx_hw_calc_format_para(struct hdmitx_hw_common *tx_hw,
+	struct hdmi_format_para *para);
+int hdmitx_hw_set_packet(struct hdmitx_hw_common *tx_hw,
+	int type, unsigned char *DB, unsigned char *HB);
+int hdmitx_hw_disable_packet(struct hdmitx_hw_common *tx_hw,
+	int type);
 int hdmitx_hw_avmute(struct hdmitx_hw_common *tx_hw,
 	int muteflag);
 int hdmitx_hw_set_phy(struct hdmitx_hw_common *tx_hw,
 	int flag);
+
+enum hdmi_tf_type hdmitx_hw_get_hdr_st(struct hdmitx_hw_common *tx_hw);
+enum hdmi_tf_type hdmitx_hw_get_dv_st(struct hdmitx_hw_common *tx_hw);
+enum hdmi_tf_type hdmitx_hw_get_hdr10p_st(struct hdmitx_hw_common *tx_hw);
+
+/*utils functions shared for hdmitx hw module.*/
+u32 hdmitx_hw_get_audio_n_paras(enum hdmi_audio_fs fs, enum hdmi_color_depth cd, u32 tmds_clk);
 
 #endif

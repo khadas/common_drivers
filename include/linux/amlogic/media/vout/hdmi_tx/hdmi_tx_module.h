@@ -23,6 +23,8 @@
 #include <drm/amlogic/meson_connector_dev.h>
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_common.h>
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_hw_common.h>
+#include <linux/amlogic/media/vout/hdmi_tx/hdmi_tx_hw.h>
+#include <linux/amlogic/media/vout/hdmi_tx_repeater.h>
 
 #define DEVICE_NAME "amhdmitx"
 
@@ -41,27 +43,6 @@
 #define REG_LOG 0x80
 #define SCDC_LOG 0x100
 #define VINFO_LOG 0x200
-
-/* chip type */
-enum amhdmitx_chip_e {
-	MESON_CPU_ID_M8B = 0,
-	MESON_CPU_ID_GXBB,
-	MESON_CPU_ID_GXTVBB,
-	MESON_CPU_ID_GXL,
-	MESON_CPU_ID_GXM,
-	MESON_CPU_ID_TXL,
-	MESON_CPU_ID_TXLX,
-	MESON_CPU_ID_AXG,
-	MESON_CPU_ID_GXLX,
-	MESON_CPU_ID_TXHD,
-	MESON_CPU_ID_G12A,
-	MESON_CPU_ID_G12B,
-	MESON_CPU_ID_SM1,
-	MESON_CPU_ID_TM2,
-	MESON_CPU_ID_TM2B,
-	MESON_CPU_ID_SC2,
-	MESON_CPU_ID_MAX,
-};
 
 enum hdmitx_event_log_bits {
 	HDMITX_HPD_PLUGOUT                      = BIT(0),
@@ -94,22 +75,9 @@ enum hdmitx_event_log_bits {
 	HDMITX_HDMI_ERROR_MASK	=	GENMASK(31, 16),
 };
 
-struct amhdmitx_data_s {
-	enum amhdmitx_chip_e chip_type;
-	const char *chip_name;
-};
-
-/*****************************
- *    hdmitx attr management
- ******************************/
-
 /************************************
  *    hdmitx device structure
  *************************************/
-
-enum hd_ctrl {
-	VID_EN, VID_DIS, AUD_EN, AUD_DIS, EDID_EN, EDID_DIS, HDCP_EN, HDCP_DIS,
-};
 
 struct hdr_dynamic_struct {
 	unsigned int type;
@@ -169,47 +137,6 @@ struct drm_hdmitx_hdcp_cb {
 	void *data;
 };
 
-enum hdmi_hdr_transfer {
-	T_UNKNOWN = 0,
-	T_BT709,
-	T_UNDEF,
-	T_BT601,
-	T_BT470M,
-	T_BT470BG,
-	T_SMPTE170M,
-	T_SMPTE240M,
-	T_LINEAR,
-	T_LOG100,
-	T_LOG316,
-	T_IEC61966_2_4,
-	T_BT1361E,
-	T_IEC61966_2_1,
-	T_BT2020_10,
-	T_BT2020_12,
-	T_SMPTE_ST_2084,
-	T_SMPTE_ST_28,
-	T_HLG,
-};
-
-enum hdmi_hdr_color {
-	C_UNKNOWN = 0,
-	C_BT709,
-	C_UNDEF,
-	C_BT601,
-	C_BT470M,
-	C_BT470BG,
-	C_SMPTE170M,
-	C_SMPTE240M,
-	C_FILM,
-	C_BT2020,
-};
-
-enum hdmitx_aspect_ratio {
-	AR_UNKNOWM = 0,
-	AR_4X3,
-	AR_16X9,
-};
-
 struct aspect_ratio_list {
 	enum hdmi_vic vic;
 	int flag;
@@ -237,7 +164,7 @@ struct st_debug_param {
 struct hdmitx_dev {
 	struct cdev cdev; /* The cdev structure */
 	struct hdmitx_common tx_comm;
-	struct hdmitx_hw_common tx_hw;
+	struct hdmitx20_hw tx_hw;
 	dev_t hdmitx_id;
 	struct proc_dir_entry *proc_file;
 	struct task_struct *task;
@@ -268,7 +195,6 @@ struct hdmitx_dev {
 	struct delayed_work cec_work;
 #endif
 	struct timer_list hdcp_timer;
-	struct amhdmitx_data_s *data;
 	int hdmitx_gpios_hpd;
 	int hdmitx_gpios_scl;
 	int hdmitx_gpios_sda;
@@ -288,13 +214,9 @@ struct hdmitx_dev {
 	int ready;	/* 1, hdmi stable output, others are 0 */
 	int hdcp_hpd_stick;	/* 1 not init & reset at plugout */
 	int hdcp_tst_sig;
-	unsigned int div40;
 	bool pre_tmds_clk_div40;
 	unsigned int lstore;
 	struct {
-		void (*setpacket)(int type, unsigned char *DB,
-				  unsigned char *HB);
-		void (*disablepacket)(int type);
 		void (*setaudioinfoframe)(unsigned char *AUD_DB,
 					  unsigned char *CHAN_STAT_BUF);
 		int (*setdispmode)(struct hdmitx_dev *hdmitx_device);
@@ -323,10 +245,6 @@ struct hdmitx_dev {
 		void (*am_hdmitx_hdcp_enable)(void);
 		void (*am_hdmitx_hdcp_disconnect)(void);
 	} hwop;
-	struct {
-		unsigned int hdcp14_en;
-		unsigned int hdcp14_rslt;
-	} hdcpop;
 	struct hdmi_config_platform_data config_data;
 	enum hdmi_event_t hdmitx_event;
 	unsigned int irq_hpd;
@@ -377,10 +295,10 @@ struct hdmitx_dev {
 	/* 0: default setting  1:ch0/1  2:ch2/3  3:ch4/5  4:ch6/7 */
 	unsigned int aud_output_ch;
 	unsigned int hdmi_ch;
-/* if set to 1, then HDMI will output no audio */
-/* In KTV case, HDMI output Picture only, and Audio is driven by other
- * sources.
- */
+	/* if set to 1, then HDMI will output no audio */
+	/* In KTV case, HDMI output Picture only, and Audio is driven by other
+	 * sources.
+	 */
 	unsigned char hdmi_audio_off_flag;
 	enum hdmi_hdr_transfer hdr_transfer_feature;
 	enum hdmi_hdr_color hdr_color_feature;
@@ -402,7 +320,6 @@ struct hdmitx_dev {
 	unsigned int flag_3dfp:1;
 	unsigned int flag_3dtb:1;
 	unsigned int flag_3dss:1;
-	unsigned int dongle_mode:1;
 	unsigned int cedst_en:1; /* configure in DTS */
 	unsigned int bist_lock:1;
 	unsigned int vend_id_hit:1;
@@ -425,10 +342,6 @@ struct hdmitx_dev {
 	struct st_debug_param debug_param;
 };
 
-/* HDMI LOG */
-#define HDMI_LOG_HDCP           BIT(0)
-
-#define HDMI_PROCESS_DELAY  msleep(10)
 /* reduce a little time, previous setting is 4000/10 */
 #define AUTH_PROCESS_TIME   (1000 / 100)
 
@@ -446,62 +359,6 @@ extern struct hdmitx_audpara hdmiaud_config_data;
 extern struct hdmitx_audpara hsty_hdmiaud_config_data[8];
 extern unsigned int hsty_hdmiaud_config_loc, hsty_hdmiaud_config_num;
 
-int hdmitx_construct_vsif(struct hdmitx_common *tx_comm,
-	enum vsif_type type, int on, void *param);
-
-/* if vic is 93 ~ 95, or 98 (HDMI14 4K), return 1 */
-bool is_hdmi14_4k(enum hdmi_vic vic);
-
-/* if 4k can support Y420, return 1.
- * when current cs == 420, and vic can support 420,
- * current output is 4k420 mode.
- */
-bool is_hdmi4k_support_420(enum hdmi_vic vic);
-
-/*
- * HDMI Repeater TX I/F
- * RX downstream Information from rptx to rprx
- */
-/* send part raw edid from TX to RX */
-void rx_repeat_hpd_state(unsigned int st);
-/* prevent compile error in no HDMIRX case */
-void __attribute__((weak))rx_repeat_hpd_state(unsigned int st)
-{
-}
-
-void rx_edid_physical_addr(unsigned char a, unsigned char b,
-			   unsigned char c, unsigned char d);
-void __attribute__((weak))rx_edid_physical_addr(unsigned char a,
-						unsigned char b,
-						unsigned char c,
-						unsigned char d)
-{
-}
-
-int rx_set_hdr_lumi(unsigned char *data, int len);
-int __attribute__((weak))rx_set_hdr_lumi(unsigned char *data, int len)
-{
-	return 0;
-}
-
-void rx_set_repeater_support(bool enable);
-void __attribute__((weak))rx_set_repeater_support(bool enable)
-{
-}
-
-void rx_set_receiver_edid(unsigned char *data, int len);
-void __attribute__((weak))rx_set_receiver_edid(unsigned char *data, int len)
-{
-}
-
-void rx_set_receive_hdcp(unsigned char *data, int len, int depth,
-			 bool max_cascade, bool max_devs);
-void __attribute__((weak))rx_set_receive_hdcp(unsigned char *data, int len,
-					      int depth, bool max_cascade,
-					      bool max_devs)
-{
-}
-
 int hdmitx_set_display(struct hdmitx_dev *hdmitx_device,
 		       enum hdmi_vic videocode);
 
@@ -511,25 +368,8 @@ int hdmi_set_3d(struct hdmitx_dev *hdmitx_device, int type,
 int hdmitx_set_audio(struct hdmitx_dev *hdmitx_device,
 		     struct hdmitx_audpara *audio_param);
 
-/* for notify to cec/hdmirx */
-#define HDMITX_PLUG			1
-#define HDMITX_UNPLUG			2
-#define HDMITX_PHY_ADDR_VALID		3
-
 #define HDMI_SUSPEND	0
 #define HDMI_WAKEUP	1
-
-enum hdmitx_event {
-	HDMITX_NONE_EVENT = 0,
-	HDMITX_HPD_EVENT,
-	HDMITX_HDCP_EVENT,
-	HDMITX_CUR_ST_EVENT,
-	HDMITX_AUDIO_EVENT,
-	HDMITX_HDCPPWR_EVENT,
-	HDMITX_HDR_EVENT,
-	HDMITX_RXSENSE_EVENT,
-	HDMITX_CEDST_EVENT,
-};
 
 #define MAX_UEVENT_LEN 64
 struct hdmitx_uevent {
@@ -542,10 +382,7 @@ struct hdmitx_dev *get_hdmitx_device(void);
 /* for hdmitx internal usage */
 void hdmitx_hdcp_status(int hdmi_authenticated);
 void hdmitx_event_notify(unsigned long state, void *arg);
-void hdmitx20_video_mute_op(unsigned int flag);
 
-void hdmi_set_audio_para(int para);
-void phy_pll_off(void);
 void hdmitx_hdcp_do_work(struct hdmitx_dev *hdev);
 
 /***********************************************************************
@@ -553,88 +390,8 @@ void hdmitx_hdcp_do_work(struct hdmitx_dev *hdev);
  ***********************************************************************/
 void hdmitx_meson_init(struct hdmitx_dev *hdmitx_device);
 unsigned int get_hdcp22_base(void);
+void hdmitx20_video_mute_op(unsigned int flag);
 
-/*
- * HDMITX HPD HW related operations
- */
-enum hpd_op {
-	HPD_INIT_DISABLE_PULLUP,
-	HPD_INIT_SET_FILTER,
-	HPD_IS_HPD_MUXED,
-	HPD_MUX_HPD,
-	HPD_UNMUX_HPD,
-	HPD_READ_HPD_GPIO,
-};
-
-int hdmitx_hpd_hw_op(enum hpd_op cmd);
-/*
- * HDMITX DDC HW related operations
- */
-enum ddc_op {
-	DDC_INIT_DISABLE_PULL_UP_DN,
-	DDC_MUX_DDC,
-	DDC_UNMUX_DDC,
-};
-
-int hdmitx_ddc_hw_op(enum ddc_op cmd);
-
-#define HDMITX_HWCMD_MUX_HPD_IF_PIN_HIGH       0x3
-#define HDMITX_HWCMD_TURNOFF_HDMIHW           0x4
-#define HDMITX_HWCMD_MUX_HPD                0x5
-#define HDMITX_HWCMD_PLL_MODE                0x6
-#define HDMITX_HWCMD_TURN_ON_PRBS           0x7
-#define HDMITX_FORCE_480P_CLK                0x8
-#define HDMITX_GET_AUTHENTICATE_STATE        0xa
-#define HDMITX_SW_INTERNAL_HPD_TRIG          0xb
-#define HDMITX_HWCMD_OSD_ENABLE              0xf
-
-#define HDMITX_HDCP_MONITOR                  0x11
-#define HDMITX_IP_INTR_MASN_RST              0x12
-#define HDMITX_EARLY_SUSPEND_RESUME_CNTL     0x14
-#define HDMITX_EARLY_SUSPEND             0x1
-#define HDMITX_LATE_RESUME               0x2
-/* Refer to HDMI_OTHER_CTRL0 in hdmi_tx_reg.h */
-#define HDMITX_IP_SW_RST                     0x15
-#define TX_CREG_SW_RST      BIT(5)
-#define TX_SYS_SW_RST       BIT(4)
-#define CEC_CREG_SW_RST     BIT(3)
-#define CEC_SYS_SW_RST      BIT(2)
-#define HDMITX_AVMUTE_CNTL                   0x19
-#define AVMUTE_SET          0   /* set AVMUTE to 1 */
-#define AVMUTE_CLEAR        1   /* set AVunMUTE to 1 */
-#define AVMUTE_OFF          2   /* set both AVMUTE and AVunMUTE to 0 */
-#define HDMITX_CBUS_RST                      0x1A
-#define HDMITX_INTR_MASKN_CNTL               0x1B
-#define INTR_MASKN_ENABLE   0
-#define INTR_MASKN_DISABLE  1
-#define INTR_CLEAR          2
-
-#define HDMI_HDCP_DELAYTIME_AFTER_DISPLAY    20      /* unit: ms */
-
-#define HDMITX_HDCP_MONITOR_BUF_SIZE         1024
-struct Hdcp_Sub {
-	char *hdcp_sub_name;
-	unsigned int hdcp_sub_addr_start;
-	unsigned int hdcp_sub_len;
-};
-
-unsigned int hd_read_reg(unsigned int addr);
-void hd_write_reg(unsigned int addr, unsigned int val);
-void hd_set_reg_bits(unsigned int addr, unsigned int value,
-		     unsigned int offset, unsigned int len);
-void hdmitx_wr_reg(unsigned int addr, unsigned int data);
-void hdmitx_poll_reg(unsigned int addr, unsigned int val,
-		     unsigned long timeout);
-void hdmitx_set_reg_bits(unsigned int addr, unsigned int value,
-			 unsigned int offset, unsigned int len);
-unsigned int hdmitx_rd_reg(unsigned int addr);
-unsigned int hdmitx_rd_check_reg(unsigned int addr, unsigned int exp_data,
-				 unsigned int mask);
-bool hdmitx_get_bit(unsigned int addr, unsigned int bit_nr);
-
-enum hdmi_tf_type hdmitx_get_cur_hdr_st(void);
-enum hdmi_tf_type hdmitx_get_cur_dv_st(void);
-enum hdmi_tf_type hdmitx_get_cur_hdr10p_st(void);
 bool LGAVIErrorTV(struct rx_cap *prxcap);
 bool hdmitx_find_vendor_6g(struct hdmitx_dev *hdev);
 bool hdmitx_find_vendor_ratio(struct hdmitx_dev *hdev);

@@ -91,39 +91,6 @@ void setup_attr(const char *buf)
 }
 EXPORT_SYMBOL(setup_attr);
 
-/*
- * hdmitx_audio_mute_op() is used by external driver call
- * flag: 0: audio off   1: audio_on
- *       2: for EDID auto mode
- */
-void hdmitx_audio_mute_op(unsigned int flag)
-{
-#if defined(CONFIG_AMLOGIC_HDMITX)
-	if (get_hdmitx20_init() == 1)
-		hdmitx20_audio_mute_op(flag);
-#endif
-#if defined(CONFIG_AMLOGIC_HDMITX21)
-	/* 0x8000000: AUDIO_MUTE_PATH_1 */
-	if (get_hdmitx21_init() == 1)
-		hdmitx21_audio_mute_op(flag, 0x8000000);
-#endif
-}
-EXPORT_SYMBOL(hdmitx_audio_mute_op);
-
-void hdmitx_video_mute_op(u32 flag)
-{
-#if defined(CONFIG_AMLOGIC_HDMITX)
-	if (get_hdmitx20_init() == 1)
-		hdmitx20_video_mute_op(flag);
-#endif
-/* just for debug, path = 0 */
-#if defined(CONFIG_AMLOGIC_HDMITX21)
-	if (get_hdmitx21_init() == 1)
-		hdmitx21_video_mute_op(flag, 0);
-#endif
-}
-EXPORT_SYMBOL(hdmitx_video_mute_op);
-
 void hdmitx_ext_set_audio_output(int enable)
 {
 #if defined(CONFIG_AMLOGIC_HDMITX)

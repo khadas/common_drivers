@@ -157,10 +157,6 @@ int get_hpd_state(void);
 int hdmitx_event_notifier_regist(struct notifier_block *nb);
 int hdmitx_event_notifier_unregist(struct notifier_block *nb);
 struct vsdb_phyaddr *get_hdmitx_phy_addr(void);
-void get_attr(char attr[16]);
-void setup_attr(const char *buf);
-void hdmitx_audio_mute_op(unsigned int flag);
-void hdmitx_video_mute_op(u32 flag);
 int register_earcrx_callback(pf_callback callback);
 void unregister_earcrx_callback(void);
 unsigned int hdmitx_drv_ver(void);
@@ -177,5 +173,8 @@ void hdmitx_ext_set_audio_output(int enable);
  */
 int hdmitx_ext_get_audio_status(void);
 
-#endif
+/*!!DEPRECATED API, DONT USE!!*/
+void get_attr(char attr[16]);
+void setup_attr(const char *buf);
 
+#endif

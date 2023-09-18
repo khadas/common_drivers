@@ -3,10 +3,9 @@
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
 
-//#define DEBUG
 #include <linux/kernel.h>
-#include <linux/amlogic/media/vout/hdmi_tx/hdmi_common.h>
 #include <linux/string.h>
+#include <linux/amlogic/media/vout/hdmitx_common/hdmitx_common.h>
 
 /* Recommended N and Expected CTS for 32kHz */
 static const struct hdmi_audio_fs_ncts aud_32k_para = {
@@ -360,15 +359,15 @@ static const struct hdmi_audio_fs_ncts *all_aud_paras[] = {
 	NULL,
 };
 
-unsigned int hdmi_get_aud_n_paras(enum hdmi_audio_fs fs,
+u32 hdmitx_hw_get_audio_n_paras(enum hdmi_audio_fs fs,
 				  enum hdmi_color_depth cd,
-				  unsigned int tmds_clk)
+				  u32 tmds_clk)
 {
 	const struct hdmi_audio_fs_ncts *p = NULL;
-	unsigned int i, n;
-	unsigned int N_multiples = 1;
+	u32 i, n;
+	u32 N_multiples = 1;
 
-	pr_debug("hdmitx: fs = %d, cd = %d, tmds_clk = %d\n", fs, cd, tmds_clk);
+	pr_info("hdmitx: fs = %d, cd = %d, tmds_clk = %d\n", fs, cd, tmds_clk);
 	switch (fs) {
 	case FS_32K:
 		p = all_aud_paras[0];
@@ -404,7 +403,9 @@ unsigned int hdmi_get_aud_n_paras(enum hdmi_audio_fs fs,
 		break;
 	}
 	for (i = 0; i < AUDIO_PARA_MAX_NUM; i++) {
-		if (tmds_clk == p->array[i].tmds_clk)
+		if (tmds_clk == p->array[i].tmds_clk ||
+		    (tmds_clk + 1) == p->array[i].tmds_clk ||
+		    (tmds_clk - 1) == p->array[i].tmds_clk)
 			break;
 	}
 
@@ -422,35 +423,5 @@ unsigned int hdmi_get_aud_n_paras(enum hdmi_audio_fs fs,
 	else
 		n = p->def_n;
 	return n * N_multiples;
-}
-
-bool is_hdmi14_4k(enum hdmi_vic vic)
-{
-	bool ret = 0;
-
-	switch (vic) {
-	case HDMI_93_3840x2160p24_16x9:
-	case HDMI_94_3840x2160p25_16x9:
-	case HDMI_95_3840x2160p30_16x9:
-	case HDMI_98_4096x2160p24_256x135:
-		ret = 1;
-		break;
-	default:
-		ret = 0;
-		break;
-	}
-
-	return ret;
-}
-
-bool is_hdmi4k_support_420(enum hdmi_vic vic)
-{
-	if (vic == HDMI_102_4096x2160p60_256x135 ||
-		vic == HDMI_101_4096x2160p50_256x135 ||
-		vic == HDMI_97_3840x2160p60_16x9 ||
-		vic == HDMI_96_3840x2160p50_16x9)
-		return true;
-
-	return false;
 }
 

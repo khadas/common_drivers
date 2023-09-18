@@ -6,8 +6,9 @@
 #ifndef __HW_ENC_CLK_CONFIG_H__
 #define __HW_ENC_CLK_CONFIG_H__
 
-#include <linux/amlogic/media/vout/hdmi_tx/hdmi_common.h>
+#include <linux/amlogic/media/vout/hdmi_tx/hdmi_tx_hw.h>
 #include <linux/amlogic/media/vout/hdmi_tx/hdmi_tx_module.h>
+#include <linux/amlogic/media/vout/hdmitx_common/hdmitx_types.h>
 #include <linux/amlogic/media/vout/vinfo.h>
 
 #define VID_PLL_DIV_1      0
@@ -42,12 +43,12 @@ struct hw_enc_clk_val_group {
 };
 
 void hdmitx_set_clk(struct hdmitx_dev *hdev);
-void hdmitx_set_cts_sys_clk(struct hdmitx_dev *hdev);
-void hdmitx_set_top_pclk(struct hdmitx_dev *hdev);
+void hdmitx_set_cts_sys_clk(struct hdmitx20_hw *tx_hw);
+void hdmitx_set_top_pclk(struct hdmitx20_hw *tx_hw);
 void hdmitx_set_hdcp_pclk(struct hdmitx_dev *hdev);
 void hdmitx_set_cts_hdcp22_clk(struct hdmitx_dev *hdev);
 void hdmitx_set_hdmi_axi_clk(struct hdmitx_dev *hdev);
-void hdmitx_set_sys_clk(struct hdmitx_dev *hdev, unsigned char flag);
+void hdmitx_set_sys_clk(struct hdmitx20_hw *tx_hw, unsigned char flag);
 void hdmitx_disable_clk(struct hdmitx_dev *hdev);
 
 #endif

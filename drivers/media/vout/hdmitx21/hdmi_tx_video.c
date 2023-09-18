@@ -19,7 +19,7 @@
 
 #include <linux/amlogic/media/vout/hdmi_tx21/hdmi_info_global.h>
 #include <linux/amlogic/media/vout/hdmi_tx21/hdmi_tx_module.h>
-#include <linux/amlogic/media/vout/hdmitx_common/hdmitx_dev_common.h>
+#include <linux/amlogic/media/vout/hdmitx_common/hdmitx_common.h>
 
 #include "hw/common.h"
 
@@ -94,7 +94,7 @@ int hdmitx21_set_display(struct hdmitx_dev *hdev, enum hdmi_vic videocode)
 	enum hdmi_vic vic;
 	int ret = -1;
 
-	vic = hdev->tx_hw.getstate(&hdev->tx_hw, STAT_VIDEO_VIC, 0);
+	vic = hdmitx_hw_get_state(&hdev->tx_hw.base, STAT_VIDEO_VIC, 0);
 	if (hdev->vend_id_hit)
 		pr_info(VID "special tv detected\n");
 	pr_info(VID "already init VIC = %d  Now VIC = %d\n",
@@ -143,11 +143,11 @@ int hdmitx21_set_display(struct hdmitx_dev *hdev, enum hdmi_vic videocode)
 		 */
 		if (is_dvi_device(&hdev->tx_comm.rxcap)) {
 			pr_info(VID "Sink is DVI device\n");
-			hdev->tx_hw.cntlconfig(&hdev->tx_hw,
+			hdmitx_hw_cntl_config(&hdev->tx_hw.base,
 				CONF_HDMI_DVI_MODE, DVI_MODE);
 		} else {
 			pr_info(VID "Sink is HDMI device\n");
-			hdev->tx_hw.cntlconfig(&hdev->tx_hw,
+			hdmitx_hw_cntl_config(&hdev->tx_hw.base,
 				CONF_HDMI_DVI_MODE, HDMI_MODE);
 		}
 		if (videocode == HDMI_95_3840x2160p30_16x9 ||
@@ -163,11 +163,10 @@ int hdmitx21_set_display(struct hdmitx_dev *hdev, enum hdmi_vic videocode)
 			;
 
 		if (hdev->tx_comm.allm_mode) {
-			hdmitx21_construct_vsif(&hdev->tx_comm, VT_ALLM, 1, NULL);
-			hdev->tx_hw.cntlconfig(&hdev->tx_hw, CONF_CT_MODE,
-				SET_CT_OFF);
+			hdmitx_common_setup_vsif_packet(&hdev->tx_comm, VT_ALLM, 1, NULL);
+			hdmitx_hw_cntl_config(&hdev->tx_hw.base, CONF_CT_MODE, SET_CT_OFF);
 		} else {
-			hdev->tx_hw.cntlconfig(&hdev->tx_hw, CONF_CT_MODE,
+			hdmitx_hw_cntl_config(&hdev->tx_hw.base, CONF_CT_MODE,
 				hdev->tx_comm.ct_mode | hdev->it_content << 4);
 		}
 		ret = 0;
@@ -279,12 +278,4 @@ static void hdmitx_set_spd_info(struct hdmitx_dev *hdev)
 	}
 	spd_db[24] = 0x1;
 	// TODO hdev->hwop.setinfoframe(HDMI_INFOFRAME_TYPE_SPD, SPD_HB);
-}
-
-int hdmitx21_construct_vsif(struct hdmitx_common *tx_comm,
-	enum vsif_type type, int on, void *param)
-{
-	struct hdmitx_dev *hdev = to_hdmitx21_dev(tx_comm);
-
-	return hdmitx_dev_setup_vsif_packet(tx_comm, &hdev->tx_hw, type, on, param);
 }

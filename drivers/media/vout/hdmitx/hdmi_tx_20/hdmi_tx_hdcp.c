@@ -172,7 +172,7 @@ static void _hdcp_do_work(struct work_struct *work)
 		memset(&obs_cur, 0, sizeof(obs_cur));
 		memset(&obs_last, 0, sizeof(obs_last));
 		mutex_unlock(&mutex);
-		hdev->tx_hw.cntlmisc(&hdev->tx_hw, MISC_HDCP_CLKDIS, 0);
+		hdmitx_hw_cntl_misc(&hdev->tx_hw.base, MISC_HDCP_CLKDIS, 0);
 		break;
 	}
 }

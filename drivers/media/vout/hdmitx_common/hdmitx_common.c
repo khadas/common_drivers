@@ -100,7 +100,7 @@ int hdmitx_common_validate_vic(struct hdmitx_common *tx_comm, u32 vic)
 	}
 
 	/*ip level filter*/
-	if (tx_comm->tx_hw->validatemode(vic) != 0)
+	if (hdmitx_hw_validate_mode(tx_comm->tx_hw, vic) != 0)
 		return -EPERM;
 
 	return 0;
@@ -138,7 +138,7 @@ int hdmitx_common_build_format_para(struct hdmitx_common *tx_comm,
 
 	ret = hdmitx_format_para_init(para, vic, frac_rate_policy, cs, cd, cr);
 	if (ret == 0)
-		ret = tx_comm->tx_hw->calcformatpara(para);
+		ret = hdmitx_hw_calc_format_para(tx_comm->tx_hw, para);
 	if (ret < 0)
 		hdmitx_format_para_print(para);
 
@@ -152,13 +152,10 @@ int hdmitx_common_init_bootup_format_para(struct hdmitx_common *tx_comm,
 	int ret = 0;
 	struct hdmitx_hw_common *tx_hw = tx_comm->tx_hw;
 
-	if (tx_hw->getstate(tx_hw, STAT_TX_OUTPUT, 0)) {
-		para->vic = tx_hw->getstate(tx_hw, STAT_VIDEO_VIC, 0);
-		para->cs = tx_hw->getstate(tx_hw, STAT_VIDEO_CS, 0);
-		para->cd = tx_hw->getstate(tx_hw, STAT_VIDEO_CD, 0);
-
-		pr_info("%s: init uboot format para (%d,%d,%d)\n",
-			__func__, para->vic, para->cs, para->cd);
+	if (hdmitx_hw_get_state(tx_hw, STAT_TX_OUTPUT, 0)) {
+		para->vic = hdmitx_hw_get_state(tx_hw, STAT_VIDEO_VIC, 0);
+		para->cs = hdmitx_hw_get_state(tx_hw, STAT_VIDEO_CS, 0);
+		para->cd = hdmitx_hw_get_state(tx_hw, STAT_VIDEO_CD, 0);
 
 		ret = hdmitx_common_build_format_para(tx_comm, para, para->vic,
 			tx_comm->frac_rate_policy, para->cs, para->cd,
@@ -166,10 +163,14 @@ int hdmitx_common_init_bootup_format_para(struct hdmitx_common *tx_comm,
 		if (ret == 0) {
 			pr_info("%s init ok\n", __func__);
 			hdmitx_format_para_print(para);
+		} else {
+			pr_info("%s: init uboot format para fail (%d,%d,%d)\n",
+				__func__, para->vic, para->cs, para->cd);
 		}
 
 		return ret;
 	} else {
+		pr_info("%s hdmi is not enabled\n", __func__);
 		return hdmitx_format_para_reset(para);
 	}
 }

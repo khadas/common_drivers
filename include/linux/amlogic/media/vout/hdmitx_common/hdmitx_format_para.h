@@ -8,25 +8,27 @@
 
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_types.h>
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_mode.h>
+#include <linux/amlogic/media/vout/vinfo.h>
 
 struct hdmi_format_para {
 	enum hdmi_vic vic;
 	unsigned char *name;
 	unsigned char *sname;
 
+	struct hdmi_timing timing;
+
 	enum hdmi_color_depth cd; /* cd8, cd10 or cd12 */
 	enum hdmi_colorspace cs; /* 0/1/2/3: rgb/422/444/420 */
 	enum hdmi_quantization_range cr; /* limit, full */
 	u32 frac_mode;
 
-	struct hdmi_timing timing;
-
+	/*hw related information, set in calcformatpara() func*/
 	u32 scrambler_en:1;
 	u32 tmds_clk_div40:1;
 	u32 tmds_clk; /* Unit: 1000 */
-
 	u32 frl_clk;
 	u32 dsc_en;
+	/*hw related information end*/
 };
 
 int hdmitx_format_para_reset(struct hdmi_format_para *para);

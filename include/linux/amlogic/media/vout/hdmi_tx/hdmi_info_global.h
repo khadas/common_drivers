@@ -6,67 +6,9 @@
 #ifndef _HDMI_INFO_GLOBAL_H
 #define _HDMI_INFO_GLOBAL_H
 
-#include "hdmi_common.h"
+#include <linux/amlogic/media/vout/hdmitx_common/hdmitx_types.h>
+#include <linux/amlogic/media/vout/hdmitx_common/hdmitx_common.h>
 #include "../hdmi_tx_ext.h"
-
-enum hdmi_pixel_repeat {
-	NO_REPEAT = 0,
-	HDMI_2_TIMES_REPEAT,
-	HDMI_3_TIMES_REPEAT,
-	HDMI_4_TIMES_REPEAT,
-	HDMI_5_TIMES_REPEAT,
-	HDMI_6_TIMES_REPEAT,
-	HDMI_7_TIMES_REPEAT,
-	HDMI_8_TIMES_REPEAT,
-	HDMI_9_TIMES_REPEAT,
-	HDMI_10_TIMES_REPEAT,
-	MAX_TIMES_REPEAT,
-};
-
-enum hdmi_scan {
-	SS_NO_DATA = 0,
-	/* where some active pixelsand lines at the edges are not displayed. */
-	SS_SCAN_OVER,
-	/* where all active pixels&lines are displayed,
-	 * with or without a border.
-	 */
-	SS_SCAN_UNDER,
-	SS_RSV
-};
-
-enum hdmi_barinfo {
-	B_INVALID = 0, B_BAR_VERT, /* Vert. Bar Infovalid */
-	B_BAR_HORIZ, /* Horiz. Bar Infovalid */
-	B_BAR_VERT_HORIZ,
-/* Vert.and Horiz. Bar Info valid */
-};
-
-enum hdmi_colourimetry {
-	CC_NO_DATA = 0, CC_ITU601, CC_ITU709, CC_XVYCC601, CC_XVYCC709,
-};
-
-enum hdmi_scaling {
-	SC_NO_UINFORM = 0,
-	/* Picture has been scaled horizontally */
-	SC_SCALE_HORIZ,
-	SC_SCALE_VERT, /* Picture has been scaled vertically */
-	SC_SCALE_HORIZ_VERT,
-/* Picture has been scaled horizontally & SC_SCALE_H_V */
-};
-
-struct hdmi_videoinfo {
-	enum hdmi_vic VIC;
-	enum hdmi_colorspace color;
-	enum hdmi_color_depth color_depth;
-	enum hdmi_barinfo bar_info;
-	enum hdmi_pixel_repeat repeat_time;
-	enum hdmi_aspect_ratio aspect_ratio;
-	enum hdmi_colourimetry cc;
-	enum hdmi_scan ss;
-	enum hdmi_scaling sc;
-};
-
-/* -------------------HDMI VIDEO END---------------------------- */
 
 /* -----------------------HDMI TX---------------------------------- */
 
@@ -89,14 +31,6 @@ struct hdmitx_audpara {
 	enum hdmi_audio_fs sample_rate;
 	enum hdmi_audio_sampsize sample_size;
 	enum hdmi_audio_source_if aud_src_if;
-};
-
-/* ACR packet CTS parameters have 3 types: */
-/* 1. HW auto calculated */
-/* 2. Fixed values defined by Spec */
-/* 3. Calculated by clock meter */
-enum hdmitx_audcts {
-	AUD_CTS_AUTO = 0, AUD_CTS_FIXED, AUD_CTS_CALC,
 };
 
 struct hdmitx_audinfo {

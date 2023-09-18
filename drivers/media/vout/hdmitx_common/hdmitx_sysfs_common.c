@@ -5,7 +5,7 @@
 
 #include <linux/kernel.h>
 #include <linux/types.h>
-#include <linux/amlogic/media/vout/hdmitx_common/hdmitx_dev_common.h>
+#include <linux/amlogic/media/vout/hdmitx_common/hdmitx_common.h>
 #include "hdmitx_sysfs_common.h"
 
 /*!!Only one instance supported.*/
@@ -537,7 +537,7 @@ static ssize_t phy_store(struct device *dev,
 	else
 		pr_info("set phy wrong: %s\n", buf);
 
-	global_tx_hw->cntlmisc(global_tx_hw, MISC_TMDS_PHY_OP, cmd);
+	hdmitx_hw_cntl_misc(global_tx_hw, MISC_TMDS_PHY_OP, cmd);
 	return count;
 }
 
@@ -547,7 +547,7 @@ static ssize_t phy_show(struct device *dev,
 	int pos = 0;
 	int state = 0;
 
-	state = global_tx_hw->getstate(global_tx_hw, STAT_TX_PHY, 0);
+	state = hdmitx_hw_get_state(global_tx_hw, STAT_TX_PHY, 0);
 	pos += snprintf(buf + pos, PAGE_SIZE, "%d\n", state);
 
 	return pos;
@@ -589,9 +589,9 @@ static ssize_t contenttype_mode_store(struct device *dev,
 
 	if (global_tx_common->allm_mode == 1) {
 		global_tx_common->allm_mode = 0;
-		hdmitx_dev_setup_vsif_packet(global_tx_common, global_tx_hw, VT_ALLM, 0, NULL);
+		hdmitx_common_setup_vsif_packet(global_tx_common, VT_ALLM, 0, NULL);
 	}
-	hdmitx_dev_setup_vsif_packet(global_tx_common, global_tx_hw, VT_HDMI14_4K, 1, NULL);
+	hdmitx_common_setup_vsif_packet(global_tx_common, VT_HDMI14_4K, 1, NULL);
 
 	if (com_str(buf, "0") || com_str(buf, "off"))
 		ct_mode = SET_CT_OFF;
@@ -604,7 +604,7 @@ static ssize_t contenttype_mode_store(struct device *dev,
 	else if (com_str(buf, "4") || com_str(buf, "cinema"))
 		ct_mode = SET_CT_CINEMA;
 
-	global_tx_hw->cntlconfig(global_tx_hw, CONF_CT_MODE, ct_mode);
+	hdmitx_hw_cntl_config(global_tx_hw, CONF_CT_MODE, ct_mode);
 	global_tx_common->ct_mode = ct_mode;
 
 	return count;

@@ -149,4 +149,8 @@ int hdmitx_print_sink_cap(struct hdmitx_common *tx_comm, char *buffer, int buffe
 /*modesetting function*/
 int hdmitx_common_do_mode_setting(struct hdmitx_common *tx_comm, struct hdmitx_binding_state *new);
 
+/*packet api*/
+int hdmitx_common_setup_vsif_packet(struct hdmitx_common *tx_comm,
+	enum vsif_type type, int on, void *param);
+
 #endif

@@ -100,19 +100,6 @@ int hdmitx_format_para_init(struct hdmi_format_para *para,
 	else
 		para->frac_mode = frac_rate_policy;
 
-	if (timing->vic == HDMIV_2560x1600p60hz) {
-		para->tmds_clk_div40 = 0;
-		para->scrambler_en = 0;
-	} else {
-		if (timing->pixel_freq > 340000) {
-			para->tmds_clk_div40 = 1;
-			para->scrambler_en = 1;
-		} else {
-			para->tmds_clk_div40 = 0;
-			para->scrambler_en = 0;
-		}
-	}
-
 	return 0;
 }
 
@@ -135,7 +122,9 @@ int hdmitx_format_para_print(struct hdmi_format_para *para)
 	pr_info("format_para: name %s vic %d frac %d\n",
 		para->sname ? para->sname : para->name, para->vic, para->frac_mode);
 	pr_info("format_para: cs %d cd %d\n", para->cs, para->cd);
-	pr_info("format_para: TMDS %d FRL %d\n", para->tmds_clk, para->frl_clk);
+	pr_info("format_para: TMDS %d DIV40 %d,%d\n", para->tmds_clk,
+		para->tmds_clk_div40, para->scrambler_en);
+	pr_info("format_para: FRL %d\n", para->frl_clk);
 	return 0;
 }
 

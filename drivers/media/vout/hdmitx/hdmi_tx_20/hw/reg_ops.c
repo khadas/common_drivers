@@ -85,11 +85,11 @@ unsigned int hd_read_reg(unsigned int addr)
 	unsigned int val = 0;
 	unsigned int paddr = TO_PHY_ADDR(addr);
 
-	struct hdmitx_dev *hdev = get_hdmitx_device();
+	struct hdmitx20_hw *tx20_hw = get_hdmitx20_hw_instance();
 
 	pr_debug(REG "Rd[0x%x] 0x%x\n", paddr, val);
 
-	switch (hdev->data->chip_type) {
+	switch (tx20_hw->chip_data->chip_type) {
 	case MESON_CPU_ID_TXLX:
 	case MESON_CPU_ID_GXL:
 	case MESON_CPU_ID_GXM:
@@ -112,11 +112,11 @@ void hd_write_reg(unsigned int addr, unsigned int val)
 {
 	unsigned int paddr = TO_PHY_ADDR(addr);
 
-	struct hdmitx_dev *hdev = get_hdmitx_device();
+	struct hdmitx20_hw *tx20_hw = get_hdmitx20_hw_instance();
 
 	pr_debug(REG "Wr[0x%x] 0x%x\n", paddr, val);
 
-	switch (hdev->data->chip_type) {
+	switch (tx20_hw->chip_data->chip_type) {
 	case MESON_CPU_ID_TXLX:
 	case MESON_CPU_ID_GXL:
 	case MESON_CPU_ID_GXM:
@@ -196,15 +196,14 @@ unsigned int hdmitx_rd_reg_g12a(unsigned int addr)
 unsigned int hdmitx_rd_reg(unsigned int addr)
 {
 	unsigned int data;
-	struct hdmitx_dev *hdev = get_hdmitx_device();
+	struct hdmitx20_hw *tx20_hw = get_hdmitx20_hw_instance();
 
-	if (hdev->data->chip_type >= MESON_CPU_ID_G12A)
+	if (tx20_hw->chip_data->chip_type >= MESON_CPU_ID_G12A)
 		data = hdmitx_rd_reg_g12a(addr);
 	else
 		data = hdmitx_rd_reg_normal(addr);
 	return data;
 }
-EXPORT_SYMBOL(hdmitx_rd_reg);
 
 bool hdmitx_get_bit(unsigned int addr, unsigned int bit_nr)
 {
@@ -256,14 +255,13 @@ void hdmitx_wr_reg_g12a(unsigned int addr, unsigned int data)
 
 void hdmitx_wr_reg(unsigned int addr, unsigned int data)
 {
-	struct hdmitx_dev *hdev = get_hdmitx_device();
+	struct hdmitx20_hw *tx20_hw = get_hdmitx20_hw_instance();
 
-	if (hdev->data->chip_type >= MESON_CPU_ID_G12A)
+	if (tx20_hw->chip_data->chip_type >= MESON_CPU_ID_G12A)
 		hdmitx_wr_reg_g12a(addr, data);
 	else
 		hdmitx_wr_reg_normal(addr, data);
 }
-EXPORT_SYMBOL(hdmitx_wr_reg);
 
 void hdmitx_set_reg_bits(unsigned int addr, unsigned int value,
 			 unsigned int offset, unsigned int len)
@@ -275,7 +273,6 @@ void hdmitx_set_reg_bits(unsigned int addr, unsigned int value,
 	data32 |= (value & ((1 << len) - 1)) << offset;
 	hdmitx_wr_reg(addr, data32);
 }
-EXPORT_SYMBOL(hdmitx_set_reg_bits);
 
 void hdmitx_poll_reg(unsigned int addr, unsigned int val, unsigned long timeout)
 {
@@ -290,7 +287,6 @@ void hdmitx_poll_reg(unsigned int addr, unsigned int val, unsigned long timeout)
 		pr_info(REG "hdmitx poll:0x%x  val:0x%x T1=%lu t=%lu T2=%lu timeout\n",
 			addr, val, time, timeout, jiffies);
 }
-EXPORT_SYMBOL(hdmitx_poll_reg);
 
 unsigned int hdmitx_rd_check_reg(unsigned int addr, unsigned int exp_data,
 				 unsigned int mask)
@@ -307,4 +303,3 @@ unsigned int hdmitx_rd_check_reg(unsigned int addr, unsigned int exp_data,
 	}
 	return 0;
 }
-EXPORT_SYMBOL(hdmitx_rd_check_reg);

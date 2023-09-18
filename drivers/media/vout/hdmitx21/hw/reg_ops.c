@@ -63,7 +63,7 @@ inline bool cor_reg_addr_mask(u32 addr)
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
 
 	addr = addr & 0xffff;
-	if (hdev->data->chip_type == MESON_CPU_ID_S1A)
+	if (hdev->tx_hw.chip_data->chip_type == MESON_CPU_ID_S1A)
 		if ((addr >= 0x0330 && addr <= 0x03ff) ||
 			(addr >= 0x0800 && addr <= 0x08ff) ||
 			(addr >= 0x0940 && addr <= 0x09ff) ||

@@ -145,7 +145,7 @@ void hdcp_enable_intrs(bool en)
 
 static void hdmitx_phy_bandgap_en(struct hdmitx_dev *hdev)
 {
-	switch (hdev->data->chip_type) {
+	switch (hdev->tx_hw.chip_data->chip_type) {
 	case MESON_CPU_ID_T7:
 	case MESON_CPU_ID_S1A:
 		hdmitx21_phy_bandgap_en_t7();

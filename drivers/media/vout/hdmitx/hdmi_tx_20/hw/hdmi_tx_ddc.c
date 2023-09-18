@@ -29,6 +29,7 @@
 #include <linux/amlogic/media/vout/hdmi_tx/hdmi_tx_module.h>
 #include "common.h"
 #include "hdmi_tx_reg.h"
+#include "reg_ops.h"
 
 const char *slave_msg[] = {
 	[EDID_SLAVE] = "edid",

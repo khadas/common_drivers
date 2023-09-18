@@ -101,6 +101,15 @@ enum scdc_addr {
 #define MANUFACT_SPECIFIC_SIZE 34
 };
 
+/*
+ * HDMITX DDC HW related operations
+ */
+enum ddc_op {
+	DDC_INIT_DISABLE_PULL_UP_DN,
+	DDC_MUX_DDC,
+	DDC_UNMUX_DDC,
+};
+
 int hdmitx21_ddc_hw_op(enum ddc_op cmd);
 
 void scdc21_rd_sink(u8 adr, u8 *val);

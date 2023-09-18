@@ -54,22 +54,22 @@ static inline int check_div(unsigned int div)
 	return div;
 }
 
-void hdmitx_set_sys_clk(struct hdmitx_dev *hdev, unsigned char flag)
+void hdmitx_set_sys_clk(struct hdmitx20_hw *tx_hw, unsigned char flag)
 {
 	if (flag & 4)
-		hdmitx_set_cts_sys_clk(hdev);
+		hdmitx_set_cts_sys_clk(tx_hw);
 
 	if (flag & 2) {
-		hdmitx_set_top_pclk(hdev);
+		hdmitx_set_top_pclk(tx_hw);
 
-		if (hdev->data->chip_type < MESON_CPU_ID_SC2)
+		if (tx_hw->chip_data->chip_type < MESON_CPU_ID_SC2)
 			hd_set_reg_bits(P_HHI_GCLK_OTHER, 1, 17, 1);
 	}
 }
 
 static void hdmitx_disable_encp_clk(struct hdmitx_dev *hdev)
 {
-	if (hdev->data->chip_type >= MESON_CPU_ID_SC2)
+	if (hdev->tx_hw.chip_data->chip_type >= MESON_CPU_ID_SC2)
 		hd_set_reg_bits(P_CLKCTRL_VID_CLK_CTRL2, 0, 2, 1);
 	else
 		hd_set_reg_bits(P_HHI_VID_CLK_CNTL2, 0, 2, 1);
@@ -90,7 +90,7 @@ static void hdmitx_enable_encp_clk(struct hdmitx_dev *hdev)
 	}
 #endif
 
-	if (hdev->data->chip_type >= MESON_CPU_ID_SC2)
+	if (hdev->tx_hw.chip_data->chip_type >= MESON_CPU_ID_SC2)
 		hd_set_reg_bits(P_CLKCTRL_VID_CLK_CTRL2, 1, 2, 1);
 	else
 		hd_set_reg_bits(P_HHI_VID_CLK_CNTL2, 1, 2, 1);
@@ -98,7 +98,7 @@ static void hdmitx_enable_encp_clk(struct hdmitx_dev *hdev)
 
 static void hdmitx_disable_enci_clk(struct hdmitx_dev *hdev)
 {
-	if (hdev->data->chip_type >= MESON_CPU_ID_SC2)
+	if (hdev->tx_hw.chip_data->chip_type >= MESON_CPU_ID_SC2)
 		hd_set_reg_bits(P_CLKCTRL_VID_CLK_CTRL2, 0, 0, 1);
 	else
 		hd_set_reg_bits(P_HHI_VID_CLK_CNTL2, 0, 0, 1);
@@ -136,21 +136,21 @@ static void hdmitx_enable_enci_clk(struct hdmitx_dev *hdev)
 	}
 #endif
 
-	if (hdev->data->chip_type >= MESON_CPU_ID_SC2)
+	if (hdev->tx_hw.chip_data->chip_type >= MESON_CPU_ID_SC2)
 		hd_set_reg_bits(P_CLKCTRL_VID_CLK_CTRL2, 1, 0, 1);
 	else
 		hd_set_reg_bits(P_HHI_VID_CLK_CNTL2, 1, 0, 1);
 }
 
-static void hdmitx_disable_tx_pixel_clk(struct hdmitx_dev *hdev)
+static void hdmitx_disable_tx_pixel_clk(struct hdmitx20_hw *tx_hw)
 {
-	if (hdev->data->chip_type >= MESON_CPU_ID_SC2)
+	if (tx_hw->chip_data->chip_type >= MESON_CPU_ID_SC2)
 		hd_set_reg_bits(P_CLKCTRL_VID_CLK_CTRL2, 0, 5, 1);
 	else
 		hd_set_reg_bits(P_HHI_VID_CLK_CNTL2, 0, 5, 1);
 }
 
-void hdmitx_set_cts_sys_clk(struct hdmitx_dev *hdev)
+void hdmitx_set_cts_sys_clk(struct hdmitx20_hw *tx_hw)
 {
 	/* Enable cts_hdmitx_sys_clk */
 	/* .clk0 ( cts_oscin_clk ), */
@@ -160,7 +160,7 @@ void hdmitx_set_cts_sys_clk(struct hdmitx_dev *hdev)
 	/* [10: 9] clk_sel. select cts_oscin_clk=24MHz */
 	/* [	8] clk_en. Enable gated clock */
 	/* [ 6: 0] clk_div. Divide by 1. = 24/1 = 24 MHz */
-	if (hdev->data->chip_type >= MESON_CPU_ID_SC2) {
+	if (tx_hw->chip_data->chip_type >= MESON_CPU_ID_SC2) {
 		hd_set_reg_bits(P_CLKCTRL_HDMI_CLK_CTRL, 0, 9, 3);
 		hd_set_reg_bits(P_CLKCTRL_HDMI_CLK_CTRL, 0, 0, 7);
 		hd_set_reg_bits(P_CLKCTRL_HDMI_CLK_CTRL, 1, 8, 1);
@@ -171,10 +171,10 @@ void hdmitx_set_cts_sys_clk(struct hdmitx_dev *hdev)
 	hd_set_reg_bits(P_HHI_HDMI_CLK_CNTL, 1, 8, 1);
 }
 
-void hdmitx_set_top_pclk(struct hdmitx_dev *hdev)
+void hdmitx_set_top_pclk(struct hdmitx20_hw *tx_hw)
 {
 	/* top hdmitx pixel clock */
-	if (hdev->data->chip_type >= MESON_CPU_ID_SC2)
+	if (tx_hw->chip_data->chip_type >= MESON_CPU_ID_SC2)
 		hd_set_reg_bits(P_CLKCTRL_SYS_CLK_EN0_REG2, 1, 4, 1);
 	else
 		hd_set_reg_bits(P_HHI_GCLK_MPEG2, 1, 4, 1);
@@ -182,7 +182,7 @@ void hdmitx_set_top_pclk(struct hdmitx_dev *hdev)
 
 void hdmitx_set_cts_hdcp22_clk(struct hdmitx_dev *hdev)
 {
-	switch (hdev->data->chip_type) {
+	switch (hdev->tx_hw.chip_data->chip_type) {
 	case MESON_CPU_ID_SC2:
 		hd_write_reg(P_CLKCTRL_HDCP22_CLK_CTRL, 0x01000100);
 		break;
@@ -227,7 +227,7 @@ void hdmitx_set_cts_hdcp22_clk(struct hdmitx_dev *hdev)
 void hdmitx_set_hdcp_pclk(struct hdmitx_dev *hdev)
 {
 	/* top hdcp pixel clock */
-	if (hdev->data->chip_type >= MESON_CPU_ID_SC2)
+	if (hdev->tx_hw.chip_data->chip_type >= MESON_CPU_ID_SC2)
 		hd_set_reg_bits(P_CLKCTRL_SYS_CLK_EN0_REG2, 1, 3, 1);
 	else
 		hd_set_reg_bits(P_HHI_GCLK_MPEG2, 1, 3, 1);
@@ -235,7 +235,7 @@ void hdmitx_set_hdcp_pclk(struct hdmitx_dev *hdev)
 
 void hdmitx_set_hdmi_axi_clk(struct hdmitx_dev *hdev)
 {
-	switch (hdev->data->chip_type) {
+	switch (hdev->tx_hw.chip_data->chip_type) {
 	case MESON_CPU_ID_TM2:
 	case MESON_CPU_ID_TM2B:
 		if (hdev->hdmitx_clk_tree.cts_hdmi_axi_clk) {
@@ -249,13 +249,11 @@ void hdmitx_set_hdmi_axi_clk(struct hdmitx_dev *hdev)
 	}
 }
 
-static void set_hpll_clk_out(unsigned int clk)
+static void set_hpll_clk_out(struct hdmitx20_hw *tx_hw, unsigned int clk)
 {
-	struct hdmitx_dev *hdev = get_hdmitx_device();
-
 	pr_info("config HPLL = %d frac_rate = %d\n", clk, frac_rate);
 
-	switch (hdev->data->chip_type) {
+	switch (tx_hw->chip_data->chip_type) {
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
 	case MESON_CPU_ID_GXL:
 	case MESON_CPU_ID_GXM:
@@ -284,7 +282,7 @@ static void set_hpll_sspll(enum hdmi_vic vic)
 {
 	struct hdmitx_dev *hdev = get_hdmitx_device();
 
-	switch (hdev->data->chip_type) {
+	switch (hdev->tx_hw.chip_data->chip_type) {
 	case MESON_CPU_ID_G12A:
 	case MESON_CPU_ID_G12B:
 	case MESON_CPU_ID_SM1:
@@ -310,11 +308,9 @@ static void set_hpll_sspll(enum hdmi_vic vic)
 	}
 }
 
-static void set_hpll_od1(unsigned int div)
+static void set_hpll_od1(struct hdmitx20_hw *tx_hw, unsigned int div)
 {
-	struct hdmitx_dev *hdev = get_hdmitx_device();
-
-	switch (hdev->data->chip_type) {
+	switch (tx_hw->chip_data->chip_type) {
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
 	case MESON_CPU_ID_GXBB:
 	case MESON_CPU_ID_GXTVBB:
@@ -355,11 +351,9 @@ static void set_hpll_od1(unsigned int div)
 	}
 }
 
-static void set_hpll_od2(unsigned int div)
+static void set_hpll_od2(struct hdmitx20_hw *tx_hw, unsigned int div)
 {
-	struct hdmitx_dev *hdev = get_hdmitx_device();
-
-	switch (hdev->data->chip_type) {
+	switch (tx_hw->chip_data->chip_type) {
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
 	case MESON_CPU_ID_GXBB:
 	case MESON_CPU_ID_GXTVBB:
@@ -400,11 +394,9 @@ static void set_hpll_od2(unsigned int div)
 	}
 }
 
-static void set_hpll_od3(unsigned int div)
+static void set_hpll_od3(struct hdmitx20_hw *tx_hw, unsigned int div)
 {
-	struct hdmitx_dev *hdev = get_hdmitx_device();
-
-	switch (hdev->data->chip_type) {
+	switch (tx_hw->chip_data->chip_type) {
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
 	case MESON_CPU_ID_GXBB:
 	case MESON_CPU_ID_GXTVBB:
@@ -458,16 +450,15 @@ static void set_hpll_od3(unsigned int div)
  * wire            set_preset      = control[15];
  * wire    [14:0]  shift_preset    = control[14:0];
  */
-static void set_hpll_od3_clk_div(int div_sel)
+static void set_hpll_od3_clk_div(struct hdmitx20_hw *tx_hw, int div_sel)
 {
 	int shift_val = 0;
 	int shift_sel = 0;
-	struct hdmitx_dev *hdev = get_hdmitx_device();
 	unsigned int reg_vid_pll = P_HHI_VID_PLL_CLK_DIV;
 
 	pr_debug("%s[%d] div = %d\n", __func__, __LINE__, div_sel);
 
-	if (hdev->data->chip_type >= MESON_CPU_ID_SC2)
+	if (tx_hw->chip_data->chip_type >= MESON_CPU_ID_SC2)
 		reg_vid_pll = P_CLKCTRL_VID_PLL_CLK_DIV;
 
 	/* Disable the output clock */
@@ -561,9 +552,9 @@ static void set_hpll_od3_clk_div(int div_sel)
 	hd_set_reg_bits(reg_vid_pll, 1, 19, 1);
 }
 
-static void set_vid_clk_div(struct hdmitx_dev *hdev, unsigned int div)
+static void set_vid_clk_div(struct hdmitx20_hw *tx_hw, unsigned int div)
 {
-	if (hdev->data->chip_type >= MESON_CPU_ID_SC2) {
+	if (tx_hw->chip_data->chip_type >= MESON_CPU_ID_SC2) {
 		hd_set_reg_bits(P_CLKCTRL_VID_CLK_CTRL, 0, 16, 3);
 		hd_set_reg_bits(P_CLKCTRL_VID_CLK_DIV, div - 1, 0, 8);
 		hd_set_reg_bits(P_CLKCTRL_VID_CLK_CTRL, 7, 0, 3);
@@ -574,12 +565,12 @@ static void set_vid_clk_div(struct hdmitx_dev *hdev, unsigned int div)
 	}
 }
 
-static void set_hdmi_tx_pixel_div(struct hdmitx_dev *hdev, unsigned int div)
+static void set_hdmi_tx_pixel_div(struct hdmitx20_hw *tx_hw, unsigned int div)
 {
 	div = check_div(div);
 	if (div == -1)
 		return;
-	if (hdev->data->chip_type >= MESON_CPU_ID_SC2) {
+	if (tx_hw->chip_data->chip_type >= MESON_CPU_ID_SC2) {
 		hd_set_reg_bits(P_CLKCTRL_HDMI_CLK_CTRL, div, 16, 4);
 		hd_set_reg_bits(P_CLKCTRL_VID_CLK_CTRL2, 1, 5, 1);
 	} else {
@@ -588,12 +579,12 @@ static void set_hdmi_tx_pixel_div(struct hdmitx_dev *hdev, unsigned int div)
 	}
 }
 
-static void set_encp_div(struct hdmitx_dev *hdev, unsigned int div)
+static void set_encp_div(struct hdmitx20_hw *tx_hw, unsigned int div)
 {
 	div = check_div(div);
 	if (div == -1)
 		return;
-	if (hdev->data->chip_type >= MESON_CPU_ID_SC2) {
+	if (tx_hw->chip_data->chip_type >= MESON_CPU_ID_SC2) {
 		hd_set_reg_bits(P_CLKCTRL_VID_CLK_DIV, div, 24, 4);
 		hd_set_reg_bits(P_CLKCTRL_VID_CLK_CTRL, 1, 19, 1);
 	} else {
@@ -603,12 +594,12 @@ static void set_encp_div(struct hdmitx_dev *hdev, unsigned int div)
 	}
 }
 
-static void set_enci_div(struct hdmitx_dev *hdev, unsigned int div)
+static void set_enci_div(struct hdmitx20_hw *tx_hw, unsigned int div)
 {
 	div = check_div(div);
 	if (div == -1)
 		return;
-	if (hdev->data->chip_type >= MESON_CPU_ID_SC2) {
+	if (tx_hw->chip_data->chip_type >= MESON_CPU_ID_SC2) {
 		hd_set_reg_bits(P_CLKCTRL_VID_CLK_DIV, div, 28, 4);
 		hd_set_reg_bits(P_CLKCTRL_VID_CLK_CTRL, 1, 19, 1);
 	} else {
@@ -893,9 +884,9 @@ static void set_hdmitx_fe_clk(struct hdmitx_dev *hdev)
 	unsigned int vid_clk_div = P_HHI_VID_CLK_DIV;
 	unsigned int hdmi_clk_cntl = P_HHI_HDMI_CLK_CNTL;
 
-	if (hdev->data->chip_type < MESON_CPU_ID_TM2B)
+	if (hdev->tx_hw.chip_data->chip_type < MESON_CPU_ID_TM2B)
 		return;
-	if (hdev->data->chip_type >= MESON_CPU_ID_SC2) {
+	if (hdev->tx_hw.chip_data->chip_type >= MESON_CPU_ID_SC2) {
 		vid_clk_cntl2 = P_CLKCTRL_VID_CLK_CTRL2;
 		vid_clk_div = P_CLKCTRL_VID_CLK_DIV;
 		hdmi_clk_cntl = P_CLKCTRL_HDMI_CLK_CTRL;
@@ -927,6 +918,7 @@ static void hdmitx_set_clk_(struct hdmitx_dev *hdev,
 	enum hdmi_vic vic = hdev->tx_comm.cur_VIC;
 	enum hdmi_colorspace cs = hdev->tx_comm.fmt_para.cs;
 	enum hdmi_color_depth cd = hdev->tx_comm.fmt_para.cd;
+	struct hdmitx20_hw *tx_hw = &hdev->tx_hw;
 
 	if (!test_clk)
 		return;
@@ -1029,23 +1021,23 @@ static void hdmitx_set_clk_(struct hdmitx_dev *hdev,
 	}
 next:
 	*test_clk = p_enc[j];
-	hdmitx_set_cts_sys_clk(hdev);
-	set_hpll_clk_out(p_enc[j].hpll_clk_out);
+	hdmitx_set_cts_sys_clk(tx_hw);
+	set_hpll_clk_out(tx_hw, p_enc[j].hpll_clk_out);
 	if (cd == COLORDEPTH_24B && hdev->sspll)
 		set_hpll_sspll(vic);
-	set_hpll_od1(p_enc[j].od1);
-	set_hpll_od2(p_enc[j].od2);
-	set_hpll_od3(p_enc[j].od3);
-	set_hpll_od3_clk_div(p_enc[j].vid_pll_div);
+	set_hpll_od1(tx_hw, p_enc[j].od1);
+	set_hpll_od2(tx_hw, p_enc[j].od2);
+	set_hpll_od3(tx_hw, p_enc[j].od3);
+	set_hpll_od3_clk_div(tx_hw, p_enc[j].vid_pll_div);
 	pr_debug("j = %d  vid_clk_div = %d\n", j, p_enc[j].vid_clk_div);
-	set_vid_clk_div(hdev, p_enc[j].vid_clk_div);
-	set_hdmi_tx_pixel_div(hdev, p_enc[j].hdmi_tx_pixel_div);
+	set_vid_clk_div(tx_hw, p_enc[j].vid_clk_div);
+	set_hdmi_tx_pixel_div(tx_hw, p_enc[j].hdmi_tx_pixel_div);
 
 	if (hdev->tx_comm.hdmitx_vinfo.viu_mux == VIU_MUX_ENCI) {
-		set_enci_div(hdev, p_enc[j].enci_div);
+		set_enci_div(tx_hw, p_enc[j].enci_div);
 		hdmitx_enable_enci_clk(hdev);
 	} else {
-		set_encp_div(hdev, p_enc[j].encp_div);
+		set_encp_div(tx_hw, p_enc[j].encp_div);
 		hdmitx_enable_encp_clk(hdev);
 	}
 	set_hdmitx_fe_clk(hdev);
@@ -1181,7 +1173,7 @@ void hdmitx_set_clk(struct hdmitx_dev *hdev)
 
 	hdmitx_check_frac_rate(hdev);
 
-	if (hdev->data->chip_type == MESON_CPU_ID_SC2) {
+	if (hdev->tx_hw.chip_data->chip_type == MESON_CPU_ID_SC2) {
 		/* set the clock and test the pixel clock */
 		for (i = 0; i < SET_CLK_MAX_TIMES; i++) {
 			hdmitx_set_clk_(hdev, &test_clks);
@@ -1197,6 +1189,8 @@ void hdmitx_set_clk(struct hdmitx_dev *hdev)
 
 void hdmitx_disable_clk(struct hdmitx_dev *hdev)
 {
+	struct hdmitx20_hw *tx_hw = &hdev->tx_hw;
+
 	/* cts_encp/enci_clk */
 	if (hdev->tx_comm.hdmitx_vinfo.viu_mux == VIU_MUX_ENCI)
 		hdmitx_disable_enci_clk(hdev);
@@ -1204,6 +1198,6 @@ void hdmitx_disable_clk(struct hdmitx_dev *hdev)
 		hdmitx_disable_encp_clk(hdev);
 
 	/* hdmi_tx_pixel_clk */
-	hdmitx_disable_tx_pixel_clk(hdev);
+	hdmitx_disable_tx_pixel_clk(tx_hw);
 }
 

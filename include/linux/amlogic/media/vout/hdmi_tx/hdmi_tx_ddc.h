@@ -66,6 +66,15 @@ enum hdcp_addr {
 	HDCP2_DBG = 0xC0,
 };
 
+/*
+ * HDMITX DDC HW related operations
+ */
+enum ddc_op {
+	DDC_INIT_DISABLE_PULL_UP_DN,
+	DDC_MUX_DDC,
+	DDC_UNMUX_DDC,
+};
+
 int hdmitx_ddc_hw_op(enum ddc_op cmd);
 
 void scdc_rd_sink(u8 adr, u8 *val);

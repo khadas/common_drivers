@@ -5,11 +5,52 @@
 
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_hw_common.h>
 
+int hdmitx_hw_cntl_config(struct hdmitx_hw_common *tx_hw,
+	u32 cmd, u32 arg)
+{
+	return tx_hw->cntlconfig(tx_hw, cmd, arg);
+}
+
+int hdmitx_hw_cntl_misc(struct hdmitx_hw_common *tx_hw,
+	u32 cmd, u32 arg)
+{
+	return tx_hw->cntlmisc(tx_hw, cmd, arg);
+}
+
+int hdmitx_hw_get_state(struct hdmitx_hw_common *tx_hw,
+	u32 cmd, u32 arg)
+{
+	return tx_hw->getstate(tx_hw, cmd, arg);
+}
+
+int hdmitx_hw_validate_mode(struct hdmitx_hw_common *tx_hw, u32 vic)
+{
+	return tx_hw->validatemode(tx_hw, vic);
+}
+
+int hdmitx_hw_calc_format_para(struct hdmitx_hw_common *tx_hw,
+	struct hdmi_format_para *para)
+{
+	return tx_hw->calcformatpara(tx_hw, para);
+}
+
+int hdmitx_hw_set_packet(struct hdmitx_hw_common *tx_hw,
+	int type, unsigned char *DB, unsigned char *HB)
+{
+	tx_hw->setpacket(type, DB, HB);
+	return 0;
+}
+
+int hdmitx_hw_disable_packet(struct hdmitx_hw_common *tx_hw,
+	int type)
+{
+	tx_hw->disablepacket(type);
+	return 0;
+}
+
 int hdmitx_hw_avmute(struct hdmitx_hw_common *tx_hw, int muteflag)
 {
-	tx_hw->cntlmisc(tx_hw, MISC_AVMUTE_OP, muteflag);
-
-	return 0;
+	return hdmitx_hw_cntl_misc(tx_hw, MISC_AVMUTE_OP, muteflag);
 }
 
 int hdmitx_hw_set_phy(struct hdmitx_hw_common *tx_hw, int flag)
@@ -20,9 +61,22 @@ int hdmitx_hw_set_phy(struct hdmitx_hw_common *tx_hw, int flag)
 		cmd = TMDS_PHY_DISABLE;
 	else
 		cmd = TMDS_PHY_ENABLE;
-	tx_hw->cntlmisc(tx_hw, MISC_TMDS_PHY_OP, cmd);
+	return hdmitx_hw_cntl_misc(tx_hw, MISC_TMDS_PHY_OP, cmd);
+}
 
-	return 0;
+enum hdmi_tf_type hdmitx_hw_get_hdr_st(struct hdmitx_hw_common *tx_hw)
+{
+	return hdmitx_hw_get_state(tx_hw, STAT_TX_HDR, 0);
+}
+
+enum hdmi_tf_type hdmitx_hw_get_dv_st(struct hdmitx_hw_common *tx_hw)
+{
+	return hdmitx_hw_get_state(tx_hw, STAT_TX_DV, 0);
+}
+
+enum hdmi_tf_type hdmitx_hw_get_hdr10p_st(struct hdmitx_hw_common *tx_hw)
+{
+	return hdmitx_hw_get_state(tx_hw, STAT_TX_HDR10P, 0);
 }
 
 u32 hdmitx_calc_frl_clk(u32 pixel_freq,

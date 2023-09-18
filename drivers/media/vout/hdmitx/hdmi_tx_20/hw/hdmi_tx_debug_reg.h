@@ -6,7 +6,7 @@
 #ifndef __HDMI_TX_DEBUG_REG_H_
 #define __HDMI_TX_DEBUG_REG_H_
 
-#include <linux/amlogic/media/vout/hdmi_tx/hdmi_tx_module.h>
+#include <linux/amlogic/media/vout/hdmi_tx/hdmi_tx_hw.h>
 #include "hdmi_tx_reg.h"
 #include "mach_reg.h"
 #include "reg_sc2.h"

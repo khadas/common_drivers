@@ -88,11 +88,16 @@ unsigned int hd_read_reg(unsigned int addr);
 void hd_write_reg(unsigned int addr, unsigned int val);
 void hd_set_reg_bits(unsigned int addr, unsigned int value,
 		unsigned int offset, unsigned int len);
-void init_reg_map(unsigned int type);
 
-unsigned int hd_read_reg(unsigned int addr);
-void hd_write_reg(unsigned int addr, unsigned int val);
-void hd_set_reg_bits(unsigned int addr, unsigned int value,
-		     unsigned int offset, unsigned int len);
+void hdmitx_wr_reg(unsigned int addr, unsigned int data);
+void hdmitx_poll_reg(unsigned int addr, unsigned int val,
+		     unsigned long timeout);
+unsigned int hdmitx_rd_check_reg(unsigned int addr, unsigned int exp_data,
+				 unsigned int mask);
+bool hdmitx_get_bit(unsigned int addr, unsigned int bit_nr);
+void hdmitx_set_reg_bits(unsigned int addr, unsigned int value,
+				unsigned int offset, unsigned int len);
+
 int hdmitx_init_reg_map(struct platform_device *pdev);
+
 #endif

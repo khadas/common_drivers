@@ -20,11 +20,14 @@
 #include <linux/amlogic/media/vout/hdmi_tx/hdmi_info_global.h>
 #include <linux/amlogic/media/vout/hdmi_tx/hdmi_tx_module.h>
 #include <linux/amlogic/media/vout/hdmi_tx/hdmi_tx_compliance.h>
-#include <linux/amlogic/media/vout/hdmitx_common/hdmitx_dev_common.h>
+#include <linux/amlogic/media/vout/hdmitx_common/hdmitx_common.h>
 
 #include "hw/common.h"
 
-#define to_hdmitx20_dev(x)	container_of(x, struct hdmitx_dev, tx_comm)
+/* Old definitions */
+#define TYPE_AVI_INFOFRAMES       0x82
+#define AVI_INFOFRAMES_VERSION    0x02
+#define AVI_INFOFRAMES_LENGTH     0x0D
 
 static void hdmitx_set_spd_info(struct hdmitx_dev *hdmitx_device);
 static void hdmi_set_vend_spec_infofram(struct hdmitx_dev *hdev,
@@ -845,6 +848,7 @@ int hdmitx_set_display(struct hdmitx_dev *hdev, enum hdmi_vic videocode)
 {
 	struct hdmi_format_para *para = &hdev->tx_comm.fmt_para;
 	struct hdmitx_vidpara *param = NULL;
+	struct hdmitx_hw_common *tx_hw_base = &hdev->tx_hw.base;
 	int i, ret = -1;
 	unsigned char AVI_DB[32];
 	unsigned char AVI_HB[32];
@@ -881,11 +885,11 @@ int hdmitx_set_display(struct hdmitx_dev *hdev, enum hdmi_vic videocode)
 			 */
 			if (is_dvi_device(&hdev->tx_comm.rxcap)) {
 				pr_info(VID "Sink is DVI device\n");
-				hdev->tx_hw.cntlconfig(&hdev->tx_hw,
+				hdmitx_hw_cntl_config(tx_hw_base,
 					CONF_HDMI_DVI_MODE, DVI_MODE);
 			} else {
 				pr_info(VID "Sink is HDMI device\n");
-				hdev->tx_hw.cntlconfig(&hdev->tx_hw,
+				hdmitx_hw_cntl_config(tx_hw_base,
 					CONF_HDMI_DVI_MODE, HDMI_MODE);
 			}
 			hdmi_tx_construct_avi_packet(param, (char *)AVI_DB);
@@ -902,11 +906,11 @@ int hdmitx_set_display(struct hdmitx_dev *hdev, enum hdmi_vic videocode)
 				;
 
 			if (hdev->tx_comm.allm_mode) {
-				hdmitx_construct_vsif(&hdev->tx_comm, VT_ALLM, 1, NULL);
-				hdev->tx_hw.cntlconfig(&hdev->tx_hw, CONF_CT_MODE,
+				hdmitx_common_setup_vsif_packet(&hdev->tx_comm, VT_ALLM, 1, NULL);
+				hdmitx_hw_cntl_config(tx_hw_base, CONF_CT_MODE,
 					SET_CT_OFF);
 			}
-			hdev->tx_hw.cntlconfig(&hdev->tx_hw, CONF_CT_MODE,
+			hdmitx_hw_cntl_config(tx_hw_base, CONF_CT_MODE,
 				hdev->tx_comm.ct_mode);
 			ret = 0;
 		}
@@ -922,13 +926,14 @@ static void hdmi_set_vend_spec_infofram(struct hdmitx_dev *hdev,
 	int i;
 	unsigned char VEN_DB[6];
 	unsigned char VEN_HB[3];
+	struct hdmitx_hw_common *tx_hw_base = &hdev->tx_hw.base;
 
 	VEN_HB[0] = 0x81;
 	VEN_HB[1] = 0x01;
 	VEN_HB[2] = 0x5;
 
 	if (videocode == 0) {	   /* For non-4kx2k mode setting */
-		hdev->hwop.setpacket(HDMI_PACKET_VEND, NULL, VEN_HB);
+		hdmitx_hw_set_packet(tx_hw_base, HDMI_PACKET_VEND, NULL, VEN_HB);
 		return;
 	}
 
@@ -959,7 +964,7 @@ static void hdmi_set_vend_spec_infofram(struct hdmitx_dev *hdev,
 	} else {
 		;
 	}
-	hdev->hwop.setpacket(HDMI_PACKET_VEND, VEN_DB, VEN_HB);
+	hdmitx_hw_set_packet(tx_hw_base, HDMI_PACKET_VEND, VEN_DB, VEN_HB);
 }
 
 int hdmi_set_3d(struct hdmitx_dev *hdev, int type, unsigned int param)
@@ -967,12 +972,13 @@ int hdmi_set_3d(struct hdmitx_dev *hdev, int type, unsigned int param)
 	int i;
 	unsigned char VEN_DB[6];
 	unsigned char VEN_HB[3];
+	struct hdmitx_hw_common *tx_hw_base = &hdev->tx_hw.base;
 
 	VEN_HB[0] = 0x81;
 	VEN_HB[1] = 0x01;
 	VEN_HB[2] = 0x6;
 	if (type == T3D_DISABLE) {
-		hdev->hwop.setpacket(HDMI_PACKET_VEND, NULL, VEN_HB);
+		hdmitx_hw_set_packet(tx_hw_base, HDMI_PACKET_VEND, NULL, VEN_HB);
 	} else {
 		for (i = 0; i < 0x6; i++)
 			VEN_DB[i] = 0;
@@ -982,7 +988,7 @@ int hdmi_set_3d(struct hdmitx_dev *hdev, int type, unsigned int param)
 		VEN_DB[3] = 0x40;
 		VEN_DB[4] = type << 4;
 		VEN_DB[5] = param << 4;
-		hdev->hwop.setpacket(HDMI_PACKET_VEND, VEN_DB, VEN_HB);
+		hdmitx_hw_set_packet(tx_hw_base, HDMI_PACKET_VEND, VEN_DB, VEN_HB);
 	}
 	return 0;
 }
@@ -995,6 +1001,7 @@ static void hdmitx_set_spd_info(struct hdmitx_dev *hdev)
 	unsigned char SPD_HB[3] = {0x83, 0x1, 0x19};
 	unsigned int len = 0;
 	struct vendor_info_data *vend_data;
+	struct hdmitx_hw_common *tx_hw_base = &hdev->tx_hw.base;
 
 	if (hdev->config_data.vend_data) {
 		vend_data = hdev->config_data.vend_data;
@@ -1013,13 +1020,6 @@ static void hdmitx_set_spd_info(struct hdmitx_dev *hdev)
 			(len > 16) ? 16 : len);
 	}
 	SPD_DB[24] = 0x1;
-	hdev->hwop.setpacket(HDMI_SOURCE_DESCRIPTION, SPD_DB, SPD_HB);
+	hdmitx_hw_set_packet(tx_hw_base, HDMI_SOURCE_DESCRIPTION, SPD_DB, SPD_HB);
 }
 
-int hdmitx_construct_vsif(struct hdmitx_common *tx_comm,
-	enum vsif_type type, int on, void *param)
-{
-	struct hdmitx_dev *hdev = to_hdmitx20_dev(tx_comm);
-
-	return hdmitx_dev_setup_vsif_packet(tx_comm, &hdev->tx_hw, type, on, param);
-}

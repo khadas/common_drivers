@@ -3,7 +3,7 @@
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
 
-#include <linux/amlogic/media/vout/hdmitx_common/hdmitx_dev_common.h>
+#include <linux/amlogic/media/vout/hdmitx_common/hdmitx_common.h>
 #include <drm/amlogic/meson_drm_bind.h>
 #include <linux/component.h>
 #include "hdmitx_drm_hook.h"
@@ -107,11 +107,10 @@ static int drm_hdmitx_set_contenttype(int content_type)
 	 * reset allm to enable contenttype.
 	 * TODO: follow spec to skip contenttype when ALLM is on.
 	 */
-	hdmitx_dev_setup_vsif_packet(global_tx_base,
-		global_tx_hw, VT_HDMI14_4K, 1, NULL);
+	hdmitx_common_setup_vsif_packet(global_tx_base, VT_HDMI14_4K, 1, NULL);
 
 	/*reset previous ct.*/
-	global_tx_hw->cntlconfig(global_tx_hw, CONF_CT_MODE, SET_CT_OFF);
+	hdmitx_hw_cntl_config(global_tx_hw, CONF_CT_MODE, SET_CT_OFF);
 	global_tx_base->ct_mode = 0;
 
 	switch (content_type) {
@@ -135,7 +134,7 @@ static int drm_hdmitx_set_contenttype(int content_type)
 		break;
 	};
 
-	global_tx_hw->cntlconfig(global_tx_hw,
+	hdmitx_hw_cntl_config(global_tx_hw,
 		CONF_CT_MODE, content_type);
 	global_tx_base->ct_mode = content_type;
 

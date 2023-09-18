@@ -437,7 +437,7 @@ void set21_hpll_sspll_t7(enum hdmi_vic vic)
 		hd21_set_reg_bits(ANACTRL_HDMIPLL_CTRL2, 1, 8, 1);
 		/* 2: 1000ppm  1: 500ppm */
 		hd21_set_reg_bits(ANACTRL_HDMIPLL_CTRL2, 2, 4, 4);
-		if (hdev->dongle_mode)
+		if (hdev->tx_hw.dongle_mode)
 			hd21_set_reg_bits(ANACTRL_HDMIPLL_CTRL2, 4, 4, 4);
 		/* bit[15] hdmi_dpll_sdmnc_en */
 		hd21_set_reg_bits(ANACTRL_HDMIPLL_CTRL3, 0, 15, 1);

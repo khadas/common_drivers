@@ -22,8 +22,8 @@
 #include <linux/device.h>
 #include <linux/workqueue.h>
 #include <linux/amlogic/media/vout/hdmi_tx/hdmi_tx_module.h>
-#include <linux/amlogic/media/vout/hdmi_tx/hdmi_common.h>
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_common.h>
+#include <linux/amlogic/media/vout/hdmitx_common/hdmitx_types.h>
 #include <linux/amlogic/media/amvecm/amvecm.h>
 #include <linux/miscdevice.h>
 

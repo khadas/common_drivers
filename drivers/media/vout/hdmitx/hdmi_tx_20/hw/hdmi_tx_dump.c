@@ -12,7 +12,7 @@
 #include <linux/device.h>
 #include <linux/debugfs.h>
 #include <linux/seq_file.h>
-#include <linux/amlogic/media/vout/hdmi_tx/hdmi_common.h>
+#include <linux/amlogic/media/vout/hdmitx_common/hdmitx_types.h>
 #include <linux/amlogic/media/vout/hdmi_tx/hdmi_tx_module.h>
 #include <linux/amlogic/media/vout/hdmi_tx/hdmi_version.h>
 #include "mach_reg.h"
@@ -1289,6 +1289,8 @@ static void hdmitx_parsing_vsifpkt(struct seq_file *s)
 	unsigned char *conf;
 	unsigned int ieee_code = 0;
 	unsigned int count;
+	struct hdmitx_dev *hdev = get_hdmitx_device();
+	struct hdmitx_hw_common *tx_hw_base = &hdev->tx_hw.base;
 
 	seq_puts(s, "\n--------parsing VSIF--------\n");
 
@@ -1332,19 +1334,19 @@ static void hdmitx_parsing_vsifpkt(struct seq_file *s)
 		seq_printf(s, "3D_Ext_Data: 0x%x\n", tmp);
 		return;
 	}
-	if (hdmitx_get_cur_dv_st() == HDMI_DV_VSIF_STD) {
+	if (hdmitx_hw_get_dv_st(tx_hw_base) == HDMI_DV_VSIF_STD) {
 		/* DV STD */
 		seq_printf(s, "DV STD %s[%d]\n", __func__, __LINE__);
 		print_current_dv_hdr_(s);
 		return;
 	}
-	if (hdmitx_get_cur_dv_st() == HDMI_DV_VSIF_LL) {
+	if (hdmitx_hw_get_dv_st(tx_hw_base) == HDMI_DV_VSIF_LL) {
 		/* DV LL */
 		seq_printf(s, "DV LL %s[%d]\n", __func__, __LINE__);
 		print_current_dv_hdr_(s);
 		return;
 	}
-	if (hdmitx_get_cur_hdr10p_st() == HDMI_HDR10P_DV_VSIF) {
+	if (hdmitx_hw_get_hdr10p_st(tx_hw_base) == HDMI_HDR10P_DV_VSIF) {
 		/* HDR10plus */
 		seq_printf(s, "HDR10+ %s[%d]\n", __func__, __LINE__);
 		print_current_dv_hdr_(s);

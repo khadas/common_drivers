@@ -10,6 +10,41 @@
 #include <linux/hdmi.h>
 #include <linux/amlogic/media/vout/hdmi_tx_ext.h>
 
+enum hdmi_hdr_transfer {
+	T_UNKNOWN = 0,
+	T_BT709,
+	T_UNDEF,
+	T_BT601,
+	T_BT470M,
+	T_BT470BG,
+	T_SMPTE170M,
+	T_SMPTE240M,
+	T_LINEAR,
+	T_LOG100,
+	T_LOG316,
+	T_IEC61966_2_4,
+	T_BT1361E,
+	T_IEC61966_2_1,
+	T_BT2020_10,
+	T_BT2020_12,
+	T_SMPTE_ST_2084,
+	T_SMPTE_ST_28,
+	T_HLG,
+};
+
+enum hdmi_hdr_color {
+	C_UNKNOWN = 0,
+	C_BT709,
+	C_UNDEF,
+	C_BT601,
+	C_BT470M,
+	C_BT470BG,
+	C_SMPTE170M,
+	C_SMPTE240M,
+	C_FILM,
+	C_BT2020,
+};
+
 enum hdmi_tf_type {
 	HDMI_NONE = 0,
 	/* HDMI_HDR_TYPE, HDMI_DV_TYPE, and HDMI_HDR10P_TYPE
@@ -86,6 +121,16 @@ struct size_map {
 	enum hdmi_audio_sampsize ss;
 };
 
+enum hd_ctrl {
+	VID_EN, VID_DIS, AUD_EN, AUD_DIS, EDID_EN, EDID_DIS, HDCP_EN, HDCP_DIS,
+};
+
+enum hdmitx_aspect_ratio {
+	AR_UNKNOWN = 0,
+	AR_4X3,
+	AR_16X9,
+};
+
 #define HDMI_PACKET_TYPE_GCP 0x3
 
 struct hdmitx_infoframe {
@@ -96,6 +141,168 @@ struct hdmitx_infoframe {
 	union hdmi_infoframe aud;
 	union hdmi_infoframe drm;
 	union hdmi_infoframe emp;
+};
+
+enum hdmitx_event {
+	HDMITX_NONE_EVENT = 0,
+	HDMITX_HPD_EVENT,
+	HDMITX_HDCP_EVENT,
+	HDMITX_CUR_ST_EVENT,
+	HDMITX_AUDIO_EVENT,
+	HDMITX_HDCPPWR_EVENT,
+	HDMITX_HDR_EVENT,
+	HDMITX_RXSENSE_EVENT,
+	HDMITX_CEDST_EVENT,
+};
+
+enum hdmi_pixel_repeat {
+	NO_REPEAT = 0,
+	HDMI_2_TIMES_REPEAT,
+	HDMI_3_TIMES_REPEAT,
+	HDMI_4_TIMES_REPEAT,
+	HDMI_5_TIMES_REPEAT,
+	HDMI_6_TIMES_REPEAT,
+	HDMI_7_TIMES_REPEAT,
+	HDMI_8_TIMES_REPEAT,
+	HDMI_9_TIMES_REPEAT,
+	HDMI_10_TIMES_REPEAT,
+	MAX_TIMES_REPEAT,
+};
+
+enum hdmi_scan {
+	SS_NO_DATA = 0,
+	/* where some active pixelsand lines at the edges are not displayed. */
+	SS_SCAN_OVER,
+	/* where all active pixels&lines are displayed,
+	 * with or without a border.
+	 */
+	SS_SCAN_UNDER,
+	SS_RSV
+};
+
+enum hdmi_barinfo {
+	B_INVALID = 0, B_BAR_VERT, /* Vert. Bar Infovalid */
+	B_BAR_HORIZ, /* Horiz. Bar Infovalid */
+	B_BAR_VERT_HORIZ,
+/* Vert.and Horiz. Bar Info valid */
+};
+
+enum hdmi_colourimetry {
+	CC_NO_DATA = 0, CC_ITU601, CC_ITU709, CC_XVYCC601, CC_XVYCC709,
+};
+
+enum hdmi_scaling {
+	SC_NO_UINFORM = 0,
+	/* Picture has been scaled horizontally */
+	SC_SCALE_HORIZ,
+	SC_SCALE_VERT, /* Picture has been scaled vertically */
+	SC_SCALE_HORIZ_VERT,
+/* Picture has been scaled horizontally & SC_SCALE_H_V */
+};
+
+/* FL-- Front Left */
+/* FC --Front Center */
+/* FR --Front Right */
+/* FLC-- Front Left Center */
+/* FRC-- Front RiQhtCenter */
+/* RL-- Rear Left */
+/* RC --Rear Center */
+/* RR-- Rear Right */
+/* RLC-- Rear Left Center */
+/* RRC --Rear RiQhtCenter */
+/* LFE-- Low Frequency Effect */
+enum hdmi_speak_location {
+	CA_FR_FL = 0,
+	CA_LFE_FR_FL,
+	CA_FC_FR_FL,
+	CA_FC_LFE_FR_FL,
+
+	CA_RC_FR_FL,
+	CA_RC_LFE_FR_FL,
+	CA_RC_FC_FR_FL,
+	CA_RC_FC_LFE_FR_FL,
+
+	CA_RR_RL_FR_FL,
+	CA_RR_RL_LFE_FR_FL,
+	CA_RR_RL_FC_FR_FL,
+	CA_RR_RL_FC_LFE_FR_FL,
+
+	CA_RC_RR_RL_FR_FL,
+	CA_RC_RR_RL_LFE_FR_FL,
+	CA_RC_RR_RL_FC_FR_FL,
+	CA_RC_RR_RL_FC_LFE_FR_FL,
+
+	CA_RRC_RC_RR_RL_FR_FL,
+	CA_RRC_RC_RR_RL_LFE_FR_FL,
+	CA_RRC_RC_RR_RL_FC_FR_FL,
+	CA_RRC_RC_RR_RL_FC_LFE_FR_FL,
+
+	CA_FRC_RLC_FR_FL,
+	CA_FRC_RLC_LFE_FR_FL,
+	CA_FRC_RLC_FC_FR_FL,
+	CA_FRC_RLC_FC_LFE_FR_FL,
+
+	CA_FRC_RLC_RC_FR_FL,
+	CA_FRC_RLC_RC_LFE_FR_FL,
+	CA_FRC_RLC_RC_FC_FR_FL,
+	CA_FRC_RLC_RC_FC_LFE_FR_FL,
+
+	CA_FRC_RLC_RR_RL_FR_FL,
+	CA_FRC_RLC_RR_RL_LFE_FR_FL,
+	CA_FRC_RLC_RR_RL_FC_FR_FL,
+	CA_FRC_RLC_RR_RL_FC_LFE_FR_FL,
+};
+
+enum hdmi_audio_downmix {
+	LSV_0DB = 0,
+	LSV_1DB,
+	LSV_2DB,
+	LSV_3DB,
+	LSV_4DB,
+	LSV_5DB,
+	LSV_6DB,
+	LSV_7DB,
+	LSV_8DB,
+	LSV_9DB,
+	LSV_10DB,
+	LSV_11DB,
+	LSV_12DB,
+	LSV_13DB,
+	LSV_14DB,
+	LSV_15DB,
+};
+
+#define AUDIO_PARA_MAX_NUM       14
+struct hdmi_audio_fs_ncts {
+	struct {
+		u32 tmds_clk;
+		u32 n; /* 24 or 30 bit */
+		u32 cts; /* 24 or 30 bit */
+		u32 n_36bit;
+		u32 cts_36bit;
+		u32 n_48bit;
+		u32 cts_48bit;
+	} array[AUDIO_PARA_MAX_NUM];
+	u32 def_n;
+};
+
+struct rate_map_fs {
+	unsigned int rate;
+	enum hdmi_audio_fs fs;
+};
+
+struct hdmi_rx_audioinfo {
+	/* !< Signal decoding type -- TvAudioType */
+	enum hdmi_audio_type type;
+	enum hdmi_audio_format format;
+	/* !< active audio channels bit mask. */
+	enum hdmi_audio_chnnum channels;
+	enum hdmi_audio_fs fs; /* !< Signal sample rate in Hz */
+	enum hdmi_audio_sampsize ss;
+	enum hdmi_speak_location speak_loc;
+	enum hdmi_audio_downmix lsv;
+	u32 N_value;
+	u32 CTS;
 };
 
 #endif

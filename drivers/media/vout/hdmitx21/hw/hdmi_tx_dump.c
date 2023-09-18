@@ -115,7 +115,7 @@ static int dump_hdmireg_show(struct seq_file *s, void *p)
 	dumpcor(s, DEBUG_MODE_EN_IVCTX, DROP_GEN_TYPE_5_IVCTX);
 	// 0x00000300 - 0x0000031a
 	dumpcor(s, TX_ZONE_CTL0_IVCTX, FIFO_10TO20_CTRL_IVCTX);
-	if (hdev->data->chip_type >= MESON_CPU_ID_S5) {
+	if (hdev->tx_hw.chip_data->chip_type >= MESON_CPU_ID_S5) {
 		// 0x00000330 - 0x00000334
 		dumpcor(s, MHLHDMITXTOP_INTR_IVCTX, EMSC_ADCTC_LD_SEL_IVCTX);
 	}
@@ -131,7 +131,7 @@ static int dump_hdmireg_show(struct seq_file *s, void *p)
 	dumpcor(s, HDCP2X_DEBUG_CTRL0_IVCTX, HDCP2X_DEBUG_STAT16_IVCTX);
 	// 0x00000900 - 0x00000933
 	dumpcor(s, SCRCTL_IVCTX, FRL_LTP_OVR_VAL1_IVCTX);
-	if (hdev->data->chip_type >= MESON_CPU_ID_S5) {
+	if (hdev->tx_hw.chip_data->chip_type >= MESON_CPU_ID_S5) {
 		// 0x00000934 - 0x0000097a
 		dumpcor(s, RSVD1_HDMI2_IVCTX, H21TXSB_SPARE_9_IVCTX);
 		// 0x00000980 - 0x00000985
@@ -651,7 +651,7 @@ static int hdmitx_dump_cts_enc_clk_status(struct seq_file *s, void *p)
 		[7] = "fclk_div7",
 	};
 
-	if (hdev->data->chip_type == MESON_CPU_ID_T7)
+	if (hdev->tx_hw.chip_data->chip_type == MESON_CPU_ID_T7)
 		return 0;
 
 	val[0] = hd21_read_reg(CLKCTRL_VID_CLK0_CTRL);

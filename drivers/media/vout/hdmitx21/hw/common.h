@@ -22,7 +22,7 @@
 #include <linux/cdev.h>
 #include <linux/io.h>
 #include <linux/amlogic/media/vout/hdmi_tx21/hdmi_tx_ddc.h>
-#include <linux/amlogic/media/vout/hdmi_tx21/hdmi_common.h>
+#include <linux/amlogic/media/vout/hdmitx_common/hdmitx_types.h>
 #include "../hdmi_tx.h"
 #include "hdmi_tx_reg.h"
 #include "register.h"
@@ -182,5 +182,19 @@ void dump_infoframe_packets(struct seq_file *s);
 /* data flow metering config */
 void hdmitx_dfm_cfg(u8 bw_type, u16 h_active);
 void hdmitx21_s5_clk_div_rst(u32 clk_idx);
+
+/*
+ * HDMITX HPD HW related operations
+ */
+enum hpd_op {
+	HPD_INIT_DISABLE_PULLUP,
+	HPD_INIT_SET_FILTER,
+	HPD_IS_HPD_MUXED,
+	HPD_MUX_HPD,
+	HPD_UNMUX_HPD,
+	HPD_READ_HPD_GPIO,
+};
+
+int hdmitx21_hpd_hw_op(enum hpd_op cmd);
 
 #endif

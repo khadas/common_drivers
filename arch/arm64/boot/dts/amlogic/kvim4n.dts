@@ -805,6 +805,12 @@
 	};
 	/* Audio Related end */
 
+	gpiomem {
+		compatible = "amlogic, gpiomem";
+		reg = <0x0 0xfe004000 0x0 0x1000>;
+		status = "okay";
+	};
+
 	picdec {
 		compatible = "amlogic, picdec";
 		status = "okay";

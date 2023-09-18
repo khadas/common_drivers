@@ -10,11 +10,7 @@
 #include "aml_dsc.h"
 //#include "hw_demux/hwdemux.h"
 
-#ifdef CONFIG_AMLOGIC_ZAPPER_CUT
-#define DMX_DEV_COUNT     3
-#else
 #define DMX_DEV_COUNT     32
-#endif
 
 #define DSC_DEV_COUNT     DMX_DEV_COUNT
 /*TSIN just 4, but maxlinear maybe send 8 TS at one TSIN.*/
@@ -52,8 +48,8 @@ struct aml_dvb {
 
 	struct swdmx_ts_parser *tsp[DMX_DEV_COUNT];
 	struct swdmx_demux *swdmx[DMX_DEV_COUNT];
-	struct aml_dmx dmx[DMX_DEV_COUNT];
-	struct aml_dsc dsc[DSC_DEV_COUNT];
+	struct aml_dmx *dmx[DMX_DEV_COUNT];
+	struct aml_dsc *dsc[DSC_DEV_COUNT];
 	struct aml_ts_input ts[FE_DEV_COUNT];
 	/*protect many user operate*/
 	struct mutex mutex;

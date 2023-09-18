@@ -2361,7 +2361,7 @@ static int _dmx_set_hw_source(struct dmx_demux *dmx, int hw_source)
 						advb->ts[demux->ts_index].ts_sid ^ 0x20;
 					ts_output_update_filter(demux->id, demux->sid);
 				}
-				if (advb->dsc[demux->id].sid !=
+				if (advb->dsc[demux->id]->sid !=
 					advb->ts[demux->ts_index].ts_sid)
 					dsc_set_sid(demux->id, advb->ts[demux->ts_index].ts_sid);
 			}
@@ -2684,10 +2684,13 @@ static int dump_filter_ringbuffer(char *buf)
 	total += r;
 
 	for (h = 0; h < DMX_DEV_COUNT; h++) {
-		if (!advb->dmx[h].swdmx)
+		if (!advb->dmx[h])
 			continue;
 
-	dmx = &advb->dmx[h].dmx_ext.dmx;
+		if (!advb->dmx[h]->swdmx)
+			continue;
+
+	dmx = &advb->dmx[h]->dmx_ext.dmx;
 	demux = (struct aml_dmx *)dmx->priv;
 	dvr_exit = 0;
 
@@ -2869,11 +2872,14 @@ static ssize_t dump_av_level_show(struct class *class,
 	struct filter_mem_info *fpinfo;
 
 	for (h = 0; h < DMX_DEV_COUNT; h++) {
-		if (!advb->dmx[h].swdmx)
+		if (!advb->dmx[h])
+			continue;
+
+		if (!advb->dmx[h]->swdmx)
 			continue;
 
 		memset(&info, 0, sizeof(struct dmx_filter_mem_info));
-		_dmx_get_mem_info(&advb->dmx[h].dmx_ext.dmx, &info);
+		_dmx_get_mem_info(&advb->dmx[h]->dmx_ext.dmx, &info);
 		for (i = 0; i < info.filter_num; i++) {
 			if (info.info[i].type != DMX_VIDEO_TYPE &&
 				info.info[i].type != DMX_AUDIO_TYPE)
@@ -2973,8 +2979,8 @@ static ssize_t dmx_source_store(struct class *class,
 		dprint_i("dmx_id:%d fail\n", dmx_id);
 		return size;
 	}
-	demux = &advb->dmx[dmx_id];
-	if (!demux->init) {
+	demux = advb->dmx[dmx_id];
+	if (!demux || !demux->init) {
 		dprint_i("dmx_id:%d not init\n", dmx_id);
 		return size;
 	}

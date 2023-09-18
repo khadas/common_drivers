@@ -97,19 +97,25 @@ ssize_t get_pcr_show(struct class *class,
 	u64 value;
 	unsigned int base;
 	int ret = 0;
+	struct aml_dmx *dmx;
 
+	if (print_dmx >= DMX_DEV_COUNT)
+		return total;
+	dmx = dvb->dmx[print_dmx];
+	if (!dmx)
+		return total;
 	for (i = 0; i < 4; i++) {
 		value = 0;
 		base = 0;
 		if (print_stc) {
-			ret = dmx_get_stc(&dvb->dmx[print_dmx].dmx_ext.dmx, i,
+			ret = dmx_get_stc(&dmx->dmx_ext.dmx, i,
 				&value, &base);
 			if (ret != 0)
 				continue;
 			r = sprintf(buf, "dmx:%d num%d stc:0x%llx base:%d\n",
 				print_dmx, i, value, base);
 		} else {
-			ret = dmx_get_pcr(&dvb->dmx[print_dmx].dmx_ext.dmx, i, &value);
+			ret = dmx_get_pcr(&dmx->dmx_ext.dmx, i, &value);
 			if (ret != 0)
 				continue;
 			r = sprintf(buf, "dmx:%d num%d pcr:0x%llx\n",
@@ -143,33 +149,37 @@ ssize_t dmx_setting_show(struct class *class, struct class_attribute *attr,
 	int r, total = 0;
 	int i;
 	struct aml_dvb *dvb = aml_get_dvb_device();
+	struct aml_dmx *dmx;
 
 	for (i = 0; i < dmx_dev_num; i++) {
+		dmx = dvb->dmx[i];
+		if (!dmx)
+			continue;
 		r = sprintf(buf, "dmx%d input:%s ", i,
-			    dvb->dmx[i].source == INPUT_DEMOD ? "input_demod" :
-			    (dvb->dmx[i].source == INPUT_LOCAL ?
+			    dmx->source == INPUT_DEMOD ? "input_demod" :
+			    (dmx->source == INPUT_LOCAL ?
 			     "input_local" : "input_local_sec"));
 		buf += r;
 		total += r;
-		if (dvb->dmx[i].hw_source >= 0 &&
-			dvb->dmx[i].hw_source < FRONTEND_TS0) {
-			r = sprintf(buf, "DMA_%d ", dvb->dmx[i].hw_source);
-		} else if (dvb->dmx[i].hw_source >= FRONTEND_TS0 &&
-			dvb->dmx[i].hw_source < DMA_0_1) {
+		if (dmx->hw_source >= 0 &&
+			dmx->hw_source < FRONTEND_TS0) {
+			r = sprintf(buf, "DMA_%d ", dmx->hw_source);
+		} else if (dmx->hw_source >= FRONTEND_TS0 &&
+			dmx->hw_source < DMA_0_1) {
 			r = sprintf(buf, "FRONTEND_TS%d ",
-					dvb->dmx[i].hw_source - FRONTEND_TS0);
-		} else if (dvb->dmx[i].hw_source >= DMA_0_1 &&
-			dvb->dmx[i].hw_source < FRONTEND_TS0_1) {
-			r = sprintf(buf, "DMA_%d_1 ", dvb->dmx[i].hw_source - DMA_0_1);
-		} else if (dvb->dmx[i].hw_source >= FRONTEND_TS0_1) {
+					dmx->hw_source - FRONTEND_TS0);
+		} else if (dmx->hw_source >= DMA_0_1 &&
+			dmx->hw_source < FRONTEND_TS0_1) {
+			r = sprintf(buf, "DMA_%d_1 ", dmx->hw_source - DMA_0_1);
+		} else if (dmx->hw_source >= FRONTEND_TS0_1) {
 			r = sprintf(buf, "FRONTEND_TS%d_1 ",
-					dvb->dmx[i].hw_source - FRONTEND_TS0_1);
+					dmx->hw_source - FRONTEND_TS0_1);
 		}
 
 		buf += r;
 		total += r;
 
-		r = sprintf(buf, "sid:0x%0x\n", dvb->dmx[i].sid);
+		r = sprintf(buf, "sid:0x%0x\n", dmx->sid);
 		buf += r;
 		total += r;
 	}
@@ -234,7 +244,10 @@ int demux_get_stc(int demux_device_index, int index,
 	if (demux_device_index >= DMX_DEV_COUNT || demux_device_index < 0)
 		return -1;
 
-	dmx_get_stc(&dvb->dmx[demux_device_index].dmx_ext.dmx, index, stc, base);
+	if (!dvb->dmx[demux_device_index])
+		return -1;
+
+	dmx_get_stc(&dvb->dmx[demux_device_index]->dmx_ext.dmx, index, stc, base);
 
 	return 0;
 }
@@ -247,7 +260,10 @@ int demux_get_pcr(int demux_device_index, int index, u64 *pcr)
 	if (demux_device_index >= DMX_DEV_COUNT || demux_device_index < 0)
 		return -1;
 
-	return dmx_get_pcr(&dvb->dmx[demux_device_index].dmx_ext.dmx, index, pcr);
+	if (!dvb->dmx[demux_device_index])
+		return -1;
+
+	return dmx_get_pcr(&dvb->dmx[demux_device_index]->dmx_ext.dmx, index, pcr);
 }
 EXPORT_SYMBOL(demux_get_pcr);
 
@@ -672,15 +688,19 @@ static int aml_dvb_remove(struct platform_device *pdev)
 	}
 
 	for (i = 0; i < dmx_dev_num; i++) {
-		if (advb->dmx[i].init) {
-			dmx_destroy(&advb->dmx[i]);
-			advb->dmx[i].id = -1;
+		if (advb->dmx[i]->init) {
+			dmx_destroy(advb->dmx[i]);
+			advb->dmx[i]->id = -1;
 		}
+		vfree(advb->dmx[i]);
+		advb->dmx[i] = NULL;
 	}
 
 	for (i = 0; i < dmx_dev_num; i++) {
-		dsc_release(&advb->dsc[i]);
-		advb->dsc[i].id = -1;
+		dsc_release(advb->dsc[i]);
+		advb->dsc[i]->id = -1;
+		vfree(advb->dsc[i]);
+		advb->dsc[i] = NULL;
 	}
 
 	ts_output_destroy();
@@ -809,6 +829,16 @@ static int aml_dvb_probe(struct platform_device *pdev)
 		hw_source = DMA_0;
 	//create dmx dev
 	for (i = 0; i < dmx_dev_num; i++) {
+		advb->dmx[i] = vmalloc(sizeof(*advb->dmx[i]));
+		if (!advb->dmx[i])
+			goto INIT_ERR;
+		memset(advb->dmx[i], 0, sizeof(*advb->dmx[i]));
+
+		advb->dsc[i] = vmalloc(sizeof(*advb->dsc[i]));
+		if (!advb->dsc[i])
+			goto INIT_ERR;
+		memset(advb->dsc[i], 0, sizeof(*advb->dsc[i]));
+
 		advb->swdmx[i] = swdmx_demux_new();
 		if (!advb->swdmx[i])
 			goto INIT_ERR;
@@ -821,27 +851,27 @@ static int aml_dvb_probe(struct platform_device *pdev)
 						 swdmx_demux_ts_packet_cb,
 						 advb->swdmx[i]);
 
-		advb->dmx[i].id = i;
-		advb->dmx[i].pmutex = &advb->mutex;
-		advb->dmx[i].swdmx = advb->swdmx[i];
-		advb->dmx[i].tsp = advb->tsp[i];
-		advb->dmx[i].source = tsn_in;
-		advb->dmx[i].ts_index = valid_ts;
+		advb->dmx[i]->id = i;
+		advb->dmx[i]->pmutex = &advb->mutex;
+		advb->dmx[i]->swdmx = advb->swdmx[i];
+		advb->dmx[i]->tsp = advb->tsp[i];
+		advb->dmx[i]->source = tsn_in;
+		advb->dmx[i]->ts_index = valid_ts;
 		if (tsn_in == INPUT_DEMOD)
-			advb->dmx[i].sid = advb->ts[advb->dmx[i].ts_index].ts_sid;
+			advb->dmx[i]->sid = advb->ts[advb->dmx[i]->ts_index].ts_sid;
 		else
-			advb->dmx[i].sid = -1;
-		advb->dmx[i].hw_source = hw_source;
-		ret = dmx_init(&advb->dmx[i], padater);
+			advb->dmx[i]->sid = -1;
+		advb->dmx[i]->hw_source = hw_source;
+		ret = dmx_init(advb->dmx[i], padater);
 		if (ret)
 			goto INIT_ERR;
 
-		advb->dsc[i].mutex = advb->mutex;
+		advb->dsc[i]->mutex = advb->mutex;
 //              advb->dsc[i].slock = advb->slock;
-		advb->dsc[i].id = i;
-		advb->dsc[i].sid = advb->dmx[i].sid;
+		advb->dsc[i]->id = i;
+		advb->dsc[i]->sid = advb->dmx[i]->sid;
 
-		ret = dsc_init(&advb->dsc[i], padater);
+		ret = dsc_init(advb->dsc[i], padater);
 		if (ret)
 			goto INIT_ERR;
 	}

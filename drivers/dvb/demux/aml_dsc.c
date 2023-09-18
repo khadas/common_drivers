@@ -823,9 +823,10 @@ int dsc_set_sid(int id, int sid)
 	struct aml_dsc *dsc;
 	struct dsc_channel *chans;
 
-	advb->dsc[id].sid = sid;
-
-	dsc = &advb->dsc[id];
+	if (!advb->dsc[id])
+		return -1;
+	advb->dsc[id]->sid = sid;
+	dsc = advb->dsc[id];
 	if (dsc->dev) {
 		chans = dsc->dsc_channels;
 		while (chans) {
@@ -904,7 +905,10 @@ int dsc_dump_info(char *buf)
 	total += r;
 
 	for (i = 0; i < DSC_DEV_COUNT; i++) {
-		dsc = &dvb->dsc[i];
+		dsc = dvb->dsc[i];
+		if (!dsc)
+			continue;
+
 		if (!dsc->dev)
 			continue;
 
@@ -1007,7 +1011,7 @@ int dsc_dump_info(char *buf)
 			}
 			chans = chans->next;
 		}
-		mutex_unlock(&dvb->dsc[i].mutex);
+		mutex_unlock(&dsc->mutex);
 	}
 	return total;
 }

@@ -32,7 +32,6 @@
 
 #include "xhci.h"
 #include "xhci-plat.h"
-#include "crg_xhci.h"
 
 static const struct xhci_plat_priv crg_xhci_plat_priv = {
 	.quirks = XHCI_NO_64BIT_SUPPORT | XHCI_RESET_ON_RESUME,
@@ -259,7 +258,7 @@ static int crg_host_init(struct crg_drd *crg)
 
 	props[prop_idx++] = PROPERTY_ENTRY_BOOL("xhci-crg-host");
 	props[prop_idx++] = PROPERTY_ENTRY_BOOL("usb2-lpm-disable");
-	crg_control_flag = 1;
+
 	if (prop_idx) {
 		ret = device_create_managed_software_node(&xhci->dev, props, NULL);
 		if (ret) {
@@ -667,7 +666,6 @@ EXPORT_SYMBOL_GPL(crg_init);
 /* AMLOGIC corigine driver does not allow module unload */
 int __init amlogic_crg_host_driver_init(void)
 {
-	crg_xhci_init();
 	platform_driver_probe(&crg_host_driver, crg_probe);
 
 	return 0;

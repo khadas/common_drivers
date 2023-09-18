@@ -29,7 +29,6 @@
 #include <linux/phy/phy.h>
 #include "xhci.h"
 #include "xhci-plat.h"
-#include "crg_xhci.h"
 
 #define CRG_DEFAULT_AUTOSUSPEND_DELAY	5000 /* ms */
 #define CRG_XHCI_RESOURCES_NUM	2
@@ -233,7 +232,7 @@ int crg_host_init(struct crg *crg)
 
 	props[prop_idx++] = PROPERTY_ENTRY_BOOL("xhci-crg-host");
 	props[prop_idx++] = PROPERTY_ENTRY_BOOL("usb2-lpm-disable");
-	crg_control_flag = 1;
+
 	if (prop_idx) {
 		ret = device_create_managed_software_node(&xhci->dev, props, NULL);
 		if (ret) {
@@ -596,7 +595,6 @@ static struct platform_driver crg_driver = {
 /* AMLOGIC corigine driver does not allow module unload */
 int __init amlogic_crg_init(void)
 {
-	crg_xhci_init();
 	platform_driver_probe(&crg_driver, crg_probe);
 	return 0;
 }

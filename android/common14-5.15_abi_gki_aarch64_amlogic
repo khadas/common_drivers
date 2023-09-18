@@ -1,6 +1,3 @@
-  sg_pcopy_to_buffer
-  usb_hcd_is_primary_hcd
-  usb_hcd_map_urb_for_dma
   kimage_vaddr
   sysfs_create_bin_file
   vabits_actual

@@ -1747,12 +1747,8 @@ void lcd_tcon_vsync_isr(struct aml_lcd_drv_s *pdrv)
 	if (lcd_tcon_conf->tcon_is_busy)
 		return;
 
-	lcd_tcon_lut_dma_disable(pdrv);
-	if (lcd_tcon_get_dma_ref() > 0) {
-		if (lcd_debug_print_flag & LCD_DBG_PR_ISR)
-			LCDPR("%s, dma update\n", __func__);
-		lcd_tcon_dma_update(pdrv);
-	}
+	if (lcd_tcon_conf->lut_dma_update)
+		lcd_tcon_conf->lut_dma_update(pdrv);
 
 	if (tcon_mm_table.version) {
 		if (tcon_mm_table.multi_lut_update) {
@@ -3304,6 +3300,7 @@ static struct lcd_tcon_config_s tcon_data_tl1 = {
 	.tcon_disable = lcd_tcon_disable_tl1,
 	.tcon_reload = NULL,
 	.tcon_reload_pre = NULL,
+	.lut_dma_update = NULL,
 };
 
 static struct lcd_tcon_config_s tcon_data_t5 = {
@@ -3350,6 +3347,7 @@ static struct lcd_tcon_config_s tcon_data_t5 = {
 	.tcon_disable = lcd_tcon_disable_t5,
 	.tcon_reload = NULL,
 	.tcon_reload_pre = NULL,
+	.lut_dma_update = NULL,
 };
 
 static struct lcd_tcon_config_s tcon_data_t5d = {
@@ -3392,6 +3390,7 @@ static struct lcd_tcon_config_s tcon_data_t5d = {
 	.tcon_disable = lcd_tcon_disable_t5,
 	.tcon_reload = NULL,
 	.tcon_reload_pre = NULL,
+	.lut_dma_update = NULL,
 };
 
 static struct lcd_tcon_config_s tcon_data_t3 = {
@@ -3438,8 +3437,58 @@ static struct lcd_tcon_config_s tcon_data_t3 = {
 	.tcon_disable = lcd_tcon_disable_t3,
 	.tcon_reload = lcd_tcon_reload_t3,
 	.tcon_reload_pre = lcd_tcon_reload_pre_t3,
+	.lut_dma_update = NULL,
 };
 
+static struct lcd_tcon_config_s tcon_data_t5m = {
+	.tcon_valid = 0,
+	.tcon_is_busy = 0,
+
+	.core_reg_ver = 1, /* new version with header */
+	.core_reg_width = LCD_TCON_CORE_REG_WIDTH_T5,
+	.reg_table_width = LCD_TCON_TABLE_WIDTH_T5,
+	.reg_table_len = LCD_TCON_TABLE_LEN_T5,
+	.core_reg_start = TCON_CORE_REG_START_T5,
+	.top_reg_base = TCON_TOP_BASE,
+
+	.reg_top_ctrl = REG_LCD_TCON_MAX,
+	.bit_en = BIT_TOP_EN_T5,
+
+	.reg_core_od = REG_CORE_OD_T5,
+	.bit_od_en = BIT_OD_EN_T5,
+
+	.reg_ctrl_timing_base = REG_LCD_TCON_MAX,
+	.ctrl_timing_offset = CTRL_TIMING_OFFSET_T5,
+	.ctrl_timing_cnt = CTRL_TIMING_CNT_T5,
+
+	.axi_bank = LCD_TCON_AXI_BANK_T5,
+
+	/*rsv_mem(12M)    axi_mem(10M)   bin_path(10K) secure_cfg(64byte)
+	 *             |----------------|-------------|-------------|
+	 */
+	.rsv_mem_size    = 0x00a02840,
+	.axi_mem_size    = 0x00a00000,
+	.bin_path_size   = 0x00002800,
+	.secure_cfg_size = 0x00000040,
+	.vac_size        = 0,
+	.demura_set_size = 0,
+	.demura_lut_size = 0,
+	.acc_lut_size    = 0,
+
+	.axi_reg = NULL,
+	.tcon_axi_mem_config = lcd_tcon_axi_mem_config_t5,
+	.tcon_axi_mem_secure = lcd_tcon_axi_mem_secure_t3,
+	.tcon_axi_mem_update = lcd_tcon_axi_rmem_update_t5,
+	.tcon_global_reset = lcd_tcon_global_reset_t3,
+	.tcon_enable = lcd_tcon_enable_t3,
+	.tcon_disable = lcd_tcon_disable_t3,
+	.tcon_reload = lcd_tcon_reload_t3,
+	.tcon_reload_pre = lcd_tcon_reload_pre_t3,
+	.lut_dma_update = lcd_tcon_lut_dma_update,
+	.lut_dma_mif_set = lcd_tcon_lut_dma_mif_set_t5m,
+	.lut_dma_enable = lcd_tcon_lut_dma_enable_t5m,
+	.lut_dma_disable = lcd_tcon_lut_dma_disable_t5m,
+};
 static struct lcd_tcon_config_s tcon_data_t5w = {
 	.tcon_valid = 0,
 	.tcon_is_busy = 0,
@@ -3484,6 +3533,7 @@ static struct lcd_tcon_config_s tcon_data_t5w = {
 	.tcon_disable = lcd_tcon_disable_t5,
 	.tcon_reload = lcd_tcon_reload_t3,
 	.tcon_reload_pre = lcd_tcon_reload_pre_t3,
+	.lut_dma_update = NULL,
 };
 
 static struct lcd_tcon_config_s tcon_data_t3x = {
@@ -3530,6 +3580,7 @@ static struct lcd_tcon_config_s tcon_data_t3x = {
 	.tcon_disable = lcd_tcon_disable_t3,
 	.tcon_reload = lcd_tcon_reload_t3,
 	.tcon_reload_pre = lcd_tcon_reload_pre_t3,
+	.lut_dma_update = NULL,
 };
 
 static struct lcd_tcon_config_s tcon_data_txhd2 = {
@@ -3571,6 +3622,7 @@ static struct lcd_tcon_config_s tcon_data_txhd2 = {
 	.tcon_disable = lcd_tcon_disable_t5,
 	.tcon_reload = NULL,
 	.tcon_reload_pre = NULL,
+	.lut_dma_update = NULL,
 };
 
 int lcd_tcon_probe(struct aml_lcd_drv_s *pdrv)
@@ -3592,8 +3644,10 @@ int lcd_tcon_probe(struct aml_lcd_drv_s *pdrv)
 		lcd_tcon_conf = &tcon_data_t5d;
 		break;
 	case LCD_CHIP_T3:
-	case LCD_CHIP_T5M:
 		lcd_tcon_conf = &tcon_data_t3;
+		break;
+	case LCD_CHIP_T5M:
+		lcd_tcon_conf = &tcon_data_t5m;
 		break;
 	case LCD_CHIP_T5W:
 		lcd_tcon_conf = &tcon_data_t5w;

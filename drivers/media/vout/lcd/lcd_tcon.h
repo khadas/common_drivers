@@ -61,6 +61,11 @@ struct lcd_tcon_config_s {
 	int (*tcon_reload)(struct aml_lcd_drv_s *pdrv);
 	int (*tcon_enable)(struct aml_lcd_drv_s *pdrv);
 	int (*tcon_disable)(struct aml_lcd_drv_s *pdrv);
+	void (*lut_dma_update)(struct aml_lcd_drv_s *pdrv);
+	void (*lut_dma_mif_set)(phys_addr_t paddr, unsigned int size);
+	void (*lut_dma_enable)(struct aml_lcd_drv_s *pdrv);
+	void (*lut_dma_disable)(struct aml_lcd_drv_s *pdrv);
+
 };
 
 struct tcon_rmem_config_s {
@@ -264,10 +269,10 @@ void lcd_tcon_fw_base_timing_update(struct aml_lcd_drv_s *pdrv);
 
 int lcd_tcon_get_dma_ref(void);
 void lcd_tcon_set_dma_ref(int i);
-void lcd_tcon_dma_update(struct aml_lcd_drv_s *pdrv);
-void lcd_tcon_lut_dma_mif_set(phys_addr_t paddr, unsigned int size);
-void lcd_tcon_lut_dma_enable(struct aml_lcd_drv_s *pdrv);
-void lcd_tcon_lut_dma_disable(struct aml_lcd_drv_s *pdrv);
+void lcd_tcon_lut_dma_update(struct aml_lcd_drv_s *pdrv);
+void lcd_tcon_lut_dma_mif_set_t5m(phys_addr_t paddr, unsigned int size);
+void lcd_tcon_lut_dma_enable_t5m(struct aml_lcd_drv_s *pdrv);
+void lcd_tcon_lut_dma_disable_t5m(struct aml_lcd_drv_s *pdrv);
 
 void lcd_tcon_od_pre_disable(unsigned char *table);
 int lcd_tcon_valid_check(void);

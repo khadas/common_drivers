@@ -29,7 +29,7 @@ struct lcd_tcon_dma_info_s {
 };
 
 static struct  list_head *lcd_tcon_dma_list_head;
-static atomic_t lcd_tcon_dma_ref = ATOMIC_INIT(-1);
+static atomic_t lcd_tcon_dma_ref = ATOMIC_INIT(0);
 
 int lcd_tcon_get_dma_ref(void)
 {
@@ -64,21 +64,26 @@ static void lcd_tcon_dma_update_add(phys_addr_t paddr, unsigned int size)
 	atomic_inc(&lcd_tcon_dma_ref);
 }
 
-void lcd_tcon_dma_update(struct aml_lcd_drv_s *pdrv)
+void lcd_tcon_lut_dma_update(struct aml_lcd_drv_s *pdrv)
 {
+	struct lcd_tcon_config_s *tcon = get_lcd_tcon_config();
 	struct lcd_tcon_dma_info_s *dma_info;
 	struct list_head *list_temp;
+	int lut_dma_ref = 0;
 
-	lcd_tcon_lut_dma_disable(pdrv);
+	if (!tcon || !tcon->lut_dma_mif_set || !tcon->lut_dma_enable || !tcon->lut_dma_disable)
+		return;
+
+	lut_dma_ref = lcd_tcon_get_dma_ref();
+	if (lut_dma_ref > 0) {
+		tcon->lut_dma_disable(pdrv);
+
 	if (!lcd_tcon_dma_list_head)
 		return;
 
 	dma_info = list_entry(lcd_tcon_dma_list_head, struct lcd_tcon_dma_info_s, list);
-	if (lcd_debug_print_flag & LCD_DBG_PR_ISR)
-		LCDPR("%s,  dma_info: paddr:0x%llx, size:0x%x\n", __func__,
-			(unsigned long long)dma_info->paddr, dma_info->size);
-	lcd_tcon_lut_dma_mif_set(dma_info->paddr, dma_info->size);
-	lcd_tcon_lut_dma_enable(pdrv);
+	tcon->lut_dma_mif_set(dma_info->paddr, dma_info->size);
+	tcon->lut_dma_enable(pdrv);
 
 	if (lcd_tcon_dma_list_head->next != lcd_tcon_dma_list_head) {
 		list_temp = lcd_tcon_dma_list_head->next;
@@ -87,9 +92,16 @@ void lcd_tcon_dma_update(struct aml_lcd_drv_s *pdrv)
 	} else {
 		lcd_tcon_dma_list_head = NULL;
 	}
+		if (lcd_debug_print_flag & LCD_DBG_PR_ISR)
+			LCDPR("%s,  dma_info: paddr:0x%llx, size:0x%x\n", __func__,
+				(unsigned long long)dma_info->paddr, dma_info->size);
 	kfree(dma_info);
 
 	atomic_dec(&lcd_tcon_dma_ref);
+	} else if (lut_dma_ref == 0) {
+		tcon->lut_dma_disable(pdrv);
+		lcd_tcon_set_dma_ref(-1);
+	}
 }
 
 /*
@@ -97,7 +109,7 @@ void lcd_tcon_dma_update(struct aml_lcd_drv_s *pdrv)
  * paddr: 16bytes aligned
  * size: 16bytes aligned
  */
-void lcd_tcon_lut_dma_mif_set(phys_addr_t paddr, unsigned int size)
+void lcd_tcon_lut_dma_mif_set_t5m(phys_addr_t paddr, unsigned int size)
 {
 	unsigned int cmd_cnt = 0;
 
@@ -119,27 +131,20 @@ void lcd_tcon_lut_dma_mif_set(phys_addr_t paddr, unsigned int size)
 	lcd_vcbus_write(VPU_LUT_DMA_INTR_SEL, 0);//0:sel tcon 1:sel venc2
 }
 
-void lcd_tcon_lut_dma_enable(struct aml_lcd_drv_s *pdrv)
+void lcd_tcon_lut_dma_enable_t5m(struct aml_lcd_drv_s *pdrv)
 {
 	if (!pdrv)
 		return;
 
-	lcd_tcon_setb(pdrv, 0x367, 1, 0, 14); //  intr trig pixel
-	lcd_tcon_setb(pdrv, 0x367, 1, 16, 1); // enale tcon intr
-	lcd_tcon_setb(pdrv, 0x367, 1, 16, 1); // enale tcon intr
-	lcd_tcon_setb(pdrv, 0x367, 1, 16, 1); // enale tcon intr
 	lcd_tcon_setb(pdrv, 0x367, 1, 16, 1); // enale tcon intr
 	lcd_tcon_setb(pdrv, 0x207, 1, 31, 1); //enable dma clk
 }
 
-void lcd_tcon_lut_dma_disable(struct aml_lcd_drv_s *pdrv)
+void lcd_tcon_lut_dma_disable_t5m(struct aml_lcd_drv_s *pdrv)
 {
 	if (!pdrv)
 		return;
 
-	lcd_tcon_setb(pdrv, 0x367, 0, 16, 1); // disable tcon intr
-	lcd_tcon_setb(pdrv, 0x367, 0, 16, 1); // disable tcon intr
-	lcd_tcon_setb(pdrv, 0x367, 0, 16, 1); // disable tcon intr
 	lcd_tcon_setb(pdrv, 0x367, 0, 16, 1); // disable tcon intr
 	lcd_tcon_setb(pdrv, 0x207, 0, 31, 1); //disable dma
 }

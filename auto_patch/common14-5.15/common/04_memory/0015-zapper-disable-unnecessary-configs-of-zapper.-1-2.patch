@@ -1,4 +1,4 @@
-From 7c96daa3ba79d9dca44b51c2667b5b9aa1889300 Mon Sep 17 00:00:00 2001
+From 6ba5b85bfa6a8810bb690427131c98d96012ae87 Mon Sep 17 00:00:00 2001
 From: Jianxiong Pan <jianxiong.pan@amlogic.com>
 Date: Mon, 17 Apr 2023 16:01:34 +0800
 Subject: [PATCH] zapper: disable unnecessary configs of zapper. [1/2]
@@ -17,38 +17,50 @@ t215.
 Change-Id: Ia2f39b1c9d55986522c763c2a40960ad3a6cc09f
 Signed-off-by: Jianxiong Pan <jianxiong.pan@amlogic.com>
 ---
- arch/arm/Kconfig                      | 24 +++++------
- arch/arm/mm/Kconfig                   |  2 +-
- drivers/gpio/Kconfig                  |  1 +
- drivers/gpu/drm/Makefile              | 14 +++++++
- drivers/gpu/drm/bridge/Kconfig        |  2 +-
- drivers/media/dvb-core/Kconfig        |  2 +-
- drivers/media/dvb-core/Makefile       |  9 +++-
- drivers/mtd/spi-nor/Makefile          |  2 +
- drivers/mtd/spi-nor/core.c            |  2 +
- drivers/net/loopback.c                |  2 +
- drivers/usb/gadget/function/u_ether.c |  2 +
- include/linux/slub_def.h              | 13 ++++++
- include/linux/tracepoint.h            |  2 +-
- init/Kconfig                          |  5 ++-
- init/Kconfig.gki                      | 14 +++----
- kernel/trace/trace_events.c           |  6 +++
- mm/rmap.c                             |  5 +++
- mm/slub.c                             | 10 +++++
- net/Kconfig                           |  7 ++--
- net/Makefile                          |  7 +++-
- net/core/Makefile                     | 21 +++++++---
- net/core/dev.c                        | 59 ++++++++++++++++++---------
- net/core/dev_ioctl.c                  |  3 +-
- net/core/filter.c                     | 13 ++++--
- net/core/net-sysfs.c                  |  6 ++-
- net/core/rtnetlink.c                  | 12 ++++--
- net/core/sock.c                       |  9 ++--
- net/core/sysctl_net_core.c            |  4 ++
- net/core/utils.c                      |  4 ++
- net/ethernet/eth.c                    |  6 ++-
- security/Kconfig                      |  2 +-
- 31 files changed, 197 insertions(+), 73 deletions(-)
+ arch/arm/Kconfig                |  24 +++----
+ arch/arm/mm/Kconfig             |   2 +-
+ drivers/gpio/Kconfig            |   1 +
+ drivers/gpu/drm/Makefile        |  14 ++++
+ drivers/gpu/drm/bridge/Kconfig  |   2 +-
+ drivers/media/dvb-core/Kconfig  |   2 +-
+ drivers/media/dvb-core/Makefile |   9 ++-
+ drivers/mtd/spi-nor/Makefile    |   2 +
+ drivers/mtd/spi-nor/core.c      |   2 +
+ drivers/net/Makefile            |   2 +
+ drivers/usb/gadget/Kconfig      |   6 ++
+ include/linux/netdevice.h       |   2 +
+ include/linux/slub_def.h        |  13 ++++
+ include/linux/tracepoint.h      |   2 +-
+ include/net/pkt_sched.h         |   2 +
+ init/Kconfig                    |   7 +-
+ init/Kconfig.gki                |  14 ++--
+ kernel/trace/trace_events.c     |   6 ++
+ mm/rmap.c                       |   5 ++
+ mm/slub.c                       |  10 +++
+ net/Kconfig                     |   9 +--
+ net/Makefile                    |  10 +++
+ net/core/Makefile               |  18 +++++-
+ net/core/datagram.c             |   4 ++
+ net/core/dev.c                  | 111 ++++++++++++++++++++++++++++----
+ net/core/dev_ioctl.c            |  13 +++-
+ net/core/dst.c                  |   2 +
+ net/core/filter.c               |  29 ++++++++-
+ net/core/net-sysfs.c            |   1 -
+ net/core/net_namespace.c        |   7 +-
+ net/core/rtnetlink.c            |  22 +++++--
+ net/core/skbuff.c               |  10 +++
+ net/core/sock.c                 |  36 +++++++++--
+ net/core/sock_diag.c            |   4 ++
+ net/core/sock_reuseport.c       |   6 ++
+ net/core/sysctl_net_core.c      |   4 ++
+ net/core/utils.c                |   4 ++
+ net/ethernet/eth.c              |   6 +-
+ net/netlink/af_netlink.c        |  10 +++
+ net/sched/Makefile              |   4 ++
+ net/sched/sch_generic.c         |  28 ++++++++
+ net/socket.c                    |   6 ++
+ security/Kconfig                |   2 +-
+ 43 files changed, 410 insertions(+), 63 deletions(-)
 
 diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
 index e0664fc1e12f..b6f462587baf 100644
@@ -275,34 +287,92 @@ index 1e61c2364622..88953ed75465 100644
  };
  
  static const struct flash_info *
-diff --git a/drivers/net/loopback.c b/drivers/net/loopback.c
-index 498e5c8013ef..9f72efd34ee4 100644
---- a/drivers/net/loopback.c
-+++ b/drivers/net/loopback.c
-@@ -135,7 +135,9 @@ static u32 always_on(struct net_device *dev)
+diff --git a/drivers/net/Makefile b/drivers/net/Makefile
+index 739838623cf6..6fc49e4c4d13 100644
+--- a/drivers/net/Makefile
++++ b/drivers/net/Makefile
+@@ -18,7 +18,9 @@ obj-$(CONFIG_MACVLAN) += macvlan.o
+ obj-$(CONFIG_MACVTAP) += macvtap.o
+ obj-$(CONFIG_MII) += mii.o
+ obj-$(CONFIG_MDIO) += mdio.o
++ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ obj-$(CONFIG_NET) += loopback.o
++endif
+ obj-$(CONFIG_NETDEV_LEGACY_INIT) += Space.o
+ obj-$(CONFIG_NETCONSOLE) += netconsole.o
+ obj-y += phy/
+diff --git a/drivers/usb/gadget/Kconfig b/drivers/usb/gadget/Kconfig
+index bc2cfb4ab23d..a44f3123e837 100644
+--- a/drivers/usb/gadget/Kconfig
++++ b/drivers/usb/gadget/Kconfig
+@@ -277,6 +277,7 @@ config USB_CONFIGFS_NCM
+ 	bool "Network Control Model (CDC NCM)"
+ 	depends on USB_CONFIGFS
+ 	depends on NET
++	depends on !AMLOGIC_ZAPPER_NET_CUT
+ 	select USB_U_ETHER
+ 	select USB_F_NCM
+ 	select CRC32
+@@ -289,6 +290,7 @@ config USB_CONFIGFS_ECM
+ 	bool "Ethernet Control Model (CDC ECM)"
+ 	depends on USB_CONFIGFS
+ 	depends on NET
++	depends on !AMLOGIC_ZAPPER_NET_CUT
+ 	select USB_U_ETHER
+ 	select USB_F_ECM
+ 	help
+@@ -301,6 +303,7 @@ config USB_CONFIGFS_ECM_SUBSET
+ 	bool "Ethernet Control Model (CDC ECM) subset"
+ 	depends on USB_CONFIGFS
+ 	depends on NET
++	depends on !AMLOGIC_ZAPPER_NET_CUT
+ 	select USB_U_ETHER
+ 	select USB_F_SUBSET
+ 	help
+@@ -311,6 +314,7 @@ config USB_CONFIGFS_RNDIS
+ 	bool "RNDIS"
+ 	depends on USB_CONFIGFS
+ 	depends on NET
++	depends on !AMLOGIC_ZAPPER_NET_CUT
+ 	select USB_U_ETHER
+ 	select USB_F_RNDIS
+ 	help
+@@ -327,6 +331,7 @@ config USB_CONFIGFS_EEM
+ 	bool "Ethernet Emulation Model (EEM)"
+ 	depends on USB_CONFIGFS
+ 	depends on NET
++	depends on !AMLOGIC_ZAPPER_NET_CUT
+ 	select USB_U_ETHER
+ 	select USB_F_EEM
+ 	select CRC32
+@@ -343,6 +348,7 @@ config USB_CONFIGFS_PHONET
+ 	bool "Phonet protocol"
+ 	depends on USB_CONFIGFS
+ 	depends on NET
++	depends on !AMLOGIC_ZAPPER_NET_CUT
+ 	depends on PHONET
+ 	select USB_U_ETHER
+ 	select USB_F_PHONET
+diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+index 4c233725da42..d95f7110d5bd 100644
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -2543,6 +2543,7 @@ static inline void *netdev_priv(const struct net_device *dev)
+ void netif_napi_add(struct net_device *dev, struct napi_struct *napi,
+ 		    int (*poll)(struct napi_struct *, int), int weight);
  
- static const struct ethtool_ops loopback_ethtool_ops = {
- 	.get_link		= always_on,
-+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
- 	.get_ts_info		= ethtool_op_get_ts_info,
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ /**
+  *	netif_tx_napi_add - initialize a NAPI context
+  *	@dev:  network device
+@@ -2562,6 +2563,7 @@ static inline void netif_tx_napi_add(struct net_device *dev,
+ 	set_bit(NAPI_STATE_NO_BUSY_POLL, &napi->state);
+ 	netif_napi_add(dev, napi, poll, weight);
+ }
 +#endif
- };
  
- static int loopback_dev_init(struct net_device *dev)
-diff --git a/drivers/usb/gadget/function/u_ether.c b/drivers/usb/gadget/function/u_ether.c
-index 83d137b3f086..73a23c641d4d 100644
---- a/drivers/usb/gadget/function/u_ether.c
-+++ b/drivers/usb/gadget/function/u_ether.c
-@@ -159,7 +159,9 @@ static void eth_get_drvinfo(struct net_device *net, struct ethtool_drvinfo *p)
- 
- static const struct ethtool_ops ops = {
- 	.get_drvinfo = eth_get_drvinfo,
-+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
- 	.get_link = ethtool_op_get_link,
-+#endif
- };
- 
- static void defer_kevent(struct eth_dev *dev, int flag)
+ /**
+  *  __netif_napi_del - remove a NAPI context
 diff --git a/include/linux/slub_def.h b/include/linux/slub_def.h
 index 4c24ab681149..20dca01109ae 100644
 --- a/include/linux/slub_def.h
@@ -357,8 +427,28 @@ index d86e9b27dd5a..80a3ea6d8cb0 100644
  struct tp_module {
  	struct list_head list;
  	struct module *mod;
+diff --git a/include/net/pkt_sched.h b/include/net/pkt_sched.h
+index 9e7b21c0b3a6..4a6eb0e30358 100644
+--- a/include/net/pkt_sched.h
++++ b/include/net/pkt_sched.h
+@@ -124,6 +124,7 @@ bool sch_direct_xmit(struct sk_buff *skb, struct Qdisc *q,
+ 		     struct net_device *dev, struct netdev_queue *txq,
+ 		     spinlock_t *root_lock, bool validate);
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ void __qdisc_run(struct Qdisc *q);
+ 
+ static inline void qdisc_run(struct Qdisc *q)
+@@ -133,6 +134,7 @@ static inline void qdisc_run(struct Qdisc *q)
+ 		qdisc_run_end(q);
+ 	}
+ }
++#endif
+ 
+ /* Calculate maximal size of packet seen by hard_start_xmit
+    routine of this device.
 diff --git a/init/Kconfig b/init/Kconfig
-index 57a8e6746a42..6ab973ecc5c6 100644
+index 57a8e6746a42..f4add213554e 100644
 --- a/init/Kconfig
 +++ b/init/Kconfig
 @@ -544,7 +544,7 @@ config HAVE_SCHED_AVG_IRQ
@@ -370,6 +460,15 @@ index 57a8e6746a42..6ab973ecc5c6 100644
  	default y if ARM64
  	depends on SMP
  	depends on CPU_FREQ_THERMAL
+@@ -1246,7 +1246,7 @@ config PID_NS
+ config NET_NS
+ 	bool "Network namespace"
+ 	depends on NET
+-	default y
++	default y if !AMLOGIC_ZAPPER_NET_CUT
+ 	help
+ 	  Allow user space to create what appear to be multiple instances
+ 	  of the network stack.
 @@ -2117,6 +2117,7 @@ config MODULE_FORCE_LOAD
  
  config MODULE_UNLOAD
@@ -554,7 +653,7 @@ index 024873afd4d4..6a419af51560 100644
  #if defined(CONFIG_SLUB_DEBUG) && defined(CONFIG_DEBUG_FS)
  static int slab_debugfs_show(struct seq_file *seq, void *v)
 diff --git a/net/Kconfig b/net/Kconfig
-index fb13460c6dab..53b67066e4b2 100644
+index fb13460c6dab..0e63d2a7a05d 100644
 --- a/net/Kconfig
 +++ b/net/Kconfig
 @@ -256,13 +256,13 @@ config PCPU_DEV_REFCNT
@@ -562,14 +661,14 @@ index fb13460c6dab..53b67066e4b2 100644
  	bool
  	depends on SMP && SYSFS
 -	default y
-+	default y if !AMLOGIC_ZAPPER_CUT
++	default y if !AMLOGIC_ZAPPER_NET_CUT
  
  config RFS_ACCEL
  	bool
  	depends on RPS
  	select CPU_RMAP
 -	default y
-+	default y if !AMLOGIC_ZAPPER_CUT
++	default y if !AMLOGIC_ZAPPER_NET_CUT
  
  config SOCK_RX_QUEUE_MAPPING
  	bool
@@ -578,121 +677,349 @@ index fb13460c6dab..53b67066e4b2 100644
  	depends on SMP
  	select SOCK_RX_QUEUE_MAPPING
 -	default y
-+	default y if !AMLOGIC_ZAPPER_CUT
++	default y if !AMLOGIC_ZAPPER_NET_CUT
  
  config HWBM
+ 	bool
+@@ -294,7 +294,7 @@ config CGROUP_NET_CLASSID
+ 
+ config NET_RX_BUSY_POLL
+ 	bool
+-	default y
++	default y if !AMLOGIC_ZAPPER_NET_CUT
+ 
+ config BQL
  	bool
 @@ -418,6 +418,7 @@ config SOCK_VALIDATE_XMIT
  config NET_SELFTESTS
  	def_tristate PHYLIB
  	depends on PHYLIB && INET
-+	default n if AMLOGIC_ZAPPER_CUT
++	default n if AMLOGIC_ZAPPER_NET_CUT
  
  config NET_SOCK_MSG
  	bool
 diff --git a/net/Makefile b/net/Makefile
-index fbfeb8a0bb37..a700164b6275 100644
+index fbfeb8a0bb37..630ff6c1006c 100644
 --- a/net/Makefile
 +++ b/net/Makefile
-@@ -12,13 +12,18 @@ obj-$(CONFIG_COMPAT)		+= compat.o
+@@ -6,19 +6,29 @@
+ # Rewritten to use lists instead of if-statements.
+ #
+ 
++ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ obj-y				:= devres.o socket.o core/
++else
++obj-y				:= socket.o core/
++endif
+ 
+ obj-$(CONFIG_COMPAT)		+= compat.o
  
  # LLC has to be linked before the files in net/802/
  obj-$(CONFIG_LLC)		+= llc/
--obj-y				+= ethernet/ 802/ sched/ netlink/ bpf/ ethtool/
-+ifndef CONFIG_AMLOGIC_ZAPPER_CUT
-+obj-y				+= ethtool/
++ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ obj-y				+= ethernet/ 802/ sched/ netlink/ bpf/ ethtool/
++else
++obj-y				+= sched/ netlink/
 +endif
-+obj-y				+= ethernet/ 802/ sched/ netlink/ bpf/
  obj-$(CONFIG_NETFILTER)		+= netfilter/
  obj-$(CONFIG_INET)		+= ipv4/
  obj-$(CONFIG_TLS)		+= tls/
  obj-$(CONFIG_XFRM)		+= xfrm/
  obj-$(CONFIG_UNIX_SCM)		+= unix/
-+ifndef CONFIG_AMLOGIC_ZAPPER_CUT
++ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
  obj-y				+= ipv6/
 +endif
  obj-$(CONFIG_BPFILTER)		+= bpfilter/
  obj-$(CONFIG_PACKET)		+= packet/
  obj-$(CONFIG_NET_KEY)		+= key/
 diff --git a/net/core/Makefile b/net/core/Makefile
-index 4268846f2f47..ed7de6f18d93 100644
+index 4268846f2f47..aae590882a3d 100644
 --- a/net/core/Makefile
 +++ b/net/core/Makefile
-@@ -2,18 +2,25 @@
+@@ -2,24 +2,38 @@
  #
  # Makefile for the Linux networking core.
  #
 -
--obj-y := sock.o request_sock.o skbuff.o datagram.o stream.o scm.o \
--	 gen_stats.o gen_estimator.o net_namespace.o secure_seq.o flow_dissector.o
-+ifndef CONFIG_AMLOGIC_ZAPPER_CUT
-+obj-y := flow_dissector.o secure_seq.o
-+endif
-+obj-y += sock.o request_sock.o skbuff.o datagram.o stream.o scm.o \
-+	 gen_stats.o gen_estimator.o net_namespace.o
++ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ obj-y := sock.o request_sock.o skbuff.o datagram.o stream.o scm.o \
+ 	 gen_stats.o gen_estimator.o net_namespace.o secure_seq.o flow_dissector.o
  
  obj-$(CONFIG_SYSCTL) += sysctl_net_core.o
- 
-+ifndef CONFIG_AMLOGIC_ZAPPER_CUT
-+obj-y += tso.o fib_notifier.o flow_offload.o xdp.o neighbour.o
++else
++obj-y := sock.o request_sock.o skbuff.o datagram.o stream.o scm.o \
++	 net_namespace.o
 +endif
-+
- obj-y		     += dev.o dev_addr_lists.o dst.o netevent.o \
--			neighbour.o rtnetlink.o utils.o link_watch.o filter.o \
--			sock_diag.o dev_ioctl.o tso.o sock_reuseport.o \
--			fib_notifier.o xdp.o flow_offload.o
-+			 rtnetlink.o utils.o link_watch.o filter.o \
-+			sock_diag.o dev_ioctl.o  sock_reuseport.o \
  
-+ifndef CONFIG_AMLOGIC_ZAPPER_CUT
++ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ obj-y		     += dev.o dev_addr_lists.o dst.o netevent.o \
+ 			neighbour.o rtnetlink.o utils.o link_watch.o filter.o \
+ 			sock_diag.o dev_ioctl.o tso.o sock_reuseport.o \
+ 			fib_notifier.o xdp.o flow_offload.o
++else
++obj-y 		     += dev.o dst.o utils.o filter.o sock_diag.o dev_ioctl.o sock_reuseport.o
++endif
+ 
++ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
  obj-y += net-sysfs.o
 +endif
  obj-$(CONFIG_PAGE_POOL) += page_pool.o
++ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
  obj-$(CONFIG_PROC_FS) += net-procfs.o
++endif
  obj-$(CONFIG_NET_PKTGEN) += pktgen.o
-@@ -36,4 +43,6 @@ obj-$(CONFIG_FAILOVER) += failover.o
+ obj-$(CONFIG_NETPOLL) += netpoll.o
+ obj-$(CONFIG_FIB_RULES) += fib_rules.o
++ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ obj-$(CONFIG_TRACEPOINTS) += net-traces.o
++endif
+ obj-$(CONFIG_NET_DROP_MONITOR) += drop_monitor.o
+ obj-$(CONFIG_NET_SELFTESTS) += selftests.o
+ obj-$(CONFIG_NETWORK_PHY_TIMESTAMPING) += timestamping.o
+@@ -36,4 +50,6 @@ obj-$(CONFIG_FAILOVER) += failover.o
  obj-$(CONFIG_NET_SOCK_MSG) += skmsg.o
  obj-$(CONFIG_BPF_SYSCALL) += sock_map.o
  obj-$(CONFIG_BPF_SYSCALL) += bpf_sk_storage.o
-+ifndef CONFIG_AMLOGIC_ZAPPER_CUT
++ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
  obj-$(CONFIG_OF)	+= of_net.o
 +endif
+\ No newline at end of file
+diff --git a/net/core/datagram.c b/net/core/datagram.c
+index 28e5f921dcaf..4cc0d77559ff 100644
+--- a/net/core/datagram.c
++++ b/net/core/datagram.c
+@@ -529,7 +529,9 @@ static size_t simple_copy_to_iter(const void *addr, size_t bytes,
+ int skb_copy_datagram_iter(const struct sk_buff *skb, int offset,
+ 			   struct iov_iter *to, int len)
+ {
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 	trace_skb_copy_datagram_iovec(skb, len);
++#endif
+ 	return __skb_datagram_iter(skb, offset, to, len, false,
+ 			simple_copy_to_iter, NULL);
+ }
+@@ -708,6 +710,7 @@ int zerocopy_sg_from_iter(struct sk_buff *skb, struct iov_iter *from)
+ }
+ EXPORT_SYMBOL(zerocopy_sg_from_iter);
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ /**
+  *	skb_copy_and_csum_datagram - Copy datagram to an iovec iterator
+  *          and update a checksum.
+@@ -779,6 +782,7 @@ int skb_copy_and_csum_datagram_msg(struct sk_buff *skb,
+ 	return -EFAULT;
+ }
+ EXPORT_SYMBOL(skb_copy_and_csum_datagram_msg);
++#endif
+ 
+ /**
+  * 	datagram_poll - generic datagram poll
 diff --git a/net/core/dev.c b/net/core/dev.c
-index f05fe5e3120c..052a22ac4d18 100644
+index f05fe5e3120c..f919206a826b 100644
 --- a/net/core/dev.c
 +++ b/net/core/dev.c
-@@ -2911,8 +2911,9 @@ EXPORT_SYMBOL(netdev_set_sb_channel);
+@@ -159,12 +159,15 @@
+ /* This should be increased if a protocol with a bigger head is added. */
+ #define GRO_MAX_HEAD (MAX_HEADER + 128)
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ static DEFINE_SPINLOCK(ptype_lock);
+ static DEFINE_SPINLOCK(offload_lock);
++#endif
+ struct list_head ptype_base[PTYPE_HASH_SIZE] __read_mostly;
+ struct list_head ptype_all __read_mostly;	/* Taps */
+ static struct list_head offload_base __read_mostly;
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ static int netif_rx_internal(struct sk_buff *skb);
+ static int call_netdevice_notifiers_info(unsigned long val,
+ 					 struct netdev_notifier_info *info);
+@@ -172,6 +175,7 @@ static int call_netdevice_notifiers_extack(unsigned long val,
+ 					   struct net_device *dev,
+ 					   struct netlink_ext_ack *extack);
+ static struct napi_struct *napi_by_id(unsigned int napi_id);
++#endif
+ 
+ /*
+  * The @dev_base_head list is protected by @dev_base_lock and the rtnl
+@@ -198,10 +202,12 @@ EXPORT_SYMBOL(dev_base_lock);
+ static DEFINE_MUTEX(ifalias_mutex);
+ 
+ /* protects napi_hash addition/deletion and napi_gen_id */
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ static DEFINE_SPINLOCK(napi_hash_lock);
+ 
+ static unsigned int napi_gen_id = NR_CPUS;
+ static DEFINE_READ_MOSTLY_HASHTABLE(napi_hash, 8);
++#endif
+ 
+ static DECLARE_RWSEM(devnet_rename_sem);
+ 
+@@ -237,6 +243,7 @@ static inline void rps_unlock(struct softnet_data *sd)
+ #endif
+ }
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ static struct netdev_name_node *netdev_name_node_alloc(struct net_device *dev,
+ 						       const char *name)
+ {
+@@ -400,6 +407,7 @@ static void unlist_netdevice(struct net_device *dev, bool lock)
+  */
+ 
+ static RAW_NOTIFIER_HEAD(netdev_chain);
++#endif
+ 
+ /*
+  *	Device drivers call our routines to queue packets here. We empty the
+@@ -498,7 +506,7 @@ static inline void netdev_set_addr_lockdep_class(struct net_device *dev)
+  *
+  *******************************************************************************/
+ 
+-
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ /*
+  *	Add a protocol ID to the list. Now that the input handler is
+  *	smarter we can dispense with all the messy stuff that used to be
+@@ -606,7 +614,6 @@ void dev_remove_pack(struct packet_type *pt)
+ }
+ EXPORT_SYMBOL(dev_remove_pack);
+ 
+-
+ /**
+  *	dev_add_offload - register offload handlers
+  *	@po: protocol offload declaration
+@@ -684,6 +691,7 @@ void dev_remove_offload(struct packet_offload *po)
+ 	synchronize_net();
+ }
+ EXPORT_SYMBOL(dev_remove_offload);
++#endif
+ 
+ /*******************************************************************************
+  *
+@@ -780,6 +788,7 @@ int dev_fill_forward_path(const struct net_device *dev, const u8 *daddr,
+ }
+ EXPORT_SYMBOL_GPL(dev_fill_forward_path);
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ /**
+  *	__dev_get_by_name	- find a device by its name
+  *	@net: the applicable net namespace
+@@ -1306,6 +1315,7 @@ int dev_change_name(struct net_device *dev, const char *newname)
+ 
+ 	return err;
+ }
++#endif
+ 
+ /**
+  *	dev_set_alias - change ifalias of a device
+@@ -1366,6 +1376,7 @@ int dev_get_alias(const struct net_device *dev, char *name, size_t len)
+ 	return ret;
+ }
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ /**
+  *	netdev_features_change - device changes features
+  *	@dev: device to cause notification
+@@ -1631,7 +1642,6 @@ void dev_close(struct net_device *dev)
+ }
+ EXPORT_SYMBOL(dev_close);
+ 
+-
+ /**
+  *	dev_disable_lro - disable Large Receive Offload on a device
+  *	@dev: device
+@@ -2053,6 +2063,7 @@ static int call_netdevice_notifiers_mtu(unsigned long val,
+ 
+ 	return call_netdevice_notifiers_info(val, &info.info);
+ }
++#endif
+ 
+ #ifdef CONFIG_NET_INGRESS
+ static DEFINE_STATIC_KEY_FALSE(ingress_needed_key);
+@@ -2157,6 +2168,7 @@ static inline void net_timestamp_set(struct sk_buff *skb)
+ 			__net_timestamp(SKB);			\
+ 	}							\
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ bool is_skb_forwardable(const struct net_device *dev, const struct sk_buff *skb)
+ {
+ 	return __is_skb_forwardable(dev, skb, true);
+@@ -2210,6 +2222,7 @@ int dev_forward_skb_nomtu(struct net_device *dev, struct sk_buff *skb)
+ {
+ 	return __dev_forward_skb2(dev, skb, false) ?: netif_rx_internal(skb);
+ }
++#endif
+ 
+ static inline int deliver_skb(struct sk_buff *skb,
+ 			      struct packet_type *pt_prev,
+@@ -2334,6 +2347,7 @@ void dev_queue_xmit_nit(struct sk_buff *skb, struct net_device *dev)
+ }
+ EXPORT_SYMBOL_GPL(dev_queue_xmit_nit);
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ /**
+  * netif_setup_tc - Handle tc mappings on real_num_tx_queues change
+  * @dev: Network device
+@@ -2371,6 +2385,7 @@ static void netif_setup_tc(struct net_device *dev, unsigned int txq)
+ 		}
+ 	}
+ }
++#endif
+ 
+ int netdev_txq_to_tc(struct net_device *dev, unsigned int txq)
+ {
+@@ -2785,7 +2800,6 @@ int netif_set_xps_queue(struct net_device *dev, const struct cpumask *mask,
+ }
+ EXPORT_SYMBOL(netif_set_xps_queue);
+ 
+-#endif
+ static void netdev_unbind_all_sb_channels(struct net_device *dev)
+ {
+ 	struct netdev_queue *txq = &dev->_tx[dev->num_tx_queues];
+@@ -2911,8 +2925,9 @@ EXPORT_SYMBOL(netdev_set_sb_channel);
  int netif_set_real_num_tx_queues(struct net_device *dev, unsigned int txq)
  {
  	bool disabling;
-+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
  	int rc;
 -
 +#endif
  	disabling = txq < dev->real_num_tx_queues;
  
  	if (txq < 1 || txq > dev->num_tx_queues)
-@@ -2921,12 +2922,13 @@ int netif_set_real_num_tx_queues(struct net_device *dev, unsigned int txq)
+@@ -2921,14 +2936,16 @@ int netif_set_real_num_tx_queues(struct net_device *dev, unsigned int txq)
  	if (dev->reg_state == NETREG_REGISTERED ||
  	    dev->reg_state == NETREG_UNREGISTERING) {
  		ASSERT_RTNL();
 -
-+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
  		rc = netdev_queue_update_kobjects(dev, dev->real_num_tx_queues,
  						  txq);
 +
  		if (rc)
  			return rc;
--
-+#endif
+ 
  		if (dev->num_tc)
  			netif_setup_tc(dev, txq);
++#endif
  
-@@ -2962,18 +2964,21 @@ EXPORT_SYMBOL(netif_set_real_num_tx_queues);
+ 		dev_qdisc_change_real_num_tx(dev, txq);
+ 
+@@ -2948,7 +2965,9 @@ int netif_set_real_num_tx_queues(struct net_device *dev, unsigned int txq)
+ 	return 0;
+ }
+ EXPORT_SYMBOL(netif_set_real_num_tx_queues);
++#endif
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ #ifdef CONFIG_SYSFS
+ /**
+  *	netif_set_real_num_rx_queues - set actual number of RX queues used
+@@ -2962,18 +2981,21 @@ EXPORT_SYMBOL(netif_set_real_num_tx_queues);
   */
  int netif_set_real_num_rx_queues(struct net_device *dev, unsigned int rxq)
  {
-+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
  	int rc;
 -
 +#endif
@@ -702,7 +1029,7 @@ index f05fe5e3120c..052a22ac4d18 100644
  	if (dev->reg_state == NETREG_REGISTERED) {
  		ASSERT_RTNL();
 -
-+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
  		rc = net_rx_queue_update_kobjects(dev, dev->real_num_rx_queues,
  						  rxq);
 +
@@ -712,15 +1039,40 @@ index f05fe5e3120c..052a22ac4d18 100644
  	}
  
  	dev->real_num_rx_queues = rxq;
-@@ -3159,6 +3164,7 @@ void netif_device_attach(struct net_device *dev)
+@@ -3059,6 +3081,7 @@ void __netif_schedule(struct Qdisc *q)
+ 		__netif_reschedule(q);
  }
- EXPORT_SYMBOL(netif_device_attach);
+ EXPORT_SYMBOL(__netif_schedule);
++#endif
  
-+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
- /*
-  * Returns a Tx hash based on the given packet descriptor a Tx queues' number
-  * to be used as a distribution range.
-@@ -3195,7 +3201,7 @@ static u16 skb_tx_hash(const struct net_device *dev,
+ struct dev_kfree_skb_cb {
+ 	enum skb_free_reason reason;
+@@ -3069,6 +3092,7 @@ static struct dev_kfree_skb_cb *get_kfree_skb_cb(const struct sk_buff *skb)
+ 	return (struct dev_kfree_skb_cb *)skb->cb;
+ }
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ void netif_schedule_queue(struct netdev_queue *txq)
+ {
+ 	rcu_read_lock();
+@@ -3093,6 +3117,7 @@ void netif_tx_wake_queue(struct netdev_queue *dev_queue)
+ 	}
+ }
+ EXPORT_SYMBOL(netif_tx_wake_queue);
++#endif
+ 
+ void __dev_kfree_skb_irq(struct sk_buff *skb, enum skb_free_reason reason)
+ {
+@@ -3127,7 +3152,7 @@ void __dev_kfree_skb_any(struct sk_buff *skb, enum skb_free_reason reason)
+ }
+ EXPORT_SYMBOL(__dev_kfree_skb_any);
+ 
+-
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ /**
+  * netif_device_detach - mark device as removed
+  * @dev: network device
+@@ -3195,7 +3220,7 @@ static u16 skb_tx_hash(const struct net_device *dev,
  
  	return (u16) reciprocal_scale(skb_get_hash(skb), qcount) + qoffset;
  }
@@ -729,12 +1081,45 @@ index f05fe5e3120c..052a22ac4d18 100644
  static void skb_warn_bad_offload(const struct sk_buff *skb)
  {
  	static const netdev_features_t null_features;
-@@ -4077,10 +4083,10 @@ u16 netdev_pick_tx(struct net_device *dev, struct sk_buff *skb,
+@@ -3369,6 +3394,7 @@ static inline bool skb_needs_check(struct sk_buff *skb, bool tx_path)
+ 	return skb->ip_summed == CHECKSUM_NONE;
+ }
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ /**
+  *	__skb_gso_segment - Perform segmentation on skb.
+  *	@skb: buffer to segment
+@@ -3595,9 +3621,13 @@ static int xmit_one(struct sk_buff *skb, struct net_device *dev,
+ 
+ 	len = skb->len;
+ 	PRANDOM_ADD_NOISE(skb, dev, txq, len + jiffies);
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 	trace_net_dev_start_xmit(skb, dev);
++#endif
+ 	rc = netdev_start_xmit(skb, dev, txq, more);
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 	trace_net_dev_xmit(skb, rc, dev, len);
++#endif
+ 
+ 	return rc;
+ }
+@@ -3792,8 +3822,10 @@ static int dev_qdisc_enqueue(struct sk_buff *skb, struct Qdisc *q,
+ 	int rc;
+ 
+ 	rc = q->enqueue(skb, q, to_free) & NET_XMIT_MASK;
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 	if (rc == NET_XMIT_SUCCESS)
+ 		trace_qdisc_enqueue(q, txq, skb);
++#endif
+ 	return rc;
+ }
+ 
+@@ -4077,10 +4109,10 @@ u16 netdev_pick_tx(struct net_device *dev, struct sk_buff *skb,
  	if (queue_index < 0 || skb->ooo_okay ||
  	    queue_index >= dev->real_num_tx_queues) {
  		int new_index = get_xps_queue(dev, sb_dev, skb);
 -
-+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
  		if (new_index < 0)
  			new_index = skb_tx_hash(dev, sb_dev, skb);
 -
@@ -742,7 +1127,25 @@ index f05fe5e3120c..052a22ac4d18 100644
  		if (queue_index != new_index && sk &&
  		    sk_fullsock(sk) &&
  		    rcu_access_pointer(sk->sk_dst_cache))
-@@ -4416,6 +4422,7 @@ set_rps_cpu(struct net_device *dev, struct sk_buff *skb,
+@@ -4190,7 +4222,9 @@ static int __dev_queue_xmit(struct sk_buff *skb, struct net_device *sb_dev)
+ 	txq = netdev_core_pick_tx(dev, skb, sb_dev);
+ 	q = rcu_dereference_bh(txq->qdisc);
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 	trace_net_dev_queue(skb);
++#endif
+ 	if (q->enqueue) {
+ 		rc = __dev_xmit_skb(skb, q, dev, txq);
+ 		goto out;
+@@ -4307,6 +4341,7 @@ int __dev_direct_xmit(struct sk_buff *skb, u16 queue_id)
+ 	return NET_XMIT_DROP;
+ }
+ EXPORT_SYMBOL(__dev_direct_xmit);
++#endif
+ 
+ /*************************************************************************
+  *			Receiver routines
+@@ -4416,6 +4451,7 @@ set_rps_cpu(struct net_device *dev, struct sk_buff *skb,
  	return rflow;
  }
  
@@ -750,7 +1153,7 @@ index f05fe5e3120c..052a22ac4d18 100644
  /*
   * get_rps_cpu is called from netif_receive_skb and returns the target
   * CPU from the RPS map of the receiving queue for a given skb.
-@@ -4515,7 +4522,7 @@ static int get_rps_cpu(struct net_device *dev, struct sk_buff *skb,
+@@ -4515,7 +4551,7 @@ static int get_rps_cpu(struct net_device *dev, struct sk_buff *skb,
  done:
  	return cpu;
  }
@@ -759,163 +1162,327 @@ index f05fe5e3120c..052a22ac4d18 100644
  #ifdef CONFIG_RFS_ACCEL
  
  /**
-@@ -5640,6 +5647,7 @@ static int generic_xdp_install(struct net_device *dev, struct netdev_bpf *xdp)
- 	return ret;
- }
+@@ -4567,6 +4603,7 @@ static void rps_trigger_softirq(void *data)
  
-+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
- static int netif_receive_skb_internal(struct sk_buff *skb)
+ #endif /* CONFIG_RPS */
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ /*
+  * Check if this softnet_data structure is another cpu one
+  * If yes, queue it to our IPI list and return 1
+@@ -4587,11 +4624,13 @@ static int rps_ipi_queued(struct softnet_data *sd)
+ #endif /* CONFIG_RPS */
+ 	return 0;
+ }
++#endif
+ 
+ #ifdef CONFIG_NET_FLOW_LIMIT
+ int netdev_flow_limit_table_len __read_mostly = (1 << 12);
+ #endif
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ static bool skb_flow_limit(struct sk_buff *skb, unsigned int qlen)
+ {
+ #ifdef CONFIG_NET_FLOW_LIMIT
+@@ -4905,7 +4944,9 @@ static int netif_rx_internal(struct sk_buff *skb)
+ 
+ 	net_timestamp_check(READ_ONCE(netdev_tstamp_prequeue), skb);
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 	trace_netif_rx(skb);
++#endif
+ 
+ #ifdef CONFIG_RPS
+ 	if (static_branch_unlikely(&rps_needed)) {
+@@ -4953,10 +4994,14 @@ int netif_rx(struct sk_buff *skb)
  {
  	int ret;
-@@ -5666,7 +5674,7 @@ static int netif_receive_skb_internal(struct sk_buff *skb)
- 	rcu_read_unlock();
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 	trace_netif_rx_entry(skb);
++#endif
+ 
+ 	ret = netif_rx_internal(skb);
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 	trace_netif_rx_exit(ret);
++#endif
+ 
  	return ret;
  }
--
-+#endif
- static void netif_receive_skb_list_internal(struct list_head *head)
+@@ -4966,14 +5011,18 @@ int netif_rx_ni(struct sk_buff *skb)
  {
- 	struct sk_buff *skb, *next;
-@@ -5700,6 +5708,7 @@ static void netif_receive_skb_list_internal(struct list_head *head)
- 	rcu_read_unlock();
+ 	int err;
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 	trace_netif_rx_ni_entry(skb);
++#endif
+ 
+ 	preempt_disable();
+ 	err = netif_rx_internal(skb);
+ 	if (local_softirq_pending())
+ 		do_softirq();
+ 	preempt_enable();
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 	trace_netif_rx_ni_exit(err);
++#endif
+ 
+ 	return err;
+ }
+@@ -5012,11 +5061,13 @@ static __latent_entropy void net_tx_action(struct softirq_action *h)
+ 			clist = clist->next;
+ 
+ 			WARN_ON(refcount_read(&skb->users));
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 			if (likely(get_kfree_skb_cb(skb)->reason == SKB_REASON_CONSUMED))
+ 				trace_consume_skb(skb);
+ 			else
+ 				trace_kfree_skb(skb, net_tx_action,
+ 						SKB_DROP_REASON_NOT_SPECIFIED);
++#endif
+ 
+ 			if (skb->fclone != SKB_FCLONE_UNAVAILABLE)
+ 				__kfree_skb(skb);
+@@ -5075,6 +5126,7 @@ static __latent_entropy void net_tx_action(struct softirq_action *h)
+ 
+ 	xfrm_dev_backlog(sd);
+ }
++#endif
+ 
+ #if IS_ENABLED(CONFIG_BRIDGE) && IS_ENABLED(CONFIG_ATM_LANE)
+ /* This hook is defined here for ATM LANE */
+@@ -5145,6 +5197,7 @@ sch_handle_ingress(struct sk_buff *skb, struct packet_type **pt_prev, int *ret,
+ 	return skb;
  }
  
-+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
  /**
-  *	netif_receive_skb - process receive buffer from network
-  *	@skb: buffer to process
-@@ -5727,7 +5736,7 @@ int netif_receive_skb(struct sk_buff *skb)
+  *	netdev_is_rx_handler_busy - check if receive handler is registered
+  *	@dev: device to check
+@@ -5265,7 +5318,9 @@ static int __netif_receive_skb_core(struct sk_buff **pskb, bool pfmemalloc,
+ 
+ 	net_timestamp_check(!READ_ONCE(netdev_tstamp_prequeue), skb);
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 	trace_netif_receive_skb(skb);
++#endif
+ 
+ 	orig_dev = skb->dev;
+ 
+@@ -5744,12 +5799,16 @@ void netif_receive_skb_list(struct list_head *head)
+ 
+ 	if (list_empty(head))
+ 		return;
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 	if (trace_netif_receive_skb_list_entry_enabled()) {
+ 		list_for_each_entry(skb, head, list)
+ 			trace_netif_receive_skb_list_entry(skb);
+ 	}
++#endif
+ 	netif_receive_skb_list_internal(head);
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 	trace_netif_receive_skb_list_exit(0);
++#endif
+ }
+ EXPORT_SYMBOL(netif_receive_skb_list);
+ 
+@@ -6226,12 +6285,16 @@ gro_result_t napi_gro_receive(struct napi_struct *napi, struct sk_buff *skb)
+ 	gro_result_t ret;
+ 
+ 	skb_mark_napi_id(skb, napi);
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 	trace_napi_gro_receive_entry(skb);
++#endif
+ 
+ 	skb_gro_reset_offset(skb, 0);
+ 
+ 	ret = napi_skb_finish(napi, skb, dev_gro_receive(napi, skb));
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 	trace_napi_gro_receive_exit(ret);
++#endif
+ 
  	return ret;
  }
- EXPORT_SYMBOL(netif_receive_skb);
--
-+#endif
- /**
-  *	netif_receive_skb_list - process many receive buffers from network
-  *	@head: list of skbs to process.
-@@ -10127,18 +10136,22 @@ static int netif_alloc_rx_queues(struct net_device *dev)
+@@ -6355,10 +6418,14 @@ gro_result_t napi_gro_frags(struct napi_struct *napi)
+ 	gro_result_t ret;
+ 	struct sk_buff *skb = napi_frags_skb(napi);
  
- 	for (i = 0; i < count; i++) {
- 		rx[i].dev = dev;
--
-+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
- 		/* XDP RX-queue setup */
- 		err = xdp_rxq_info_reg(&rx[i].xdp_rxq, dev, i, 0);
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 	trace_napi_gro_frags_entry(skb);
 +#endif
+ 
+ 	ret = napi_frags_finish(napi, skb, dev_gro_receive(napi, skb));
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 	trace_napi_gro_frags_exit(ret);
++#endif
+ 
+ 	return ret;
+ }
+@@ -6484,6 +6551,7 @@ static int process_backlog(struct napi_struct *napi, int quota)
+ 
+ 	return work;
+ }
++#endif
+ 
+ /**
+  * __napi_schedule - schedule for receive
+@@ -6554,6 +6622,7 @@ void __napi_schedule_irqoff(struct napi_struct *n)
+ }
+ EXPORT_SYMBOL(__napi_schedule_irqoff);
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ bool napi_complete_done(struct napi_struct *n, int work_done)
+ {
+ 	unsigned long flags, val, new, timeout = 0;
+@@ -6638,6 +6707,7 @@ static struct napi_struct *napi_by_id(unsigned int napi_id)
+ 
+ 	return NULL;
+ }
++#endif
+ 
+ #if defined(CONFIG_NET_RX_BUSY_POLL)
+ 
+@@ -6698,7 +6768,9 @@ static void busy_poll_stop(struct napi_struct *napi, void *have_poll_lock, bool
+ 	 * rearmed the napi (napi_complete_done()) in which case it could
+ 	 * already be running on another CPU.
+ 	 */
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 	trace_napi_poll(napi, rc, budget);
++#endif
+ 	netpoll_poll_unlock(have_poll_lock);
+ 	if (rc == budget)
+ 		__busy_poll_stop(napi, skip_schedule);
+@@ -6751,7 +6823,9 @@ void napi_busy_loop(unsigned int napi_id,
+ 			napi_poll = napi->poll;
+ 		}
+ 		work = napi_poll(napi, budget);
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 		trace_napi_poll(napi, work, budget);
++#endif
+ 		gro_normal_list(napi);
+ count:
+ 		if (work > 0)
+@@ -6784,6 +6858,7 @@ EXPORT_SYMBOL(napi_busy_loop);
+ 
+ #endif /* CONFIG_NET_RX_BUSY_POLL */
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ static void napi_hash_add(struct napi_struct *napi)
+ {
+ 	if (test_bit(NAPI_STATE_NO_BUSY_POLL, &napi->state))
+@@ -7013,7 +7088,9 @@ static int __napi_poll(struct napi_struct *n, bool *repoll)
+ 	work = 0;
+ 	if (test_bit(NAPI_STATE_SCHED, &n->state)) {
+ 		work = n->poll(n, weight);
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 		trace_napi_poll(n, work, weight);
++#endif
+ 	}
+ 
+ 	if (unlikely(work > weight))
+@@ -7189,6 +7266,7 @@ static __latent_entropy void net_rx_action(struct softirq_action *h)
+ 
+ 	net_rps_action_and_irq_enable(sd);
+ }
++#endif
+ 
+ struct netdev_adjacent {
+ 	struct net_device *dev;
+@@ -7209,6 +7287,7 @@ struct netdev_adjacent {
+ 	struct rcu_head rcu;
+ };
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ static struct netdev_adjacent *__netdev_find_adj(struct net_device *adj_dev,
+ 						 struct list_head *adj_list)
+ {
+@@ -10132,6 +10211,7 @@ static int netif_alloc_rx_queues(struct net_device *dev)
+ 		err = xdp_rxq_info_reg(&rx[i].xdp_rxq, dev, i, 0);
  		if (err < 0)
  			goto err_rxq_info;
 +
  	}
  	return 0;
  
- err_rxq_info:
+@@ -10139,6 +10219,7 @@ static int netif_alloc_rx_queues(struct net_device *dev)
  	/* Rollback successful reg's and free other resources */
-+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
  	while (i--)
  		xdp_rxq_info_unreg(&rx[i].xdp_rxq);
-+#endif
++
  	kvfree(dev->_rx);
  	dev->_rx = NULL;
  	return err;
-@@ -10146,15 +10159,16 @@ static int netif_alloc_rx_queues(struct net_device *dev)
+@@ -11097,6 +11178,7 @@ void unregister_netdevice_many(struct list_head *head)
  
- static void netif_free_rx_queues(struct net_device *dev)
- {
-+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
- 	unsigned int i, count = dev->num_rx_queues;
--
-+#endif
- 	/* netif_alloc_rx_queues alloc failed, resources have been unreg'ed */
- 	if (!dev->_rx)
- 		return;
--
-+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
- 	for (i = 0; i < count; i++)
- 		xdp_rxq_info_unreg(&dev->_rx[i].xdp_rxq);
--
-+#endif
- 	kvfree(dev->_rx);
- }
- 
-@@ -10242,10 +10256,11 @@ int register_netdevice(struct net_device *dev)
- 	/* When net_device's are persistent, this will be fatal. */
- 	BUG_ON(dev->reg_state != NETREG_UNINITIALIZED);
- 	BUG_ON(!net);
--
-+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
- 	ret = ethtool_check_ops(dev->ethtool_ops);
- 	if (ret)
- 		return ret;
-+#endif
- 
- 	spin_lock_init(&dev->addr_list_lock);
- 	netdev_set_addr_lockdep_class(dev);
-@@ -10330,14 +10345,14 @@ int register_netdevice(struct net_device *dev)
- 	ret = notifier_to_errno(ret);
- 	if (ret)
- 		goto err_uninit;
--
-+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
- 	ret = netdev_register_kobject(dev);
- 	write_lock(&dev_base_lock);
- 	dev->reg_state = ret ? NETREG_UNREGISTERED : NETREG_REGISTERED;
- 	write_unlock(&dev_base_lock);
- 	if (ret)
- 		goto err_uninit;
--
-+#endif
- 	__netdev_update_features(dev);
- 
- 	/*
-@@ -11094,9 +11109,10 @@ void unregister_netdevice_many(struct list_head *head)
- 		/* Notifier chain MUST detach us all upper devices. */
- 		WARN_ON(netdev_has_any_upper_dev(dev));
- 		WARN_ON(netdev_has_any_lower_dev(dev));
--
-+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
  		/* Remove entries from kobject tree */
  		netdev_unregister_kobject(dev);
-+#endif
++
  #ifdef CONFIG_XPS
  		/* Remove XPS queueing entries */
  		netif_reset_xps_queues_gt(dev, 0);
-@@ -11254,8 +11270,10 @@ int __dev_change_net_namespace(struct net_device *dev, struct net *net,
+@@ -11254,8 +11336,10 @@ int __dev_change_net_namespace(struct net_device *dev, struct net *net,
  	/* Adapt owner in case owning user namespace of target network
  	 * namespace is different from the original one.
  	 */
-+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
  	err = netdev_change_owner(dev, net_old, net);
  	WARN_ON(err);
 +#endif
  
  	/* Add the device back in the hashes */
  	list_netdevice(dev);
-@@ -11626,9 +11644,10 @@ static int __init net_dev_init(void)
+@@ -11695,3 +11779,4 @@ static int __init net_dev_init(void)
+ }
  
- 	if (dev_proc_init())
- 		goto out;
--
-+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
- 	if (netdev_kobject_init())
- 		goto out;
+ subsys_initcall(net_dev_init);
 +#endif
- 
- 	INIT_LIST_HEAD(&ptype_all);
- 	for (i = 0; i < PTYPE_HASH_SIZE; i++)
 diff --git a/net/core/dev_ioctl.c b/net/core/dev_ioctl.c
-index 0e87237fd871..0824de49648f 100644
+index 0e87237fd871..3510f9299d76 100644
 --- a/net/core/dev_ioctl.c
 +++ b/net/core/dev_ioctl.c
-@@ -515,7 +515,7 @@ int dev_ioctl(struct net *net, unsigned int cmd, struct ifreq *ifr,
- 		if (colon)
- 			*colon = ':';
- 		return ret;
+@@ -21,6 +21,7 @@
+  *	match.  --pb
+  */
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ static int dev_ifname(struct net *net, struct ifreq *ifr)
+ {
+ 	ifr->ifr_name[IFNAMSIZ-1] = 0;
+@@ -448,6 +449,7 @@ void dev_load(struct net *net, const char *name)
+ 		request_module("%s", name);
+ }
+ EXPORT_SYMBOL(dev_load);
++#endif
+ 
+ /*
+  *	This function handles all "interface"-type I/O control requests. The actual
+@@ -470,14 +472,17 @@ EXPORT_SYMBOL(dev_load);
+ int dev_ioctl(struct net *net, unsigned int cmd, struct ifreq *ifr,
+ 	      void __user *data, bool *need_copyout)
+ {
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 	int ret;
++#endif
+ 	char *colon;
+ 
+ 	if (need_copyout)
+ 		*need_copyout = true;
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 	if (cmd == SIOCGIFNAME)
+ 		return dev_ifname(net, ifr);
 -
-+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
- 	case SIOCETHTOOL:
++#endif
+ 	ifr->ifr_name[IFNAMSIZ-1] = 0;
+ 
+ 	colon = strchr(ifr->ifr_name, ':');
+@@ -489,6 +494,7 @@ int dev_ioctl(struct net *net, unsigned int cmd, struct ifreq *ifr,
+ 	 */
+ 
+ 	switch (cmd) {
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 	case SIOCGIFHWADDR:
  		dev_load(net, ifr->ifr_name);
- 		rtnl_lock();
-@@ -524,6 +524,7 @@ int dev_ioctl(struct net *net, unsigned int cmd, struct ifreq *ifr,
+ 		ret = dev_get_mac_address(&ifr->ifr_hwaddr, net, ifr->ifr_name);
+@@ -543,6 +549,7 @@ int dev_ioctl(struct net *net, unsigned int cmd, struct ifreq *ifr,
  		if (colon)
  			*colon = ':';
  		return ret;
@@ -923,121 +1490,350 @@ index 0e87237fd871..0824de49648f 100644
  
  	/*
  	 *	These ioctl calls:
+@@ -580,6 +587,7 @@ int dev_ioctl(struct net *net, unsigned int cmd, struct ifreq *ifr,
+ 		if (!ns_capable(net->user_ns, CAP_NET_ADMIN))
+ 			return -EPERM;
+ 		fallthrough;
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 	case SIOCBONDSLAVEINFOQUERY:
+ 	case SIOCBONDINFOQUERY:
+ 		dev_load(net, ifr->ifr_name);
+@@ -589,6 +597,7 @@ int dev_ioctl(struct net *net, unsigned int cmd, struct ifreq *ifr,
+ 		if (need_copyout)
+ 			*need_copyout = false;
+ 		return ret;
++#endif
+ 
+ 	case SIOCGIFMEM:
+ 		/* Get the per device memory space. We can add this but
+@@ -603,6 +612,7 @@ int dev_ioctl(struct net *net, unsigned int cmd, struct ifreq *ifr,
+ 	 *	Unknown or private ioctl.
+ 	 */
+ 	default:
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 		if (cmd == SIOCWANDEV ||
+ 		    cmd == SIOCGHWTSTAMP ||
+ 		    (cmd >= SIOCDEVPRIVATE &&
+@@ -613,6 +623,7 @@ int dev_ioctl(struct net *net, unsigned int cmd, struct ifreq *ifr,
+ 			rtnl_unlock();
+ 			return ret;
+ 		}
++#endif
+ 		return -ENOTTY;
+ 	}
+ }
+diff --git a/net/core/dst.c b/net/core/dst.c
+index 497ef9b3fc6a..06aa19868b6c 100644
+--- a/net/core/dst.c
++++ b/net/core/dst.c
+@@ -149,6 +149,7 @@ static void dst_destroy_rcu(struct rcu_head *head)
+  * in preparation for a NETDEV_DOWN/NETDEV_UNREGISTER event and also to
+  * make the next dst_ops->check() fail.
+  */
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ void dst_dev_put(struct dst_entry *dst)
+ {
+ 	struct net_device *dev = dst->dev;
+@@ -163,6 +164,7 @@ void dst_dev_put(struct dst_entry *dst)
+ 	dev_put(dev);
+ }
+ EXPORT_SYMBOL(dst_dev_put);
++#endif
+ 
+ void dst_release(struct dst_entry *dst)
+ {
 diff --git a/net/core/filter.c b/net/core/filter.c
-index 519315a1acf3..baa888cd9131 100644
+index 519315a1acf3..4622e08ca807 100644
 --- a/net/core/filter.c
 +++ b/net/core/filter.c
-@@ -156,12 +156,12 @@ int sk_filter_trim_cap(struct sock *sk, struct sk_buff *skb, unsigned int cap)
- 	return err;
+@@ -79,6 +79,7 @@
+ #include <net/tls.h>
+ #include <net/xdp.h>
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ static const struct bpf_func_proto *
+ bpf_sk_base_func_proto(enum bpf_func_id func_id);
+ 
+@@ -104,6 +105,7 @@ int copy_bpf_fprog_from_user(struct sock_fprog *dst, sockptr_t src, int len)
+ 	return 0;
+ }
+ EXPORT_SYMBOL_GPL(copy_bpf_fprog_from_user);
++#endif
+ 
+ /**
+  *	sk_filter_trim_cap - run a packet through a socket filter
+@@ -157,6 +159,7 @@ int sk_filter_trim_cap(struct sock *sk, struct sk_buff *skb, unsigned int cap)
  }
  EXPORT_SYMBOL(sk_filter_trim_cap);
--
-+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
  BPF_CALL_1(bpf_skb_get_pay_offset, struct sk_buff *, skb)
  {
  	return skb_get_poff(skb);
- }
--
-+#endif
- BPF_CALL_3(bpf_skb_get_nlattr, struct sk_buff *, skb, u32, a, u32, x)
- {
- 	struct nlattr *nla;
-@@ -428,7 +428,9 @@ static bool convert_bpf_extensions(struct sock_filter *fp,
- 		/* Emit call(arg1=CTX, arg2=A, arg3=X) */
- 		switch (fp->k) {
- 		case SKF_AD_OFF + SKF_AD_PAY_OFFSET:
-+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
- 			*insn = BPF_EMIT_CALL(bpf_skb_get_pay_offset);
-+#endif
- 			break;
- 		case SKF_AD_OFF + SKF_AD_NLATTR:
- 			*insn = BPF_EMIT_CALL(bpf_skb_get_nlattr);
-@@ -3067,6 +3069,7 @@ static const struct bpf_func_proto bpf_get_route_realm_proto = {
- 	.arg1_type      = ARG_PTR_TO_CTX,
- };
+@@ -7173,10 +7176,12 @@ bool bpf_helper_changes_pkt_data(void *func)
  
-+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
- BPF_CALL_1(bpf_get_hash_recalc, struct sk_buff *, skb)
- {
- 	/* If skb_clear_hash() was called due to mangling, we can
-@@ -3083,7 +3086,7 @@ static const struct bpf_func_proto bpf_get_hash_recalc_proto = {
- 	.ret_type	= RET_INTEGER,
- 	.arg1_type	= ARG_PTR_TO_CTX,
- };
--
+ 	return false;
+ }
 +#endif
- BPF_CALL_1(bpf_set_hash_invalid, struct sk_buff *, skb)
+ 
+ const struct bpf_func_proto bpf_event_output_data_proto __weak;
+ const struct bpf_func_proto bpf_sk_storage_get_cg_sock_proto __weak;
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ static const struct bpf_func_proto *
+ sock_filter_func_proto(enum bpf_func_id func_id, const struct bpf_prog *prog)
  {
- 	/* After all direct packet write, this can be used once for
-@@ -7434,8 +7437,10 @@ tc_cls_act_func_proto(enum bpf_func_id func_id, const struct bpf_prog *prog)
+@@ -7329,10 +7334,12 @@ sk_filter_func_proto(enum bpf_func_id func_id, const struct bpf_prog *prog)
+ 		return bpf_sk_base_func_proto(func_id);
+ 	}
+ }
++#endif
+ 
+ const struct bpf_func_proto bpf_sk_storage_get_proto __weak;
+ const struct bpf_func_proto bpf_sk_storage_delete_proto __weak;
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ static const struct bpf_func_proto *
+ cg_skb_func_proto(enum bpf_func_id func_id, const struct bpf_prog *prog)
+ {
+@@ -7434,8 +7441,10 @@ tc_cls_act_func_proto(enum bpf_func_id func_id, const struct bpf_prog *prog)
  		return &bpf_redirect_peer_proto;
  	case BPF_FUNC_get_route_realm:
  		return &bpf_get_route_realm_proto;
-+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
  	case BPF_FUNC_get_hash_recalc:
  		return &bpf_get_hash_recalc_proto;
 +#endif
  	case BPF_FUNC_set_hash_invalid:
  		return &bpf_set_hash_invalid_proto;
  	case BPF_FUNC_set_hash:
-@@ -7705,8 +7710,10 @@ lwt_out_func_proto(enum bpf_func_id func_id, const struct bpf_prog *prog)
+@@ -7543,16 +7552,19 @@ xdp_func_proto(enum bpf_func_id func_id, const struct bpf_prog *prog)
+ 		return bpf_sk_base_func_proto(func_id);
+ 	}
+ }
+-
++#endif
+ const struct bpf_func_proto bpf_sock_map_update_proto __weak;
+ const struct bpf_func_proto bpf_sock_hash_update_proto __weak;
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ static const struct bpf_func_proto *
+ sock_ops_func_proto(enum bpf_func_id func_id, const struct bpf_prog *prog)
+ {
+ 	switch (func_id) {
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 	case BPF_FUNC_setsockopt:
+ 		return &bpf_sock_ops_setsockopt_proto;
++#endif
+ 	case BPF_FUNC_getsockopt:
+ 		return &bpf_sock_ops_getsockopt_proto;
+ 	case BPF_FUNC_sock_ops_cb_flags_set:
+@@ -7587,10 +7599,11 @@ sock_ops_func_proto(enum bpf_func_id func_id, const struct bpf_prog *prog)
+ 		return bpf_sk_base_func_proto(func_id);
+ 	}
+ }
+-
++#endif
+ const struct bpf_func_proto bpf_msg_redirect_map_proto __weak;
+ const struct bpf_func_proto bpf_msg_redirect_hash_proto __weak;
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ static const struct bpf_func_proto *
+ sk_msg_func_proto(enum bpf_func_id func_id, const struct bpf_prog *prog)
+ {
+@@ -7635,16 +7648,19 @@ sk_msg_func_proto(enum bpf_func_id func_id, const struct bpf_prog *prog)
+ 		return bpf_sk_base_func_proto(func_id);
+ 	}
+ }
+-
++#endif
+ const struct bpf_func_proto bpf_sk_redirect_map_proto __weak;
+ const struct bpf_func_proto bpf_sk_redirect_hash_proto __weak;
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ static const struct bpf_func_proto *
+ sk_skb_func_proto(enum bpf_func_id func_id, const struct bpf_prog *prog)
+ {
+ 	switch (func_id) {
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 	case BPF_FUNC_skb_store_bytes:
+ 		return &bpf_skb_store_bytes_proto;
++#endif
+ 	case BPF_FUNC_skb_load_bytes:
+ 		return &bpf_skb_load_bytes_proto;
+ 	case BPF_FUNC_skb_pull_data:
+@@ -7697,16 +7713,20 @@ lwt_out_func_proto(enum bpf_func_id func_id, const struct bpf_prog *prog)
+ 	switch (func_id) {
+ 	case BPF_FUNC_skb_load_bytes:
+ 		return &bpf_skb_load_bytes_proto;
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 	case BPF_FUNC_skb_pull_data:
+ 		return &bpf_skb_pull_data_proto;
++#endif
+ 	case BPF_FUNC_csum_diff:
+ 		return &bpf_csum_diff_proto;
+ 	case BPF_FUNC_get_cgroup_classid:
  		return &bpf_get_cgroup_classid_proto;
  	case BPF_FUNC_get_route_realm:
  		return &bpf_get_route_realm_proto;
-+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
  	case BPF_FUNC_get_hash_recalc:
  		return &bpf_get_hash_recalc_proto;
 +#endif
  	case BPF_FUNC_perf_event_output:
  		return &bpf_skb_event_output_proto;
  	case BPF_FUNC_get_smp_processor_id:
+@@ -10226,6 +10246,7 @@ int sk_get_filter(struct sock *sk, struct sock_filter __user *ubuf,
+ 	release_sock(sk);
+ 	return ret;
+ }
++#endif
+ 
+ #ifdef CONFIG_INET
+ static void bpf_init_reuseport_kern(struct sk_reuseport_kern *reuse_kern,
+@@ -10683,6 +10704,7 @@ const struct bpf_verifier_ops sk_lookup_verifier_ops = {
+ 
+ #endif /* CONFIG_INET */
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ DEFINE_BPF_DISPATCHER(xdp)
+ 
+ void bpf_prog_change_xdp(struct bpf_prog *prev_prog, struct bpf_prog *prog)
+@@ -10859,3 +10881,4 @@ bpf_sk_base_func_proto(enum bpf_func_id func_id)
+ 
+ 	return func;
+ }
++#endif
 diff --git a/net/core/net-sysfs.c b/net/core/net-sysfs.c
-index e9ea0695efb4..6d0ab0bd6e0a 100644
+index e9ea0695efb4..ac8b570081b7 100644
 --- a/net/core/net-sysfs.c
 +++ b/net/core/net-sysfs.c
-@@ -216,9 +216,10 @@ static ssize_t speed_show(struct device *dev,
- 
- 	if (netif_running(netdev) && netif_device_present(netdev)) {
- 		struct ethtool_link_ksettings cmd;
--
-+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
- 		if (!__ethtool_get_link_ksettings(netdev, &cmd))
- 			ret = sprintf(buf, fmt_dec, cmd.base.speed);
-+#endif
- 	}
- 	rtnl_unlock();
- 	return ret;
-@@ -241,8 +242,8 @@ static ssize_t duplex_show(struct device *dev,
- 		return restart_syscall();
+@@ -242,7 +242,6 @@ static ssize_t duplex_show(struct device *dev,
  
  	if (netif_running(netdev)) {
-+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
  		struct ethtool_link_ksettings cmd;
 -
  		if (!__ethtool_get_link_ksettings(netdev, &cmd)) {
  			const char *duplex;
  
-@@ -259,6 +260,7 @@ static ssize_t duplex_show(struct device *dev,
- 			}
- 			ret = sprintf(buf, "%s\n", duplex);
- 		}
-+#endif
+diff --git a/net/core/net_namespace.c b/net/core/net_namespace.c
+index dcddc54d0840..8d6e238e578e 100644
+--- a/net/core/net_namespace.c
++++ b/net/core/net_namespace.c
+@@ -184,6 +184,7 @@ static void ops_free_list(const struct pernet_operations *ops,
  	}
- 	rtnl_unlock();
- 	return ret;
+ }
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ /* should be called with nsid_lock held */
+ static int alloc_netid(struct net *net, struct net *peer, int reqid)
+ {
+@@ -302,6 +303,7 @@ struct net *get_net_ns_by_id(const struct net *net, int id)
+ 
+ 	return peer;
+ }
++#endif
+ 
+ /*
+  * setup_net runs the initializers for the network namespace object.
+@@ -718,6 +720,7 @@ static struct pernet_operations __net_initdata net_ns_ops = {
+ 	.exit = net_ns_net_exit,
+ };
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ static const struct nla_policy rtnl_net_policy[NETNSA_MAX + 1] = {
+ 	[NETNSA_NONE]		= { .type = NLA_UNSPEC },
+ 	[NETNSA_NSID]		= { .type = NLA_S32 },
+@@ -1081,7 +1084,7 @@ static void rtnl_net_notifyid(struct net *net, int cmd, int id, u32 portid,
+ out:
+ 	rtnl_set_sk_err(net, RTNLGRP_NSID, err);
+ }
+-
++#endif
+ void __init net_ns_init(void)
+ {
+ 	struct net_generic *ng;
+@@ -1116,10 +1119,12 @@ void __init net_ns_init(void)
+ 	if (register_pernet_subsys(&net_ns_ops))
+ 		panic("Could not register network namespace subsystems");
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 	rtnl_register(PF_UNSPEC, RTM_NEWNSID, rtnl_net_newid, NULL,
+ 		      RTNL_FLAG_DOIT_UNLOCKED);
+ 	rtnl_register(PF_UNSPEC, RTM_GETNSID, rtnl_net_getid, rtnl_net_dumpid,
+ 		      RTNL_FLAG_DOIT_UNLOCKED);
++#endif
+ }
+ 
+ static void free_exit_list(struct pernet_operations *ops, struct list_head *net_exit_list)
 diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
-index 8c85e93daa73..689dfb20582c 100644
+index 8c85e93daa73..2e8065fae974 100644
 --- a/net/core/rtnetlink.c
 +++ b/net/core/rtnetlink.c
-@@ -3877,6 +3877,7 @@ void rtmsg_ifinfo_newnet(int type, struct net_device *dev, unsigned int change,
+@@ -108,8 +108,12 @@ void __rtnl_unlock(void)
+ 
+ void rtnl_unlock(void)
+ {
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 	/* This fellow will unlock it for us. */
+ 	netdev_run_todo();
++#else
++	__rtnl_unlock();
++#endif
+ }
+ EXPORT_SYMBOL(rtnl_unlock);
+ 
+@@ -2680,12 +2684,14 @@ static int do_setlink(const struct sk_buff *skb,
+ 		status |= DO_SETLINK_MODIFIED;
+ 	}
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 	if (tb[IFLA_MTU]) {
+ 		err = dev_set_mtu_ext(dev, nla_get_u32(tb[IFLA_MTU]), extack);
+ 		if (err < 0)
+ 			goto errout;
+ 		status |= DO_SETLINK_MODIFIED;
+ 	}
++#endif
+ 
+ 	if (tb[IFLA_GROUP]) {
+ 		dev_set_group(dev, nla_get_u32(tb[IFLA_GROUP]));
+@@ -3125,6 +3131,7 @@ static int rtnl_dellink(struct sk_buff *skb, struct nlmsghdr *nlh,
+ 
+ int rtnl_configure_link(struct net_device *dev, const struct ifinfomsg *ifm)
+ {
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 	unsigned int old_flags;
+ 	int err;
+ 
+@@ -3142,6 +3149,7 @@ int rtnl_configure_link(struct net_device *dev, const struct ifinfomsg *ifm)
+ 		dev->rtnl_link_state = RTNL_LINK_INITIALIZED;
+ 		__dev_notify_flags(dev, old_flags, ~0U);
+ 	}
++#endif
+ 	return 0;
+ }
+ EXPORT_SYMBOL(rtnl_configure_link);
+@@ -3460,8 +3468,10 @@ static int __rtnl_newlink(struct sk_buff *skb, struct nlmsghdr *nlh,
+ 
+ 	if (ops->newlink)
+ 		err = ops->newlink(link_net ? : net, dev, tb, data, extack);
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 	else
+ 		err = register_netdevice(dev);
++#endif
+ 	if (err < 0) {
+ 		free_netdev(dev);
+ 		goto out;
+@@ -3877,6 +3887,7 @@ void rtmsg_ifinfo_newnet(int type, struct net_device *dev, unsigned int change,
  			   new_nsid, new_ifindex);
  }
  
-+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
  static int nlmsg_populate_fdb_fill(struct sk_buff *skb,
  				   struct net_device *dev,
  				   u8 *addr, u16 vid, u32 pid, u32 seq,
-@@ -3912,7 +3913,7 @@ static int nlmsg_populate_fdb_fill(struct sk_buff *skb,
+@@ -3912,7 +3923,7 @@ static int nlmsg_populate_fdb_fill(struct sk_buff *skb,
  	nlmsg_cancel(skb, nlh);
  	return -EMSGSIZE;
  }
@@ -1046,15 +1842,15 @@ index 8c85e93daa73..689dfb20582c 100644
  static inline size_t rtnl_fdb_nlmsg_size(void)
  {
  	return NLMSG_ALIGN(sizeof(struct ndmsg)) +
-@@ -3921,6 +3922,7 @@ static inline size_t rtnl_fdb_nlmsg_size(void)
+@@ -3921,6 +3932,7 @@ static inline size_t rtnl_fdb_nlmsg_size(void)
  	       0;
  }
  
-+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
  static void rtnl_fdb_notify(struct net_device *dev, u8 *addr, u16 vid, int type,
  			    u16 ndm_state)
  {
-@@ -3944,7 +3946,7 @@ static void rtnl_fdb_notify(struct net_device *dev, u8 *addr, u16 vid, int type,
+@@ -3944,7 +3956,7 @@ static void rtnl_fdb_notify(struct net_device *dev, u8 *addr, u16 vid, int type,
  errout:
  	rtnl_set_sk_err(net, RTNLGRP_NEIGH, err);
  }
@@ -1063,15 +1859,15 @@ index 8c85e93daa73..689dfb20582c 100644
  /*
   * ndo_dflt_fdb_add - default netdevice operation to add an FDB entry
   */
-@@ -3982,6 +3984,7 @@ int ndo_dflt_fdb_add(struct ndmsg *ndm,
+@@ -3982,6 +3994,7 @@ int ndo_dflt_fdb_add(struct ndmsg *ndm,
  }
  EXPORT_SYMBOL(ndo_dflt_fdb_add);
  
-+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
  static int fdb_vid_parse(struct nlattr *vlan_attr, u16 *p_vid,
  			 struct netlink_ext_ack *extack)
  {
-@@ -4603,7 +4606,7 @@ static int rtnl_fdb_get(struct sk_buff *in_skb, struct nlmsghdr *nlh,
+@@ -4603,7 +4616,7 @@ static int rtnl_fdb_get(struct sk_buff *in_skb, struct nlmsghdr *nlh,
  	kfree_skb(skb);
  	return err;
  }
@@ -1080,11 +1876,11 @@ index 8c85e93daa73..689dfb20582c 100644
  static int brport_nla_put_flag(struct sk_buff *skb, u32 flags, u32 mask,
  			       unsigned int attrnum, unsigned int flag)
  {
-@@ -5698,10 +5701,11 @@ void __init rtnetlink_init(void)
+@@ -5698,10 +5711,11 @@ void __init rtnetlink_init(void)
  	rtnl_register(PF_UNSPEC, RTM_NEWLINKPROP, rtnl_newlinkprop, NULL, 0);
  	rtnl_register(PF_UNSPEC, RTM_DELLINKPROP, rtnl_dellinkprop, NULL, 0);
  
-+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
  	rtnl_register(PF_BRIDGE, RTM_NEWNEIGH, rtnl_fdb_add, NULL, 0);
  	rtnl_register(PF_BRIDGE, RTM_DELNEIGH, rtnl_fdb_del, NULL, 0);
  	rtnl_register(PF_BRIDGE, RTM_GETNEIGH, rtnl_fdb_get, rtnl_fdb_dump, 0);
@@ -1093,37 +1889,142 @@ index 8c85e93daa73..689dfb20582c 100644
  	rtnl_register(PF_BRIDGE, RTM_GETLINK, NULL, rtnl_bridge_getlink, 0);
  	rtnl_register(PF_BRIDGE, RTM_DELLINK, rtnl_bridge_dellink, NULL, 0);
  	rtnl_register(PF_BRIDGE, RTM_SETLINK, rtnl_bridge_setlink, NULL, 0);
+diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+index 59d66042b468..a0c6475e857f 100644
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -774,7 +774,9 @@ void kfree_skb_reason(struct sk_buff *skb, enum skb_drop_reason reason)
+ 		return;
+ 
+ 	trace_android_vh_kfree_skb(skb);
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 	trace_kfree_skb(skb, __builtin_return_address(0), reason);
++#endif
+ 	__kfree_skb(skb);
+ }
+ EXPORT_SYMBOL(kfree_skb_reason);
+@@ -912,7 +914,9 @@ void consume_skb(struct sk_buff *skb)
+ 	if (!skb_unref(skb))
+ 		return;
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 	trace_consume_skb(skb);
++#endif
+ 	__kfree_skb(skb);
+ }
+ EXPORT_SYMBOL(consume_skb);
+@@ -927,7 +931,9 @@ EXPORT_SYMBOL(consume_skb);
+  */
+ void __consume_stateless_skb(struct sk_buff *skb)
+ {
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 	trace_consume_skb(skb);
++#endif
+ 	skb_release_data(skb);
+ 	kfree_skbmem(skb);
+ }
+@@ -983,7 +989,9 @@ void napi_consume_skb(struct sk_buff *skb, int budget)
+ 		return;
+ 
+ 	/* if reaching here SKB is ready to free */
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 	trace_consume_skb(skb);
++#endif
+ 
+ 	/* if SKB is a clone, don't handle this case */
+ 	if (skb->fclone != SKB_FCLONE_UNAVAILABLE) {
+@@ -3017,6 +3025,7 @@ __wsum skb_copy_and_csum_bits(const struct sk_buff *skb, int offset,
+ }
+ EXPORT_SYMBOL(skb_copy_and_csum_bits);
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ __sum16 __skb_checksum_complete_head(struct sk_buff *skb, int len)
+ {
+ 	__sum16 sum;
+@@ -3075,6 +3084,7 @@ __sum16 __skb_checksum_complete(struct sk_buff *skb)
+ 	return sum;
+ }
+ EXPORT_SYMBOL(__skb_checksum_complete);
++#endif
+ 
+ static __wsum warn_crc32c_csum_update(const void *buff, int len, __wsum sum)
+ {
 diff --git a/net/core/sock.c b/net/core/sock.c
-index 9356cdb250d9..341efb30cff2 100644
+index eb81bd20de83..d843c136e1d3 100644
 --- a/net/core/sock.c
 +++ b/net/core/sock.c
-@@ -819,9 +819,11 @@ static int sock_timestamping_bind_phc(struct sock *sk, int phc_index)
+@@ -343,9 +343,11 @@ void sk_error_report(struct sock *sk)
+ 	switch (sk->sk_family) {
+ 	case AF_INET:
+ 		fallthrough;
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 	case AF_INET6:
+ 		trace_inet_sk_error_report(sk);
+ 		break;
++#endif
+ 	default:
+ 		break;
+ 	}
+@@ -463,7 +465,9 @@ int __sock_queue_rcv_skb(struct sock *sk, struct sk_buff *skb)
+ 
+ 	if (atomic_read(&sk->sk_rmem_alloc) >= sk->sk_rcvbuf) {
+ 		atomic_inc(&sk->sk_drops);
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 		trace_sock_rcvqueue_full(sk, skb);
++#endif
+ 		return -ENOMEM;
+ 	}
+ 
+@@ -713,6 +717,7 @@ static int sock_getbindtodevice(struct sock *sk, char __user *optval,
+ 	return ret;
+ }
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ bool sk_mc_loop(struct sock *sk)
  {
+ 	if (dev_recursion_level())
+@@ -731,6 +736,7 @@ bool sk_mc_loop(struct sock *sk)
+ 	return true;
+ }
+ EXPORT_SYMBOL(sk_mc_loop);
++#endif
+ 
+ void sock_set_reuseaddr(struct sock *sk)
+ {
+@@ -817,12 +823,16 @@ void sock_set_timestamp(struct sock *sk, int optname, bool valbool)
+ 
+ static int sock_timestamping_bind_phc(struct sock *sk, int phc_index)
+ {
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
  	struct net *net = sock_net(sk);
++#endif
  	struct net_device *dev = NULL;
-+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
  	bool match = false;
  	int *vclock_index;
  	int i, num;
+-
 +#endif
- 
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
  	if (sk->sk_bound_dev_if)
  		dev = dev_get_by_index(net, sk->sk_bound_dev_if);
-@@ -830,10 +832,11 @@ static int sock_timestamping_bind_phc(struct sock *sk, int phc_index)
+ 
+@@ -830,10 +840,12 @@ static int sock_timestamping_bind_phc(struct sock *sk, int phc_index)
  		pr_err("%s: sock not bind to device\n", __func__);
  		return -EOPNOTSUPP;
  	}
 -
-+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
++#endif
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
  	num = ethtool_get_phc_vclocks(dev, &vclock_index);
 +#endif
  	dev_put(dev);
 -
-+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
  	for (i = 0; i < num; i++) {
  		if (*(vclock_index + i) == phc_index) {
  			match = true;
-@@ -846,7 +849,7 @@ static int sock_timestamping_bind_phc(struct sock *sk, int phc_index)
+@@ -846,7 +858,7 @@ static int sock_timestamping_bind_phc(struct sock *sk, int phc_index)
  
  	if (!match)
  		return -EINVAL;
@@ -1132,15 +2033,181 @@ index 9356cdb250d9..341efb30cff2 100644
  	sk->sk_bind_phc = phc_index;
  
  	return 0;
+@@ -1160,6 +1172,7 @@ int sock_setsockopt(struct socket *sock, int level, int optname,
+ 				       optlen, optname == SO_SNDTIMEO_OLD);
+ 		break;
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 	case SO_ATTACH_FILTER: {
+ 		struct sock_fprog fprog;
+ 
+@@ -1216,6 +1229,7 @@ int sock_setsockopt(struct socket *sock, int level, int optname,
+ 		else
+ 			sock_valbool_flag(sk, SOCK_FILTER_LOCKED, valbool);
+ 		break;
++#endif
+ 
+ 	case SO_PASSSEC:
+ 		if (valbool)
+@@ -1660,12 +1674,14 @@ int sock_getsockopt(struct socket *sock, int level, int optname,
+ 	case SO_BINDTODEVICE:
+ 		return sock_getbindtodevice(sk, optval, optlen, len);
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 	case SO_GET_FILTER:
+ 		len = sk_get_filter(sk, (struct sock_filter __user *)optval, len);
+ 		if (len < 0)
+ 			return len;
+ 
+ 		goto lenout;
++#endif
+ 
+ 	case SO_LOCK_FILTER:
+ 		v.val = sock_flag(sk, SOCK_FILTER_LOCKED);
+@@ -1940,17 +1956,21 @@ EXPORT_SYMBOL(sk_alloc);
+ static void __sk_destruct(struct rcu_head *head)
+ {
+ 	struct sock *sk = container_of(head, struct sock, sk_rcu);
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 	struct sk_filter *filter;
++#endif
+ 
+ 	if (sk->sk_destruct)
+ 		sk->sk_destruct(sk);
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 	filter = rcu_dereference_check(sk->sk_filter,
+ 				       refcount_read(&sk->sk_wmem_alloc) == 0);
+ 	if (filter) {
+ 		sk_filter_uncharge(sk, filter);
+ 		RCU_INIT_POINTER(sk->sk_filter, NULL);
+ 	}
++#endif
+ 
+ 	sock_disable_timestamp(sk, SK_FLAGS_TIMESTAMP);
+ 
+@@ -1996,9 +2016,11 @@ static void __sk_free(struct sock *sk)
+ 	if (likely(sk->sk_net_refcnt))
+ 		sock_inuse_add(sock_net(sk), -1);
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 	if (unlikely(sk->sk_net_refcnt && sock_diag_has_destroy_listeners(sk)))
+ 		sock_diag_broadcast_destroy(sk);
+ 	else
++#endif
+ 		sk_destruct(sk);
+ }
+ 
+@@ -2045,7 +2067,9 @@ static void sk_init_common(struct sock *sk)
+ struct sock *sk_clone_lock(const struct sock *sk, const gfp_t priority)
+ {
+ 	struct proto *prot = READ_ONCE(sk->sk_prot);
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 	struct sk_filter *filter;
++#endif
+ 	bool is_charged = true;
+ 	struct sock *newsk;
+ 
+@@ -2092,6 +2116,7 @@ struct sock *sk_clone_lock(const struct sock *sk, const gfp_t priority)
+ 
+ 	cgroup_sk_clone(&newsk->sk_cgrp_data);
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 	rcu_read_lock();
+ 	filter = rcu_dereference(sk->sk_filter);
+ 	if (filter != NULL)
+@@ -2102,6 +2127,7 @@ struct sock *sk_clone_lock(const struct sock *sk, const gfp_t priority)
+ 		is_charged = sk_filter_charge(newsk, filter);
+ 	RCU_INIT_POINTER(newsk->sk_filter, filter);
+ 	rcu_read_unlock();
++#endif
+ 
+ 	if (unlikely(!is_charged || xfrm_sk_clone_policy(newsk, sk))) {
+ 		/* We need to make sure that we don't uncharge the new
+@@ -2831,8 +2857,10 @@ int __sk_mem_raise_allocated(struct sock *sk, int size, int amt, int kind)
+ 		}
+ 	}
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 	if (kind == SK_MEM_SEND || (kind == SK_MEM_RECV && charged))
+ 		trace_sock_exceed_buf_limit(sk, prot, allocated, kind);
++#endif
+ 
+ 	sk_memory_allocated_sub(sk, amt);
+ 
+diff --git a/net/core/sock_diag.c b/net/core/sock_diag.c
+index c9c45b935f99..e8ac2ea05342 100644
+--- a/net/core/sock_diag.c
++++ b/net/core/sock_diag.c
+@@ -15,10 +15,12 @@
+ #include <linux/inet_diag.h>
+ #include <linux/sock_diag.h>
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ static const struct sock_diag_handler *sock_diag_handlers[AF_MAX];
+ static int (*inet_rcv_compat)(struct sk_buff *skb, struct nlmsghdr *nlh);
+ static DEFINE_MUTEX(sock_diag_table_mutex);
+ static struct workqueue_struct *broadcast_wq;
++#endif
+ 
+ DEFINE_COOKIE(sock_cookie);
+ 
+@@ -58,6 +60,7 @@ void sock_diag_save_cookie(struct sock *sk, __u32 *cookie)
+ }
+ EXPORT_SYMBOL_GPL(sock_diag_save_cookie);
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ int sock_diag_put_meminfo(struct sock *sk, struct sk_buff *skb, int attrtype)
+ {
+ 	u32 mem[SK_MEMINFO_VARS];
+@@ -337,3 +340,4 @@ static int __init sock_diag_init(void)
+ 	return register_pernet_subsys(&diag_net_ops);
+ }
+ device_initcall(sock_diag_init);
++#endif
+diff --git a/net/core/sock_reuseport.c b/net/core/sock_reuseport.c
+index 5a165286e4d8..de9ed0f222aa 100644
+--- a/net/core/sock_reuseport.c
++++ b/net/core/sock_reuseport.c
+@@ -305,7 +305,9 @@ static void reuseport_free_rcu(struct rcu_head *head)
+ 	struct sock_reuseport *reuse;
+ 
+ 	reuse = container_of(head, struct sock_reuseport, rcu);
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 	sk_reuseport_prog_free(rcu_dereference_protected(reuse->prog, 1));
++#endif
+ 	ida_free(&reuseport_ida, reuse->reuseport_id);
+ 	kfree(reuse);
+ }
+@@ -708,7 +710,9 @@ int reuseport_attach_prog(struct sock *sk, struct bpf_prog *prog)
+ 	rcu_assign_pointer(reuse->prog, prog);
+ 	spin_unlock_bh(&reuseport_lock);
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 	sk_reuseport_prog_free(old_prog);
++#endif
+ 	return 0;
+ }
+ EXPORT_SYMBOL(reuseport_attach_prog);
+@@ -743,7 +747,9 @@ int reuseport_detach_prog(struct sock *sk)
+ 	if (!old_prog)
+ 		return -ENOENT;
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 	sk_reuseport_prog_free(old_prog);
++#endif
+ 	return 0;
+ }
+ EXPORT_SYMBOL(reuseport_detach_prog);
 diff --git a/net/core/sysctl_net_core.c b/net/core/sysctl_net_core.c
-index ed20cbdd1931..96f496d89845 100644
+index ed20cbdd1931..0ff4d1452240 100644
 --- a/net/core/sysctl_net_core.c
 +++ b/net/core/sysctl_net_core.c
 @@ -251,6 +251,7 @@ static int proc_do_dev_weight(struct ctl_table *table, int write,
  	return ret;
  }
  
-+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
  static int proc_do_rss_key(struct ctl_table *table, int write,
  			   void *buffer, size_t *lenp, loff_t *ppos)
  {
@@ -1156,7 +2223,7 @@ index ed20cbdd1931..96f496d89845 100644
  		.mode		= 0644,
  		.proc_handler	= proc_dointvec
  	},
-+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
  	{
  		.procname	= "netdev_rss_key",
  		.data		= &netdev_rss_key,
@@ -1169,14 +2236,14 @@ index ed20cbdd1931..96f496d89845 100644
  	{
  		.procname	= "bpf_jit_enable",
 diff --git a/net/core/utils.c b/net/core/utils.c
-index 1f31a39236d5..41c3b5501cb1 100644
+index 1f31a39236d5..bdb6f62a6fd3 100644
 --- a/net/core/utils.c
 +++ b/net/core/utils.c
 @@ -317,6 +317,7 @@ static int inet4_pton(const char *src, u16 port_num,
  	return 0;
  }
  
-+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
  static int inet6_pton(struct net *net, const char *src, u16 port_num,
  		struct sockaddr_storage *addr)
  {
@@ -1192,7 +2259,7 @@ index 1f31a39236d5..41c3b5501cb1 100644
  	case AF_INET:
  		ret = inet4_pton(src, port_num, addr);
  		break;
-+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
  	case AF_INET6:
  		ret = inet6_pton(net, src, port_num, addr);
  		break;
@@ -1205,14 +2272,14 @@ index 1f31a39236d5..41c3b5501cb1 100644
  		pr_err("unexpected address family %d\n", af);
  	}
 diff --git a/net/ethernet/eth.c b/net/ethernet/eth.c
-index 73fce9467467..ee9ae20fd640 100644
+index 73fce9467467..b9b645e33bed 100644
 --- a/net/ethernet/eth.c
 +++ b/net/ethernet/eth.c
 @@ -112,6 +112,7 @@ int eth_header(struct sk_buff *skb, struct net_device *dev,
  }
  EXPORT_SYMBOL(eth_header);
  
-+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
  /**
   * eth_get_headlen - determine the length of header for an ethernet frame
   * @dev: pointer to network device
@@ -1229,7 +2296,7 @@ index 73fce9467467..ee9ae20fd640 100644
  	return NULL;
  }
  
-+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
  int eth_platform_get_mac_address(struct device *dev, u8 *mac_addr)
  {
  	unsigned char *addr;
@@ -1242,6 +2309,292 @@ index 73fce9467467..ee9ae20fd640 100644
  /**
   * nvmem_get_mac_address - Obtain the MAC address from an nvmem cell named
   * 'mac-address' associated with given device.
+diff --git a/net/netlink/af_netlink.c b/net/netlink/af_netlink.c
+index 011ec7d9a719..b0c7ca6a21f9 100644
+--- a/net/netlink/af_netlink.c
++++ b/net/netlink/af_netlink.c
+@@ -205,6 +205,7 @@ int netlink_add_tap(struct netlink_tap *nt)
+ }
+ EXPORT_SYMBOL_GPL(netlink_add_tap);
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ static int __netlink_remove_tap(struct netlink_tap *nt)
+ {
+ 	struct net *net = dev_net(nt->dev);
+@@ -242,6 +243,7 @@ int netlink_remove_tap(struct netlink_tap *nt)
+ 	return ret;
+ }
+ EXPORT_SYMBOL_GPL(netlink_remove_tap);
++#endif
+ 
+ static __net_init int netlink_tap_init_net(struct net *net)
+ {
+@@ -302,9 +304,11 @@ static int __netlink_deliver_tap_skb(struct sk_buff *skb,
+ 		nskb->pkt_type = netlink_is_kernel(sk) ?
+ 				 PACKET_KERNEL : PACKET_USER;
+ 		skb_reset_network_header(nskb);
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 		ret = dev_queue_xmit(nskb);
+ 		if (unlikely(ret > 0))
+ 			ret = net_xmit_errno(ret);
++#endif
+ 	}
+ 
+ 	dev_put(dev);
+@@ -1444,8 +1448,10 @@ static void do_one_broadcast(struct sock *sk,
+ 		if (!(nlk->flags & NETLINK_F_LISTEN_ALL_NSID))
+ 			return;
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 		if (!peernet_has_id(sock_net(sk), p->net))
+ 			return;
++#endif
+ 
+ 		if (!file_ns_capable(sk->sk_socket->file, p->net->user_ns,
+ 				     CAP_NET_BROADCAST))
+@@ -1488,9 +1494,11 @@ static void do_one_broadcast(struct sock *sk,
+ 		p->skb2 = NULL;
+ 		goto out;
+ 	}
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 	NETLINK_CB(p->skb2).nsid = peernet2id(sock_net(sk), p->net);
+ 	if (NETLINK_CB(p->skb2).nsid != NETNSA_NSID_NOT_ASSIGNED)
+ 		NETLINK_CB(p->skb2).nsid_is_set = true;
++#endif
+ 	val = netlink_broadcast_deliver(sk, p->skb2);
+ 	if (val < 0) {
+ 		netlink_overrun(sk);
+@@ -2931,8 +2939,10 @@ static int __init netlink_proto_init(void)
+ 	sock_register(&netlink_family_ops);
+ 	register_pernet_subsys(&netlink_net_ops);
+ 	register_pernet_subsys(&netlink_tap_net_ops);
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 	/* The netlink device handler may be needed early. */
+ 	rtnetlink_init();
++#endif
+ out:
+ 	return err;
+ panic:
+diff --git a/net/sched/Makefile b/net/sched/Makefile
+index b7dbac5c519f..0e341ce9fcdd 100644
+--- a/net/sched/Makefile
++++ b/net/sched/Makefile
+@@ -3,7 +3,11 @@
+ # Makefile for the Linux Traffic Control Unit.
+ #
+ 
++ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ obj-y	:= sch_generic.o sch_mq.o
++else
++obj-y	:= sch_generic.o
++endif
+ 
+ obj-$(CONFIG_INET)		+= sch_frag.o
+ obj-$(CONFIG_NET_SCHED)		+= sch_api.o sch_blackhole.o
+diff --git a/net/sched/sch_generic.c b/net/sched/sch_generic.c
+index 02299785209c..ea4b344d2dbf 100644
+--- a/net/sched/sch_generic.c
++++ b/net/sched/sch_generic.c
+@@ -32,8 +32,10 @@
+ #include <net/xfrm.h>
+ 
+ /* Qdisc to use by default */
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ const struct Qdisc_ops *default_qdisc_ops = &pfifo_fast_ops;
+ EXPORT_SYMBOL(default_qdisc_ops);
++#endif
+ 
+ static void qdisc_maybe_clear_missed(struct Qdisc *q,
+ 				     const struct netdev_queue *txq)
+@@ -298,10 +300,13 @@ static struct sk_buff *dequeue_skb(struct Qdisc *q, bool *validate,
+ 			try_bulk_dequeue_skb_slow(q, skb, packets);
+ 	}
+ trace:
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 	trace_qdisc_dequeue(q, txq, *packets, skb);
++#endif
+ 	return skb;
+ }
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ /*
+  * Transmit possibly several skbs, and handle the return status as
+  * required. Owning running seqcount bit guarantees that
+@@ -365,6 +370,7 @@ bool sch_direct_xmit(struct sk_buff *skb, struct Qdisc *q,
+ 
+ 	return true;
+ }
++#endif
+ 
+ /*
+  * NOTE: Called under qdisc_lock(q) with locally disabled BH.
+@@ -407,6 +413,7 @@ static inline bool qdisc_restart(struct Qdisc *q, int *packets)
+ 	return sch_direct_xmit(skb, q, dev, txq, root_lock, validate);
+ }
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ void __qdisc_run(struct Qdisc *q)
+ {
+ 	int quota = READ_ONCE(dev_tx_weight);
+@@ -424,6 +431,7 @@ void __qdisc_run(struct Qdisc *q)
+ 		}
+ 	}
+ }
++#endif
+ 
+ unsigned long dev_trans_start(struct net_device *dev)
+ {
+@@ -445,6 +453,7 @@ unsigned long dev_trans_start(struct net_device *dev)
+ }
+ EXPORT_SYMBOL(dev_trans_start);
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ static void dev_watchdog(struct timer_list *t)
+ {
+ 	struct net_device *dev = from_timer(dev, t, watchdog_timer);
+@@ -473,7 +482,9 @@ static void dev_watchdog(struct timer_list *t)
+ 			}
+ 
+ 			if (some_queue_timedout) {
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 				trace_net_dev_xmit_timeout(dev, i);
++#endif
+ 				WARN_ONCE(1, KERN_INFO "NETDEV WATCHDOG: %s (%s): transmit queue %u timed out\n",
+ 				       dev->name, netdev_drivername(dev), i);
+ 				dev->netdev_ops->ndo_tx_timeout(dev, i);
+@@ -526,7 +537,9 @@ void netif_carrier_on(struct net_device *dev)
+ 		if (dev->reg_state == NETREG_UNINITIALIZED)
+ 			return;
+ 		atomic_inc(&dev->carrier_up_count);
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 		linkwatch_fire_event(dev);
++#endif
+ 		if (netif_running(dev))
+ 			__netdev_watchdog_up(dev);
+ 	}
+@@ -545,7 +558,9 @@ void netif_carrier_off(struct net_device *dev)
+ 		if (dev->reg_state == NETREG_UNINITIALIZED)
+ 			return;
+ 		atomic_inc(&dev->carrier_down_count);
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 		linkwatch_fire_event(dev);
++#endif
+ 	}
+ }
+ EXPORT_SYMBOL(netif_carrier_off);
+@@ -564,9 +579,12 @@ void netif_carrier_event(struct net_device *dev)
+ 		return;
+ 	atomic_inc(&dev->carrier_up_count);
+ 	atomic_inc(&dev->carrier_down_count);
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 	linkwatch_fire_event(dev);
++#endif
+ }
+ EXPORT_SYMBOL_GPL(netif_carrier_event);
++#endif
+ 
+ /* "NOOP" scheduler: the best scheduler, recommended for all interfaces
+    under all circumstances. It is difficult to invent anything faster or
+@@ -643,6 +661,7 @@ struct Qdisc_ops noqueue_qdisc_ops __read_mostly = {
+ 	.owner		=	THIS_MODULE,
+ };
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ static const u8 prio2band[TC_PRIO_MAX + 1] = {
+ 	1, 2, 2, 2, 1, 2, 0, 0 , 1, 1, 1, 1, 1, 1, 1, 1
+ };
+@@ -955,7 +974,9 @@ struct Qdisc *qdisc_create_dflt(struct netdev_queue *dev_queue,
+ 	sch->parent = parentid;
+ 
+ 	if (!ops->init || ops->init(sch, NULL, extack) == 0) {
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 		trace_qdisc_create(ops, dev_queue->dev, parentid);
++#endif
+ 		return sch;
+ 	}
+ 
+@@ -971,7 +992,9 @@ void qdisc_reset(struct Qdisc *qdisc)
+ 	const struct Qdisc_ops *ops = qdisc->ops;
+ 	struct sk_buff *skb, *tmp;
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 	trace_qdisc_reset(qdisc);
++#endif
+ 
+ 	if (ops->reset)
+ 		ops->reset(qdisc);
+@@ -1027,7 +1050,9 @@ static void qdisc_destroy(struct Qdisc *qdisc)
+ 	module_put(ops->owner);
+ 	dev_put(qdisc_dev(qdisc));
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 	trace_qdisc_destroy(qdisc);
++#endif
+ 
+ 	call_rcu(&qdisc->rcu, qdisc_free_cb);
+ }
+@@ -1060,6 +1085,7 @@ void qdisc_put_unlocked(struct Qdisc *qdisc)
+ 	rtnl_unlock();
+ }
+ EXPORT_SYMBOL(qdisc_put_unlocked);
++#endif
+ 
+ /* Attach toplevel qdisc to device queue. */
+ struct Qdisc *dev_graft_qdisc(struct netdev_queue *dev_queue,
+@@ -1083,6 +1109,7 @@ struct Qdisc *dev_graft_qdisc(struct netdev_queue *dev_queue,
+ }
+ EXPORT_SYMBOL(dev_graft_qdisc);
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ static void shutdown_scheduler_queue(struct net_device *dev,
+ 				     struct netdev_queue *dev_queue,
+ 				     void *_qdisc_default)
+@@ -1410,6 +1437,7 @@ void dev_shutdown(struct net_device *dev)
+ 
+ 	WARN_ON(timer_pending(&dev->watchdog_timer));
+ }
++#endif
+ 
+ /**
+  * psched_ratecfg_precompute__() - Pre-compute values for reciprocal division
+diff --git a/net/socket.c b/net/socket.c
+index 62696d035445..67c29a864071 100644
+--- a/net/socket.c
++++ b/net/socket.c
+@@ -798,18 +798,22 @@ static bool skb_is_swtx_tstamp(const struct sk_buff *skb, int false_tstamp)
+ static void put_ts_pktinfo(struct msghdr *msg, struct sk_buff *skb)
+ {
+ 	struct scm_ts_pktinfo ts_pktinfo;
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 	struct net_device *orig_dev;
++#endif
+ 
+ 	if (!skb_mac_header_was_set(skb))
+ 		return;
+ 
+ 	memset(&ts_pktinfo, 0, sizeof(ts_pktinfo));
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 	rcu_read_lock();
+ 	orig_dev = dev_get_by_napi_id(skb_napi_id(skb));
+ 	if (orig_dev)
+ 		ts_pktinfo.if_index = orig_dev->ifindex;
+ 	rcu_read_unlock();
++#endif
+ 
+ 	ts_pktinfo.pkt_length = skb->len - skb_mac_offset(skb);
+ 	put_cmsg(msg, SOL_SOCKET, SCM_TIMESTAMPING_PKTINFO,
+@@ -1243,8 +1247,10 @@ static long sock_ioctl(struct file *file, unsigned cmd, unsigned long arg)
+ 			break;
+ 
+ 		case SIOCGIFCONF:
++#ifndef CONFIG_AMLOGIC_ZAPPER_NET_CUT
+ 			err = dev_ifconf(net, argp);
+ 			break;
++#endif
+ 
+ 		default:
+ 			err = sock_do_ioctl(net, sock, cmd, arg);
 diff --git a/security/Kconfig b/security/Kconfig
 index 5d412b3ddc49..1084e8c9fe82 100644
 --- a/security/Kconfig
@@ -1256,5 +2609,5 @@ index 5d412b3ddc49..1084e8c9fe82 100644
  endchoice
  
 -- 
-2.25.1
+2.42.0
 

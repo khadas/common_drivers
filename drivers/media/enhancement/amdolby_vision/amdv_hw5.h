@@ -37,6 +37,7 @@ struct dolby5_top1_type {
 
 	int bit_mode;//0:8bit 1:10bit
 	int fmt_mode;//0:444 1:422 2:420
+	u32 block_mode;
 	dma_addr_t rdmif_baddr[3];
 	int rdmif_stride[3];
 

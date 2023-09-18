@@ -589,29 +589,6 @@ static void tick_entry_hook(void *data, struct rq *rq)
 }
 #endif
 
-#if defined(CONFIG_ARM64) || defined(CONFIG_ARM)
-/* let cpupri_check_rt() directly return 0 */
-static int __kprobes cpupri_check_rt_pre_handler(struct kprobe *p, struct pt_regs *regs)
-{
-#ifdef CONFIG_ARM64
-	regs->regs[0] = 0;
-	instruction_pointer_set(regs, regs->regs[30]);
-#endif
-#ifdef CONFIG_ARM
-	regs->ARM_r0 = 0;
-	instruction_pointer_set(regs, regs->ARM_lr);
-#endif
-
-	//no need continue do single-step
-	return 1;
-}
-
-static struct kprobe kp_cpupri_check_rt = {
-	.symbol_name = "cpupri_check_rt",
-	.pre_handler = cpupri_check_rt_pre_handler,
-};
-#endif
-
 int aml_sched_init(void)
 {
 #if defined(CONFIG_ANDROID_VENDOR_HOOKS) && defined(CONFIG_FAIR_GROUP_SCHED)
@@ -627,11 +604,6 @@ int aml_sched_init(void)
 	register_trace_android_rvh_enqueue_task(enqueue_task_hook, NULL);
 	register_trace_android_rvh_tick_entry(tick_entry_hook, NULL);
 	register_trace_android_vh_sched_show_task(sched_show_task_hook, NULL);
-#endif
-
-#if defined(CONFIG_ARM64) || defined(CONFIG_ARM)
-	if (register_kprobe(&kp_cpupri_check_rt))
-		pr_err("register_kprobe cpupri_check_rt failed\n");
 #endif
 
 	return 0;

@@ -1,0 +1,35 @@
+From 776300dc10a2c2c051f1d7cc5b5d0af961acee1a Mon Sep 17 00:00:00 2001
+From: Jianxiong Pan <jianxiong.pan@amlogic.com>
+Date: Mon, 18 Sep 2023 14:09:41 +0800
+Subject: [PATCH] ANDROID: mm: fix freeing of MIGRATE_ISOLATE page.
+
+While porting [1] from 5.10 kernel there was a bug introduced which
+results in CMA pages ending up in MIGRATE_MOVABLE pcp list. Remove
+the extra line.
+
+[1] https://android-review.googlesource.com/c/kernel/common/+/2059993
+
+Fixes: 98f3cc7ecdf3 ("ANDROID: mm: freeing MIGRATE_ISOLATE page instantly")
+Bug: 299241869
+
+Change-Id: Id1b81141d3acf21dd67c0349e501a3308ffbfe87
+Signed-off-by: Jianxiong Pan <jianxiong.pan@amlogic.com>
+---
+ mm/page_alloc.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index d303fecba84d..8e9e9e0e1597 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -3672,7 +3672,6 @@ void free_unref_page(struct page *page, unsigned int order)
+ 			free_one_page(page_zone(page), page, pfn, order, migratetype, FPI_NONE);
+ 			return;
+ 		}
+-		migratetype = MIGRATE_MOVABLE;
+ 		if (migratetype == MIGRATE_HIGHATOMIC)
+ 			migratetype = MIGRATE_MOVABLE;
+ 	}
+-- 
+2.42.0
+

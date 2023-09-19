@@ -720,6 +720,16 @@ static void vdac_dev_disable(void)
 		return;
 
 	mutex_lock(&vdac_mutex);
+
+	if (s_vdac_data->cpu_id == VDAC_CPU_S1A) {
+		/* sar adc has its own band gap, so
+		 * cvbs band gap can be disabled to
+		 * save power consumption
+		 */
+		vdac_ana_reg_write(s_vdac_data->reg_cntl0, 0);
+		vdac_ana_reg_write(s_vdac_data->reg_cntl1, 0);
+	}
+
 	if ((pri_flag & VDAC_MODULE_MASK) == 0) {
 		mutex_unlock(&vdac_mutex);
 		return;

@@ -67,7 +67,8 @@
 /* 2023/06/05 --- V3.00 --- txhd2 bringup */
 /* 2023/07/04 --- V3.01 --- add afc enable and state IO control. */
 /*                          fix nicam bg output again. */
-#define AMLATVDEMOD_VER "V3.01"
+/* 2023/09/11 --- V3.02 --- Fix afc(+/-2MHz). */
+#define AMLATVDEMOD_VER "V3.02"
 
 struct aml_atvdemod_device *amlatvdemod_devp;
 

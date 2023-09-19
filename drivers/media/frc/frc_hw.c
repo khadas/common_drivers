@@ -2433,9 +2433,9 @@ void frc_cfg_memc_loss(u32 memc_loss_en)
 {
 	u32 memcloss = READ_FRC_REG(FRC_REG_TOP_CTRL11); // 0x0404000c;
 
-	memcloss = READ_FRC_REG(FRC_REG_TOP_CTRL11);
 	if (memc_loss_en > 3)
 		memc_loss_en = 3;
+	memcloss &= 0xFFFFFFFC;
 	memcloss |= memc_loss_en;
 	WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL11, memcloss);
 }

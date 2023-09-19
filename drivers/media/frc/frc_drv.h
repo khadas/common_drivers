@@ -100,8 +100,9 @@
 // frc_20230828 init vlock in bootup
 // frc_20230908 t3x revB configure set_2
 // frc_20230918 t3x revB use pre_vsync from vpu
+// frc_20230921 fix frc security abnormal
 
-#define FRC_FW_VER			"2023-0921 fix frc security abnormal"
+#define FRC_FW_VER			"2023-0920 remove hme buffer in t3x/t5m"
 #define FRC_KERDRV_VER                  2976
 
 #define FRC_DEVNO	1
@@ -155,6 +156,8 @@ extern int frc_dbg_en;
 #define FRC_ME_SD_RATE_HD		2
 #define FRC_ME_SD_RATE_4K		4
 #define FRC_LOGO_SD_RATE		1
+
+/*only t3*/
 #define FRC_HME_SD_RATE			4
 
 #define FRC_HVSIZE_ALIGN_SIZE		16
@@ -298,12 +301,15 @@ struct st_frc_buf {
 	u32 in_align_vsize;
 	u32 me_hsize;
 	u32 me_vsize;
+
+	/*only t3*/
 	u32 hme_hsize;
 	u32 hme_vsize;
-	u32 me_blk_hsize;
-	u32 me_blk_vsize;
 	u32 hme_blk_hsize;
 	u32 hme_blk_vsize;
+
+	u32 me_blk_hsize;
+	u32 me_blk_vsize;
 	u32 logo_hsize;
 	u32 logo_vsize;
 
@@ -359,14 +365,14 @@ struct st_frc_buf {
 	u32 lossy_mcdw_c_link_buf_paddr[FRC_TOTAL_BUF_NUM];
 
 	/*norm buffer*/
-	u32 norm_hme_data_buf_size[FRC_TOTAL_BUF_NUM];
+	u32 norm_hme_data_buf_size[FRC_TOTAL_BUF_NUM];// only t3
 	u32 norm_memv_buf_size[FRC_MEMV_BUF_NUM];
-	u32 norm_hmemv_buf_size[FRC_MEMV2_BUF_NUM];
+	u32 norm_hmemv_buf_size[FRC_MEMV2_BUF_NUM];// only t3
 	u32 norm_mevp_out_buf_size[FRC_MEVP_BUF_NUM];
 
-	u32 norm_hme_data_buf_paddr[FRC_TOTAL_BUF_NUM];
+	u32 norm_hme_data_buf_paddr[FRC_TOTAL_BUF_NUM];// only t3
 	u32 norm_memv_buf_paddr[FRC_MEMV_BUF_NUM];
-	u32 norm_hmemv_buf_paddr[FRC_MEMV2_BUF_NUM];
+	u32 norm_hmemv_buf_paddr[FRC_MEMV2_BUF_NUM];// only t3
 	u32 norm_mevp_out_buf_paddr[FRC_MEVP_BUF_NUM];
 
 	/*logo buffer*/
@@ -546,7 +552,7 @@ struct frc_ud_s {
 	// unsigned blend_ud_err:1;
 	// unsigned me_dwscl_err:1;
 	// unsigned smp_nr_err:1;
-	// unsigned hme_dwscl_err:1;
+	// unsigned hme_dwscl_err:1;only t3
 	unsigned inp_undone_err:6;
 
 	unsigned other6_err:1;

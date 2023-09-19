@@ -135,6 +135,9 @@ void frc_buf_dump_memory_addr_info(struct frc_dev_s *devp)
 {
 	u32 i;
 	ulong base;
+	enum chip_id chip;
+
+	chip = get_chip_type();
 
 	base = devp->buf.cma_mem_paddr_start;
 	/*info buffer*/
@@ -144,19 +147,21 @@ void frc_buf_dump_memory_addr_info(struct frc_dev_s *devp)
 	pr_frc(0, "lossy_mc_c_info_buf_paddr:0x%lx size:0x%x\n",
 		base + devp->buf.lossy_mc_c_info_buf_paddr,
 		devp->buf.lossy_mc_c_info_buf_size);
-	pr_frc(0, "lossy_mc_v_info_buf_paddr:0x%lx size:0x%x\n",
-		base + devp->buf.lossy_mc_v_info_buf_paddr,
-		devp->buf.lossy_mc_v_info_buf_size);
+//	pr_frc(0, "lossy_mc_v_info_buf_paddr:0x%lx size:0x%x\n",
+//		base + devp->buf.lossy_mc_v_info_buf_paddr,
+//		devp->buf.lossy_mc_v_info_buf_size);
 	pr_frc(0, "lossy_me_x_info_buf_paddr:0x%lx size:0x%x\n",
 		base + devp->buf.lossy_me_x_info_buf_paddr,
 		devp->buf.lossy_me_x_info_buf_size);
 	/*t3x mcdw info buffer*/
-	pr_frc(0, "lossy_mcdw_y_info_buf_paddr:0x%lx size:0x%x\n",
-		base + devp->buf.lossy_mcdw_y_info_buf_paddr,
-		devp->buf.lossy_mcdw_y_info_buf_size);
-	pr_frc(0, "lossy_mcdw_c_info_buf_paddr:0x%lx size:0x%x\n",
-		base + devp->buf.lossy_mcdw_c_info_buf_paddr,
-		devp->buf.lossy_mcdw_c_info_buf_size);
+	if (chip == ID_T3X) {
+		pr_frc(0, "lossy_mcdw_y_info_buf_paddr:0x%lx size:0x%x\n",
+			base + devp->buf.lossy_mcdw_y_info_buf_paddr,
+			devp->buf.lossy_mcdw_y_info_buf_size);
+		pr_frc(0, "lossy_mcdw_c_info_buf_paddr:0x%lx size:0x%x\n",
+			base + devp->buf.lossy_mcdw_c_info_buf_paddr,
+			devp->buf.lossy_mcdw_c_info_buf_size);
+	}
 
 	/*lossy data buffer*/
 	for (i = 0; i < FRC_TOTAL_BUF_NUM; i++)
@@ -169,10 +174,10 @@ void frc_buf_dump_memory_addr_info(struct frc_dev_s *devp)
 		       base + devp->buf.lossy_mc_c_data_buf_paddr[i],
 		       devp->buf.lossy_mc_c_data_buf_size[i]);
 
-	for (i = 0; i < FRC_TOTAL_BUF_NUM; i++)
-		pr_frc(0, "lossy_mc_v_data_buf_paddr[%d]:0x%lx size:0x%x\n", i,
-		       base + devp->buf.lossy_mc_v_data_buf_paddr[i],
-		       devp->buf.lossy_mc_v_data_buf_size[i]);
+//	for (i = 0; i < FRC_TOTAL_BUF_NUM; i++)
+//		pr_frc(0, "lossy_mc_v_data_buf_paddr[%d]:0x%lx size:0x%x\n", i,
+//		       base + devp->buf.lossy_mc_v_data_buf_paddr[i],
+//		       devp->buf.lossy_mc_v_data_buf_size[i]);
 
 	for (i = 0; i < FRC_TOTAL_BUF_NUM; i++)
 		pr_frc(0, "lossy_me_data_buf_paddr[%d]:0x%lx size:0x%x\n", i,
@@ -180,15 +185,17 @@ void frc_buf_dump_memory_addr_info(struct frc_dev_s *devp)
 		       devp->buf.lossy_me_data_buf_size[i]);
 
 	/*lossy mcdw data buffer*/
-	for (i = 0; i < FRC_TOTAL_BUF_NUM; i++)
-		pr_frc(0, "lossy_mcdw_y_data_buf_paddr[%d]:0x%lx size:0x%x\n", i,
-		       base + devp->buf.lossy_mcdw_y_data_buf_paddr[i],
-		       devp->buf.lossy_mcdw_y_data_buf_size[i]);
+	if (chip == ID_T3X) {
+		for (i = 0; i < FRC_TOTAL_BUF_NUM; i++)
+			pr_frc(0, "lossy_mcdw_y_data_buf_paddr[%d]:0x%lx size:0x%x\n", i,
+				base + devp->buf.lossy_mcdw_y_data_buf_paddr[i],
+				devp->buf.lossy_mcdw_y_data_buf_size[i]);
 
-	for (i = 0; i < FRC_TOTAL_BUF_NUM; i++)
-		pr_frc(0, "lossy_mcdw_c_data_buf_paddr[%d]:0x%lx size:0x%x\n", i,
-		       base + devp->buf.lossy_mcdw_c_data_buf_paddr[i],
-		       devp->buf.lossy_mcdw_c_data_buf_size[i]);
+		for (i = 0; i < FRC_TOTAL_BUF_NUM; i++)
+			pr_frc(0, "lossy_mcdw_c_data_buf_paddr[%d]:0x%lx size:0x%x\n", i,
+				base + devp->buf.lossy_mcdw_c_data_buf_paddr[i],
+				devp->buf.lossy_mcdw_c_data_buf_size[i]);
+	}
 
 	/*link buffer*/
 	for (i = 0; i < FRC_TOTAL_BUF_NUM; i++)
@@ -201,41 +208,47 @@ void frc_buf_dump_memory_addr_info(struct frc_dev_s *devp)
 		       base + devp->buf.lossy_mc_c_link_buf_paddr[i],
 		       devp->buf.lossy_mc_c_link_buf_size[i]);
 
-	for (i = 0; i < FRC_TOTAL_BUF_NUM; i++)
-		pr_frc(0, "lossy_mc_v_link_buf_paddr[%d]:0x%lx size:0x%x\n", i,
-		       base + devp->buf.lossy_mc_v_link_buf_paddr[i],
-		       devp->buf.lossy_mc_v_link_buf_size[i]);
+//	for (i = 0; i < FRC_TOTAL_BUF_NUM; i++)
+//		pr_frc(0, "lossy_mc_v_link_buf_paddr[%d]:0x%lx size:0x%x\n", i,
+//		       base + devp->buf.lossy_mc_v_link_buf_paddr[i],
+//		       devp->buf.lossy_mc_v_link_buf_size[i]);
 
 	for (i = 0; i < FRC_TOTAL_BUF_NUM; i++)
 		pr_frc(0, "lossy_me_link_buf_paddr[%d]:0x%lx size:0x%x\n", i,
 		       base + devp->buf.lossy_me_link_buf_paddr[i],
 		       devp->buf.lossy_me_link_buf_size[i]);
 	/*t3x mcdw link buffer*/
-	for (i = 0; i < FRC_TOTAL_BUF_NUM; i++)
-		pr_frc(0, "lossy_mcdw_y_link_buf_paddr[%d]:0x%lx size:0x%x\n", i,
-		       base + devp->buf.lossy_mcdw_y_link_buf_paddr[i],
-		       devp->buf.lossy_mcdw_y_link_buf_size[i]);
+	if (chip == ID_T3X) {
+		for (i = 0; i < FRC_TOTAL_BUF_NUM; i++)
+			pr_frc(0, "lossy_mcdw_y_link_buf_paddr[%d]:0x%lx size:0x%x\n", i,
+				base + devp->buf.lossy_mcdw_y_link_buf_paddr[i],
+				devp->buf.lossy_mcdw_y_link_buf_size[i]);
 
-	for (i = 0; i < FRC_TOTAL_BUF_NUM; i++)
-		pr_frc(0, "lossy_mcdw_c_link_buf_paddr[%d]:0x%lx size:0x%x\n", i,
-		       base + devp->buf.lossy_mcdw_c_link_buf_paddr[i],
-		       devp->buf.lossy_mcdw_c_link_buf_size[i]);
+		for (i = 0; i < FRC_TOTAL_BUF_NUM; i++)
+			pr_frc(0, "lossy_mcdw_c_link_buf_paddr[%d]:0x%lx size:0x%x\n", i,
+				base + devp->buf.lossy_mcdw_c_link_buf_paddr[i],
+				devp->buf.lossy_mcdw_c_link_buf_size[i]);
+	}
 
 	/*norm buffer*/
-	for (i = 0; i < FRC_TOTAL_BUF_NUM; i++)
-		pr_frc(0, "norm_hme_data_buf_paddr[%d]:0x%lx size:0x%x\n", i,
-		       base + devp->buf.norm_hme_data_buf_paddr[i],
-		       devp->buf.norm_hme_data_buf_size[i]);
+	if (chip == ID_T3) {
+		for (i = 0; i < FRC_TOTAL_BUF_NUM; i++)
+			pr_frc(0, "norm_hme_data_buf_paddr[%d]:0x%lx size:0x%x\n", i,
+				base + devp->buf.norm_hme_data_buf_paddr[i],
+				devp->buf.norm_hme_data_buf_size[i]);
+	}
 
 	for (i = 0; i < FRC_MEMV_BUF_NUM; i++)
 		pr_frc(0, "norm_memv_buf_paddr[%d]:0x%lx size:0x%x\n", i,
 		       base + devp->buf.norm_memv_buf_paddr[i],
 		       devp->buf.norm_memv_buf_size[i]);
 
-	for (i = 0; i < FRC_MEMV2_BUF_NUM; i++)
-		pr_frc(0, "norm_hmemv_buf_paddr[%d]:0x%lx size:0x%x\n", i,
-		       base + devp->buf.norm_hmemv_buf_paddr[i],
-		       devp->buf.norm_hmemv_buf_size[i]);
+	if (chip == ID_T3) {
+		for (i = 0; i < FRC_MEMV2_BUF_NUM; i++)
+			pr_frc(0, "norm_hmemv_buf_paddr[%d]:0x%lx size:0x%x\n", i,
+				base + devp->buf.norm_hmemv_buf_paddr[i],
+				devp->buf.norm_hmemv_buf_size[i]);
+	}
 
 	for (i = 0; i < FRC_MEVP_BUF_NUM; i++)
 		pr_frc(0, "norm_mevp_out_buf_paddr[%d]:0x%lx size:0x%x\n", i,
@@ -266,6 +279,9 @@ void frc_buf_dump_memory_addr_info(struct frc_dev_s *devp)
 void frc_buf_dump_memory_size_info(struct frc_dev_s *devp)
 {
 	u32 log = 0;
+	enum chip_id chip;
+
+	chip = get_chip_type();
 
 	pr_frc(log, "in hv (%d, %d) align (%d, %d)",
 	       devp->buf.in_hsize, devp->buf.in_vsize,
@@ -287,9 +303,11 @@ void frc_buf_dump_memory_size_info(struct frc_dev_s *devp)
 	       devp->buf.lossy_me_x_info_buf_size, LOSSY_MC_INFO_LINE_SIZE,
 	       devp->buf.lossy_me_x_info_buf_size * 1);
 	/*mcdw info buffer*/
-	pr_frc(log, "lossy_mcdw_info_buf_size=%d, line buf:%d all:%d\n",
-	       devp->buf.lossy_mcdw_y_info_buf_size, LOSSY_MC_INFO_LINE_SIZE,
-	       devp->buf.lossy_mcdw_y_info_buf_size * 2);
+	if (chip == ID_T3X) {
+		pr_frc(log, "lossy_mcdw_info_buf_size=%d, line buf:%d all:%d\n",
+			devp->buf.lossy_mcdw_y_info_buf_size, LOSSY_MC_INFO_LINE_SIZE,
+			devp->buf.lossy_mcdw_y_info_buf_size * 2);
+	}
 
 	/*lossy mc data buffer*/
 	pr_frc(log, "lossy_mc_y_data_buf_size=%d, all:%d\n",
@@ -305,12 +323,14 @@ void frc_buf_dump_memory_size_info(struct frc_dev_s *devp)
 	       devp->buf.lossy_me_data_buf_size[0] * FRC_TOTAL_BUF_NUM);
 
 	/*lossy mcdw data buffer*/
-	pr_frc(log, "lossy_mcdw_y_data_buf_size=%d, all:%d\n",
-	       devp->buf.lossy_mcdw_y_data_buf_size[0],
-	       devp->buf.lossy_mcdw_y_data_buf_size[0] * FRC_TOTAL_BUF_NUM);
-	pr_frc(log, "lossy_mcdw_c_data_buf_size=%d, all:%d\n",
-	       devp->buf.lossy_mcdw_c_data_buf_size[0],
-	       devp->buf.lossy_mcdw_c_data_buf_size[0] * FRC_TOTAL_BUF_NUM);
+	if (chip == ID_T3X) {
+		pr_frc(log, "lossy_mcdw_y_data_buf_size=%d, all:%d\n",
+			devp->buf.lossy_mcdw_y_data_buf_size[0],
+			devp->buf.lossy_mcdw_y_data_buf_size[0] * FRC_TOTAL_BUF_NUM);
+		pr_frc(log, "lossy_mcdw_c_data_buf_size=%d, all:%d\n",
+			devp->buf.lossy_mcdw_c_data_buf_size[0],
+			devp->buf.lossy_mcdw_c_data_buf_size[0] * FRC_TOTAL_BUF_NUM);
+	}
 
 	/*mc link buffer*/
 	pr_frc(log, "lossy_mc_link_buf_size=%d, all:%d\n",
@@ -323,14 +343,18 @@ void frc_buf_dump_memory_size_info(struct frc_dev_s *devp)
 	       devp->buf.lossy_me_link_buf_size[0] * FRC_TOTAL_BUF_NUM);
 
 	/*mcdw link buffer*/
-	pr_frc(log, "lossy_mcdw_link_buf_size=%d, all:%d\n",
-	       devp->buf.lossy_mcdw_y_link_buf_size[0],
-	       devp->buf.lossy_mcdw_y_link_buf_size[0] * FRC_TOTAL_BUF_NUM * 2);
+	if (chip == ID_T3X) {
+		pr_frc(log, "lossy_mcdw_link_buf_size=%d, all:%d\n",
+			devp->buf.lossy_mcdw_y_link_buf_size[0],
+			devp->buf.lossy_mcdw_y_link_buf_size[0] * FRC_TOTAL_BUF_NUM * 2);
+	}
 
 	/*norm hme data buffer*/
-	pr_frc(log, "norm_hme_data_buffer=%d , all:%d\n",
-	       devp->buf.norm_hme_data_buf_size[0],
-	       devp->buf.norm_hme_data_buf_size[0] * FRC_TOTAL_BUF_NUM);
+	if (chip == ID_T3) {
+		pr_frc(log, "norm_hme_data_buffer=%d , all:%d\n",
+			devp->buf.norm_hme_data_buf_size[0],
+			devp->buf.norm_hme_data_buf_size[0] * FRC_TOTAL_BUF_NUM);
+	}
 
 	/*norm memv buffer*/
 	pr_frc(log, "norm_memv_buf_size=%d , all:%d\n",
@@ -338,9 +362,11 @@ void frc_buf_dump_memory_size_info(struct frc_dev_s *devp)
 	       devp->buf.norm_memv_buf_size[0] * FRC_MEMV_BUF_NUM);
 
 	/*norm hmemv buffer*/
-	pr_frc(log, "norm_hmemv_buf_size=%d , all:%d\n",
-	       devp->buf.norm_hmemv_buf_size[0],
-	       devp->buf.norm_hmemv_buf_size[0] * FRC_MEMV2_BUF_NUM);
+	if (chip == ID_T3) {
+		pr_frc(log, "norm_hmemv_buf_size=%d , all:%d\n",
+			devp->buf.norm_hmemv_buf_size[0],
+			devp->buf.norm_hmemv_buf_size[0] * FRC_MEMV2_BUF_NUM);
+	}
 
 	/*norm mevp buffer*/
 	pr_frc(log, "norm_mevp_out_buf_size=%d , all:%d\n",
@@ -922,15 +948,22 @@ int frc_buf_calculate(struct frc_dev_s *devp)
 		}
 	}
 
-	/*norm hme data buffer*/
-	temp = (devp->buf.hme_hsize * FRC_ME_BITS_NUM + 511) / 8;
-	for (i = 0; i < FRC_TOTAL_BUF_NUM; i++) {
-		devp->buf.norm_hme_data_buf_size[i] = temp * devp->buf.hme_vsize;
-		devp->buf.total_size += devp->buf.norm_hme_data_buf_size[i];
+	/*t3 norm hme data buffer*/
+	if (chip == ID_T3) {
+		temp = (devp->buf.hme_hsize * FRC_ME_BITS_NUM + 511) / 8;
+		for (i = 0; i < FRC_TOTAL_BUF_NUM; i++) {
+			devp->buf.norm_hme_data_buf_size[i] = temp * devp->buf.hme_vsize;
+			devp->buf.total_size += devp->buf.norm_hme_data_buf_size[i];
+		}
+		pr_frc(log, "norm_hme_data_buffer=%d ,line buf:%d all:%d\n",
+			devp->buf.norm_hme_data_buf_size[0], temp,
+			devp->buf.norm_hme_data_buf_size[0] * FRC_TOTAL_BUF_NUM);
+	} else { // t3x t5m
+		for (i = 0; i < FRC_TOTAL_BUF_NUM; i++) {
+			devp->buf.norm_hme_data_buf_size[i] = 0;
+			devp->buf.total_size += devp->buf.norm_hme_data_buf_size[i];
+		}
 	}
-	pr_frc(log, "norm_hme_data_buffer=%d ,line buf:%d all:%d\n",
-	       devp->buf.norm_hme_data_buf_size[0], temp,
-	       devp->buf.norm_hme_data_buf_size[0] * FRC_TOTAL_BUF_NUM);
 
 	/*norm memv buffer*/
 	temp = (devp->buf.me_blk_hsize * 64 + 511) / 8;
@@ -942,15 +975,22 @@ int frc_buf_calculate(struct frc_dev_s *devp)
 	       devp->buf.norm_memv_buf_size[0], temp,
 	       devp->buf.norm_memv_buf_size[0] * FRC_MEMV_BUF_NUM);
 
-	/*norm hmemv buffer*/
-	temp = (devp->buf.hme_blk_hsize * 64 + 511) / 8;
-	for (i = 0; i < FRC_MEMV2_BUF_NUM; i++) {
-		devp->buf.norm_hmemv_buf_size[i] = temp * devp->buf.hme_blk_vsize;
-		devp->buf.total_size += devp->buf.norm_hmemv_buf_size[i];
+	/*t3 norm hmemv buffer*/
+	if (chip == ID_T3) {
+		temp = (devp->buf.hme_blk_hsize * 64 + 511) / 8;
+		for (i = 0; i < FRC_MEMV2_BUF_NUM; i++) {
+			devp->buf.norm_hmemv_buf_size[i] = temp * devp->buf.hme_blk_vsize;
+			devp->buf.total_size += devp->buf.norm_hmemv_buf_size[i];
+		}
+		pr_frc(log, "norm_hmemv_buf_size=%d ,line buf:%d all:%d\n",
+			devp->buf.norm_hmemv_buf_size[0], temp,
+			devp->buf.norm_hmemv_buf_size[0] * FRC_MEMV2_BUF_NUM);
+	} else { // t3x t5m
+		for (i = 0; i < FRC_MEMV2_BUF_NUM; i++) {
+			devp->buf.norm_hmemv_buf_size[i] = 0;
+			devp->buf.total_size += devp->buf.norm_hmemv_buf_size[i];
+		}
 	}
-	pr_frc(log, "norm_hmemv_buf_size=%d ,line buf:%d all:%d\n",
-	       devp->buf.norm_hmemv_buf_size[0], temp,
-	       devp->buf.norm_hmemv_buf_size[0] * FRC_MEMV2_BUF_NUM);
 
 	/*norm mevp buffer*/
 	temp = (devp->buf.me_blk_hsize * 64 + 511) / 8;
@@ -1133,11 +1173,15 @@ int frc_buf_distribute(struct frc_dev_s *devp)
 
 	/*norm buffer*/
 	paddr = roundup(paddr, ALIGN_4K * 16);/*secure size need 64K align*/
-	real_onebuf_size = roundup(devp->buf.norm_hme_data_buf_size[0], ALIGN_4K);
-	for (i = 0; i < FRC_TOTAL_BUF_NUM; i++) {
-		devp->buf.norm_hme_data_buf_paddr[i] = paddr;
-		pr_frc(log, "norm_hme_data_buf_paddr[%d]:0x%lx\n", i, paddr);
-		paddr += real_onebuf_size;
+
+	/*t3 hme buffer*/
+	if (chip == ID_T3) {
+		real_onebuf_size = roundup(devp->buf.norm_hme_data_buf_size[0], ALIGN_4K);
+		for (i = 0; i < FRC_TOTAL_BUF_NUM; i++) {
+			devp->buf.norm_hme_data_buf_paddr[i] = paddr;
+			pr_frc(log, "norm_hme_data_buf_paddr[%d]:0x%lx\n", i, paddr);
+			paddr += real_onebuf_size;
+		}
 	}
 
 	real_onebuf_size = roundup(devp->buf.norm_memv_buf_size[0], ALIGN_4K);
@@ -1147,11 +1191,14 @@ int frc_buf_distribute(struct frc_dev_s *devp)
 		paddr += real_onebuf_size;
 	}
 
-	real_onebuf_size = roundup(devp->buf.norm_hmemv_buf_size[0], ALIGN_4K);
-	for (i = 0; i < FRC_MEMV2_BUF_NUM; i++) {
-		devp->buf.norm_hmemv_buf_paddr[i] = paddr;
-		pr_frc(log, "norm_hmemv_buf_paddr[%d]:0x%lx\n", i, paddr);
-		paddr += real_onebuf_size;
+	/*t3 hmemv buffer*/
+	if (chip == ID_T3) {
+		real_onebuf_size = roundup(devp->buf.norm_hmemv_buf_size[0], ALIGN_4K);
+		for (i = 0; i < FRC_MEMV2_BUF_NUM; i++) {
+			devp->buf.norm_hmemv_buf_paddr[i] = paddr;
+			pr_frc(log, "norm_hmemv_buf_paddr[%d]:0x%lx\n", i, paddr);
+			paddr += real_onebuf_size;
+		}
 	}
 
 	real_onebuf_size = roundup(devp->buf.norm_mevp_out_buf_size[0], ALIGN_4K);
@@ -1195,8 +1242,15 @@ int frc_buf_distribute(struct frc_dev_s *devp)
 	paddr = roundup(paddr, ALIGN_4K * 16);
 
 	devp->buf.real_total_size = paddr;
-	devp->buf.link_tab_size = devp->buf.norm_hme_data_buf_paddr[0] -
+
+	if (chip == ID_T3) {
+		devp->buf.link_tab_size = devp->buf.norm_hme_data_buf_paddr[0] -
 				devp->buf.lossy_mc_y_link_buf_paddr[0];
+	} else {
+		devp->buf.link_tab_size = devp->buf.norm_memv_buf_paddr[0] -
+				devp->buf.lossy_mc_y_link_buf_paddr[0];
+	}
+
 	/*data  secure buffer */
 	devp->buf.secure_start = devp->buf.cma_mem_paddr_start +
 					devp->buf.lossy_mc_y_data_buf_paddr[0];
@@ -1250,14 +1304,16 @@ int frc_buf_mapping_tab_init(struct frc_dev_s *devp)
 	link_tab_all_size = devp->buf.link_tab_size;
 	pr_frc(log, "paddr start:0x%lx, link start=0x%lx - 0x%lx, size:0x%x\n",
 	       (ulong)devp->buf.cma_mem_paddr_start, (ulong)devp->buf.lossy_mc_y_link_buf_paddr[0],
-	       (ulong)devp->buf.norm_hme_data_buf_paddr[0], link_tab_all_size);
+	       (ulong)(chip <= ID_T3 ? devp->buf.norm_hme_data_buf_paddr[0] :
+	       devp->buf.norm_memv_buf_paddr[0]), link_tab_all_size);
 
 	if (link_tab_all_size <= 0) {
 		pr_frc(0, "link buf err\n");
 		return -1;
 	}
 	vmap_offset_start = devp->buf.lossy_mc_y_link_buf_paddr[0];
-	vmap_offset_end = devp->buf.norm_hme_data_buf_paddr[0];
+	vmap_offset_end = chip <= ID_T3 ? devp->buf.norm_hme_data_buf_paddr[0] :
+						devp->buf.norm_memv_buf_paddr[0];
 	cma_vaddr = frc_buf_vmap(cma_paddr, vmap_offset_end);
 	pr_frc(0, "map: paddr=0x%lx, vaddr=0x%lx, link tab size=0x%x (%d)\n",
 		(ulong)cma_paddr, (ulong)cma_vaddr, link_tab_all_size, link_tab_all_size);
@@ -1475,18 +1531,22 @@ int frc_buf_config(struct frc_dev_s *devp)
 			WRITE_FRC_REG_BY_CPU(i, (base +
 		devp->buf.lossy_mcdw_c_link_buf_paddr[i - FRC_REG_MCDW_CBUF_ADDRX_0]) >> shft_bits);
 	}
-	/*norm hme data buffer*/
-	for (i = FRC_REG_HME_BUF_ADDRX_0; i <= FRC_REG_HME_BUF_ADDRX_15; i++)
-		WRITE_FRC_REG_BY_CPU(i,
-	(base + devp->buf.norm_hme_data_buf_paddr[i - FRC_REG_HME_BUF_ADDRX_0]) >> shft_bits);
+	/*t3 norm hme data buffer*/
+	if (chip == ID_T3) {
+		for (i = FRC_REG_HME_BUF_ADDRX_0; i <= FRC_REG_HME_BUF_ADDRX_15; i++)
+			WRITE_FRC_REG_BY_CPU(i, (base +
+		devp->buf.norm_hme_data_buf_paddr[i - FRC_REG_HME_BUF_ADDRX_0]) >> shft_bits);
+	}
 	/*norm memv buffer*/
 	for (i = FRC_REG_ME_NC_UNI_MV_ADDRX_0; i <= FRC_REG_ME_PC_PHS_MV_ADDR; i++)
 		WRITE_FRC_REG_BY_CPU(i,
 	(base + devp->buf.norm_memv_buf_paddr[i - FRC_REG_ME_NC_UNI_MV_ADDRX_0]) >> shft_bits);
-	/*norm hmemv buffer*/
-	for (i = FRC_REG_HME_NC_UNI_MV_ADDRX_0; i <= FRC_REG_VP_PF_UNI_MV_ADDR; i++)
-		WRITE_FRC_REG_BY_CPU(i,
-	(base + devp->buf.norm_hmemv_buf_paddr[i - FRC_REG_HME_NC_UNI_MV_ADDRX_0]) >> shft_bits);
+	/*t3 norm hmemv buffer*/
+	if (chip == ID_T3) {
+		for (i = FRC_REG_HME_NC_UNI_MV_ADDRX_0; i <= FRC_REG_VP_PF_UNI_MV_ADDR; i++)
+			WRITE_FRC_REG_BY_CPU(i, (base +
+		devp->buf.norm_hmemv_buf_paddr[i - FRC_REG_HME_NC_UNI_MV_ADDRX_0]) >> shft_bits);
+	}
 
 	/*norm mevp buffer*/
 	for (i = FRC_REG_VP_MC_MV_ADDRX_0; i <= FRC_REG_VP_MC_MV_ADDRX_1; i++)

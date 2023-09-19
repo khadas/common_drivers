@@ -658,12 +658,6 @@ static void vpp_vd1_hwin_set(u32 vpp_index,
 	struct vpp_post_misc_reg_s *vpp_reg = &vpp_post_reg.vpp_post_misc_reg;
 	u32 vd1_win_in_hsize = 0, vd1_slice_num = 0;
 
-	/* t3x vpp_in_padding_support skip this */
-	if (cur_dev->vpp_in_padding_support && vpp_post->vpp_pad_cut.h_cut_en) {
-		pr_err("%s: hwin used padding cut, skip\n",
-			__func__);
-		return;
-	}
 	if (vpp_post->vd1_hwin.vd1_hwin_en) {
 		vd1_slice_num = vpp_post->vd1_hwin.slice_num;
 		vd1_win_in_hsize = (vpp_post->vd1_hwin.vd1_hwin_in_hsize +
@@ -887,6 +881,11 @@ static int vpp_post_hwincut_param_set(struct vpp_post_input_s *vpp_input,
 		vpp_post->vd1_hwin.vd1_win_vsize = vpp_input->din_vsize[0];
 		vpp_post->vd1_hwin.slice_num = vpp_input->vd1_proc_slice;
 		vpp_input->din_hsize[0] = vpp_post->vd1_hwin.vd1_hwin_out_hsize;
+		if (debug_flag_s5 & DEBUG_VPP_POST)
+			pr_info("%s:vd1 cut for padding:vd1_hwin_in_hsize:%d, out_hsize:%d\n",
+				__func__,
+				vpp_post->vd1_hwin.vd1_hwin_in_hsize,
+				vpp_post->vd1_hwin.vd1_hwin_out_hsize);
 	} else {
 		vpp_post->vd1_hwin.vd1_hwin_en = 0;
 	}
@@ -1471,7 +1470,10 @@ int update_vpp_input_info(const struct vinfo_s *info)
 			vpp_input.din_y_start[0] = vd_proc_vd1_info->vd1_dout_y_start[0];
 		}
 	} else if (vd_proc_vd1_info->vd1_slices_dout_dpsel == VD1_SLICES_DOUT_2S4P) {
-		vpp_input.din_hsize[0] = SIZE_ALIG32(vd_proc_vd1_info->vd1_dout_hsize[0]);
+		if (video_is_meson_s5_cpu())
+			vpp_input.din_hsize[0] = SIZE_ALIG32(vd_proc_vd1_info->vd1_dout_hsize[0]);
+		else
+			vpp_input.din_hsize[0] = vd_proc_vd1_info->vd1_dout_hsize[0];
 		vpp_input.din_vsize[0] = vd_proc_vd1_info->vd1_dout_vsize[0];
 		vpp_input.din_x_start[0] = vd_proc_vd1_info->vd1_dout_x_start[0];
 		vpp_input.din_y_start[0] = vd_proc_vd1_info->vd1_dout_y_start[0];
@@ -1527,22 +1529,24 @@ int update_vpp_input_info(const struct vinfo_s *info)
 
 	if (vd_proc_vd1_info->vd1_slices_dout_dpsel == VD1_SLICES_DOUT_4S4P ||
 		vd_proc_vd1_info->vd1_slices_dout_dpsel == VD1_SLICES_DOUT_2S4P) {
-		vpp_input.vd1_padding_en = 1;
+		vpp_input.vd1_padding_en = 0;
 
 		if (vd_proc_vd1_info->vd1_work_mode == VD1_2_2SLICES_MODE)
 			vpp_input.vd1_size_before_padding = vd_proc_vd1_info->vd1_whole_hsize;
 		else
 			vpp_input.vd1_size_before_padding = vd_proc_vd1_info->vd1_dout_hsize[0];
-		vpp_input.vd1_size_after_padding = vpp_input.din_hsize[0];
+		if (video_is_meson_s5_cpu())
+			vpp_input.vd1_size_after_padding = vpp_input.din_hsize[0];
+		else
+			vpp_input.vd1_size_after_padding =
+				SIZE_ALIG32(vpp_input.din_hsize[0]);
+		if (vpp_input.vd1_size_before_padding !=
+			vpp_input.vd1_size_after_padding)
+			vpp_input.vd1_padding_en = 1;
 		if (vd_proc_vd1_info->vd1_slices_dout_dpsel == VD1_SLICES_DOUT_4S4P)
 			vpp_input.vd1_proc_slice = 4;
 		else if (vd_proc_vd1_info->vd1_slices_dout_dpsel == VD1_SLICES_DOUT_2S4P) {
 			vpp_input.vd1_proc_slice = 2;
-			/* 2 slice most case not need padding */
-			if (vpp_input.vd1_size_before_padding !=
-				vpp_input.vd1_size_after_padding)
-				vpp_input.vd1_padding_en = 0;
-			/* todo for t3x designed for oled */
 		}
 	} else {
 		vpp_input.vd1_padding_en = 0;

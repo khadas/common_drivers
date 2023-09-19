@@ -1225,7 +1225,7 @@ void vdin_set_matrix_t3x(struct vdin_dev_s *devp)
 			matrix_sel = devp->debug.dbg_sel_mat & 0xf;
 		else
 			matrix_sel = VDIN_SEL_MATRIX0;/*VDIN_SEL_MATRIX_HDR*/
-		pr_info("%s %d:%p,conv:%d,port:%d,fmt_range:%d,color_range:%d\n",
+		pr_info("%s %d:%p,conv:%d,port:%#x,fmt_range:%d,color_range:%d\n",
 			__func__, __LINE__,
 			devp->fmt_info_p, devp->format_convert,
 			devp->parm.port, devp->prop.color_fmt_range,

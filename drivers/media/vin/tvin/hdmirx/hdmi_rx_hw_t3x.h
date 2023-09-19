@@ -169,7 +169,7 @@ void dump_reg_phy_t3x(u8 port);
 void dump_aml_phy_sts_t3x(u8 port);
 void aml_phy_short_bist_t3x(u8 port);
 bool aml_get_tmds_valid_t3x(u8 port);
-void aml_phy_power_off_t3x(void);
+void aml_phy_power_off_t3x(u8 port);
 void aml_phy_switch_port_t3x(u8 port);
 void aml_phy_iq_skew_monitor_t3x(void);
 void get_val_t3x(char *temp, unsigned int val, int len);
@@ -214,6 +214,10 @@ bool s_tmds_transmission_detected(u8 port);
 bool hdmirx_flt_update_cleared_wait(u32 addr, u8 port);
 void hdmirx_vga_gain_tuning(u8 port);
 void rx_set_term_value_t3x(unsigned char port, bool value);
+void aml_phy_power_off_t3x_port0(void);
+void aml_phy_power_off_t3x_port1(void);
+void aml_phy_power_off_t3x_port2(void);
+void aml_phy_power_off_t3x_port3(void);
 
 //void reset_pcs(void);
 

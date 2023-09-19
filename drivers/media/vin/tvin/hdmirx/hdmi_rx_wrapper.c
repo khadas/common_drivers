@@ -4712,6 +4712,20 @@ void rx_5v_monitor(void)
 	else
 		tmp_5v = rx_get_hdmi5v_sts();
 
+	if (rx_info.chip_id == CHIP_ID_T3X) {
+		if (tmp_5v == 0 && pwr_sts == 0) {
+			aml_phy_power_off_t3x(E_PORT0);
+			aml_phy_power_off_t3x(E_PORT1);
+			aml_phy_power_off_t3x(E_PORT2);
+			aml_phy_power_off_t3x(E_PORT3);
+		}
+		for (i = 0; i < rx_info.port_num; i++) {
+			rx[i].cur_5v_sts = (tmp_5v >> i) & 1;
+			if (rx[i].cur_5v_sts == 0)
+				aml_phy_power_off_t3x(i);
+		}
+	}
+
 	if (tmp_5v != pwr_sts)
 		check_cnt++;
 
@@ -4727,8 +4741,15 @@ void rx_5v_monitor(void)
 		for (i = 0; i < rx_info.port_num; i++) {
 			if (rx[i].cur_5v_sts != ((pwr_sts >> i) & 1)) {
 				rx[i].cur_5v_sts = (pwr_sts >> i) & 1;
-				if (rx[i].cur_5v_sts == 0)
+				if (rx_info.chip_id == CHIP_ID_T3X) {
 					set_fsm_state(FSM_5V_LOST, i);
+					rx_set_cur_hpd(0, 5, i);
+					if (rx[i].cur_5v_sts == 0)
+						aml_phy_power_off_t3x(i);
+				} else {
+					if (rx[i].cur_5v_sts == 0)
+						set_fsm_state(FSM_5V_LOST, i);
+				}
 				if (hdmirx_repeat_support()) {
 					rx[i].hdcp.stream_type = 0;
 					hdmitx_reauth_request(UPSTREAM_INACTIVE);

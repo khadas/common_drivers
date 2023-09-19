@@ -3692,6 +3692,51 @@ void aml_phy_iq_skew_monitor_t3x(void)
 {
 }
 
+void rx_set_term_value_t3x_20(unsigned char port, bool value)
+{
+	u32 data32;
+
+	data32 = hdmirx_rd_amlphy_t3x(T3X_HDMIRX20PHY_DCHA_MISC2, port);
+	if (value) {
+		data32 |= (1 << (28 + port));
+	} else {
+		/* rst cdr to clr tmds_valid */
+		//data32 &= ~(MSK(3, 7));
+		data32 &= ~(1 << (28 + port));
+	}
+	hdmirx_wr_amlphy_t3x(T3X_HDMIRX20PHY_DCHA_MISC2, data32, port);
+}
+
+void rx_set_term_value_t3x_21(unsigned char port, bool value)
+{
+	u32 data32;
+
+	if (value) {
+		hdmirx_wr_amlphy_t3x(T3X_HDMIRX21PHY_MISC0, 0x01bcfff0, port);
+		data32 = hdmirx_rd_amlphy_t3x(T3X_HDMIRX21PHY_MISC0, port);
+		data32 |= (1 << (22 + port));
+	} else {
+		/* rst cdr to clr tmds_valid */
+		//data32 &= ~(MSK(3, 7));
+		data32 = 0;
+	}
+	hdmirx_wr_amlphy_t3x(T3X_HDMIRX21PHY_MISC0, data32, port);
+}
+
+void rx_set_term_value_t3x(unsigned char port, bool value)
+{
+	if (port <= E_PORT1) {
+		rx_set_term_value_t3x_20(port, value);
+	} else if (port <= E_PORT3) {
+		rx_set_term_value_t3x_21(port, value);
+	} else {
+		rx_set_term_value_t3x_20(E_PORT0, value);
+		rx_set_term_value_t3x_20(E_PORT1, value);
+		rx_set_term_value_t3x_21(E_PORT2, value);
+		rx_set_term_value_t3x_21(E_PORT3, value);
+	}
+}
+
 void aml_phy_power_off_t3x_port0(void)
 {
 	hdmirx_wr_amlphy_t3x(T3X_HDMIRX20PLL_CTRL0, 0x0, E_PORT0);
@@ -3776,12 +3821,22 @@ void aml_phy_power_off_t3x_port3(void)
 	wr_reg_clk_ctl(T3X_CLKCTRL_HDMI_PLL1_CTRL3, 0x0);
 }
 
-void aml_phy_power_off_t3x(void)
+void aml_phy_power_off_t3x(u8 port)
 {
-	aml_phy_power_off_t3x_port0();
-	aml_phy_power_off_t3x_port1();
-	aml_phy_power_off_t3x_port2();
-	aml_phy_power_off_t3x_port3();
+	if (port == E_PORT0) {
+		aml_phy_power_off_t3x_port0();
+	} else if (port == E_PORT1) {
+		aml_phy_power_off_t3x_port1();
+	} else if (port == E_PORT2) {
+		aml_phy_power_off_t3x_port2();
+	} else if (port == E_PORT3) {
+		aml_phy_power_off_t3x_port3();
+	} else {
+		aml_phy_power_off_t3x_port0();
+		aml_phy_power_off_t3x_port1();
+		aml_phy_power_off_t3x_port2();
+		aml_phy_power_off_t3x_port3();
+	}
 }
 
 void aml_phy_offset_cal_t3x(void)

@@ -1596,12 +1596,12 @@ void hdmirx_top_irq_en(int en, int lvl, u8 port)
 	if (rx_info.chip_id >= CHIP_ID_T3X) {//todo
 		data32  = 0;
 		data32 |= (0    << 30); // [   30] aud_chg;
-		data32 |= (0    << 29); // [   29] hdmirx_sqofclk_fall;
+		data32 |= (1    << 29); // [   29] hdmirx_sqofclk_fall;
 		data32 |= (0    << 28); // [   28] hdmirx_sqofclk_rise;
 		data32 |= (0    << 26); // [   26] last_emp_done;
 		data32 |= (((lvl == 2) ? 1 : 0) << 23); // [   23] de_rise_del_irq;
 		data32 |= (((lvl == 2) ? 1 : 0) << 21); // [   21] emp_field_done;
-		data32 |= (0    << 20); // [   23] hdmirx_sqofclk_fall;
+		data32 |= (1    << 20); // [   23] hdmirx_sqofclk_fall;
 		data32 |= (0    << 19); // [   19] edid_addr2_intr
 		data32 |= (0    << 18); // [   18] edid_addr1_intr
 		data32 |= (0    << 17); // [   17] edid_addr0_intr
@@ -2805,8 +2805,8 @@ void rx_set_term_value_t5m(unsigned char port, bool value)
 void rx_set_term_value(unsigned char port, bool value)
 {
 	if (rx_info.chip_id == CHIP_ID_T3X)
-		return;
-	if (rx_info.chip_id == CHIP_ID_T5M || rx_info.chip_id == CHIP_ID_TXHD2)
+		rx_set_term_value_t3x(port, value);
+	else if (rx_info.chip_id == CHIP_ID_T5M || rx_info.chip_id == CHIP_ID_TXHD2)
 		rx_set_term_value_t5m(port, value);
 	else if (rx_info.chip_id >= CHIP_ID_T5 && rx_info.chip_id <= CHIP_ID_T5W)
 		rx_set_term_value_t5(port, value);
@@ -2823,6 +2823,7 @@ int rx_set_port_hpd(u8 port_id, bool val)
 				hdmirx_wr_cor(RX_HPD_C_CTRL_AON_IVCRX, 0x1, port_id);
 			hdmirx_wr_bits_top_common(TOP_HPD_PWR5V, _BIT(port_id), 1);
 			rx_i2c_edid_cfg_with_port(0xf, true);
+			rx_set_term_value(port_id, 1);
 		} else {
 			if (rx_info.chip_id >= CHIP_ID_T7)
 				hdmirx_wr_cor(RX_HPD_C_CTRL_AON_IVCRX, 0x0, port_id);
@@ -6361,7 +6362,7 @@ void aml_phy_power_off(void)
 		aml_phy_power_off_txhd2();
 		break;
 	case PHY_VER_T3X:
-		aml_phy_power_off_t3x();
+		aml_phy_power_off_t3x(E_PORT_NUM);
 		break;
 	default:
 		rx_pr("rx not poweroff\n");

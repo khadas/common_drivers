@@ -5202,7 +5202,6 @@ static void hdmitx_hpd_plugout_handler(struct work_struct *work)
 	hdmitx_edid_done = false;
 	hdev->tx_comm.hpd_state = 0;
 	hdev->ll_enabled_in_auto_mode = false;
-	hdev->pre_tmds_clk_div40 = false;
 	if (hdev->tv_usage == 0) {
 		rx_edid_physical_addr(0, 0, 0, 0);
 		hdmitx_notify_hpd(hdev->tx_comm.hpd_state, NULL);

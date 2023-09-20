@@ -263,40 +263,6 @@
 			0xffff  0x0>; /* ending flag */
 	};
 
-	bt-dev{
-		compatible = "amlogic, aml-bt";
-		dev_name = "bt-dev";
-		status = "okay";
-		reset-gpios = <&gpio GPIOX_17 GPIO_ACTIVE_HIGH>;
-		hostwake-gpios = <&gpio GPIOX_19 GPIO_ACTIVE_HIGH>;
-	};
-
-	wifi{
-		compatible = "amlogic, aml-wifi";
-		dev_name = "aml_wifi";
-		status = "okay";
-		interrupt-gpios = <&gpio GPIOX_7 GPIO_ACTIVE_HIGH>;
-		irq_trigger_type = "IRQF_TRIGGER_LOW";
-		power_on-gpios = <&gpio GPIOX_6 GPIO_ACTIVE_HIGH>;
-		wifi_static_buf = <1>;
-		pinctrl-names = "default";
-		pinctrl-0 = <&pwm_e_pins>;
-		pwm_config = <&wifi_pwm_conf>;
-	};
-
-	wifi_pwm_conf:wifi_pwm_conf{
-		pwm_channel1_conf {
-			pwms = <&pwm_ef MESON_PWM_0 30541 0>;
-			duty-cycle = <15270>;
-			times = <10>;
-		};
-		pwm_channel2_conf {
-			pwms = <&pwm_ef MESON_PWM_2 30500 0>;
-			duty-cycle = <15250>;
-			times = <12>;
-		};
-	};
-
 	codec_mm {
 		compatible = "amlogic, codec, mm";
 		memory-region = <&codec_mm_cma &codec_mm_reserved>;
@@ -2044,6 +2010,18 @@
 			size=<0x0 0x0>;
 		};
 	};
+};
+
+&aml_wifi{
+	status = "okay";
+	interrupt-gpios = <&gpio  GPIOX_7  GPIO_ACTIVE_HIGH>;
+	power_on-gpios = <&gpio   GPIOX_6  GPIO_ACTIVE_HIGH>;
+};
+
+&aml_bt {
+	status = "okay";
+	reset-gpios = <&gpio    GPIOX_17 GPIO_ACTIVE_HIGH>;
+	hostwake-gpios = <&gpio GPIOX_19 GPIO_ACTIVE_HIGH>;
 };
 
 &pcie_A {

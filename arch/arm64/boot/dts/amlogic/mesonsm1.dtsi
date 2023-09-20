@@ -1540,6 +1540,34 @@
 		power-domains = <&pwrdm PWRC_SM1_GE2D_ID>;
 	};
 
+	aml_bt: aml_bt {
+		compatible = "amlogic, aml-bt";
+		status = "disabled";
+	};
+
+	aml_wifi: aml_wifi {
+		compatible = "amlogic, aml-wifi";
+		status = "disabled";
+		irq_trigger_type = "IRQF_TRIGGER_LOW";
+		wifi_static_buf = <2>;
+		pinctrl-0 = <&pwm_e_pins>;
+		pinctrl-names = "default";
+		pwm_config = <&wifi_pwm_conf>;
+	};
+
+	wifi_pwm_conf:wifi_pwm_conf{
+		pwm_channel1_conf {
+			pwms = <&pwm_ef MESON_PWM_0 30541 0>;
+			duty-cycle = <15270>;
+			times = <10>;
+		};
+		pwm_channel2_conf {
+			pwms = <&pwm_ef MESON_PWM_2 30500 0>;
+			duty-cycle = <15250>;
+			times = <12>;
+		};
+	};
+
 	meson-amvideom {
 		compatible = "amlogic, amvideom";
 		dev_name = "amvideom";

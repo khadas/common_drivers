@@ -92,7 +92,7 @@ const struct frm_dly_dat_s chip_frc_frame_dly[3][4] = {
 	{ // chip_t3x  fhd,4k2k,4k1k,4K2K-120Hz
 		{130, 11},
 		{120, 14},
-		{266, 28},
+		{232, 22},   //{266, 28},
 		{220, 20},  // {240, 15},
 	},
 };

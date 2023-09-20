@@ -1636,8 +1636,8 @@ void frc_top_init(struct frc_dev_s *frc_devp)
 		mevp_frm_dly = frc_devp->frm_dly_set[2].mevp_frm_dly;
 		mc_frm_dly  = frc_devp->frm_dly_set[2].mc_frm_dly;
 		pr_frc(log, "4k1k_mc_frm_dly:%d\n", mc_frm_dly);
-		if (chip == ID_T3X)
-			frc_top->is_me1mc4 = 2;
+		//if (chip == ID_T3X)
+		//	frc_top->is_me1mc4 = 2;
 	} else {
 		//mevp_frm_dly = 140;
 		//mc_frm_dly = 10;

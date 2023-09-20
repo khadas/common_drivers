@@ -102,6 +102,7 @@
 #define DEBUG_FIXED_LUT             0x20
 #define DEBUG_FIXED_REG             0x40
 #define DEBUG_5065_RGB_BUG          0x80
+#define DEBUG_SDR2020_FORCE_HLG     0x100
 
 enum core1_switch_type {
 	NO_SWITCH = 0,
@@ -855,7 +856,7 @@ extern bool need_update_cfg;
 extern u32 debug_ko;
 extern int debug_cp_res;
 extern u32 force_update_reg;
-extern const char *input_str[10];
+extern const char *input_str[11];
 extern bool module_installed;
 extern struct top1_pyramid_addr top1_py_addr;
 extern void *top1_reg_buf;

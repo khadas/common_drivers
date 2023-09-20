@@ -12857,7 +12857,7 @@ int get_hdr_cur_output(void)
 			mode = output_format;
 		if (mode == BT709 || mode == BT_BYPASS)
 			hdr_output_mode = HDR_OUTPUT_MODE_SDR;
-		else if (mode == BT2020 || mode == BT2020_PQ)
+		else if (mode == BT2020_PQ)
 			hdr_output_mode = HDR_OUTPUT_MODE_HDR10;
 		else if (mode == BT2020_HLG)
 			hdr_output_mode = HDR_OUTPUT_MODE_HLG;
@@ -12869,7 +12869,7 @@ int get_hdr_cur_output(void)
 		mode = output_format;
 		if (mode == BT709 || mode == BT_BYPASS)
 			hdr_output_mode = HDR_OUTPUT_MODE_SDR;
-		else if (mode == BT2020 || mode == BT2020_PQ)
+		else if (mode == BT2020_PQ)
 			hdr_output_mode = HDR_OUTPUT_MODE_HDR10;
 		else if (mode == BT2020_HLG)
 			hdr_output_mode = HDR_OUTPUT_MODE_HLG;

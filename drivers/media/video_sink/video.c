@@ -613,10 +613,10 @@ int vpp_crc_result;
 /* viu2 vpp_crc */
 static u32 vpp_crc_viu2_en;
 /* source fmt string */
-const char *src_fmt_str[10] = {
+const char *src_fmt_str[11] = {
 	"SDR", "HDR10", "HDR10+", "HDR Prime", "HLG",
 	"Dolby Vison", "Dolby Vison Low latency", "MVC",
-	"CUVA_HDR", "CUVA_HLG"
+	"CUVA_HDR", "CUVA_HLG", "SDR_2020"
 };
 
 atomic_t primary_src_fmt =
@@ -5739,8 +5739,7 @@ s32 update_vframe_src_fmt(struct vframe_s *vf,
 	}
 
 	if (vf->src_fmt.fmt == VFRAME_SIGNAL_FMT_INVALID) {
-		if ((signal_transfer_characteristic == 14 ||
-		     signal_transfer_characteristic == 18) &&
+		if (signal_transfer_characteristic == 18 &&
 		    signal_color_primaries == 9) {
 			if (signal_cuva)
 				vf->src_fmt.fmt = VFRAME_SIGNAL_FMT_CUVA_HLG;
@@ -5761,6 +5760,12 @@ s32 update_vframe_src_fmt(struct vframe_s *vf,
 				vf->src_fmt.fmt = VFRAME_SIGNAL_FMT_CUVA_HDR;
 			else
 				vf->src_fmt.fmt = VFRAME_SIGNAL_FMT_HDR10;
+		} else if (signal_transfer_characteristic == 14 ||
+			signal_transfer_characteristic == 1) {
+			if (signal_color_primaries == 9)
+				vf->src_fmt.fmt = VFRAME_SIGNAL_FMT_SDR_2020;
+			else
+				vf->src_fmt.fmt = VFRAME_SIGNAL_FMT_SDR;
 		} else {
 			vf->src_fmt.fmt = VFRAME_SIGNAL_FMT_SDR;
 		}
@@ -5898,8 +5903,7 @@ char *find_vframe_sei(struct vframe_s *vf,
 	}
 #endif
 	if (!dv_src) {
-		if ((signal_transfer_characteristic == 14 ||
-		     signal_transfer_characteristic == 18) &&
+		if (signal_transfer_characteristic == 18 &&
 		    signal_color_primaries == 9) {
 			/* HLG */
 			/* TODO: need parser SEI for CUVA */

@@ -3868,12 +3868,13 @@ static void do_vd1_swap_frame(u8 layer_id,
 			VFRAME_SIGNAL_FMT_SDR,
 			VFRAME_SIGNAL_FMT_MVC,
 			VFRAME_SIGNAL_FMT_CUVA_HDR,
-			VFRAME_SIGNAL_FMT_CUVA_HLG
+			VFRAME_SIGNAL_FMT_CUVA_HLG,
+			VFRAME_SIGNAL_FMT_SDR_2020
 		};
 
 #if defined(CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_VECM)
 #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
-		if (is_amdv_enable())
+		if (is_amdv_on())
 			new_src_fmt = get_amdv_src_format(VD1_PATH);
 		else
 #endif

@@ -1035,7 +1035,7 @@ const struct meson_ddemod_data  data_t3 = {
 };
 #endif
 
-#ifndef CONFIG_AMLOGIC_ZAPPER_C1A
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT_C1A
 const struct meson_ddemod_data  data_s4d = {
 	.dig_clk = {
 		.demod_clk_ctl = 0x74,
@@ -1182,7 +1182,7 @@ static const struct of_device_id meson_ddemod_match[] = {
 		.data		= &data_t3,
 	},
 #endif
-#ifndef CONFIG_AMLOGIC_ZAPPER_C1A
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT_C1A
 	{
 		.compatible = "amlogic, ddemod-s4d",
 		.data		= &data_s4d,

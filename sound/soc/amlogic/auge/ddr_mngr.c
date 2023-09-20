@@ -2272,7 +2272,7 @@ static struct ddr_chipinfo c2_ddr_chipinfo = {
 };
 #endif
 
-#ifndef CONFIG_AMLOGIC_ZAPPER_C1A
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT_C1A
 static struct ddr_chipinfo t5_ddr_chipinfo = {
 	.same_src_fn           = true,
 	.ugt                   = true,
@@ -2420,7 +2420,7 @@ static const struct of_device_id aml_ddr_mngr_device_id[] = {
 		.data       = &c2_ddr_chipinfo,
 	},
 #endif
-#ifndef CONFIG_AMLOGIC_ZAPPER_C1A
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT_C1A
 	{
 		.compatible = "amlogic, t5-audio-ddr-manager",
 		.data       = &t5_ddr_chipinfo,

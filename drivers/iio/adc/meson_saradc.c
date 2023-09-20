@@ -1311,7 +1311,7 @@ static const struct meson_sar_adc_data meson_sar_adc_txlx_data = {
 };
 #endif
 
-#ifndef CONFIG_AMLOGIC_ZAPPER_C1A
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT_C1A
 static const struct meson_sar_adc_data meson_sar_adc_g12a_data = {
 	.param = &meson_sar_adc_g12a_param,
 	.name = "meson-g12a-saradc",
@@ -1362,7 +1362,7 @@ static const struct of_device_id meson_sar_adc_of_match[] = {
 		.data = &meson_sar_adc_txlx_data,
 	},
 #endif
-#ifndef CONFIG_AMLOGIC_ZAPPER_C1A
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT_C1A
 	{
 		.compatible = "amlogic,meson-g12a-saradc",
 		.data = &meson_sar_adc_g12a_data,

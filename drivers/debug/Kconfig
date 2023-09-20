@@ -126,7 +126,7 @@ config AMLOGIC_ZAPPER_CUT
 	help
 	  remove more for zapper
 
-config AMLOGIC_ZAPPER_C1A
+config AMLOGIC_ZAPPER_CUT_C1A
 	bool "zapper C1A"
 	depends on AMLOGIC_DEBUG
 	default n

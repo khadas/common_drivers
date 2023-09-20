@@ -254,7 +254,7 @@ static struct meson_msr_id clk_msr_axg[] __initdata = {
 };
 #endif
 
-#ifndef CONFIG_AMLOGIC_ZAPPER_C1A
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT_C1A
 static struct meson_msr_id clk_msr_s4[] __initdata = {
 	CLK_MSR_ID(0, "cts_sys_clk"),
 	CLK_MSR_ID(1, "cts_axi_clk"),
@@ -3506,7 +3506,7 @@ static struct meson_msr_data meson_axg_data __initdata = {
 };
 #endif
 
-#ifndef CONFIG_AMLOGIC_ZAPPER_C1A
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT_C1A
 static struct meson_msr_data meson_s4_data __initdata = {
 	.msr_table = (struct meson_msr_id *)&clk_msr_s4,
 	.table_size = ARRAY_SIZE(clk_msr_s4),
@@ -3708,7 +3708,7 @@ static const struct of_device_id meson_msr_match_table[] = {
 		.data = &meson_axg_data,
 	},
 #endif
-#ifndef CONFIG_AMLOGIC_ZAPPER_C1A
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT_C1A
 	{
 		.compatible = "amlogic,meson-s4-clk-measure",
 		.data = &meson_s4_data,

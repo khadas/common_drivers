@@ -277,7 +277,7 @@ static int adc_24m_pll_config(struct tvin_adc_dev *devp)
 		usleep_range(20, 25);
 		adc_wr_hiu(pll_addr->adc_pll_cntl_1, 0x021a4605);
 #endif
-#ifndef CONFIG_AMLOGIC_ZAPPER_C1A
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT_C1A
 	} else {
 		adc_wr_hiu(pll_addr->adc_pll_cntl_0, 0x01200490);
 		adc_wr_hiu(pll_addr->adc_pll_cntl_0, 0x31200490);
@@ -371,7 +371,7 @@ static int adc_dpll_dvbs_config(struct tvin_adc_dev *devp,
 		usleep_range(20, 25);
 		adc_wr_hiu(pll_addr->adc_pll_cntl_1, 0xc3882004);
 		usleep_range(20, 25);
-#ifndef CONFIG_AMLOGIC_ZAPPER_C1A
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT_C1A
 	} else if (devp->plat_data->chip_id == ADC_CHIP_T5M ||
 	    devp->plat_data->chip_id == ADC_CHIP_T3X) {
 		adc_wr_hiu(pll_addr->adc_pll_cntl_0, 0x112e410e);
@@ -531,7 +531,7 @@ static int adc_dadc_other_dtv_cntl_config(struct tvin_adc_dev *devp)
 		/* enable bandgap */
 		adc_wr_hiu_bits(adc_addr->vdac_cntl_0, 0x982, 0, 12);
 		adc_wr_hiu(adc_addr->s2_dadc_cntl, 0x308e3106);
-#ifndef CONFIG_AMLOGIC_ZAPPER_C1A
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT_C1A
 	} else if (devp->plat_data->chip_id == ADC_CHIP_TXHD2) {
 		adc_wr_hiu(adc_addr->dadc_cntl, 0x03132048);
 		adc_wr_hiu(adc_addr->dadc_cntl_2, 0x401);
@@ -571,7 +571,7 @@ static int adc_dadc_dvbs_cntl_config(struct tvin_adc_dev *devp)
 		/* enable bandgap */
 		adc_wr_hiu_bits(adc_addr->vdac_cntl_0, 0x982, 0, 12);
 		adc_wr_hiu(adc_addr->s2_dadc_cntl, 0x302c3007);
-#ifndef CONFIG_AMLOGIC_ZAPPER_C1A
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT_C1A
 	} else if (devp->plat_data->chip_id == ADC_CHIP_TXHD2) {
 		adc_wr_hiu(adc_addr->dadc_cntl, 0x03132048);
 		adc_wr_hiu(adc_addr->dadc_cntl_2, 0x401);
@@ -612,7 +612,7 @@ static int adc_dadc_dvbt_cntl_config(struct tvin_adc_dev *devp)
 
 	adc_addr = &devp->plat_data->adc_addr;
 
-#ifndef CONFIG_AMLOGIC_ZAPPER_C1A
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT_C1A
 	if (devp->plat_data->chip_id == ADC_CHIP_TXHD2) {
 		adc_wr_hiu(adc_addr->dadc_cntl, 0x03132048);
 		adc_wr_hiu(adc_addr->dadc_cntl_2, 0x401);
@@ -630,7 +630,7 @@ static int adc_dadc_dvbt_cntl_config(struct tvin_adc_dev *devp)
 		adc_wr_hiu(adc_addr->dadc_cntl, 0x0030303c);
 	}
 
-#ifndef CONFIG_AMLOGIC_ZAPPER_C1A
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT_C1A
 	if (devp->plat_data->chip_id <= ADC_CHIP_T3X) {
 		if (devp->plat_data->chip_id >= ADC_CHIP_T3)
 			adc_wr_hiu(adc_addr->dadc_cntl_2, 0x00003448);
@@ -645,7 +645,7 @@ static int adc_dadc_dvbt_cntl_config(struct tvin_adc_dev *devp)
 	return 0;
 }
 
-#ifndef CONFIG_AMLOGIC_ZAPPER_C1A
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT_C1A
 //s4/s4d box framework config DTV but not DVBS/S2 DVBT/T2 format
 static int adc_dadc_box_other_dtv_cntl_config(struct tvin_adc_dev *devp)
 {
@@ -815,7 +815,7 @@ void adc_set_ddemod_default(struct dfe_adcpll_para *adcpll_para)
 
 			break;
 
-#ifndef CONFIG_AMLOGIC_ZAPPER_C1A
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT_C1A
 		case ADC_CHIP_S4:
 		case ADC_CHIP_S4D:
 			adc_dadc_box_other_dtv_cntl_config(devp);
@@ -1852,7 +1852,7 @@ static const struct adc_platform_data_s adc_data_t3 = {
 };
 #endif
 
-#ifndef CONFIG_AMLOGIC_ZAPPER_C1A
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT_C1A
 static const struct adc_platform_data_s adc_data_s4d = {
 	ADC_ADDR_TL1_TO_S4,
 	ADC_PLL_ADDR_TL1,
@@ -1939,7 +1939,7 @@ static const struct of_device_id adc_dt_match[] = {
 		.data = &adc_data_t3,
 	},
 #endif
-#ifndef CONFIG_AMLOGIC_ZAPPER_C1A
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT_C1A
 	{
 		.compatible = "amlogic, adc-s4d",
 		.data = &adc_data_s4d,

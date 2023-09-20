@@ -718,7 +718,7 @@ static struct ddr_port_desc ddr_port_desc_t3[] __initdata = {
 };
 #endif
 
-#ifndef CONFIG_AMLOGIC_ZAPPER_C1A
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT_C1A
 static struct ddr_port_desc ddr_port_desc_s4[] __initdata = {
 	{ .port_id =  0, .port_name = "ARM"           },
 	{ .port_id =  1, .port_name = "MALI"          },
@@ -1213,7 +1213,7 @@ int __init ddr_find_port_desc_type(int cpu_type, struct ddr_port_desc **desc, in
 		desc_size = ARRAY_SIZE(ddr_port_desc_t3);
 		break;
 #endif
-#ifndef CONFIG_AMLOGIC_ZAPPER_C1A
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT_C1A
 	case DMC_TYPE_S4:
 		*desc = ddr_port_desc_s4;
 		desc_size = ARRAY_SIZE(ddr_port_desc_s4);

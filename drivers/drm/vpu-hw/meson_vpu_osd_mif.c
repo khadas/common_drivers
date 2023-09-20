@@ -321,7 +321,7 @@ static u32 osd_secure_input_index[] = {OSD1_INPUT_SECURE,
  * Internal function to query information for a given format. See
  * meson_drm_format_info() for the public API.
  */
-#ifndef CONFIG_AMLOGIC_ZAPPER_C1A
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT_C1A
 const struct meson_drm_format_info *__meson_drm_format_info(u32 format)
 {
 	static const struct meson_drm_format_info formats[] = {
@@ -582,7 +582,7 @@ const struct meson_drm_format_info *__meson_drm_format_info_s1a(u32 format)
 	return NULL;
 }
 
-#ifndef CONFIG_AMLOGIC_ZAPPER_C1A
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT_C1A
 const struct meson_drm_format_info *__meson_drm_afbc_format_info(u32 format)
 {
 	static const struct meson_drm_format_info formats[] = {
@@ -643,7 +643,7 @@ const struct meson_drm_format_info *__meson_drm_afbc_format_info(u32 format)
  * The instance of struct meson_drm_format_info that describes the
  * pixel format, or NULL if the format is unsupported.
  */
-#ifndef CONFIG_AMLOGIC_ZAPPER_C1A
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT_C1A
 const struct meson_drm_format_info *meson_drm_format_info(u32 format,
 							  bool afbc_en)
 {
@@ -693,7 +693,7 @@ const struct meson_drm_format_info *meson_drm_format_info_s1a(u32 format,
  * Returns:
  * The hw_blkmode match the specified pixel format.
  */
-#ifndef CONFIG_AMLOGIC_ZAPPER_C1A
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT_C1A
 static u8 meson_drm_format_hw_blkmode(u32 format, bool afbc_en)
 {
 	const struct meson_drm_format_info *info;
@@ -728,7 +728,7 @@ static u8 meson_drm_format_hw_blkmode_s1a(u32 format, bool afbc_en)
  * Returns:
  * The hw_colormat match the specified pixel format.
  */
-#ifndef CONFIG_AMLOGIC_ZAPPER_C1A
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT_C1A
 static u8 meson_drm_format_hw_colormat(u32 format, bool afbc_en)
 {
 	const struct meson_drm_format_info *info;
@@ -763,7 +763,7 @@ static u8 meson_drm_format_hw_colormat_s1a(u32 format, bool afbc_en)
  * Returns:
  * The alpha_replace match the specified pixel format.
  */
-#ifndef CONFIG_AMLOGIC_ZAPPER_C1A
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT_C1A
 static u8 meson_drm_format_alpha_replace(u32 format, bool afbc_en)
 {
 	const struct meson_drm_format_info *info;
@@ -995,7 +995,7 @@ static void osd_color_config(struct meson_vpu_block *vblk,
 		color = meson_drm_format_hw_colormat_s1a(pixel_format, afbc_en);
 		alpha_replace = (pixel_blend == DRM_MODE_BLEND_PIXEL_NONE) ||
 		meson_drm_format_alpha_replace_s1a(pixel_format, afbc_en);
-#ifndef CONFIG_AMLOGIC_ZAPPER_C1A
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT_C1A
 	} else {
 		blk_mode = meson_drm_format_hw_blkmode(pixel_format, afbc_en);
 		color = meson_drm_format_hw_colormat(pixel_format, afbc_en);

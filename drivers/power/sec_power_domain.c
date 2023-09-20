@@ -327,7 +327,7 @@ static struct sec_pm_domain_data t7_pm_domain_data __initdata = {
 };
 #endif
 
-#ifndef CONFIG_AMLOGIC_ZAPPER_C1A
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT_C1A
 static struct sec_pm_private_domain s4_pm_domains[] __initdata = {
 	[PDID_S4_DOS_HEVC] = POWER_DOMAIN(hevc, PDID_S4_DOS_HEVC, DOMAIN_INIT_OFF, 0),
 	[PDID_S4_DOS_VDEC] = POWER_DOMAIN(vdec, PDID_S4_DOS_VDEC, DOMAIN_INIT_OFF, 0),
@@ -822,7 +822,7 @@ static const struct of_device_id pd_match_table[] = {
 		.data = &t7_pm_domain_data,
 	},
 #endif
-#ifndef CONFIG_AMLOGIC_ZAPPER_C1A
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT_C1A
 	{
 		.compatible = "amlogic,s4-power-domain",
 		.data = &s4_pm_domain_data,

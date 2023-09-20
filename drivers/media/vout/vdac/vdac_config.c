@@ -190,7 +190,7 @@ static struct meson_vdac_data meson_t3_vdac_data = {
 };
 #endif
 
-#ifndef CONFIG_AMLOGIC_ZAPPER_C1A
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT_C1A
 static struct meson_vdac_data meson_s4d_vdac_data = {
 	.cpu_id = VDAC_CPU_S4D,
 	.name = "meson-s4d-vdac",
@@ -311,7 +311,7 @@ const struct of_device_id meson_vdac_dt_match[] = {
 		.data		= &meson_t3_vdac_data,
 	},
 #endif
-#ifndef CONFIG_AMLOGIC_ZAPPER_C1A
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT_C1A
 	{
 		.compatible = "amlogic, vdac-s4d",
 		.data		= &meson_s4d_vdac_data,

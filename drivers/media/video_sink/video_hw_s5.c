@@ -11654,7 +11654,20 @@ void set_video_slice_policy(struct video_layer_s *layer,
 						layer->aisr_mif_setting.aisr_enable = 0;
 					}
 				}
-				if (debug_flag_s5 & DEBUG_VD_PROC)
+				if (debug_common_flag & DEBUG_FLAG_COMMON_AMDV)
+					pr_info("%s:dv on=%d\n", __func__, is_amdv_on());
+				if (slice_num == 2 &&
+					video_is_meson_s5_cpu() && is_amdv_enable())
+					vd1s1_vd2_prebld_en = 1;
+				if (vd1s1_vd2_prebld_en != last_vd1s1_vd2_prebld_en)
+					vd_layer[0].property_changed = true;
+				last_vd1s1_vd2_prebld_en = vd1s1_vd2_prebld_en;
+			} else if (vinfo->width > 1920 &&
+				vinfo->height >= 1080 &&
+				(vinfo->sync_duration_num /
+			    vinfo->sync_duration_den > 144)) {
+				slice_num = 2;
+				if (debug_common_flag & DEBUG_FLAG_COMMON_AMDV)
 					pr_info("%s:dv on=%d\n", __func__, is_amdv_on());
 				if (slice_num == 2 &&
 					video_is_meson_s5_cpu() && is_amdv_enable())

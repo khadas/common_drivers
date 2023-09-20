@@ -32,6 +32,7 @@
 
 #include "xhci.h"
 #include "xhci-plat.h"
+#include "crg_xhci.h"
 
 static const struct xhci_plat_priv crg_xhci_plat_priv = {
 	.quirks = XHCI_NO_64BIT_SUPPORT | XHCI_RESET_ON_RESUME,
@@ -266,7 +267,7 @@ static int crg_host_init(struct crg_drd *crg)
 			goto err1;
 		}
 	}
-
+	crg_xhci_init();
 	ret = platform_device_add_data(xhci, &crg_xhci_plat_priv,
 								sizeof(crg_xhci_plat_priv));
 	if (ret)

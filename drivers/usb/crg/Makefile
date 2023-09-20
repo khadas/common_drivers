@@ -8,4 +8,5 @@ $(MODULE_NAME)-$(CONFIG_AMLOGIC_CRG) += crg/crg_drd.o
 
 $(MODULE_NAME)-$(CONFIG_AMLOGIC_CRG) += crg/crg_udc.o
 $(MODULE_NAME)-$(CONFIG_AMLOGIC_CRG) += crg/crg_usbphy.o
+$(MODULE_NAME)-$(CONFIG_AMLOGIC_CRG) += crg/crg_xhci.o
 

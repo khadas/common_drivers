@@ -10,3 +10,10 @@
 # amlogic-debug-iotrace.ko
   __tracepoint_android_vh_set_module_permit_after_init
   __traceiter_android_vh_set_module_permit_after_init
+
+  sg_pcopy_to_buffer
+  usb_hcd_is_primary_hcd
+  usb_hcd_map_urb_for_dma
+  xhci_get_ep_ctx
+  usb_hcd_link_urb_to_ep
+

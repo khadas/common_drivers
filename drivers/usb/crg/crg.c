@@ -29,6 +29,7 @@
 #include <linux/phy/phy.h>
 #include "xhci.h"
 #include "xhci-plat.h"
+#include "crg_xhci.h"
 
 #define CRG_DEFAULT_AUTOSUSPEND_DELAY	5000 /* ms */
 #define CRG_XHCI_RESOURCES_NUM	2
@@ -241,6 +242,7 @@ int crg_host_init(struct crg *crg)
 		}
 	}
 
+	crg_xhci_init();
 	ret = platform_device_add_data(xhci, &crg_xhci_plat_priv,
 								sizeof(crg_xhci_plat_priv));
 	if (ret)

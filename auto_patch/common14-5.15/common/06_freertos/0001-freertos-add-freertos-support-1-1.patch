@@ -1,4 +1,4 @@
-From 1c4024c165189cb04ef85ed6df143e13e9f01793 Mon Sep 17 00:00:00 2001
+From 7ab31fd1d624dff4d48434d232c18a32690447df Mon Sep 17 00:00:00 2001
 From: "wanwei.jiang" <wanwei.jiang@amlogic.com>
 Date: Mon, 28 Feb 2022 09:54:55 +0800
 Subject: [PATCH] freertos: add freertos support [1/1]
@@ -20,14 +20,14 @@ C2 T7
 Change-Id: Ib2b18fbcb026afa8df7654eac90355f080e9a74b
 Signed-off-by: wanwei.jiang <wanwei.jiang@amlogic.com>
 ---
- arch/arm/kernel/smp.c            | 11 ++++++++++
+ arch/arm/kernel/smp.c            | 19 +++++++++++++++++
  arch/arm64/kernel/smp.c          | 23 ++++++++++++++++++++
  drivers/irqchip/irq-gic-common.c | 36 ++++++++++++++++++++++++++++++++
  drivers/irqchip/irq-gic.c        | 20 +++++++++++++++++-
- 4 files changed, 89 insertions(+), 1 deletion(-)
+ 4 files changed, 97 insertions(+), 1 deletion(-)
 
 diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
-index f46317f6d8ce..d1678f770a4c 100644
+index f46317f6d8ce..86f17e8f6260 100644
 --- a/arch/arm/kernel/smp.c
 +++ b/arch/arm/kernel/smp.c
 @@ -48,6 +48,10 @@
@@ -62,8 +62,23 @@ index f46317f6d8ce..d1678f770a4c 100644
  		printk_deferred_enter();
  		nmi_cpu_backtrace(get_irq_regs());
  		printk_deferred_exit();
+@@ -763,6 +774,14 @@ void smp_send_reschedule(int cpu)
+ 	smp_cross_call(cpumask_of(cpu), IPI_RESCHEDULE);
+ }
+ 
++#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_IPI_SEND)
++void arch_send_ipi_rtos(int cpu)
++{
++	smp_cross_call(cpumask_of(cpu), IPI_FREERTOS);
++}
++EXPORT_SYMBOL(arch_send_ipi_rtos);
++#endif
++
+ void smp_send_stop(void)
+ {
+ 	unsigned long timeout;
 diff --git a/arch/arm64/kernel/smp.c b/arch/arm64/kernel/smp.c
-index 7fec4e38e8e2..764511be78e7 100644
+index 7fec4e38e8e2..82b1fb0a8dfb 100644
 --- a/arch/arm64/kernel/smp.c
 +++ b/arch/arm64/kernel/smp.c
 @@ -56,6 +56,10 @@
@@ -101,7 +116,7 @@ index 7fec4e38e8e2..764511be78e7 100644
  }
  #endif
  
-+#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_T7)
++#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_IPI_SEND)
 +void arch_send_ipi_rtos(int cpu)
 +{
 +	smp_cross_call(cpumask_of(cpu), IPI_FREERTOS);
@@ -258,5 +273,5 @@ index 50041c044a1a..2a879a249758 100644
  	gic_dist_config(base, gic_irqs, NULL);
  
 -- 
-2.25.1
+2.42.0
 

@@ -66,7 +66,7 @@ static struct logbuf_t *logbuf;
 static struct dentry *rtos_logbuf_file;
 static DEFINE_MUTEX(freertos_logbuf_lock);
 
-#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_T7)
+#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_NOFITIER)
 static BLOCKING_NOTIFIER_HEAD(rtos_nofitier_chain);
 
 int register_freertos_notifier(struct notifier_block *nb)
@@ -90,7 +90,7 @@ static int call_freertos_notifiers(unsigned long val, void *v)
 }
 #endif
 
-#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_T7) || IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_C3)
+#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_MEMORY_FREE)
 static int free_rtos_memory(void)
 {
 	struct device_node *rtos_reserved;
@@ -309,9 +309,9 @@ static void freertos_do_finish(int bootup)
 				} else {
 					pr_info("cpu %u already take over\n", cpu);
 				}
-#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_T7) || IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_C3)
+#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_MEMORY_FREE)
 				free_rtos_memory();
-#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_T7)
+#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_NOFITIER)
 				call_freertos_notifiers(1, NULL);
 #endif
 				break;
@@ -500,7 +500,7 @@ static int aml_rtos_logbuf_init(void)
 	size = rtosinfo->logbuf_len;
 	pr_info("logbuffer: 0x%x, 0x%x\n",
 		rtosinfo->logbuf_phy, rtosinfo->logbuf_len);
-#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_T7) || IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_C3)
+#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_IS_MAP)
 	logbuf = memremap(phy, size, MEMREMAP_WB);
 #else
 	logbuf = ioremap_cache(phy, size);
@@ -527,7 +527,7 @@ static void aml_rtos_logbuf_deinit(void)
 	}
 }
 
-#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_T7)
+#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_ANDROID_CTRL)
 static ssize_t android_status_store(struct class *cla,
 			  struct class_attribute *attr,
 			  const char *buf, size_t count)
@@ -555,7 +555,9 @@ static ssize_t android_status_show(struct class *cla,
 	return cnt;
 }
 static CLASS_ATTR_RW(android_status);
+#endif
 
+#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_IPI_SEND)
 static ssize_t ipi_send_store(struct class *cla,
 			  struct class_attribute *attr,
 			  const char *buf, size_t count)
@@ -573,10 +575,15 @@ static ssize_t ipi_send_store(struct class *cla,
 	return count;
 }
 static CLASS_ATTR_WO(ipi_send);
+#endif
 
 static struct attribute *freertos_attrs[] = {
+#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_ANDROID_CTRL)
 	&class_attr_android_status.attr,
+#endif
+#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_IPI_SEND)
 	&class_attr_ipi_send.attr,
+#endif
 	NULL
 };
 ATTRIBUTE_GROUPS(freertos);
@@ -585,7 +592,6 @@ static struct class freertos_class = {
 	.name = "freertos",
 	.class_groups = freertos_groups,
 };
-#endif
 
 static int aml_rtos_probe(struct platform_device *pdev)
 {
@@ -596,7 +602,7 @@ static int aml_rtos_probe(struct platform_device *pdev)
 	    (int)rtosinfo_phy == SMC_UNK)
 		return 0;
 
-#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_T7) || IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_C3)
+#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_IS_MAP)
 	rtosinfo = (struct xrtosinfo_t *)memremap(rtosinfo_phy,
 						  sizeof(struct xrtosinfo_t),
 						  MEMREMAP_WB);
@@ -610,15 +616,16 @@ static int aml_rtos_probe(struct platform_device *pdev)
 		pr_err("map freertos info failed\n");
 		goto finish;
 	}
-
 #if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_T7)
 	if (rtosinfo->rtos_run_flag == RTOS_RUN_FLAG) {
+#else
+	if (1) {
+#endif
 		if (class_register(&freertos_class)) {
 			pr_err("regist freertos_class failed\n");
 			return -EINVAL;
 		}
 	}
-#endif
 	aml_rtos_logbuf_init();
 
 finish:

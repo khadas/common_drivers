@@ -10,10 +10,50 @@ config AMLOGIC_FREERTOS
 	help
 	  Say Y here to enable freertos support.
 
+config AMLOGIC_FREERTOS_NOFITIER
+	bool "Amlogic Freertos Support nofitier"
+	depends on AMLOGIC_FREERTOS
+	default n
+	help
+	  Say Y here to enable freertos nofitier support.
+
+config AMLOGIC_FREERTOS_IS_MAP
+	bool "Amlogic Freertos memory are map to kernel"
+	depends on AMLOGIC_FREERTOS
+	default n
+	help
+	  Say Y here memory are map to kernel.
+
+config AMLOGIC_FREERTOS_MEMORY_FREE
+	  bool "Amlogic Freertos memory need free"
+	  depends on AMLOGIC_FREERTOS
+	  default n
+	  help
+	    Say Y here memory need to free.
+
+config AMLOGIC_FREERTOS_IPI_SEND
+	    bool "Amlogic Freertos ipi send"
+	    depends on AMLOGIC_FREERTOS
+	    default n
+	    help
+	      Say Y here to enable ipi send support.
+
+config AMLOGIC_FREERTOS_ANDROID_CTRL
+	    bool "Amlogic Freertos android ctrl"
+	    depends on AMLOGIC_FREERTOS
+	    default n
+	    help
+	      Say Y here to enable android ctrl support.
+
 config AMLOGIC_FREERTOS_T7
 	bool "Amlogic Freertos Support with t7"
 	depends on AMLOGIC_BREAK_GKI
 	depends on AMLOGIC_FREERTOS
+	select AMLOGIC_FREERTOS_NOFITIER
+	select AMLOGIC_FREERTOS_IS_MAP
+	select AMLOGIC_FREERTOS_MEMORY_FREE
+	select AMLOGIC_FREERTOS_IPI_SEND
+	select AMLOGIC_FREERTOS_ANDROID_CTRL
 	default n
 	help
 	  Say Y here to enable freertos support.
@@ -21,6 +61,10 @@ config AMLOGIC_FREERTOS_T7
 config AMLOGIC_FREERTOS_C3
 	bool "Amlogic Freertos Support with c3"
 	depends on AMLOGIC_FREERTOS
+	select AMLOGIC_FREERTOS_NOFITIER
+	select AMLOGIC_FREERTOS_IS_MAP
+	select AMLOGIC_FREERTOS_MEMORY_FREE
+	select AMLOGIC_FREERTOS_IPI_SEND
 	default n
 	help
 	  Say Y here to enable freertos support.

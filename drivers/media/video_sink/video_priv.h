@@ -892,6 +892,9 @@ void set_mosaic_axis(u32 pic_index, u32 x_start, u32 y_start,
 extern u32 osd_vpp_misc;
 extern u32 osd_vpp_misc_mask;
 extern bool update_osd_vpp_misc;
+extern bool update_osd2_blend_src_ctrl;
+extern u32 osd2_postbld_src;
+extern u32 osd2_blend_path_sel;
 extern u32 osd_preblend_en;
 extern u32 framepacking_support;
 extern unsigned int framepacking_blank;

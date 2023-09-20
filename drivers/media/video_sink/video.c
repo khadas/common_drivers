@@ -594,11 +594,14 @@ u32 osd_vpp_misc_mask;
 bool update_osd_vpp_misc;
 bool update_osd_vpp1_bld_ctrl;
 bool update_osd_vpp2_bld_ctrl;
+bool update_osd2_blend_src_ctrl;
 u32 osd_vpp1_bld_ctrl;
 u32 osd_vpp1_bld_ctrl_mask;
 u32 osd_vpp2_bld_ctrl;
 u32 osd_vpp2_bld_ctrl_mask;
 u32 osd_vpp_bld_ctrl_update_mask;
+u32 osd2_postbld_src;
+u32 osd2_blend_path_sel;
 u32 osd_preblend_en;
 /* omx related */
 u32 omx_cur_session = 0xffffffff;
@@ -13384,6 +13387,12 @@ static int amvideo_notify_callback(struct notifier_block *block,
 
 		val = (p[4] & osd_vpp_bld_ctrl_update_mask);
 		update_osd_vpp2_bld_ctrl = val;
+
+		if (osd2_postbld_src != p[7] || osd2_blend_path_sel != p[8]) {
+			osd2_postbld_src = p[7];
+			osd2_blend_path_sel = p[8];
+			update_osd2_blend_src_ctrl = true;
+		}
 
 		if (!update_osd_vpp_misc)
 			update_osd_vpp_misc = true;

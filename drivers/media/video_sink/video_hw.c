@@ -8182,7 +8182,8 @@ void vpp_blend_update(const struct vinfo_s *vinfo)
 			VPP_PREBLEND_EN |
 			VPP_POSTBLEND_EN |
 			0xf);
-		if (vpp_misc_set != vpp_misc_set_save || force_flush) {
+		if (vpp_misc_set != vpp_misc_set_save || force_flush ||
+			update_osd2_blend_src_ctrl) {
 			u32 port_val[3] = {0, 0, 0};
 			u32 vd1_port, vd2_port, icnt;
 			u32 post_blend_reg[3] = {
@@ -8212,7 +8213,11 @@ void vpp_blend_update(const struct vinfo_s *vinfo)
 
 			/* osd2 path sel */
 			port_val[2] |= (1 << 20);
-
+			if (update_osd2_blend_src_ctrl) {
+				port_val[2] |= (osd2_blend_path_sel << 20);
+				port_val[2] |= (osd2_postbld_src << 8);
+				update_osd2_blend_src_ctrl = false;
+			}
 			if (vd_layer[0].post_blend_en) {
 				 /* post src */
 				port_val[vd1_port] |= (1 << 8);

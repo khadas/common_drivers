@@ -371,7 +371,7 @@ int hdmitx_edid_validate_format_para(struct rx_cap *prxcap,
 	} else {
 		/* Default min is 74.25 / 5 */
 		if (prxcap->Max_TMDS_Clock1 < 0xf)
-			prxcap->Max_TMDS_Clock1 = 0x1e;
+			prxcap->Max_TMDS_Clock1 = DEFAULT_MAX_TMDS_CLK;
 		rx_max_tmds_clk = prxcap->Max_TMDS_Clock1 * 5;
 	}
 	calc_tmds_clk = para->tmds_clk / 1000;
@@ -1548,7 +1548,7 @@ static void hdmitx_edid_parse_hdmi14(struct rx_cap *prxcap,
 	(count > 5) ? block_buf[offset + 5] : 0;
 	set_vsdb_dc_cap(prxcap);
 	prxcap->Max_TMDS_Clock1 =
-		(count > 6) ? block_buf[offset + 6] : 0;
+		(count > 6) ? block_buf[offset + 6] : DEFAULT_MAX_TMDS_CLK;
 	if (count > 7) {
 		tmp = block_buf[offset + 7];
 		idx = offset + 8;
@@ -2491,7 +2491,7 @@ static void check_dv_truly_support(struct rx_cap *prxcap, struct dv_info *dv)
 		} else {
 			/* Default min is 74.25 / 5 */
 			if (prxcap->Max_TMDS_Clock1 < 0xf)
-				prxcap->Max_TMDS_Clock1 = 0x1e;
+				prxcap->Max_TMDS_Clock1 = DEFAULT_MAX_TMDS_CLK;
 			max_tmds_clk = prxcap->Max_TMDS_Clock1 * 5;
 		}
 		if (dv->ver == 0)
@@ -2578,7 +2578,7 @@ static void edid_set_fallback_mode(struct rx_cap *prxcap)
 	phyaddr->valid = 0;
 	prxcap->physical_addr = 0xffff;
 
-	prxcap->Max_TMDS_Clock1 = 0x1e; /* 150MHZ / 5 */
+	prxcap->Max_TMDS_Clock1 = DEFAULT_MAX_TMDS_CLK; /* 165MHZ / 5 */
 	prxcap->native_Mode = 0; /* only RGB */
 	prxcap->dc_y444 = 0; /* only 8bit */
 	prxcap->VIC_count = 0x3;

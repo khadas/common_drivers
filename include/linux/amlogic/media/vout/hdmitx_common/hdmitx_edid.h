@@ -11,6 +11,9 @@
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_format_para.h>
 #include <linux/amlogic/media/vout/hdmi_tx_ext.h>
 
+/* the default max_tmds_clk is 165MHz/5 in H14b Table 8-16 */
+#define DEFAULT_MAX_TMDS_CLK    33
+
 #define EDID_MAX_BLOCK		8
 #define VESA_MAX_TIMING		64
 #define AUD_MAX_NUM			60

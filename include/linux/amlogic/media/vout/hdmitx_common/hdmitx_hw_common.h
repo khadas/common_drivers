@@ -95,6 +95,7 @@
 #define MISC_AUDIO_ACR_CTRL     (CMD_MISC_OFFSET + 0x18)
 #define MISC_IS_FRL_MODE        (CMD_MISC_OFFSET + 0x19)
 #define MISC_AUDIO_PREPARE	(CMD_MISC_OFFSET + 0x1a)
+#define MISC_ESMCLK_CTRL        (CMD_MISC_OFFSET + 0x1b)
 #define MISC_CLK_DIV_RST        (CMD_MISC_OFFSET + 0X20)
 
 /***********************************************************************

@@ -204,8 +204,10 @@ enum hdmi_scaling {
 struct hdmi_audio_fs_ncts {
 	struct {
 		u32 tmds_clk;
-		u32 n; /* 24 or 30 bit */
-		u32 cts; /* 24 or 30 bit */
+		unsigned int n; /* 24 bit */
+		unsigned int cts; /* 24 bit */
+		unsigned int n_30bit; /* 30 bit */
+		unsigned int cts_30bit; /* 30bit */
 		u32 n_36bit;
 		u32 cts_36bit;
 		u32 n_48bit;

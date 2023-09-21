@@ -87,7 +87,6 @@ const struct hdmi_timing *hdmitx_mode_match_timing_name(const char *name);
 static unsigned int hdmitx_edid_check_valid_blocks(unsigned char *buf);
 static void edid_dtd_parsing(struct rx_cap *prxcap, unsigned char *data);
 static void hdmitx_edid_set_default_aud(struct rx_cap *prxcap);
-static bool hdmitx_edid_header_invalid(unsigned char *buf);
 /* Base Block, Vendor/Product Information, byte[8]~[18] */
 struct edid_venddat_t {
 	u8 data[10];
@@ -505,7 +504,14 @@ static void edid_parsing_id_serial_number(struct rx_cap *prxcap,
 		prxcap->IDSerialNumber[i] = data[3 - i];
 }
 
-/* store the idx of vesa_timing[32], which is 0 */
+/* store the idx of vesa_timing[32], which is 0
+ * note: only save vesa mode, for compliance with uboot.
+ * uboot not parse standard timing, or CVT block.
+ * as disp_cap will check all mode in rx_cap->VIC[],
+ * and all mode in vesa_timing[], if CEA mode is
+ * stored in vesa_timing[], it will cause kernel
+ * support more CEA mode than uboot.
+ */
 static void store_vesa_idx(struct rx_cap *prxcap, enum hdmi_vic vesa_timing)
 {
 	int i;
@@ -643,10 +649,16 @@ static void calc_timing(struct rx_cap *prxcap, u8 *data, struct vesa_standard_ti
 			t->vesa_timing = standard_timing->vic + 1;
 		else
 			t->vesa_timing = standard_timing->vic;
-		if (t->vesa_timing < HDMITX_VESA_OFFSET)
-			store_cea_idx(prxcap, t->vesa_timing);
-		else
+
+		if (t->vesa_timing < HDMITX_VESA_OFFSET) {
+			/* for compliance with uboot, don't
+			 * save CEA mode in standard_timing block.
+			 * uboot don't parse standard_timing block
+			 */
+			/* store_cea_idx(prxcap, t->vesa_timing); */
+		} else {
 			store_vesa_idx(prxcap, t->vesa_timing);
+		}
 	}
 }
 
@@ -2106,7 +2118,10 @@ static void hdmitx_edid_set_default_aud(struct rx_cap *prxcap)
 	prxcap->RxAudioCap[0].cc3 = 1; /* 16bit */
 }
 
-/* add default VICs for all zeroes case */
+/* for below cases:
+ * for exception process: no CEA vic in parse result
+ * DVI case(only one block), HDMI/HDCP CTS(TODO)
+ */
 static void hdmitx_edid_set_default_vic(struct rx_cap *prxcap)
 {
 	if (!prxcap)
@@ -2118,7 +2133,7 @@ static void hdmitx_edid_set_default_vic(struct rx_cap *prxcap)
 	prxcap->VIC[2] = HDMI_5_1920x1080i60_16x9;
 	prxcap->VIC[3] = HDMI_16_1920x1080p60_16x9;
 	prxcap->native_vic = HDMI_3_720x480p60_16x9;
-	pr_debug(EDID "set default vic\n");
+	pr_info(EDID "set default vic\n");
 }
 
 #define PRINT_HASH(hash)
@@ -2474,8 +2489,10 @@ static void edid_cvt_timing(struct rx_cap *prxcap, u8 *data)
 	for (i = 0; i < 4; i++) {
 		memset(&t, 0, sizeof(struct vesa_standard_timing));
 		edid_cvt_timing_3bytes(prxcap, &t, &data[i * 3]);
-		if (t.vesa_timing)
-			store_vesa_idx(prxcap, t.vesa_timing);
+		if (t.vesa_timing) {
+			if (t.vesa_timing >= HDMITX_VESA_OFFSET)
+				store_vesa_idx(prxcap, t.vesa_timing);
+		}
 	}
 }
 

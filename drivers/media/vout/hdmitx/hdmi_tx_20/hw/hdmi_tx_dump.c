@@ -127,8 +127,8 @@ static const struct file_operations dump_busreg_fops = {
 	do { \
 		typeof(_a) a = _a; \
 		typeof(_b) b = _b; \
-		for (reg_adr = (a & ~SEC_OFFSET); \
-		     reg_adr < (b & ~SEC_OFFSET) + 1; reg_adr++) { \
+		for (reg_adr = (a); \
+		     reg_adr < (b) + 1; reg_adr++) { \
 			hdmitx_wr_reg(HDMITX_DWC_A_KSVMEMCTRL, 0x1); \
 			hdmitx_poll_reg(HDMITX_DWC_A_KSVMEMCTRL, 1 << 1, \
 					2 * HZ); \
@@ -603,9 +603,6 @@ static void hdmitx_parsing_audpkt(struct seq_file *s)
 	seq_printf(s, "coding_type: %s\n", conf);
 
 	switch ((reg_val & 0x70) >> 4) {
-	case CC_REFER_TO_STREAM:
-		conf = "refer to stream header";
-		break;
 	case CC_2CH:
 		conf = "2 channels";
 		break;
@@ -627,8 +624,10 @@ static void hdmitx_parsing_audpkt(struct seq_file *s)
 	case CC_8CH:
 		conf = "8 channels";
 		break;
+	case CC_REFER_TO_STREAM:
 	default:
-		conf = "MAX";
+		conf = "refer to stream header";
+		break;
 	}
 	seq_printf(s, "channel_count: %s\n", conf);
 

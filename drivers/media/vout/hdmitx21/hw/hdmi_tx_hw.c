@@ -1397,16 +1397,16 @@ static void set_aud_acr_pkt(struct hdmitx_dev *hdev,
 
 	/* if current mode is 59.94hz not 60hz, char_rate will shift down 0.1% */
 	char_rate = para->timing.pixel_freq;
-	if (para->timing.name && likely_frac_rate_mode(para->timing.name))
-		if (hdev->tx_comm.frac_rate_policy)
-			char_rate = char_rate * 1000 / 1001;
 
 	if (para->cs == HDMI_COLORSPACE_YUV422)
 		aud_n_para = hdmitx_hw_get_audio_n_paras(audio_param->rate,
-						  COLORDEPTH_24B, char_rate);
+			COLORDEPTH_24B, char_rate);
+	else if (para->cs == HDMI_COLORSPACE_YUV420)
+		aud_n_para = hdmitx_hw_get_audio_n_paras(audio_param->rate,
+			para->cd, char_rate / 2);
 	else
 		aud_n_para = hdmitx_hw_get_audio_n_paras(audio_param->rate,
-						  para->cd, char_rate);
+			para->cd, char_rate);
 	if (hdev->frl_rate)
 		aud_n_para = hdmi21_get_frl_aud_n_paras(audio_param->rate, hdev->frl_rate);
 	hdmitx21_set_reg_bits(ACR_CTS_CLK_DIV_IVCTX, hdev->frl_rate ? 1 : 0, 4, 1);
@@ -2462,6 +2462,9 @@ static int hdmitx_cntl_config(struct hdmitx_hw_common *tx_hw, u32 cmd,
 		hdmi_avi_infoframe_config(CONF_AVI_AR, argv & 0x3);
 		break;
 	case CONF_AVI_BT2020:
+		break;
+	case CONF_AVI_VIC:
+		hdmitx21_set_avi_vic(argv);
 		break;
 	case CONF_CLR_DV_VS10_SIG:
 		break;

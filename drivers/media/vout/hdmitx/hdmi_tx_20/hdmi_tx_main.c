@@ -600,12 +600,14 @@ static void edidinfo_detach_to_vinfo(struct hdmitx_dev *hdev)
 {
 	struct vinfo_s *info = &hdev->tx_comm.hdmitx_vinfo;
 
+	mutex_lock(&getedid_mutex);
 	memset(&info->hdr_info, 0, sizeof(info->hdr_info));
 	memset(&info->rx_latency, 0, sizeof(info->rx_latency));
 	hdmitx_vdev.dv_info = &dv_dummy;
 
 	info->screen_real_width = 0;
 	info->screen_real_height = 0;
+	mutex_unlock(&getedid_mutex);
 }
 
 /*disp_mode attr*/
@@ -1052,7 +1054,6 @@ static int hdmitx_check_valid_aspect_ratio(enum hdmi_vic vic, int aspect_ratio)
 int hdmitx_get_aspect_ratio(void)
 {
 	enum hdmi_vic vic = HDMI_0_UNKNOWN;
-	int x, y;
 	struct hdmitx_dev *hdev = get_hdmitx_device();
 
 	vic = hdmitx_hw_get_state(&hdev->tx_hw.base, STAT_VIDEO_VIC, 0);
@@ -1060,16 +1061,6 @@ int hdmitx_get_aspect_ratio(void)
 	if (vic == HDMI_2_720x480p60_4x3 || vic == HDMI_17_720x576p50_4x3)
 		return AR_4X3;
 	if (vic == HDMI_3_720x480p60_16x9 || vic == HDMI_18_720x576p50_16x9)
-		return AR_16X9;
-
-	struct vinfo_s *info = NULL;
-
-	info = hdmitx_get_current_vinfo(NULL);
-	x = info->aspect_ratio_num;
-	y = info->aspect_ratio_den;
-	if (x == 4 && y == 3)
-		return AR_4X3;
-	if (x == 16 && y == 9)
 		return AR_16X9;
 
 	return 0;
@@ -1083,28 +1074,28 @@ struct aspect_ratio_list *hdmitx_get_support_ar_list(void)
 	struct rx_cap *prxcap = &hdev->tx_comm.rxcap;
 
 	memset(ar_list, 0, sizeof(ar_list));
-	if (hdmitx_edid_validate_mode(prxcap, HDMI_2_720x480p60_4x3) == 0 &&
-			hdmitx_edid_validate_mode(prxcap, HDMI_3_720x480p60_16x9) == 0) {
+	if (hdmitx_edid_validate_mode(prxcap, HDMI_2_720x480p60_4x3) == 0) {
 		ar_list[i].vic = HDMI_2_720x480p60_4x3;
 		ar_list[i].flag = TRUE;
 		ar_list[i].aspect_ratio_num = 4;
 		ar_list[i].aspect_ratio_den = 3;
 		i++;
-
+	}
+	if (hdmitx_edid_validate_mode(prxcap, HDMI_3_720x480p60_16x9) == 0) {
 		ar_list[i].vic = HDMI_3_720x480p60_16x9;
 		ar_list[i].flag = TRUE;
 		ar_list[i].aspect_ratio_num = 16;
 		ar_list[i].aspect_ratio_den = 9;
 		i++;
 	}
-	if (hdmitx_edid_validate_mode(prxcap, HDMI_17_720x576p50_4x3) == 0 &&
-			hdmitx_edid_validate_mode(prxcap, HDMI_18_720x576p50_16x9) == 0) {
+	if (hdmitx_edid_validate_mode(prxcap, HDMI_17_720x576p50_4x3) == 0) {
 		ar_list[i].vic = HDMI_17_720x576p50_4x3;
 		ar_list[i].flag = TRUE;
 		ar_list[i].aspect_ratio_num = 4;
 		ar_list[i].aspect_ratio_den = 3;
 		i++;
-
+	}
+	if (hdmitx_edid_validate_mode(prxcap, HDMI_18_720x576p50_16x9) == 0) {
 		ar_list[i].vic = HDMI_18_720x576p50_16x9;
 		ar_list[i].flag = TRUE;
 		ar_list[i].aspect_ratio_num = 16;
@@ -5606,7 +5597,6 @@ static void hdmitx_cedst_process(struct work_struct *work)
 	hdmitx_set_uevent(HDMITX_CEDST_EVENT, 0);
 	hdmitx_set_uevent(HDMITX_CEDST_EVENT, ced);
 	queue_delayed_work(hdev->cedst_wq, &hdev->work_cedst, HZ);
-	queue_delayed_work(hdev->cedst_wq, &hdev->work_cedst, HZ);
 }
 
 /*only for first time plugout */
@@ -6912,6 +6902,7 @@ static void _amhdmitx_suspend(struct hdmitx_dev *hdev)
 
 	hdmitx_hw_cntl_misc(&hdev->tx_hw.base, MISC_DIS_HPLL, 0);
 	hdev->hwop.cntlddc(hdev, DDC_RESET_HDCP, 0);
+	hdmitx_hw_cntl_misc(&hdev->tx_hw.base, MISC_ESMCLK_CTRL, 0);
 	pr_info("amhdmitx: suspend and reset hdcp\n");
 }
 
@@ -6934,7 +6925,7 @@ static int amhdmitx_resume(struct platform_device *pdev)
 	 */
 	if (hdev->hdcp_ctl_lvl > 0)
 		return 0;
-
+	hdmitx_hw_cntl_misc(&hdev->tx_hw.base, MISC_ESMCLK_CTRL, 1);
 	pr_info("amhdmitx: I2C_REACTIVE\n");
 	hdmitx_hw_cntl_misc(&hdev->tx_hw.base, MISC_I2C_REACTIVE, 0);
 
@@ -7036,8 +7027,7 @@ unsigned int drm_get_rx_hdcp_cap(void)
 	 * read hdcp version of sink during hdcp1.4 authentication.
 	 * if hdcp1.4 authentication currently, force return hdcp1.4
 	 */
-	if (hdev->hdcp_mode == 1)
-		return 0x1;
+
 	/* if TX don't have HDCP22 key, skip RX hdcp22 ver */
 	if (hdev->hwop.cntlddc(hdev,
 		DDC_HDCP_22_LSTORE, 0) == 0 || !hdcp_tx22_daemon_ready())

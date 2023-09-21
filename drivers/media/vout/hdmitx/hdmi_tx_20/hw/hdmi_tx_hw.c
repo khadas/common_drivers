@@ -2633,10 +2633,9 @@ static int set_aud_acr_pkt(struct hdmitx_dev *hdev,
 {
 	unsigned int data32;
 	unsigned int aud_n_para;
-	unsigned int char_rate = 0;
-	struct hdmi_timing frac_timing;
 	static unsigned int pre_aud_n_para;
 	struct hdmi_format_para *para = &hdev->tx_comm.fmt_para;
+	unsigned int char_rate = para->timing.pixel_freq;
 
 	/* audio packetizer config */
 	hdmitx_wr_reg(HDMITX_DWC_AUD_INPUTCLKFS, audio_param->aud_src_if ? 4 : 0);
@@ -2645,15 +2644,12 @@ static int set_aud_acr_pkt(struct hdmitx_dev *hdev,
 	    audio_param->type == CT_DTS_HD_MA)
 		hdmitx_wr_reg(HDMITX_DWC_AUD_INPUTCLKFS, 2);
 
-	frac_timing = para->timing;
-	if (hdev->tx_comm.frac_rate_policy && hdmitx_mode_update_timing(&frac_timing, true) >= 0)
-		char_rate = frac_timing.pixel_freq;
-	else
-		char_rate = para->timing.pixel_freq;
-
 	if (para->cs == HDMI_COLORSPACE_YUV422)
 		aud_n_para = hdmitx_hw_get_audio_n_paras(audio_param->rate,
 						  COLORDEPTH_24B, char_rate);
+	else if (para->cs == HDMI_COLORSPACE_YUV420)
+		aud_n_para = hdmitx_hw_get_audio_n_paras(audio_param->rate,
+						  para->cd, char_rate / 2);
 	else
 		aud_n_para = hdmitx_hw_get_audio_n_paras(audio_param->rate,
 						  para->cd, char_rate);
@@ -3393,7 +3389,7 @@ static void hdmitx_debug(struct hdmitx_dev *hdev, const char *buf)
 			extcon_event_type = hdmitx_extcon_hdmi;
 			pr_info("test extcon event type hdmitx_extcon_hdmi\n");
 			ret = kstrtoul(tmpbuf + 15, 10, &value);
-			extcon_set_state(extcon_event_type, EXTCON_DISP_HDMI, value);
+			extcon_set_state_sync(extcon_event_type, EXTCON_DISP_HDMI, value);
 		}
 	}
 }
@@ -4097,9 +4093,6 @@ int hdmitx_pkt_dump(struct hdmitx_dev *hdmitx_device, char *buf, int len)
 	pos += snprintf(buf + pos, len - pos, "AUDI.sample_frequency: %s\n", conf);
 
 	switch ((reg_val & 0x30) >> 4) {
-	case SS_REFER_TO_STREAM:
-		conf = "refer to stream header";
-		break;
 	case SS_16BITS:
 		conf = "16bit";
 		break;
@@ -4109,8 +4102,10 @@ int hdmitx_pkt_dump(struct hdmitx_dev *hdmitx_device, char *buf, int len)
 	case SS_24BITS:
 		conf = "24bit";
 		break;
+	case SS_REFER_TO_STREAM:
 	default:
-		conf = "MAX";
+		conf = "refer to stream header";
+		break;
 	}
 	pos += snprintf(buf + pos, len - pos, "AUDI.sample_size: %s\n", conf);
 
@@ -5856,6 +5851,20 @@ static int hdmitx_cntl_misc(struct hdmitx_hw_common *tx_hw, unsigned int cmd,
 			      hdmitx_rd_reg(HDMITX_DWC_AUD_N1));
 		udelay(1);
 		break;
+	case MISC_AUDIO_ACR_CTRL:
+		if (argv == 0)
+			hdmitx_set_reg_bits(HDMITX_DWC_FC_PACKET_TX_EN, 0, 0, 1);
+		if (argv == 1)
+			hdmitx_set_reg_bits(HDMITX_DWC_FC_PACKET_TX_EN, 1, 0, 1);
+		break;
+	case MISC_ESMCLK_CTRL:
+		hdmitx_set_reg_bits(HDMITX_TOP_CLK_CNTL, !!argv, 6, 1);
+		hd_set_reg_bits(P_CLKCTRL_HDCP22_CLK_CTRL, !!argv, 8, 1);
+		break;
+	case MISC_AUDIO_PREPARE:
+		hdmitx_set_reg_bits(HDMITX_DWC_AUD_CONF0, 0, 0, 4);
+		hdmitx_set_reg_bits(HDMITX_DWC_AUD_CONF0, 1, 5, 1);
+		break;
 	case MISC_DIS_HPLL:
 		/* RESET set as 1, delay 50us, Enable set as 0 */
 		/* G12A reset/enable bit position is different */
@@ -5870,16 +5879,6 @@ static int hdmitx_cntl_misc(struct hdmitx_hw_common *tx_hw, unsigned int cmd,
 			usleep_range(49, 51);
 			hd_set_reg_bits(pll_cntl, 0, 30, 1);
 		}
-		break;
-	case MISC_AUDIO_ACR_CTRL:
-		if (argv == 0)
-			hdmitx_set_reg_bits(HDMITX_DWC_FC_PACKET_TX_EN, 0, 0, 1);
-		if (argv == 1)
-			hdmitx_set_reg_bits(HDMITX_DWC_FC_PACKET_TX_EN, 1, 0, 1);
-		break;
-	case MISC_AUDIO_PREPARE:
-		hdmitx_set_reg_bits(HDMITX_DWC_AUD_CONF0, 0, 0, 4);
-		hdmitx_set_reg_bits(HDMITX_DWC_AUD_CONF0, 1, 5, 1);
 		break;
 	default:
 		break;

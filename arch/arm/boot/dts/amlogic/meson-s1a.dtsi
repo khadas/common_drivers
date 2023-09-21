@@ -1644,7 +1644,7 @@
 		key = <&efusekey>;
 		check = <&efusecheck>;
 		clock-names = "efuse_clk";
-		status = "disabled";
+		status = "okay";
 	};
 
 	efusekey:efusekey{

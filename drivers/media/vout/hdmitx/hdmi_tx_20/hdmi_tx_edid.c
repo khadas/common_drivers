@@ -236,7 +236,7 @@ static void edid_standard_timing_iii(struct rx_cap *prxcap, unsigned char *data)
 		store_vesa_idx(prxcap, HDMIV_1920x1200p60hz);
 }
 
-static void calc_timing(unsigned char *data, struct vesa_standard_timing *t)
+static void calc_timing(unsigned char *data, struct vesa_standard_timing *t, struct rx_cap *prxcap)
 {
 	const struct hdmi_timing *timing = NULL;
 
@@ -261,9 +261,6 @@ static void calc_timing(unsigned char *data, struct vesa_standard_timing *t)
 	t->vsync = (data[1] & 0x3f) + 60;
 	timing = hdmitx_mode_match_vesa_timing(t);
 	if (timing) {
-		struct hdmitx_dev *hdev = get_hdmitx_device();
-		struct rx_cap *prxcap = &hdev->tx_comm.rxcap;
-
 		/* prefer 16x9 mode */
 		if (timing->vic == HDMI_6_720x480i60_4x3 ||
 			timing->vic == HDMI_2_720x480p60_4x3 ||
@@ -288,7 +285,7 @@ static void edid_standardtiming(struct rx_cap *prxcap, unsigned char *data,
 
 	for (i = 0; i < max_num; i++) {
 		memset(&timing, 0, sizeof(struct vesa_standard_timing));
-		calc_timing(&data[i * 2], &timing);
+		calc_timing(&data[i * 2], &timing, prxcap);
 	}
 }
 
@@ -703,14 +700,13 @@ INVALID_DRM_STATIC:
 	return -1;
 }
 
-static int edid_parsedrmsb(struct rx_cap *prxcap,
+static int edid_parsedrmsb(struct hdmitx_common *tx_comm, struct rx_cap *prxcap,
 			   unsigned char *buf)
 {
-	struct hdmitx_dev *hdev = get_hdmitx_device();
 	struct hdr_info *hdr = &prxcap->hdr_info;
 	struct hdr_info *hdr2 = &prxcap->hdr_info2;
 
-	if (hdev->tx_comm.hdr_priority == 2) {
+	if (tx_comm->hdr_priority == 2) {
 		_edid_parsedrmsb(hdr2, buf);
 		return 0;
 	}
@@ -777,14 +773,13 @@ INVALID_DRM_DYNAMIC:
 	return -1;
 }
 
-static int edid_parsedrmdb(struct rx_cap *prxcap,
+static int edid_parsedrmdb(struct hdmitx_common *tx_comm, struct rx_cap *prxcap,
 			   unsigned char *buf)
 {
-	struct hdmitx_dev *hdev = get_hdmitx_device();
 	struct hdr_info *hdr = &prxcap->hdr_info;
 	struct hdr_info *hdr2 = &prxcap->hdr_info2;
 
-	if (hdev->tx_comm.hdr_priority == 2) {
+	if (tx_comm->hdr_priority == 2) {
 		_edid_parsedrmdb(hdr2, buf);
 		return 0;
 	}
@@ -1129,12 +1124,12 @@ static void get_ilatency(struct rx_cap *prxcap, unsigned char *val)
 		prxcap->i_aLatency = val[1] * 2 - 1;
 }
 
-static void hdmitx_edid_parse_hdmi14(struct rx_cap *prxcap,
+static void hdmitx_edid_parse_hdmi14(struct hdmitx_dev *hdev,
+					 struct rx_cap *prxcap,
 				     unsigned char offset,
 				     unsigned char *block_buf,
 				     unsigned char count)
 {
-	struct hdmitx_dev *hdev = get_hdmitx_device();
 	struct hdmitx_info *info = &hdev->hdmi_info;
 	int idx = 0, tmp = 0;
 
@@ -1382,7 +1377,7 @@ static int hdmitx_edid_cta_block_parse(struct hdmitx_dev *hdev,
 			if (block_buf[offset] == 0x03 &&
 			    block_buf[offset + 1] == 0x0c &&
 			    block_buf[offset + 2] == 0x00) {
-				hdmitx_edid_parse_hdmi14(prxcap, offset,
+				hdmitx_edid_parse_hdmi14(hdev, prxcap, offset,
 							 block_buf, count);
 			} else if ((block_buf[offset] == 0xd8) &&
 				(block_buf[offset + 1] == 0x5d) &&
@@ -1420,14 +1415,14 @@ static int hdmitx_edid_cta_block_parse(struct hdmitx_dev *hdev,
 						block_buf[offset + 2];
 					break;
 				case EXTENSION_DRM_STATIC_TAG:
-					edid_parsedrmsb(prxcap,
+					edid_parsedrmsb(&hdev->tx_comm, prxcap,
 							&block_buf[offset]);
 					rx_set_hdr_lumi(&block_buf[offset],
 							(block_buf[offset] &
 							 0x1f) + 1);
 					break;
 				case EXTENSION_DRM_DYNAMIC_TAG:
-					edid_parsedrmdb(prxcap,
+					edid_parsedrmdb(&hdev->tx_comm, prxcap,
 							&block_buf[offset]);
 					break;
 				case EXTENSION_VFPDB_TAG:
@@ -1490,7 +1485,7 @@ next:
 			memcpy(drm_data, tv_drm[force_hdr - 1],
 				drm_size);
 		}
-		edid_parsedrmsb(prxcap, drm_data);
+		edid_parsedrmsb(&hdev->tx_comm, prxcap, drm_data);
 	}
 
 	if (aud_flag == 0)

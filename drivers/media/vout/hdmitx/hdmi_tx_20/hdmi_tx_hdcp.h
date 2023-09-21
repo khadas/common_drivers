@@ -15,7 +15,7 @@
  * other devices
  */
 int hdcp_ksv_valid(unsigned char *dat);
-int hdmitx_hdcp_init(void);
+int hdmitx_hdcp_init(struct hdmitx_dev *hdev);
 
 #endif
 

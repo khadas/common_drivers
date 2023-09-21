@@ -50,11 +50,9 @@ static int write_buff(const char *fmt, ...);
 
 static struct hdcplog_buf hdcplog_buf;
 
-unsigned int hdcp_get_downstream_ver(void)
+unsigned int hdcp_get_downstream_ver(struct hdmitx_dev *hdev)
 {
 	unsigned int ret = 14;
-
-	struct hdmitx_dev *hdev = get_hdmitx_device();
 
 	/* if TX don't have HDCP22 key, skip RX hdcp22 ver */
 	if (hdev->hwop.cntlddc(hdev, DDC_HDCP_22_LSTORE, 0) == 0)
@@ -286,9 +284,8 @@ const struct file_operations hdcplog_ops = {
 
 static struct dentry *hdmitx_dbgfs;
 
-int hdmitx_hdcp_init(void)
+int hdmitx_hdcp_init(struct hdmitx_dev *hdev)
 {
-	struct hdmitx_dev *hdev = get_hdmitx_device();
 	struct dentry *entry;
 
 	pr_debug(HDCP "%s\n", __func__);
@@ -318,10 +315,8 @@ int hdmitx_hdcp_init(void)
 	return 0;
 }
 
-void __exit hdmitx_hdcp_exit(void)
+void __exit hdmitx_hdcp_exit(struct hdmitx_dev *hdev)
 {
-	struct hdmitx_dev *hdev = get_hdmitx_device();
-
 	if (hdev)
 		cancel_delayed_work_sync(&hdev->work_do_hdcp);
 }

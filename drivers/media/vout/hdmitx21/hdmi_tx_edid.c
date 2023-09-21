@@ -231,7 +231,7 @@ static void edid_standardtimingiii(struct rx_cap *prxcap, u8 *data)
 		store_vesa_idx(prxcap, HDMIV_1920x1200p60hz);
 }
 
-static void calc_timing(u8 *data, struct vesa_standard_timing *t)
+static void calc_timing(u8 *data, struct vesa_standard_timing *t, struct rx_cap *prxcap)
 {
 	const struct hdmi_timing *standard_timing = NULL;
 
@@ -256,9 +256,6 @@ static void calc_timing(u8 *data, struct vesa_standard_timing *t)
 	t->vsync = (data[1] & 0x3f) + 60;
 	standard_timing = hdmitx_mode_match_vesa_timing(t);
 	if (standard_timing) {
-		struct hdmitx_dev *hdev = get_hdmitx21_device();
-		struct rx_cap *prxcap = &hdev->tx_comm.rxcap;
-
 		/* prefer 16x9 mode */
 		if (standard_timing->vic == HDMI_6_720x480i60_4x3 ||
 			standard_timing->vic == HDMI_2_720x480p60_4x3 ||
@@ -282,7 +279,7 @@ static void edid_standardtiming(struct rx_cap *prxcap, u8 *data,
 
 	for (i = 0; i < max_num; i++) {
 		memset(&timing, 0, sizeof(struct vesa_standard_timing));
-		calc_timing(&data[i * 2], &timing);
+		calc_timing(&data[i * 2], &timing, prxcap);
 	}
 }
 
@@ -1182,9 +1179,8 @@ INVALID_DRM_STATIC:
 	return -1;
 }
 
-static int edid_parsedrmsb(struct rx_cap *prxcap, u8 *buf)
+static int edid_parsedrmsb(struct hdmitx_dev *hdev, struct rx_cap *prxcap, u8 *buf)
 {
-	struct hdmitx_dev *hdev = get_hdmitx21_device();
 	struct hdr_info *hdr = &prxcap->hdr_info;
 	struct hdr_info *hdr2 = &prxcap->hdr_info2;
 
@@ -1254,9 +1250,8 @@ INVALID_DRM_DYNAMIC:
 	return -1;
 }
 
-static int edid_parsedrmdb(struct rx_cap *prxcap, u8 *buf)
+static int edid_parsedrmdb(struct hdmitx_dev *hdev, struct rx_cap *prxcap, u8 *buf)
 {
-	struct hdmitx_dev *hdev = get_hdmitx21_device();
 	struct hdr_info *hdr = &prxcap->hdr_info;
 	struct hdr_info *hdr2 = &prxcap->hdr_info2;
 
@@ -1954,14 +1949,14 @@ static int hdmitx_edid_block_parse(struct hdmitx_dev *hdev,
 						blockbuf[offset + 2];
 					break;
 				case EXTENSION_DRM_STATIC_TAG:
-					edid_parsedrmsb(prxcap,
+					edid_parsedrmsb(hdev, prxcap,
 							&blockbuf[offset]);
 					rx_set_hdr_lumi(&blockbuf[offset],
 							(blockbuf[offset] &
 							 0x1f) + 1);
 					break;
 				case EXTENSION_DRM_DYNAMIC_TAG:
-					edid_parsedrmdb(prxcap,
+					edid_parsedrmdb(hdev, prxcap,
 							&blockbuf[offset]);
 					break;
 				case EXTENSION_VFPDB_TAG:

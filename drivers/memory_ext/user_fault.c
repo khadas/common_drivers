@@ -83,7 +83,7 @@
 #endif
 #endif
 
-static int show_data_valid(unsigned long reg)
+static int show_kernel_data_valid(unsigned long reg)
 {
 	struct page *page;
 
@@ -127,7 +127,7 @@ static void show_data(unsigned long addr, int nbytes, const char *name)
 	 * We need more strict filtering rules
 	 */
 
-	if (!show_data_valid((unsigned long)(addr + nbytes / 2)))
+	if (!show_kernel_data_valid((unsigned long)(addr + nbytes / 2)))
 		return;
 
 #if IS_ENABLED(CONFIG_AMLOGIC_SECMON)
@@ -173,7 +173,6 @@ static void show_data(unsigned long addr, int nbytes, const char *name)
 /*
  * dump a block of user memory from around the given address
  */
-#if defined(CONFIG_ARM64) || defined(CONFIG_RISCV)
 static void show_user_data(unsigned long addr, int nbytes, const char *name)
 {
 	int	i, j;
@@ -184,19 +183,6 @@ static void show_user_data(unsigned long addr, int nbytes, const char *name)
 
 	if (!access_ok((void *)addr, nbytes))
 		return;
-
-	if (!show_data_valid((unsigned long)(addr + nbytes / 2)))
-		return;
-
-#if IS_ENABLED(CONFIG_AMLOGIC_SECMON)
-	/*
-	 * filter out secure monitor region
-	 */
-	if (within_secmon_region(addr + nbytes / 2)) {
-		pr_emerg("\n%s: %#lx S\n", name, addr + nbytes / 2);
-		return;
-	}
-#endif
 
 	pr_info("\n%s: %#lx:\n", name, addr);
 
@@ -214,22 +200,23 @@ static void show_user_data(unsigned long addr, int nbytes, const char *name)
 		 * each line of the dump < 80 characters
 		 */
 		len = 0;
-		len += snprintf(buf + len, sizeof(buf) - len, "%04lx ", (unsigned long)p & 0xffff);
+		len += snprintf(buf + len, sizeof(buf) - len,
+						"%04lx ", (unsigned long)p & 0xffff);
 		for (j = 0; j < 8; j++) {
-			u32	data;
 			int bad;
+			unsigned char data[4];
 
-			bad = __get_user(data, p);
+			bad = __copy_from_user_inatomic(data, (const void *)p, sizeof(u32));
 			if (bad)
 				len += snprintf(buf + len, sizeof(buf) - len, " ********");
 			else
-				len += snprintf(buf + len, sizeof(buf) - len, " %08x", data);
+				len += snprintf(buf + len, sizeof(buf) - len,
+								" %08x", *(u32 *)data);
 			++p;
 		}
 		pr_info("%s\n", buf);
 	}
 }
-#endif
 
 #ifdef CONFIG_ARM64
 static void show_pfn(unsigned long reg, char *s)
@@ -271,74 +258,6 @@ static void show_regs_pfn(struct pt_regs *regs)
 	}
 }
 
-#elif defined CONFIG_ARM
-static void show_user_data(unsigned long addr, int nbytes, const char *name)
-{
-	int	i, j;
-	int	nlines;
-	u32	*p;
-	char	buf[128] = {0};
-	int	len = 0;
-
-	if (!access_ok((void *)addr, nbytes))
-		return;
-
-#ifdef CONFIG_AMLOGIC_MODIFY
-	/*
-	 * Treating data in general purpose register as an address
-	 * and dereferencing it is quite a dangerous behaviour,
-	 * especially when it is an address belonging to secure
-	 * region or ioremap region, which can lead to external
-	 * abort on non-linefetch and can not be protected by
-	 * probe_kernel_address.
-	 * We need more strict filtering rules
-	 */
-
-	if (!show_data_valid((unsigned long)(addr + nbytes / 2)))
-		return;
-
-#if IS_ENABLED(CONFIG_AMLOGIC_SECMON)
-	/*
-	 * filter out secure monitor region
-	 */
-	if (within_secmon_region(addr + nbytes / 2)) {
-		pr_emerg("\n%s: %#lx S\n", name, addr + nbytes / 2);
-		return;
-	}
-#endif
-#endif
-
-	pr_info("\n%s: %#lx:\n", name, addr);
-
-	/*
-	 * round address down to a 32 bit boundary
-	 * and always dump a multiple of 32 bytes
-	 */
-	p = (u32 *)(addr & ~(sizeof(u32) - 1));
-	nbytes += (addr & (sizeof(u32) - 1));
-	nlines = (nbytes + 31) / 32;
-
-	for (i = 0; i < nlines; i++) {
-		/*
-		 * just display low 16 bits of address to keep
-		 * each line of the dump < 80 characters
-		 */
-		len = 0;
-		len += snprintf(buf + len, sizeof(buf) - len, "%04lx ", (unsigned long)p & 0xffff);
-		for (j = 0; j < 8; j++) {
-			u32 data;
-			int bad;
-
-			bad = __get_user(data, p);
-			if (bad)
-				len += snprintf(buf + len, sizeof(buf) - len, " ********");
-			else
-				len += snprintf(buf + len, sizeof(buf) - len, " %08x", data);
-			++p;
-		}
-		pr_info("%s\n", buf);
-	}
-}
 #elif defined CONFIG_RISCV
 static void show_pfn(unsigned long reg, const char *s)
 {

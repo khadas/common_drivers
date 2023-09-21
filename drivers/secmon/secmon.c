@@ -95,7 +95,7 @@ int within_secmon_region(unsigned long addr)
 		return 0;
 
 	if (!addr_pfn)
-		return 1;
+		return 0;
 
 	if (addr_pfn >= virt_to_pfn(secmon_start_virt) &&
 	    addr_pfn <= virt_to_pfn(secmon_start_virt + secmon_size))

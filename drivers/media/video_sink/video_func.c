@@ -3820,7 +3820,8 @@ static void do_vd1_swap_frame(u8 layer_id,
 	prime_sl_process(vd_layer[0].dispbuf);
 #endif
 
-	if (new_frame || vd_layer[0].dispbuf) {
+	if ((new_frame || vd_layer[0].dispbuf) &&
+		get_video_enabled(0)) {
 		if (new_frame) {
 			if (new_frame->ext_signal_type & 0x1) {
 				if (!atomic_read(&fmm_changed)) {

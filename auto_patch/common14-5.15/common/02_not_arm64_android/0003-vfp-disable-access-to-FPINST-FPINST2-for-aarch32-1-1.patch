@@ -1,0 +1,110 @@
+From 978c8d3f81d0cfc290a25f1b034d6ec2e3878ca3 Mon Sep 17 00:00:00 2001
+From: Jianxin Pan <jianxin.pan@amlogic.com>
+Date: Fri, 27 Aug 2021 12:42:04 +0800
+Subject: [PATCH] vfp: disable access to FPINST/FPINST2 for aarch32 [1/1]
+
+PD#SWPL-58611
+
+Problem:
+upported FP instruction in kernel mode
+
+Solution:
+disable  access to FPINST/FPINST2 for aarch32 because there is
+no fpinst/fpinst2 in armv8 aarch32.
+
+Verify:
+T5D
+
+Change-Id: I930193d2a28b80c875d250b7dbc0287c47d84c84
+Signed-off-by: Jianxin Pan <jianxin.pan@amlogic.com>
+(cherry picked from commit f430dfd5d417fa5ccf739502bb3be89d48232a24)
+---
+ arch/arm/vfp/vfphw.S     | 6 ++++++
+ arch/arm/vfp/vfpmodule.c | 5 ++++-
+ 2 files changed, 10 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/vfp/vfphw.S b/arch/arm/vfp/vfphw.S
+index 6f7926c9c179..4122c9514c32 100644
+--- a/arch/arm/vfp/vfphw.S
++++ b/arch/arm/vfp/vfphw.S
+@@ -109,6 +109,7 @@ ENTRY(vfp_support_entry)
+ 	VFPFSTMIA r4, r5		@ save the working registers
+ 	VFPFMRX	r5, FPSCR		@ current status
+ #ifndef CONFIG_CPU_FEROCEON
++#ifndef CONFIG_AMLOGIC_ARMV8_AARCH32
+ 	tst	r1, #FPEXC_EX		@ is there additional state to save?
+ 	beq	1f
+ 	VFPFMRX	r6, FPINST		@ FPINST (only if FPEXC.EX is set)
+@@ -116,6 +117,7 @@ ENTRY(vfp_support_entry)
+ 	beq	1f
+ 	VFPFMRX	r8, FPINST2		@ FPINST2 if needed (and present)
+ 1:
++#endif
+ #endif
+ 	stmia	r4, {r1, r5, r6, r8}	@ save FPEXC, FPSCR, FPINST, FPINST2
+ vfp_reload_hw:
+@@ -152,6 +154,7 @@ vfp_reload_hw:
+ 					@ FPEXC is in a safe state
+ 	ldmia	r10, {r1, r5, r6, r8}	@ load FPEXC, FPSCR, FPINST, FPINST2
+ #ifndef CONFIG_CPU_FEROCEON
++#ifndef CONFIG_AMLOGIC_ARMV8_AARCH32
+ 	tst	r1, #FPEXC_EX		@ is there additional state to restore?
+ 	beq	1f
+ 	VFPFMXR	FPINST, r6		@ restore FPINST (only if FPEXC.EX is set)
+@@ -159,6 +162,7 @@ vfp_reload_hw:
+ 	beq	1f
+ 	VFPFMXR	FPINST2, r8		@ FPINST2 if needed (and present)
+ 1:
++#endif
+ #endif
+ 	VFPFMXR	FPSCR, r5		@ restore status
+
+@@ -225,6 +229,7 @@ ENTRY(vfp_save_state)
+ 	DBGSTR1	"save VFP state %p", r0
+ 	VFPFSTMIA r0, r2		@ save the working registers
+ 	VFPFMRX	r2, FPSCR		@ current status
++#ifndef CONFIG_AMLOGIC_ARMV8_AARCH32
+ 	tst	r1, #FPEXC_EX		@ is there additional state to save?
+ 	beq	1f
+ 	VFPFMRX	r3, FPINST		@ FPINST (only if FPEXC.EX is set)
+@@ -232,6 +237,7 @@ ENTRY(vfp_save_state)
+ 	beq	1f
+ 	VFPFMRX	r12, FPINST2		@ FPINST2 if needed (and present)
+ 1:
++#endif
+ 	stmia	r0, {r1, r2, r3, r12}	@ save FPEXC, FPSCR, FPINST, FPINST2
+ 	ret	lr
+ ENDPROC(vfp_save_state)
+diff --git a/arch/arm/vfp/vfpmodule.c b/arch/arm/vfp/vfpmodule.c
+index 2cb355c1b5b7..2df55b621c89 100644
+--- a/arch/arm/vfp/vfpmodule.c
++++ b/arch/arm/vfp/vfpmodule.c
+@@ -357,12 +357,14 @@ void VFP_bounce(u32 trigger, u32 fpexc, struct pt_regs *regs)
+
+ 	if (fpexc & FPEXC_EX) {
+ #ifndef CONFIG_CPU_FEROCEON
++#ifndef CONFIG_AMLOGIC_ARMV8_AARCH32
+ 		/*
+ 		 * Asynchronous exception. The instruction is read from FPINST
+ 		 * and the interrupted instruction has to be restarted.
+ 		 */
+ 		trigger = fmrx(FPINST);
+ 		regs->ARM_pc -= 4;
++#endif
+ #endif
+ 	} else if (!(fpexc & FPEXC_DEX)) {
+ 		/*
+@@ -409,8 +411,9 @@ void VFP_bounce(u32 trigger, u32 fpexc, struct pt_regs *regs)
+ 	 * before the condition above.
+ 	 */
+ 	barrier();
++#ifndef CONFIG_AMLOGIC_ARMV8_AARCH32
+ 	trigger = fmrx(FPINST2);
+-
++#endif
+  emulate:
+ 	exceptions = vfp_emulate_instruction(trigger, orig_fpscr, regs);
+ 	if (exceptions)
+--
+2.25.1
+

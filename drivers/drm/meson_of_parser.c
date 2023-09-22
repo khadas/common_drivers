@@ -134,6 +134,9 @@ void meson_of_init(struct device *vpu_dev, struct drm_device *dev,
 	ret = of_property_read_u8(dev->dev->of_node,
 				"dummyl_from_hdmitx", &priv->dummyl_from_hdmitx);
 
+	ret = of_property_read_u8(dev->dev->of_node,
+				"remove_get_vblank_timestamp", &priv->remove_get_vblank_timestamp);
+
 	am_meson_vpu_get_plane_crtc_mask(priv, "crtcmask_of_osd",
 		pipeline->num_osds, conf->crtcmask_osd);
 	am_meson_vpu_get_plane_crtc_mask(priv, "crtcmask_of_video",

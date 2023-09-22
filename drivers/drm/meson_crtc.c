@@ -526,7 +526,7 @@ static void meson_crtc_early_unregister(struct drm_crtc *crtc)
 {
 }
 
-static const struct drm_crtc_funcs am_meson_crtc_funcs = {
+static struct drm_crtc_funcs am_meson_crtc_funcs = {
 	.atomic_destroy_state	= meson_crtc_destroy_state,
 	.atomic_duplicate_state = meson_crtc_duplicate_state,
 	.destroy		= drm_crtc_cleanup,
@@ -541,7 +541,6 @@ static const struct drm_crtc_funcs am_meson_crtc_funcs = {
 	.verify_crc_source	= meson_crtc_verify_crc_source,
 	.enable_vblank = meson_crtc_enable_vblank,
 	.disable_vblank = meson_crtc_disable_vblank,
-	.get_vblank_timestamp = drm_crtc_vblank_helper_get_vblank_timestamp,
 	.late_register = meson_crtc_late_register,
 	.early_unregister = meson_crtc_early_unregister,
 };
@@ -1140,6 +1139,10 @@ struct am_meson_crtc *meson_crtc_bind(struct meson_drm *priv, int idx)
 	primary_plane = &priv->osd_planes[plane_index]->base;
 
 	snprintf(crtc_name, 64, "%s-%d", "VPP", amcrtc->crtc_index);
+
+	if (!priv->remove_get_vblank_timestamp)
+		am_meson_crtc_funcs.get_vblank_timestamp =
+			drm_crtc_vblank_helper_get_vblank_timestamp;
 
 	ret = drm_crtc_init_with_planes(priv->drm, crtc,
 					primary_plane, priv->cursor_plane,

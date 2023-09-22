@@ -116,6 +116,7 @@ struct meson_drm {
 	bool logo_show_done;
 	u32 osd_occupied_index;
 	u8 dummyl_from_hdmitx;
+	u8 remove_get_vblank_timestamp;
 };
 
 /*component bind functions*/

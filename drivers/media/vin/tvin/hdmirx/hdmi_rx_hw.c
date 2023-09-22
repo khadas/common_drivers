@@ -4670,7 +4670,7 @@ void rx_aud_pll_ctl(bool en, u8 port)
 					tmp |= (1 << 8);// [    8] clk_en for cts_hdmirx_aud_pll_clk
 					wr_reg_clk_ctl(RX_CLK_CTRL2, tmp);
 					/* AUD_CLK=N/CTS*TMDS_CLK */
-					wr_reg_ana_ctl(ANACTL_AUD_PLL_CNTL, 0x40009540);
+					wr_reg_ana_ctl(ANACTL_AUD_PLL_CNTL, 0x40001540);
 					/* use mpll */
 					tmp = 0;
 					tmp |= 2 << 2; /* 0:tmds_clk 1:ref_clk 2:mpll_clk */
@@ -4681,7 +4681,7 @@ void rx_aud_pll_ctl(bool en, u8 port)
 					if (log_level & AUDIO_LOG)
 						rx_pr("aud div=%d\n",
 							rd_reg_ana_ctl(ANACTL_AUD_PLL_CNTL3));
-					wr_reg_ana_ctl(ANACTL_AUD_PLL_CNTL, 0x6000d540);
+					wr_reg_ana_ctl(ANACTL_AUD_PLL_CNTL, 0x60001540);
 					tmp = hdmirx_rd_top_common(TOP_ACR_CNTL_STAT) >> 31;
 					if (log_level & AUDIO_LOG)
 						rx_pr("audio pll lock:0x%x\n", tmp);

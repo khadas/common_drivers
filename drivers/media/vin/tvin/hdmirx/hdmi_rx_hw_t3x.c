@@ -178,13 +178,13 @@ void t3x_480p_pll_cfg_20(u8 port)
 	usleep_range(10, 20);
 	hdmirx_wr_amlphy_t3x(T3X_RG_RX20PLL_0, 0x0530a003, port);
 	usleep_range(10, 20);
-	hdmirx_wr_amlphy_t3x(T3X_RG_RX20PLL_1, 0x41401236, port);
+	hdmirx_wr_amlphy_t3x(T3X_RG_RX20PLL_1, 0x21401236, port);
 	usleep_range(10, 20);
 	hdmirx_wr_amlphy_t3x(T3X_RG_RX20PLL_0, 0x0530a007, port);
 	usleep_range(10, 20);
 	hdmirx_wr_amlphy_t3x(T3X_RG_RX20PLL_0, 0x4530a007, port);
 	usleep_range(10, 20);
-	rx[port].phy.aud_div = 0;
+	rx[port].phy.aud_div = 0x3;
 	rx[port].phy.aud_div_1 = 0x408;
 }
 
@@ -198,13 +198,13 @@ void t3x_720p_pll_cfg_20(u8 port)
 	usleep_range(10, 20);
 	hdmirx_wr_amlphy_t3x(T3X_RG_RX20PLL_0, 0x05305003, port);
 	usleep_range(10, 20);
-	hdmirx_wr_amlphy_t3x(T3X_RG_RX20PLL_1, 0x61401236, port);
+	hdmirx_wr_amlphy_t3x(T3X_RG_RX20PLL_1, 0x21401236, port);
 	usleep_range(10, 20);
 	hdmirx_wr_amlphy_t3x(T3X_RG_RX20PLL_0, 0x05305007, port);
 	usleep_range(10, 20);
 	hdmirx_wr_amlphy_t3x(T3X_RG_RX20PLL_0, 0x45305007, port);
 	usleep_range(10, 20);
-	rx[port].phy.aud_div = 0;
+	rx[port].phy.aud_div = 2;
 	rx[port].phy.aud_div_1 = 0x8;
 }
 
@@ -1166,7 +1166,7 @@ void aml_eq_cfg_t3x_20(u8 port)
 	u32 data32;
 	int i = 0;
 	/* dont need to run eq if no sqo_clk or pll not lock */
-	if (!aml_phy_pll_lock(port) || !is_clk_stable(port))
+	if (!is_clk_stable(port))
 		return;
 	hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX20PHY_DCHD_CDR, T3X_20_CDR_RSTB, 1, port);
 	hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX20PHY_DCHD_CDR, T3X_20_CDR_EN, 1, port);
@@ -1647,12 +1647,12 @@ void t3x_480p_pll_cfg_21(u8 port)
 	usleep_range(20, 30);
 	hdmirx_wr_amlphy_t3x(T3X_HDMIRX21PLL_CTRL0, 0x0530a003, port);
 	usleep_range(20, 30);
-	hdmirx_wr_amlphy_t3x(T3X_HDMIRX21PLL_CTRL1, 0x41401236, port);
+	hdmirx_wr_amlphy_t3x(T3X_HDMIRX21PLL_CTRL1, 0x21401236, port);
 	usleep_range(20, 30);
 	hdmirx_wr_amlphy_t3x(T3X_HDMIRX21PLL_CTRL0, 0x0530a007, port);
 	usleep_range(20, 30);
 	hdmirx_wr_amlphy_t3x(T3X_HDMIRX21PLL_CTRL0, 0x4530a007, port);
-	rx[port].phy.aud_div = 0;
+	rx[port].phy.aud_div = 3;
 	rx[port].phy.aud_div_1 = 0x408;
 }
 

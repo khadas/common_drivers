@@ -675,7 +675,7 @@
 };
 
 &i2c4 {
-	status = "okay";
+	status = "disable";
 	pinctrl-names="default";
 	pinctrl-0=<&i2c4_pins3>;
 	clock-frequency = <300000>;

@@ -2712,7 +2712,7 @@ void frc_internal_initial(struct frc_dev_s *frc_devp)
 		out_frm_dly_num = 0x0;
 		// WRITE_FRC_BITS(FRC_REG_TOP_RESERVE0, 0x17, 0, 8); // rev.A
 		// WRITE_FRC_BITS(FRC_REG_TOP_RESERVE0, 0x46, 0, 8); // rev.B
-		WRITE_FRC_BITS(FRC_REG_TOP_RESERVE0, 0x68, 0, 8); // rev.B + prevsync
+		WRITE_FRC_BITS(FRC_REG_TOP_RESERVE0, 0x78, 0, 8); // rev.B + prevsync
 		// frc_memc_120hz_patch_1(frc_devp);
 	} else {
 		frc_top->memc_loss_en = 0x03;

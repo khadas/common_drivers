@@ -2108,18 +2108,20 @@ void cec_save_mail_box(void)
 
 	CEC_INFO("%s\n", __func__);
 	tmp = cec_get_cur_phy_addr();
-	if (cec_dev->dev_type != CEC_TV_ADDR) {
-		/* 0xffff is the default invalid phy addr */
-		if (get_hpd_state() == 0)
-			cec_dev->phy_addr = 0xffff;
-		else if (tmp == 0)
-			cec_dev->phy_addr = 0xffff;
-		else
-			cec_dev->phy_addr = tmp;
-	} else {
-		cec_dev->phy_addr = 0;
-	}
+	//use register AO_DEBUG_REG1 to save physical addr,no need cec_dev->phy_addr
+//	if (cec_dev->dev_type != CEC_TV_ADDR) {
+//		/* 0xffff is the default invalid phy addr */
+//		if (get_hpd_state() == 0)
+//			cec_dev->phy_addr = 0xffff;
+//		else if (tmp == 0)
+//			cec_dev->phy_addr = 0xffff;
+//		else
+//			cec_dev->phy_addr = tmp;
+//	} else {
+//		cec_dev->phy_addr = 0;
+//	}
 
+	CEC_INFO("cec_get_cur_phy_addr=0x%x,cec_dev->phy_addr=0x%x", tmp, cec_dev->phy_addr);
 	cec_mailbox.cec_config = cec_config(0, 0);
 	cec_mailbox.phy_addr = cec_config2_phyaddr(0, 0);
 	cec_mailbox.phy_addr |= cec_config2_logaddr(0, 0) << 16;

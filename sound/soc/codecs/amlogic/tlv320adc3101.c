@@ -780,7 +780,6 @@ static int adc3101_i2c_probe(struct i2c_client *i2c,
 	if (ret) {
 		pr_warn("failed to get differential_pair, set it default:0\n");
 		adc3101->differential_pair = 0;
-		ret = 0;
 	}
 
 	ret = of_property_read_u32(i2c->dev.of_node, "slot_number",
@@ -788,7 +787,6 @@ static int adc3101_i2c_probe(struct i2c_client *i2c,
 	if (ret) {
 		pr_warn("failed to get slot_number, set it default:0\n");
 		adc3101->slot_number = 0;
-		ret = 0;
 	}
 	ret = devm_snd_soc_register_component(&i2c->dev,
 					      &soc_codec_dev_adc3101, adc3101_dai, 1);

@@ -584,8 +584,11 @@ int pdm_get_ors(int dclk_idx, int sample_rate)
 			osr = 64;
 		else if (sample_rate == 16000)
 			osr = 128;
-		else if (sample_rate == 16000)
+		else if (sample_rate == 8000)
 			osr = 256;
+		else
+			pr_err("%s, Not support rate:%d\n",
+				__func__, sample_rate);
 	} else {
 		if (sample_rate == 96000)
 			osr = 32;

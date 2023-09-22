@@ -1072,7 +1072,7 @@ static int resample_platform_probe(struct platform_device *pdev)
 		p_resample->resample_module);
 	return 0;
 err:
-	if (!IS_ERR_OR_NULL(p_resample)) {
+	if (p_resample) {
 		if (!IS_ERR_OR_NULL(p_resample->chipinfo)) {
 			if (p_resample->chipinfo && p_resample->chipinfo->id == 0)
 				s_resample_a = NULL;

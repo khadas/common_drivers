@@ -619,26 +619,25 @@
 	adc_keypad {
 		compatible = "amlogic, adc_keypad";
 		status = "okay";
-		key_name = "standby", "vol+", "vol-";
-		key_num = <3>;
+		key_name = "function";
+		key_num = <1>;
 		io-channels = <&saradc 0>;
 		io-channel-names = "key-chan-0";
-		key_chan = <0 0 0>;
-		key_code = <116 115 114>;
-		key_val = <20 910 630>; //val=voltage/1800mV*1023
-		key_tolerance = <40 40 40>;
+		key_chan = <0>;
+		key_code = <28>;
+		key_val = <87>; //val=voltage/1800mV*1023
+		key_tolerance = <40>;
 	};
 
 	gpio_keypad{
 		compatible = "amlogic, gpio_keypad";
 		status = "okay";
 		scan_period = <20>;
-		key_num = <2>;
-		key_name = "bluetooth", "mute";
-		key_code = <600 SW_MUTE_DEVICE>;
-		key_type = <EV_KEY EV_SW>;
-		key-gpios = <&gpio  GPIOD_2  GPIO_ACTIVE_HIGH
-			     &gpio  GPIOD_3  GPIO_ACTIVE_HIGH>;
+		key_num = <1>;
+		key_name = "power";
+		key_code = <KEY_POWER>;
+		key_type = <EV_KEY>;
+		key-gpios = <&gpio GPIOD_8  GPIO_ACTIVE_HIGH>;
 		detect_mode = <0>;/*0:polling mode, 1:irq mode*/
 	};
 };

@@ -170,10 +170,12 @@ static int meson_vrtc_alarm_irq_enable(struct device *dev, unsigned int enabled)
 	struct meson_vrtc_data *vrtc = dev_get_drvdata(dev);
 
 #ifdef CONFIG_AMLOGIC_MODIFY
-	if (enabled)
+	if (enabled) {
 		add_timer(&vrtc->alarm);
-	else
+	} else {
+		vrtc->alarm_time = 0;
 		del_timer(&vrtc->alarm);
+	}
 #endif
 
 	vrtc->enabled = enabled;

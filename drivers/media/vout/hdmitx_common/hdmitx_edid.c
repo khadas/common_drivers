@@ -98,7 +98,7 @@ static struct edid_venddat_t vendor_id[] = {
 /* Add new vendor data here */
 };
 
-void phy_addr_clear(struct vsdb_phyaddr *vsdb_phy_addr)
+static void phy_addr_clear(struct vsdb_phyaddr *vsdb_phy_addr)
 {
 	if (!vsdb_phy_addr)
 		return;

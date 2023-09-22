@@ -26,7 +26,12 @@ struct hdmitx21_hw {
 	struct amhdmitx_data_s *chip_data;
 	u8 tx_max_frl_rate; /* configure in dts file */
 	unsigned int dongle_mode:1;
+	u32 repeater_mode:1;
+	u32 enc_idx;
 	struct hdmitx_infoframe *infoframes;
+
+	/*for debug*/
+	u32 debug_hpd_lock;
 };
 
 #define to_hdmitx21_hw(x)	container_of(x, struct hdmitx21_hw, base)

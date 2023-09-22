@@ -234,11 +234,18 @@ enum hdmi_ll_mode {
  *             HDMITX COMMON STRUCT & API
  **********************************************************************/
 struct hdmitx_hw_common {
+	/*uninit when destroy*/
+	void (*uninit)(struct hdmitx_hw_common *tx_hw);
+
 	int (*cntlmisc)(struct hdmitx_hw_common *tx_hw,
 			u32 cmd, u32 arg);
 	/* Configure control */
 	int (*cntlconfig)(struct hdmitx_hw_common *tx_hw,
 			u32 cmd, u32 arg);
+	/* Control ddc for hdcp/edid functions */
+	int (*cntlddc)(struct hdmitx_hw_common *tx_hw,
+			   unsigned int cmd, unsigned long arg);
+
 	/* In original setpacket, there are many policies, like
 	 *	if ((DB[4] >> 4) == T3D_FRAME_PACKING)
 	 * Need a only pure data packet to call
@@ -246,18 +253,25 @@ struct hdmitx_hw_common {
 	void (*setpacket)(int type, unsigned char *DB,
 			unsigned char *HB);
 	void (*disablepacket)(int type);
+
 	/* Audio/Video/System Status */
 	int (*getstate)(struct hdmitx_hw_common *tx_hw,
 			u32 cmd, u32 arg);
+
 	/*validate if vic is supported by hw ip/phy*/
 	int (*validatemode)(struct hdmitx_hw_common *tx_hw, u32 vic);
 	/*calc formatpara hw info config*/
 	int (*calcformatpara)(struct hdmitx_hw_common *tx_hw, struct hdmi_format_para *para);
+
+	/*debug function*/
+	void (*debugfun)(struct hdmitx_hw_common *tx_hw, const char *cmd_str);
 };
 
 int hdmitx_hw_cntl_config(struct hdmitx_hw_common *tx_hw,
 	u32 cmd, u32 arg);
 int hdmitx_hw_cntl_misc(struct hdmitx_hw_common *tx_hw,
+	u32 cmd, u32 arg);
+int hdmitx_hw_cntl_ddc(struct hdmitx_hw_common *tx_hw,
 	u32 cmd, u32 arg);
 int hdmitx_hw_get_state(struct hdmitx_hw_common *tx_hw,
 	u32 cmd, u32 arg);

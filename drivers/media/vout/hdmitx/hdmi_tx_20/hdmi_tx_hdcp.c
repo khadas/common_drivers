@@ -54,7 +54,7 @@ unsigned int hdcp_get_downstream_ver(struct hdmitx_dev *hdev)
 	unsigned int ret = 14;
 
 	/* if TX don't have HDCP22 key, skip RX hdcp22 ver */
-	if (hdev->hwop.cntlddc(hdev, DDC_HDCP_22_LSTORE, 0) == 0)
+	if (hdmitx_hw_cntl_ddc(&hdev->tx_hw.base, DDC_HDCP_22_LSTORE, 0) == 0)
 		if (hdcp_rd_hdcp22_ver())
 			ret = 22;
 		else
@@ -85,8 +85,8 @@ int hdcp_ksv_valid(unsigned char *dat)
 
 static int save_obs_val(struct hdmitx_dev *hdev, struct hdcp_obs_val *obs)
 {
-	return hdev->hwop.cntlddc((struct hdmitx_dev *)obs,
-		DDC_HDCP14_SAVE_OBS, 0);
+	return hdmitx_hw_cntl_ddc(&hdev->tx_hw.base,
+		DDC_HDCP14_SAVE_OBS, (unsigned long)obs);
 }
 
 static void pr_obs(struct hdcp_obs_val *obst0, struct hdcp_obs_val *obst1,
@@ -188,7 +188,7 @@ static int hdmitx_hdcp_task(void *data)
 
 	INIT_DELAYED_WORK(&hdev->work_do_hdcp, _hdcp_do_work);
 	while (hdev->hpd_event != 0xff) {
-		hdmi_authenticated = hdev->hwop.cntlddc(hdev,
+		hdmi_authenticated = hdmitx_hw_cntl_ddc(&hdev->tx_hw.base,
 			DDC_HDCP_GET_AUTH, 0);
 		hdmitx_hdcp_status(hdmi_authenticated);
 		if (auth_trigger != hdmi_authenticated) {

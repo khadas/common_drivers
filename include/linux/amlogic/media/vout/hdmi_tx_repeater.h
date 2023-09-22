@@ -10,12 +10,6 @@
  * HDMI Repeater TX I/F
  * RX downstream Information from rptx to rprx
  */
-/* send part raw edid from TX to RX */
-void rx_repeat_hpd_state(bool plug);
-/* prevent compile error in no HDMIRX case */
-__weak void rx_repeat_hpd_state(bool plug)
-{
-}
 
 void rx_edid_physical_addr(int a, int b, int c, int d);
 __weak void rx_edid_physical_addr(int a, int b, int c, int d)

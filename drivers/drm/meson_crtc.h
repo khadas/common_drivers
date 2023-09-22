@@ -153,5 +153,4 @@ int get_amdv_mode(void);
 void set_hdr_policy(int policy);
 int get_hdr_policy(void);
 #endif
-bool dv_support(void);
 #endif

@@ -174,7 +174,7 @@ void hdmitx_top_intr_handler(struct work_struct *work)
 			else
 				dat_top &= ~(1 << 1);
 		}
-		if ((dat_top & 0x6) && hdev->hpd_lock) {
+		if ((dat_top & 0x6) && hdev->tx_hw.debug_hpd_lock) {
 			pr_info("HDMI hpd locked\n");
 			goto next;
 		}

@@ -256,8 +256,6 @@ int hdmitx_edid_validate_mode(struct rx_cap *rxcap, u32 vic);
 int hdmitx_edid_validate_format_para(struct rx_cap *prxcap,
 		struct hdmi_format_para *para);
 
-void phy_addr_clear(struct vsdb_phyaddr *vsdb_phy_addr);
-
 /*edid is good return 0, otherwise return < 0.*/
 bool hdmitx_edid_is_all_zeros(unsigned char *rawedid);
 int _check_base_structure(unsigned char *buf);

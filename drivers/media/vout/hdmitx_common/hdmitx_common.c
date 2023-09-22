@@ -5,6 +5,7 @@
 
 #include <linux/errno.h>
 #include <linux/mm.h>
+#include <linux/amlogic/media/vout/hdmi_tx_ext.h>
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_common.h>
 #include <hdmitx_boot_parameters.h>
 
@@ -41,19 +42,18 @@ int hdmitx_common_init(struct hdmitx_common *tx_comm, struct hdmitx_hw_common *h
 	/*load tx boot params*/
 	tx_comm->hdr_priority = boot_param->hdr_mask;
 	memcpy(tx_comm->hdmichecksum, boot_param->edid_chksum, sizeof(tx_comm->hdmichecksum));
-
 	memcpy(tx_comm->fmt_attr, boot_param->color_attr, sizeof(tx_comm->fmt_attr));
 
 	tx_comm->frac_rate_policy = boot_param->fraction_refreshrate;
 	tx_comm->config_csc_en = boot_param->config_csc;
-
-	hdmitx_format_para_reset(&tx_comm->fmt_para);
-
 	tx_comm->res_1080p = 0;
 	tx_comm->max_refreshrate = 60;
 	tx_comm->edid_ptr = tx_comm->EDID_buf;
 
 	tx_comm->tx_hw = hw_comm;
+	tx_comm->repeater_mode = 0;
+
+	hdmitx_format_para_reset(&tx_comm->fmt_para);
 
 	/*mutex init*/
 	mutex_init(&tx_comm->setclk_mutex);
@@ -61,59 +61,41 @@ int hdmitx_common_init(struct hdmitx_common *tx_comm, struct hdmitx_hw_common *h
 	return 0;
 }
 
-int hdmitx_common_destroy(struct hdmitx_common *tx_comm)
+int hdmitx_common_attch_platform_data(struct hdmitx_common *tx_comm,
+	enum HDMITX_PLATFORM_API_TYPE type, void *plt_data)
 {
+	switch (type) {
+	case HDMITX_PLATFORM_TRACER:
+		tx_comm->tx_tracer = (struct hdmitx_tracer *)plt_data;
+		break;
+	case HDMITX_PLATFORM_UEVENT:
+		tx_comm->event_mgr = (struct hdmitx_event_mgr *)plt_data;
+		break;
+	default:
+		pr_err("%s unknown platform api %d\n", __func__, type);
+		break;
+	};
+
 	return 0;
 }
 
-bool resolution_limited_1080p(const struct hdmi_timing *timing)
+int hdmitx_common_trace_event(struct hdmitx_common *tx_comm,
+	enum hdmitx_event_log_bits event)
 {
-	if (!timing)
-		return 0;
+	static int cnt;
 
-	if (timing->h_active > 1920 || timing->v_active > 1080)
-		return 0;
-	return 1;
+	hdmitx_tracer_write_event(tx_comm->tx_tracer, event);
+	return hdmitx_event_mgr_send_uevent(tx_comm->event_mgr,
+				HDMITX_CUR_ST_EVENT, ++cnt);
 }
 
-bool resolution_limited_2160p(const struct hdmi_timing *timing)
+int hdmitx_common_destroy(struct hdmitx_common *tx_comm)
 {
-	if (!timing)
-		return 0;
-
-	if (timing->h_active > 4096 || timing->v_active > 2160)
-		return 0;
-	return 1;
-}
-
-bool resolution_limited_4320p(const struct hdmi_timing *timing)
-{
-	if (!timing)
-		return 0;
-
-	if (timing->h_active > 7680 || timing->v_active > 4320)
-		return 0;
-	return 1;
-}
-
-bool freshrate_limited_60hz(const struct hdmi_timing *timing)
-{
-	if (!timing)
-		return 0;
-
-	if (timing->v_freq / 1000 > 60)
-		return 0;
-	return 1;
-}
-
-bool freshrate_limited_120hz(const struct hdmi_timing *timing)
-{
-	if (!timing)
-		return 0;
-
-	if (timing->v_freq / 1000 > 120)
-		return 0;
-	return 1;
+	if (tx_comm->tx_tracer)
+		hdmitx_tracer_destroy(tx_comm->tx_tracer);
+	if (tx_comm->event_mgr)
+		hdmitx_event_mgr_destroy(tx_comm->event_mgr);
+	return 0;
 }
 
 bool hdmitx_validate_y420_vic(enum hdmi_vic vic)
@@ -453,6 +435,40 @@ int hdmitx_common_parse_vic_in_edid(struct hdmitx_common *tx_comm, const char *m
 	return vic;
 }
 EXPORT_SYMBOL(hdmitx_common_parse_vic_in_edid);
+
+int hdmitx_common_notify_hpd_status(struct hdmitx_common *tx_comm)
+{
+	if (!tx_comm->suspend_flag) {
+		/*TOCONFIRM: notify to drm*/
+		if (tx_comm->drm_hpd_cb.callback)
+			tx_comm->drm_hpd_cb.callback(tx_comm->drm_hpd_cb.data);
+
+		/*notify to userspace by uevent*/
+		hdmitx_event_mgr_send_uevent(tx_comm->event_mgr,
+					HDMITX_HPD_EVENT, tx_comm->hpd_state);
+		hdmitx_event_mgr_send_uevent(tx_comm->event_mgr,
+					HDMITX_AUDIO_EVENT, tx_comm->hpd_state);
+	} else {
+		/* under early suspend, only update uevent state, not
+		 * post to system, in case 1.old android system will
+		 * set hdmi mode, 2.audio server and audio_hal will
+		 * start run, increase power consumption
+		 */
+		hdmitx_event_mgr_set_uevent_state(tx_comm->event_mgr,
+			HDMITX_HPD_EVENT, tx_comm->hpd_state);
+		hdmitx_event_mgr_set_uevent_state(tx_comm->event_mgr,
+			HDMITX_AUDIO_EVENT, tx_comm->hpd_state);
+	}
+
+	/*notify to other driver module:cec/rx TODO: need lock for edid_ptr */
+	/*if (tx_comm->hpd_state)
+	 *	hdmitx_event_mgr_notify(tx_comm->event_mgr, HDMITX_PLUG,
+	 *		tx_comm->edid_parsing ? tx_comm->edid_ptr : NULL);
+	 *else
+	 *	hdmitx_event_mgr_notify(tx_comm->event_mgr, HDMITX_UNPLUG, NULL);
+	 */
+	return 0;
+}
 
 /********************************Debug function***********************************/
 int hdmitx_load_edid_file(char *path)

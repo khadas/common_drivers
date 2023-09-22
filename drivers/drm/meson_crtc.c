@@ -74,6 +74,12 @@ __setup("gamma=", gamma_boot_ctl);
  *SDR			0
  *DV LL		    19
  */
+static bool dv_support(void)
+{
+	pr_err("NOT IMPLEMENTED\n");
+	return false;
+}
+
 static void set_eotf_by_property(struct am_meson_crtc_state *state)
 {
 	if (state->crtc_eotf_by_property_flag) {

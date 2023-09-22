@@ -868,6 +868,82 @@ static ssize_t valid_mode_store(struct device *dev,
 
 static DEVICE_ATTR_WO(valid_mode);
 
+static ssize_t hdmitx_cur_status_show(struct device *dev,
+				  struct device_attribute *attr,
+				  char *buf)
+{
+	int pos = 0;
+
+	pos = hdmitx_tracer_read_event(global_tx_common->tx_tracer,
+		buf, PAGE_SIZE);
+	return pos;
+}
+
+static DEVICE_ATTR_RO(hdmitx_cur_status);
+
+static ssize_t debug_store(struct device *dev,
+			   struct device_attribute *attr,
+			   const char *buf, size_t count)
+{
+	global_tx_hw->debugfun(global_tx_hw, buf);
+	return count;
+}
+
+static DEVICE_ATTR_WO(debug);
+
+/* Indicate whether a rptx under repeater */
+static ssize_t hdmi_repeater_tx_show(struct device *dev,
+				     struct device_attribute *attr,
+				     char *buf)
+{
+	int pos = 0;
+
+	pos += snprintf(buf + pos, PAGE_SIZE, "%d\n",
+		!!global_tx_common->repeater_mode);
+
+	return pos;
+}
+
+static DEVICE_ATTR_RO(hdmi_repeater_tx);
+
+static ssize_t hdmi_used_show(struct device *dev,
+	struct device_attribute *attr, char *buf)
+{
+	int pos = 0;
+
+	pos += snprintf(buf + pos, PAGE_SIZE, "%d",
+		global_tx_common->already_used);
+	return pos;
+}
+
+static DEVICE_ATTR_RO(hdmi_used);
+
+static ssize_t fake_plug_show(struct device *dev,
+			      struct device_attribute *attr, char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "%d", global_tx_common->hpd_state);
+}
+
+static ssize_t fake_plug_store(struct device *dev,
+			       struct device_attribute *attr,
+			       const char *buf, size_t count)
+{
+	pr_info("hdmitx: fake plug %s\n", buf);
+
+	if (strncmp(buf, "1", 1) == 0)
+		global_tx_common->hpd_state = 1;
+
+	if (strncmp(buf, "0", 1) == 0)
+		global_tx_common->hpd_state = 0;
+
+	/*notify to drm hdmi*/
+	hdmitx_common_notify_hpd_status(global_tx_common);
+
+	return count;
+}
+
+static DEVICE_ATTR_RW(fake_plug);
+
 /*************************tx20 sysfs*************************/
 
 /*************************tx21 sysfs*************************/
@@ -892,7 +968,6 @@ int hdmitx_sysfs_common_create(struct device *dev,
 	ret = device_create_file(dev, &dev_attr_preferred_mode);
 	ret = device_create_file(dev, &dev_attr_cea_cap);
 	ret = device_create_file(dev, &dev_attr_vesa_cap);
-
 	ret = device_create_file(dev, &dev_attr_valid_mode);
 
 	ret = device_create_file(dev, &dev_attr_contenttype_cap);
@@ -904,6 +979,13 @@ int hdmitx_sysfs_common_create(struct device *dev,
 	ret = device_create_file(dev, &dev_attr_phy);
 
 	ret = device_create_file(dev, &dev_attr_contenttype_mode);
+
+	ret = device_create_file(dev, &dev_attr_hdmitx_cur_status);
+	ret = device_create_file(dev, &dev_attr_hdmi_repeater_tx);
+	ret = device_create_file(dev, &dev_attr_hdmi_used);
+
+	ret = device_create_file(dev, &dev_attr_debug);
+	ret = device_create_file(dev, &dev_attr_fake_plug);
 
 	return ret;
 }
@@ -921,6 +1003,7 @@ int hdmitx_sysfs_common_destroy(struct device *dev)
 	device_remove_file(dev, &dev_attr_preferred_mode);
 	device_remove_file(dev, &dev_attr_cea_cap);
 	device_remove_file(dev, &dev_attr_vesa_cap);
+	device_remove_file(dev, &dev_attr_valid_mode);
 
 	device_remove_file(dev, &dev_attr_contenttype_cap);
 	device_remove_file(dev, &dev_attr_hdr_cap);
@@ -928,11 +1011,16 @@ int hdmitx_sysfs_common_destroy(struct device *dev)
 	device_remove_file(dev, &dev_attr_dv_cap);
 	device_remove_file(dev, &dev_attr_dv_cap2);
 
-	device_remove_file(dev, &dev_attr_valid_mode);
-
 	device_remove_file(dev, &dev_attr_phy);
 
 	device_remove_file(dev, &dev_attr_contenttype_mode);
+
+	device_remove_file(dev, &dev_attr_hdmitx_cur_status);
+	device_remove_file(dev, &dev_attr_hdmi_repeater_tx);
+	device_remove_file(dev, &dev_attr_hdmi_used);
+
+	device_remove_file(dev, &dev_attr_debug);
+	device_remove_file(dev, &dev_attr_fake_plug);
 
 	global_tx_common = 0;
 	global_tx_hw = 0;

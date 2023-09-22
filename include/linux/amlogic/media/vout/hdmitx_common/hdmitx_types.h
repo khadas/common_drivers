@@ -143,18 +143,6 @@ struct hdmitx_infoframe {
 	union hdmi_infoframe emp;
 };
 
-enum hdmitx_event {
-	HDMITX_NONE_EVENT = 0,
-	HDMITX_HPD_EVENT,
-	HDMITX_HDCP_EVENT,
-	HDMITX_CUR_ST_EVENT,
-	HDMITX_AUDIO_EVENT,
-	HDMITX_HDCPPWR_EVENT,
-	HDMITX_HDR_EVENT,
-	HDMITX_RXSENSE_EVENT,
-	HDMITX_CEDST_EVENT,
-};
-
 enum hdmi_pixel_repeat {
 	NO_REPEAT = 0,
 	HDMI_2_TIMES_REPEAT,

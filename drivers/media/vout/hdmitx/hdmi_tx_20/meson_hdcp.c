@@ -555,6 +555,7 @@ void meson_hdcp_init(void)
 	hdmitx_dev->hwop.am_hdmitx_hdcp_disable = am_hdmitx_hdcp_disable;
 	hdmitx_dev->hwop.am_hdmitx_hdcp_enable = am_hdmitx_hdcp_enable;
 	hdmitx_dev->hwop.am_hdmitx_hdcp_disconnect = am_hdmitx_hdcp_disconnect;
+
 	INIT_DELAYED_WORK(&meson_hdcp.notify_work, meson_hdcp_key_notify);
 	meson_hdcp.key_chk_cnt = 0;
 	timer_setup(&meson_hdcp.daemon_load_timer, hdcp_key_check, 0);

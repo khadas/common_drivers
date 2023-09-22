@@ -15,6 +15,8 @@
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_hw_common.h>
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_edid.h>
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_types.h>
+#include <linux/amlogic/media/vout/hdmitx_common/hdmitx_tracer.h>
+#include <linux/amlogic/media/vout/hdmitx_common/hdmitx_event_mgr.h>
 
 #define HDMI_PACKET_TYPE_GCP 0x3
 #define HDMI_INFOFRAME_TYPE_VENDOR2 (0x81 | 0x100)
@@ -51,10 +53,13 @@ struct hdmitx_common {
 	/* contenttype:0/off 1/game, 2/graphics, 3/photo, 4/cinema */
 	u32 ct_mode;
 
-	/*protect hotplug flow and related struct.*/
-	struct mutex setclk_mutex;
 	/* 1, connect; 0, disconnect */
 	unsigned char hpd_state;
+	/* if HDMI plugin even once time, then set 1
+	 * if never hdmi plugin, then keep as 0
+	 * for android ott.
+	 */
+	u32 already_used;
 
 	/*edid related*/
 	unsigned char *edid_ptr;
@@ -76,15 +81,30 @@ struct hdmitx_common {
 	struct hdmitx_base_state *old_states[HDMITX_MAX_MODULE];
 
 	/*soc limitation*/
-	int res_1080p;
-	int max_refreshrate;
+	u32 res_1080p;
+	u32 max_refreshrate;
 
 	struct hdmitx_hw_common *tx_hw;
 
 	struct hdmitx_ctrl_ops *ctrl_ops;
 
 	/*protect set mode flow*/
+	/*protect hotplug flow and related struct.*/
+	struct mutex setclk_mutex;
+	/*
+	 * Normally, after the HPD in or late resume, there will reading EDID, and
+	 * notify application to select a hdmi mode output. But during the mode
+	 * setting moment, there may be HPD out. It will clear the edid data, ..., etc.
+	 * To avoid such case, here adds the hdmimode_mutex to let the HPD in, HPD out
+	 * handler and mode setting sequentially.
+	 */
 	struct mutex hdmimode_mutex;
+
+	u32 repeater_mode;
+
+	/*debug & log*/
+	struct hdmitx_tracer *tx_tracer;
+	struct hdmitx_event_mgr *event_mgr;
 };
 
 struct hdmitx_base_state *hdmitx_get_mod_state(struct hdmitx_common *tx_common,
@@ -128,13 +148,22 @@ int hdmitx_common_build_format_para(struct hdmitx_common *tx_comm,
 int hdmitx_common_init_bootup_format_para(struct hdmitx_common *tx_comm,
 		struct hdmi_format_para *para);
 
-/* For different SOC, different output limited capabilities */
-bool resolution_limited_1080p(const struct hdmi_timing *timing);
-bool resolution_limited_2160p(const struct hdmi_timing *timing);
-bool resolution_limited_4320p(const struct hdmi_timing *timing);
-bool freshrate_limited_60hz(const struct hdmi_timing *timing);
-bool freshrate_limited_120hz(const struct hdmi_timing *timing);
+/* Attach platform related functions to hdmitx_common;
+ * Currently hdmitx_tracer, hdmitx_uevent_mgr is platform related;
+ */
+enum HDMITX_PLATFORM_API_TYPE {
+	HDMITX_PLATFORM_TRACER = 0,
+	HDMITX_PLATFORM_UEVENT,
+};
 
+int hdmitx_common_attch_platform_data(struct hdmitx_common *tx_comm,
+	enum HDMITX_PLATFORM_API_TYPE type, void *plt_data);
+
+int hdmitx_common_trace_event(struct hdmitx_common *tx_comm,
+	enum hdmitx_event_log_bits event);
+
+/*Notify hpd event to all outer modules: vpp by vout, drm, userspace*/
+int hdmitx_common_notify_hpd_status(struct hdmitx_common *tx_comm);
 /*******************************hdmitx common api end*******************************/
 
 int hdmitx_hpd_notify_unlocked(struct hdmitx_common *tx_comm);

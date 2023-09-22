@@ -120,7 +120,7 @@ bool __weak get_rx_active_sts(void)
 
 bool hdcp_need_control_by_upstream(struct hdmitx_dev *hdev)
 {
-	if (!hdev->repeater_tx)
+	if (!hdev->tx_comm.repeater_mode)
 		return false;
 
 	if (!get_rx_active_sts())
@@ -296,7 +296,7 @@ static void hdcp_topology_update(struct hdcp_t *p_hdcp)
 	} else if (p_hdcp->hdcp_type == HDCP_VER_HDCP1X) {
 		if (p_hdcp->ds_repeater) {
 			u8 bstatus[2];
-			u8 max_devices = hdev->repeater_tx ?
+			u8 max_devices = hdev->tx_comm.repeater_mode ?
 				HDCP1X_MAX_TX_DEV_RPT : HDCP1X_MAX_TX_DEV_SRC;
 
 			hdcptx1_bstatus_get(bstatus);
@@ -457,7 +457,8 @@ static bool is_topology_correct(struct hdcp_t *p_hdcp)
 {
 	u8 max_depth = HDCP1X_MAX_DEPTH;
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
-	u8 max_device_count = hdev->repeater_tx ? HDCP1X_MAX_TX_DEV_RPT : HDCP1X_MAX_TX_DEV_SRC;
+	u8 max_device_count = hdev->tx_comm.repeater_mode ?
+		HDCP1X_MAX_TX_DEV_RPT : HDCP1X_MAX_TX_DEV_SRC;
 
 	if (p_hdcp->hdcp_type == HDCP_VER_HDCP2X) {
 		max_device_count = HDCP2X_MAX_DEV;
@@ -656,7 +657,7 @@ static void hdcp_notify_rpt_info(struct work_struct *work)
 		}
 	} else if (p_hdcp->hdcp_type == HDCP_VER_HDCP1X) {
 		if (p_hdcp->ds_repeater) {
-			u8 max_devices = hdev->repeater_tx ?
+			u8 max_devices = hdev->tx_comm.repeater_mode ?
 				HDCP1X_MAX_TX_DEV_RPT : HDCP1X_MAX_TX_DEV_SRC;
 			/* include the count/depth of downstream repeater itself.
 			 * the bksv of downstream repeater will be added to notify
@@ -705,7 +706,8 @@ static void hdcp_notify_rpt_info(struct work_struct *work)
 			pr_hdcp_info(L_2, "%02x\n", hdcp_topo.ksv_list[5 * i + j]);
 		pr_hdcp_info(L_2, "\n");
 	}
-	hdmitx21_event_notify(HDMITX_KSVLIST, &hdcp_topo);
+	hdmitx_event_mgr_notify(hdev->tx_comm.event_mgr,
+			HDMITX_KSVLIST, &hdcp_topo);
 }
 
 static void hdcp_req_reauth_whandler(struct work_struct *work)
@@ -718,21 +720,21 @@ static void hdcp_req_reauth_whandler(struct work_struct *work)
 	cancel_delayed_work(&hdev->work_up_hdcp_timeout);
 	/* if signal not ready, means hdmitx is setting mode, delay 1S */
 	/* note: for CTS, it should not delay */
-	mutex_lock(&hdev->hdmimode_mutex);
+	mutex_lock(&hdev->tx_comm.hdmimode_mutex);
 	if (hdev->tx_comm.suspend_flag) {
 		pr_hdcp_info(L_1, "suspend, no need re-auth\n");
-		mutex_unlock(&hdev->hdmimode_mutex);
+		mutex_unlock(&hdev->tx_comm.hdmimode_mutex);
 		return;
 	}
 	if (!hdev->tx_comm.hpd_state) {
 		pr_hdcp_info(L_1, "hdmitx hpd low, no need re-auth\n");
-		mutex_unlock(&hdev->hdmimode_mutex);
+		mutex_unlock(&hdev->tx_comm.hdmimode_mutex);
 		return;
 	}
 	if (!hdev->ready) {
 		schedule_delayed_work(&p_hdcp->req_reauth_wk, HZ);
 		pr_hdcp_info(L_1, "hdmitx signal not done, delay hdcp re-auth\n");
-		mutex_unlock(&hdev->hdmimode_mutex);
+		mutex_unlock(&hdev->tx_comm.hdmimode_mutex);
 		return;
 	}
 	/* firstly need to disable current hdcp auth */
@@ -757,7 +759,7 @@ static void hdcp_req_reauth_whandler(struct work_struct *work)
 				p_hdcp->req_reauth_ver == hdev->hdcp_mode) {
 				pr_info("topology not changed, no need hdcp re-auth\n");
 				schedule_delayed_work(&p_hdcp->ksv_notify_wk, 0);
-				mutex_unlock(&hdev->hdmimode_mutex);
+				mutex_unlock(&hdev->tx_comm.hdmimode_mutex);
 				return;
 			}
 		}
@@ -794,7 +796,7 @@ static void hdcp_req_reauth_whandler(struct work_struct *work)
 		}
 		mutex_unlock(&hdcp_mutex);
 	}
-	mutex_unlock(&hdev->hdmimode_mutex);
+	mutex_unlock(&hdev->tx_comm.hdmimode_mutex);
 }
 
 void hdmitx21_rst_stream_type(struct hdcp_t *hdcp)

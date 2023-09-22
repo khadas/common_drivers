@@ -17,6 +17,12 @@ int hdmitx_hw_cntl_misc(struct hdmitx_hw_common *tx_hw,
 	return tx_hw->cntlmisc(tx_hw, cmd, arg);
 }
 
+int hdmitx_hw_cntl_ddc(struct hdmitx_hw_common *tx_hw,
+	u32 cmd, u32 arg)
+{
+	return tx_hw->cntlddc(tx_hw, cmd, arg);
+}
+
 int hdmitx_hw_get_state(struct hdmitx_hw_common *tx_hw,
 	u32 cmd, u32 arg)
 {

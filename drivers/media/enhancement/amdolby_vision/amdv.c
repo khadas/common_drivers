@@ -14720,6 +14720,7 @@ static ssize_t amdolby_vision_debug_store
 {
 	char *buf_orig, *parm[MAX_PARAM] = {NULL};
 	long val = 0;
+	long val2 = 0;
 
 	if (!buf)
 		return count;
@@ -14902,6 +14903,12 @@ static ssize_t amdolby_vision_debug_store
 	} else if (!strcmp(parm[0], "top1_crc_ro")) {
 		top1_crc_rd = 1;
 		pr_info("set top1_crc_rd %d\n", top1_crc_rd);
+	} else if (!strcmp(parm[0], "dump_top1_frame")) {
+		if (parm[1] && kstrtoul(parm[1], 10, &val) >= 0 &&
+			parm[2] && kstrtoul(parm[2], 10, &val2) >= 0)
+			dump_top1_frame((int)val, (int)val2);
+		else
+			dump_top1_frame(0, 0);
 	} else if (!strcmp(parm[0], "force_sdr10")) {
 		if (kstrtoul(parm[1], 10, &val) < 0)
 			return -EINVAL;
@@ -16869,6 +16876,14 @@ static int __exit amdolby_vision_remove(struct platform_device *pdev)
 				vfree(top2_v_info.comp_buf[i]);
 				top2_v_info.comp_buf[i] = NULL;
 			}
+		}
+		if (tv_hw5_setting && tv_hw5_setting->top1_ext) {
+			vfree(tv_hw5_setting->top1_ext);
+			tv_hw5_setting->top1_ext = NULL;
+		}
+		if (tv_hw5_setting && tv_hw5_setting->top2_ext) {
+			vfree(tv_hw5_setting->top2_ext);
+			tv_hw5_setting->top2_ext = NULL;
 		}
 	}
 

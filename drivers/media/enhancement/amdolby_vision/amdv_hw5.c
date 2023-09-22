@@ -1399,8 +1399,8 @@ int tv_top1_set(u64 *top1_reg,
 			plane_bits = 8;
 		else if (top1_vd_info.bitdepth == 10)
 			plane_bits = 16;
-
-		top1_type.rdmif_stride[i] = top1_stride_rdmif(top1_vd_info.width, plane_bits);
+		/*vf->canvas0_config[0].width instead of valid data width vf->width*/
+		top1_type.rdmif_stride[i] = top1_stride_rdmif(top1_vd_info.buf_width, plane_bits);
 		if (fix_data == CASE5344_TOP1_READFROM_FILE)
 			top1_type.rdmif_stride[i] = 480;
 		else if (fix_data == CASE5363_TOP1_READFROM_FILE)

@@ -42,6 +42,9 @@
 #include <linux/vmalloc.h>
 
 #include "amdv.h"
+#ifdef CONFIG_AMLOGIC_MEDIA_CODEC_MM
+#include <linux/amlogic/media/codec_mm/codec_mm.h>
+#endif
 
 static struct dv_atsc p_atsc_md;
 
@@ -54,6 +57,7 @@ module_param(force_update_top2, uint, 0664);
 MODULE_PARM_DESC(force_update_top2, "\n force_update_top2\n");
 
 struct dv5_top1_vd_info top1_vd_info;
+struct vframe_s *vf_tmp;
 
 #define signal_cuva ((vf->signal_type >> 31) & 1)
 #define signal_color_primaries ((vf->signal_type >> 16) & 0xff)
@@ -61,6 +65,104 @@ struct dv5_top1_vd_info top1_vd_info;
 
 struct dynamic_cfg_s dynamic_config_new;
 struct dynamic_cfg_s dynamic_darkdetail = {16, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0};
+
+void dump_top1_frame(int force_w, int force_h)
+{
+#ifdef CONFIG_AMLOGIC_ENABLE_VIDEO_PIPELINE_DUMP_DATA
+	struct file *fp = NULL;
+	char name_buf[32];
+	loff_t pos;
+#endif
+	int data_size_y, data_size_uv;
+	u8 *data_y;
+	u8 *data_uv;
+	u16 *data_y_16;
+	u16 *data_uv_16;
+	int i;
+	struct vframe_s *vf = vf_tmp;
+	int data_w = 1;
+
+#ifdef CONFIG_AMLOGIC_ENABLE_VIDEO_PIPELINE_DUMP_DATA
+	snprintf(name_buf, sizeof(name_buf), "/data/src_vframe.yuv");
+	fp = filp_open(name_buf, O_CREAT | O_RDWR, 0644);
+	if (IS_ERR(fp))
+		return;
+#endif
+
+	if (vf && vf->canvas0_config[0].phy_addr) {
+		pr_dv_dbg("vf %px: size %d %d %d %d %d %d\n", vf, force_w, force_h,
+			vf->canvas0_config[0].width, vf->canvas0_config[0].height,
+			vf->canvas0_config[1].width, vf->canvas0_config[1].height);
+		if (vf->canvas0_config[0].block_mode)
+			pr_dv_dbg("data in block mode, maybe disaplay error\n");
+
+		data_w = vf->canvas0_config[0].bit_depth ? 2 : 1;/*420-10bit or 8bit*/
+
+		if (force_w > 0 && force_w <= vf->canvas0_config[0].width &&
+			force_h > 0 && force_h <= vf->canvas0_config[0].height)
+			data_size_y = force_w * force_h * data_w;
+		else
+			data_size_y = vf->canvas0_config[0].width *
+				vf->canvas0_config[0].height * data_w;
+
+		data_size_uv = data_size_y / 2;
+
+		data_y = codec_mm_vmap(vf->canvas0_config[0].phy_addr, data_size_y);
+		data_uv = codec_mm_vmap(vf->canvas0_config[1].phy_addr, data_size_uv);
+		data_y_16 = (u16 *)data_y;
+		data_uv_16 = (u16 *)data_uv;
+		if (!data_y || !data_uv) {
+			pr_dv_error("error map data\n");
+			return;
+		}
+#ifdef CONFIG_AMLOGIC_ENABLE_VIDEO_PIPELINE_DUMP_DATA
+		pos = fp->f_pos;
+		kernel_write(fp, data_y, data_size_y, &pos);
+		fp->f_pos = pos;
+		pos = fp->f_pos;
+		kernel_write(fp, data_uv, data_size_uv, &pos);
+		fp->f_pos = pos;
+		filp_close(fp, NULL);
+#endif
+		if (debug_dolby & 0x80000) {
+			pr_dv_dbg("y8===>size %d\n", data_size_y);
+			for (i = 0; i < 1200; i += 8)
+				pr_dv_dbg("%02x %02x %02x %02x %02x %02x %02x %02x\n",
+				data_y[i],
+				data_y[i + 1],
+				data_y[i + 2],
+				data_y[i + 3],
+				data_y[i + 4],
+				data_y[i + 5],
+				data_y[i + 6],
+				data_y[i + 7]);
+			pr_dv_dbg("y16===>size %d\n", data_size_y);
+			for (i = 0; i < 600; i += 8)
+				pr_info("%02x %02x %02x %02x %02x %02x %02x %02x\n",
+				data_y_16[i],
+				data_y_16[i + 1],
+				data_y_16[i + 2],
+				data_y_16[i + 3],
+				data_y_16[i + 4],
+				data_y_16[i + 5],
+				data_y_16[i + 6],
+				data_y_16[i + 7]);
+			pr_dv_dbg("uv16===>size %d\n", data_size_uv);
+			for (i = 0; i < 600; i += 8)
+				pr_dv_dbg("%02x %02x %02x %02x %02x %02x %02x %02x\n",
+				data_uv_16[i],
+				data_uv_16[i + 1],
+				data_uv_16[i + 2],
+				data_uv_16[i + 3],
+				data_uv_16[i + 4],
+				data_uv_16[i + 5],
+				data_uv_16[i + 6],
+				data_uv_16[i + 7]);
+		}
+		codec_mm_unmap_phyaddr(data_y);
+		codec_mm_unmap_phyaddr(data_uv);
+	}
+}
 
 static void get_top1_vd_info(struct vframe_s *vf,
 	struct dv5_top1_vd_info *top1_vd_info)
@@ -83,14 +185,22 @@ static void get_top1_vd_info(struct vframe_s *vf,
 	top1_vd_info->canvasaddr[1] = vf->canvas0_config[1].phy_addr;
 	top1_vd_info->canvasaddr[2] = vf->canvas0_config[2].phy_addr;
 	top1_vd_info->blk_mode = vf->canvas0_config[0].block_mode;
+	top1_vd_info->buf_width = vf->canvas0_config[0].width;
+	top1_vd_info->buf_height = vf->canvas0_config[0].height;
 
 	if (debug_dolby & 0x80000) {
-		pr_info("vf %px,w,h:%d,%d,cw,ch:%d,%d,type:0x%x,bdp:%d,plane:%d,c addr:0x%lx,0x%lx,0x%lx,b %d\n",
+		pr_info("vf %px,w,h:%d,%d,cw,ch:%d,%d,%d,%d,%d,%d,%d,%d,type:0x%x,bdp:%d,p:%d,addr:0x%lx,0x%lx,0x%lx,b %d\n",
 			vf,
 			top1_vd_info->width,
 			top1_vd_info->height,
 			top1_vd_info->compWidth,
 			top1_vd_info->compHeight,
+			vf->canvas0_config[0].width,
+			vf->canvas0_config[0].height,
+			vf->canvas0_config[1].width,
+			vf->canvas0_config[1].height,
+			vf->canvas0_config[2].width,
+			vf->canvas0_config[2].height,
 			top1_vd_info->type,
 			top1_vd_info->bitdepth,
 			top1_vd_info->plane,
@@ -767,8 +877,10 @@ int amdv_parse_metadata_hw5_top1(struct vframe_s *vf)
 	if (!p_funcs_tv || !p_funcs_tv->tv_hw5_control_path_analyzer || !tv_hw5_setting)
 		return -1;
 
-	if (vf)
+	if (vf) {
 		update_top1_onoff(vf);
+		vf_tmp = vf;
+	}
 
 	if (!enable_top1)
 		return -1;

@@ -9,7 +9,7 @@
 /*#define V2_4_3*/
 
 /*  driver version */
-#define DRIVER_VER "202300919"
+#define DRIVER_VER "202300922"
 
 #include <linux/types.h>
 #include "amdv_pq_config.h"
@@ -1025,6 +1025,8 @@ struct dv5_top1_vd_info {
 	u32 height;
 	u32 compWidth;
 	u32 compHeight;
+	u32 buf_width;
+	u32 buf_height;
 	int bitdepth;
 	int type;
 
@@ -1282,5 +1284,5 @@ void update_top1_onoff(struct vframe_s *vf);
 bool get_top1_onoff(void);
 void fixed_buf_config(void);
 bool is_dv_unique_drm(struct vframe_s *vf);
-
+void dump_top1_frame(int force_w, int force_h);
 #endif

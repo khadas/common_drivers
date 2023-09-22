@@ -83,6 +83,10 @@ u32 fix_data;
 module_param(fix_data, uint, 0664);
 MODULE_PARM_DESC(fix_data, "\n fix_data\n");
 
+/*bit0: little endian=0 bit1: little endian=1*/
+/*bit2: cntl_64bit_rev=0 bit3:cntl_64bit_rev=1*/
+/*bit4-7: cntl_color_map*/
+/*bit8-11: rdmif_stride*/
 uint debug_rdmif;
 module_param(debug_rdmif, uint, 0664);
 MODULE_PARM_DESC(debug_rdmif, "\n debug_rdmif\n");
@@ -218,6 +222,7 @@ static void dolby5_top1_rdmif
 	int vsize,
 	int bit_mode,
 	int fmt_mode,
+	int block_mode,
 	ulong baddr[3],
 	int stride[3])
 {
@@ -245,23 +250,35 @@ static void dolby5_top1_rdmif
 	unsigned int cvfmt_en = 0; //420
 	unsigned int chfmt_en = 0; //420/422
 	unsigned int yc_ratio = 0;
+	unsigned int little_endian = 1;/*1:hevc 420-10 little endian 128bit read*/
+	unsigned int cntl_64bit_rev = 0;/*0 for h265 420-10*/
+	u32 pic_32byte_aligned = 0;
+
+	if (fix_data)
+		block_mode = 0;
+	if (bit_mode == 1)/*8bit, h264, no dw*/
+		little_endian = 0;/*match with VD1_IF0_GEN_REG bit4*/
 
 	if (fmt_mode == 2)
 		separate_en = 1;
 
 	if (fmt_mode == 0) {
 		yuv444 = 1;
-	} else if (fmt_mode == 2) {
+	} else if (fmt_mode == 2) {/*420*/
 		yuv420 = 1;
 		cntl_color_map = 2;//2 for h265 dw 420-10
+		if (bit_mode == 1) {/*8bit, h264*/
+			cntl_color_map = 1;/*match with VD1_IF0_GEN_REG2 bit0-1*/
+			cntl_64bit_rev = 1;/*match with VD1_IF0_GEN_REG3 bit0*/
+		}
 		cvfmt_en = 1;
 		chfmt_en = 1;
 	} else {
 		chfmt_en = 1;
 	}
 
-	if (debug_rdmif >> 4)
-		cntl_color_map = debug_rdmif >> 4 & 0xf;
+	if (debug_rdmif & 0xf0)
+		cntl_color_map = (debug_rdmif >> 4) & 0xf;
 	if (yuv444 == 1)
 		chrm_xend = hsize - 1;
 	else
@@ -332,7 +349,7 @@ static void dolby5_top1_rdmif
 			(0 << 4) |                 //little endian 128bit read
 			(separate_en << 1) |       //separate_en
 			1);
-	else
+	else if ((debug_rdmif & 2))
 		VSYNC_WR_DV_REG(DOLBY_TOP1_GEN_REG,
 			(1 << 25) |                //luma last line end mode
 			(0 << 19) |                //cntl hold lines
@@ -340,16 +357,39 @@ static void dolby5_top1_rdmif
 			(cntl_pixel_bytes << 14) | //cntl_pixel_bytes
 			(1 << 4) |                 //little endian 128bit read
 			(separate_en << 1) |       //separate_en
+			1);
+	else
+		VSYNC_WR_DV_REG(DOLBY_TOP1_GEN_REG,
+			(1 << 25) |                //luma last line end mode
+			(0 << 19) |                //cntl hold lines
+			(yuv444 << 16) |           //demux_mode
+			(cntl_pixel_bytes << 14) | //cntl_pixel_bytes
+			(little_endian << 4) |     //little endian 128bit read
+			(separate_en << 1) |       //separate_en
 			1);                        //cntl_enable
 
 	VSYNC_WR_DV_REG_BITS(DOLBY_TOP1_GEN_REG2, cntl_color_map, 0, 2);
 	VSYNC_WR_DV_REG_BITS(DOLBY_TOP1_GEN_REG3, cntl_bits_mode, 8, 2);
 	VSYNC_WR_DV_REG_BITS(DOLBY_TOP1_GEN_REG3, cntl_bit16_mode, 7, 1);
 
-	if ((debug_rdmif & 2))
+	if ((debug_rdmif & 4))
+		VSYNC_WR_DV_REG_BITS(DOLBY_TOP1_GEN_REG3, 0, 0, 1);//cntl_64bit_rev 2x64 bit revert
+	else if ((debug_rdmif & 8))
 		VSYNC_WR_DV_REG_BITS(DOLBY_TOP1_GEN_REG3, 1, 0, 1);//cntl_64bit_rev 2x64 bit revert
 	else
-		VSYNC_WR_DV_REG_BITS(DOLBY_TOP1_GEN_REG3, 0, 0, 1);//cntl_64bit_rev
+		VSYNC_WR_DV_REG_BITS(DOLBY_TOP1_GEN_REG3, cntl_64bit_rev, 0, 1);//cntl_64bit_rev
+
+	if (block_mode)
+		pic_32byte_aligned = 7;
+	VSYNC_WR_DV_REG_BITS(DOLBY_TOP1_GEN_REG3, (block_mode & 0x3), 1, 2);
+	VSYNC_WR_DV_REG_BITS(DOLBY_TOP1_GEN_REG3, block_mode, 12, 2);
+	VSYNC_WR_DV_REG_BITS(DOLBY_TOP1_GEN_REG3, block_mode, 14, 2);
+	VSYNC_WR_DV_REG_BITS(DOLBY_TOP1_GEN_REG3, (pic_32byte_aligned << 6) |
+		(block_mode << 4) |
+		(block_mode << 2) |
+		(block_mode << 0),
+		18,
+		9);
 
 	VSYNC_WR_DV_REG(DOLBY_TOP1_FMT_CTRL,
 		(1 << 28) | //hfmt repeat
@@ -539,6 +579,10 @@ static void dolby5_ahb_reg_config(u32 *reg_baddr,
 				VSYNC_WR_DV_REG(DOLBY5_CORE2_REG_BASE0 + reg_addr, reg_val);
 			if (reg_addr == 5)
 				last_int_top2 = reg_val;
+
+			/*enable crc cntrl (0xf3d-0xd00)*/
+			if ((dolby_vision_flags & FLAG_CERTIFICATION) && reg_addr == 573)
+				VSYNC_WR_DV_REG(DOLBY5_CORE2_REG_BASE0 + reg_addr, 1);
 		}
 	}
 }
@@ -551,6 +595,7 @@ static void dolby5_top1_ini(struct dolby5_top1_type *dolby5_top1)
 	//int rdma_size = dolby5_top1->rdma_size;
 	int bit_mode = dolby5_top1->bit_mode;
 	int fmt_mode = dolby5_top1->fmt_mode;
+	int block_mode = dolby5_top1->block_mode;
 	ulong rdmif_baddr[3];
 	int rdmif_stride[3];
 	int vsync_sel = dolby5_top1->vsync_sel;
@@ -617,6 +662,7 @@ static void dolby5_top1_ini(struct dolby5_top1_type *dolby5_top1)
 		core1_vsize,
 		bit_mode,
 		fmt_mode,
+		block_mode,
 		rdmif_baddr,
 		rdmif_stride);
 
@@ -1304,7 +1350,7 @@ static u32 top1_stride_rdmif(u32 buffr_width, u8 plane_bits)
 	u32 line_stride;
 
 	/* input: buffer width not hsize */
-	/* 1 stride = 16 byte */
+	/* 1 stride = 16 byte, DDR 64bytes alignment */
 	line_stride = (((buffr_width * plane_bits + 127) / 128 + 3) >> 2) << 2;
 	return line_stride;
 }
@@ -1358,7 +1404,10 @@ int tv_top1_set(u64 *top1_reg,
 		if (fix_data == CASE5344_TOP1_READFROM_FILE)
 			top1_type.rdmif_stride[i] = 480;
 		else if (fix_data == CASE5363_TOP1_READFROM_FILE)
-			top1_type.rdmif_stride[i] = 136;
+			top1_type.rdmif_stride[i] = 135;/*(540x32+127)/128*/
+
+		if (debug_rdmif & 0xff00)
+			top1_type.rdmif_stride[i] = (debug_rdmif >> 8) & 0xff;
 	}
 	top1_type.rdmif_stride[2] = 0;
 
@@ -1391,10 +1440,13 @@ int tv_top1_set(u64 *top1_reg,
 	else if (top1_vd_info.bitdepth == 8)
 		top1_type.bit_mode = 1;
 
+	top1_type.block_mode = top1_vd_info.blk_mode;
+
 	if (fix_data == CASE5344_TOP1_READFROM_FILE || fix_data == CASE5363_TOP1_READFROM_FILE) {
 		top1_type.fmt_mode = 0;//test, force 444
 		top1_vd_info.bitdepth = 10;
 		top1_type.bit_mode = 0;
+		top1_type.block_mode = 0;
 	}
 
 	if (debug_dolby & 0x80000)

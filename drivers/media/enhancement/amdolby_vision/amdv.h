@@ -9,7 +9,7 @@
 /*#define V2_4_3*/
 
 /*  driver version */
-#define DRIVER_VER "202300811"
+#define DRIVER_VER "202300919"
 
 #include <linux/types.h>
 #include "amdv_pq_config.h"
@@ -1029,6 +1029,7 @@ struct dv5_top1_vd_info {
 	int type;
 
 	u32 plane;
+	u32 blk_mode;
 	ulong canvasaddr[3];
 	ulong compHeadAddr;
 	ulong compBodyAddr;

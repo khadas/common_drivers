@@ -67,17 +67,25 @@ static void get_top1_vd_info(struct vframe_s *vf,
 {
 	top1_vd_info->width = vf->width;
 	top1_vd_info->height = vf->height;
-	top1_vd_info->compWidth = vf->compWidth;
-	top1_vd_info->compHeight = vf->compHeight;
+	if (is_src_crop_valid(vf->src_crop)) {
+		top1_vd_info->compWidth = vf->compWidth -
+			vf->src_crop.left - vf->src_crop.right;
+		top1_vd_info->compHeight = vf->compHeight -
+			vf->src_crop.top - vf->src_crop.bottom;
+	} else {
+		top1_vd_info->compWidth = vf->compWidth;
+		top1_vd_info->compHeight = vf->compHeight;
+	}
 	top1_vd_info->type = vf->type;
 	top1_vd_info->bitdepth = vf->canvas0_config[0].bit_depth == 1 ? 10 : 8;
 	top1_vd_info->plane = vf->plane_num;
 	top1_vd_info->canvasaddr[0] = vf->canvas0_config[0].phy_addr;
 	top1_vd_info->canvasaddr[1] = vf->canvas0_config[1].phy_addr;
 	top1_vd_info->canvasaddr[2] = vf->canvas0_config[2].phy_addr;
+	top1_vd_info->blk_mode = vf->canvas0_config[0].block_mode;
 
 	if (debug_dolby & 0x80000) {
-		pr_info("vf %px,w,h:%d,%d,cw,ch:%d,%d,type:0x%x,bdp:%d,plane:%d, c addr:0x%lx, 0x%lx, 0x%lx\n",
+		pr_info("vf %px,w,h:%d,%d,cw,ch:%d,%d,type:0x%x,bdp:%d,plane:%d,c addr:0x%lx,0x%lx,0x%lx,b %d\n",
 			vf,
 			top1_vd_info->width,
 			top1_vd_info->height,
@@ -88,7 +96,8 @@ static void get_top1_vd_info(struct vframe_s *vf,
 			top1_vd_info->plane,
 			top1_vd_info->canvasaddr[0],
 			top1_vd_info->canvasaddr[1],
-			top1_vd_info->canvasaddr[2]);
+			top1_vd_info->canvasaddr[2],
+			top1_vd_info->blk_mode);
 	}
 }
 
@@ -115,15 +124,24 @@ void update_top1_onoff(struct vframe_s *vf)
 	static bool last_enable_top1 = true;
 
 	if (vf) {
-		if (!(vf->type & VIDTYPE_COMPRESS))
-			enable_top1 = false;
-
-		w = (vf->type & VIDTYPE_COMPRESS) ?
-			vf->compWidth : vf->width;
-		h = (vf->type & VIDTYPE_COMPRESS) ?
-			vf->compHeight : vf->height;
+		if (vf->type & VIDTYPE_COMPRESS) {
+			if (is_src_crop_valid(vf->src_crop)) {
+				w = vf->compWidth -
+					vf->src_crop.left - vf->src_crop.right;
+				h = vf->compHeight -
+					vf->src_crop.top - vf->src_crop.bottom;
+			} else {
+				w = vf->compWidth;
+				h = vf->compHeight;
+			}
+		} else {
+			w = vf->width;
+			h = vf->height;
+		}
 
 		if (w <= 256 || h <= 144)
+			enable_top1 = false;
+		else if ((w % 4) || (h % 4))
 			enable_top1 = false;
 		//else
 		//	enable_top1 = true;
@@ -143,7 +161,7 @@ void update_top1_onoff(struct vframe_s *vf)
 
 		if (last_enable_top1 != enable_top1) {
 			if (debug_dolby & 1)
-				pr_dv_dbg("top1 status changed %d %d, update pyramid in cfg\n",
+				pr_dv_dbg("top1 status changed %d=>%d, update pyramid in cfg\n",
 					last_enable_top1, enable_top1);
 			/*disable pyramid in cfg if !enable_top1, otherwise resotre it*/
 			update_cp_cfg_hw5(true);
@@ -760,10 +778,20 @@ int amdv_parse_metadata_hw5_top1(struct vframe_s *vf)
 
 	if (vf) {
 		video_frame = true;
-		w = (vf->type & VIDTYPE_COMPRESS) ?
-			vf->compWidth : vf->width;
-		h = (vf->type & VIDTYPE_COMPRESS) ?
-			vf->compHeight : vf->height;
+		if (vf->type & VIDTYPE_COMPRESS) {
+			if (is_src_crop_valid(vf->src_crop)) {
+				w = vf->compWidth -
+					vf->src_crop.left - vf->src_crop.right;
+				h = vf->compHeight -
+					vf->src_crop.top - vf->src_crop.bottom;
+			} else {
+				w = vf->compWidth;
+				h = vf->compHeight;
+			}
+		} else {
+			w = vf->width;
+			h = vf->height;
+		}
 	}
 
 	if (is_aml_tvmode() && vf &&
@@ -1399,10 +1427,20 @@ int amdv_parse_metadata_hw5(struct vframe_s *vf,
 
 	if (vf) {
 		video_frame = true;
-		w = (vf->type & VIDTYPE_COMPRESS) ?
-			vf->compWidth : vf->width;
-		h = (vf->type & VIDTYPE_COMPRESS) ?
-			vf->compHeight : vf->height;
+		if (vf->type & VIDTYPE_COMPRESS) {
+			if (is_src_crop_valid(vf->src_crop)) {
+				w = vf->compWidth -
+					vf->src_crop.left - vf->src_crop.right;
+				h = vf->compHeight -
+					vf->src_crop.top - vf->src_crop.bottom;
+			} else {
+				w = vf->compWidth;
+				h = vf->compHeight;
+			}
+		} else {
+			w = vf->width;
+			h = vf->height;
+		}
 	}
 
 	if (is_aml_tvmode() && vf &&

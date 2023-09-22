@@ -10,6 +10,8 @@
 extern int multi_picture_case;
 extern int multi_slice_case;
 extern int hist_dma_case;
+extern unsigned int lc_overlap;
+extern int lc_slice_num_changed;
 
 struct cm_port_s {
 	int cm_addr_port[4];
@@ -104,6 +106,7 @@ void ve_lc_base_init(void);
 void ve_lc_region_read(int blk_vnum, int blk_hnum,
 	int slice, int *black_count,
 	int *curve_data, int *hist_data);
+void dump_lc_mapping_reg(void);
 void dump_lc_reg(void);
 void dump_dnlp_reg(void);
 

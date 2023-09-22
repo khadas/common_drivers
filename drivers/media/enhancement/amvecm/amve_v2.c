@@ -41,9 +41,17 @@ int dnlp_slice_num_changed;
 module_param(dnlp_slice_num_changed, int, 0644);
 MODULE_PARM_DESC(dnlp_slice_num_changed, "dnlp_slice_num_changed for t3x");
 
+int lc_slice_num_changed;
+module_param(lc_slice_num_changed, int, 0644);
+MODULE_PARM_DESC(lc_slice_num_changed, "lc_slice_num_changed for t3x");
+
 int hist_dma_case = 1;
 module_param(hist_dma_case, int, 0644);
 MODULE_PARM_DESC(hist_dma_case, "hist_dma_case for t3x");
+
+int dump_lc_curve;
+module_param(dump_lc_curve, int, 0644);
+MODULE_PARM_DESC(dump_lc_curve, "dump_lc_curve for t3x");
 
 static int vev2_dbg;
 module_param(vev2_dbg, int, 0644);
@@ -78,7 +86,12 @@ unsigned int lc_reg_ofst[4] = {
 };
 
 int lc_h_count_ini_phs;
-unsigned int lc_overlap = 64;/*32;*/
+
+unsigned int lc_overlap_s0 = 32;
+module_param(lc_overlap_s0, int, 0644);
+MODULE_PARM_DESC(lc_overlap_s0, "lc_overlap_s0");
+
+unsigned int lc_overlap = 32;
 module_param(lc_overlap, int, 0644);
 MODULE_PARM_DESC(lc_overlap, "lc_overlap");
 
@@ -998,11 +1011,13 @@ void get_luma_hist(struct vframe_s *vf)
 		(!vi_hist_en || dnlp_slice_num_changed)) {
 		vpp_luma_hist_en(slice_case);
 		dnlp_slice_num_changed = 0;
+		pr_amve_v2("%s: dnlp_slice_num_changed 1->0\n",
+			__func__);
 	}
 
 	if (vd_info) {
 		if (slice_case)
-			overlap = 64;
+			overlap = 32;
 		else
 			overlap = 0;
 
@@ -1291,6 +1306,7 @@ int ve_multi_slice_case_get(void)
 	if (slice_case != multi_slice_case) {
 		multi_slice_case = slice_case;
 		dnlp_slice_num_changed = 1;
+		lc_slice_num_changed = 1;
 	}
 
 	return slice_case;
@@ -1996,28 +2012,150 @@ static void _lc_mtrx_set(enum lc_mtx_sel_e mtrx_sel,
 static void _lc_blk_bdry_cfg(unsigned int height,
 	unsigned int width, int h_num, int v_num, int rdma_mode)
 {
-	int i;
-	int slice_max;
 	int lc_reg;
 	unsigned int value;
-	int slice_case;
-	unsigned int tmp;
+	int slice_case = ve_multi_slice_case_get();
 
 	width /= h_num;
 	height /= v_num;
 
-	slice_case = ve_multi_slice_case_get();
-
-	if (slice_case)
-		slice_max = get_slice_max();
-	else
-		slice_max = SLICE1;
-
 	/*lc curve mapping block IDX default 4k panel*/
-	for (i = SLICE0; i < slice_max; i++) {
+	/*slice0*/
+	lc_reg = VPP_SRSHARP1_LC_CURVE_BLK_HIDX_0_1 +
+		sr_sharp_reg_ofst[0];
+	value = READ_VPP_REG_S5(lc_reg);
+	value &= 0xc000c000;
+	value |= width & GET_BITS(0, 14);
+	value |= (0 << 16) & GET_BITS(16, 14);
+	if (rdma_mode)
+		VSYNC_WRITE_VPP_REG(lc_reg, value);
+	else
+		WRITE_VPP_REG_S5(lc_reg, value);
+
+	lc_reg += 1;
+	value = READ_VPP_REG_S5(lc_reg);
+	value &= 0xc000c000;
+	value |= (width * 3) & GET_BITS(0, 14);
+	value |= ((width * 2) << 16) & GET_BITS(16, 14);
+	if (rdma_mode)
+		VSYNC_WRITE_VPP_REG(lc_reg, value);
+	else
+		WRITE_VPP_REG_S5(lc_reg, value);
+
+	lc_reg += 1;
+	value = READ_VPP_REG_S5(lc_reg);
+	value &= 0xc000c000;
+	value |= (width * 5) & GET_BITS(0, 14);
+	value |= ((width * 4) << 16) & GET_BITS(16, 14);
+	if (rdma_mode)
+		VSYNC_WRITE_VPP_REG(lc_reg, value);
+	else
+		WRITE_VPP_REG_S5(lc_reg, value);
+
+	lc_reg += 1;
+	value = READ_VPP_REG_S5(lc_reg);
+	value &= 0xc000c000;
+	if (slice_case)
+		value |= (width * 6 - lc_overlap) & GET_BITS(0, 14);
+	else
+		value |= (width * 7) & GET_BITS(0, 14);
+	value |= ((width * 6) << 16) & GET_BITS(16, 14);
+	if (rdma_mode)
+		VSYNC_WRITE_VPP_REG(lc_reg, value);
+	else
+		WRITE_VPP_REG_S5(lc_reg, value);
+
+	lc_reg += 1;
+	value = READ_VPP_REG_S5(lc_reg);
+	value &= 0xc000c000;
+	if (slice_case) {
+		value |= (width * 8) & GET_BITS(0, 14);
+		value |= ((width * 7) << 16) & GET_BITS(16, 14);
+	} else {
+		value |= (width * 9) & GET_BITS(0, 14);
+		value |= ((width * 8) << 16) & GET_BITS(16, 14);
+	}
+	if (rdma_mode)
+		VSYNC_WRITE_VPP_REG(lc_reg, value);
+	else
+		WRITE_VPP_REG_S5(lc_reg, value);
+
+	lc_reg += 1;
+	value = READ_VPP_REG_S5(lc_reg);
+	value &= 0xc000c000;
+	value |= (width * 11) & GET_BITS(0, 14);
+	value |= ((width * 10) << 16) & GET_BITS(16, 14);
+	if (rdma_mode)
+		VSYNC_WRITE_VPP_REG(lc_reg, value);
+	else
+		WRITE_VPP_REG_S5(lc_reg, value);
+
+	lc_reg += 1;
+	value = READ_VPP_REG_S5(lc_reg);
+	value &= 0xffffc000;
+	value |= (width * h_num) & GET_BITS(0, 14);
+	if (rdma_mode)
+		VSYNC_WRITE_VPP_REG(lc_reg, value);
+	else
+		WRITE_VPP_REG_S5(lc_reg, value);
+
+	lc_reg = VPP_SRSHARP1_LC_CURVE_BLK_VIDX_0_1 +
+		sr_sharp_reg_ofst[0];
+	value = READ_VPP_REG_S5(lc_reg);
+	value &= 0xc000c000;
+	value |= height & GET_BITS(0, 14);
+	value |= (0 << 16) & GET_BITS(16, 14);
+	if (rdma_mode)
+		VSYNC_WRITE_VPP_REG(lc_reg, value);
+	else
+		WRITE_VPP_REG_S5(lc_reg, value);
+
+	lc_reg += 1;
+	value = READ_VPP_REG_S5(lc_reg);
+	value &= 0xc000c000;
+	value |= (height * 3) & GET_BITS(0, 14);
+	value |= ((height * 2) << 16) & GET_BITS(16, 14);
+	if (rdma_mode)
+		VSYNC_WRITE_VPP_REG(lc_reg, value);
+	else
+		WRITE_VPP_REG_S5(lc_reg, value);
+
+	lc_reg += 1;
+	value = READ_VPP_REG_S5(lc_reg);
+	value &= 0xc000c000;
+	value |= (height * 5) & GET_BITS(0, 14);
+	value |= ((height * 4) << 16) & GET_BITS(16, 14);
+	if (rdma_mode)
+		VSYNC_WRITE_VPP_REG(lc_reg, value);
+	else
+		WRITE_VPP_REG_S5(lc_reg, value);
+
+	lc_reg += 1;
+	value = READ_VPP_REG_S5(lc_reg);
+	value &= 0xc000c000;
+	value |= (height * 7) & GET_BITS(0, 14);
+	value |= ((height * 6) << 16) & GET_BITS(16, 14);
+	if (rdma_mode)
+		VSYNC_WRITE_VPP_REG(lc_reg, value);
+	else
+		WRITE_VPP_REG_S5(lc_reg, value);
+
+	lc_reg += 1;
+	value = READ_VPP_REG_S5(lc_reg);
+	value &= 0xffffc000;
+	value |= (height * v_num) & GET_BITS(0, 14);
+	if (rdma_mode)
+		VSYNC_WRITE_VPP_REG(lc_reg, value);
+	else
+		WRITE_VPP_REG_S5(lc_reg, value);
+
+	/*slice1*/
+	if (slice_case) {
 		lc_reg = VPP_SRSHARP1_LC_CURVE_BLK_HIDX_0_1 +
-			sr_sharp_reg_ofst[i];
-		value = width & GET_BITS(0, 14);
+			sr_sharp_reg_ofst[1];
+		value = READ_VPP_REG_S5(lc_reg);
+		value &= 0xc000c000;
+		value |= lc_overlap & GET_BITS(0, 14);
 		value |= (0 << 16) & GET_BITS(16, 14);
 		if (rdma_mode)
 			VSYNC_WRITE_VPP_REG(lc_reg, value);
@@ -2025,64 +2163,69 @@ static void _lc_blk_bdry_cfg(unsigned int height,
 			WRITE_VPP_REG_S5(lc_reg, value);
 
 		lc_reg += 1;
-		value = (width * 3) & GET_BITS(0, 14);
-		value |= ((width * 2) << 16) & GET_BITS(16, 14);
+		value = READ_VPP_REG_S5(lc_reg);
+		value &= 0xc000c000;
+		value |= (width * 2 + lc_overlap) & GET_BITS(0, 14);
+		value |= ((width * 1 + lc_overlap) << 16) & GET_BITS(16, 14);
 		if (rdma_mode)
 			VSYNC_WRITE_VPP_REG(lc_reg, value);
 		else
 			WRITE_VPP_REG_S5(lc_reg, value);
 
 		lc_reg += 1;
-		value = (width * 5) & GET_BITS(0, 14);
-		value |= ((width * 4) << 16) & GET_BITS(16, 14);
+		value = READ_VPP_REG_S5(lc_reg);
+		value &= 0xc000c000;
+		value |= (width * 4 + lc_overlap) & GET_BITS(0, 14);
+		value |= ((width * 3 + lc_overlap) << 16) & GET_BITS(16, 14);
 		if (rdma_mode)
 			VSYNC_WRITE_VPP_REG(lc_reg, value);
 		else
 			WRITE_VPP_REG_S5(lc_reg, value);
 
 		lc_reg += 1;
-		value = (width * 7) & GET_BITS(0, 14);
-		value |= ((width * 6) << 16) & GET_BITS(16, 14);
+		value = READ_VPP_REG_S5(lc_reg);
+		value &= 0xc000c000;
+		value |= (width * 6 + lc_overlap) & GET_BITS(0, 14);
+		value |= ((width * 5 + lc_overlap) << 16) & GET_BITS(16, 14);
 		if (rdma_mode)
 			VSYNC_WRITE_VPP_REG(lc_reg, value);
 		else
 			WRITE_VPP_REG_S5(lc_reg, value);
 
 		lc_reg += 1;
-		value = (width * 9) & GET_BITS(0, 14);
-		value |= ((width * 8) << 16) & GET_BITS(16, 14);
+		value = READ_VPP_REG_S5(lc_reg);
+		value &= 0xc000c000;
+		value |= (width * 8 + lc_overlap) & GET_BITS(0, 14);
+		value |= ((width * 7 + lc_overlap) << 16) & GET_BITS(16, 14);
 		if (rdma_mode)
 			VSYNC_WRITE_VPP_REG(lc_reg, value);
 		else
 			WRITE_VPP_REG_S5(lc_reg, value);
 
 		lc_reg += 1;
-		value = (width * 11) & GET_BITS(0, 14);
-		value |= ((width * 10) << 16) & GET_BITS(16, 14);
+		value = READ_VPP_REG_S5(lc_reg);
+		value &= 0xc000c000;
+		value |= (width * 10 + lc_overlap) & GET_BITS(0, 14);
+		value |= ((width * 9 + lc_overlap) << 16) & GET_BITS(16, 14);
 		if (rdma_mode)
 			VSYNC_WRITE_VPP_REG(lc_reg, value);
 		else
 			WRITE_VPP_REG_S5(lc_reg, value);
 
 		lc_reg += 1;
-		value = (width * h_num) & GET_BITS(0, 14);
-		if (slice_case && i == SLICE1) {
-			tmp = (h_num >> 1) - 1;
-			value |= (tmp << 16) & GET_BITS(16, 4);
-			tmp = (h_num >> 1) - 2;
-			value |= (tmp << 20) & GET_BITS(20, 4);
-			value |= (0x1 << 25);
-			if (width * 11 >= lc_h_count_ini_phs)
-				value |= (0x1 << 24);
-		}
+		value = READ_VPP_REG_S5(lc_reg);
+		value &= 0xffffc000;
+		value |= (width * h_num) & GET_BITS(0, 14);
 		if (rdma_mode)
 			VSYNC_WRITE_VPP_REG(lc_reg, value);
 		else
 			WRITE_VPP_REG_S5(lc_reg, value);
 
 		lc_reg = VPP_SRSHARP1_LC_CURVE_BLK_VIDX_0_1 +
-			sr_sharp_reg_ofst[i];
-		value = height & GET_BITS(0, 14);
+			sr_sharp_reg_ofst[1];
+		value = READ_VPP_REG_S5(lc_reg);
+		value &= 0xc000c000;
+		value |= height & GET_BITS(0, 14);
 		value |= (0 << 16) & GET_BITS(16, 14);
 		if (rdma_mode)
 			VSYNC_WRITE_VPP_REG(lc_reg, value);
@@ -2090,7 +2233,9 @@ static void _lc_blk_bdry_cfg(unsigned int height,
 			WRITE_VPP_REG_S5(lc_reg, value);
 
 		lc_reg += 1;
-		value = (height * 3) & GET_BITS(0, 14);
+		value = READ_VPP_REG_S5(lc_reg);
+		value &= 0xc000c000;
+		value |= (height * 3) & GET_BITS(0, 14);
 		value |= ((height * 2) << 16) & GET_BITS(16, 14);
 		if (rdma_mode)
 			VSYNC_WRITE_VPP_REG(lc_reg, value);
@@ -2098,7 +2243,9 @@ static void _lc_blk_bdry_cfg(unsigned int height,
 			WRITE_VPP_REG_S5(lc_reg, value);
 
 		lc_reg += 1;
-		value = (height * 5) & GET_BITS(0, 14);
+		value = READ_VPP_REG_S5(lc_reg);
+		value &= 0xc000c000;
+		value |= (height * 5) & GET_BITS(0, 14);
 		value |= ((height * 4) << 16) & GET_BITS(16, 14);
 		if (rdma_mode)
 			VSYNC_WRITE_VPP_REG(lc_reg, value);
@@ -2106,7 +2253,9 @@ static void _lc_blk_bdry_cfg(unsigned int height,
 			WRITE_VPP_REG_S5(lc_reg, value);
 
 		lc_reg += 1;
-		value = (height * 7) & GET_BITS(0, 14);
+		value = READ_VPP_REG_S5(lc_reg);
+		value &= 0xc000c000;
+		value |= (height * 7) & GET_BITS(0, 14);
 		value |= ((height * 6) << 16) & GET_BITS(16, 14);
 		if (rdma_mode)
 			VSYNC_WRITE_VPP_REG(lc_reg, value);
@@ -2114,13 +2263,9 @@ static void _lc_blk_bdry_cfg(unsigned int height,
 			WRITE_VPP_REG_S5(lc_reg, value);
 
 		lc_reg += 1;
-		value = (height * v_num) & GET_BITS(0, 14);
-		if (slice_case && i == SLICE1) {
-			tmp = width * 11 - lc_h_count_ini_phs;
-			/*if (tmp < 0)*/
-			/*	tmp *= (-1);*/
-			value |= (tmp << 16) & GET_BITS(16, 14);
-		}
+		value = READ_VPP_REG_S5(lc_reg);
+		value &= 0xffffc000;
+		value |= (height * v_num) & GET_BITS(0, 14);
 		if (rdma_mode)
 			VSYNC_WRITE_VPP_REG(lc_reg, value);
 		else
@@ -2390,31 +2535,36 @@ void ve_lc_stts_en(int enable,
 	int slice_max;
 	int data32;
 	int tmp = 0x1;
-	int slice_hsize = width;
+	int slice0_hsize = width;
+	int slice1_hsize = width;
 	int slice_case = ve_multi_slice_case_get();
 
 	if (slice_case || multi_picture_case) {
 		tmp = 0x3;
 		slice_max = get_slice_max();
-		slice_hsize = (width >> 1) + lc_overlap;
+		slice0_hsize = (width >> 1) + lc_overlap_s0;
+		slice1_hsize = (width >> 1) + lc_overlap;
 	} else {
 		slice_max = SLICE1;
 	}
 
 	/*WRITE_VPP_REG_S5(VPP_LC_STTS_GCLK_CTRL0, 0x0);*/
 
-	data32 = ((height - 1) << 16) | (slice_hsize - 1);
-	if (rdma_mode) {
+	data32 = ((height - 1) << 16) | (slice0_hsize - 1);
+	if (rdma_mode)
 		VSYNC_WRITE_VPP_REG(VPP_LC_STTS1_WIDTHM1_HEIGHTM1,
 			data32);
-		VSYNC_WRITE_VPP_REG(VPP_LC_STTS2_WIDTHM1_HEIGHTM1,
-			data32);
-	} else {
+	else
 		WRITE_VPP_REG_S5(VPP_LC_STTS1_WIDTHM1_HEIGHTM1,
 			data32);
+
+	data32 = ((height - 1) << 16) | (slice1_hsize - 1);
+	if (rdma_mode)
+		VSYNC_WRITE_VPP_REG(VPP_LC_STTS2_WIDTHM1_HEIGHTM1,
+			data32);
+	else
 		WRITE_VPP_REG_S5(VPP_LC_STTS2_WIDTHM1_HEIGHTM1,
 			data32);
-	}
 
 	/*lc lpf enable*/
 	if (lpf_en) {
@@ -2694,30 +2844,40 @@ void ve_lc_top_cfg(int enable, int h_num, int v_num,
 	int slice_max;
 	int lc_reg;
 	unsigned int value;
-	int tmp;
 	int data32;
 	int sync_ctrl = 0; /*0: pre_frame, 1: cur_frame*/
 	int slice_case = ve_multi_slice_case_get();
+	unsigned int hsize_out, hwin_begin, hwin_end;
 
 	if (slice_case || multi_picture_case)
 		slice_max = get_slice_max();
 	else
 		slice_max = SLICE1;
 
+	if (slice_case) {
+		value = READ_VPP_REG_S5(V2_VD_S1_HWIN_CUT);
+		hwin_begin = (value >> 16) & 0x1fff;
+		hwin_end = value & 0x1fff;
+		hsize_out = READ_VPP_REG_S5(V2_VD_PROC_S1_OUT_SIZE);
+		hsize_out = (hsize_out >> 16) & 0x1fff;
+
+		lc_overlap = hsize_out - (hwin_end - hwin_begin + 1);
+		lc_overlap_s0 = lc_overlap;
+
+		pr_amve_v2("[lc_overlap]%d/%d/h_out:%d/w_b:%d/w_e:%d\n",
+			lc_overlap_s0, lc_overlap,
+			hsize_out, hwin_begin, hwin_end);
+	}
+
 	/*lc curve mapping block IDX default 4k panel*/
 	for (i = SLICE0; i < slice_max; i++) {
 		lc_reg = VPP_SRSHARP1_LC_HV_NUM +
 			sr_sharp_reg_ofst[i];
+		value = READ_VPP_REG_S5(lc_reg);
+		value &= 0xffffe0e0;
 		/*lc ram write h num and v num*/
-		value = v_num & GET_BITS(0, 5);
+		value |= v_num & GET_BITS(0, 5);
 		value |= (h_num << 8) & GET_BITS(8, 5);
-		if (slice_case && i == SLICE1) {
-			tmp = (width >> 1) + lc_overlap;
-			tmp = (width - tmp) << 1;
-			value |= (tmp << 16) & GET_BITS(16, 13);
-			lc_h_count_ini_phs = tmp;
-		}
-
 		if (rdma_mode)
 			VSYNC_WRITE_VPP_REG(lc_reg, value);
 		else
@@ -2978,6 +3138,9 @@ void ve_lc_curve_set(int init_flag,
 	int h_num, v_num;
 	unsigned int tmp, tmp1;
 	unsigned int lnr_data, lnr_data1;
+	unsigned int offset = 0;
+	unsigned int shift = 0;
+	int slice_case = ve_multi_slice_case_get();
 
 	if (!init_flag && !data)
 		return;
@@ -3018,6 +3181,9 @@ void ve_lc_curve_set(int init_flag,
 		return;
 	}
 
+	if (slice == 1)
+		offset = 5;
+
 	VSYNC_WRITE_VPP_REG(ctrl_reg, 1);
 	VSYNC_WRITE_VPP_REG(addr_reg, 0);
 
@@ -3026,7 +3192,14 @@ void ve_lc_curve_set(int init_flag,
 			switch (demo_mode) {
 			case 0:/*off*/
 			default:
-				k = 6 * (i * h_num + j);
+				if (slice_case &&
+					slice == 0 &&
+					j > 5)
+					shift = 1;
+				else
+					shift = 0;
+
+				k = 6 * (i * h_num + j + offset - shift);
 				tmp = data[k + 0] |
 					(data[k + 1] << 10) |
 					(data[k + 2] << 20);
@@ -3186,11 +3359,11 @@ void ve_lc_region_read(int blk_vnum, int blk_hnum,
 	int *curve_data, int *hist_data)
 {
 	int slice_max;
-	int lc_reg;
-	int ctrl_reg;
-	int addr_reg;
-	int data_reg;
-	int i, j;
+	unsigned int lc_reg;
+	unsigned int ctrl_reg;
+	unsigned int addr_reg;
+	unsigned int data_reg;
+	unsigned int i, j;
 	unsigned int tmp, tmp1;
 	unsigned int cur_block;
 	unsigned int length = 1632; /*12*8*17*/
@@ -3246,11 +3419,80 @@ void ve_lc_region_read(int blk_vnum, int blk_hnum,
 	am_dma_get_mif_data_lc_stts(slice, hist_data, length);
 }
 
+void dump_lc_mapping_reg(void)
+{
+	int i;
+	int slice = 0;
+	int slice_max = 0;
+	int ctrl_reg;
+	int addr_reg;
+	int data_reg;
+	unsigned int ret_data, ret_data1;
+
+	slice_max = get_slice_max();
+
+	for (slice = SLICE0; slice < slice_max; slice++) {
+		pr_info("########## slice[%d] curve data ###########\n",
+			slice);
+
+		ctrl_reg = VPP_SRSHARP1_LC_MAP_RAM_CTRL +
+			sr_sharp_reg_ofst[slice];
+		addr_reg = VPP_SRSHARP1_LC_MAP_RAM_ADDR +
+			sr_sharp_reg_ofst[slice];
+		data_reg = VPP_SRSHARP1_LC_MAP_RAM_DATA +
+			sr_sharp_reg_ofst[slice];
+
+		WRITE_VPP_REG_S5(ctrl_reg, 1);
+		WRITE_VPP_REG_S5(addr_reg, 0 | (1 << 31));
+
+		for (i = 0; i < 12 * 8; i++) {
+			ret_data = READ_VPP_REG_S5(data_reg);
+			ret_data1 = READ_VPP_REG_S5(data_reg);
+			pr_info("[%d] %d/%d\n", i, ret_data, ret_data1);
+		}
+
+		WRITE_VPP_REG_S5(ctrl_reg, 0);
+	}
+}
+
 void dump_lc_reg(void)
 {
 	int i;
 	unsigned int tmp;
 	int lc_reg;
+
+	pr_info("multi_slice_case=%d\n", multi_slice_case);
+	pr_info("hist_dma_case=%d\n", hist_dma_case);
+	pr_info("lc_overlap_s0=%d\n", lc_overlap_s0);
+	pr_info("lc_overlap=%d\n", lc_overlap);
+
+	if (vd_info) {
+		pr_info("vd_info slice_num=%d\n", vd_info->slice_num);
+		pr_info("vd1_in_hsize=%d\n", vd_info->vd1_in_hsize);
+		pr_info("vd1_in_vsize=%d\n", vd_info->vd1_in_vsize);
+		pr_info("vd1_dout_hsize=%d\n", vd_info->vd1_dout_hsize);
+		pr_info("vd1_dout_vsize=%d\n", vd_info->vd1_dout_vsize);
+		pr_info("slice[0].hsize=%d\n",
+			vd_info->slice[0].hsize);
+		pr_info("slice[0].vsize=%d\n",
+			vd_info->slice[0].vsize);
+		pr_info("slice[0].scaler_in_hsize=%d\n",
+			vd_info->slice[0].scaler_in_hsize);
+		pr_info("slice[1].hsize=%d\n",
+			vd_info->slice[1].hsize);
+		pr_info("slice[1].vsize=%d\n",
+			vd_info->slice[1].vsize);
+		pr_info("slice[1].scaler_in_hsize=%d\n",
+			vd_info->slice[1].scaler_in_hsize);
+	}
+
+	lc_reg = 0x5257;
+	tmp = READ_VPP_REG_S5(lc_reg);
+	pr_info("[0x%04x]=0x%08x\n", lc_reg, tmp);
+
+	lc_reg = 0x7757;
+	tmp = READ_VPP_REG_S5(lc_reg);
+	pr_info("[0x%04x]=0x%08x\n", lc_reg, tmp);
 
 	lc_reg = 0x282e;
 	tmp = READ_VPP_REG_S5(lc_reg);
@@ -3286,14 +3528,6 @@ void dump_lc_reg(void)
 		pr_info("[0x%04x]=0x%08x\n", lc_reg, tmp);
 	}
 
-	lc_reg = 0x5257;
-	tmp = READ_VPP_REG_S5(lc_reg);
-	pr_info("[0x%04x]=0x%08x\n", lc_reg, tmp);
-
-	lc_reg = 0x7757;
-	tmp = READ_VPP_REG_S5(lc_reg);
-	pr_info("[0x%04x]=0x%08x\n", lc_reg, tmp);
-
 	for (i = 0; i < 2; i++) {
 		lc_reg = 0x52c0 + i;
 		tmp = READ_VPP_REG_S5(lc_reg);
@@ -3326,6 +3560,75 @@ void dump_lc_reg(void)
 		tmp = READ_VPP_REG_S5(lc_reg);
 		pr_info("[0x%04x]=0x%08x\n", lc_reg, tmp);
 	}
+
+	if (dump_lc_curve) {
+		for (i = 0; i < 96; i++) {
+			lc_reg = 0x52fd;
+			tmp = READ_VPP_REG_S5(lc_reg);
+			pr_info("[0x%04x]=0x%08x\n", lc_reg, tmp);
+			lc_reg = 0x52fe;
+			tmp = READ_VPP_REG_S5(lc_reg);
+			pr_info("[0x%04x]=0x%08x\n", lc_reg, tmp);
+			lc_reg = 0x77fd;
+			tmp = READ_VPP_REG_S5(lc_reg);
+			pr_info("[0x%04x]=0x%08x\n", lc_reg, tmp);
+			lc_reg = 0x77fe;
+			tmp = READ_VPP_REG_S5(lc_reg);
+			pr_info("[0x%04x]=0x%08x\n", lc_reg, tmp);
+		}
+	}
+
+	lc_reg = 0x2811;
+	tmp = READ_VPP_REG_S5(lc_reg);
+	pr_info("[0x%04x]=0x%08x\n", lc_reg, tmp);
+
+	lc_reg = 0x3202;
+	tmp = READ_VPP_REG_S5(lc_reg);
+	pr_info("[0x%04x]=0x%08x\n", lc_reg, tmp);
+
+	lc_reg = 0x3203;
+	tmp = READ_VPP_REG_S5(lc_reg);
+	pr_info("[0x%04x]=0x%08x\n", lc_reg, tmp);
+
+	lc_reg = 0x3204;
+	tmp = READ_VPP_REG_S5(lc_reg);
+	pr_info("[0x%04x]=0x%08x\n", lc_reg, tmp);
+
+	lc_reg = 0x3207;
+	tmp = READ_VPP_REG_S5(lc_reg);
+	pr_info("[0x%04x]=0x%08x\n", lc_reg, tmp);
+
+	lc_reg = 0x3201;
+	tmp = READ_VPP_REG_S5(lc_reg);
+	pr_info("[0x%04x]=0x%08x\n", lc_reg, tmp);
+
+	lc_reg = 0x3241;
+	tmp = READ_VPP_REG_S5(lc_reg);
+	pr_info("[0x%04x]=0x%08x\n", lc_reg, tmp);
+
+	lc_reg = 0x2809;
+	tmp = READ_VPP_REG_S5(lc_reg);
+	pr_info("[0x%04x]=0x%08x\n", lc_reg, tmp);
+
+	lc_reg = 0x280a;
+	tmp = READ_VPP_REG_S5(lc_reg);
+	pr_info("[0x%04x]=0x%08x\n", lc_reg, tmp);
+
+	lc_reg = 0x280b;
+	tmp = READ_VPP_REG_S5(lc_reg);
+	pr_info("[0x%04x]=0x%08x\n", lc_reg, tmp);
+
+	lc_reg = 0x2808;
+	tmp = READ_VPP_REG_S5(lc_reg);
+	pr_info("[0x%04x]=0x%08x\n", lc_reg, tmp);
+
+	lc_reg = 0x2813;
+	tmp = READ_VPP_REG_S5(lc_reg);
+	pr_info("[0x%04x]=0x%08x\n", lc_reg, tmp);
+
+	lc_reg = 0x28c5;
+	tmp = READ_VPP_REG_S5(lc_reg);
+	pr_info("[0x%04x]=0x%08x\n", lc_reg, tmp);
 }
 
 void dump_dnlp_reg(void)

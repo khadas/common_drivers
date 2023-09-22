@@ -771,6 +771,9 @@
 #define VPP_SRSHARP0_PK_NR_EN                     0x5027
 #define VPP_SRSHARP1_PK_NR_EN                     0x5227
 
+#define VPP_SR2_SHARP_PROC_1R                     0x5257
+#define VPP_SR2_SHARP_PROC_1R_S1                  0x7757
+
 #define VPP_SRSHARP1_DNLP_EN                      0x5245
 #define VPP_SRSHARP1_DNLP_00                      0x5290
 #define VPP_SRSHARP1_LC_INPUT_MUX                 0x52b1
@@ -838,6 +841,21 @@
 #define VPP_LC_STTS_WHITE_INFO2                   0x5aed
 #define VPP_LC_STTS_BLACK_INFO2                   0x5aee
 #define VPP_LC_STTS_DMA_ERROR_RO                  0x5aef
+
+#define V2_VD_PROC_S1_OUT_SIZE                    0x2808
+#define V2_VD_PROC_S1_PPS_IN_SIZE                 0x2809
+#define V2_VD_PROC_S1_SR0_IN_SIZE                 0x280a
+#define V2_VD_PROC_S1_SR1_IN_SIZE                 0x280b
+#define V2_VD_PROC_BYPASS_CTRL                    0x2811
+#define V2_VD_S1_HWIN_CUT                         0x2813
+#define V2_VD_PPS_CTRL                            0x28c5
+
+#define V2_VPP_VD_PREBLND_H_V_SIZE                0x3201
+#define V2_VPP_VD_PREBLND_CTRL                    0x3202
+#define V2_VPP_PREBLEND_VD1_H_START_END           0x3203
+#define V2_VPP_PREBLEND_VD1_V_START_END           0x3204
+#define V2_VD1_PREBLEND_SRC_CTRL                  0x3207
+#define V2_VPP_VD_PRE_BLEND_DUMMY_DATA            0x3241
 
 #define VPP_LUT3D_CTRL                            0x2540
 #define VPP_LUT3D_CBUS2RAM_CTRL                   0x2541

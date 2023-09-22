@@ -62,6 +62,7 @@ struct _dma_reg_cfg_s {
 	unsigned char reg_wrmif0_badr0;
 	unsigned char reg_wrmif0_badr1;
 	unsigned char reg_wrmif_sel;
+	unsigned char reg_sr_mode_l2c1;
 };
 
 struct _viu_dma_reg_cfg_s {
@@ -77,6 +78,7 @@ static struct _dma_reg_cfg_s dma_reg_cfg = {
 	0xde,
 	0xdf,
 	0xee,
+	0xa2,
 };
 
 static struct _viu_dma_reg_cfg_s viu_dma_reg_cfg = {
@@ -179,13 +181,13 @@ static void _set_vpu_lut_dma_mif_wr_unit(int enable,
 void am_dma_init(void)
 {
 	/*lut_dma_wr initial*/
-	lut_dma_wr[EN_DMA_WR_ID_LC_STTS_0].stride = 12;
+	lut_dma_wr[EN_DMA_WR_ID_LC_STTS_0].stride = 48;
 	lut_dma_wr[EN_DMA_WR_ID_LC_STTS_0].addr_mode = 1;
-	lut_dma_wr[EN_DMA_WR_ID_LC_STTS_0].rpt_num = 32;
+	lut_dma_wr[EN_DMA_WR_ID_LC_STTS_0].rpt_num = 8;
 
-	lut_dma_wr[EN_DMA_WR_ID_LC_STTS_1].stride = 12;
+	lut_dma_wr[EN_DMA_WR_ID_LC_STTS_1].stride = 48;
 	lut_dma_wr[EN_DMA_WR_ID_LC_STTS_1].addr_mode = 1;
-	lut_dma_wr[EN_DMA_WR_ID_LC_STTS_1].rpt_num = 32;
+	lut_dma_wr[EN_DMA_WR_ID_LC_STTS_1].rpt_num = 8;
 
 	lut_dma_wr[EN_DMA_WR_ID_VI_HIST_SPL_0].stride = 22;
 	lut_dma_wr[EN_DMA_WR_ID_VI_HIST_SPL_0].addr_mode = 3;
@@ -285,6 +287,10 @@ void am_dma_set_mif_wr_status(int enable)
 
 	pr_am_dma("%s: addr = %x, enable = %d\n",
 		__func__, addr, enable);
+
+	addr = ADDR_PARAM(dma_reg_cfg.page,
+		dma_reg_cfg.reg_sr_mode_l2c1);
+	WRITE_VPP_REG_S5(addr, 0x00420000);
 }
 
 void am_dma_set_mif_wr(enum lut_dma_wr_id_e dma_wr_id,

@@ -17,13 +17,15 @@
 #include <linux/regmap.h>
 #include <linux/spi/spi.h>
 #include <linux/types.h>
+#include <linux/amlogic/aml_pageinfo.h>
+#include "page_info.h"
 
 /* register map */
 #define REG_CMD			0x00
 #define REG_ADDR		0x04
 #define REG_CTRL		0x08
 #define REG_CTRL1		0x0c
-#define REG_STATUS		0x10
+#define REG_STATUS0		0x10
 #define REG_CTRL2		0x14
 #define REG_CLOCK		0x18
 #define REG_USER		0x1c
@@ -288,12 +290,20 @@ static int meson_spifc_probe(struct platform_device *pdev)
 	struct meson_spifc *spifc;
 	void __iomem *base;
 	unsigned int rate;
+	u8 *boot_info;
 	int ret = 0;
 
 	master = spi_alloc_master(&pdev->dev, sizeof(struct meson_spifc));
 	if (!master)
 		return -ENOMEM;
 
+	boot_info = devm_kzalloc(&pdev->dev,
+				 MAX_BYTES_IN_BOOTINFO,
+				 GFP_KERNEL);
+	if (!boot_info)
+		return -ENOMEM;
+
+	page_info_pre_init(boot_info, PAGE_INFO_V1);
 	platform_set_drvdata(pdev, master);
 
 	spifc = spi_master_get_devdata(master);

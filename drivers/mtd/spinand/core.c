@@ -19,6 +19,7 @@
 #include <linux/spi/spi-mem.h>
 #include <linux/amlogic/aml_spi_nand.h>
 #include <linux/amlogic/aml_spi_mem.h>
+#include <linux/amlogic/aml_pageinfo.h>
 
 static int spinand_read_reg_op(struct spinand_device *spinand, u8 reg, u8 *val)
 {
@@ -579,7 +580,7 @@ static int spinand_lock_block(struct spinand_device *spinand, u8 lock)
 	return spinand_write_reg_op(spinand, REG_BLOCK_LOCK, lock);
 }
 
-static int __spinand_read_page(struct spinand_device *spinand,
+static int _spinand_read_page(struct spinand_device *spinand,
 			     const struct nand_page_io_req *req)
 {
 	struct nand_device *nand = spinand_to_nand(spinand);
@@ -616,15 +617,15 @@ static int spinand_read_page(struct spinand_device *spinand,
 	struct nand_device *nand = spinand_to_nand(spinand);
 	struct nand_page_io_req last_req = *req;
 	int page = nanddev_pos_to_row(nand, &req->pos);
+	int version = get_page_info_version();
 
-	if ((spinand_get_info_page_mode() == FRONT_INFO_P) &&
-	    page < SPI_NAND_BOOT_TOTAL_PAGES)
+	if (version != PAGE_INFO_V1 && page < SPI_NAND_BOOT_TOTAL_PAGES)
 		nanddev_pos_next_page(nand, &last_req.pos);
 
-	return __spinand_read_page(spinand, &last_req);
+	return _spinand_read_page(spinand, &last_req);
 }
 
-static int __spinand_write_page(struct spinand_device *spinand,
+static int _spinand_write_page(struct spinand_device *spinand,
 			      const struct nand_page_io_req *req)
 {
 	struct nand_device *nand = spinand_to_nand(spinand);
@@ -657,48 +658,48 @@ static int __spinand_write_page(struct spinand_device *spinand,
 	return nand_ecc_finish_io_req(nand, (struct nand_page_io_req *)req);
 }
 
-static int spinand_append_front_info_page(struct mtd_info *mtd,
-				    struct nand_page_io_req *last_req)
-{
-	struct spinand_device *spinand = mtd_to_spinand(mtd);
-	struct nand_device *nand = mtd_to_nanddev(mtd);
-	struct nand_page_io_req req;
-	int page;
-	u8 *buf;
-	int ret = 0;
-
-	page = nanddev_pos_to_row(nand, &last_req->pos);
-	req = *last_req;
-	req.datalen = mtd->writesize;
-	req.dataoffs = 0;
-	req.ooblen = 0;
-	buf = kzalloc(mtd->writesize, GFP_KERNEL);
-	req.databuf.in = buf;
-	spinand_set_front_info_page(mtd, buf);
-	ret = __spinand_write_page(spinand, &req);
-	kfree(buf);
-	pr_info("%s: %d\n", __func__, page);
-
-	return ret;
-}
-
 static int spinand_write_page(struct spinand_device *spinand,
 			      struct nand_page_io_req *req)
 {
 	struct nand_device *nand = spinand_to_nand(spinand);
 	struct mtd_info *mtd = &nand->mtd;
-	struct nand_page_io_req last_req = *req;
+	struct nand_page_io_req last_req  = *req;
 	int page = nanddev_pos_to_row(nand, &req->pos);
+	int version = get_page_info_version();
+	u8 read_cmd = spinand->op_templates.read_cache->cmd.opcode;
+	u32 fip_size = 0, fip_copies = 0;
+	u8 *buf, *info;
+	int ret = 0;
 
-	if ((spinand_get_info_page_mode() == FRONT_INFO_P) &&
-	    spinand_is_front_info_page(nand, page))
-		spinand_append_front_info_page(mtd, &last_req);
-
-	if ((spinand_get_info_page_mode() == FRONT_INFO_P) &&
-	    page < SPI_NAND_BOOT_TOTAL_PAGES)
+	if (!req->pos.target && page_info_is_page(page)) {
+		/* for infopage v1 need to describe the tpl information */
+		spinand_get_tpl_info(&fip_size, &fip_copies);
+		last_req.datalen = mtd->writesize;
+		last_req.dataoffs = 0;
+		last_req.ooblen = 0;
+		buf = kzalloc(mtd->writesize, GFP_KERNEL);
+		last_req.databuf.in = buf;
+		info = page_info_post_init(mtd, read_cmd, fip_size, fip_copies);
+		memcpy(buf, info, get_page_info_size());
+		/* information page is behind BL2 */
+		if (version == PAGE_INFO_V1)
+			nanddev_pos_next_page(nand, &last_req.pos);
+		pr_info("%s: write infopage at page :%d\n", __func__,
+					nanddev_pos_to_row(nand, &last_req.pos));
+		ret = _spinand_write_page(spinand, &last_req);
+		kfree(buf);
+		if (ret) {
+			pr_err("%s: fail to write infopage at page :%d\n", __func__,
+					nanddev_pos_to_row(nand, &last_req.pos));
+			return ret;
+		}
+		last_req = *req;
+	}
+	/* information page is in front of BL2 */
+	if (page < SPI_NAND_BOOT_TOTAL_PAGES && version != PAGE_INFO_V1)
 		nanddev_pos_next_page(nand, &last_req.pos);
 
-	return __spinand_write_page(spinand, &last_req);
+	return _spinand_write_page(spinand, &last_req);
 }
 
 static int spinand_mtd_read(struct mtd_info *mtd, loff_t from,
@@ -747,33 +748,6 @@ static int spinand_mtd_read(struct mtd_info *mtd, loff_t from,
 	return ret ? ret : max_bitflips;
 }
 
-static int spinand_append_info_page(struct mtd_info *mtd,
-				    struct nand_page_io_req *last_req)
-{
-	struct spinand_device *spinand = mtd_to_spinand(mtd);
-	struct nand_device *nand = mtd_to_nanddev(mtd);
-	struct nand_page_io_req req;
-	int page;
-	u8 *buf;
-	int ret = 0;
-
-	page = nanddev_pos_to_row(nand, &last_req->pos);
-	if (!last_req->pos.target && spinand_is_info_page(nand, page)) {
-		req = *last_req;
-		req.datalen = mtd->writesize;
-		req.dataoffs = 0;
-		req.ooblen = 0;
-		buf = kzalloc(mtd->writesize, GFP_KERNEL);
-		req.databuf.in = buf;
-		spinand_set_info_page(mtd, buf);
-		nanddev_pos_next_page(nand, &req.pos);
-		ret = spinand_write_page(spinand, &req);
-		kfree(buf);
-		pr_info("%s: %d\n", __func__, page);
-	}
-	return ret;
-}
-
 static int spinand_mtd_write(struct mtd_info *mtd, loff_t to,
 			     struct mtd_oob_ops *ops)
 {
@@ -800,12 +774,6 @@ static int spinand_mtd_write(struct mtd_info *mtd, loff_t to,
 		if (ret)
 			break;
 
-		/* spinand add info page support */
-		if (spinand_get_info_page_mode() == NORMAL_INFO_P) {
-			ret = spinand_append_info_page(mtd, &iter.req);
-			if (ret)
-				break;
-		}
 		ops->retlen += iter.req.datalen;
 		ops->oobretlen += iter.req.ooblen;
 	}

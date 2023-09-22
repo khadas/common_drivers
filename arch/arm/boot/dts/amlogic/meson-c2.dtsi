@@ -367,6 +367,7 @@
 			ahb-addr = <0xe0000000 0x0>;
 			clock-names = "spifc_gate";
 			clocks = <&clkc CLKID_SPIFC_GATE>;
+			info_version = <1>;
 			#address-cells = <1>;
 			#size-cells = <0>;
 			power-domains = <&pwrdm PDID_CX_SPIFC>;

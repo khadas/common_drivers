@@ -380,6 +380,7 @@
 			assigned-clock-parents = <&clkc CLKID_FCLK_DIV2>;
 			#address-cells = <1>;
 			#size-cells = <0>;
+			info_version = <2>;
 			//power-domains = <&pwrdm PDID_CX_SPIFC>;
 		};
 

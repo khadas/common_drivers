@@ -501,6 +501,7 @@ static int spi_nfc_clk_init(struct spi_nfc *spi_nfc,
 						     nand_clk_ctrl,
 						     sizeof(int));
 
+	writel(CLK_SELECT_NAND | readl(spi_nfc->nand_clk_reg), spi_nfc->nand_clk_reg);
 	init.name = devm_kstrdup(spi_nfc->dev, "nfc#div", GFP_KERNEL);
 	init.ops = &clk_divider_ops;
 	fix_div2_pll_name[0] = __clk_get_name(spi_nfc->fix_div2_pll);
@@ -552,7 +553,8 @@ static int spi_nfc_prepare(struct spi_nfc *spi_nfc,
 	if (!boot_info)
 		return -ENOMEM;
 
-	page_info_pre_init(boot_info);
+	page_info_pre_init(boot_info, PAGE_INFO_V3);
+	page_info_initialize(DEFAULT_ECC_MODE, 0, 0);
 
 	nfc_set_clock_and_timing(&clk_rate);
 

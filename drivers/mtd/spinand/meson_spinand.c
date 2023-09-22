@@ -37,16 +37,34 @@
 #define NAND_FIPMODE_ADVANCE   (2)
 //#define CONFIG_NOT_SKIP_BAD_BLOCK
 
+struct meson_partition_platform_data {
+	u32 reserved_part_blk_num;
+	u32 bl_mode;
+	u32 fip_copies;
+	u32 fip_size;
+	struct mtd_partition *part;
+	u32 part_num;
+};
+
 struct meson_spinand {
 	struct mtd_info *mtd;
 	struct spinand_device *spinand;
 	struct meson_rsv_handler_t *rsv;
+	struct meson_partition_platform_data *pdata;
 	s8 *block_status;
 	unsigned int erasesize_shift;
-	u32 info_p_mode;
 };
 
 struct meson_spinand *meson_spinand_global;
+
+void spinand_get_tpl_info(u32 *fip_size, u32 *fip_copies)
+{
+	if (meson_spinand_global->pdata) {
+		*fip_size = meson_spinand_global->pdata->fip_size;
+		*fip_copies = meson_spinand_global->pdata->fip_copies;
+	}
+}
+EXPORT_SYMBOL_GPL(spinand_get_tpl_info);
 
 bool meson_spinand_isbad(struct nand_device *nand, const struct nand_pos *pos)
 {
@@ -150,7 +168,6 @@ int meson_spinand_init(struct spinand_device *spinand, struct mtd_info *mtd)
 
 	spi_mem_set_mtd(mtd);
 	meson_spinand_global = meson_spinand;
-	meson_spinand->info_p_mode = NORMAL_INFO_P;
 	meson_spinand->erasesize_shift = ffs(mtd->erasesize) - 1;
 	meson_spinand->block_status =
 		kzalloc((mtd->size >> meson_spinand->erasesize_shift),
@@ -201,94 +218,6 @@ exit_error2:
 }
 EXPORT_SYMBOL_GPL(meson_spinand_init);
 
-u32 spinand_get_info_page_mode(void)
-{
-	return meson_spinand_global->info_p_mode;
-}
-EXPORT_SYMBOL_GPL(spinand_get_info_page_mode);
-
-bool spinand_is_info_page(struct nand_device *nand, int page)
-{
-	return unlikely((page % 128) == (SPI_NAND_BL2_PAGES - 1) &&
-			page < SPI_NAND_BOOT_TOTAL_PAGES);
-}
-EXPORT_SYMBOL_GPL(spinand_is_info_page);
-
-bool spinand_is_front_info_page(struct nand_device *nand, int page)
-{
-	return unlikely((page % 128 == 0) && page < SPI_NAND_BOOT_TOTAL_PAGES);
-}
-EXPORT_SYMBOL_GPL(spinand_is_front_info_page);
-
-int spinand_set_info_page(struct mtd_info *mtd, void *buf)
-{
-	struct meson_spinand *spinand = meson_spinand_global;
-	u32 page_per_blk;
-	struct mtd_oob_region region;
-	struct spinand_info_page *info_page = (struct spinand_info_page *)buf;
-	u32 rsv_block_num = meson_rsv_get_block_cnt(NAND_RSV_INDEX);
-
-	page_per_blk = mtd->erasesize / mtd->writesize;
-	memcpy(info_page->magic, SPINAND_MAGIC, strlen(SPINAND_MAGIC));
-	info_page->version = SPINAND_INFO_VER;
-	/* DISCRETE only */
-	info_page->mode = 1;
-	info_page->bl2_num = SPI_NAND_BL2_COPY_NUM;
-	info_page->fip_num = SPI_NAND_TPL_COPY_NUM;
-	info_page->dev.s.rd_max = SPI_NAND_NBITS;
-	info_page->dev.s.fip_start =
-		SPI_NAND_BOOT_TOTAL_PAGES + rsv_block_num * page_per_blk;
-	info_page->dev.s.fip_pages = SPI_NAND_TPL_SIZE_PER_COPY / mtd->writesize;
-	info_page->dev.s.page_size = mtd->writesize;
-	info_page->dev.s.page_per_blk = page_per_blk;
-	info_page->dev.s.oob_size = mtd->oobsize;
-	mtd->ooblayout->free(mtd, 0, &region);
-	info_page->dev.s.oob_offset = region.offset;
-	info_page->dev.s.bbt_start = 0;
-	info_page->dev.s.bbt_valid = 0;
-	info_page->dev.s.bbt_size = spinand->rsv->bbt->size;
-
-	return 0;
-}
-EXPORT_SYMBOL_GPL(spinand_set_info_page);
-
-int spinand_set_front_info_page(struct mtd_info *mtd, void *buf)
-{
-	struct nand_device *dev = mtd_to_nanddev(mtd);
-	struct spinand_front_info_page *boot_info = (struct spinand_front_info_page *)buf;
-	u32 page_per_bbt, i;
-
-	memcpy(boot_info->magic, SPINAND_MAGIC_V2, SPINAND_MAGIC_V2_LEN);
-	boot_info->version = SPINAND_INFO_VER_2;
-	page_per_bbt = (mtd->size >> (mtd->erasesize_shift + mtd->writesize_shift));
-	boot_info->common = (page_per_bbt ? page_per_bbt : 1) & 0x3;
-	boot_info->dev_cfg.page_size = mtd->writesize;
-
-	if (dev->memorg.planes_per_lun > 1) {
-		boot_info->dev_cfg.planes_per_lun = ((6 & 0xf) << 4) |
-			((dev->memorg.planes_per_lun & 0xf) << 0);
-		boot_info->dev_cfg.bus_width = ((mtd->writesize_shift + 1) << 4) | (1 << 0);
-	} else {
-		boot_info->dev_cfg.planes_per_lun = 1;
-		boot_info->dev_cfg.bus_width = 1;
-	}
-
-	for (i = 0; i < sizeof(struct spinand_front_info_page) - 4; i++)
-		boot_info->checksum += *((u8 *)buf + i);
-
-	return 0;
-}
-EXPORT_SYMBOL_GPL(spinand_set_front_info_page);
-
-struct meson_partition_platform_data {
-	u32 reserved_part_blk_num;
-	u32 bl_mode;
-	u32 fip_copies;
-	u32 fip_size;
-	struct mtd_partition *part;
-	u32 part_num;
-};
-
 static struct meson_partition_platform_data *
 	meson_partition_parse_platform_data(struct device_node *np)
 {
@@ -324,6 +253,7 @@ static struct meson_partition_platform_data *
 			GFP_KERNEL);
 	pdata->part = (struct mtd_partition *)&pdata[1];
 	pdata->part_num = part_num;
+	meson_spinand_global->pdata = pdata;
 
 	ret = of_property_read_u32(np, "bl_mode", &pdata->bl_mode);
 	if (ret) {
@@ -351,13 +281,6 @@ static struct meson_partition_platform_data *
 		pr_info("%s: no fip copies in dts\n", __func__);
 		return NULL;
 	}
-
-	ret = of_property_read_u32(np, "info_p_mode", &meson_spinand_global->info_p_mode);
-	if (ret) {
-		meson_spinand_global->info_p_mode = NORMAL_INFO_P;
-		pr_info("use normal info page mode\n");
-	}
-	pr_debug("info_p_mode %d\n", meson_spinand_global->info_p_mode);
 
 	part = pdata->part;
 	for_each_child_of_node(part_np, child) {

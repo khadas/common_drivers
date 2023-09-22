@@ -15,10 +15,12 @@
 #include <linux/regmap.h>
 #include <linux/spi/spi.h>
 #include <linux/types.h>
+#include <linux/amlogic/aml_pageinfo.h>
 #ifdef CONFIG_MTD_SPI_NOR
 #include <linux/mtd/spi-nor.h>
 #endif
 #include <linux/atomic.h>
+#include "page_info.h"
 
 #define CONFIG_SPIFC_HWCAPS_DUAL_QUAD
 
@@ -932,15 +934,16 @@ static int meson_spifc_probe(struct platform_device *pdev)
 	struct meson_spifc *spifc;
 	struct resource *res;
 	void __iomem *base;
+	unsigned int info_version = 0;
 	int ret = 0;
 	u32 ahb_addr = 0;
+	u8 *boot_info;
 
 	spifc = devm_kzalloc(&pdev->dev, sizeof(*spifc), GFP_KERNEL);
 	if (!spifc)
 		return -ENOMEM;
 
 	spifc->dev = &pdev->dev;
-
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	base = devm_ioremap_resource(spifc->dev, res);
 	if (IS_ERR(base)) {
@@ -954,6 +957,13 @@ static int meson_spifc_probe(struct platform_device *pdev)
 	if (IS_ERR(spifc->regmap)) {
 		ret = PTR_ERR(spifc->regmap);
 		goto out_err;
+	}
+
+	ret = of_property_read_u32(pdev->dev.of_node, "info_version",
+					   &info_version);
+	if (ret) {
+		pr_err("spifc info version parse failed!\n");
+		return ret;
 	}
 
 #ifdef CONFIG_ENABLE_AHB_MODE
@@ -979,6 +989,13 @@ static int meson_spifc_probe(struct platform_device *pdev)
 		goto out_err;
 	}
 
+	boot_info = devm_kzalloc(&pdev->dev,
+				 MAX_BYTES_IN_BOOTINFO,
+				 GFP_KERNEL);
+	if (!boot_info)
+		return -ENOMEM;
+
+	page_info_pre_init(boot_info, info_version);
 	platform_set_drvdata(pdev, spifc);
 	meson_spifc_hw_init(spifc);
 

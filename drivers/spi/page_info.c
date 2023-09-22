@@ -155,8 +155,6 @@ unsigned int page_info_get_pages_in_boot(void)
 void page_info_initialize(unsigned int default_n2m,
 			  unsigned char bus_width, unsigned char ca)
 {
-	memset((unsigned char *)page_info,
-		0, sizeof(struct boot_info));
 	page_info->dev_cfg0.page_size = sizeof(struct boot_info);
 	page_info->dev_cfg0.planes_per_lun = 0;
 	page_info->dev_cfg0.bus_width = bus_width;
@@ -167,7 +165,76 @@ void page_info_initialize(unsigned int default_n2m,
 	page_info->dev_cfg1.dummy_cycles = 0xFF;
 }
 
-#ifdef __PXP_DEBUG__
+int get_page_info_version(void)
+{
+	return page_info->version;
+}
+EXPORT_SYMBOL_GPL(get_page_info_version);
+
+int get_page_info_size(void)
+{
+	return sizeof(struct boot_info);
+}
+EXPORT_SYMBOL_GPL(get_page_info_size);
+
+static void page_info_init_from_mtd(struct mtd_info *mtd, u8 cmd, u32 fip_size, u32 fip_copies)
+{
+	struct nand_device *dev = mtd_to_nanddev(mtd);
+	unsigned char ecc_steps, *temp;
+	unsigned int checksum = 0, i;
+	enum PAGE_INFO_V page_info_ver;
+
+	page_info_ver = get_page_info_version();
+	memcpy(page_info->magic, BOOTINFO_MAGIC, strlen(BOOTINFO_MAGIC));
+	page_info->dev_cfg0.page_size = mtd->writesize;
+	page_info->dev_cfg0.planes_per_lun = dev->memorg.planes_per_lun;
+	if (page_info->dev_cfg0.planes_per_lun > 1) {
+		page_info->dev_cfg0.planes_per_lun |= 6 << 4;
+		page_info->dev_cfg0.bus_width =
+			(mtd->writesize_shift + 1) << 4;
+	}
+
+	page_info->dev_cfg0.bus_width &= ~0x03;
+	if (cmd == 0x6b)
+		page_info->dev_cfg0.bus_width |= 2;
+	else if (cmd == 0x3b)
+		page_info->dev_cfg0.bus_width |= 1;
+	NFC_Print("bus_width", page_info->dev_cfg0.bus_width);
+	if (page_info_ver == PAGE_INFO_V1) {
+		/* for compatible,  a1/c1/c2 ... need to know fip's start and size */
+		page_info->reserved[0] = 1024 / 64 + 48;
+		page_info->reserved[1] = fip_size / mtd->erasesize;
+		page_info->reserved[2] = fip_copies;
+		page_info->dev_cfg1.block_size = mtd->erasesize;
+	} else if (page_info_ver == PAGE_INFO_V2) {
+		/* for compatible,  C3 use this field  */
+		i = mtd->erasesize_shift + mtd->writesize_shift;
+		page_info->reserved[2] = ((mtd->size >> i) ? (mtd->size >> i) : 1) & 0x3;
+	}
+
+	if (page_info_ver != PAGE_INFO_V3)
+		goto _cal_sum;
+
+	ecc_steps = mtd->writesize >> 9;
+	page_info->host_cfg.n2m_cmd = (DEFAULT_ECC_MODE & (~0x3F)) | ecc_steps;
+	page_info->host_cfg.frequency_index = 0xFF;
+	page_info->dev_cfg1.ca_lanes = 0;
+	page_info->dev_cfg1.cs_deselect_time = 0xFF;
+	page_info->dev_cfg1.dummy_cycles = 0xFF;
+	page_info->dev_cfg1.block_size = mtd->erasesize;
+	page_info->dev_cfg1.is_gang_programer = 0;
+	page_info->dev_cfg1.xor_bbt_start_block |= (1 << 24);
+	page_info->dev_cfg1.block_num_in_chip = mtd->size >> mtd->erasesize_shift;
+
+_cal_sum:
+	page_info->checksum = 0;
+	temp = (unsigned char *)page_info;
+	for (i = 0; i < sizeof(struct boot_info); i++)
+		checksum += temp[i];
+	page_info->checksum = checksum;
+	pr_info("page info updated checksum : 0x%x\n", checksum);
+}
+
 static void page_info_dump_info(void)
 {
 	unsigned char planes_per_lun, plane_shift, bus_width, cache_plane_shift;
@@ -212,11 +279,34 @@ static void page_info_dump_info(void)
 	pr_info("device_ecc_disable: 0x%x\n", device_ecc_disable);
 	pr_info("n2m_cmd: 0x%x\n", n2m_cmd);
 }
-#endif
 
-int page_info_pre_init(u8 *boot_info)
+unsigned char *page_info_post_init(struct mtd_info *mtd, u8 cmd, u32 fip_size, u32 fip_copies)
+{
+	page_info_init_from_mtd(mtd, cmd, fip_size, fip_copies);
+	page_info_dump_info();
+	return (unsigned char *)page_info;
+}
+EXPORT_SYMBOL_GPL(page_info_post_init);
+
+int page_info_pre_init(u8 *boot_info, int version)
 {
 	page_info = (struct boot_info *)boot_info;
-	page_info_initialize(DEFAULT_ECC_MODE, 0, 0);
+	page_info->version = version;
 	return 0;
 }
+EXPORT_SYMBOL_GPL(page_info_pre_init);
+
+bool page_info_is_page(int page)
+{
+	enum PAGE_INFO_V page_info_ver;
+
+	page_info_ver = get_page_info_version();
+	if (page_info_ver == PAGE_INFO_V1)
+		return unlikely(((page % 128) == 31) && (page < 1024));
+	else if (page_info_ver == PAGE_INFO_V2 || page_info_ver == PAGE_INFO_V3)
+		return unlikely(!(page % 128) && (page < 1024));
+	else
+		return 0;
+}
+EXPORT_SYMBOL_GPL(page_info_is_page);
+

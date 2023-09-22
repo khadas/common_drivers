@@ -762,6 +762,7 @@
 			//clocks = <&clkc CLKID_SPIFC_GATE>;
 			#address-cells = <1>;
 			#size-cells = <0>;
+			info_version = <1>;
 			//power-domains = <&pwrdm PDID_SPIFC>;
 			status = "disabled";
 		};

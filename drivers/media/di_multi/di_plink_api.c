@@ -4950,6 +4950,81 @@ static void count_4k(struct dimn_itf_s *itf, struct dvfm_s *vf)
 	}
 }
 
+static unsigned int vtype_fill_bypass(struct vframe_s *vf)
+{
+	unsigned int ds_ratio = 0;
+	unsigned int hdctds_ratio = 0;
+	unsigned int src_fmt = 2;
+	unsigned int skip = 0;
+	bool need_ds = false;
+	bool memuse_org = true;
+
+	if ((vf->type & VIDTYPE_VIU_422) && !(vf->type & 0x10000000)) {
+		src_fmt = 0;
+		need_ds = true;
+		/*422 is one plane, post not support, need pre out nv21*/
+	} else if ((vf->type & VIDTYPE_VIU_NV21) ||
+		   (vf->type & 0x10000000)) {
+		/*hdmi in dw is nv21 VIDTYPE_DW_NV21*/
+		src_fmt = 2;
+	}
+
+	if (vf->type & VIDTYPE_INTERLACE) {
+		if (src_fmt == 2) {
+			skip = 1;
+		} else if (src_fmt == 0) {
+			need_ds = true;
+		/*hdmiin output, In the first half of the line*/
+			if (vf->width > 960 ||
+			    (vf->height >> 1) > 540)
+				hdctds_ratio = 1;
+		}
+	} else {
+		if (vf->width > 1920 || vf->height > 1080) {
+			hdctds_ratio = 1;
+			skip = 1;
+		} else if (vf->width > 960 || vf->height > 540) {
+			if (src_fmt == 0) {
+				/*hdmi in always use ds*/
+				hdctds_ratio = 1;
+			} else {
+				/*decoder use mif skip for save ddr*/
+				hdctds_ratio = 0;
+				skip = 1;
+				dbg_dctp("1080p use mif skip\n");
+			}
+		}
+	}
+
+	if (hdctds_ratio || skip || need_ds)
+		memuse_org = false;
+
+	if (!memuse_org) {
+		ds_ratio = hdctds_ratio;
+		if (skip)
+			ds_ratio = ds_ratio + 1;
+
+		if (need_ds && (vf->type & VIDTYPE_COMPRESS))
+			ds_ratio = (vf->compWidth / vf->width) >> 1;
+	}
+
+	if (memuse_org) {
+		if (vf->type & VIDTYPE_COMPRESS) {
+			if (vf->width == vf->compWidth)
+				ds_ratio = 0;
+			else if (vf->width >= (vf->compWidth >> 1))
+				ds_ratio = 1;
+			else if (vf->width >= (vf->compWidth >> 2))
+				ds_ratio = 2;
+			else
+				ds_ratio = 3;
+		}
+	}
+	dbg_poll("ds_ratio=%d, skip=%d,memuse_org=%d,need_ds=%d,src_fmt=%d\n", ds_ratio,
+		skip, memuse_org, need_ds, src_fmt);
+	return ds_ratio;
+}
+
 /* cnt: for */
 static bool dpvpp_parser_bypass(struct dimn_itf_s *itf,
 				unsigned int cnt)
@@ -4960,6 +5035,7 @@ static bool dpvpp_parser_bypass(struct dimn_itf_s *itf,
 	struct di_buffer *buffer_ori;
 	unsigned int cnt_in;
 	int i;
+	unsigned int ds_ratio = 0;
 	struct dim_prevpp_ds_s *ds;
 
 	if (!itf || !itf->ds)
@@ -4985,7 +5061,12 @@ static bool dpvpp_parser_bypass(struct dimn_itf_s *itf,
 		dvfm = (struct dimn_dvfm_s *)vf->private_data;
 		if (itf->etype == EDIM_NIN_TYPE_VFM) {
 			vf_ori = (struct vframe_s *)dvfm->c.ori_in;
-			vf_ori->di_flag |= DI_FLAG_DI_BYPASS;
+			ds_ratio = vtype_fill_bypass(vf_ori);
+			vf_ori->di_flag |= DI_FLAG_DI_PVPPLINK_BYPASS | DI_FLAG_DI_BYPASS;
+			ds_ratio = ds_ratio << DI_FLAG_DCT_DS_RATIO_BIT;
+			ds_ratio &= DI_FLAG_DCT_DS_RATIO_MASK;
+			vf_ori->di_flag &= ~DI_FLAG_DCT_DS_RATIO_MASK;
+			vf_ori->di_flag |= ds_ratio;
 			vf_ori->private_data = NULL;
 
 			qidle->ops.put(qidle, vf);
@@ -4996,7 +5077,15 @@ static bool dpvpp_parser_bypass(struct dimn_itf_s *itf,
 			/*EDIM_NIN_TYPE_INS*/
 			buffer_ori = (struct di_buffer *)dvfm->c.ori_in;
 			buffer_ori->flag |= DI_FLAG_BUF_BY_PASS;
-
+			if (buffer_ori->vf) {
+				ds_ratio = vtype_fill_bypass(buffer_ori->vf);
+				buffer_ori->vf->di_flag |=
+					DI_FLAG_DI_PVPPLINK_BYPASS | DI_FLAG_BUF_BY_PASS;
+				ds_ratio = ds_ratio << DI_FLAG_DCT_DS_RATIO_BIT;
+				ds_ratio &= DI_FLAG_DCT_DS_RATIO_MASK;
+				buffer_ori->vf->di_flag &= ~DI_FLAG_DCT_DS_RATIO_MASK;
+				buffer_ori->vf->di_flag |= ds_ratio;
+			}
 			qidle->ops.put(qidle, vf);
 			qready->ops.put(qready, buffer_ori);
 			if (qready->ops.is_full(qready))
@@ -5108,7 +5197,6 @@ static bool dpvpp_parser(struct dimn_itf_s *itf)
 	if (!itf ||
 	    !itf->c.reg_di || !itf->ds || itf->c.pause_parser)
 		return false;
-
 	if (itf->c.src_state & EDVPP_SRC_NEED_MSK_CRT)
 		return false;
 
@@ -5389,7 +5477,6 @@ static int dpvpp_get_plink_input_win(struct di_ch_s *pch,
 			__func__, src_w, src_h, tmp.orig_w, tmp.orig_h,
 			tmp.x_st, tmp.x_end, tmp.x_size, tmp.x_check_sum,
 			tmp.y_st, tmp.y_end, tmp.y_size, tmp.y_check_sum);
-
 	/* just skip warning if only source size change */
 	if (src_w != tmp.orig_w)
 		ret++;
@@ -7330,7 +7417,7 @@ static bool dpvpp_parser_nr(struct dimn_itf_s *itf)
 	ndvfm->c.bypass_reason = bypass;
 	if (bypass) {
 		if (!itf->c.bypass_reason)
-			dbg_plink1("to bypass:%d:%d\n", bypass, ndvfm->c.cnt_in);
+			dbg_plink2("to bypass:%d:%d\n", bypass, ndvfm->c.cnt_in);
 		itf->c.bypass_reason = bypass;
 		dpvpp_parser_bypass(itf, 1);
 		return true;
@@ -7340,7 +7427,7 @@ static bool dpvpp_parser_nr(struct dimn_itf_s *itf)
 			dpvpp_dbg_force_dech,
 			dpvpp_dbg_force_decv);
 	if (itf->c.bypass_reason)
-		dbg_plink1("leave bypass:%d\n", ndvfm->c.cnt_in);
+		dbg_plink2("leave bypass:%d\n", ndvfm->c.cnt_in);
 	itf->c.bypass_reason = 0;
 	dim_print("%s:nub:%d\n", __func__, ndvfm->c.cnt_in);
 	chg = dpvpp_is_change_dvfm(&ds->in_last, in_dvfm);
@@ -8374,7 +8461,7 @@ static bool vtype_fill_d(struct dimn_itf_s *itf,
 				itf->c.last_ds_ratio = ds_ratio;
 			} else {
 				/* keep the last_ds_ratio if meet dct pre timeout */
-				dbg_plink1("%s:dct_pre not match %px\n",
+				dbg_plink2("%s:dct_pre not match %px\n",
 					__func__, pch->dct_pre);
 				ds_ratio = itf->c.last_ds_ratio;
 			}

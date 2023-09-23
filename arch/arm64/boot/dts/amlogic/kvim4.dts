@@ -1800,10 +1800,10 @@
 
 &periphs_pinctrl {
 	pdmin_pins: pdmin_pin {
-		mux { /* GPIOM_3, GPIOM_4, GPIOM_5, GPIOM_1, GPIOM_2 */
+		mux { /* GPIOM_3, GPIOM_1, GPIOM_2 */
 			groups = "pdm_dclk",
-				"pdm_din0",
-//				"pdm_din1_m5",
+				/*"pdm_din0",*/
+				/*"pdm_din1_m5",*/
 				"pdm_din2",
 				"pdm_din3";
 			function = "pdm";

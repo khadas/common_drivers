@@ -173,16 +173,23 @@ static struct v4l2_queryctrl amlvideo2_node_qctrl[] = {{
 	.minimum = 0, .maximum = 270, .step = 90, .default_value = 0, .flags =
 		V4L2_CTRL_FLAG_SLIDER, } };
 
-static struct v4l2_frmivalenum amlvideo2_frmivalenum[] = {{
+static struct v4l2_frmivalenum amlvideo2_frmivalenum[] = {
+	{
 	.index = 0, .pixel_format = V4L2_PIX_FMT_NV21, .width = 1920, .height =
 		1080, .type = V4L2_FRMIVAL_TYPE_DISCRETE, {.discrete = {
-		.numerator = 1, .denominator = 30, } } }, {
+		.numerator = 1, .denominator = 30, } }
+	},
+	{
+	.index = 0, .pixel_format = V4L2_PIX_FMT_NV21, .width = 3840, .height =
+		2160, .type = V4L2_FRMIVAL_TYPE_DISCRETE, {.discrete = {
+		.numerator = 1, .denominator = 30, } }
+	},
+	{
 	.index = 1, .pixel_format = V4L2_PIX_FMT_NV21, .width = 1600, .height =
 		1200, .type = V4L2_FRMIVAL_TYPE_DISCRETE, {.discrete = {
-		.numerator = 1, .denominator = 5, } } }, {
-	.index = 2, .pixel_format = V4L2_PIX_FMT_NV21, .width = 3840, .height =
-		2160, .type = V4L2_FRMIVAL_TYPE_DISCRETE, {.discrete = {
-		.numerator = 1, .denominator = 5, } } }};
+		.numerator = 1, .denominator = 15, } }
+	}
+};
 
 #define dpr_err(dev, level, fmt, arg...) \
 	v4l2_dbg((level), debug, &(dev)->v4l2_dev, fmt, ## arg)
@@ -4939,6 +4946,8 @@ static int vidioc_try_fmt_vid_cap(struct file *file, void *priv,
 	}
 
 	support_4k = node->vid_dev->support_4k_capture;
+	if (amlvideo2_dbg_en)
+		pr_info("%s support_4k=%d\n", __func__, support_4k);
 	if (support_4k) {
 		maxh = norm_maxh_4k();
 		maxw = norm_maxw_4k();

@@ -4312,48 +4312,47 @@ do { \
 								if (doepint_temp.b.sr)
 									CLEAR_OUT_EP_INTR(core_if, epnum, sr);
 
-									/* Delay is needed for core to update setup
-									 * packet count from 3 to 2 after receiving
-									 * setup packet*/
-									dwc_udelay(100);
-									doepint.d32 = DWC_READ_REG32(&core_if->dev_if->
-																	out_ep_regs[0]->doepint);
-									if (doeptsize0.b.supcnt == 3) {
-										DWC_DEBUGPL(DBG_ANY, "Rolling over!!!!!!!\n");
-										ep->dwc_ep.stp_rollover = 1;
-									}
-									if (doepint.b.setup) {
+								/* Delay is needed for core to update setup
+								 * packet count from 3 to 2 after receiving
+								 * setup packet
+								 */
+								dwc_udelay(100);
+								doepint.d32 = DWC_READ_REG32(&core_if->dev_if->out_ep_regs[0]->doepint);
+								if (doeptsize0.b.supcnt == 3) {
+									DWC_DEBUGPL(DBG_ANY, "Rolling over!!!!!!!\n");
+									ep->dwc_ep.stp_rollover = 1;
+								}
+								if (doepint.b.setup) {
 retry:
-										/* Already started data stage, clear setup */
-										CLEAR_OUT_EP_INTR(core_if, epnum, setup);
-										doepint.b.setup = 0;
-										handle_ep0(pcd);
-										ep->dwc_ep.stp_rollover = 0;
-										/* Prepare for more setup packets */
-										if (pcd->ep0state == EP0_IN_STATUS_PHASE ||
-											pcd->ep0state == EP0_IN_DATA_PHASE) {
-											depctl_data_t depctl = {.d32 = 0};
-											depctl.b.cnak = 1;
-											ep0_out_start(core_if, pcd);
-											/* Core not updating setup packet count
-											 * in case of PET testing - @TODO vahrama
-											 * to check with HW team further */
-											if (!core_if->otg_ver)
-												DWC_MODIFY_REG32(&core_if->dev_if->
-													out_ep_regs[0]->doepctl, 0, depctl.d32);
+									/* Already started data stage, clear setup */
+									CLEAR_OUT_EP_INTR(core_if, epnum, setup);
+									doepint.b.setup = 0;
+									handle_ep0(pcd);
+									ep->dwc_ep.stp_rollover = 0;
+									/* Prepare for more setup packets */
+									if (pcd->ep0state == EP0_IN_STATUS_PHASE ||
+										pcd->ep0state == EP0_IN_DATA_PHASE) {
+										depctl_data_t depctl = {.d32 = 0};
 
-										}
-										goto exit_xfercompl;
-									} else {
-										/* Prepare for more setup packets */
-										DWC_DEBUGPL(DBG_ANY,
-											"EP0_IDLE SR=1 setup=0 new setup comes\n");
-										doepint.d32 = DWC_READ_REG32(&core_if->dev_if->
-																	out_ep_regs[0]->doepint);
-										if (doepint.b.setup)
-											goto retry;
+										depctl.b.cnak = 1;
 										ep0_out_start(core_if, pcd);
+										/* Core not updating setup packet count
+										 * in case of PET testing - @TODO vahrama
+										 * to check with HW team further
+										 */
+										if (!core_if->otg_ver)
+											DWC_MODIFY_REG32(&core_if->dev_if->out_ep_regs[0]->doepctl, 0, depctl.d32);
 									}
+									goto exit_xfercompl;
+								} else {
+									/* Prepare for more setup packets */
+									DWC_DEBUGPL(DBG_ANY,
+										"EP0_IDLE SR=1 setup=0 new setup comes\n");
+									doepint.d32 = DWC_READ_REG32(&core_if->dev_if->out_ep_regs[0]->doepint);
+									if (doepint.b.setup)
+										goto retry;
+									ep0_out_start(core_if, pcd);
+								}
 							} else {
 								dwc_otg_pcd_request_t *req;
 								diepint_data_t diepint0 = {.d32 = 0};

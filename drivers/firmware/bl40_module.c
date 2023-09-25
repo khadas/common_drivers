@@ -92,12 +92,12 @@ static long bl40_miscdev_ioctl(struct file *fp, unsigned int cmd,
 			       unsigned long arg)
 {
 	int ret = 0;
-	const struct firmware *firmware;
+	const struct firmware *firmware = NULL;
 	void __user *argp = (void __user *)arg;
 
 	switch (cmd) {
 	case BL40_FIRMWARE_LOAD: {
-		struct bl40_info bl40_info;
+		struct bl40_info bl40_info = {0};
 		unsigned long phy_addr;
 		void *virt_addr = NULL;
 		struct arm_smccc_res res = {0};
@@ -136,7 +136,7 @@ static long bl40_miscdev_ioctl(struct file *fp, unsigned int cmd,
 	}
 	break;
 	case BL40_CMD_SEND: {
-		struct bl40_msg_buf bl40_buf;
+		struct bl40_msg_buf bl40_buf = {0};
 
 		ret = copy_from_user((void *)&bl40_buf,
 				     argp, sizeof(bl40_buf));
@@ -148,7 +148,7 @@ static long bl40_miscdev_ioctl(struct file *fp, unsigned int cmd,
 	}
 	break;
 	case BL40_CMD_LISTEN: {
-		struct bl40_msg bl40_msg;
+		struct bl40_msg bl40_msg = {0};
 		unsigned long flags;
 
 		init_completion(&bl40_msg.complete);

@@ -2369,6 +2369,7 @@ static void vframe_composer(struct composer_dev *dev)
 	struct vframe_s *input_vf[MXA_LAYER_COUNT] = {NULL};
 	struct output_axis out_axis[MXA_LAYER_COUNT] = {0};
 	struct file *fence_file;
+	bool has_fence;
 
 	if (IS_ERR_OR_NULL(dev)) {
 		vc_print(dev->index, PRINT_ERROR, "%s: invalid param.\n", __func__);
@@ -2415,6 +2416,22 @@ static void vframe_composer(struct composer_dev *dev)
 			vc_print(dev->index, PRINT_ERROR, "com: get failed\n");
 			return;
 		}
+
+		has_fence = false;
+		frames_info = &received_frames->frames_info;
+		count = frames_info->frame_count;
+		for (i = 0; i < count - 1; i++) {
+			fence_file = received_frames->fence_file[i];
+			if (fence_file) {
+				has_fence = true;
+				break;
+			}
+		}
+		if (has_fence) {
+			vc_print(dev->index, PRINT_OTHER, "com: has fence, cannot drop\n");
+			break;
+		}
+
 		if (!kfifo_peek(&dev->receive_q, &received_frames_tmp))
 			break;
 		drop_count++;

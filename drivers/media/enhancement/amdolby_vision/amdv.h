@@ -903,6 +903,10 @@ extern u32 l1l4_distance;
 extern bool ignore_top1_result;
 extern u8 force_drm[32];
 extern bool dv_unique_drm;
+extern char *cfg_data;
+extern char *bin_data;
+extern int cfg_size;
+extern int bin_size;
 /************/
 
 #define pr_dv_dbg(fmt, args...)\

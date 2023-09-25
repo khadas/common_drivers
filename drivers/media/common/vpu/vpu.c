@@ -2518,6 +2518,25 @@ static int vpu_remove(struct platform_device *pdev)
 	return 0;
 }
 
+static void vpu_shutdown(struct platform_device *pdev)
+{
+	if (!IS_ERR_OR_NULL(vpu_conf.vapb_clk) &&
+		__clk_is_enabled(vpu_conf.vapb_clk))
+		clk_disable_unprepare(vpu_conf.vapb_clk);
+
+	if (!IS_ERR_OR_NULL(vpu_conf.vpu_clk) &&
+		__clk_is_enabled(vpu_conf.vpu_clk))
+		clk_disable_unprepare(vpu_conf.vpu_clk);
+
+	if (!IS_ERR_OR_NULL(vpu_conf.gp_pll) &&
+		__clk_is_enabled(vpu_conf.gp_pll))
+		clk_disable_unprepare(vpu_conf.gp_pll);
+
+	if (!IS_ERR_OR_NULL(vpu_conf.vpu_intr) &&
+		__clk_is_enabled(vpu_conf.vpu_intr))
+		clk_disable_unprepare(vpu_conf.vpu_intr);
+}
+
 #ifdef CONFIG_PM
 static int vpu_suspend(struct platform_device *pdev, pm_message_t state)
 {
@@ -2571,6 +2590,7 @@ static struct platform_driver vpu_driver = {
 	},
 	.probe = vpu_probe,
 	.remove = vpu_remove,
+	.shutdown = vpu_shutdown,
 #ifdef CONFIG_PM
 	.suspend    = vpu_suspend,
 	.resume     = vpu_resume,

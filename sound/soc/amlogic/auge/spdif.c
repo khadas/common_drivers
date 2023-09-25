@@ -1319,6 +1319,8 @@ static void aml_dai_spdif_shutdown(struct snd_pcm_substream *substream,
 	char *clk_name = (char *)__clk_get_name(p_spdif->sysclk);
 	struct snd_soc_card *card = cpu_dai->component->card;
 
+	if (!clk_name)
+		return;
 	if (p_spdif->standard_sysclk % 11025 == 0) {
 		if (!strcmp(__clk_get_name(clk_get_parent(p_spdif->clk_spdifout)),
 				__clk_get_name(p_spdif->sysclk))) {
@@ -1676,6 +1678,8 @@ static void aml_set_spdifclk_1(struct aml_spdif *p_spdif, int freq, bool tune)
 	if (freq) {
 		char *clk_name = (char *)__clk_get_name(p_spdif->sysclk);
 
+		if (!clk_name)
+			return;
 		mpll_freq = freq *
 				mpll2sys_clk_ratio_by_type(p_spdif->codec_type);
 		/* make sure mpll_freq doesn't exceed MPLL max freq */
@@ -1713,6 +1717,9 @@ static void aml_set_spdifclk_2(struct aml_spdif *p_spdif, int freq, bool tune)
 {
 	int ratio = 0;
 	char *clk_name = (char *)__clk_get_name(p_spdif->sysclk);
+
+	if (!clk_name)
+		return;
 
 	if (freq == 0) {
 		dev_err(p_spdif->dev, "%s(), clk 0 err\n", __func__);

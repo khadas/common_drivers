@@ -416,6 +416,8 @@ static void di_process_task(struct di_process_dev *dev)
 	bool is_i_frame;
 	struct vframe_s *vf_1;
 	struct vframe_s *vf_2;
+	struct file *file_1 = NULL;
+	struct file *file_2 = NULL;
 	int ret;
 	struct di_buffer *di_buf;
 	bool need_q_drop = true;
@@ -461,7 +463,8 @@ static void di_process_task(struct di_process_dev *dev)
 	}
 
 	need_process_count = DIPR_POOL_SIZE - kfifo_len(&dev->di_input_free_q);
-	if (need_process_count >= 4) {
+	dp_print(dev->index, PRINT_OTHER, "need_process_count %d\n", need_process_count);
+	if (need_process_count > 0) {
 		need_q_drop = false;
 		dp_print(dev->index, PRINT_OTHER, "too many buf need process %d, so not q_drop\n",
 			need_process_count);
@@ -469,24 +472,40 @@ static void di_process_task(struct di_process_dev *dev)
 
 	if (is_i_frame && drop_count && q_dropped && need_q_drop) {
 		dp_print(dev->index, PRINT_OTHER, "drop count %d\n", drop_count);
-		ret = di_get_ref_vf(file_vf, &vf_1, &vf_2);
+		buf_mgr_file_lock(uvm_di_mgr);
+		ret = di_get_ref_vf(file_vf, &vf_1, &vf_2, &file_1, &file_2);
+		/*this time file_1 or file_2 has been free, it will panic when get file*/
 		if (drop_count == 1) {
-			if (vf_1) {
+			if (vf_1 && file_1) {
+				get_file(file_1);
+				buf_mgr_file_unlock(uvm_di_mgr);
 				video_wait_decode_fence(dev, vf_1);
-				queue_input_to_di(dev, vf_1, true, NULL, false);
+				ret = queue_input_to_di(dev, vf_1, true, file_1, false);
+				if (ret != 0)
+					fput(file_1);
 			} else {
+				buf_mgr_file_unlock(uvm_di_mgr);
 				dp_print(dev->index, PRINT_ERROR, "drop 1 but not find ref\n");
 			}
 		} else if (drop_count == 2) {
-			if (vf_1 && vf_2) {
+			if (vf_1 && vf_2 && file_1 && file_2) {
+				get_file(file_1);
+				get_file(file_2);
+				buf_mgr_file_unlock(uvm_di_mgr);
 				video_wait_decode_fence(dev, vf_2);
-				queue_input_to_di(dev, vf_2, true, NULL, false);
+				ret = queue_input_to_di(dev, vf_2, true, file_1, false);
+				if (ret != 0)
+					fput(file_1);
 				video_wait_decode_fence(dev, vf_1);
-				queue_input_to_di(dev, vf_1, true, NULL, false);
+				ret = queue_input_to_di(dev, vf_1, true, file_2, false);
+				if (ret != 0)
+					fput(file_2);
 			} else {
+				buf_mgr_file_unlock(uvm_di_mgr);
 				dp_print(dev->index, PRINT_ERROR, "drop 2 but not find ref\n");
 			}
 		} else {
+			buf_mgr_file_unlock(uvm_di_mgr);
 			dp_print(dev->index, PRINT_OTHER, "drop too many frame %d\n", drop_count);
 		}
 	}
@@ -607,6 +626,12 @@ enum DI_ERRORTYPE dp_empty_input_done(struct di_buffer *buf)
 	buf->caller_mng.dummy = buf->vf->crop[2];
 	buf->caller_mng.src_file = (struct file *)buf->vf->vc_private;
 
+	if (buf->caller_mng.dropped && !buf->caller_mng.dummy) {
+		dp_print(dev->index, PRINT_OTHER, "%s: fput drop file %px\n",
+			__func__, buf->caller_mng.src_file);
+		fput(buf->caller_mng.src_file);
+	}
+
 	dev->empty_done_count++;
 	total_empty_done_count++;
 
@@ -673,6 +698,12 @@ enum DI_ERRORTYPE dp_fill_output_done(struct di_buffer *buf)
 	if (!di_bypass) {
 		dev->fill_done_count++;
 		total_fill_done_count++;
+	}
+
+	if (dropped && !buf->caller_mng.dummy && di_bypass) {
+		dp_print(dev->index, PRINT_OTHER, "%s: fput drop file %px\n",
+			__func__, buf->caller_mng.src_file);
+		fput(buf->caller_mng.src_file);
 	}
 
 	dp_print(dev->index, PRINT_OTHER,
@@ -1223,6 +1254,7 @@ static int di_process_q_output(struct di_process_dev *dev, u32 fd)
 	if (!private_data) {
 		dp_print(dev->index, PRINT_ERROR, "qbuf private_data null\n");
 		fput(file_vf);
+		dp_print(dev->index, PRINT_ERROR, "qbuf private_data null, fput done\n");
 		total_put_count++;
 		return 0;
 	}

@@ -32,4 +32,6 @@ struct uvm_di_mgr_t {
 };
 
 int buf_mgr_free_checkin(struct dp_buf_mgr_t *buf_mgr, struct file *file);
+void buf_mgr_file_lock(struct uvm_di_mgr_t *uvm_di_mgr);
+void buf_mgr_file_unlock(struct uvm_di_mgr_t *uvm_di_mgr);
 

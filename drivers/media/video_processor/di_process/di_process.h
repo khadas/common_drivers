@@ -119,7 +119,8 @@ struct di_process_dev {
 #define DI_PROCESS_IOCTL_SET_FRAME   _IOW(DI_PROCESS_IOC_MAGIC, 0x02, struct frame_info_t)
 #define DI_PROCESS_IOCTL_Q_OUTPUT    _IOW(DI_PROCESS_IOC_MAGIC, 0x03, int)
 
-int di_get_ref_vf(struct file *file, struct vframe_s **vf_1, struct vframe_s **vf_2);
+int di_get_ref_vf(struct file *file, struct vframe_s **vf_1, struct vframe_s **vf_2,
+	struct file **file_1, struct file **file_2);
 struct uvm_di_mgr_t *get_uvm_di_mgr(struct file *file_vf);
 int di_processed_checkin(struct file *file);
 

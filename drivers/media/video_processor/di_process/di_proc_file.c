@@ -114,6 +114,11 @@ struct file_private_data *di_proc_get_file_private_data(struct file *file_vf,
 		return NULL;
 	}
 
+	if (!dmabuf_is_uvm((struct dma_buf *)file_vf->private_data)) {
+		di_proc_file_print(PRINT_ERROR, "%s: dmabuf is not uvm\n", __func__);
+		return NULL;
+	}
+
 	uhmod = uvm_get_hook_mod((struct dma_buf *)(file_vf->private_data),
 				 VF_PROCESS_V4LVIDEO);
 	if (uhmod && uhmod->arg) {

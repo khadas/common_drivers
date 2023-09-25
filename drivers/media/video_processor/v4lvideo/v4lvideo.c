@@ -2523,7 +2523,6 @@ static int vidioc_dqbuf(struct file *file, void *priv, struct v4l2_buffer *p)
 	if (vf->type_original & VIDTYPE_INTERLACE || vf->type & VIDTYPE_INTERLACE)
 		p->field = V4L2_FIELD_INTERLACED;
 
-	mutex_unlock(&dev->mutex_input);
 	//pr_err("dqbuf: frame_num=%d\n", p->sequence);
 	dq_count[inst_id]++;
 	v4l_print(dev->inst, PRINT_OTHER,
@@ -2533,6 +2532,8 @@ static int vidioc_dqbuf(struct file *file, void *priv, struct v4l2_buffer *p)
 
 	v4l_print(dev->inst, PRINT_OTHER, "w*h=%d, %d; %d, %d\n",
 		vf->width, vf->height, vf->compWidth, vf->compHeight);
+
+	mutex_unlock(&dev->mutex_input);
 
 	ret = buf_mgr_dq_checkin(dev->dp_buf_mgr, file_vf);
 	if (ret != 0)

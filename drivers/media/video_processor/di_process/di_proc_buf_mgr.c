@@ -595,6 +595,7 @@ int buf_mgr_release(struct dp_buf_mgr_t *buf_mgr)
 		return -1;
 	}
 
+	buf_mgr->reset_id++;
 	dp_buf_print(buf_mgr, PRINT_OTHER, "%s func is called\n", __func__);
 	buf_mgr_put(buf_mgr);
 	return 0;
@@ -616,7 +617,11 @@ int buf_mgr_reset(struct dp_buf_mgr_t *buf_mgr)
 	}
 
 	dp_buf_print(buf_mgr, PRINT_OTHER, "%s func is called\n", __func__);
+
+	mutex_lock(&buf_mgr->file_mutex);
 	buf_mgr->reset_id++;
+	mutex_unlock(&buf_mgr->file_mutex);
+
 	buf_mgr->receive_count = 0;
 
 	if (buf_mgr->ref_list_1) {
@@ -635,7 +640,7 @@ int buf_mgr_reset(struct dp_buf_mgr_t *buf_mgr)
 
 	buf_mgr->ref_list_1 = NULL;
 	buf_mgr->ref_list_2 = NULL;
-		return 0;
+	return 0;
 }
 EXPORT_SYMBOL(buf_mgr_reset);
 
@@ -892,7 +897,8 @@ int di_processed_checkin(struct file *file)
  *
  * @return	   0 for  success, or fail type if < 0
  */
-int di_get_ref_vf(struct file *file, struct vframe_s **vf_1, struct vframe_s **vf_2)
+int di_get_ref_vf(struct file *file, struct vframe_s **vf_1, struct vframe_s **vf_2,
+	struct file **file_1, struct file **file_2)
 {
 	struct vf_ref_t *vf_ref = NULL;
 	struct dp_buf_mgr_t *buf_mgr = NULL;
@@ -902,6 +908,8 @@ int di_get_ref_vf(struct file *file, struct vframe_s **vf_1, struct vframe_s **v
 
 	*vf_1 = NULL;
 	*vf_2 = NULL;
+	*file_1 = NULL;
+	*file_2 = NULL;
 
 	buf_mgr = get_di_mgr_data(file);
 	if (!buf_mgr) {
@@ -921,22 +929,46 @@ int di_get_ref_vf(struct file *file, struct vframe_s **vf_1, struct vframe_s **v
 		return -1;
 	}
 
-	if (vf_ref->ref_number > 1) {
+	if (vf_ref->ref_number > 1 && vf_ref->buf_mgr_reset_id == buf_mgr->reset_id) {
 		vf_ref1 = get_ref1_from_list(buf_mgr, vf_ref);
 		if (!vf_ref1) {
 			dp_buf_print(buf_mgr, PRINT_ERROR, "%s: get vf_ref1 fail\n", __func__);
 			return -1;
 		}
 		*vf_1 = vf_ref1->vf;
+		*file_1 = vf_ref1->file;
 	}
 
-	if (vf_ref->ref_number > 2) {
+	if (vf_ref->ref_number > 2 && vf_ref->buf_mgr_reset_id == buf_mgr->reset_id) {
 		vf_ref2 = get_ref1_from_list(buf_mgr, vf_ref1);
 		if (!vf_ref2) {
 			dp_buf_print(buf_mgr, PRINT_ERROR, "processed: ref2 dec fail\n");
 			return -1;
 		}
 		*vf_2 = vf_ref2->vf;
+		*file_2 = vf_ref2->file;
 	}
 	return 0;
+}
+
+void buf_mgr_file_lock(struct uvm_di_mgr_t *uvm_di_mgr)
+{
+	struct dp_buf_mgr_t *buf_mgr = NULL;
+
+	if (!uvm_di_mgr)
+		return;
+
+	buf_mgr = uvm_di_mgr->buf_mgr;
+	mutex_lock(&buf_mgr->file_mutex);
+}
+
+void buf_mgr_file_unlock(struct uvm_di_mgr_t *uvm_di_mgr)
+{
+	struct dp_buf_mgr_t *buf_mgr = NULL;
+
+	if (!uvm_di_mgr)
+		return;
+
+	buf_mgr = uvm_di_mgr->buf_mgr;
+	mutex_unlock(&buf_mgr->file_mutex);
 }

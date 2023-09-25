@@ -751,6 +751,10 @@
 	status = "okay";
 };
 
+&meson_suspend {
+	status = "okay";
+};
+
 &vddcpu0 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pwm_f_pins4>;
@@ -804,14 +808,6 @@
 	//pinctrl-0 = <&pwm_e_pins1>;
 };
 
-&pwm_cd {
-	status = "okay";
-};
-
-&uart_A {
-	status = "okay";
-};
-
 &sd_emmc_a {
 	status = "disabled";
 	pinctrl-0 = <&sdio_pins>;
@@ -847,7 +843,7 @@
 };
 
 &pwm_ab {
-	status = "okay";
+	status = "disabled";
 };
 
 &uart_C {

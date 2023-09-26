@@ -19,6 +19,8 @@
 #include <linux/arm-smccc.h>
 #include <linux/amlogic/secmon.h>
 #include <linux/amlogic/ddr_cooling.h>
+#include <linux/amlogic/meson_cooldev.h>
+#include <linux/amlogic/media_cooling.h>
 #include <linux/debugfs.h>
 #include "thermal_core.h"
 #include "thermal_hwmon.h"
@@ -725,7 +727,7 @@ static int meson_map_dt_data(struct platform_device *pdev)
 		data->tsensor_set_emulation = r1p1_tsensor_set_emulation;
 		data->tsensor_clear_irqs = r1p1_tsensor_clear_irqs;
 		data->tsensor_update_irqs =  r1p1_tsensor_update_irqs;
-		data->ntrip = 4;
+		data->ntrip = 8;
 		break;
 	default:
 		dev_err(&pdev->dev, "Platform not supported\n");
@@ -739,7 +741,9 @@ static void meson_thermal_hot_callback(struct thermal_zone_device *tz)
 	struct thermal_instance *instance;
 	struct thermal_cooling_device *cdev;
 	struct ddr_cooling_device *ddr_cdev;
-	u32 state_set;
+	struct cpucore_cooling_device *cpucore_cdev;
+	struct media_cooling_device *media_cdev;
+	u32 state_set, *last_state;
 	unsigned long state_get;
 
 	if (tz->temperature < 0)
@@ -748,12 +752,27 @@ static void meson_thermal_hot_callback(struct thermal_zone_device *tz)
 	mutex_lock(&tz->lock);
 	list_for_each_entry(instance, &tz->thermal_instances, tz_node) {
 		cdev = instance->cdev;
-		ddr_cdev = cdev->devdata;
-		if (cdev->ops && cdev->ops->set_cur_state && instance->trip == THERMAL_TRIP_HOT) {
+		switch (meson_get_cooldev_type(cdev)) {
+		case COOL_DEV_TYPE_CPU_CORE:
+			cpucore_cdev = cdev->devdata;
+			last_state = &cpucore_cdev->setstep;
+			break;
+		case COOL_DEV_TYPE_DDR:
+			ddr_cdev = cdev->devdata;
+			last_state = &ddr_cdev->last_state;
+			break;
+		case COOL_DEV_TYPE_MEDIA:
+			media_cdev = cdev->devdata;
+			last_state = &media_cdev->setstep;
+			break;
+		default:
+			continue;
+		}
+		if (cdev->ops && cdev->ops->set_cur_state) {
 			cdev->ops->get_requested_power(cdev, &state_set);
-			if (state_set != ddr_cdev->last_state) {
+			if (state_set != *last_state) {
 				cdev->ops->set_cur_state(cdev, (unsigned long)state_set);
-				ddr_cdev->last_state = state_set;
+				*last_state = state_set;
 				cdev->ops->get_cur_state(cdev, &state_get);
 				pr_info("[%s]temp:%d, set:0x%x, get:0x%lx\n", cdev->type,
 						tz->temperature, state_set, state_get);
@@ -1060,8 +1079,6 @@ static struct platform_driver meson_tsensor_driver = {
 static int __init meson_platdrv_init(void)
 {
 	int ret;
-
-	cpu_hotplug_init();
 
 	ret = platform_driver_register(&(meson_tsensor_driver));
 	if (ret)

@@ -8,33 +8,36 @@
 
 #include <linux/thermal.h>
 #include <linux/cpumask.h>
-struct cpucore_cooling_device {
-	int id;
-	int hot_step;
-	struct thermal_cooling_device *cool_dev;
-	unsigned int cpucore_state;
-	unsigned int cpucore_val;
-	struct list_head node;
-	int max_cpu_core_num;
-	int cluster_id;
-	int stop_flag;
+
+enum hotplug_mode {
+	CPU_PLUG,
+	CPU_UNPLUG,
+	CPU_MODE_MAX
 };
 
-#define CPU_STOP 0x80000000
-
-/**
- * cpucore_cooling_register - function to create cpucore cooling device.
- * @clip_cpus: cpumask of cpus where the frequency constraints will happen
+/*cpunum: cpu number which coolingdevice can plug&unplug most.
+ *cluster_num: clusters which coolingdevice can work on.
+ *cluster_core_num: number of cores which coolingdevice can plug&unplug.
+ *online: cpumask of coolingdevice can unplug, set when plug, clear when unplug.
+ *offline: cpumask of coolingdevice can plug back, set when unplug, clear when plug.
+ *hotstep: cpu number which need to offline for current temperature:0-->trip~trip+hyst,
+ *1-->trip+hyst~trip+2*hyst,2-->trip+2*hyst~trip+3*hyst......
+ *setstep: step last set.
  */
+struct cpucore_cooling_device {
+	int cpunum;
+	int cluster_num;
+	int *cluster_core_num;
+	cpumask_var_t *online;
+	cpumask_var_t *offline;
+	int mode; /*plug or unplug*/
+	struct thermal_cooling_device *cool_dev;
+	int hotstep;
+	int setstep;
+};
+
 struct thermal_cooling_device *cpucore_cooling_register(struct device_node *np,
-							int cluster_id);
+				struct device_node *child);
 
-/**
- * cpucore_cooling_unregister - function to remove cpucore cooling device.
- * @cdev: thermal cooling device pointer.
- */
 void cpucore_cooling_unregister(struct thermal_cooling_device *cdev);
-int get_cpunum_by_cluster(int cluster);
-
-int cpu_hotplug_init(void);
 #endif /* __CPU_COOLING_H__ */

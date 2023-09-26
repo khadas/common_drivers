@@ -387,9 +387,10 @@
 				node_name = "ddr_cool0";
 				device_type = "ddr";
 			};
-			cpucore_cool_cluster0 {
-				cluster_id = <0>;
-				node_name = "cpucore0";
+			cpucore_cool {
+				cluster_core_num = <3>;
+				cluster_cores = <1 2 3>;
+				node_name = "cpucore";
 				device_type = "cpucore";
 			};
 			gpufreq_cool {
@@ -397,12 +398,19 @@
 				node_name = "bifrost";
 				device_type = "gpufreq";
 			};
+			media_cool {
+				node_name = "media_cool0";
+				device_type = "media";
+			};
 		};
 		ddr_cool0:ddr_cool0 {
 			#cooling-cells = <2>; /* min followed by max */
 		};
-		cpucore0:cpucore0 {
+		cpucore:cpucore {
 			#cooling-cells = <2>; /* min followed by max */
+		};
+		media_cool0:media_cool0 {
+			#cooling-cells = <2>;
 		};
 	};/*meson cooling devices end*/
 
@@ -433,6 +441,16 @@
 					hysteresis = <1000>;
 					type = "critical";
 				};
+				pmedia_change: trip-point@4 {
+					temperature = <85000>;
+					hysteresis = <10000>;
+					type = "hot";
+				};
+				pcpucore: trip-point@5 {
+					temperature = <95000>;
+					hysteresis = <10000>;
+					type = "hot";
+				};
 			};
 			cooling-maps {
 				cpufreq_cooling_map {
@@ -448,6 +466,16 @@
 				gpufreq_cooling_map {
 					trip = <&pcontrol>;
 					cooling-device = <&gpu 0 3>;
+					contribution = <1024>;
+				};
+				media_cooling_map {
+					trip = <&pmedia_change>;
+					cooling-device = <&media_cool0 0 2>;
+					contribution = <1024>;
+				};
+				cpucore_cooling_map {
+					trip = <&pcpucore>;
+					cooling-device = <&cpucore 0 2>;
 					contribution = <1024>;
 				};
 			};

@@ -17,6 +17,7 @@
 #include <linux/amlogic/gpu_cooling.h>
 #include <linux/amlogic/ddr_cooling.h>
 #include <linux/amlogic/meson_cooldev.h>
+#include <linux/amlogic/media_cooling.h>
 #include <linux/cpu.h>
 
 enum cluster_type {
@@ -25,13 +26,7 @@ enum cluster_type {
 	NUM_CLUSTERS
 };
 
-enum cool_dev_type {
-	COOL_DEV_TYPE_CPU_CORE = 0,
-	COOL_DEV_TYPE_GPU_FREQ,
-	COOL_DEV_TYPE_GPU_CORE,
-	COOL_DEV_TYPE_DDR,
-	COOL_DEV_TYPE_MAX
-};
+char *cooldev_name[COOL_DEV_TYPE_MAX] = {"cpucore", "gpufreq", "gpucore", "ddr", "media"};
 
 struct meson_cooldev {
 	int cool_dev_num;
@@ -42,16 +37,26 @@ struct meson_cooldev {
 
 static struct meson_cooldev *meson_gcooldev;
 
-static int get_cool_dev_type(char *type)
+int get_cool_dev_type(char *type)
 {
-	if (!strcmp(type, "cpucore"))
-		return COOL_DEV_TYPE_CPU_CORE;
-	if (!strcmp(type, "gpufreq"))
-		return COOL_DEV_TYPE_GPU_FREQ;
-	if (!strcmp(type, "gpucore"))
-		return COOL_DEV_TYPE_GPU_CORE;
-	if (!strcmp(type, "ddr"))
-		return COOL_DEV_TYPE_DDR;
+	int i;
+
+	for (i = 0; i < COOL_DEV_TYPE_MAX; i++) {
+		if (!strcmp(type, cooldev_name[i]))
+			return i;
+	}
+
+	return COOL_DEV_TYPE_MAX;
+}
+
+int meson_get_cooldev_type(struct thermal_cooling_device *cdev)
+{
+	int i;
+
+	for (i = 0; i < COOL_DEV_TYPE_MAX; i++) {
+		if (strstr(cdev->type, cooldev_name[i]))
+			return get_cool_dev_type(cooldev_name[i]);
+	}
 	return COOL_DEV_TYPE_MAX;
 }
 
@@ -67,11 +72,11 @@ static int register_cool_dev(struct platform_device *pdev,
 	struct meson_cooldev *mcooldev = platform_get_drvdata(pdev);
 	struct cool_dev *cool = &mcooldev->cool_devs[index];
 	struct device_node *node;
-	int c_id, pp, coeff, i;
+	int pp, coeff, i;
 	const char *node_name;
 	char *ddrdata_name[2] = {"ddr_data", "gpu_data"};
 
-	pr_debug("meson_cdev index: %d\n", index);
+	pr_debug("meson_cdev index: %d %s\n", index, cool->device_type);
 
 	if (of_property_read_string(child, "node_name", &node_name)) {
 		pr_err("thermal: read node_name failed\n");
@@ -86,14 +91,9 @@ static int register_cool_dev(struct platform_device *pdev,
 			return -EINVAL;
 		}
 		cool->np = node;
-		if (of_property_read_u32(child, "cluster_id", &c_id)) {
-			pr_err("thermal: read cluster_id failed\n");
-			return -EINVAL;
-		}
-		cool->cooling_dev = cpucore_cooling_register(cool->np,
-							     c_id);
-		break;
 
+		cool->cooling_dev = cpucore_cooling_register(cool->np, child);
+		break;
 	case COOL_DEV_TYPE_DDR:
 		node = of_find_node_by_name(NULL, node_name);
 		if (!node) {
@@ -164,6 +164,11 @@ static int register_cool_dev(struct platform_device *pdev,
 		cool->np = node;
 		save_gpucore_thermal_para(cool->np);
 		return 0;
+
+	case COOL_DEV_TYPE_MEDIA:
+		if (setup_media_para(node_name))
+			return -EINVAL;
+		break;
 
 	default:
 		pr_err("thermal: unknown type:%s\n", cool->device_type);

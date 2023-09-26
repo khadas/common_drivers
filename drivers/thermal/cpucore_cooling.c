@@ -10,49 +10,9 @@
 #include <linux/slab.h>
 #include <linux/cpu.h>
 #include "cpucore_cooling.h"
-#include <linux/amlogic/cpu_hotplug.h>
 #include <linux/cpumask.h>
 #include <linux/amlogic/meson_cooldev.h>
 #include "thermal_core.h"
-
-/**
- * struct cpucore_cooling_device - data for cooling device with cpucore
- * @id: unique integer value corresponding to each cpucore_cooling_device
- *	registered.
- * @cool_dev: thermal_cooling_device pointer to keep track of the
- *	registered cooling device.
- * @cpucore_state: integer value representing the current state of cpucore
- *	cooling	devices.
- * @cpucore_val: integer value representing the absolute value of the clipped
- *	frequency.
- * @allowed_cpus: all the cpus involved for this cpucore_cooling_device.
- *
- * This structure is required for keeping information of each
- * cpucore_cooling_device registered. In order to prevent corruption of this a
- * mutex lock cooling_cpucore_lock is used.
- */
-
-static int cpucorecd_id;
-static DEFINE_MUTEX(cooling_cpucore_lock);
-static LIST_HEAD(cpucore_dev_list);
-/* notify_table passes value to the cpucore_ADJUST callback function. */
-#define NOTIFY_INVALID NULL
-
-static void cpucore_coolingdevice_id_get(int *id)
-{
-	mutex_lock(&cooling_cpucore_lock);
-	*id = cpucorecd_id++;
-	mutex_unlock(&cooling_cpucore_lock);
-}
-
-static void cpucore_coolingdevice_id_put(void)
-{
-	mutex_lock(&cooling_cpucore_lock);
-	cpucorecd_id--;
-	mutex_unlock(&cooling_cpucore_lock);
-}
-
-/* cpucore cooling device callback functions are defined below */
 
 /**
  * cpucore_get_max_state - callback function to get the max cooling state.
@@ -67,8 +27,8 @@ static void cpucore_coolingdevice_id_put(void)
 static int cpucore_get_max_state(struct thermal_cooling_device *cdev,
 				 unsigned long *state)
 {
-	struct cpucore_cooling_device *cpucore_device = cdev->devdata;
-	*state = cpucore_device->max_cpu_core_num;
+	struct cpucore_cooling_device *cpucore_dev = cdev->devdata;
+	*state = cpucore_dev->cpunum;
 	pr_debug("max cpu core=%ld\n", *state);
 	return 0;
 }
@@ -86,8 +46,8 @@ static int cpucore_get_max_state(struct thermal_cooling_device *cdev,
 static int cpucore_get_cur_state(struct thermal_cooling_device *cdev,
 				 unsigned long *state)
 {
-	struct cpucore_cooling_device *cpucore_device = cdev->devdata;
-	*state = cpucore_device->cpucore_state;
+	struct cpucore_cooling_device *cpucore_dev = cdev->devdata;
+	*state = cpucore_dev->setstep;
 	pr_debug("current state=%ld\n", *state);
 	return 0;
 }
@@ -105,42 +65,100 @@ static int cpucore_get_cur_state(struct thermal_cooling_device *cdev,
 static int cpucore_set_cur_state(struct thermal_cooling_device *cdev,
 				 unsigned long state)
 {
-	struct cpucore_cooling_device *cpucore_device = cdev->devdata;
-	int set_max_num, id;
+	struct cpucore_cooling_device *cpucore_dev = cdev->devdata;
+	int i, cpu;
 
-	if (WARN_ON(state > cpucore_device->max_cpu_core_num))
+	if (WARN_ON(state > cpucore_dev->cpunum))
 		return -EINVAL;
 
-	mutex_lock(&cooling_cpucore_lock);
-	if (cpucore_device->stop_flag) {
-		mutex_unlock(&cooling_cpucore_lock);
-		return 0;
-	}
-	if ((state & CPU_STOP) == CPU_STOP) {
-		cpucore_device->stop_flag = 1;
-		state = state & (~CPU_STOP);
-	}
-	mutex_unlock(&cooling_cpucore_lock);
-	if (cpucore_device->max_cpu_core_num >= state) {
-		cpucore_device->cpucore_state = state;
-		set_max_num = cpucore_device->max_cpu_core_num - state;
-		id = cpucore_device->cluster_id;
-		pr_debug("set cluster :%d, max cpu num=%d,state=%ld\n",
-				id, set_max_num, state);
-		cpufreq_set_max_cpu_num(set_max_num, id);
+	switch (cpucore_dev->mode) {
+	case CPU_PLUG:
+		for (i = 0; i < cpucore_dev->cluster_num; i++) {
+			if (!cpumask_weight(cpucore_dev->offline[i]))
+				continue;
+			cpu = cpumask_last(cpucore_dev->offline[i]);
+			pr_debug("[%s]online cpu%d\n", cdev->type, cpu);
+			add_cpu(cpu);
+			cpumask_clear_cpu(cpu, cpucore_dev->offline[i]);
+			cpumask_set_cpu(cpu, cpucore_dev->online[i]);
+			break;
+		}
+		break;
+	case CPU_UNPLUG:
+		for (i = 0; i < cpucore_dev->cluster_num; i++) {
+			if (!cpumask_weight(cpucore_dev->online[i]))
+				continue;
+			cpu = cpumask_any_and(cpucore_dev->online[i], cpu_online_mask);
+			if (cpu == nr_cpu_ids)
+				continue;
+			pr_debug("[%s]offline cpu%d\n", cdev->type, cpu);
+			remove_cpu(cpu);
+			cpumask_set_cpu(cpu, cpucore_dev->offline[i]);
+			cpumask_clear_cpu(cpu, cpucore_dev->online[i]);
+			break;
+		}
+		break;
+	default:
+		break;
 	}
 
 	return 0;
 }
 
+static int calculate_hotstep(struct thermal_instance *instance)
+{
+	struct thermal_zone_device *tz;
+	struct thermal_cooling_device *cdev;
+	struct cpucore_cooling_device *cpucore_dev;
+	int hyst = 0, trip_temp;
+
+	if (!instance)
+		return -EINVAL;
+
+	tz = instance->tz;
+	cdev = instance->cdev;
+
+	if (!tz || !cdev)
+		return -EINVAL;
+
+	cpucore_dev = cdev->devdata;
+
+	tz->ops->get_trip_hyst(tz, instance->trip, &hyst);
+	tz->ops->get_trip_temp(tz, instance->trip, &trip_temp);
+
+	if (tz->temperature >= (trip_temp + (cpucore_dev->hotstep + 1) * hyst)) {
+		cpucore_dev->hotstep++;
+		cpucore_dev->mode = CPU_UNPLUG;
+		pr_debug("[%s]temp:%d increase,trip:%d,hotstep:%d\n", cdev->type, tz->temperature,
+			trip_temp, cpucore_dev->hotstep);
+	}
+	if (tz->temperature < (trip_temp + cpucore_dev->hotstep * hyst) && cpucore_dev->hotstep) {
+		cpucore_dev->hotstep--;
+		cpucore_dev->mode = CPU_PLUG;
+		pr_debug("[%s]temp:%d decrease,trip:%d,hotstep:%d\n", cdev->type, tz->temperature,
+			trip_temp, cpucore_dev->hotstep);
+	}
+
+	return cpucore_dev->hotstep;
+}
+
 /*
- * Simple mathematics model for cpu core power:
- * just for ipa hook, nothing to do;
+ * return the cooling device hotstep, witch is constrained by instance->upper.
  */
 static int cpucore_get_requested_power(struct thermal_cooling_device *cdev,
 				       u32 *power)
 {
-	*power = 0;
+	struct thermal_instance *instance;
+
+	mutex_lock(&cdev->lock);
+	list_for_each_entry(instance, &cdev->thermal_instances, cdev_node) {
+		if (!cdev->ops || !cdev->ops->set_cur_state)
+			continue;
+		*power = (u32)calculate_hotstep(instance);
+		if (*power > instance->upper)
+			*power = instance->upper;
+	}
+	mutex_unlock(&cdev->lock);
 
 	return 0;
 }
@@ -160,77 +178,6 @@ static int cpucore_power2state(struct thermal_cooling_device *cdev,
 	return 0;
 }
 
-static int cpucore_notify_state(void *thermal_instance,
-				int trip,
-				enum thermal_trip_type type)
-{
-	struct thermal_instance *ins = thermal_instance;
-	struct thermal_zone_device *tz;
-	struct thermal_cooling_device *cdev;
-	struct cpucore_cooling_device *cpucore_device;
-	unsigned long  ins_upper, target_upper = 0;
-	long cur_state = -1;
-	long upper = -1;
-	int hyst = 0, trip_temp;
-
-	if (!ins)
-		return -EINVAL;
-
-	tz = ins->tz;
-	cdev = ins->cdev;
-
-	if (!tz || !cdev)
-		return -EINVAL;
-
-	cpucore_device = cdev->devdata;
-
-	tz->ops->get_trip_hyst(tz, trip, &hyst);
-	tz->ops->get_trip_temp(tz, trip, &trip_temp);
-
-	/* increase each hyst step */
-	if (tz->temperature >= (trip_temp + cpucore_device->hot_step * hyst)) {
-		cpucore_device->hot_step++;
-		pr_info("temp:%d increase, hyst:%d, trip_temp:%d, hot:%x\n",
-			tz->temperature, hyst, trip_temp, cpucore_device->hot_step);
-	}
-	/* reserve a step gap */
-	if (tz->temperature <= (trip_temp + (cpucore_device->hot_step - 2) * hyst) &&
-	    cpucore_device->hot_step) {
-		cpucore_device->hot_step--;
-		pr_info("temp:%d decrease, hyst:%d, trip_temp:%d, hot:%x\n",
-			tz->temperature, hyst, trip_temp, cpucore_device->hot_step);
-	}
-
-	switch (type) {
-	case THERMAL_TRIP_HOT:
-		ins_upper = ins->upper;
-		if (!IS_ERR_VALUE(ins_upper) &&
-				ins_upper >= target_upper) {
-			target_upper = ins_upper;
-			upper = target_upper;
-		}
-		cur_state = cpucore_device->hot_step;
-		/* do not exceed levels */
-		if (upper != -1 && cur_state > upper)
-			cur_state = upper;
-		if (cur_state < 0)
-			cur_state = 0;
-		pr_debug("%s, cur_state:%ld, upper:%ld, step:%d\n",
-			 __func__, cur_state, upper, cpucore_device->hot_step);
-		cdev->ops->set_cur_state(cdev, cur_state);
-		break;
-	default:
-		break;
-	}
-	return 0;
-}
-
-int __weak get_cpunum_by_cluster(int cluster)
-{
-	pr_info("[Thermal] Not found getting cpunum interface!!\n");
-	return 0;
-}
-
 /* Bind cpucore callbacks to thermal cooling device ops */
 static struct thermal_cooling_device_ops const cpucore_cooling_ops = {
 	.get_max_state = cpucore_get_max_state,
@@ -240,6 +187,46 @@ static struct thermal_cooling_device_ops const cpucore_cooling_ops = {
 	.power2state   = cpucore_power2state,
 	.get_requested_power = cpucore_get_requested_power,
 };
+
+static int setup_cooling_params(struct cpucore_cooling_device *cdev,
+	struct device_node *child)
+{
+	int i, j, cpu, offset;
+
+	cdev->cpunum = 0;
+	cdev->hotstep = 0;
+	cdev->setstep = 0;
+	cdev->mode = CPU_MODE_MAX;
+	cdev->cluster_num = of_property_count_u32_elems(child, "cluster_core_num");
+	if (cdev->cluster_num < 1)
+		return -EINVAL;
+	cdev->cluster_core_num = kcalloc(cdev->cluster_num, sizeof(u32), GFP_KERNEL);
+	if (!cdev->cluster_core_num)
+		return -ENOMEM;
+	cdev->online = kcalloc(cdev->cluster_num, sizeof(cpumask_var_t), GFP_KERNEL);
+	if (!cdev->online)
+		return -ENOMEM;
+	cdev->offline = kcalloc(cdev->cluster_num, sizeof(cpumask_var_t), GFP_KERNEL);
+	if (!cdev->offline)
+		return -ENOMEM;
+	if (of_property_read_u32_array(child, "cluster_core_num",
+		cdev->cluster_core_num, cdev->cluster_num))
+		return -EINVAL;
+
+	for (i = 0; i < cdev->cluster_num; i++) {
+		offset = i == 0 ? 0 : cdev->cluster_core_num[i - 1];
+		for (j = 0; j < cdev->cluster_core_num[i]; j++) {
+			of_property_read_u32_index(child, "cluster_cores", j + offset,
+				&cpu);
+			cpumask_set_cpu(cpu, cdev->online[i]);
+			cdev->cpunum++;
+		}
+		pr_debug("cluster%d[%d %*pbl]\n", i, cdev->cluster_core_num[i],
+			cpumask_pr_args(cdev->online[i]));
+	}
+
+	return 0;
+}
 
 /**
  * cpucore_cooling_register - function to create cpucore cooling device.
@@ -252,38 +239,34 @@ static struct thermal_cooling_device_ops const cpucore_cooling_ops = {
  * on failure, it returns a corresponding ERR_PTR().
  */
 struct thermal_cooling_device *
-cpucore_cooling_register(struct device_node *np, int cluster_id)
+cpucore_cooling_register(struct device_node *np,
+	struct device_node *child)
 {
 	struct thermal_cooling_device *cool_dev;
-	struct cpucore_cooling_device *cpucore_dev = NULL;
-	char dev_name[THERMAL_NAME_LENGTH];
-	int cores = 0;
+	struct cpucore_cooling_device *cpucore_cdev;
 
-	(void) cpucore_notify_state;
-	cpucore_dev = kzalloc(sizeof(*cpucore_dev), GFP_KERNEL);
-	if (!cpucore_dev)
-		return ERR_PTR(-ENOMEM);
+	cpucore_cdev = kzalloc(sizeof(*cpucore_cdev), GFP_KERNEL);
+	if (!cpucore_cdev)
+		return ERR_PTR(-EINVAL);
 
-	cpucore_coolingdevice_id_get(&cpucore_dev->id);
-	cpucore_dev->cluster_id = cluster_id;
+	if (setup_cooling_params(cpucore_cdev, child))
+		goto free;
 
-	cores = get_cpunum_by_cluster(cluster_id);
-	cpucore_dev->max_cpu_core_num = cores;
-	pr_debug("%s, max_cpu_core_num:%d\n", __func__, cores);
-
-	snprintf(dev_name, sizeof(dev_name), "thermal-cpucore-%d",
-		 cpucore_dev->id);
-	cool_dev = thermal_of_cooling_device_register(np, dev_name, cpucore_dev,
+	cool_dev = thermal_of_cooling_device_register(np, "thermal-cpucore-0", cpucore_cdev,
 						      &cpucore_cooling_ops);
 	if (!cool_dev) {
-		cpucore_coolingdevice_id_put();
-		kfree(cpucore_dev);
-		pr_info("%s cpucore cooling devices register fail\n", __func__);
-		return ERR_PTR(-EINVAL);
+		pr_err("cpucore cooling device register fail\n");
+		goto free;
 	}
-	cpucore_dev->cool_dev = cool_dev;
-	cpucore_dev->cpucore_state = 0;
+	cpucore_cdev->cool_dev = cool_dev;
+
 	return cool_dev;
+free:
+	kfree(cpucore_cdev->cluster_core_num);
+	kfree(cpucore_cdev->online);
+	kfree(cpucore_cdev->offline);
+	kfree(cpucore_cdev);
+	return ERR_PTR(-EINVAL);
 }
 EXPORT_SYMBOL_GPL(cpucore_cooling_register);
 
@@ -303,7 +286,6 @@ void cpucore_cooling_unregister(struct thermal_cooling_device *cdev)
 	cpucore_dev = cdev->devdata;
 
 	thermal_cooling_device_unregister(cpucore_dev->cool_dev);
-	cpucore_coolingdevice_id_put();
 	kfree(cpucore_dev);
 }
 EXPORT_SYMBOL_GPL(cpucore_cooling_unregister);

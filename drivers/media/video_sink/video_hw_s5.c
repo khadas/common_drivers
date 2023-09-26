@@ -11622,6 +11622,7 @@ void set_video_slice_policy(struct video_layer_s *layer,
 #endif
 	const struct vinfo_s *vinfo = get_current_vinfo();
 	static bool last_vd1s1_vd2_prebld_en;
+	static bool slice_stable;
 
 	if (cur_dev->display_module != S5_DISPLAY_MODULE)
 		return;
@@ -11651,10 +11652,12 @@ void set_video_slice_policy(struct video_layer_s *layer,
 			    vinfo->sync_duration_den > 60)) {
 				/* 4k120hz and frc_n2m_worked && aisr enable 1 slice */
 				if (frc_n2m_is_stable(layer)) {
-					if (is_aisr_enable(layer))
+					if (is_aisr_enable(layer)) {
 						slice_num = 1;
-					else
+						slice_stable = true;
+					} else {
 						slice_num = 2;
+					}
 				} else {
 					slice_num = 2;
 					/* temp set for current frame */
@@ -11697,7 +11700,10 @@ void set_video_slice_policy(struct video_layer_s *layer,
 		if (n2m_setting == 2 &&
 			slice_num != layer->slice_num) {
 			layer->property_changed = true;
-			video_prop_status |= VIDEO_PROP_CHANGE_SLICE_NUM;
+			if (slice_stable) {
+				video_prop_status |= VIDEO_PROP_CHANGE_SLICE_NUM;
+				slice_stable = false;
+			}
 			if (debug_flag)
 				pr_info("%s n2m_setting=%d, slice_num=%d-> %d\n",
 					__func__, n2m_setting, layer->slice_num, slice_num);

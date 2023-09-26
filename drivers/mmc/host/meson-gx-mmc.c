@@ -1179,7 +1179,7 @@ tuning:
 		}
 	}
 
-	len += sprintf(adj_print + len, ">\n");
+	sprintf(adj_print + len, ">\n");
 	pr_debug("%s", host->adj_win);
 
 	find_best_win(mmc, rx_adj, clk_div, &best_s, &best_sz, true);
@@ -3277,7 +3277,7 @@ static void sdio_reset_comm(struct mmc_card *card)
 	struct mmc_host *host = card->host;
 	int i = 0, err = 0;
 
-	while (!card->sdio_func[i] && i < SDIO_MAX_FUNCS)
+	while (i < SDIO_MAX_FUNCS && !card->sdio_func[i])
 		i++;
 	if (WARN_ON(i == SDIO_MAX_FUNCS))
 		return;

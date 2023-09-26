@@ -1091,7 +1091,7 @@ static void vlock_setting(struct vframe_s *vf, struct stvlock_sig_sts *pvlock)
 		/*	temp_value + 1, 16, 14);*/
 		WRITE_VPP_REG_BITS(VPU_VLOCK_ADJ_EN_SYNC_CTRL + offset_vlck,
 				   vlock_latch_en_cnt, 8, 8);
-		WRITE_VPP_REG_BITS(pvlock->enc_video_mode_addr + offset_enc, 1, 15, 1);
+		//WRITE_VPP_REG_BITS(pvlock->enc_video_mode_addr + offset_enc, 1, 15, 1);
 	}
 	if ((vlock_mode & (VLOCK_MODE_AUTO_PLL |
 		VLOCK_MODE_MANUAL_PLL))) {
@@ -1377,12 +1377,12 @@ static void vlock_disable_step1(struct stvlock_sig_sts *pvlock)
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		if (chip_type_id == chip_t3x) {
 			WRITE_VPP_REG_BITS(pvlock->enc_video_mode_adv_addr + offset_enc, 0, 19, 1);
-			WRITE_VPP_REG_BITS(pvlock->enc_video_mode_addr + offset_enc, 0, 15, 1);
+			//WRITE_VPP_REG_BITS(pvlock->enc_video_mode_addr + offset_enc, 0, 15, 1);
 		} else
 #endif
 		{
 			WRITE_VPP_REG_BITS(pvlock->enc_video_mode_adv_addr + offset_enc, 0, 14, 1);
-			WRITE_VPP_REG_BITS(pvlock->enc_video_mode_addr + offset_enc, 0, 15, 1);
+			//WRITE_VPP_REG_BITS(pvlock->enc_video_mode_addr + offset_enc, 0, 15, 1);
 		}
 		/*restore h,v total*/
 		WRITE_VPP_REG_BITS(pvlock->enc_max_line_switch_addr + offset_enc, 0x1fff, 0, 13);

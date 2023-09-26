@@ -56,19 +56,18 @@ static ssize_t rawedid_show(struct device *dev,
 	int pos = 0;
 	int i;
 	int num;
-	int block_no = 0;
+	int ext_block_num = 0;
 
 	/* prevent null prt */
 	if (!global_tx_common->edid_ptr)
 		global_tx_common->edid_ptr = global_tx_common->EDID_buf;
 
-	block_no = global_tx_common->edid_ptr[126];
-	if (block_no == 1)
-		if (global_tx_common->edid_ptr[128 + 4] == 0xe2 &&
-			global_tx_common->edid_ptr[128 + 5] == 0x78)
-			block_no = global_tx_common->edid_ptr[128 + 6];	//EEODB
-	if (block_no < 8)
-		num = (block_no + 1) * 128;
+	ext_block_num = global_tx_common->edid_ptr[126];
+	if (ext_block_num && global_tx_common->edid_ptr[128 + 4] == EXTENSION_EEODB_EXT_TAG &&
+		global_tx_common->edid_ptr[128 + 5] == EXTENSION_EEODB_EXT_CODE)
+		ext_block_num = global_tx_common->edid_ptr[128 + 6];	//EEODB
+	if (ext_block_num < 8)
+		num = (ext_block_num + 1) * 128;
 	else
 		num = 8 * 128;
 
@@ -97,7 +96,7 @@ static ssize_t edid_parsing_show(struct device *dev,
 {
 	int pos = 0;
 
-	if (hdmitx_edid_validate(global_tx_common->edid_ptr) == 0)
+	if (check_dvi_hdmi_edid_valid(global_tx_common->edid_ptr))
 		pos += snprintf(buf + pos, PAGE_SIZE, "ok\n");
 	else
 		pos += snprintf(buf + pos, PAGE_SIZE, "ng\n");
@@ -121,7 +120,6 @@ static ssize_t edid_store(struct device *dev,
 	u32 argn = 0;
 	char *p = NULL, *para = NULL, *argv[8] = {NULL};
 	u32 path_length = 0;
-	u32 index = 0, tmp = 0;
 
 	p = kstrdup(buf, GFP_KERNEL);
 	if (!p)
@@ -136,51 +134,6 @@ static ssize_t edid_store(struct device *dev,
 				break;
 		}
 	} while (para);
-
-	if (buf[0] == 'h') {
-		int i;
-
-		pr_info("EDID hash value:\n");
-		for (i = 0; i < 20; i++)
-			pr_info("%02x", global_tx_common->EDID_hash[i]);
-		pr_info("\n");
-	}
-	if (buf[0] == 'd') {
-		int ii, jj;
-		unsigned long block_idx;
-		int ret;
-
-		ret = kstrtoul(buf + 1, 16, &block_idx);
-		if (block_idx < EDID_MAX_BLOCK) {
-			for (ii = 0; ii < 8; ii++) {
-				for (jj = 0; jj < 16; jj++) {
-					index = block_idx * 128 + ii * 16 + jj;
-					tmp = global_tx_common->EDID_buf1[index];
-					pr_info("%02x ", tmp);
-				}
-				pr_info("\n");
-			}
-		pr_info("\n");
-	}
-	}
-	if (buf[0] == 'e') {
-		int ii, jj;
-		unsigned long block_idx;
-		int ret;
-
-		ret = kstrtoul(buf + 1, 16, &block_idx);
-		if (block_idx < EDID_MAX_BLOCK) {
-			for (ii = 0; ii < 8; ii++) {
-				for (jj = 0; jj < 16; jj++) {
-					index = block_idx * 128 + ii * 16 + jj;
-					tmp = global_tx_common->EDID_buf1[index];
-					pr_info("%02x ", tmp);
-				}
-				pr_info("\n");
-			}
-			pr_info("\n");
-		}
-	}
 
 	if (!strncmp(argv[0], "save", strlen("save"))) {
 		u32 type = 0;
@@ -254,6 +207,7 @@ static ssize_t _hdr_cap_show(struct device *dev,
 	int hdr10plugsupported = 0;
 	const struct cuva_info *cuva = &hdr->cuva_info;
 	const struct hdr10_plus_info *hdr10p = &hdr->hdr10plus_info;
+	const struct sbtm_info *sbtm = &hdr->sbtm_info;
 
 	if (hdr10p->ieeeoui == HDR10_PLUS_IEEE_OUI &&
 		hdr10p->application_version != 0xFF)
@@ -320,6 +274,97 @@ static ssize_t _hdr_cap_show(struct device *dev,
 			pos += snprintf(buf + pos, PAGE_SIZE, "%02x",
 				cuva->rawdata[i]);
 		pos += snprintf(buf + pos, PAGE_SIZE, "\n");
+	}
+	/* sbtm capability show */
+	if (sbtm->sbtm_support) {
+		pos += snprintf(buf + pos, PAGE_SIZE, "SBTM supported: 1\n");
+		if (sbtm->max_sbtm_ver)
+			pos += snprintf(buf + pos, PAGE_SIZE, "  Max_SBTM_Ver: 0x%x\n",
+				sbtm->max_sbtm_ver);
+		if (sbtm->grdm_support)
+			pos += snprintf(buf + pos, PAGE_SIZE, "  grdm_support: 0x%x\n",
+				sbtm->grdm_support);
+		if (sbtm->drdm_ind)
+			pos += snprintf(buf + pos, PAGE_SIZE, "  drdm_ind: 0x%x\n",
+				sbtm->drdm_ind);
+		if (sbtm->hgig_cat_drdm_sel)
+			pos += snprintf(buf + pos, PAGE_SIZE, "  hgig_cat_drdm_sel: 0x%x\n",
+				sbtm->hgig_cat_drdm_sel);
+		if (sbtm->use_hgig_drdm)
+			pos += snprintf(buf + pos, PAGE_SIZE, "  use_hgig_drdm: 0x%x\n",
+				sbtm->use_hgig_drdm);
+		if (sbtm->maxrgb)
+			pos += snprintf(buf + pos, PAGE_SIZE, "  maxrgb: 0x%x\n",
+				sbtm->maxrgb);
+		if (sbtm->gamut)
+			pos += snprintf(buf + pos, PAGE_SIZE, "  gamut: 0x%x\n",
+				sbtm->gamut);
+		if (sbtm->red_x)
+			pos += snprintf(buf + pos, PAGE_SIZE, "  red_x: 0x%x\n",
+				sbtm->red_x);
+		if (sbtm->red_y)
+			pos += snprintf(buf + pos, PAGE_SIZE, "  red_y: 0x%x\n",
+				sbtm->red_y);
+		if (sbtm->green_x)
+			pos += snprintf(buf + pos, PAGE_SIZE, "  green_x: 0x%x\n",
+				sbtm->green_x);
+		if (sbtm->green_y)
+			pos += snprintf(buf + pos, PAGE_SIZE, "  green_y: 0x%x\n",
+				sbtm->green_y);
+		if (sbtm->blue_x)
+			pos += snprintf(buf + pos, PAGE_SIZE, "  blue_x: 0x%x\n",
+				sbtm->blue_x);
+		if (sbtm->blue_y)
+			pos += snprintf(buf + pos, PAGE_SIZE, "  blue_y: 0x%x\n",
+				sbtm->blue_y);
+		if (sbtm->white_x)
+			pos += snprintf(buf + pos, PAGE_SIZE, "  white_x: 0x%x\n",
+				sbtm->white_x);
+		if (sbtm->white_y)
+			pos += snprintf(buf + pos, PAGE_SIZE, "  white_y: 0x%x\n",
+				sbtm->white_y);
+		if (sbtm->min_bright_10)
+			pos += snprintf(buf + pos, PAGE_SIZE, "  min_bright_10: 0x%x\n",
+				sbtm->min_bright_10);
+		if (sbtm->peak_bright_100)
+			pos += snprintf(buf + pos, PAGE_SIZE, "  peak_bright_100: 0x%x\n",
+				sbtm->peak_bright_100);
+		if (sbtm->p0_exp)
+			pos += snprintf(buf + pos, PAGE_SIZE, "  p0_exp: 0x%x\n",
+				sbtm->p0_exp);
+		if (sbtm->p0_mant)
+			pos += snprintf(buf + pos, PAGE_SIZE, "  p0_mant: 0x%x\n",
+				sbtm->p0_mant);
+		if (sbtm->peak_bright_p0)
+			pos += snprintf(buf + pos, PAGE_SIZE, "  peak_bright_p0: 0x%x\n",
+				sbtm->peak_bright_p0);
+		if (sbtm->p1_exp)
+			pos += snprintf(buf + pos, PAGE_SIZE, "  p1_exp: 0x%x\n",
+				sbtm->p1_exp);
+		if (sbtm->p1_mant)
+			pos += snprintf(buf + pos, PAGE_SIZE, "  p1_mant: 0x%x\n",
+				sbtm->p1_mant);
+		if (sbtm->peak_bright_p1)
+			pos += snprintf(buf + pos, PAGE_SIZE, "  peak_bright_p1: 0x%x\n",
+				sbtm->peak_bright_p1);
+		if (sbtm->p2_exp)
+			pos += snprintf(buf + pos, PAGE_SIZE, "  p2_exp: 0x%x\n",
+				sbtm->p2_exp);
+		if (sbtm->p2_mant)
+			pos += snprintf(buf + pos, PAGE_SIZE, "  p2_mant: 0x%x\n",
+				sbtm->p2_mant);
+		if (sbtm->peak_bright_p2)
+			pos += snprintf(buf + pos, PAGE_SIZE, "  peak_bright_p2: 0x%x\n",
+				sbtm->peak_bright_p2);
+		if (sbtm->p3_exp)
+			pos += snprintf(buf + pos, PAGE_SIZE, "  p3_exp: 0x%x\n",
+				sbtm->p3_exp);
+		if (sbtm->p3_mant)
+			pos += snprintf(buf + pos, PAGE_SIZE, "  p3_mant: 0x%x\n",
+				sbtm->p3_mant);
+		if (sbtm->peak_bright_p3)
+			pos += snprintf(buf + pos, PAGE_SIZE, "  peak_bright_p3: 0x%x\n",
+				sbtm->peak_bright_p3);
 	}
 	return pos;
 }
@@ -651,12 +696,12 @@ static ssize_t disp_cap_show(struct device *dev,
 
 		timing = hdmitx_mode_vic_to_hdmi_timing(vic);
 		if (!timing) {
-			//pr_err("%s: unsupport vic [%d]\n", __func__, vic);
+			// pr_err("%s: unsupport vic [%d]\n", __func__, vic);
 			continue;
 		}
 
 		if (hdmitx_common_validate_vic(global_tx_common, vic) != 0) {
-			//pr_err("%s: vic[%d] over range.\n", __func__, vic);
+			// pr_err("%s: vic[%d] over range.\n", __func__, vic);
 			continue;
 		}
 

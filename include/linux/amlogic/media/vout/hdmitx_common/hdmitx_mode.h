@@ -8,11 +8,12 @@
 
 #include <linux/types.h>
 #include <linux/hdmi.h>
+#include "hdmitx_types.h"
 
 /* half for valid vic, half for vic with y420*/
 #define VIC_MAX_NUM 512
 #define VESA_MAX_TIMING 64
-#define Y420_VIC_MAX_NUM 6 /* only 6 4k mode for y420 */
+#define Y420_VIC_MAX_NUM 32 /* vic numbers for y420 */
 
 #define HDMITX_VESA_OFFSET	0x300
 

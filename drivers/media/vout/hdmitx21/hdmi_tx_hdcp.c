@@ -27,7 +27,6 @@
 #include <linux/spinlock.h>
 #include <linux/spinlock_types.h>
 #include <linux/extcon-provider.h>
-#include <linux/amlogic/media/vout/hdmi_tx21/hdmi_info_global.h>
 #include <linux/amlogic/media/vout/hdmi_tx21/hdmi_tx_module.h>
 #include "hw/hdmi_tx_reg.h"
 #include "hdmi_tx.h"
@@ -90,7 +89,7 @@ static void hdcp_update_csm(struct hdcp_t *p_hdcp);
  */
 static DEFINE_MUTEX(stream_type_mutex);
 /* hdcp stop & start should be mutexed */
-/* todo: if need to removed, as most hdcp
+/* TODO: if need to removed, as most hdcp
  * operations mutexed by hdmimode_mutex?
  */
 static DEFINE_MUTEX(hdcp_mutex);

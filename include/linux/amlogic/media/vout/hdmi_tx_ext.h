@@ -9,6 +9,7 @@
 #include <linux/notifier.h>
 #include <linux/kernel.h>
 #include <sound/asoundef.h>
+#include "hdmi_tx_repeater.h"
 
 /* interface for external module: audio/cec/hdmirx/dv... */
 

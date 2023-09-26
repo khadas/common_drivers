@@ -14,7 +14,9 @@
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_format_para.h>
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_hw_common.h>
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_edid.h>
+#include <linux/amlogic/media/vout/hdmitx_common/hdmitx_types.h>
 
+#define HDMI_PACKET_TYPE_GCP 0x3
 #define HDMI_INFOFRAME_TYPE_VENDOR2 (0x81 | 0x100)
 
 struct hdmitx_ctrl_ops {
@@ -56,9 +58,7 @@ struct hdmitx_common {
 
 	/*edid related*/
 	unsigned char *edid_ptr;
-	unsigned char EDID_buf[EDID_MAX_BLOCK * 128];
-	unsigned char EDID_buf1[EDID_MAX_BLOCK * 128]; /* for second read */
-	unsigned char tmp_edid_buf[128 * EDID_MAX_BLOCK];
+	unsigned char EDID_buf[EDID_MAX_BLOCK * 128]; // TODO
 	unsigned char EDID_hash[20];
 	/* indicate RX edid data integrated, HEAD valid and checksum pass */
 	unsigned int edid_parsing;
@@ -127,6 +127,14 @@ int hdmitx_common_build_format_para(struct hdmitx_common *tx_comm,
 /* For bootup init: init hdmi_format_para from hw configs.*/
 int hdmitx_common_init_bootup_format_para(struct hdmitx_common *tx_comm,
 		struct hdmi_format_para *para);
+
+/* For different SOC, different output limited capabilities */
+bool resolution_limited_1080p(const struct hdmi_timing *timing);
+bool resolution_limited_2160p(const struct hdmi_timing *timing);
+bool resolution_limited_4320p(const struct hdmi_timing *timing);
+bool freshrate_limited_60hz(const struct hdmi_timing *timing);
+bool freshrate_limited_120hz(const struct hdmi_timing *timing);
+
 /*******************************hdmitx common api end*******************************/
 
 int hdmitx_hpd_notify_unlocked(struct hdmitx_common *tx_comm);
@@ -140,6 +148,12 @@ int hdmitx_get_hdrinfo(struct hdmitx_common *tx_comm, struct hdr_info *hdrinfo);
 
 /*edid related function.*/
 int hdmitx_update_edid_chksum(u8 *buf, u32 block_cnt, struct rx_cap *rxcap);
+int hdmitx_edid_parse(struct hdmitx_common *tx_comm); // TODO
+void hdmitx_edid_print(struct hdmitx_common *tx_comm); // TODO, remove compare
+void hdmitx_edid_buffer_clear(struct hdmitx_common *tx_comm);
+void hdmitx_edid_rxcap_clear(struct hdmitx_common *tx_comm);
+bool hdmitx_edid_only_support_sd(struct rx_cap *prxcap);
+bool hdmitx_validate_y420_vic(enum hdmi_vic vic);
 
 /*debug functions*/
 int hdmitx_load_edid_file(char *path);

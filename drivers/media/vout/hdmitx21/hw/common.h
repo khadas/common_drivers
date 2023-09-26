@@ -127,25 +127,6 @@ void set_tv_enci_new(struct hdmitx_dev *hdev, u32 enc_index,
 	enum hdmi_vic vic, u32 enable);
 void hdmitx21_venc_en(bool en, bool pi_mode);
 
-/***********************************************************************
- *                   hdmi debug printk
- * pr_info(EDID "edid bad\");
- * pr_debug(AUD "set audio format: AC-3\n");
- * pr_err(REG "write reg\n")
- **********************************************************************/
-#undef pr_fmt
-#define pr_fmt(fmt) "hdmitx: " fmt
-
-#define VID         "video: "
-#define AUD         "audio: "
-#define CEC         "cec: "
-#define EDID        "edid: "
-#define HDCP        "hdcp: "
-#define SYS         "system: "
-#define HPD         "hpd: "
-#define HW          "hw: "
-#define REG         "reg: "
-
 void hdmitx21_phy_bandgap_en_t7(void);
 void hdmitx21_phy_bandgap_en_s5(void);
 

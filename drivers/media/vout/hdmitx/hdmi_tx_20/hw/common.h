@@ -10,25 +10,6 @@
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_types.h>
 #include "hdmi_tx_reg.h"
 
-/***********************************************************************
- *                   hdmi debug printk
- * pr_info(EDID "edid bad\");
- * pr_debug(AUD "set audio format: AC-3\n");
- * pr_err(REG "write reg\n")
- **********************************************************************/
-#undef pr_fmt
-#define pr_fmt(fmt) "hdmitx: " fmt
-
-#define VID         "video: "
-#define AUD         "audio: "
-#define CEC         "cec: "
-#define EDID        "edid: "
-#define HDCP        "hdcp: "
-#define SYS         "system: "
-#define HPD         "hpd: "
-#define HW          "hw: "
-#define REG         "reg: "
-
 int hdmitx_hpd_hw_op_gxbb(enum hpd_op cmd);
 int read_hpd_gpio_gxbb(void);
 int hdmitx_ddc_hw_op_gxbb(enum ddc_op cmd);

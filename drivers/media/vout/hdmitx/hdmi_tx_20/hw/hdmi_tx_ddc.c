@@ -25,7 +25,6 @@
 #include <linux/timekeeping.h>
 
 #include <linux/amlogic/media/vout/hdmi_tx/hdmi_tx_ddc.h>
-#include <linux/amlogic/media/vout/hdmi_tx/hdmi_info_global.h>
 #include <linux/amlogic/media/vout/hdmi_tx/hdmi_tx_module.h>
 #include "common.h"
 #include "hdmi_tx_reg.h"
@@ -280,13 +279,13 @@ void hdmitx_read_edid(unsigned char *rx_edid)
 				blk_no = rx_edid[126] + 1;
 			byte_num++;
 		}
-		if (byte_num > 127 && byte_num < 256)
-			if (rx_edid[128 + 4] == 0xe2 && rx_edid[128 + 5] == 0x78)
+		if (byte_num == 136)
+			if (rx_edid[128 + 4] == EXTENSION_EEODB_EXT_TAG &&
+				rx_edid[128 + 5] == EXTENSION_EEODB_EXT_CODE)
 				blk_no = rx_edid[128 + 6] + 1;
 		if (blk_no > 8) {
 			pr_info(HW "edid extension block number:");
-			pr_info(HW " %d, reset to MAX 7\n",
-				blk_no - 1);
+			pr_info(HW " %d, reset to MAX 7\n", blk_no - 1);
 			blk_no = 8; /* Max extended block */
 		}
 	}

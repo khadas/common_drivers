@@ -23,7 +23,6 @@
 #include <linux/clk.h>
 #include <linux/amlogic/media/vout/vinfo.h>
 #include <linux/amlogic/media/vout/hdmi_tx/enc_clk_config.h>
-#include <linux/amlogic/media/vout/hdmi_tx/hdmi_info_global.h>
 #include <linux/amlogic/media/vout/hdmi_tx/hdmi_tx_module.h>
 #include "common.h"
 #include "mach_reg.h"
@@ -1659,7 +1658,7 @@ static inline void setreg(const struct reg_s *r)
 static const struct reg_s *tvregs_setting_mode(struct hdmitx_dev *hdev)
 {
 	int i = 0;
-	enum hdmi_vic vic = hdev->cur_video_param->VIC;
+	enum hdmi_vic vic = hdev->tx_comm.fmt_para.vic;
 
 	if (hdev->flag_3dfp) {
 		for (i = 0; i < ARRAY_SIZE(tvregstab_3dfp); i++) {
@@ -1683,13 +1682,11 @@ void set_vmode_enc_hw(struct hdmitx_dev *hdev)
 
 	/*hd_set_reg_bits(P_VENC_VDAC_SETTING, 0x1f, 0, 5);*/
 	if (s) {
-		pr_info("set enc for VIC: %d\n",
-			hdev->cur_video_param->VIC);
+		pr_info("set enc for VIC: %d\n", hdev->tx_comm.fmt_para.vic);
 		while (s->reg != MREG_END_MARKER)
 			setreg(s++);
 	} else {
-		pr_info("set enc not find VIC: %d\n",
-			hdev->cur_video_param->VIC);
+		pr_info("set enc not find VIC: %d\n", hdev->tx_comm.fmt_para.vic);
 	}
 	if (hdev->bist_lock)
 		hd_set_reg_bits(P_ENCP_VIDEO_MODE_ADV, 0, 3, 1);

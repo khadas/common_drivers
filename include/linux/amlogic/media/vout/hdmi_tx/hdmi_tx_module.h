@@ -5,7 +5,6 @@
 
 #ifndef _HDMI_TX_MODULE_H
 #define _HDMI_TX_MODULE_H
-#include "hdmi_info_global.h"
 #include "hdmi_config.h"
 #include "hdmi_hdcp.h"
 #include <linux/wait.h>
@@ -221,7 +220,7 @@ struct hdmitx_dev {
 					  unsigned char *CHAN_STAT_BUF);
 		int (*setdispmode)(struct hdmitx_dev *hdmitx_device);
 		int (*setaudmode)(struct hdmitx_dev *hdmitx_device,
-				  struct hdmitx_audpara *audio_param);
+				  struct aud_para *audio_param);
 		void (*setupirq)(struct hdmitx_dev *hdmitx_device);
 		void (*debugfun)(struct hdmitx_dev *hdmitx_device,
 				 const char *buf);
@@ -250,14 +249,11 @@ struct hdmitx_dev {
 	unsigned int irq_hpd;
 	unsigned int irq_viu1_vsync;
 	/*EDID*/
-	struct hdmitx_vidpara *cur_video_param;
-	int vic_count;
 	struct hdmitx_clk_tree_s hdmitx_clk_tree;
 	/*audio*/
-	struct hdmitx_audpara cur_audio_param;
+	struct aud_para cur_audio_param;
 	int audio_param_update_flag;
 	unsigned char unplug_powerdown;
-	unsigned short physical_addr;
 	atomic_t kref_video_mute;
 	atomic_t kref_audio_mute;
 	/**/
@@ -269,7 +265,6 @@ struct hdmitx_dev {
 	unsigned char mux_hpd_if_pin_high_flag;
 	int auth_process_timer;
 	int aspect_ratio;	/* 1, 4:3; 2, 16:9 */
-	struct hdmitx_info hdmi_info;
 	unsigned int log;
 	unsigned int tx_aud_cfg; /* 0, off; 1, on */
 	unsigned int hpd_lock;
@@ -348,15 +343,10 @@ struct hdmitx_dev {
 /***********************************************************************
  *    hdmitx protocol level interface
  **********************************************************************/
-int hdmitx_edid_parse(struct hdmitx_dev *hdmitx_device);
-int check_dvi_hdmi_edid_valid(unsigned char *buf);
-void hdmitx_edid_clear(struct hdmitx_dev *hdmitx_device);
-void hdmitx_edid_ram_buffer_clear(struct hdmitx_dev *hdmitx_device);
-void hdmitx_edid_buf_compare_print(struct hdmitx_dev *hdmitx_device);
 void hdmitx_current_status(enum hdmitx_event_log_bits event);
 
-extern struct hdmitx_audpara hdmiaud_config_data;
-extern struct hdmitx_audpara hsty_hdmiaud_config_data[8];
+extern struct aud_para hdmiaud_config_data;
+extern struct aud_para hsty_hdmiaud_config_data[8];
 extern unsigned int hsty_hdmiaud_config_loc, hsty_hdmiaud_config_num;
 
 int hdmitx_set_display(struct hdmitx_dev *hdmitx_device,
@@ -366,7 +356,7 @@ int hdmi_set_3d(struct hdmitx_dev *hdmitx_device, int type,
 		unsigned int param);
 
 int hdmitx_set_audio(struct hdmitx_dev *hdmitx_device,
-		     struct hdmitx_audpara *audio_param);
+		     struct aud_para *audio_param);
 
 #define HDMI_SUSPEND	0
 #define HDMI_WAKEUP	1
@@ -391,8 +381,6 @@ void hdmitx_hdcp_do_work(struct hdmitx_dev *hdev);
 void hdmitx_meson_init(struct hdmitx_dev *hdmitx_device);
 unsigned int get_hdcp22_base(void);
 void hdmitx20_video_mute_op(unsigned int flag);
-
-bool LGAVIErrorTV(struct rx_cap *prxcap);
 bool hdmitx_find_vendor_6g(struct hdmitx_dev *hdev);
 bool hdmitx_find_vendor_ratio(struct hdmitx_dev *hdev);
 bool hdmitx_find_vendor_null_pkt(struct hdmitx_dev *hdev);

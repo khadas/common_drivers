@@ -17,9 +17,9 @@
 #include <linux/mutex.h>
 #include <linux/cdev.h>
 
-#include <linux/amlogic/media/vout/hdmi_tx/hdmi_info_global.h>
 #include <linux/amlogic/media/vout/hdmi_tx/hdmi_tx_module.h>
 #include <linux/amlogic/media/vout/hdmi_tx/hdmi_tx_compliance.h>
+#include <linux/amlogic/media/vout/hdmitx_common/hdmitx_common.h>
 #include "hw/common.h"
 
 #undef PCM_USE_INFOFRAME
@@ -44,7 +44,7 @@ static const unsigned char cs_sw_len[] = {
 };
 
 static void
-hdmi_tx_construct_aud_packet(struct hdmitx_audpara *audio_param,
+hdmi_tx_construct_aud_packet(struct aud_para *audio_param,
 			     unsigned char *AUD_DB,
 			     unsigned char *CHAN_STAT_BUF,
 			     int hdmi_ch)
@@ -54,18 +54,18 @@ hdmi_tx_construct_aud_packet(struct hdmitx_audpara *audio_param,
 		pr_info(AUD "Audio Type: PCM\n");
 		if (AUD_DB) {
 			/*Note: HDMI Spec V1.4 Page 154*/
-			if (audio_param->channel_num == CC_2CH ||
-			    audio_param->channel_num == CC_REFER_TO_STREAM)
+			if (audio_param->chs == CC_2CH ||
+			    audio_param->chs == CC_REFER_TO_STREAM)
 				AUD_DB[0] = 0;
 			else
 				AUD_DB[0] = 0 << 4 |
-				audio_param->channel_num;
+				audio_param->chs;
 			AUD_DB[1] = FS_REFER_TO_STREAM << 2 |
 			SS_REFER_TO_STREAM;
 			AUD_DB[2] = 0x0;
-			if (audio_param->channel_num == CC_6CH) {
+			if (audio_param->chs == CC_6CH) {
 				AUD_DB[3] = 0xb;
-			} else if (audio_param->channel_num == CC_8CH) {
+			} else if (audio_param->chs == CC_8CH) {
 				if (hdmi_ch == CC_6CH)
 					AUD_DB[3] = 0x0b;
 				else
@@ -77,19 +77,19 @@ hdmi_tx_construct_aud_packet(struct hdmitx_audpara *audio_param,
 		}
 		if (CHAN_STAT_BUF) {
 			CHAN_STAT_BUF[2] = 0x10 |
-			(audio_param->channel_num + 1);
+			(audio_param->chs + 1);
 			CHAN_STAT_BUF[24 + 2] = 0x20 |
-			(audio_param->channel_num + 1);
+			(audio_param->chs + 1);
 			CHAN_STAT_BUF[3] =
-				cs_freq[audio_param->sample_rate];
+				cs_freq[audio_param->rate];
 			CHAN_STAT_BUF[24 + 3] =
-				cs_freq[audio_param->sample_rate];
+				cs_freq[audio_param->rate];
 			CHAN_STAT_BUF[4] =
-			cs_sw_len[audio_param->sample_size] |
-			~cs_freq[audio_param->sample_rate] << 4;
+			cs_sw_len[audio_param->size] |
+			~cs_freq[audio_param->rate] << 4;
 			CHAN_STAT_BUF[24 + 4] =
-			cs_sw_len[audio_param->sample_size] |
-			~cs_freq[audio_param->sample_rate] << 4;
+			cs_sw_len[audio_param->size] |
+			~cs_freq[audio_param->rate] << 4;
 		}
 	} else if (audio_param->type == CT_AC_3) {
 		pr_info(AUD "Audio Type: AC3\n");
@@ -229,7 +229,7 @@ hdmi_tx_construct_aud_packet(struct hdmitx_audpara *audio_param,
 }
 
 int hdmitx_set_audio(struct hdmitx_dev *hdmitx_device,
-		     struct hdmitx_audpara *audio_param)
+		     struct aud_para *audio_param)
 {
 	int i, ret = -1;
 	unsigned char AUD_DB[32];

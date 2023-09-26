@@ -17,9 +17,7 @@
 #include <linux/mutex.h>
 #include <linux/cdev.h>
 
-#include <linux/amlogic/media/vout/hdmi_tx21/hdmi_info_global.h>
 #include <linux/amlogic/media/vout/hdmi_tx21/hdmi_tx_module.h>
-#include <linux/amlogic/media/vout/hdmitx_common/hdmitx_common.h>
 
 #include "hw/common.h"
 

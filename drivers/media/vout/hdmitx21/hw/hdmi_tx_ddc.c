@@ -23,7 +23,6 @@
 #include <linux/clk.h>
 
 #include <linux/amlogic/media/vout/hdmi_tx21/hdmi_tx_ddc.h>
-#include <linux/amlogic/media/vout/hdmi_tx21/hdmi_info_global.h>
 #include <linux/amlogic/media/vout/hdmi_tx21/hdmi_tx_module.h>
 #include "common.h"
 
@@ -46,23 +45,23 @@ void scdc21_wr_sink(u8 adr, u8 val)
 void hdmitx21_read_edid(u8 *_rx_edid)
 {
 	u32 blk_idx = 0;
-	u8 edid_extension = 0;
+	u8 ext_block_num = 0;
 	u8 *rx_edid = _rx_edid;
 
 	// Read complete EDID data sequentially
-	while (blk_idx < (1 + edid_extension)) {
+	while (blk_idx < (1 + ext_block_num)) {
 		hdmitx_ddcm_read(blk_idx >> 1, DDC_EDID_ADDR, (blk_idx * 128) & 0xff,
 			&rx_edid[blk_idx * 128], 128);
 		if (blk_idx == 0)
-			edid_extension = rx_edid[126];
+			ext_block_num = rx_edid[126];
 		if (blk_idx == 1)
-			if (rx_edid[128 + 4] == 0xe2 && rx_edid[128 + 5] == 0x78)
-				edid_extension = rx_edid[128 + 6];
-		if (edid_extension > 7) {
+			if (rx_edid[128 + 4] == EXTENSION_EEODB_EXT_TAG &&
+				rx_edid[128 + 5] == EXTENSION_EEODB_EXT_CODE)
+				ext_block_num = rx_edid[128 + 6];
+		if (ext_block_num > 7) {
 			pr_info(HW "edid extension block number:");
-			pr_info(HW " %d, reset to MAX 7\n",
-				edid_extension);
-			edid_extension = 7; /* Max extended block */
+			pr_info(HW " %d, reset to MAX 7\n", ext_block_num);
+			ext_block_num = 7; /* Max extended block */
 		}
 		blk_idx++;
 	}

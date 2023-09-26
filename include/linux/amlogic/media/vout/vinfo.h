@@ -60,6 +60,17 @@ struct master_display_info_s {
 	u32 max_frame_average;	/* Maximum Frame-average Light Level */
 };
 
+/* SBTM packet info */
+struct vtem_sbtm_st {
+	u8 sbtm_ver: 4; /* MD0 */
+	unsigned char: 4;
+	u8 sbtm_mode: 2; /* MD1 */
+	u8 sbtm_type: 2;
+	u8 grdm_min: 2;
+	u8 grdm_lum: 2;
+	u16 frmpblimitint; /* MD2/3 */
+};
+
 /*
  *hdr_dynamic_type
  * 0x0001: type_1_hdr_metadata_version
@@ -93,6 +104,41 @@ struct cuva_info {
 	u8 rx_mode_sup;
 };
 
+/* SBTM EDID capabilities */
+struct sbtm_info {
+	unsigned char sbtm_support: 1;
+	unsigned char max_sbtm_ver: 4;
+	unsigned char grdm_support: 2;
+	unsigned char drdm_ind: 1;
+	unsigned char hgig_cat_drdm_sel: 3;
+	unsigned char: 1;
+	unsigned char use_hgig_drdm: 1;
+	unsigned char maxrgb: 1;
+	unsigned char gamut: 2;
+	unsigned short red_x;
+	unsigned short red_y;
+	unsigned short green_x;
+	unsigned short green_y;
+	unsigned short blue_x;
+	unsigned short blue_y;
+	unsigned short white_x;
+	unsigned short white_y;
+	unsigned char min_bright_10;
+	unsigned char peak_bright_100;
+	unsigned char p0_exp: 2;
+	unsigned char p0_mant: 6;
+	unsigned char peak_bright_p0;
+	unsigned char p1_exp: 2;
+	unsigned char p1_mant: 6;
+	unsigned char peak_bright_p1;
+	unsigned char p2_exp: 2;
+	unsigned char p2_mant: 6;
+	unsigned char peak_bright_p2;
+	unsigned char p3_exp: 2;
+	unsigned char p3_mant: 6;
+	unsigned char peak_bright_p3;
+};
+
 struct hdr_info {
 /* RX EDID hdr support types */
 	/* hdr_support: bit0/SDR bit1/HDR bit2/SMPTE2084 bit3/HLG */
@@ -118,6 +164,7 @@ struct hdr_info {
 	u32 lumi_peak; /* RX EDID Lumi Peak value */
 	u32 ldim_support; /* RX EDID Local Dimming Support */
 	struct cuva_info cuva_info;
+	struct sbtm_info sbtm_info; /* TV SBTM EDID capabilities */
 };
 
 struct hdr10plus_para {

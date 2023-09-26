@@ -5,7 +5,6 @@
 
 #ifndef _HDMI_TX21_MODULE_H
 #define _HDMI_TX21_MODULE_H
-#include "hdmi_info_global.h"
 #include "hdmi_config.h"
 #include "hdmi_hdcp.h"
 #include <linux/wait.h>
@@ -144,7 +143,7 @@ struct hdmitx_dev {
 	u32 hdcp_mode;
 	struct {
 		int (*setdispmode)(struct hdmitx_dev *hdev);
-		int (*setaudmode)(struct hdmitx_dev *hdev, struct hdmitx_audpara *audio_param);
+		int (*setaudmode)(struct hdmitx_dev *hdev, struct aud_para *audio_param);
 		void (*setupirq)(struct hdmitx_dev *hdev);
 		void (*debugfun)(struct hdmitx_dev *hdev, const char *buf);
 		void (*debug_bist)(struct hdmitx_dev *hdmitx_device, unsigned int num);
@@ -166,10 +165,9 @@ struct hdmitx_dev {
 	int vic_count;
 	struct hdmitx_clk_tree_s hdmitx_clk_tree;
 	/*audio*/
-	struct hdmitx_audpara cur_audio_param;
+	struct aud_para cur_audio_param;
 	int audio_param_update_flag;
 	u8 unplug_powerdown;
-	unsigned short physical_addr;
 	atomic_t kref_video_mute;
 	atomic_t kref_audio_mute;
 	/**/
@@ -181,7 +179,6 @@ struct hdmitx_dev {
 	u8 manual_frl_rate; /* for manual setting */
 	u8 frl_rate; /* for mode setting */
 	u8 dsc_en;
-	struct hdmitx_info hdmi_info;
 	u32 tx_aud_cfg; /* 0, off; 1, on */
 	u32 hpd_lock;
 	/* 0: RGB444  1: Y444  2: Y422  3: Y420 */
@@ -265,11 +262,6 @@ struct hdmitx_dev *get_hdmitx21_device(void);
 /***********************************************************************
  *    hdmitx protocol level interface
  **********************************************************************/
-int hdmitx21_edid_parse(struct hdmitx_dev *hdev);
-int check21_dvi_hdmi_edid_valid(u8 *buf);
-void hdmitx21_edid_clear(struct hdmitx_dev *hdev);
-void hdmitx21_edid_ram_buffer_clear(struct hdmitx_dev *hdev);
-void hdmitx21_edid_buf_compare_print(struct hdmitx_dev *hdev);
 void hdmitx21_dither_config(struct hdmitx_dev *hdev);
 
 /* set vic to AVI.VIC */
@@ -284,7 +276,7 @@ int hdmi21_set_3d(struct hdmitx_dev *hdev, int type,
 		u32 param);
 
 int hdmitx21_set_audio(struct hdmitx_dev *hdev,
-		     struct hdmitx_audpara *audio_param);
+		     struct aud_para *audio_param);
 
 #define HDMI_SUSPEND    0
 #define HDMI_WAKEUP     1

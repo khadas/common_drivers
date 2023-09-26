@@ -51,6 +51,7 @@ int hdmitx_common_init(struct hdmitx_common *tx_comm, struct hdmitx_hw_common *h
 
 	tx_comm->res_1080p = 0;
 	tx_comm->max_refreshrate = 60;
+	tx_comm->edid_ptr = tx_comm->EDID_buf;
 
 	tx_comm->tx_hw = hw_comm;
 
@@ -62,6 +63,71 @@ int hdmitx_common_init(struct hdmitx_common *tx_comm, struct hdmitx_hw_common *h
 
 int hdmitx_common_destroy(struct hdmitx_common *tx_comm)
 {
+	return 0;
+}
+
+bool resolution_limited_1080p(const struct hdmi_timing *timing)
+{
+	if (!timing)
+		return 0;
+
+	if (timing->h_active > 1920 || timing->v_active > 1080)
+		return 0;
+	return 1;
+}
+
+bool resolution_limited_2160p(const struct hdmi_timing *timing)
+{
+	if (!timing)
+		return 0;
+
+	if (timing->h_active > 4096 || timing->v_active > 2160)
+		return 0;
+	return 1;
+}
+
+bool resolution_limited_4320p(const struct hdmi_timing *timing)
+{
+	if (!timing)
+		return 0;
+
+	if (timing->h_active > 7680 || timing->v_active > 4320)
+		return 0;
+	return 1;
+}
+
+bool freshrate_limited_60hz(const struct hdmi_timing *timing)
+{
+	if (!timing)
+		return 0;
+
+	if (timing->v_freq / 1000 > 60)
+		return 0;
+	return 1;
+}
+
+bool freshrate_limited_120hz(const struct hdmi_timing *timing)
+{
+	if (!timing)
+		return 0;
+
+	if (timing->v_freq / 1000 > 120)
+		return 0;
+	return 1;
+}
+
+bool hdmitx_validate_y420_vic(enum hdmi_vic vic)
+{
+	const struct hdmi_timing *timing;
+
+	/* In Spec2.1 Table 7-34, greater than 2160p30hz will support y420 */
+	timing = hdmitx_mode_vic_to_hdmi_timing(vic);
+	if (!timing)
+		return 0;
+	if (timing->v_active >= 2160 && timing->v_freq > 30000)
+		return 1;
+	if (timing->v_active >= 4320)
+		return 1;
 	return 0;
 }
 
@@ -391,7 +457,7 @@ EXPORT_SYMBOL(hdmitx_common_parse_vic_in_edid);
 /********************************Debug function***********************************/
 int hdmitx_load_edid_file(char *path)
 {
-	/*todo: sync function <load_edid_data>.*/
+	/*TODO: sync function <load_edid_data>.*/
 	return 0;
 }
 
@@ -412,9 +478,8 @@ int hdmitx_save_edid_file(unsigned char *rawedid, char *path)
 	}
 
 	block_cnt = rawedid[0x7e] + 1;
-	if (rawedid[0x7e] != 0 &&
-		rawedid[128 + 4] == 0xe2 &&
-		rawedid[128 + 5] == 0x78)
+	if (rawedid[0x7e] && rawedid[128 + 4] == EXTENSION_EEODB_EXT_TAG &&
+		rawedid[128 + 5] == EXTENSION_EEODB_EXT_CODE)
 		block_cnt = rawedid[128 + 6] + 1;
 
 	/* dump as txt file*/

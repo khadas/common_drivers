@@ -38,7 +38,6 @@
 	#define PIN_UNMUX           0x2
 #define DDC_EDID_READ_DATA      (CMD_DDC_OFFSET + 0x0a)
 #define DDC_IS_EDID_DATA_READY  (CMD_DDC_OFFSET + 0x0b)
-#define DDC_EDID_GET_DATA       (CMD_DDC_OFFSET + 0x0c)
 #define DDC_EDID_CLEAR_RAM      (CMD_DDC_OFFSET + 0x0d)
 #define DDC_HDCP_MUX_INIT       (CMD_DDC_OFFSET + 0x0e)
 #define DDC_HDCP_14_LSTORE      (CMD_DDC_OFFSET + 0x0f)

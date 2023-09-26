@@ -200,78 +200,6 @@ enum hdmi_scaling {
 /* Picture has been scaled horizontally & SC_SCALE_H_V */
 };
 
-/* FL-- Front Left */
-/* FC --Front Center */
-/* FR --Front Right */
-/* FLC-- Front Left Center */
-/* FRC-- Front RiQhtCenter */
-/* RL-- Rear Left */
-/* RC --Rear Center */
-/* RR-- Rear Right */
-/* RLC-- Rear Left Center */
-/* RRC --Rear RiQhtCenter */
-/* LFE-- Low Frequency Effect */
-enum hdmi_speak_location {
-	CA_FR_FL = 0,
-	CA_LFE_FR_FL,
-	CA_FC_FR_FL,
-	CA_FC_LFE_FR_FL,
-
-	CA_RC_FR_FL,
-	CA_RC_LFE_FR_FL,
-	CA_RC_FC_FR_FL,
-	CA_RC_FC_LFE_FR_FL,
-
-	CA_RR_RL_FR_FL,
-	CA_RR_RL_LFE_FR_FL,
-	CA_RR_RL_FC_FR_FL,
-	CA_RR_RL_FC_LFE_FR_FL,
-
-	CA_RC_RR_RL_FR_FL,
-	CA_RC_RR_RL_LFE_FR_FL,
-	CA_RC_RR_RL_FC_FR_FL,
-	CA_RC_RR_RL_FC_LFE_FR_FL,
-
-	CA_RRC_RC_RR_RL_FR_FL,
-	CA_RRC_RC_RR_RL_LFE_FR_FL,
-	CA_RRC_RC_RR_RL_FC_FR_FL,
-	CA_RRC_RC_RR_RL_FC_LFE_FR_FL,
-
-	CA_FRC_RLC_FR_FL,
-	CA_FRC_RLC_LFE_FR_FL,
-	CA_FRC_RLC_FC_FR_FL,
-	CA_FRC_RLC_FC_LFE_FR_FL,
-
-	CA_FRC_RLC_RC_FR_FL,
-	CA_FRC_RLC_RC_LFE_FR_FL,
-	CA_FRC_RLC_RC_FC_FR_FL,
-	CA_FRC_RLC_RC_FC_LFE_FR_FL,
-
-	CA_FRC_RLC_RR_RL_FR_FL,
-	CA_FRC_RLC_RR_RL_LFE_FR_FL,
-	CA_FRC_RLC_RR_RL_FC_FR_FL,
-	CA_FRC_RLC_RR_RL_FC_LFE_FR_FL,
-};
-
-enum hdmi_audio_downmix {
-	LSV_0DB = 0,
-	LSV_1DB,
-	LSV_2DB,
-	LSV_3DB,
-	LSV_4DB,
-	LSV_5DB,
-	LSV_6DB,
-	LSV_7DB,
-	LSV_8DB,
-	LSV_9DB,
-	LSV_10DB,
-	LSV_11DB,
-	LSV_12DB,
-	LSV_13DB,
-	LSV_14DB,
-	LSV_15DB,
-};
-
 #define AUDIO_PARA_MAX_NUM       14
 struct hdmi_audio_fs_ncts {
 	struct {
@@ -291,18 +219,20 @@ struct rate_map_fs {
 	enum hdmi_audio_fs fs;
 };
 
-struct hdmi_rx_audioinfo {
-	/* !< Signal decoding type -- TvAudioType */
-	enum hdmi_audio_type type;
-	enum hdmi_audio_format format;
-	/* !< active audio channels bit mask. */
-	enum hdmi_audio_chnnum channels;
-	enum hdmi_audio_fs fs; /* !< Signal sample rate in Hz */
-	enum hdmi_audio_sampsize ss;
-	enum hdmi_speak_location speak_loc;
-	enum hdmi_audio_downmix lsv;
-	u32 N_value;
-	u32 CTS;
-};
+/***********************************************************************
+ *                   hdmi debug printk
+ **********************************************************************/
+#undef pr_fmt
+#define pr_fmt(fmt) "hdmitx: " fmt
+
+#define VID         "video: "
+#define AUD         "audio: "
+#define CEC         "cec: "
+#define EDID        "edid: "
+#define HDCP        "hdcp: "
+#define SYS         "system: "
+#define HPD         "hpd: "
+#define HW          "hw: "
+#define REG         "reg: "
 
 #endif

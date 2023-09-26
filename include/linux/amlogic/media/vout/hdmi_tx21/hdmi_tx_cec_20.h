@@ -8,7 +8,6 @@
 
 #include <linux/irq.h>
 #include <linux/amlogic/cpu_version.h>
-#include "hdmi_info_global.h"
 #include "hdmi_tx_module.h"
 
 #define CEC0_LOG_ADDR		4 /* MBX logical address */

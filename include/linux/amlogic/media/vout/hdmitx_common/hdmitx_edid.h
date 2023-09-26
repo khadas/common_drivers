@@ -16,6 +16,8 @@
 #define AUD_MAX_NUM			60
 #define MAX_RAW_LEN			64
 
+#define Y420CMDB_MAX	32
+
 enum flt_tx_states {
 	FLT_TX_LTS_L,	/* legacy mode */
 	FLT_TX_LTS_1,	/* read edid */
@@ -108,6 +110,7 @@ struct rx_cap {
 	/*vendor*/
 	u32 ieeeoui;
 	u8 Max_TMDS_Clock1; /* HDMI1.4b TMDS_CLK */
+	u16 physical_addr; /* CEC physical address */
 	u32 hf_ieeeoui;	/* For HDMI Forum */
 	u32 Max_TMDS_Clock2; /* HDMI2.0 TMDS_CLK */
 	/* CEA861-F, Table 56, Colorimetry Data Block */
@@ -174,6 +177,13 @@ struct rx_cap {
 		u8 top_and_bottom;
 		u8 side_by_side;
 	} support_3d_format[VIC_MAX_NUM];
+	struct vsdb_phyaddr vsdb_phy_addr;
+	/* for total = 32*8 = 256 VICs */
+	/* for Y420CMDB bitmap */
+	unsigned char bitmap_valid;
+	unsigned char bitmap_length;
+	unsigned char y420_all_vic;
+	unsigned char y420cmdb_bitmap[Y420CMDB_MAX];
 
 	/*hdmi_vic have different define for tx20&tx21,use u32 instead here.*/
 	//enum hdmi_vic preferred_mode;
@@ -230,6 +240,9 @@ enum vsif_type {
 #define CUVA_IEEEOUI		0x047503
 #define HF_IEEEOUI		0xC45DD8
 
+#define EXTENSION_EEODB_EXT_TAG	0xe2 /* Fixed value, HDMI EEODB Data Block*/
+#define EXTENSION_EEODB_EXT_CODE	0x78 /* HDMI EEODB tag code */
+
 #define GET_OUI_BYTE0(oui)	((oui) & 0xff) /* Little Endian */
 #define GET_OUI_BYTE1(oui)	(((oui) >> 8) & 0xff)
 #define GET_OUI_BYTE2(oui)	(((oui) >> 16) & 0xff)
@@ -246,7 +259,6 @@ int hdmitx_edid_validate_format_para(struct rx_cap *prxcap,
 void phy_addr_clear(struct vsdb_phyaddr *vsdb_phy_addr);
 
 /*edid is good return 0, otherwise return < 0.*/
-int hdmitx_edid_validate(unsigned char *rawedid);
 bool hdmitx_edid_is_all_zeros(unsigned char *rawedid);
 int _check_base_structure(unsigned char *buf);
 int _check_edid_blk_chksum(unsigned char *block);

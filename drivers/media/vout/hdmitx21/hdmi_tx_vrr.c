@@ -21,7 +21,6 @@
 
 #include <linux/amlogic/media/vout/vinfo.h>
 #include <linux/amlogic/media/vout/hdmi_tx21/enc_clk_config.h>
-#include <linux/amlogic/media/vout/hdmi_tx21/hdmi_info_global.h>
 #include <linux/amlogic/media/vout/hdmi_tx21/hdmi_tx_module.h>
 
 #include "hdmi_tx.h"
@@ -1179,7 +1178,7 @@ int hdmitx_set_fr_hint(int rate, void *data)
 	para.cinemavrr_bit = prxcap->cinemavrr;
 	para.neg_mvrr_bit = prxcap->neg_mvrr;
 	para.fva_sup = prxcap->fva;
-	para.fva_factor = 1; /* todo */
+	para.fva_factor = 1; /* TODO */
 	para.fapa_start_loc = prxcap->fapa_start_loc;
 	para.qms_tfrmin = prxcap->qms_tfr_min;
 	para.qms_tfrmax = prxcap->qms_tfr_max;

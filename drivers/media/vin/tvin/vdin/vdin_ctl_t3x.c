@@ -3472,10 +3472,11 @@ void vdin_dolby_addr_update_t3x(struct vdin_dev_s *devp, unsigned int index)
 		value |= (0 << 31);/* reg_meta_rd_en */
 		value |= (1 << 30);/* reg_meta_rd_mode */
 		value |= (0x0c0d5 << 0); /* reg_meta_tunnel_sel */
-		if (devp->h_active_org >= 3840)
-			value |= (280 << 20);/* reg_meta_wr_sum */
-		else
-			value |= ((devp->h_active_org * 3 / 40) << 20);
+		value |= (0x280 << 20);/* reg_meta_wr_sum */
+//		if (devp->h_active_org >= 3840)
+//			value |= (280 << 20);/* reg_meta_wr_sum */
+//		else
+//			value |= ((devp->h_active_org * 3 / 40) << 20);
 		wr(offset, VDIN0_META_DSC_CTRL2, value);
 		wr(offset, VDIN0_META_DSC_CTRL3, 0x0);
 	}
@@ -3520,10 +3521,11 @@ void vdin_dolby_config_t3x(struct vdin_dev_s *devp)
 		value |= (0 << 31);/* reg_meta_rd_en */
 		value |= (1 << 30);/* reg_meta_rd_mode */
 		value |= (0x0c0d5 << 0); /* reg_meta_tunnel_sel */
-		if (devp->h_active_org >= 3840)
-			value |= (280 << 20);/* reg_meta_wr_sum */
-		else
-			value |= ((devp->h_active_org * 3 / 40) << 20);
+		value |= (0x280 << 20);/* reg_meta_wr_sum */
+//		if (devp->h_active_org >= 3840)
+//			value |= (0x280 << 20);/* reg_meta_wr_sum */
+//		else
+//			value |= ((devp->h_active_org * 3 / 40) << 20);
 		wr(offset, VDIN0_META_DSC_CTRL2, value);
 		wr(offset, VDIN0_META_DSC_CTRL3, 0x0);
 	}

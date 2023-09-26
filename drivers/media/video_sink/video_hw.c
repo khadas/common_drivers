@@ -8217,6 +8217,9 @@ void vpp_blend_update(const struct vinfo_s *vinfo)
 				port_val[2] |= (osd2_blend_path_sel << 20);
 				port_val[2] |= (osd2_postbld_src << 8);
 				update_osd2_blend_src_ctrl = false;
+				if (vd_layer[0].global_debug & DEBUG_FLAG_BASIC_INFO)
+					pr_info("OSD update OSD2_BLEND_SRC_CTRL: 0x%x\n",
+						port_val[2]);
 			}
 			if (vd_layer[0].post_blend_en) {
 				 /* post src */

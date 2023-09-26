@@ -137,6 +137,7 @@
 /*  V3.5.010 add pm config for s1a */
 /*  V3.5.011 delete debug logs in probe */
 /*  V3.5.012 add DTV_STAT_SIGNAL_STRENGTH and DTV_STAT_CNR */
+/*  V3.5.013 fix r842 dvbt/t2 LTE interferer test fail */
 /****************************************************/
 /****************************************************************/
 /*               AMLDTVDEMOD_VER  Description:                  */
@@ -153,8 +154,8 @@
 /*->The last four digits indicate the release time              */
 /****************************************************************/
 #define KERNEL_4_9_EN		1
-#define AMLDTVDEMOD_VER "V3.5.012"
-#define DTVDEMOD_VER	"2023/10/16: add DTV_STAT_SIGNAL_STRENGTH and DTV_STAT_CNR"
+#define AMLDTVDEMOD_VER "V3.5.013"
+#define DTVDEMOD_VER	"2023/10/20: fix r842 dvbt/t2 LTE interferer test fail"
 #define AMLDTVDEMOD_T2_FW_VER "V1558.20230628"
 #define DEMOD_DEVICE_NAME  "dtvdemod"
 

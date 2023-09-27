@@ -432,6 +432,8 @@ static void nr4_config_op(struct NR4_PARM_s *nr4_parm_p,
 	Wr_reg_bits(NR4_TOP_CTRL, 1, 16, 1);
 	Wr_reg_bits(NR4_TOP_CTRL, 1, 18, 1);
 	Wr_reg_bits(NR4_TOP_CTRL, 1, 3, 1);
+	if (IS_IC(dil_get_cpuver_flag(), S4) && dim_ic_sub() == 1)
+		Wr_reg_bits(NR4_TOP_CTRL, 0, 3, 1);
 	Wr_reg_bits(NR4_TOP_CTRL, 1, 5, 1);
 	//add for crc @2k22-0102
 	if (dim_config_crc_ic())
@@ -456,7 +458,7 @@ static void linebuffer_config_op(unsigned short width,
 		return;
 	}
 
-	if (is_meson_txhd_cpu()) {
+	if (is_meson_txhd_cpu() || IS_IC(dil_get_cpuver_flag(), S4)) {
 		line5_444 = 640;
 		line5_422 = 960;
 		line3_444 = 1280;
@@ -489,6 +491,11 @@ static void nr2_config_op(unsigned short width, unsigned short height,
 		IS_IC(dil_get_cpuver_flag(), T5D)	||
 		IS_IC(dil_get_cpuver_flag(), T5DB)	||
 		cpu_after_eq(MESON_CPU_MAJOR_ID_SC2)) {
+		if (IS_IC(dil_get_cpuver_flag(), S4) && dim_ic_sub() == 1) {
+			op->wr(NR2_FRM_SIZE, (height << 16) |  width);
+			op->wr(NR2_SW_EN, 0x70);
+			Wr(NR4_TOP_CTRL, 0xf8ff4);
+			}
 		Wr_reg_bits(NR4_TOP_CTRL, nr2_en, 2, 1);
 		Wr_reg_bits(NR4_TOP_CTRL, nr2_en, 15, 1);
 		Wr_reg_bits(NR4_TOP_CTRL, nr2_en, 17, 1);
@@ -2316,6 +2323,13 @@ static void nr_all_ctrl(bool enable, const struct reg_acc *op)
 	} else {
 		op->bwr(NR2_SW_EN, value, 4, 1);
 		op->bwr(DNR_CTRL, value, 16, 1);
+	}
+
+	if (IS_IC(dil_get_cpuver_flag(), S4) && dim_ic_sub() == 1) {
+		Wr_reg_bits(NR4_TOP_CTRL, value, 1, 1);
+		Wr_reg_bits(NR2_SW_EN, value, 4, 2);
+		Wr_reg_bits(NR2_SW_EN, value, 3, 1);
+		Wr_reg_bits(NR2_SW_EN, value, 7, 1);
 	}
 }
 

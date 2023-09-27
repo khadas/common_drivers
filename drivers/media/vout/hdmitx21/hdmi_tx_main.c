@@ -1460,7 +1460,7 @@ static int calc_vinfo_from_hdmi_timing(const struct hdmi_timing *timing, struct 
 	tx_vinfo->viu_color_fmt = COLOR_FMT_YUV444;
 	tx_vinfo->viu_mux = timing->pi_mode ? VIU_MUX_ENCP : VIU_MUX_ENCI;
 	/* 1080i use the ENCP, not ENCI */
-	if (strstr(timing->name, "1080i"))
+	if (timing->name && strstr(timing->name, "1080i"))
 		tx_vinfo->viu_mux = VIU_MUX_ENCP;
 	tx_vinfo->viu_mux |= hdev->enc_idx << 4;
 
@@ -4464,7 +4464,7 @@ static enum vmode_e hdmitx_validate_vmode(char *mode, u32 frac, void *data)
 	timing = hdmitx_mode_match_timing_name(mode);
 	if (hdmitx_common_validate_vic(&hdmitx21_device.tx_comm, timing->vic) == 0) {
 		/*should save mode name to vinfo, will be used in set_vmode*/
-		vinfo->name = timing->sname ? timing->sname : timing->name;
+		calc_vinfo_from_hdmi_timing(timing, vinfo);
 		return VMODE_HDMI;
 	}
 

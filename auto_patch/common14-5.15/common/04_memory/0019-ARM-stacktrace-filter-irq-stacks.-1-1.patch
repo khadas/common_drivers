@@ -1,4 +1,4 @@
-From c91db0e19aa6ea2230eff81dd89cbb87d7fb9959 Mon Sep 17 00:00:00 2001
+From d11b4ee85157903d2aeba01112d8a093674c87a0 Mon Sep 17 00:00:00 2001
 From: "qiankun.wang" <qiankun.wang@amlogic.com>
 Date: Fri, 25 Aug 2023 12:48:23 +0800
 Subject: [PATCH] ARM: stacktrace: filter irq stacks. [1/1]
@@ -22,9 +22,8 @@ Change-Id: Ib99f366955a051cb439ee9f86dfe2c667288d2d0
 Signed-off-by: qiankun.wang <qiankun.wang@amlogic.com>
 ---
  arch/arm/include/asm/exception.h | 4 ++++
- lib/Kconfig                      | 6 ++++--
  mm/kasan/kasan.h                 | 6 ++++++
- 3 files changed, 14 insertions(+), 2 deletions(-)
+ 2 files changed, 10 insertions(+)
 
 diff --git a/arch/arm/include/asm/exception.h b/arch/arm/include/asm/exception.h
 index 58e039a851af..c56ab8bb419a 100644
@@ -45,23 +44,6 @@ index 58e039a851af..c56ab8bb419a 100644
 +#endif
  
  #endif /* __ASM_ARM_EXCEPTION_H */
-diff --git a/lib/Kconfig b/lib/Kconfig
-index baa977e003b7..bfbaaa878c90 100644
---- a/lib/Kconfig
-+++ b/lib/Kconfig
-@@ -677,8 +677,10 @@ config STACKDEPOT
- 
- config STACK_HASH_ORDER
- 	int "stack depot hash size (12 => 4KB, 20 => 1024KB)"
--	range 12 20
--	default 20
-+	range 12 20 if !AMLOGIC_ARM_KASAN
-+	range 6 20 if AMLOGIC_ARM_KASAN
-+	default 20 if !AMLOGIC_ARM_KASAN
-+	default 6 if AMLOGIC_ARM_KASAN
- 	depends on STACKDEPOT
- 	help
- 	 Select the hash size as a power of 2 for the stackdepot hash table.
 diff --git a/mm/kasan/kasan.h b/mm/kasan/kasan.h
 index 47da190423d4..ec8d244f3c64 100644
 --- a/mm/kasan/kasan.h

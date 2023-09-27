@@ -560,7 +560,7 @@ int rdma_register(struct rdma_op_s *rdma_op, void *op_arg, int table_size)
 				(ulong)(dma_handle);
 			info->rdma_ins[i].reg_buf =
 				kmalloc(table_size, GFP_KERNEL);
-			pr_info("%s, rdma_table_addr %lx phy: %lx reg_buf %lx\n",
+			pr_debug("%s, rdma_table_addr %lx phy: %lx reg_buf %lx\n",
 				__func__,
 				(unsigned long)
 				info->rdma_ins[i].rdma_table_addr,

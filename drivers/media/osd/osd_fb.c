@@ -5554,7 +5554,7 @@ static int __init osd_probe(struct platform_device *pdev)
 		osd_log_err("cannot get viu irq resource\n");
 		goto failed1;
 	} else {
-		osd_log_info("viu vsync irq: %d\n", int_viu_vsync);
+		osd_log_dbg(MODULE_BASE, "viu vsync irq: %d\n", int_viu_vsync);
 	}
 	if (osd_meson_dev.has_viu2 || osd_meson_dev.has_vpp1) {
 		int_viu2_vsync = platform_get_irq_byname(pdev, "viu2-vsync");
@@ -5562,7 +5562,7 @@ static int __init osd_probe(struct platform_device *pdev)
 			osd_log_err("cannot get viu2 irq resource\n");
 			goto failed1;
 		} else {
-			osd_log_info("viu2 vsync irq: %d\n", int_viu2_vsync);
+			osd_log_dbg(MODULE_BASE, "viu2 vsync irq: %d\n", int_viu2_vsync);
 		}
 	}
 	if (osd_meson_dev.has_vpp2) {
@@ -5571,7 +5571,7 @@ static int __init osd_probe(struct platform_device *pdev)
 			osd_log_err("cannot get viu2 irq resource\n");
 			goto failed1;
 		} else {
-			osd_log_info("viu3 vsync irq: %d\n", int_viu3_vsync);
+			osd_log_dbg(MODULE_BASE, "viu3 vsync irq: %d\n", int_viu3_vsync);
 		}
 	}
 
@@ -5677,7 +5677,7 @@ static int __init osd_probe(struct platform_device *pdev)
 				}
 		} else {
 			base_addr = osd_mem_res.start;
-			osd_log_info("logo reserved memory size:%d\n",
+			osd_log_info("logo reserved memory size:0x%x\n",
 				fb_memsize[0]);
 		}
 #endif
@@ -5761,7 +5761,7 @@ static int __init osd_probe(struct platform_device *pdev)
 					var_screeninfo[3];
 				fb_def_var[index].bits_per_pixel =
 					var_screeninfo[4];
-				osd_log_info("init fbdev bpp is:%d\n",
+				osd_log_dbg(MODULE_BASE, "init fbdev bpp is:%d\n",
 					     fb_def_var[index].bits_per_pixel);
 				if (fb_def_var[index].bits_per_pixel > 32)
 					fb_def_var[index].bits_per_pixel = 32;

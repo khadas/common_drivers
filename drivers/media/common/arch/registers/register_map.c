@@ -836,14 +836,14 @@ static int __init codec_io_probe(struct platform_device *pdev)
 				pr_err("cannot map codec_io registers\n");
 				return -ENOMEM;
 			}
-			pr_err("codec map io source 0x%lx,size=%d to 0x%lx\n",
+			pr_debug("codec map io source 0x%lx,size=%d to 0x%lx\n",
 			       (unsigned long)res.start,
 				 (int)resource_size(&res),
 				 (unsigned long)codecio_reg_map[i]);
 		} else {
 			codecio_reg_map[i] = 0;
 			codecio_reg_start[i] = 0;
-			pr_err("ignore io source start %lx,size=%d\n",
+			pr_debug("ignore io source start %lx,size=%d\n",
 			       (unsigned long)res.start, (int)resource_size(&res));
 		}
 
@@ -854,7 +854,7 @@ static int __init codec_io_probe(struct platform_device *pdev)
 	}
 
 	set_cpu_type_from_media(codecio_meson_dev.cpu_id);
-	pr_debug("%s success, cpu_type=0x%x\n", __func__, get_cpu_type());
+	pr_info("%s success, cpu_type=0x%x\n", __func__, get_cpu_type());
 
 	return 0;
 }

@@ -5145,63 +5145,6 @@ static s32 is_afbc_for_vpp(u8 id)
 	return ret;
 }
 
-static bool is_keystone_enable_for_txhd2(void)
-{
-	bool ret;
-
-	if (amvideo_meson_dev.cpu_type == MESON_CPU_MAJOR_ID_TXHD2_ &&
-		cur_dev->has_vpp1 &&
-		(VSYNC_RD_MPEG_REG(VPP_MISC) & (0x1 << 27)))
-		ret = true;
-	else
-		ret = false;
-
-	return ret;
-}
-
-static void set_rdma_func_handler(void)
-{
-	int vpp0, vpp1, vpp2;
-	int pre_vsync = PRE_VSYNC;
-
-	if (is_keystone_enable_for_txhd2()) {
-		vpp0 = VPP1;
-		vpp1 = VPP0;
-		vpp2 = VPP2;
-	} else {
-		vpp0 = VPP0;
-		vpp1 = VPP1;
-		vpp2 = VPP2;
-	}
-	cur_dev->rdma_func[vpp0].rdma_rd =
-		VSYNC_RD_MPEG_REG;
-	cur_dev->rdma_func[vpp0].rdma_wr =
-		VSYNC_WR_MPEG_REG;
-	cur_dev->rdma_func[vpp0].rdma_wr_bits =
-		VSYNC_WR_MPEG_REG_BITS;
-
-	cur_dev->rdma_func[vpp1].rdma_rd =
-		VSYNC_RD_MPEG_REG_VPP1;
-	cur_dev->rdma_func[vpp1].rdma_wr =
-		VSYNC_WR_MPEG_REG_VPP1;
-	cur_dev->rdma_func[vpp1].rdma_wr_bits =
-		VSYNC_WR_MPEG_REG_BITS_VPP1;
-
-	cur_dev->rdma_func[vpp2].rdma_rd =
-		VSYNC_RD_MPEG_REG_VPP2;
-	cur_dev->rdma_func[vpp2].rdma_wr =
-		VSYNC_WR_MPEG_REG_VPP2;
-	cur_dev->rdma_func[vpp2].rdma_wr_bits =
-		VSYNC_WR_MPEG_REG_BITS_VPP2;
-
-	cur_dev->rdma_func[pre_vsync].rdma_rd =
-		PRE_VSYNC_RD_MPEG_REG;
-	cur_dev->rdma_func[pre_vsync].rdma_wr =
-		PRE_VSYNC_WR_MPEG_REG;
-	cur_dev->rdma_func[pre_vsync].rdma_wr_bits =
-		PRE_VSYNC_WR_MPEG_REG_BITS;
-}
-
 s32 di_request_afbc_hw(u8 id, bool on)
 {
 	u32 cur_afbc_request;
@@ -5362,9 +5305,6 @@ static irqreturn_t vsync_isr(int irq, void *dev_id)
 {
 	irqreturn_t ret;
 
-	if (is_keystone_enable_for_txhd2())
-		return 0;
-	set_rdma_func_handler();
 	if (get_lowlatency_mode())
 		put_buffer_proc();
 	lowlatency_vsync_count++;
@@ -5388,36 +5328,6 @@ static irqreturn_t vsync_isr(int irq, void *dev_id)
 	atomic_dec(&video_proc_lock);
 	return ret;
 }
-
-static irqreturn_t vsync_isr_viu2_keystone(int irq, void *dev_id)
-{
-	irqreturn_t ret;
-
-	if (!is_keystone_enable_for_txhd2())
-		return 0;
-	set_rdma_func_handler();
-	lowlatency_vsync_count++;
-	if (atomic_inc_return(&video_proc_lock) > 1) {
-		vsync_proc_drop++;
-		atomic_dec(&video_proc_lock);
-		vsync_cnt[VPP0]++;
-		return 0;
-	}
-	if (overrun_flag) {
-		overrun_flag = false;
-		vsync_proc_drop++;
-		lowlatency_overrun_recovery_cnt++;
-		atomic_dec(&video_proc_lock);
-		vsync_cnt[VPP0]++;
-		return 0;
-	}
-	atomic_set(&video_inirq_flag, 1);
-	ret = vsync_isr_in(irq, dev_id);
-	atomic_set(&video_inirq_flag, 0);
-	atomic_dec(&video_proc_lock);
-	return ret;
-}
-
 #endif
 
 static irqreturn_t vsync_pre_vsync_isr(int irq, void *dev_id)
@@ -5473,16 +5383,10 @@ static void vsync_fiq_up(void)
 		r = request_irq(mosaic_frame_done, &mosaic_frame_done_isr,
 			IRQF_SHARED, "frame_done", (void *)video_dev_id);
 	if (amvideo_meson_dev.cpu_type == MESON_CPU_MAJOR_ID_SC2_ ||
-	    amvideo_meson_dev.has_vpp1) {
-		if (amvideo_meson_dev.cpu_type == MESON_CPU_MAJOR_ID_TXHD2_)
-			r = request_irq(video_vsync_viu2, &vsync_isr_viu2_keystone,
-					IRQF_SHARED, "vsync_viu2",
-					(void *)video_dev_id);
-		else
-			r = request_irq(video_vsync_viu2, &vsync_isr_viu2,
-					IRQF_SHARED, "vsync_viu2",
-					(void *)video_dev_id);
-	}
+	    amvideo_meson_dev.has_vpp1)
+		r = request_irq(video_vsync_viu2, &vsync_isr_viu2,
+				IRQF_SHARED, "vsync_viu2",
+				(void *)video_dev_id);
 	if (amvideo_meson_dev.has_vpp2)
 		r = request_irq(video_vsync_viu3, &vsync_isr_viu3,
 				IRQF_SHARED, "vsync_viu3",
@@ -14755,6 +14659,37 @@ static void video_cap_set(struct amvideo_device_data_s *p_amvideo)
 	pr_debug("%s cap:%x, ptype:%d\n", __func__, layer_cap, p_amvideo->cpu_type);
 }
 
+static void set_rdma_func_handler(void)
+{
+	cur_dev->rdma_func[0].rdma_rd =
+		VSYNC_RD_MPEG_REG;
+	cur_dev->rdma_func[0].rdma_wr =
+		VSYNC_WR_MPEG_REG;
+	cur_dev->rdma_func[0].rdma_wr_bits =
+		VSYNC_WR_MPEG_REG_BITS;
+
+	cur_dev->rdma_func[1].rdma_rd =
+		VSYNC_RD_MPEG_REG_VPP1;
+	cur_dev->rdma_func[1].rdma_wr =
+		VSYNC_WR_MPEG_REG_VPP1;
+	cur_dev->rdma_func[1].rdma_wr_bits =
+		VSYNC_WR_MPEG_REG_BITS_VPP1;
+
+	cur_dev->rdma_func[2].rdma_rd =
+		VSYNC_RD_MPEG_REG_VPP2;
+	cur_dev->rdma_func[2].rdma_wr =
+		VSYNC_WR_MPEG_REG_VPP2;
+	cur_dev->rdma_func[2].rdma_wr_bits =
+		VSYNC_WR_MPEG_REG_BITS_VPP2;
+
+	cur_dev->rdma_func[3].rdma_rd =
+		PRE_VSYNC_RD_MPEG_REG;
+	cur_dev->rdma_func[3].rdma_wr =
+		PRE_VSYNC_WR_MPEG_REG;
+	cur_dev->rdma_func[3].rdma_wr_bits =
+		PRE_VSYNC_WR_MPEG_REG_BITS;
+}
+
 static int amvideom_probe(struct platform_device *pdev)
 {
 	int ret = 0;
@@ -14833,12 +14768,6 @@ static int amvideom_probe(struct platform_device *pdev)
 				      &vd1_vd2_mux_dts);
 	if (vdtemp < 0)
 		vd1_vd2_mux_dts = 1;
-	prop = of_get_property(pdev->dev.of_node, "display_device_cnt", NULL);
-	if (prop)
-		display_device_cnt = of_read_ulong(prop, 1);
-	if (amvideo_meson_dev.cpu_type == MESON_CPU_MAJOR_ID_TXHD2_ &&
-		display_device_cnt == 2)
-		amvideo_meson_dev.has_vpp1 = 1;
 	set_rdma_func_handler();
 	if (amvideo_meson_dev.display_module == S5_DISPLAY_MODULE) {
 		video_early_init_s5(&amvideo_meson_dev);
@@ -14847,6 +14776,9 @@ static int amvideom_probe(struct platform_device *pdev)
 		video_early_init(&amvideo_meson_dev);
 		video_hw_init();
 	}
+	prop = of_get_property(pdev->dev.of_node, "display_device_cnt", NULL);
+	if (prop)
+		display_device_cnt = of_read_ulong(prop, 1);
 	prop = of_get_property(pdev->dev.of_node, "vpp2_layer_count", NULL);
 	if (prop && display_device_cnt >= 3) {
 		int layer_count;

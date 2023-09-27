@@ -545,6 +545,19 @@ err_pcie_resume:
 	return err;
 }
 
+static void amlogic_pcie_host_compatible_special_dev(struct amlogic_pcie *amlogic)
+{
+	struct pci_dev *dev = NULL;
+
+	for_each_pci_dev(dev) {
+		if (dev->vendor == 0X1F35) {
+			amlogic->do_reset_gpio = false;
+			dev_dbg(amlogic->dev, "dev->vendor =0x%x\n", dev->vendor);
+			break;
+		}
+	}
+}
+
 static int amlogic_pcie_rc_probe(struct platform_device *pdev)
 {
 	struct amlogic_pcie_rc *rc;
@@ -569,6 +582,7 @@ static int amlogic_pcie_rc_probe(struct platform_device *pdev)
 	amlogic = &rc->amlogic;
 	amlogic->dev = dev;
 	amlogic->is_rc = true;
+	amlogic->do_reset_gpio = true;
 
 	err = amlogic_pcie_parse_host_dt(rc);
 	if (err)
@@ -637,6 +651,9 @@ static int amlogic_pcie_rc_probe(struct platform_device *pdev)
 	}
 
 	rc->root_bus = bridge->bus;
+
+	/* some pcie device workround */
+	amlogic_pcie_host_compatible_special_dev(amlogic);
 
 	return 0;
 

@@ -77,6 +77,7 @@ struct amlogic_pcie {
 	struct phy *phy;
 
 	int reset_gpio;
+	bool do_reset_gpio;
 	u32 gpio_type;
 	u32 phy_type;
 };
@@ -377,6 +378,11 @@ static int amlogic_pcie_set_reset_gpio(struct amlogic_pcie *aml_pcie)
 	struct dw_pcie *pci = &aml_pcie->pci;
 	struct device *dev = pci->dev;
 	int ret;
+
+	if (!aml_pcie->do_reset_gpio) {
+		dev_info(dev, "GPIO no need reset for W2 when resume\n");
+		return 0;
+	}
 
 	/* reset-gpio-type 0:Shared pad(no reset) 1:OD pad 2:Normal pad */
 	if (aml_pcie->gpio_type == 0) {
@@ -737,6 +743,19 @@ static const struct dw_pcie_ops dw_pcie_ops = {
 	.start_link = amlogic_pcie_start_link,
 };
 
+static void amlogic_pcie_host_compatible_special_dev(struct amlogic_pcie *amlogic)
+{
+	struct pci_dev *dev = NULL;
+
+	for_each_pci_dev(dev) {
+		if (dev->vendor == 0X1F35) {
+			amlogic->do_reset_gpio = false;
+			dev_dbg(amlogic->pci.dev, "dev->vendor =0x%x\n", dev->vendor);
+			break;
+		}
+	}
+}
+
 static int amlogic_pcie_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
@@ -748,6 +767,7 @@ static int amlogic_pcie_probe(struct platform_device *pdev)
 	if (!aml_pcie)
 		return -ENOMEM;
 
+	aml_pcie->do_reset_gpio = true;
 	pci = &aml_pcie->pci;
 	pci->dev = dev;
 	pci->ops = &dw_pcie_ops;
@@ -772,6 +792,9 @@ static int amlogic_pcie_probe(struct platform_device *pdev)
 		dev_err(dev, "Add PCIe port failed, %d\n", ret);
 		goto err_disable_clk;
 	}
+
+	/* some pcie device workround */
+	amlogic_pcie_host_compatible_special_dev(aml_pcie);
 
 	return 0;
 

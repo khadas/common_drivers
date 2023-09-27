@@ -268,7 +268,7 @@
 		      <0xfe441c00 0x10>,  /* scpu2nee csr */
 		      <0xfe441a00 0x80>,   /* nee2scpu st */
 		      <0xfe441e00 0x80>;   /* scpu2nee st*/
-		interrupts = <GIC_SPI 49 IRQ_TYPE_EDGE_RISING>;   /* irq ree */
+		interrupts = <GIC_SPI 50 IRQ_TYPE_EDGE_RISING>;   /* irq ree */
 		#mbox-cells = <1>;
 	};
 

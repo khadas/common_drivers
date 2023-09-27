@@ -76,6 +76,12 @@ static const char * const digital_mode[] = {
 	"AML_HAL_BYPASS",
 	"AML_HAL_DDP",
 };
+
+static const char * const audio_output[] = {
+	"CVBS",
+	"HDMI",
+	"SPDIF",
+};
 #endif
 
 enum audio_hal_format {
@@ -110,6 +116,13 @@ enum audio_digital_mode {
 	AML_HAL_BYPASS = 3,
 	AML_HAL_DDP = 4,
 };
+
+enum audio_output_select {
+	CVBS_OUTPUT = 0,
+	HDMI_OUTPUT = 1,
+	SPDIF_OUTPUT = 2,
+};
+
 #endif
 
 struct aml_jack {
@@ -169,6 +182,7 @@ struct aml_card_data {
 #ifdef CONFIG_AMLOGIC_ZAPPER_CUT
 	enum audio_digital_mode dgt_mod;
 	int drc_control;
+	enum audio_output_select output_sel;
 #endif
 	struct task_struct *thread;
 	int gpio_set_flag;
@@ -232,6 +246,9 @@ static const struct soc_enum audio_hal_format_enum =
 static const struct soc_enum audio_digital_mode_enum =
 	SOC_ENUM_SINGLE(SND_SOC_NOPM, 0, ARRAY_SIZE(digital_mode),
 			digital_mode);
+static const struct soc_enum audio_output_select_enum =
+	SOC_ENUM_SINGLE(SND_SOC_NOPM, 0, ARRAY_SIZE(audio_output),
+			audio_output);
 #endif
 
 static int aml_audio_hal_format_get_enum(struct snd_kcontrol *kcontrol,
@@ -318,6 +335,34 @@ static int aml_audio_drc_control_set(struct snd_kcontrol *kcontrol,
 
 	if (p_aml_audio->drc_control != drc_control)
 		p_aml_audio->drc_control = drc_control;
+
+	return 0;
+}
+
+static int aml_audio_output_select_get_enum(struct snd_kcontrol *kcontrol,
+	struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_card *card = snd_kcontrol_chip(kcontrol);
+	struct aml_card_data *p_aml_audio;
+
+	p_aml_audio = snd_soc_card_get_drvdata(card);
+	ucontrol->value.integer.value[0] = p_aml_audio->output_sel;
+
+	return 0;
+}
+
+static int aml_audio_output_select_set_enum(struct snd_kcontrol *kcontrol,
+	struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_card *card = snd_kcontrol_chip(kcontrol);
+	struct aml_card_data *p_aml_audio;
+	int audio_output = ucontrol->value.integer.value[0];
+
+	p_aml_audio = snd_soc_card_get_drvdata(card);
+	pr_debug("update audio output select! audio_output = %d.\n", audio_output);
+
+	if (p_aml_audio->output_sel != audio_output)
+		p_aml_audio->output_sel = audio_output;
 
 	return 0;
 }
@@ -465,6 +510,10 @@ static const struct snd_kcontrol_new snd_user_controls[] = {
 			aml_audio_drc_control_get,
 			aml_audio_drc_control_set),
 
+	SOC_ENUM_EXT("Audio Output Select",
+			audio_output_select_enum,
+			aml_audio_output_select_get_enum,
+			aml_audio_output_select_set_enum),
 #endif
 
 	SND_SOC_BYTES_EXT("AML chip id", 1,

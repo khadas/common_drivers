@@ -12,7 +12,6 @@
 #include "mesontxhd2_audio.dtsi"
 
 / {
-	model = "Amlogic";
 	amlogic-dt-id = "txhd2_t950s_be319";
 	compatible = "txhd2_t950s_be319";
 	interrupt-parent = <&gic>;
@@ -44,6 +43,7 @@
 		aml-audio-card,name = "AML-AUGESOUND";
 		/*spk mute gpio*/
 		spk_mute-gpios = <&gpio GPIODV_6 GPIO_ACTIVE_LOW>;
+		spk_mute_sleep_time = <800>;
 		/*avout mute gpio*/
 		avout_mute-gpios = <&gpio GPIODV_5 GPIO_ACTIVE_HIGH>;
 		/* headphone insert det */
@@ -544,7 +544,6 @@
 		unifykey-index-21= <&keysn_21>;
 		unifykey-index-22= <&keysn_22>;
 		unifykey-index-23= <&keysn_23>;
-
 		keysn_0: key_0{
 			key-name = "usid";
 			key-device = "normal";
@@ -795,8 +794,6 @@
 		&clkc CLKID_CLK81_AHB_ARB0
 		&clkc CLKID_CLK81_PARSER>;
 		clock-names = "demux", "ahbarb0", "parser_top";
-		//pinctrl-names = "p_ts2";
-		//pinctrl-0 = <&dvb_p_ts2_pins>;
 	};
 }; /* end of / */
 

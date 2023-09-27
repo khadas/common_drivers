@@ -40,6 +40,7 @@
 		aml-audio-card,name = "AML-AUGESOUND";
 		/*spk mute gpio*/
 		spk_mute-gpios = <&gpio GPIODV_6 GPIO_ACTIVE_LOW>;
+		spk_mute_sleep_time = <800>;
 		/*avout mute gpio*/
 		avout_mute-gpios = <&gpio GPIODV_5 GPIO_ACTIVE_HIGH>;
 		/* headphone insert det */
@@ -159,7 +160,7 @@
 
 		aml-audio-card,dai-link@4 {
 			mclk-fs = <128>;
-			//continuous-clock;
+			continuous-clock;
 			/* suffix-name, sync with android audio hal used for */
 			suffix-name = "alsaPORT-spdif";
 			cpu {
@@ -174,7 +175,7 @@
 		/* spdif_b to hdmi, only playback */
 		aml-audio-card,dai-link@5 {
 			mclk-fs = <128>;
-			//continuous-clock;
+			continuous-clock;
 			/* suffix-name, sync with android audio hal
 			 * what's the dai link used for
 			 */
@@ -275,7 +276,7 @@
 		ion_fb_reserved:linux,ion-fb {
 			compatible = "shared-dma-pool";
 			reusable;
-			size = <0x0000000>;
+			size = <0x00000000>;
 			alignment = <0x400000>;
 			alloc-ranges = <0x0 0x3f000000>;
 		};
@@ -316,12 +317,13 @@
 		};
 
 		codec_mm_cma:linux,codec_mm_cma {
-				compatible = "shared-dma-pool";
-				reusable;
-				size = <0xa800000>;
-				alignment = <0x400000>;
-				linux,contiguous-region;
-				alloc-ranges = <0x0 0x30000000>;
+			compatible = "shared-dma-pool";
+			reusable;
+			/* ion_codec_mm max can alloc size 80M */
+			size = <0xa800000>;
+			alignment = <0x400000>;
+			linux,contiguous-region;
+			alloc-ranges = <0x0 0x30000000>;
 		};
 
 		/* codec shared reserved */
@@ -400,8 +402,6 @@
 		regulator-name = "WIFI_3V3";
 		regulator-min-microvolt = <3300000>;
 		regulator-max-microvolt = <3300000>;
-		gpio = <&gpio GPIOB_12 GPIO_ACTIVE_LOW>;
-		enable-active-low;
 		regulator-boot-on;
 		regulator-always-on;
 	};
@@ -756,8 +756,6 @@
 		&clkc CLKID_CLK81_AHB_ARB0
 		&clkc CLKID_CLK81_PARSER>;
 		clock-names = "demux", "ahbarb0", "parser_top";
-		//pinctrl-names = "p_ts2";
-		//pinctrl-0 = <&dvb_p_ts2_pins>;
 	};
 }; /* end of / */
 
@@ -825,22 +823,6 @@
 			"spdif_pins_mute";
 	pinctrl-0 = <&spdif_out_a_dv3_pins>;
 	pinctrl-1 = <&spdifout_a_mute_dv3_pins>;
-};
-
-&aed {
-	status = "disabled";
-};
-
-&spicc0 {
-	status = "disabled";
-	pinctrl-names = "default";
-	pinctrl-0 = <&spicc0_pins_c>;
-	cs-gpios = <&gpio GPIOC_7 GPIO_ACTIVE_HIGH>;
-	cs-gpios = <&gpio GPIOC_7 GPIO_ACTIVE_HIGH>;
-	assigned-clocks = <&clkc CLKID_SPICC0>;
-	assigned-clock-parents = <&clkc CLKID_FCLK_DIV2>;
-	assigned-clock-rates = <200000000>;
-	parent_clk_fixed;
 };
 
 &pinctrl_periphs {
@@ -993,6 +975,17 @@
 	status = "okay";
 };
 
+&spicc0 {
+	status = "disabled";
+	pinctrl-names = "default";
+	pinctrl-0 = <&spicc0_pins_c>;
+	cs-gpios = <&gpio GPIOC_7 GPIO_ACTIVE_HIGH>;
+	assigned-clocks = <&clkc CLKID_SPICC0>;
+	assigned-clock-parents = <&clkc CLKID_FCLK_DIV2>;
+	assigned-clock-rates = <200000000>;
+	parent_clk_fixed;
+};
+
 &amlvecm {
 	status = "okay";
 	gamma_en = <1>;/*1:enable ;0:disable*/
@@ -1039,3 +1032,32 @@
 	memory-region = <&vdin1_cma_reserved>;
 	status = "okay";
 };
+
+&i2c3 {
+	status = "okay";
+	clock-frequency = <100000>;
+	pinctrl-names="default";
+	pinctrl-0=<&i2c3_pins2>;
+
+	lcd_extern_i2c0: lcd_extern_i2c@29 {
+		compatible = "lcd_ext, i2c";
+		dev_name = "i2c_HV650LS";
+		reg = <0x29>;
+		status = "okay";
+	};
+
+	lcd_extern_i2c1: lcd_extern_i2c@33 {
+		compatible = "lcd_ext, i2c";
+		dev_name = "i2c_CS602";
+		reg = <0x33>;
+		status = "okay";
+	};
+
+	lcd_extern_i2c2: lcd_extern_i2c@20 {
+		compatible = "lcd_ext, i2c";
+		dev_name = "i2c_CS601";
+		reg = <0x20>;
+		status = "okay";
+	};
+};
+

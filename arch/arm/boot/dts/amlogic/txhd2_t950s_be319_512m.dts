@@ -10,7 +10,6 @@
 #include "partition_mbox_normal_txhd2_P_32.dtsi"
 
 / {
-	model = "Amlogic";
 	amlogic-dt-id = "txhd2_t950s_be319-512m";
 	compatible = "txhd2_t950s_be319-512m";
 	interrupt-parent = <&gic>;

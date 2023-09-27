@@ -9,9 +9,8 @@
 #include "mesontxhd2_drm.dtsi"
 #include "meson_txhd2-panel.dtsi"
 #include "partition_mbox_normal_txhd2_P_32.dtsi"
-
+#include "mesontxhd2_audio.dtsi"
 / {
-	model = "Amlogic";
 	amlogic-dt-id = "txhd2_t950s_be319-512m";
 	compatible = "txhd2_t950s_be319-512m";
 	interrupt-parent = <&gic>;
@@ -37,6 +36,186 @@
 		linux,usable-memory = <0x00000000 0x20000000>;
 	};
 
+	/* Audio Related start */
+	audio: auge_sound {
+		compatible = "amlogic, auge-sound-card";
+		aml-audio-card,name = "AML-AUGESOUND";
+		/*spk mute gpio*/
+		spk_mute-gpios = <&gpio GPIODV_6 GPIO_ACTIVE_LOW>;
+		spk_mute_sleep_time = <800>;
+		/*avout mute gpio*/
+		avout_mute-gpios = <&gpio GPIODV_5 GPIO_ACTIVE_HIGH>;
+		/* headphone insert det */
+		aml-audio-card,hp-det-gpio = <&gpio GPIOZ_7 GPIO_ACTIVE_LOW>;
+		interrupts = <GIC_SPI 235 IRQ_TYPE_EDGE_RISING>;
+		interrupt-names = "audio_exception64";
+
+		status = "okay";
+
+		aml-audio-card,dai-link@0 {
+			format = "dsp_a";
+			mclk-fs = <512>;
+			//continuous-clock;
+			//bitclock-inversion;
+			//frame-inversion;
+			/* master mode */
+			bitclock-master = <&tdma>;
+			frame-master = <&tdma>;
+			/* slave mode */
+			/*
+			 * bitclock-master = <&tdmacodec>;
+			 * frame-master = <&tdmacodec>;
+			 */
+			/* suffix-name, sync with android audio hal used for */
+			suffix-name = "alsaPORT-pcm";
+			tdmacpu: cpu {
+				sound-dai = <&tdma>;
+				dai-tdm-slot-tx-mask =
+							<1 1>;
+				dai-tdm-slot-rx-mask =
+							<1 1>;
+				dai-tdm-slot-num = <2>;
+				dai-tdm-slot-width = <16>;
+				system-clock-frequency = <256000>;
+			};
+			tdmacodec: codec {
+				sound-dai = <&dummy_codec>;
+			};
+		};
+
+		aml-audio-card,dai-link@1 {
+			format = "i2s";
+			mclk-fs = <256>;
+			//continuous-clock;
+			//bitclock-inversion;
+			//frame-inversion;
+			/* master mode */
+			bitclock-master = <&tdmb>;
+			frame-master = <&tdmb>;
+			/* slave mode */
+			//bitclock-master = <&tdmbcodec>;
+			//frame-master = <&tdmbcodec>;
+			/* suffix-name, sync with android audio hal
+			 * what's the dai link used for
+			 */
+			suffix-name = "alsaPORT-i2s-i2s4hdmirx";
+			cpu {
+				sound-dai = <&tdmb>;
+				dai-tdm-slot-tx-mask = <1 1>;
+				dai-tdm-slot-rx-mask = <1 1>;
+				dai-tdm-slot-num = <2>;
+				/*
+				 * dai-tdm-slot-tx-mask =
+				 *	<1 1 1 1 1 1 1 1>;
+				 * dai-tdm-slot-rx-mask =
+				 *	<1 1 1 1 1 1 1 1>;
+				 * dai-tdm-slot-num = <8>;
+				 */
+				dai-tdm-slot-width = <32>;
+				system-clock-frequency = <12288000>;
+			};
+			tdmbcodec: codec {
+				prefix-names = "AMP";
+				sound-dai = <&dummy_codec>;
+			};
+		};
+
+		aml-audio-card,dai-link@2 {
+			format = "i2s";
+			mclk-fs = <256>;
+			//continuous-clock;
+			//bitclock-inversion;
+			//frame-inversion;
+			/* master mode */
+			bitclock-master = <&tdmc>;
+			frame-master = <&tdmc>;
+			/* slave mode */
+			//bitclock-master = <&tdmccodec>;
+			//frame-master = <&tdmccodec>;
+			/* suffix-name, sync with android audio hal used for */
+			suffix-name = "alsaPORT-i2s4parser";
+			cpu {
+				sound-dai = <&tdmc>;
+				dai-tdm-slot-tx-mask = <1 1>;
+				dai-tdm-slot-rx-mask = <1 1>;
+				dai-tdm-slot-num = <2>;
+				dai-tdm-slot-width = <32>;
+				system-clock-frequency = <12288000>;
+			};
+			tdmccodec: codec {
+				sound-dai = <&dummy_codec>;
+			};
+		};
+		aml-audio-card,dai-link@3 {
+			mclk-fs = <64>;
+			/* suffix-name, sync with android audio hal
+			 * what's the dai link used for
+			 */
+			suffix-name = "alsaPORT-pdm-builtinmic";
+			cpu {
+				sound-dai = <&pdma>;
+			};
+			codec {
+				sound-dai = <&dummy_codec>;
+			};
+		};
+
+		aml-audio-card,dai-link@4 {
+			mclk-fs = <128>;
+			//continuous-clock;
+			/* suffix-name, sync with android audio hal used for */
+			suffix-name = "alsaPORT-spdif";
+			cpu {
+				sound-dai = <&spdifa>;
+				system-clock-frequency = <6144000>;
+			};
+			codec {
+				sound-dai = <&dummy_codec>;
+			};
+		};
+
+		/* spdif_b to hdmi, only playback */
+		aml-audio-card,dai-link@5 {
+			mclk-fs = <128>;
+			//continuous-clock;
+			/* suffix-name, sync with android audio hal
+			 * what's the dai link used for
+			 */
+			suffix-name = "alsaPORT-spdifb";
+			cpu {
+				sound-dai = <&spdifb>;
+				system-clock-frequency = <6144000>;
+			};
+			codec {
+				sound-dai = <&dummy_codec>;
+			};
+		};
+
+		aml-audio-card,dai-link@6 {
+			mclk-fs = <256>;
+			continuous-clock;
+			suffix-name = "alsaPORT-loopback";
+			cpu {
+				sound-dai = <&loopbacka>;
+				system-clock-frequency = <12288000>;
+			};
+			codec {
+				sound-dai = <&dummy_codec>;
+			};
+		};
+
+		aml-audio-card,dai-link@7 {
+			mclk-fs = <256>;
+			suffix-name = "alsaPORT-tv";
+			cpu {
+				sound-dai = <&extn>;
+				system-clock-frequency = <12288000>;
+			};
+			codec {
+				sound-dai = <&dummy_codec>;
+			};
+		};
+	};
 	reserved-memory {
 		#address-cells = <1>;
 		#size-cells = <1>;
@@ -80,17 +259,25 @@
 			size = <0x0 0x0>;
 		};
 
+		picdec_cma_reserved:linux,picdec {
+			compatible = "shared-dma-pool";
+			reusable;
+			size = <0x0>;
+			alignment = <0x0>;
+			linux,contiguous-region;
+		};
+
 		ion_cma_reserved:linux,ion-dev {
 			compatible = "shared-dma-pool";
 			reusable;
-			size = <0xc00000>;
+			size = <0x0>;
 			alignment = <0x400000>;
 		};
 
 		ion_fb_reserved:linux,ion-fb {
 			compatible = "shared-dma-pool";
 			reusable;
-			size = <0x2400000>;
+			size = <0x1000000>;
 			alignment = <0x400000>;
 		};
 
@@ -353,7 +540,6 @@
 		unifykey-index-21= <&keysn_21>;
 		unifykey-index-22= <&keysn_22>;
 		unifykey-index-23= <&keysn_23>;
-
 		keysn_0: key_0{
 			key-name = "usid";
 			key-device = "normal";
@@ -492,6 +678,13 @@
 		status = "okay";
 	};
 
+	picdec {
+		compatible = "amlogic, picdec";
+		memory-region = <&picdec_cma_reserved>;
+		dev_name = "picdec";
+		status = "okay";
+	};
+
 	ionvideo {
 		compatible = "amlogic, ionvideo";
 		dev_name = "ionvideo";
@@ -597,12 +790,92 @@
 		&clkc CLKID_CLK81_AHB_ARB0
 		&clkc CLKID_CLK81_PARSER>;
 		clock-names = "demux", "ahbarb0", "parser_top";
-		//pinctrl-names = "p_ts2";
-		//pinctrl-0 = <&dvb_p_ts2_pins>;
 	};
 }; /* end of / */
 
+&i2c1 {
+	status = "okay";
+	clock-frequency = <300000>;
+	pinctrl-names="default";
+	pinctrl-0=<&i2c1_pins1>;
+};
+
+&CPU0 {
+	operating-points-v2 = <&single_cpu_opp_table0>,
+		<&single_cpu_opp_table1>,
+		<&single_cpu_opp_table2>,
+		<&single_cpu_opp_table3>;
+};
+
+&CPU1 {
+	operating-points-v2 = <&single_cpu_opp_table0>,
+		<&single_cpu_opp_table1>,
+		<&single_cpu_opp_table2>,
+		<&single_cpu_opp_table3>;
+};
+
+&CPU2 {
+	operating-points-v2 = <&single_cpu_opp_table0>,
+		<&single_cpu_opp_table1>,
+		<&single_cpu_opp_table2>,
+		<&single_cpu_opp_table3>;
+};
+
+&CPU3 {
+	operating-points-v2 = <&single_cpu_opp_table0>,
+		<&single_cpu_opp_table1>,
+		<&single_cpu_opp_table2>,
+		<&single_cpu_opp_table3>;
+};
+
+&spdifa {
+	pinctrl-names = "spdif_pins",
+			"spdif_pins_mute";
+	pinctrl-0 = <&spdif_out_a_dv3_pins>;
+	pinctrl-1 = <&spdifout_a_mute_dv3_pins>;
+};
+
+&acodec {
+	diff_output = <1>;
+	/*0: 0dB; 1: 6dB; 2: 12dB; 3: 18dB;*/
+	dac_extra_gain = <1>;
+	/*-12db+ (0xe -1)* 1.5db = 7.5 db*/
+	adc_pga_gain = <0xe>;
+};
+
+&aed {
+	status = "disabled";
+};
+
+&spicc0 {
+	status = "disabled";
+	pinctrl-names = "default";
+	pinctrl-0 = <&spicc0_pins_c>;
+	cs-gpios = <&gpio GPIOC_7 GPIO_ACTIVE_HIGH>;
+	assigned-clocks = <&clkc CLKID_SPICC0>;
+	assigned-clock-parents = <&clkc CLKID_FCLK_DIV2>;
+	assigned-clock-rates = <200000000>;
+	parent_clk_fixed;
+};
+
 &pinctrl_periphs {
+	tdm_b_pins: tdm_b_pin {
+		mux { /* GPIOC_0, GPIOC_5, GPIOC_4 */
+			groups = "tdm_sclk1_c0",
+				"tdm_fs1_c5",
+				"tdm_d2_c4";
+			function = "tdm";
+		};
+	};
+	tdmout_a_gpio: tdmout_a_gpio {
+		mux { /* GPIOC_0, GPIOC_5,  GPIOC_4*/
+			groups ="GPIOC_0",
+				"GPIOC_5",
+				"GPIOC_4";
+			function = "gpio_periphs";
+			output-low;
+		};
+	};
 	/*backlight*/
 	bl_pwm_vs_on_pins:bl_pwm_vs_on_pin {
 		mux {
@@ -619,11 +892,29 @@
 	};
 };
 
-&i2c1 {
-	status = "okay";
-	clock-frequency = <300000>;
-	pinctrl-names="default";
-	pinctrl-0=<&i2c1_pins1>;
+&pinctrl_aobus {
+	pdmin: pdmin {
+		mux { /* GPIOAO_12, GPIOAO_13*/
+			groups = "pdm_din0_ao12",
+					"pdm_dclk_ao13";
+			function = "pdm_ao";
+		};
+	};
+};
+
+&pinctrl_audio {
+	tdm_d2_pins: tdm_d2_pin {
+		mux {
+			groups = "tdm_d2";
+			function = "tdmoutb_lane0";
+		};
+	};
+	tdmb_clk_pins: tdmb_clk_pin {
+		mux {
+			groups = "tdm_sclk1", "tdm_lrclk1";
+			function = "tdm_clk_outb";
+		};
+	};
 };
 
 &sd_emmc_c {
@@ -685,6 +976,12 @@
 	status = "okay";
 };
 
+&ir {
+	status = "okay";
+	pinctrl-0 = <&remote_pins>;
+	pinctrl-names = "default";
+};
+
 &crg_phy_20 {
 	status = "okay";
 	portnum = <1>;
@@ -726,19 +1023,14 @@
 	status = "okay";
 };
 
-&saradc {
+&ethmac {
 	status = "okay";
+	phy-handle = <&internal_ephy>;
+	phy-mode = "rmii";
 };
 
-&spicc0 {
-	status = "disabled";
-	pinctrl-names = "default";
-	pinctrl-0 = <&spicc0_pins_c>;
-	cs-gpios = <&gpio GPIOC_7 GPIO_ACTIVE_HIGH>;
-	assigned-clocks = <&clkc CLKID_SPICC0>;
-	assigned-clock-parents = <&clkc CLKID_FCLK_DIV2>;
-	assigned-clock-rates = <200000000>;
-	parent_clk_fixed;
+&saradc {
+	status = "okay";
 };
 
 &amlvecm {

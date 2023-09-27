@@ -4723,6 +4723,17 @@ void rx_5v_sts_to_esm(unsigned int pwr)
 	}
 }
 
+static void rx_reset_hpd_flag(u8 port)
+{
+	if (rx_info.chip_id >= CHIP_ID_T7 &&
+		rx_info.chip_id < CHIP_ID_T3X) {
+		if (rx_info.main_port == port) {
+			rx_set_cur_hpd(0, 6, port);
+			port_hpd_rst_flag |= 1 << port;
+		}
+	}
+}
+
 /* ---------------------------------------------------------- */
 /* func:         port A,B,C,D  hdmitx-5v monitor & HPD control */
 /* note:         G9TV portD no used */
@@ -4771,11 +4782,15 @@ void rx_5v_monitor(void)
 				if (rx_info.chip_id == CHIP_ID_T3X) {
 					set_fsm_state(FSM_5V_LOST, i);
 					rx_set_cur_hpd(0, 5, i);
-					if (rx[i].cur_5v_sts == 0)
+					if (rx[i].cur_5v_sts == 0) {
 						aml_phy_power_off_t3x(i);
+						port_hpd_rst_flag |= 1 << i;
+					}
 				} else {
-					if (rx[i].cur_5v_sts == 0)
+					if (rx[i].cur_5v_sts == 0) {
 						set_fsm_state(FSM_5V_LOST, i);
+						rx_reset_hpd_flag(i);
+					}
 				}
 				if (hdmirx_repeat_support()) {
 					rx[i].hdcp.stream_type = 0;

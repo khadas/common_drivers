@@ -1602,7 +1602,7 @@
 	//pinctrl-1 = <&i2c2_sleep_pins2>;
 	clock-frequency = <100000>; /* default 100k */
 	amlsens_0: sensor0@1a {
-		compatible = "amlogic, sensor";
+		compatible = "amlogic, sensor-csi-a", "amlogic, sensor";
 		index = <0>;
 		reg = <0x1a>;
 		reg-addr-type = <2>;
@@ -1632,7 +1632,7 @@
 	pinctrl-0 = <&i2c3_pins1>;
 	clock-frequency = <100000>; /* default 100k */
 	amlsens_2: sensor2@1a {
-		compatible = "amlogic, sensor";
+		compatible = "amlogic, sensor-csi-b", "amlogic, sensor";
 		index = <2>;
 		reg = <0x1a>;
 		reg-addr-type = <2>;
@@ -1826,6 +1826,10 @@
 			remote-endpoint = <&amlsens_2_ep>;
 		};
 	};
+};
+
+&camera0 {
+	compatible = "amlogic, yuvcamera";
 };
 
 &ir {

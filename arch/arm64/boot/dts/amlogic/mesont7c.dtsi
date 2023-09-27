@@ -2246,7 +2246,7 @@
 		assigned-clocks = <&clkc CLKID_MIPI_CSI_PHY_CLK>;
 	};
 
-	camera2 {
+	camera2: camera2 {
 		compatible = "amlogic, camera";
 		index = <2>;
 		csiphy = <&csiphy2>;

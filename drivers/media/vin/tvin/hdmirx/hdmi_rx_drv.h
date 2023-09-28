@@ -107,7 +107,8 @@
 /* 2023.08.28 support FRL 3G3L & 6G3L */
 /* 2023.08.31 add vpp mute cnt */
 /* 2023.9.14 add support for 240p */
-#define RX_VER1 "ver.2023/9/14"
+/* 2023 09.28 add trim flow for txhd2 */
+#define RX_VER1 "ver.2023/9/28"
 
 /* 50ms timer for hdmirx main loop (HDMI_STATE_CHECK_FREQ is 20) */
 

@@ -1065,35 +1065,17 @@ static void earctx_set_dmac_freq_normal_2(struct earc *p_earc, unsigned int freq
 	}
 
 	if (p_earc->standard_tx_freq % 8000 == 0) {
-		if (!(aml_return_chip_id() == CLK_NOTIFY_CHIP_ID)) {
-			ratio = MPLL_HBR_FIXED_FREQ / p_earc->standard_tx_dmac;
-			clk_set_rate(p_earc->clk_tx_dmac_srcpll, freq * ratio);
-			ret = clk_set_parent(p_earc->clk_tx_dmac, p_earc->clk_tx_dmac_srcpll);
-			if (ret)
-				dev_warn(p_earc->dev, "can't set clk_tx_dmac parent srcpll clock\n");
-		} else if (!strcmp(__clk_get_name(clk_get_parent(p_earc->clk_tx_dmac)), clk_name) &&
-		!strcmp(clk_name, "hifi_pll")) {
-			ratio = MPLL_HBR_FIXED_FREQ / p_earc->standard_tx_dmac;
-			clk_set_rate(p_earc->clk_tx_dmac_srcpll, freq * ratio);
-			ret = clk_set_parent(p_earc->clk_tx_dmac, p_earc->clk_tx_dmac_srcpll);
-			if (ret)
-				dev_warn(p_earc->dev, "can't set clk_tx_dmac parent srcpll clock\n");
-		}
+		ret = clk_set_parent(p_earc->clk_tx_dmac, p_earc->clk_tx_dmac_srcpll);
+		if (ret)
+			dev_warn(p_earc->dev, "can't set clk_tx_dmac parent srcpll clock\n");
+		ratio = MPLL_HBR_FIXED_FREQ / p_earc->standard_tx_dmac;
+		clk_set_rate(p_earc->clk_tx_dmac_srcpll, freq * ratio);
 	} else if (p_earc->standard_tx_freq % 11025 == 0) {
-		ratio = MPLL_CD_FIXED_FREQ / p_earc->standard_tx_dmac;
-		clk_set_rate(p_earc->clk_src_cd, freq * ratio);
 		ret = clk_set_parent(p_earc->clk_tx_dmac, p_earc->clk_src_cd);
 		if (ret)
 			dev_warn(p_earc->dev, "can't set clk_tx_dmac parent cd clock\n");
-		if (!IS_ERR(p_earc->clk_src_cd)) {
-			char *clk_name = (char *)__clk_get_name(p_earc->clk_src_cd);
-
-			ret = clk_prepare_enable(p_earc->clk_src_cd);
-			if (ret) {
-				dev_err(s_earc->dev, "Can't s_earc earc clk_src_cd:%d clk_name: %s rate: %lu\n",
-					ret, clk_name, clk_get_rate(p_earc->clk_src_cd));
-			}
-		}
+		ratio = MPLL_CD_FIXED_FREQ / p_earc->standard_tx_dmac;
+		clk_set_rate(p_earc->clk_src_cd, freq * ratio);
 	} else {
 		dev_warn(p_earc->dev, "unsupport clock rate %d\n",
 			p_earc->standard_tx_freq);

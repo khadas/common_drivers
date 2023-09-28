@@ -112,6 +112,7 @@ struct aml_spdif {
 	struct regulator *regulator_vcc3v3;
 	struct regulator *regulator_vcc5v;
 	int suspend_clk_off;
+	bool earc_use_48k;
 	/* Standardization value by normal setting */
 	unsigned int standard_sysclk;
 };
@@ -612,9 +613,11 @@ static void aml_spdif_platform_shutdown(struct platform_device *pdev)
 	if (!IS_ERR_OR_NULL(p_spdif->regulator_vcc3v3))
 		regulator_disable(p_spdif->regulator_vcc3v3);
 	if ((!IS_ERR(p_spdif->sysclk)) && (aml_return_chip_id() == CLK_NOTIFY_CHIP_ID)) {
-		ret = clk_notifier_unregister(p_spdif->sysclk, &p_spdif->clk_nb);
-		if (ret)
-			return;
+		if (p_spdif->id == 0) {
+			ret = clk_notifier_unregister(p_spdif->sysclk, &p_spdif->clk_nb);
+			if (ret)
+				return;
+		}
 	}
 
 	pr_debug("%s is mute\n", __func__);
@@ -1721,10 +1724,6 @@ static void aml_set_spdifclk_1(struct aml_spdif *p_spdif, int freq, bool tune)
 static void aml_set_spdifclk_2(struct aml_spdif *p_spdif, int freq, bool tune)
 {
 	int ratio = 0;
-	char *clk_name = (char *)__clk_get_name(p_spdif->sysclk);
-
-	if (!clk_name)
-		return;
 
 	if (freq == 0) {
 		dev_err(p_spdif->dev, "%s(), clk 0 err\n", __func__);
@@ -1732,38 +1731,48 @@ static void aml_set_spdifclk_2(struct aml_spdif *p_spdif, int freq, bool tune)
 	}
 
 	if (p_spdif->standard_sysclk % 8000 == 0) {
-		if (!(aml_return_chip_id() == CLK_NOTIFY_CHIP_ID)) {
+		if (aml_return_chip_id() != CLK_NOTIFY_CHIP_ID) {
 			ratio = MPLL_HBR_FIXED_FREQ / p_spdif->standard_sysclk;
-			clk_set_rate(p_spdif->sysclk, freq * ratio);
-			spdif_set_audio_clk(p_spdif->id,
-				p_spdif->sysclk,
-				freq, 0, tune);
-		} else if (!strcmp(__clk_get_name(clk_get_parent(p_spdif->clk_spdifout)),
-			clk_name) &&
-			!strcmp(clk_name, "hifi_pll")) {
-			ratio = MPLL_HBR_FIXED_FREQ / p_spdif->standard_sysclk;
-			clk_set_rate(p_spdif->sysclk, freq * ratio);
-			spdif_set_audio_clk(p_spdif->id,
-				p_spdif->sysclk,
-				freq, 0, tune);
-		}
-	} else if (p_spdif->standard_sysclk % 11025 == 0) {
-		ratio = MPLL_CD_FIXED_FREQ / p_spdif->standard_sysclk;
-		/* 1. when 44.1k with hifi notify first, do not set clk ,or it will change cd value
-		 * 2. dd ddp 44.1k sequence, only set the freq, hifi value has been changed before
-		 */
-		if (!strcmp(__clk_get_name(clk_get_parent(p_spdif->clk_spdifout)), clk_name) &&
-			!strcmp(clk_name, "hifi_pll") &&
-			(aml_return_chip_id() == CLK_NOTIFY_CHIP_ID)) {
 			clk_set_rate(p_spdif->sysclk, freq * ratio);
 			spdif_set_audio_clk(p_spdif->id,
 				p_spdif->sysclk,
 				freq, 0, tune);
 		} else {
-			clk_set_rate(p_spdif->clk_src_cd, freq * ratio);
+			if (p_spdif->earc_use_48k) {
+				ratio = MPLL_HBR_FIXED_FREQ / p_spdif->standard_sysclk;
+				clk_set_rate(p_spdif->sysclk, freq * ratio);
+				spdif_set_audio_clk(p_spdif->id,
+					p_spdif->sysclk,
+					freq, 0, tune);
+			} else {
+				ratio = MPLL_HBR_FIXED_FREQ / p_spdif->standard_sysclk;
+				clk_set_rate(p_spdif->clk_src_cd, freq * ratio);
+				spdif_set_audio_clk(p_spdif->id,
+					p_spdif->clk_src_cd,
+					freq, 0, tune);
+			}
+		}
+	} else if (p_spdif->standard_sysclk % 11025 == 0) {
+		if (aml_return_chip_id() != CLK_NOTIFY_CHIP_ID) {
+			ratio = MPLL_HBR_FIXED_FREQ / p_spdif->standard_sysclk;
+			clk_set_rate(p_spdif->sysclk, freq * ratio);
 			spdif_set_audio_clk(p_spdif->id,
-				p_spdif->clk_src_cd,
+				p_spdif->sysclk,
 				freq, 0, tune);
+		} else {
+			if (p_spdif->earc_use_48k) {
+				ratio = MPLL_CD_FIXED_FREQ / p_spdif->standard_sysclk;
+				clk_set_rate(p_spdif->clk_src_cd, freq * ratio);
+				spdif_set_audio_clk(p_spdif->id,
+					p_spdif->clk_src_cd,
+					freq, 0, tune);
+			} else {
+				ratio = MPLL_CD_FIXED_FREQ / p_spdif->standard_sysclk;
+				clk_set_rate(p_spdif->sysclk, freq * ratio);
+				spdif_set_audio_clk(p_spdif->id,
+					p_spdif->sysclk,
+					freq, 0, tune);
+			}
 		}
 	} else {
 		dev_warn(p_spdif->dev, "unsupport clock rate %d\n", p_spdif->standard_sysclk);
@@ -1901,25 +1910,69 @@ static int aml_spdif_clock_notifier(struct notifier_block *nb,
 
 	switch (event) {
 	case PRE_RATE_CHANGE:
-		/* must not set rate, because the sysclk maybe 49152+-change
-		 * clk_set_rate(p_spdif->sysclk, MPLL_CD_FIXED_FREQ);
-		 * need exchange the same as earc with hifi 44.1k domain,
-		 * while change back to 48k domain ,no need setting
-		 */
 		if (abs(ndata->old_rate - ndata->new_rate) < THRESHOLD_HIFI1)
 			break;
 		pr_info("%s() PRE_RATE_CHANGE clk rate %lu->%lu\n",
 			__func__, ndata->old_rate, ndata->new_rate);
-		if (p_spdif->standard_sysclk &&
-			(p_spdif->standard_sysclk % 11025 == 0)) {
-			ret = clk_set_parent(p_spdif->clk_spdifout, p_spdif->sysclk);
-			if (ret) {
-				dev_warn(p_spdif->dev, "can't set p_spdif parent cd clock\n");
-				break;
+
+		if ((abs(ndata->old_rate - MPLL_CD_FIXED_FREQ) < THRESHOLD_HIFI1) &&
+			(abs(ndata->new_rate - MPLL_HBR_FIXED_FREQ) < THRESHOLD_HIFI0)) {
+			p_spdif->earc_use_48k = true;
+			if (p_spdif->standard_sysclk &&
+				(p_spdif->standard_sysclk % 8000 == 0)) {
+				ret = clk_set_parent(p_spdif->clk_spdifout, p_spdif->sysclk);
+				if (ret)
+					dev_warn(p_spdif->dev, "can't set p_spdif parent clock\n");
+			} else if (p_spdif->standard_sysclk &&
+					  (p_spdif->standard_sysclk % 11025 == 0)) {
+				ret = clk_set_parent(p_spdif->clk_spdifout, p_spdif->clk_src_cd);
+				if (ret)
+					dev_warn(p_spdif->dev, "can't set p_spdif parent cd clock\n");
+			}
+		} else if ((abs(ndata->old_rate - MPLL_HBR_FIXED_FREQ) < THRESHOLD_HIFI0) &&
+				(abs(ndata->new_rate - MPLL_CD_FIXED_FREQ) < THRESHOLD_HIFI1)) {
+			p_spdif->earc_use_48k = false;
+			if (p_spdif->standard_sysclk &&
+				(p_spdif->standard_sysclk % 8000 == 0)) {
+				ret = clk_set_parent(p_spdif->clk_spdifout, p_spdif->clk_src_cd);
+				if (ret)
+					dev_warn(p_spdif->dev, "can't set spdif parent cd clock\n");
+			} else if (p_spdif->standard_sysclk &&
+				(p_spdif->standard_sysclk % 11025 == 0)) {
+				ret = clk_set_parent(p_spdif->clk_spdifout, p_spdif->sysclk);
+				if (ret)
+					dev_warn(p_spdif->dev, "can't set p_spdif parent clock\n");
 			}
 		}
 		break;
 	case POST_RATE_CHANGE:
+		if (abs(ndata->old_rate - ndata->new_rate) < THRESHOLD_HIFI1)
+			break;
+		pr_info("%s() POST_RATE_CHANGE clk rate %lu->%lu\n",
+			__func__, ndata->old_rate, ndata->new_rate);
+
+		if ((abs(ndata->old_rate - MPLL_CD_FIXED_FREQ) < THRESHOLD_HIFI1) &&
+			(abs(ndata->new_rate - MPLL_HBR_FIXED_FREQ) < THRESHOLD_HIFI0)) {
+			p_spdif->earc_use_48k = true;
+			if (p_spdif->standard_sysclk &&
+				(p_spdif->standard_sysclk % 8000 == 0)) {
+				clk_set_rate(p_spdif->clk_spdifout, p_spdif->standard_sysclk);
+			} else if (p_spdif->standard_sysclk &&
+					  (p_spdif->standard_sysclk % 11025 == 0)) {
+				clk_set_rate(p_spdif->clk_src_cd, MPLL_CD_FIXED_FREQ);
+			}
+		} else if ((abs(ndata->old_rate - MPLL_HBR_FIXED_FREQ) < THRESHOLD_HIFI0) &&
+			(abs(ndata->new_rate - MPLL_CD_FIXED_FREQ) < THRESHOLD_HIFI1)) {
+			p_spdif->earc_use_48k = false;
+			if (p_spdif->standard_sysclk &&
+				(p_spdif->standard_sysclk % 8000 == 0)) {
+				clk_set_rate(p_spdif->clk_src_cd, MPLL_HBR_FIXED_FREQ);
+			} else if (p_spdif->standard_sysclk &&
+							(p_spdif->standard_sysclk % 11025 == 0)) {
+				clk_set_rate(p_spdif->clk_spdifout, p_spdif->standard_sysclk);
+			}
+		}
+		break;
 	default:
 		break;
 	}
@@ -2040,10 +2093,13 @@ static int aml_spdif_parse_of(struct platform_device *pdev)
 		}
 	}
 	if ((!IS_ERR(p_spdif->sysclk)) && (aml_return_chip_id() == CLK_NOTIFY_CHIP_ID)) {
-		p_spdif->clk_nb.notifier_call = aml_spdif_clock_notifier;
-		ret = clk_notifier_register(p_spdif->sysclk, &p_spdif->clk_nb);
-		if (ret)
-			dev_err(&pdev->dev, "unable to register clock notifier\n");
+		if (p_spdif->id == 0) {
+			p_spdif->clk_nb.notifier_call = aml_spdif_clock_notifier;
+			ret = clk_notifier_register(p_spdif->sysclk, &p_spdif->clk_nb);
+			p_spdif->earc_use_48k = true;
+			if (ret)
+				dev_err(&pdev->dev, "unable to register clock notifier\n");
+		}
 	}
 
 	p_spdif->clk_src_cd = devm_clk_get(&pdev->dev, "clk_src_cd");

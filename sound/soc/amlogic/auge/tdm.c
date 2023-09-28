@@ -148,6 +148,7 @@ struct aml_tdm {
 	unsigned int vol_index;
 #endif
 	int tdmout_lane_mute_status[LANE_MAX3];
+	bool earc_use_48k;
 };
 
 #define to_aml_tdm(x)   container_of(x, struct aml_tdm, clk_nb)
@@ -488,28 +489,50 @@ static int aml_set_tdm_mclk_2(struct aml_tdm *p_tdm,
 	}
 
 	if (p_tdm->setting.standard_sysclk % 8000 == 0) {
-		if (!(aml_return_chip_id() == CLK_NOTIFY_CHIP_ID)) {
+		if (aml_return_chip_id() != CLK_NOTIFY_CHIP_ID) {
 			ratio = MPLL_HBR_FIXED_FREQ / p_tdm->setting.standard_sysclk;
 			clk_set_rate(p_tdm->clk, freq * ratio);
 			ret = clk_set_parent(p_tdm->mclk, p_tdm->clk);
 			if (ret)
 				dev_warn(p_tdm->dev, "can't set tdm parent clock\n");
 
-		} else if (!strcmp(__clk_get_name(clk_get_parent(p_tdm->mclk)), clk_name) &&
-			!strcmp(clk_name, "hifi_pll")) {
-			ratio = MPLL_HBR_FIXED_FREQ / p_tdm->setting.standard_sysclk;
-			clk_set_rate(p_tdm->clk, freq * ratio);
-			ret = clk_set_parent(p_tdm->mclk, p_tdm->clk);
-			if (ret)
-				dev_warn(p_tdm->dev, "can't set tdm parent clock\n");
+		} else {
+			if (p_tdm->earc_use_48k) {
+				ratio = MPLL_HBR_FIXED_FREQ / p_tdm->setting.standard_sysclk;
+				clk_set_rate(p_tdm->clk, freq * ratio);
+				ret = clk_set_parent(p_tdm->mclk, p_tdm->clk);
+				if (ret)
+					dev_warn(p_tdm->dev, "can't set tdm parent clock\n");
+			} else {
+				ratio = MPLL_HBR_FIXED_FREQ / p_tdm->setting.standard_sysclk;
+				clk_set_rate(p_tdm->clk_src_cd, freq * ratio);
+				ret = clk_set_parent(p_tdm->mclk, p_tdm->clk_src_cd);
+				if (ret)
+					dev_warn(p_tdm->dev, "can't set tdm cd clock\n");
+			}
 		}
 	} else if (p_tdm->setting.standard_sysclk % 11025 == 0) {
-		ratio = MPLL_CD_FIXED_FREQ / p_tdm->setting.standard_sysclk;
-
-		clk_set_rate(p_tdm->clk_src_cd, freq * ratio);
-		ret = clk_set_parent(p_tdm->mclk, p_tdm->clk_src_cd);
-		if (ret)
-			dev_warn(p_tdm->dev, "can't set tdm parent cd clock\n");
+		if (aml_return_chip_id() != CLK_NOTIFY_CHIP_ID) {
+			ratio = MPLL_CD_FIXED_FREQ / p_tdm->setting.standard_sysclk;
+			clk_set_rate(p_tdm->clk_src_cd, freq * ratio);
+			ret = clk_set_parent(p_tdm->mclk, p_tdm->clk_src_cd);
+			if (ret)
+				dev_warn(p_tdm->dev, "can't set tdm parent cd clock\n");
+		} else {
+			if (p_tdm->earc_use_48k) {
+				ratio = MPLL_CD_FIXED_FREQ / p_tdm->setting.standard_sysclk;
+				clk_set_rate(p_tdm->clk_src_cd, freq * ratio);
+				ret = clk_set_parent(p_tdm->mclk, p_tdm->clk_src_cd);
+				if (ret)
+					dev_warn(p_tdm->dev, "can't set tdm cd clock\n");
+			} else {
+				ratio = MPLL_CD_FIXED_FREQ / p_tdm->setting.standard_sysclk;
+				clk_set_rate(p_tdm->clk, freq * ratio);
+				ret = clk_set_parent(p_tdm->mclk, p_tdm->clk);
+				if (ret)
+					dev_warn(p_tdm->dev, "can't set tdm parent clock\n");
+			}
+		}
 	} else {
 		dev_warn(p_tdm->dev, "unsupport clock rate %d\n", p_tdm->setting.standard_sysclk);
 	}
@@ -1202,9 +1225,31 @@ static void tdm_sharebuffer_prepare(struct snd_pcm_substream *substream,
 			AUD_CODEC_TYPE_STEREO_PCM,
 			1,
 			p_tdm->chipinfo->separate_tohdmitx_en);
-		ops->set_clks(p_tdm->samesource_sel,
-			p_tdm->clk,
-			(p_tdm->last_mclk_freq >> 1), 1);
+		if (aml_return_chip_id() != CLK_NOTIFY_CHIP_ID) {
+			ops->set_clks(p_tdm->samesource_sel,
+				p_tdm->clk,
+				(p_tdm->last_mclk_freq >> 1), 1);
+		} else {
+			if (p_tdm->setting.standard_sysclk % 8000 == 0) {
+				if (p_tdm->earc_use_48k)
+					ops->set_clks(p_tdm->samesource_sel,
+						p_tdm->clk,
+						(p_tdm->last_mclk_freq >> 1), 1);
+				else
+					ops->set_clks(p_tdm->samesource_sel,
+						p_tdm->clk_src_cd,
+						(p_tdm->last_mclk_freq >> 1), 1);
+			} else if (p_tdm->setting.standard_sysclk % 11025 == 0) {
+				if (p_tdm->earc_use_48k)
+					ops->set_clks(p_tdm->samesource_sel,
+						p_tdm->clk_src_cd,
+						(p_tdm->last_mclk_freq >> 1), 1);
+				else
+					ops->set_clks(p_tdm->samesource_sel,
+						p_tdm->clk,
+						(p_tdm->last_mclk_freq >> 1), 1);
+			}
+		}
 	}
 }
 
@@ -2448,38 +2493,71 @@ static int aml_tdm_clock_notifier(struct notifier_block *nb,
 
 	switch (event) {
 	case PRE_RATE_CHANGE:
-		/* case: all 48k domain ,no meed change, both hifi0 and hifi1 will be ok
-		 * when earc/spdif  44.1 && tdm 48k, need changed;
-		 * when change back to 48k ,need change the parent
-		 */
 		if (abs(ndata->old_rate - ndata->new_rate) < THRESHOLD_HIFI1)
 			break;
 		pr_info("%s() PRE_RATE_CHANGE  rate %lu->%lu\n",
 			__func__, ndata->old_rate, ndata->new_rate);
-		if (p_tdm->setting.standard_sysclk &&
-			(p_tdm->setting.standard_sysclk % 8000 == 0)) {
-			if ((abs(ndata->old_rate - MPLL_CD_FIXED_FREQ) < THRESHOLD_HIFI1) &&
-				(abs(ndata->new_rate - MPLL_HBR_FIXED_FREQ) < THRESHOLD_HIFI0)) {
-				/* restore cd to MPLL_HBR_FIXED_FREQ */
+
+		if ((abs(ndata->old_rate - MPLL_CD_FIXED_FREQ) < THRESHOLD_HIFI1) &&
+			(abs(ndata->new_rate - MPLL_HBR_FIXED_FREQ) < THRESHOLD_HIFI0)) {
+			p_tdm->earc_use_48k = true;
+			if (p_tdm->setting.standard_sysclk &&
+				(p_tdm->setting.standard_sysclk % 8000 == 0)) {
 				ret = clk_set_parent(p_tdm->mclk, p_tdm->clk);
 				if (ret) {
-					dev_warn(p_tdm->dev, "can't set tdm parent cd clock\n");
-					break;
+					dev_warn(p_tdm->dev, "can't set tdm parent  clock\n");
 				}
-				clk_set_rate(p_tdm->mclk, p_tdm->setting.standard_sysclk);
-			} else if ((abs(ndata->old_rate - MPLL_HBR_FIXED_FREQ) < THRESHOLD_HIFI0) &&
-				(abs(ndata->new_rate - MPLL_CD_FIXED_FREQ) < THRESHOLD_HIFI1)) {
-				clk_set_rate(p_tdm->clk_src_cd, MPLL_HBR_FIXED_FREQ);
+			} else if (p_tdm->setting.standard_sysclk &&
+					  (p_tdm->setting.standard_sysclk % 11025 == 0)) {
 				ret = clk_set_parent(p_tdm->mclk, p_tdm->clk_src_cd);
 				if (ret) {
 					dev_warn(p_tdm->dev, "can't set tdm parent cd clock\n");
-					break;
 				}
-				clk_set_rate(p_tdm->mclk, p_tdm->setting.standard_sysclk);
+			}
+		} else if ((abs(ndata->old_rate - MPLL_HBR_FIXED_FREQ) < THRESHOLD_HIFI0) &&
+			(abs(ndata->new_rate - MPLL_CD_FIXED_FREQ) < THRESHOLD_HIFI1)) {
+			p_tdm->earc_use_48k = false;
+			if (p_tdm->setting.standard_sysclk &&
+				(p_tdm->setting.standard_sysclk % 8000 == 0)) {
+				ret = clk_set_parent(p_tdm->mclk, p_tdm->clk_src_cd);
+				if (ret)
+					dev_warn(p_tdm->dev, "can't set tdm parent cd clock\n");
+			} else if (p_tdm->setting.standard_sysclk &&
+				(p_tdm->setting.standard_sysclk % 11025 == 0)) {
+				ret = clk_set_parent(p_tdm->mclk, p_tdm->clk);
+				if (ret)
+					dev_warn(p_tdm->dev, "can't set tdm parent clock\n");
 			}
 		}
 		break;
 	case POST_RATE_CHANGE:
+		if (abs(ndata->old_rate - ndata->new_rate) < THRESHOLD_HIFI1)
+			break;
+		pr_info("%s() POST_RATE_CHANGE  rate %lu->%lu\n",
+			__func__, ndata->old_rate, ndata->new_rate);
+
+		if ((abs(ndata->old_rate - MPLL_CD_FIXED_FREQ) < THRESHOLD_HIFI1) &&
+			(abs(ndata->new_rate - MPLL_HBR_FIXED_FREQ) < THRESHOLD_HIFI0)) {
+			p_tdm->earc_use_48k = true;
+			if (p_tdm->setting.standard_sysclk &&
+				(p_tdm->setting.standard_sysclk % 8000 == 0)) {
+				clk_set_rate(p_tdm->mclk, p_tdm->setting.standard_sysclk);
+			} else if (p_tdm->setting.standard_sysclk &&
+					  (p_tdm->setting.standard_sysclk % 11025 == 0)) {
+				clk_set_rate(p_tdm->clk_src_cd, MPLL_CD_FIXED_FREQ);
+			}
+		} else if ((abs(ndata->old_rate - MPLL_HBR_FIXED_FREQ) < THRESHOLD_HIFI0) &&
+			(abs(ndata->new_rate - MPLL_CD_FIXED_FREQ) < THRESHOLD_HIFI1)) {
+			p_tdm->earc_use_48k = false;
+			if (p_tdm->setting.standard_sysclk &&
+				(p_tdm->setting.standard_sysclk % 8000 == 0)) {
+				clk_set_rate(p_tdm->clk_src_cd, MPLL_HBR_FIXED_FREQ);
+			} else if (p_tdm->setting.standard_sysclk &&
+				(p_tdm->setting.standard_sysclk % 11025 == 0)) {
+				clk_set_rate(p_tdm->mclk, p_tdm->setting.standard_sysclk);
+			}
+		}
+		break;
 	default:
 		break;
 	}
@@ -2636,10 +2714,13 @@ static int aml_tdm_platform_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "Can't get clk_src_cd\n");
 
 	if ((!IS_ERR(p_tdm->clk)) && (aml_return_chip_id() == CLK_NOTIFY_CHIP_ID)) {
-		p_tdm->clk_nb.notifier_call = aml_tdm_clock_notifier;
-		ret = clk_notifier_register(p_tdm->clk, &p_tdm->clk_nb);
-		if (ret)
-			dev_err(&pdev->dev, "unable to register clock notifier\n");
+		if (p_tdm->id == 0 || p_tdm->id == 1) {
+			p_tdm->clk_nb.notifier_call = aml_tdm_clock_notifier;
+			ret = clk_notifier_register(p_tdm->clk, &p_tdm->clk_nb);
+			p_tdm->earc_use_48k = true;
+			if (ret)
+				dev_err(&pdev->dev, "unable to register clock notifier\n");
+		}
 	}
 
 	p_tdm->mclk = devm_clk_get(&pdev->dev, "mclk");

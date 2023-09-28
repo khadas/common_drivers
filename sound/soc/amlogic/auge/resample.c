@@ -210,7 +210,7 @@ static int resample_clk_set(struct audioresample *p_resample, int output_sr)
 
 	clk_name = (char *)__clk_get_name(p_resample->pll);
 	if (!strcmp(clk_name, "hifi_pll") || !strcmp(clk_name, "t5_hifi_pll")) {
-		if (!(aml_return_chip_id() == CLK_NOTIFY_CHIP_ID)) {
+		if (aml_return_chip_id() != CLK_NOTIFY_CHIP_ID) {
 			pr_info("%s:set hifi pll\n", __func__);
 			if (p_resample->syssrc_clk_rate)
 				clk_set_rate(p_resample->pll,
@@ -861,13 +861,23 @@ static int resample_platform_resume(struct platform_device *pdev)
 		audiobus_write(EE_AUDIO_CLK_GATE_EN0, 0xffffffff);
 		audiobus_write(EE_AUDIO_CLK_GATE_EN1, 0xffffffff);
 		if (!IS_ERR(p_resample->sclk) && !IS_ERR(p_resample->pll)) {
-			clk_set_parent(p_resample->sclk, NULL);
+			/* warning:parent clk already close for parent clk check*/
+			if (__clk_is_enabled(p_resample->sclk)) {
+				ret = clk_set_parent(p_resample->sclk, NULL);
+				if (ret)
+					dev_warn(&pdev->dev, "can't set p_resample parent clock as null\n");
+			}
 			ret = clk_set_parent(p_resample->sclk, p_resample->pll);
 			if (ret)
 				dev_err(p_resample->dev, "Can't resume set p_resample->sclk parent clock\n");
 		}
 		if (!IS_ERR(p_resample->clk) && !IS_ERR(p_resample->sclk)) {
-			clk_set_parent(p_resample->clk, NULL);
+			/* warning:parent clk already close for parent clk check*/
+			if (__clk_is_enabled(p_resample->sclk)) {
+				ret = clk_set_parent(p_resample->clk, NULL);
+				if (ret)
+					dev_warn(&pdev->dev, "can't set p_resample parent clock as null\n");
+			}
 			ret = clk_set_parent(p_resample->clk, p_resample->sclk);
 			if (ret)
 				dev_err(p_resample->dev, "Can't resume set p_resample->clk clock\n");
@@ -1023,10 +1033,12 @@ static int resample_platform_probe(struct platform_device *pdev)
 		goto err;
 	}
 	if ((!IS_ERR(p_resample->pll)) && (aml_return_chip_id() == CLK_NOTIFY_CHIP_ID)) {
-		p_resample->clk_nb.notifier_call = aml_resample_clock_notifier;
-		ret = clk_notifier_register(p_resample->pll, &p_resample->clk_nb);
-		if (ret)
-			dev_err(&pdev->dev, "unable to register clock notifier\n");
+		if (p_resample->id == RESAMPLE_B) {
+			p_resample->clk_nb.notifier_call = aml_resample_clock_notifier;
+			ret = clk_notifier_register(p_resample->pll, &p_resample->clk_nb);
+			if (ret)
+				dev_err(&pdev->dev, "unable to register clock notifier\n");
+		}
 	}
 	p_resample->clk_src_cd = devm_clk_get(&pdev->dev, "clk_src_cd");
 	if (IS_ERR(p_resample->clk_src_cd))
@@ -1080,9 +1092,11 @@ static void resample_platform_shutdown(struct platform_device *pdev)
 	int ret = 0;
 
 	if (!IS_ERR(p_resample->pll) && (aml_return_chip_id() == CLK_NOTIFY_CHIP_ID)) {
-		ret = clk_notifier_unregister(p_resample->pll, &p_resample->clk_nb);
-		if (ret)
-			return;
+		if (p_resample->id == RESAMPLE_B) {
+			ret = clk_notifier_unregister(p_resample->pll, &p_resample->clk_nb);
+			if (ret)
+				return;
+		}
 	}
 }
 

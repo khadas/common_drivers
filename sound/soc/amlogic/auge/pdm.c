@@ -865,20 +865,28 @@ static int aml_pdm_dai_set_sysclk(struct snd_soc_dai *cpu_dai,
 
 	clk_name = (char *)__clk_get_name(p_pdm->dclk_srcpll);
 	if (!strcmp(clk_name, "hifi_pll") || !strcmp(clk_name, "t5_hifi_pll")) {
-		if (!(aml_return_chip_id() == CLK_NOTIFY_CHIP_ID)) {
+		if (aml_return_chip_id() != CLK_NOTIFY_CHIP_ID) {
 			pr_err("%s:set hifi pll\n", __func__);
 			if (p_pdm->syssrc_clk_rate)
 				clk_set_rate(p_pdm->dclk_srcpll, p_pdm->syssrc_clk_rate);
 			else
 				clk_set_rate(p_pdm->dclk_srcpll, 1806336 * 1000);
-		} else if (!strcmp(__clk_get_name(clk_get_parent(p_pdm->clk_pdm_dclk)),
-			clk_name)) {
-			/* T5M use clock notify, if parent changed to hifi1, no need set */
-			if (p_pdm->syssrc_clk_rate)
-				clk_set_rate(p_pdm->dclk_srcpll,
-								p_pdm->syssrc_clk_rate);
-			else
-				clk_set_rate(p_pdm->dclk_srcpll, 1806336 * 1000);
+		} else {
+			if (p_pdm->earc_use_48k) {
+				ret = clk_set_parent(p_pdm->clk_pdm_dclk, p_pdm->dclk_srcpll);
+				if (ret)
+					dev_warn(p_pdm->dev, "can't set pdm parent clock\n");
+				/* T5M use clock notify, if parent changed to hifi1, no need set */
+				if (p_pdm->syssrc_clk_rate)
+					clk_set_rate(p_pdm->dclk_srcpll,
+									p_pdm->syssrc_clk_rate);
+				else
+					clk_set_rate(p_pdm->dclk_srcpll, 1806336 * 1000);
+			} else {
+				ret = clk_set_parent(p_pdm->clk_pdm_dclk, p_pdm->clk_src_cd);
+				if (ret)
+					dev_warn(p_pdm->dev, "can't set pdm cd clock\n");
+			}
 		}
 	} else {
 		if (dclk_srcpll_freq == 0)
@@ -1111,33 +1119,46 @@ static int aml_pdm_clock_notifier(struct notifier_block *nb,
 		 */
 		if (abs(ndata->old_rate - ndata->new_rate) < THRESHOLD_HIFI1)
 			break;
-		pr_info("%s() PRE_RATE_CHANGE clk rate %lu->%lu\n",
+		pr_info("%s() PRE_RATE_CHANGE  rate %lu->%lu\n",
 			__func__, ndata->old_rate, ndata->new_rate);
+
 		if ((abs(ndata->old_rate - MPLL_CD_FIXED_FREQ) < THRESHOLD_HIFI1) &&
-				(abs(ndata->new_rate - MPLL_HBR_FIXED_FREQ) < THRESHOLD_HIFI0)) {
+			(abs(ndata->new_rate - MPLL_HBR_FIXED_FREQ) < THRESHOLD_HIFI0)) {
+			p_pdm->earc_use_48k = true;
 			if (!IS_ERR(p_pdm->dclk_srcpll)) {
 				ret = clk_set_parent(p_pdm->clk_pdm_dclk, p_pdm->dclk_srcpll);
 				if (ret) {
-					pr_err("can't set tdm parent cd clock\n");
-					break;
+					pr_err("can't set pdm parent clock\n");
 				}
-				clk_set_rate(p_pdm->clk_pdm_dclk,
-							pdm_dclkidx2rate(p_pdm->dclk_idx));
 			}
 		} else if ((abs(ndata->old_rate - MPLL_HBR_FIXED_FREQ) < THRESHOLD_HIFI0) &&
-				(abs(ndata->new_rate - MPLL_CD_FIXED_FREQ) < THRESHOLD_HIFI1)) {
+			(abs(ndata->new_rate - MPLL_CD_FIXED_FREQ) < THRESHOLD_HIFI1)) {
+			p_pdm->earc_use_48k = false;
 			if (!IS_ERR(p_pdm->clk_src_cd)) {
 				ret = clk_set_parent(p_pdm->clk_pdm_dclk, p_pdm->clk_src_cd);
 				if (ret) {
-					pr_err("can't set tdm parent cd clock\n");
+					pr_err("can't set pdm parent cd clock\n");
 					break;
 				}
-				clk_set_rate(p_pdm->clk_pdm_dclk,
-							pdm_dclkidx2rate(p_pdm->dclk_idx));
 			}
 		}
 		break;
 	case POST_RATE_CHANGE:
+		if (abs(ndata->old_rate - ndata->new_rate) < THRESHOLD_HIFI1)
+			break;
+		pr_info("%s() POST_RATE_CHANGE  rate %lu->%lu\n",
+			__func__, ndata->old_rate, ndata->new_rate);
+		if ((abs(ndata->old_rate - MPLL_CD_FIXED_FREQ) < THRESHOLD_HIFI1) &&
+			(abs(ndata->new_rate - MPLL_HBR_FIXED_FREQ) < THRESHOLD_HIFI0)) {
+			p_pdm->earc_use_48k = true;
+		} else if ((abs(ndata->old_rate - MPLL_HBR_FIXED_FREQ) < THRESHOLD_HIFI0) &&
+			(abs(ndata->new_rate - MPLL_CD_FIXED_FREQ) < THRESHOLD_HIFI1)) {
+			p_pdm->earc_use_48k = false;
+			clk_set_rate(p_pdm->clk_src_cd, MPLL_HBR_FIXED_FREQ);
+		}
+		clk_set_rate(p_pdm->clk_pdm_dclk,
+					pdm_dclkidx2rate(p_pdm->dclk_idx));
+		break;
 	default:
 		break;
 	}
@@ -1263,6 +1284,7 @@ static int aml_pdm_platform_probe(struct platform_device *pdev)
 
 	if ((!IS_ERR(p_pdm->dclk_srcpll)) && (aml_return_chip_id() == CLK_NOTIFY_CHIP_ID)) {
 		p_pdm->clk_nb.notifier_call = aml_pdm_clock_notifier;
+		p_pdm->earc_use_48k = true;
 		ret = clk_notifier_register(p_pdm->dclk_srcpll, &p_pdm->clk_nb);
 		if (ret)
 			dev_err(&pdev->dev, "unable to register clock notifier\n");

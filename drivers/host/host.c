@@ -260,7 +260,7 @@ static int __maybe_unused host_runtime_suspend(struct device *dev)
 
 	if (IS_ERR_OR_NULL(host))
 		return -EINVAL;
-	if (host->health_reg && !host->hang) {
+	if (!host->hang) {
 		aml_mbox_transfer_data(host->mbox_chan, MBOX_CMD_HIFI4STOP,
 				       message, sizeof(message),
 				       NULL, 0, MBOX_SYNC);

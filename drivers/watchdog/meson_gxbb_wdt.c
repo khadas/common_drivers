@@ -76,7 +76,8 @@ static int meson_gxbb_wdt_start(struct watchdog_device *wdt_dev)
 	struct meson_gxbb_wdt *data = watchdog_get_drvdata(wdt_dev);
 
 #if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_IOTRACE)
-	pr_info("meson gxbb wdt start\n");
+	if (wdt_debug)
+		pr_info("meson gxbb wdt start\n");
 #endif
 	writel(readl(data->reg_base + GXBB_WDT_CTRL_REG) | GXBB_WDT_CTRL_EN,
 	       data->reg_base + GXBB_WDT_CTRL_REG);
@@ -89,7 +90,8 @@ static int meson_gxbb_wdt_stop(struct watchdog_device *wdt_dev)
 	struct meson_gxbb_wdt *data = watchdog_get_drvdata(wdt_dev);
 
 #if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_IOTRACE)
-	pr_info("meson gxbb wdt stop\n");
+	if (wdt_debug)
+		pr_info("meson gxbb wdt stop\n");
 #endif
 	writel(readl(data->reg_base + GXBB_WDT_CTRL_REG) & ~GXBB_WDT_CTRL_EN,
 	       data->reg_base + GXBB_WDT_CTRL_REG);
@@ -117,7 +119,8 @@ static int meson_gxbb_wdt_set_timeout(struct watchdog_device *wdt_dev,
 	unsigned long tcnt = timeout * 1000;
 
 #if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_IOTRACE)
-	pr_info("%s() timeout=%u\n", __func__, timeout);
+	if (wdt_debug)
+		pr_info("%s() timeout=%u\n", __func__, timeout);
 #endif
 	if (tcnt > GXBB_WDT_TCNT_SETUP_MASK)
 		tcnt = GXBB_WDT_TCNT_SETUP_MASK;

@@ -153,7 +153,6 @@ static struct fun_symbol common_func[] = {
 #if IS_MODULE(CONFIG_AMLOGIC_PAGE_TRACE)
 	{"alloc_pages_ret_handler",	1, 0},
 	{"comp_alloc_ret_handler",	1, 0},
-	{"cma_alloc_ret_handler",	1, 0},
 	{"__kretprobe_trampoline_handler", 1, 0},
 	{"trampoline_probe_handler",	1, 0},
 	{"kretprobe_trampoline",	1, 0},
@@ -211,7 +210,6 @@ static char func_free_prep[NAME_MAX] = "free_unref_page_prepare";
 static char func_free_prep[NAME_MAX] = "free_pcp_prepare";
 #endif
 static char func_free_ok[NAME_MAX] = "__free_pages_ok";
-static char func_cma_alloc[NAME_MAX] = "cma_alloc";
 
 /* per-instance private data */
 struct kretp_data {
@@ -273,17 +271,6 @@ static int free_ok_entry_handler(struct kretprobe_instance *ri, struct pt_regs *
 
 NOKPROBE_SYMBOL(free_ok_entry_handler);
 
-static int cma_alloc_entry_handler(struct kretprobe_instance *ri, struct pt_regs *regs)
-{
-	struct kretp_data *data;
-
-	data = (struct kretp_data *)ri->data;
-	data->count = (unsigned int)regs->regs[1];
-	return 0;
-}
-
-NOKPROBE_SYMBOL(cma_alloc_entry_handler);
-
 /*
  * Return-probe handler: Log the return value and duration. Duration may turn
  * out to be zero consistently, depending upon the granularity of time
@@ -340,26 +327,6 @@ static int free_ok_ret_handler(struct kretprobe_instance *ri, struct pt_regs *re
 
 NOKPROBE_SYMBOL(free_ok_ret_handler);
 
-static int cma_alloc_ret_handler(struct kretprobe_instance *ri, struct pt_regs *regs)
-{
-	struct page *ret_page = (struct page *)regs_return_value(regs);
-	struct kretp_data *data = (struct kretp_data *)ri->data;
-	long i;
-
-	if (!ret_page)
-		return 0;
-
-	for (i = 0; i < data->count; i++) {
-		//set_page_trace(ret_page, 0, __GFP_NO_CMA, (void *)fun);
-		set_page_trace(ret_page, 0, 0x1c, NULL);
-		ret_page++;
-	}
-
-	return 0;
-}
-
-NOKPROBE_SYMBOL(cma_alloc_ret_handler);
-
 static struct kretprobe comp_alloc_kretprobe = {
 	.handler		= comp_alloc_ret_handler,
 	.entry_handler		= comp_alloc_entry_handler,
@@ -387,14 +354,6 @@ static struct kretprobe free_prep_kretprobe = {
 static struct kretprobe free_ok_kretprobe = {
 	.handler		= free_ok_ret_handler,
 	.entry_handler		= free_ok_entry_handler,
-	.data_size		= sizeof(struct kretp_data),
-	/* Probe up to 20 instances concurrently. */
-	.maxactive		= 20,
-};
-
-static struct kretprobe cma_alloc_kretprobe = {
-	.handler		= cma_alloc_ret_handler,
-	.entry_handler		= cma_alloc_entry_handler,
 	.data_size		= sizeof(struct kretp_data),
 	/* Probe up to 20 instances concurrently. */
 	.maxactive		= 20,
@@ -1891,15 +1850,6 @@ static int __init page_trace_module_init(void)
 	}
 	pr_debug("Planted return probe at %s: %px\n",
 			free_ok_kretprobe.kp.symbol_name, free_ok_kretprobe.kp.addr);
-
-	cma_alloc_kretprobe.kp.symbol_name = func_cma_alloc;
-	ret = register_kretprobe(&cma_alloc_kretprobe);
-	if (ret < 0) {
-		pr_err("register_kretprobe failed, returned %d\n", ret);
-		return ret;
-	}
-	pr_debug("Planted return probe at %s: %px\n",
-			cma_alloc_kretprobe.kp.symbol_name, cma_alloc_kretprobe.kp.addr);
 #endif
 
 	return 0;
@@ -1930,9 +1880,6 @@ static void __exit page_trace_module_exit(void)
 
 	unregister_kretprobe(&free_ok_kretprobe);
 	pr_debug("kretprobe at %p unregistered\n", free_ok_kretprobe.kp.addr);
-
-	unregister_kretprobe(&cma_alloc_kretprobe);
-	pr_debug("kretprobe at %p unregistered\n", cma_alloc_kretprobe.kp.addr);
 
 	if (!trace_buffer)
 		vfree(trace_buffer);

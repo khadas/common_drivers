@@ -1924,8 +1924,8 @@
 		temper-buf-size = <24>;
 		clocks = <&clkc CLKID_MIPI_ISP_CLK>,
 			<&clkc CLKID_MIPI_CSI_PHY_CLK0>;
-		clock-names = "cts_mipi_isp_clk",
-			"cts_mipi_csi_phy_clk0";
+		clock-names = "cts_mipi_isp_clk_composite",
+			"cts_mipi_csi_phy_clk0_composite";
 		link-device = <&isp_sc>;
 	};
 

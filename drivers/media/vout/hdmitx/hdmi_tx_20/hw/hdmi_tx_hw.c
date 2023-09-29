@@ -28,13 +28,11 @@
 #include <linux/rtc.h>
 #include <linux/timekeeping.h>
 #include <linux/gpio.h>
-#include <linux/extcon.h>
-#include <linux/extcon-provider.h>
-
 #include <linux/amlogic/media/vout/vinfo.h>
 #include <linux/amlogic/media/vout/hdmi_tx/enc_clk_config.h>
 #include <linux/amlogic/media/vout/hdmi_tx/hdmi_tx_module.h>
 #include <linux/amlogic/media/vout/hdmi_tx/hdmi_tx_ddc.h>
+#include <linux/amlogic/media/vout/hdmi_tx/hdmi_tx_hw.h>
 #include <linux/amlogic/media/vout/hdmi_tx_ext.h>
 #include <linux/reset.h>
 #include <linux/compiler.h>
@@ -52,7 +50,6 @@
 #include "hdmi_tx_debug_reg.h"
 
 #define HDMITX_VIC_MASK			0xff
-#define to_hdmitx20_dev(x)	container_of(x, struct hdmitx_dev, tx_hw.base)
 
 static struct hdmitx20_hw *global_txhw;
 
@@ -81,16 +78,16 @@ static void hdmitx_set_packet(int type, unsigned char *DB, unsigned char *HB);
 static void hdmitx_disable_packet(int type);
 static void hdmitx_setaudioinfoframe(unsigned char *AUD_DB,
 				     unsigned char *CHAN_STAT_BUF);
-static int hdmitx_set_dispmode(struct hdmitx_dev *hdev);
-static int hdmitx_set_audmode(struct hdmitx_dev *hdev,
+static int hdmitx_set_dispmode(struct hdmitx_hw_common *tx_hw);
+static int hdmitx_set_audmode(struct hdmitx_hw_common *tx_hw,
 			      struct aud_para *audio_param);
-static void hdmitx_setupirq(struct hdmitx_dev *hdev);
-static void hdmitx_debug(struct hdmitx_hw_common *hdev, const char *buf);
-static void hdmitx_uninit(struct hdmitx_hw_common *hdev);
-static int hdmitx_cntl(struct hdmitx_dev *hdev, unsigned int cmd,
-		       unsigned int argv);
-static int hdmitx_cntl_ddc(struct hdmitx_hw_common *tx_hw, unsigned int cmd,
-			   unsigned long argv);
+static int hdmitx_setupirq(struct hdmitx_hw_common *tx_hw);
+static void hdmitx_debug(struct hdmitx_hw_common *tx_hw, const char *buf);
+static void hdmitx_uninit(struct hdmitx_hw_common *tx_hw);
+static int hdmitx_cntl(struct hdmitx_hw_common *hdmitx_hw_common,
+		unsigned int cmd, unsigned int argv);
+static int hdmitx_cntl_ddc(struct hdmitx_hw_common *tx_hw,
+		unsigned int cmd, unsigned long argv);
 static int hdmitx_get_state(struct hdmitx_hw_common *tx_hw, unsigned int cmd,
 			    unsigned int argv);
 static int hdmitx_cntl_config(struct hdmitx_hw_common *hdev, unsigned int cmd,
@@ -671,10 +668,6 @@ void hdmitx_meson_init(struct hdmitx_dev *hdev)
 	global_txhw = &hdev->tx_hw;
 
 	hdev->hwop.setaudioinfoframe = hdmitx_setaudioinfoframe;
-	hdev->hwop.setdispmode = hdmitx_set_dispmode;
-	hdev->hwop.setaudmode = hdmitx_set_audmode;
-	hdev->hwop.setupirq = hdmitx_setupirq;
-	hdev->hwop.cntl = hdmitx_cntl;	/* todo */
 	global_txhw->base.getstate = hdmitx_get_state;
 	global_txhw->base.cntlconfig = hdmitx_cntl_config;
 	global_txhw->base.cntlmisc = hdmitx_cntl_misc;
@@ -683,8 +676,12 @@ void hdmitx_meson_init(struct hdmitx_dev *hdev)
 	global_txhw->base.setpacket = hdmitx_set_packet;
 	global_txhw->base.disablepacket = hdmitx_disable_packet;
 	global_txhw->base.cntlddc = hdmitx_cntl_ddc;
-	global_txhw->base.debugfun = hdmitx_debug;
+	global_txhw->base.cntl = hdmitx_cntl;
+	global_txhw->base.setaudmode = hdmitx_set_audmode;
 	global_txhw->base.uninit = hdmitx_uninit;
+	global_txhw->base.setupirq = hdmitx_setupirq;
+	global_txhw->base.debugfun = hdmitx_debug;
+	global_txhw->base.setdispmode = hdmitx_set_dispmode;
 	hdmi_hwp_init(hdev);
 	hdmi_hwi_init(hdev);
 	hdmitx_hw_cntl_misc(&global_txhw->base, MISC_AVMUTE_OP, CLR_AVMUTE);
@@ -2110,7 +2107,7 @@ static void hdmitx_set_scdc(struct hdmitx_dev *hdev)
 
 	if (pref_clk_div40 != para->tmds_clk_div40) {
 		pr_err("clk div40 failed!!\n");
-		hdmitx_format_para_print(para);
+		hdmitx_format_para_print(para, NULL);
 	}
 
 	set_tmds_clk_div40(para->tmds_clk_div40);
@@ -2250,8 +2247,9 @@ static void hdmitx_disable_venc(void)
  * HDMI HPLL setting-> config VENC-> IP configure & reset->
  * vpu decouple FIFO-> enable ->enable VENC-> HDMITX PHY enable
  */
-static int hdmitx_set_dispmode(struct hdmitx_dev *hdev)
+static int hdmitx_set_dispmode(struct hdmitx_hw_common *tx_hw)
 {
+	struct hdmitx_dev *hdev = get_hdmitx_device();
 	struct hdmi_format_para *para;
 
 	if (!hdev) /* disable HDMI */
@@ -2786,9 +2784,10 @@ static bool audio_get_mute_st(void)
 struct aud_para hdmiaud_config_data;
 struct aud_para hsty_hdmiaud_config_data[8];
 unsigned int hsty_hdmiaud_config_loc, hsty_hdmiaud_config_num;
-static int hdmitx_set_audmode(struct hdmitx_dev *hdev,
+static int hdmitx_set_audmode(struct hdmitx_hw_common *tx_hw,
 			      struct aud_para *audio_param)
 {
+	struct hdmitx_dev *hdev = get_hdmitx_device();
 	unsigned int data32;
 	int acr_update = 0;
 
@@ -2882,21 +2881,24 @@ static int hdmitx_set_audmode(struct hdmitx_dev *hdev,
 	return 1;
 }
 
-static void hdmitx_setupirq(struct hdmitx_dev *phdev)
+static int hdmitx_setupirq(struct hdmitx_hw_common *tx_hw)
 {
 	int r;
+	struct hdmitx_dev *hdev = get_hdmitx_device();
 
 	hdmitx_wr_reg(HDMITX_TOP_INTR_STAT_CLR, 0x7);
-	r = request_irq(phdev->irq_hpd, &intr_handler,
+	r = request_irq(hdev->irq_hpd, &intr_handler,
 			IRQF_SHARED, "hdmitx",
-			(void *)phdev);
+			(void *)hdev);
 	if (r != 0)
 		pr_info(SYS "can't request hdmitx irq\n");
-	r = request_irq(phdev->irq_viu1_vsync, &vsync_intr_handler,
+	r = request_irq(hdev->irq_viu1_vsync, &vsync_intr_handler,
 			IRQF_SHARED, "hdmi_vsync",
-			(void *)phdev);
+			(void *)hdev);
 	if (r != 0)
 		pr_info(SYS "can't request viu1_vsync irq\n");
+
+	return r;
 }
 
 static void hdmitx_uninit(struct hdmitx_hw_common *tx_hw)
@@ -2929,10 +2931,10 @@ static void hw_reset_dbg(void)
 	hdmitx_wr_reg(HDMITX_DWC_FC_VSYNCINWIDTH, val3);
 }
 
-static int hdmitx_cntl(struct hdmitx_dev *hdev, unsigned int cmd,
-		       unsigned int argv)
+static int hdmitx_cntl(struct hdmitx_hw_common *tx_hw,
+	unsigned int cmd, unsigned int argv)
 {
-	struct hdmitx20_hw *tx_hw = &hdev->tx_hw;
+	struct hdmitx20_hw *tx20_hw = to_hdmitx20_hw(tx_hw);
 
 	if (cmd == HDMITX_AVMUTE_CNTL) {
 		return 0;
@@ -2954,7 +2956,7 @@ static int hdmitx_cntl(struct hdmitx_dev *hdev, unsigned int cmd,
 				msleep(500);
 				if (hdmitx_hpd_hw_op(HPD_READ_HPD_GPIO)) {
 					pr_info(HPD "mux hpd\n");
-					hdmitx_set_sys_clk(tx_hw, 4);
+					hdmitx_set_sys_clk(tx20_hw, 4);
 					msleep(100);
 					hdmitx_hpd_hw_op(HPD_MUX_HPD);
 				}
@@ -2972,7 +2974,7 @@ static int hdmitx_cntl(struct hdmitx_dev *hdev, unsigned int cmd,
 			hdmitx_hpd_hw_op(HPD_UNMUX_HPD);
 		} else {
 			pr_info(HW "power off hdmi\n");
-			hdmitx_set_sys_clk(tx_hw, 6);
+			hdmitx_set_sys_clk(tx20_hw, 6);
 			phy_pll_off();
 		}
 	}
@@ -3173,7 +3175,7 @@ static void hdmitx_debug(struct hdmitx_hw_common *tx_hw, const char *buf)
 		hd_write_reg(P_VENC_VIDEO_TST_CLRBAR_WIDTH, value / 8);
 		return;
 	} else if (strncmp(tmpbuf, "testaudio", 9) == 0) {
-		hdmitx_set_audmode(hdev, NULL);
+		hdmitx_set_audmode(&hdev->tx_hw.base, NULL);
 	} else if (strncmp(tmpbuf, "dumpintr", 8) == 0) {
 		hdmitx_dump_intr();
 	} else if (strncmp(tmpbuf, "testhdcp", 8) == 0) {
@@ -3341,8 +3343,44 @@ static void hdmitx_debug(struct hdmitx_hw_common *tx_hw, const char *buf)
 			hdev->hwop.am_hdmitx_hdcp_disconnect();
 	} else if (strncmp(tmpbuf, "avmute_frame", 12) == 0) {
 		ret = kstrtoul(tmpbuf + 12, 10, &value);
-		hdev->debug_param.avmute_frame = value;
+		hdev->tx_comm.debug_param.avmute_frame = value;
 		pr_info(HW "avmute_frame = %lu\n", value);
+	} else if (strncmp(tmpbuf, "csc_en", 6) == 0) {
+		ret = kstrtoul(tmpbuf + 6, 0, &value);
+		/* 0: no change
+		 * 1: force switch color space converter to 444,8bit
+		 * 2: force switch color space converter to 422,12bit
+		 * 3: force switch color space converter to rgb,8bit
+		 */
+		if (value != 0 && value != 1 && value != 2 && value != 3) {
+			pr_err("set csc in 0 ~ 3\n");
+		} else {
+			pr_info("set csc_en as %lu\n", value);
+
+			hdmitx_hw_cntl_config(&hdev->tx_hw.base, CONFIG_CSC,
+				value | CSC_UPDATE_AVI_CS);
+		}
+	} else if (strncmp(tmpbuf, "config_csc_en", 13) == 0) {
+		ret = kstrtoul(tmpbuf + 13, 0, &value);
+		pr_info("config_csc_en to %lu\n", value);
+
+		if (value == 0)
+			hdev->tx_comm.config_csc_en = false;
+		else if (value == 1)
+			hdev->tx_comm.config_csc_en = true;
+	} else if (strncmp(tmpbuf, "set_div40", 9) == 0) {
+		/* echo 1 > div40, force send 1:40 tmds bit clk ratio
+		 * echo 0 > div40, send 1:10 tmds bit clk ratio if scdc_present
+		 * echo 2 > div40, force send 1:10 tmds bit clk ratio
+		 */
+		ret = kstrtoul(tmpbuf + 9, 0, &value);
+		if (value != 0 && value != 1 && value != 2) {
+			pr_err("set div40 value in 0 ~ 2\n");
+		} else {
+			pr_info("set div40 to %lu\n", value);
+			hdmitx_hw_cntl_ddc(&hdev->tx_hw.base,
+				DDC_SCDC_DIV40_SCRAMB, value);
+		}
 	}
 }
 
@@ -4652,7 +4690,7 @@ static void check_read_ksv_list_st(void)
 	pr_info("hdcp14: FSM: A9 read ksv list\n");
 }
 
-static int hdmitx_cntl_ddc(struct hdmitx_hw_common *hw_comm,
+static int hdmitx_cntl_ddc(struct hdmitx_hw_common *tx_hw,
 	unsigned int cmd, unsigned long argv)
 {
 	struct hdmitx_dev *hdev = get_hdmitx_device();
@@ -4801,13 +4839,14 @@ static int hdmitx_cntl_ddc(struct hdmitx_hw_common *hw_comm,
 			hdmitx_hdcp_opr(6);
 		break;
 	case DDC_IS_HDCP_ON:
-/* argv = !!((hdmitx_rd_reg(TX_HDCP_MODE)) & (1 << 7)); */
+		/* argv = !!((hdmitx_rd_reg(TX_HDCP_MODE)) & (1 << 7)); */
 		break;
 	case DDC_HDCP_GET_BKSV:
 		tmp_char = (unsigned char *)argv;
-		for (i = 0; i < 5; i++)
+		for (i = 0; i < 5; i++) {
 			tmp_char[i] = (unsigned char)
 				hdmitx_rd_reg(HDMITX_DWC_HDCPREG_BKSV0 + 4 - i);
+		}
 		break;
 	case DDC_HDCP_GET_AUTH:
 		if (hdev->hdcp_mode == 1)
@@ -5237,7 +5276,7 @@ static int hdmitx_cntl_config(struct hdmitx_hw_common *tx_hw, unsigned int cmd,
 {
 	int ret = 0;
 	unsigned int ieee_code = 0;
-	struct hdmitx_dev *hdev = to_hdmitx20_dev(tx_hw);
+	struct hdmitx_dev *hdev = get_hdmitx_device();
 	struct hdmitx20_hw *tx20_hw = to_hdmitx20_hw(tx_hw);
 
 	if ((cmd & CMD_CONF_OFFSET) != CMD_CONF_OFFSET) {
@@ -5539,7 +5578,7 @@ static int hdmitx_cntl_misc(struct hdmitx_hw_common *tx_hw, unsigned int cmd,
 	static int st;
 	unsigned int pll_cntl = P_HHI_HDMI_PLL_CNTL;
 	u8 rx_ver;
-	struct hdmitx_dev *hdev = to_hdmitx20_dev(tx_hw);
+	struct hdmitx_dev *hdev = get_hdmitx_device();
 	int chip_id = hdev->tx_hw.chip_data->chip_type;
 
 	if ((cmd & CMD_MISC_OFFSET) != CMD_MISC_OFFSET) {

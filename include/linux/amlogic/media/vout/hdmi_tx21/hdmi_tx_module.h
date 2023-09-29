@@ -100,10 +100,6 @@ struct hdmitx_clk_tree_s {
 	struct clk *venci_1_gate;
 };
 
-struct st_debug_param {
-	unsigned int avmute_frame;
-};
-
 struct hdmitx_dev {
 	struct cdev cdev; /* The cdev structure */
 	dev_t hdmitx_id;
@@ -134,13 +130,6 @@ struct hdmitx_dev {
 	bool pre_tmds_clk_div40;
 	u32 lstore;
 	u32 hdcp_mode;
-	struct {
-		int (*setdispmode)(struct hdmitx_dev *hdev);
-		int (*setaudmode)(struct hdmitx_dev *hdev, struct aud_para *audio_param);
-		void (*setupirq)(struct hdmitx_dev *hdev);
-		/* Configure control */
-		int (*cntl)(struct hdmitx_dev *hdev, u32 cmd, u32 arg); /* Other control */
-	} hwop;
 	struct hdmitx_infoframe infoframes;
 	struct hdmi_config_platform_data config_data;
 	enum hdmi_event_t hdmitx_event;
@@ -202,12 +191,9 @@ struct hdmitx_dev {
 	u32 cedst_en:1; /* configure in DTS */
 	u32 aon_output:1; /* always output in bl30 */
 	u32 bist_lock:1;
-	u32 vend_id_hit:1;
 	u32 fr_duration;
 	spinlock_t edid_spinlock; /* edid hdr/dv cap lock */
 	struct vpu_dev_s *hdmitx_vpu_clk_gate_dev;
-
-	unsigned int hdcp_ctl_lvl;
 
 	/*DRM related*/
 	struct connector_hdcp_cb drm_hdcp_cb;
@@ -222,7 +208,6 @@ struct hdmitx_dev {
 	bool not_restart_hdcp;
 	unsigned long up_hdcp_timeout_sec;
 	struct delayed_work work_up_hdcp_timeout;
-	struct st_debug_param debug_param;
 };
 
 struct hdmitx_dev *get_hdmitx21_device(void);

@@ -7,6 +7,7 @@
 #define __HDMI_TX21_HW_H
 
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_hw_common.h>
+#include <linux/amlogic/media/vout/hdmitx_common/hdmitx_audio.h>
 
 /* chip type */
 enum amhdmitx_chip_e {

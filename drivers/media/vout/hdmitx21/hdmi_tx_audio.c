@@ -236,7 +236,7 @@ int hdmitx21_set_audio(struct hdmitx_dev *hdev,
 	/* hdmi_audio_infoframe_init(info); */
 	for (i = 0; i < (24 * 2); i++)
 		CHAN_STAT_BUF[i] = 0;
-	if (hdev->hwop.setaudmode(hdev, audio_param) >= 0) {
+	if (hdev->tx_hw.base.setaudmode(&hdev->tx_hw.base, audio_param) >= 0) {
 		if (0)
 			hdmi_tx_construct_aud_packet(audio_param, NULL,
 					     CHAN_STAT_BUF, hdmi_ch);

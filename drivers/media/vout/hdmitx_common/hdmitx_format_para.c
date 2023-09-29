@@ -5,6 +5,7 @@
 
 #include <linux/errno.h>
 #include <linux/mm.h>
+#include <linux/string.h>
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_format_para.h>
 
 static struct parse_cd parse_cd_[] = {
@@ -116,15 +117,97 @@ int hdmitx_format_para_reset(struct hdmi_format_para *para)
 	return 0;
 }
 
-int hdmitx_format_para_print(struct hdmi_format_para *para)
+int hdmitx_format_para_print(struct hdmi_format_para *para, char *log_buf)
 {
-	pr_info("format_para: %px\n", para);
-	pr_info("format_para: name %s vic %d frac %d\n",
-		para->sname ? para->sname : para->name, para->vic, para->frac_mode);
-	pr_info("format_para: cs %d cd %d\n", para->cs, para->cd);
-	pr_info("format_para: TMDS %d DIV40 %d,%d\n", para->tmds_clk,
-		para->tmds_clk_div40, para->scrambler_en);
-	pr_info("format_para: FRL %d\n", para->frl_clk);
+	char buf[256];
+	const char *conf;
+	ssize_t pos = 0;
+	int len = sizeof(buf);
+	int i = 0;
+
+	if (para->vic == HDMI_0_UNKNOWN) {
+		pos += snprintf(buf + pos, len - pos, "format_para: [INVALID] %px vic [0]", para);
+	} else {
+		pos += snprintf(buf + pos, len - pos, "format_para: %px vic [%d]\n",
+					para, para->vic);
+		pos += snprintf(buf + pos, len - pos, "format_para: name %s frac %d\n",
+			para->sname ? para->sname : para->name, para->frac_mode);
+
+		conf = NULL;
+		for (i = 0; i < sizeof(parse_cs_) / sizeof(struct parse_cs); i++) {
+			if (para->cs == parse_cs_[i].cs) {
+				conf = parse_cs_[i].name;
+				break;
+			}
+		}
+		if (!conf)
+			conf = "reserved";
+		pos += snprintf(buf + pos, len - pos, "format_para: colorspace: %s, ", conf);
+
+		conf = NULL;
+		for (i = 0; i < sizeof(parse_cd_) / sizeof(struct parse_cd); i++) {
+			if (para->cd == parse_cd_[i].cd) {
+				conf = parse_cd_[i].name;
+				break;
+			}
+		}
+		if (!conf)
+			conf = "reserved";
+		pos += snprintf(buf + pos, len - pos, "colordepth: %s\n", conf);
+
+		pos += snprintf(buf + pos, len - pos, "format_para: TMDS %d DIV40 %d,%d\n",
+			para->tmds_clk, para->tmds_clk_div40, para->scrambler_en);
+		pos += snprintf(buf + pos, len - pos, "format_para: FRL %d\n", para->frl_clk);
+	}
+
+	if (log_buf)
+		sprintf(log_buf, "%s", buf);
+	else
+		pr_info("%s", buf);
+
+	return pos;
+}
+
+int hdmitx_format_para_rebuild_fmtattr_str(struct hdmi_format_para *para, char *attr_str, int len)
+{
+	int i = 0;
+	const char *conf;
+	ssize_t pos = 0;
+
+	attr_str[0] = 0;
+	conf = NULL;
+	for (i = 0; i < sizeof(parse_cs_) / sizeof(struct parse_cs); i++) {
+		if (para->cs == parse_cs_[i].cs) {
+			conf = parse_cs_[i].name;
+			break;
+		}
+	}
+
+	if (!conf) {
+		pr_err("UNKNOWN cs %d\n", para->cs);
+		attr_str[0] = 0;
+		return -EINVAL;
+	}
+
+	pos += snprintf(attr_str + pos, len - pos, "%s,", conf);
+
+	conf = NULL;
+	for (i = 0; i < sizeof(parse_cd_) / sizeof(struct parse_cd); i++) {
+		if (para->cd == parse_cd_[i].cd) {
+			conf = parse_cd_[i].name;
+			break;
+		}
+	}
+
+	if (!conf) {
+		pr_err("UNKNOWN cd %d\n", para->cd);
+		attr_str[0] = 0;
+		return -EINVAL;
+	}
+
+	pos += snprintf(attr_str + pos, len - pos, "%s", conf);
+
+	pr_info("rebuild fmt_string %s from (%d,%d)\n", attr_str, para->cs, para->cd);
 	return 0;
 }
 

@@ -62,6 +62,7 @@
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_common.h>
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_format_para.h>
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_platform_linux.h>
+#include <linux/amlogic/media/vout/hdmitx_common/hdmitx_audio.h>
 
 #define HDMI_TX_COUNT 32
 #define HDMI_TX_POOL_NUM  6
@@ -95,7 +96,6 @@ static int hdmitx_unhook_drm(struct device *device);
 static void tee_comm_dev_reg(struct hdmitx_dev *hdev);
 static void tee_comm_dev_unreg(struct hdmitx_dev *hdev);
 static void hdmitx_resend_div40(struct hdmitx_dev *hdev);
-static unsigned int hdmitx_get_frame_duration(void);
 const struct hdmi_timing *hdmitx_mode_match_timing_name(const char *name);
 
 /*
@@ -160,14 +160,6 @@ struct hdmitx_dev *get_hdmitx21_device(void)
 	return tx21_dev;
 }
 EXPORT_SYMBOL(get_hdmitx21_device);
-
-static int get_hdmitx_hdcp_ctl_lvl_to_drm(void)
-{
-	struct hdmitx_dev *hdev = get_hdmitx21_device();
-
-	pr_info("%s hdmitx21_%d\n", __func__, hdev->hdcp_ctl_lvl);
-	return hdev->hdcp_ctl_lvl;
-}
 
 int get_hdmitx21_init(void)
 {
@@ -261,7 +253,7 @@ static void hdmitx_early_suspend(struct early_suspend *h)
 {
 	struct hdmitx_dev *hdev = (struct hdmitx_dev *)h->param;
 	/* unsigned int mute_us =
-	 * hdev->debug_param.avmute_frame * hdmitx_get_frame_duration();
+	 * hdev->tx_comm.debug_param.avmute_frame * hdmitx_get_frame_duration();
 	 */
 
 	if (hdev->aon_output) {
@@ -291,7 +283,7 @@ static void hdmitx_early_suspend(struct early_suspend *h)
 	/* On  Android T/U, set dummy_l before early suspend, and add set
 	 * avmute before set dummy_l. No need to add delay here.
 	 *
-	 * if (hdev->debug_param.avmute_frame > 0)
+	 * if (hdev->tx_comm.debug_param.avmute_frame > 0)
 	 * msleep(mute_us / 1000);
 	 * else
 	 * msleep(100);
@@ -300,8 +292,8 @@ static void hdmitx_early_suspend(struct early_suspend *h)
 	frl_tx_stop(hdev);
 	hdmitx21_disable_hdcp(hdev);
 	hdmitx21_rst_stream_type(hdev->am_hdcp);
-	hdev->hwop.cntl(hdev, HDMITX_EARLY_SUSPEND_RESUME_CNTL,
-		HDMITX_EARLY_SUSPEND);
+	hdmitx_hw_cntl(&hdev->tx_hw.base,
+		HDMITX_EARLY_SUSPEND_RESUME_CNTL, HDMITX_EARLY_SUSPEND);
 	hdev->tx_comm.cur_VIC = HDMI_0_UNKNOWN;
 	hdmitx_set_vsif_pkt(0, 0, NULL, true);
 	hdmitx_set_hdr10plus_pkt(0, NULL);
@@ -368,8 +360,8 @@ static void hdmitx_late_resume(struct early_suspend *h)
 	hdmitx21_set_uevent(HDMITX_HDCPPWR_EVENT, HDMI_WAKEUP);
 	hdmitx21_set_uevent(HDMITX_AUDIO_EVENT, hdev->tx_comm.hpd_state);
 	pr_info("%s: late resume module %d\n", DEVICE_NAME, __LINE__);
-	hdev->hwop.cntl(hdev, HDMITX_EARLY_SUSPEND_RESUME_CNTL,
-		HDMITX_LATE_RESUME);
+	hdmitx_hw_cntl(&hdev->tx_hw.base,
+		HDMITX_EARLY_SUSPEND_RESUME_CNTL, HDMITX_LATE_RESUME);
 	hdmitx_hw_cntl_misc(&hdev->tx_hw.base, MISC_SUSFLAG, 0);
 	pr_info("HDMITX: Late Resume\n");
 
@@ -384,16 +376,12 @@ static int hdmitx_reboot_notifier(struct notifier_block *nb,
 				  unsigned long action, void *data)
 {
 	struct hdmitx_dev *hdev = container_of(nb, struct hdmitx_dev, nb);
-	unsigned int mute_us =
-		hdev->debug_param.avmute_frame * hdmitx_get_frame_duration();
 
 	hdev->ready = 0;
 	hdmitx_vrr_disable();
-	hdmitx_hw_cntl_misc(&hdev->tx_hw.base, MISC_AVMUTE_OP, SET_AVMUTE);
-	if (hdev->debug_param.avmute_frame > 0)
-		msleep(mute_us / 1000);
-	else
-		msleep(100);
+
+	hdmitx_common_avmute_locked(&hdev->tx_comm, SET_AVMUTE, AVMUTE_PATH_HDMITX);
+
 	frl_tx_stop(hdev);
 	if (hdev->rxsense_policy)
 		cancel_delayed_work(&hdev->work_rxsense);
@@ -402,8 +390,8 @@ static int hdmitx_reboot_notifier(struct notifier_block *nb,
 	hdmitx21_disable_hdcp(hdev);
 	hdmitx21_rst_stream_type(hdev->am_hdcp);
 	hdmitx_hw_cntl_misc(&hdev->tx_hw.base, MISC_TMDS_PHY_OP, TMDS_PHY_DISABLE);
-	hdev->hwop.cntl(hdev, HDMITX_EARLY_SUSPEND_RESUME_CNTL,
-		HDMITX_EARLY_SUSPEND);
+	hdmitx_hw_cntl(&hdev->tx_hw.base,
+		HDMITX_EARLY_SUSPEND_RESUME_CNTL, HDMITX_EARLY_SUSPEND);
 
 	return NOTIFY_OK;
 }
@@ -459,7 +447,8 @@ static  int  set_disp_mode(struct hdmitx_dev *hdev, const char *mode)
 	hdev->tx_comm.cur_VIC = HDMI_0_UNKNOWN;
 	ret = hdmitx21_set_display(hdev, vic);
 	if (ret >= 0) {
-		hdev->hwop.cntl(hdev, HDMITX_AVMUTE_CNTL, AVMUTE_CLEAR);
+		hdmitx_hw_cntl(&hdev->tx_hw.base,
+			HDMITX_AVMUTE_CNTL, AVMUTE_CLEAR);
 		hdev->tx_comm.cur_VIC = vic;
 		hdev->audio_param_update_flag = 1;
 		restore_mute();
@@ -696,29 +685,6 @@ static ssize_t disp_mode_store(struct device *dev,
 	return count;
 }
 
-/*
- * sink_type attr
- * sink, or repeater
- */
-static ssize_t sink_type_show(struct device *dev, struct device_attribute *attr,
-			      char *buf)
-{
-	int pos = 0;
-	struct hdmitx_dev *hdev = dev_get_drvdata(dev);
-
-	if (!hdev->tx_comm.hpd_state) {
-		pos += snprintf(buf + pos, PAGE_SIZE, "none\n");
-		return pos;
-	}
-
-	if (hdev->tx_comm.rxcap.vsdb_phy_addr.b)
-		pos += snprintf(buf + pos, PAGE_SIZE, "repeater\n");
-	else
-		pos += snprintf(buf + pos, PAGE_SIZE, "sink\n");
-
-	return pos;
-}
-
 static DEFINE_MUTEX(aud_mute_mutex);
 void hdmitx21_audio_mute_op(u32 flag, unsigned int path)
 {
@@ -784,19 +750,6 @@ static void hdmitx_sdr_hdr_uevent(struct hdmitx_dev *hdev)
 		/* HDR -> SDR*/
 		hdmitx21_set_uevent(HDMITX_HDR_EVENT, 0);
 	}
-}
-
-static unsigned int hdmitx_get_frame_duration(void)
-{
-	unsigned int frame_duration;
-	struct vinfo_s *vinfo = hdmitx_get_current_vinfo(NULL);
-
-	if (!vinfo || !vinfo->sync_duration_num)
-		return 0;
-
-	frame_duration =
-		1000000 * vinfo->sync_duration_den / vinfo->sync_duration_num;
-	return frame_duration;
 }
 
 static void hdr_work_func(struct work_struct *work)
@@ -1637,237 +1590,6 @@ static void hdmitx_set_emp_pkt(u8 *data, u32 type, u32 size)
 {
 }
 
-/*config attr*/
-static ssize_t config_show(struct device *dev,
-			   struct device_attribute *attr, char *buf)
-{
-	int pos = 0;
-	u8 *conf;
-	struct hdmitx_dev *hdev = get_hdmitx21_device();
-	struct hdmi_format_para *para = &hdev->tx_comm.fmt_para;
-
-	pos += snprintf(buf + pos, PAGE_SIZE, "cur_VIC: %d\n", hdev->tx_comm.cur_VIC);
-
-	switch (para->cd) {
-	case COLORDEPTH_24B:
-		conf = "8bit";
-		break;
-	case COLORDEPTH_30B:
-		conf = "10bit";
-		break;
-	case COLORDEPTH_36B:
-		conf = "12bit";
-		break;
-	case COLORDEPTH_48B:
-		conf = "16bit";
-		break;
-	default:
-		conf = "reserved";
-	}
-	pos += snprintf(buf + pos, PAGE_SIZE, "colordepth: %s\n",
-			conf);
-	switch (para->cs) {
-	case HDMI_COLORSPACE_RGB:
-		conf = "RGB";
-		break;
-	case HDMI_COLORSPACE_YUV422:
-		conf = "422";
-		break;
-	case HDMI_COLORSPACE_YUV444:
-		conf = "444";
-		break;
-	case HDMI_COLORSPACE_YUV420:
-		conf = "420";
-		break;
-	default:
-		conf = "reserved";
-	}
-	pos += snprintf(buf + pos, PAGE_SIZE, "colorspace: %s\n",
-			conf);
-
-	switch (hdev->tx_aud_cfg) {
-	case 0:
-		conf = "off";
-		break;
-	case 1:
-		conf = "on";
-		break;
-	case 2:
-		conf = "auto";
-		break;
-	default:
-		conf = "none";
-	}
-	pos += snprintf(buf + pos, PAGE_SIZE, "audio config: %s\n", conf);
-
-	switch (hdev->hdmi_audio_off_flag) {
-	case 0:
-		conf = "on";
-		break;
-	case 1:
-		conf = "off";
-		break;
-	default:
-		conf = "none";
-	}
-	pos += snprintf(buf + pos, PAGE_SIZE, "audio on/off: %s\n", conf);
-
-	switch (hdev->tx_aud_src) {
-	case 0:
-		conf = "SPDIF";
-		break;
-	case 1:
-		conf = "I2S";
-		break;
-	default:
-		conf = "none";
-	}
-	pos += snprintf(buf + pos, PAGE_SIZE, "audio source: %s\n", conf);
-
-	switch (hdev->cur_audio_param.type) {
-	case CT_REFER_TO_STREAM:
-		conf = "refer to stream header";
-		break;
-	case CT_PCM:
-		conf = "L-PCM";
-		break;
-	case CT_AC_3:
-		conf = "AC-3";
-		break;
-	case CT_MPEG1:
-		conf = "MPEG1";
-		break;
-	case CT_MP3:
-		conf = "MP3";
-		break;
-	case CT_MPEG2:
-		conf = "MPEG2";
-		break;
-	case CT_AAC:
-		conf = "AAC";
-		break;
-	case CT_DTS:
-		conf = "DTS";
-		break;
-	case CT_ATRAC:
-		conf = "ATRAC";
-		break;
-	case CT_ONE_BIT_AUDIO:
-		conf = "One Bit Audio";
-		break;
-	case CT_DD_P:
-		conf = "Dobly Digital+";
-		break;
-	case CT_DTS_HD:
-		conf = "DTS_HD";
-		break;
-	case CT_MAT:
-		conf = "MAT";
-		break;
-	case CT_DST:
-		conf = "DST";
-		break;
-	case CT_WMA:
-		conf = "WMA";
-		break;
-	default:
-		conf = "MAX";
-	}
-	pos += snprintf(buf + pos, PAGE_SIZE, "audio type: %s\n", conf);
-
-	switch (hdev->cur_audio_param.chs) {
-	case CC_REFER_TO_STREAM:
-		conf = "refer to stream header";
-		break;
-	case CC_2CH:
-		conf = "2 channels";
-		break;
-	case CC_3CH:
-		conf = "3 channels";
-		break;
-	case CC_4CH:
-		conf = "4 channels";
-		break;
-	case CC_5CH:
-		conf = "5 channels";
-		break;
-	case CC_6CH:
-		conf = "6 channels";
-		break;
-	case CC_7CH:
-		conf = "7 channels";
-		break;
-	case CC_8CH:
-		conf = "8 channels";
-		break;
-	default:
-		conf = "MAX";
-	}
-	pos += snprintf(buf + pos, PAGE_SIZE, "audio channel num: %s\n", conf);
-
-	switch (hdev->cur_audio_param.rate) {
-	case FS_REFER_TO_STREAM:
-		conf = "refer to stream header";
-		break;
-	case FS_32K:
-		conf = "32kHz";
-		break;
-	case FS_44K1:
-		conf = "44.1kHz";
-		break;
-	case FS_48K:
-		conf = "48kHz";
-		break;
-	case FS_88K2:
-		conf = "88.2kHz";
-		break;
-	case FS_96K:
-		conf = "96kHz";
-		break;
-	case FS_176K4:
-		conf = "176.4kHz";
-		break;
-	case FS_192K:
-		conf = "192kHz";
-		break;
-	case FS_768K:
-		conf = "768kHz";
-		break;
-	default:
-		conf = "MAX";
-	}
-	pos += snprintf(buf + pos, PAGE_SIZE, "audio sample rate: %s\n", conf);
-
-	switch (hdev->cur_audio_param.size) {
-	case SS_REFER_TO_STREAM:
-		conf = "refer to stream header";
-		break;
-	case SS_16BITS:
-		conf = "16bit";
-		break;
-	case SS_20BITS:
-		conf = "20bit";
-		break;
-	case SS_24BITS:
-		conf = "24bit";
-		break;
-	default:
-		conf = "MAX";
-	}
-	pos += snprintf(buf + pos, PAGE_SIZE, "audio sample size: %s\n", conf);
-
-	if (hdev->flag_3dfp)
-		conf = "FramePacking";
-	else if (hdev->flag_3dss)
-		conf = "SidebySide";
-	else if (hdev->flag_3dtb)
-		conf = "TopButtom";
-	else
-		conf = "off";
-	pos += snprintf(buf + pos, PAGE_SIZE, "3D config: %s\n", conf);
-	return pos;
-}
-
 static ssize_t config_store(struct device *dev,
 			    struct device_attribute *attr,
 			    const char *buf, size_t count)
@@ -2291,119 +2013,9 @@ static int hdmi_hdr_status_to_drm(void)
 	return SDR;
 }
 
-/**/
-static ssize_t dc_cap_show(struct device *dev,
-			   struct device_attribute *attr, char *buf)
-{
-	int i;
-	int pos = 0;
-	struct hdmitx_dev *hdev = dev_get_drvdata(dev);
-	struct rx_cap *prxcap = &hdev->tx_comm.rxcap;
-	const struct dv_info *dv = &hdev->tx_comm.rxcap.dv_info;
-	const struct dv_info *dv2 = &hdev->tx_comm.rxcap.dv_info2;
-
-	if (prxcap->dc_36bit_420)
-		pos += snprintf(buf + pos, PAGE_SIZE, "420,12bit\n");
-	if (prxcap->dc_30bit_420)
-		pos += snprintf(buf + pos, PAGE_SIZE, "420,10bit\n");
-
-	for (i = 0; i < Y420_VIC_MAX_NUM; i++) {
-		if (prxcap->y420_vic[i]) {
-			pos += snprintf(buf + pos, PAGE_SIZE,
-				"420,8bit\n");
-			break;
-		}
-	}
-	if (prxcap->native_Mode & (1 << 5)) {
-		if (prxcap->dc_y444) {
-			if (prxcap->dc_36bit || dv->sup_10b_12b_444 == 0x2 ||
-			    dv2->sup_10b_12b_444 == 0x2)
-				if (!hdev->vend_id_hit)
-					pos += snprintf(buf + pos, PAGE_SIZE, "444,12bit\n");
-			if (prxcap->dc_30bit || dv->sup_10b_12b_444 == 0x1 ||
-			    dv2->sup_10b_12b_444 == 0x1) {
-				if (!hdev->vend_id_hit)
-					pos += snprintf(buf + pos, PAGE_SIZE, "444,10bit\n");
-			}
-		}
-		pos += snprintf(buf + pos, PAGE_SIZE, "444,8bit\n");
-	}
-	/* y422, not check dc */
-	if (prxcap->native_Mode & (1 << 4))
-		pos += snprintf(buf + pos, PAGE_SIZE, "422,12bit\n");
-
-//nextrgb:
-	if (prxcap->dc_36bit || dv->sup_10b_12b_444 == 0x2 ||
-	    dv2->sup_10b_12b_444 == 0x2)
-		if (!hdev->vend_id_hit)
-			pos += snprintf(buf + pos, PAGE_SIZE, "rgb,12bit\n");
-	if (prxcap->dc_30bit || dv->sup_10b_12b_444 == 0x1 ||
-	    dv2->sup_10b_12b_444 == 0x1)
-		if (!hdev->vend_id_hit)
-			pos += snprintf(buf + pos, PAGE_SIZE, "rgb,10bit\n");
-	pos += snprintf(buf + pos, PAGE_SIZE, "rgb,8bit\n");
-	return pos;
-}
-
-static ssize_t allm_cap_show(struct device *dev,
-			     struct device_attribute *attr, char *buf)
-{
-	int pos = 0;
-	struct hdmitx_dev *hdev = dev_get_drvdata(dev);
-	struct rx_cap *prxcap = &hdev->tx_comm.rxcap;
-
-	pos += snprintf(buf + pos, PAGE_SIZE, "%d\n\r", prxcap->allm);
-	return pos;
-}
-
-static ssize_t allm_mode_show(struct device *dev,
-			      struct device_attribute *attr, char *buf)
-{
-	int pos = 0;
-	struct hdmitx_dev *hdev = dev_get_drvdata(dev);
-
-	pos += snprintf(buf + pos, PAGE_SIZE, "%d\n\r", hdev->tx_comm.allm_mode);
-
-	return pos;
-}
-
 static inline int com_str(const char *buf, const char *str)
 {
 	return strncmp(buf, str, strlen(str)) == 0;
-}
-
-static ssize_t allm_mode_store(struct device *dev,
-			       struct device_attribute *attr,
-			       const char *buf,
-			       size_t count)
-{
-	struct hdmitx_dev *hdev = dev_get_drvdata(dev);
-	struct hdmitx_common *tx_comm = &hdev->tx_comm;
-
-	pr_info("hdmitx: store allm_mode as %s\n", buf);
-
-	if (com_str(buf, "0")) {
-		// disable ALLM
-		tx_comm->allm_mode = 0;
-		hdmitx_common_setup_vsif_packet(tx_comm, VT_ALLM, 0, NULL);
-		if (hdmitx_edid_get_hdmi14_4k_vic(tx_comm->cur_VIC) > 0 &&
-			!hdmitx21_dv_en() &&
-			!hdmitx21_hdr10p_en())
-			hdmitx_common_setup_vsif_packet(tx_comm, VT_HDMI14_4K, 1, NULL);
-	}
-	if (com_str(buf, "1")) {
-		tx_comm->allm_mode = 1;
-		hdmitx_common_setup_vsif_packet(tx_comm, VT_ALLM, 1, NULL);
-		tx_comm->ct_mode = 0;
-		hdmitx_hw_cntl_config(&hdev->tx_hw.base, CONF_CT_MODE, SET_CT_OFF);
-	}
-	if (com_str(buf, "-1")) {
-		if (tx_comm->allm_mode == 1) {
-			tx_comm->allm_mode = 0;
-			hdmi_vend_infoframe2_rawset(NULL, NULL);
-		}
-	}
-	return count;
 }
 
 static void hdmi_tx_enable_ll_mode(bool enable)
@@ -2496,34 +2108,6 @@ static void hdmi_tx_enable_ll_mode(bool enable)
 			pr_info("%s: disabling GAME Mode disabled, enable:%d, allm:%d, cnc3:%d\n",
 				__func__, enable, tx_comm->rxcap.allm, tx_comm->rxcap.cnc3);
 			hdmitx_hw_cntl_config(&hdev->tx_hw.base, CONF_CT_MODE, SET_CT_OFF);
-		}
-	}
-}
-
-static void drm_set_allm_mode(int mode)
-{
-	struct hdmitx_dev *hdev = get_hdmitx21_device();
-	struct hdmitx_common *tx_comm = &hdev->tx_comm;
-
-	if (mode == 0) {
-		// disable ALLM
-		tx_comm->allm_mode = 0;
-		hdmitx_common_setup_vsif_packet(tx_comm, VT_ALLM, 0, NULL);
-		if (hdmitx_edid_get_hdmi14_4k_vic(tx_comm->cur_VIC) > 0 &&
-			!hdmitx21_dv_en() &&
-			!hdmitx21_hdr10p_en())
-			hdmitx_common_setup_vsif_packet(tx_comm, VT_HDMI14_4K, 1, NULL);
-	}
-	if (mode == 1) {
-		tx_comm->allm_mode = 1;
-		hdmitx_common_setup_vsif_packet(tx_comm, VT_ALLM, 1, NULL);
-		tx_comm->ct_mode = 0;
-		hdmitx_hw_cntl_config(&hdev->tx_hw.base, CONF_CT_MODE, SET_CT_OFF);
-	}
-	if (mode == 2) {
-		if (tx_comm->allm_mode == 1) {
-			tx_comm->allm_mode = 0;
-			hdmi_vend_infoframe2_rawset(NULL, NULL);
 		}
 	}
 }
@@ -2756,90 +2340,6 @@ static ssize_t vrr_cap_show(struct device *dev,
 	return _vrr_cap_show(dev, attr, buf);
 }
 
-static DEFINE_MUTEX(avmute_mutex);
-void hdmitx21_av_mute_op(u32 flag, unsigned int path)
-{
-	struct hdmitx_dev *hdev = get_hdmitx21_device();
-	static unsigned int avmute_path;
-	unsigned int mute_us =
-		hdev->debug_param.avmute_frame * hdmitx_get_frame_duration();
-
-	mutex_lock(&avmute_mutex);
-	if (flag == SET_AVMUTE) {
-		avmute_path |= path;
-		pr_info("%s: AVMUTE path=0x%x\n", __func__, path);
-		hdmitx_hw_cntl_misc(&hdev->tx_hw.base, MISC_AVMUTE_OP, SET_AVMUTE);
-	} else if (flag == CLR_AVMUTE) {
-		avmute_path &= ~path;
-		/* unmute only if none of the paths are muted */
-		if (avmute_path == 0) {
-			pr_info("%s: AV UNMUTE path=0x%x\n", __func__, path);
-			hdmitx_hw_cntl_misc(&hdev->tx_hw.base, MISC_AVMUTE_OP, CLR_AVMUTE);
-		}
-	} else if (flag == OFF_AVMUTE) {
-		hdmitx_hw_cntl_misc(&hdev->tx_hw.base, MISC_AVMUTE_OP, OFF_AVMUTE);
-	}
-	if (flag == SET_AVMUTE && hdev->debug_param.avmute_frame > 0)
-		msleep(mute_us / 1000);
-	mutex_unlock(&avmute_mutex);
-}
-
-/*
- *  1: set avmute
- * -1: clear avmute
- * 0: off avmute
- */
-static ssize_t avmute_store(struct device *dev,
-			    struct device_attribute *attr,
-			    const char *buf, size_t count)
-{
-	int cmd = OFF_AVMUTE;
-	static int mask0;
-	static int mask1;
-
-	pr_info("%s %s\n", __func__, buf);
-	if (strncmp(buf, "-1", 2) == 0) {
-		cmd = CLR_AVMUTE;
-		mask0 = -1;
-	} else if (strncmp(buf, "0", 1) == 0) {
-		cmd = OFF_AVMUTE;
-		mask0 = 0;
-	} else if (strncmp(buf, "1", 1) == 0) {
-		cmd = SET_AVMUTE;
-		mask0 = 1;
-	}
-	if (strncmp(buf, "r-1", 3) == 0) {
-		cmd = CLR_AVMUTE;
-		mask1 = -1;
-	} else if (strncmp(buf, "r0", 2) == 0) {
-		cmd = OFF_AVMUTE;
-		mask1 = 0;
-	} else if (strncmp(buf, "r1", 2) == 0) {
-		cmd = SET_AVMUTE;
-		mask1 = 1;
-	}
-	if (mask0 == 1 || mask1 == 1)
-		cmd = SET_AVMUTE;
-	else if ((mask0 == -1) && (mask1 == -1))
-		cmd = CLR_AVMUTE;
-	hdmitx21_av_mute_op(cmd, AVMUTE_PATH_1);
-
-	return count;
-}
-
-static ssize_t avmute_show(struct device *dev,
-			   struct device_attribute *attr, char *buf)
-{
-	struct hdmitx_dev *hdev = dev_get_drvdata(dev);
-	int ret = 0;
-	int pos = 0;
-
-	ret = hdmitx_hw_cntl_misc(&hdev->tx_hw.base, MISC_READ_AVMUTE_OP, 0);
-	pos += snprintf(buf + pos, PAGE_SIZE, "%d", ret);
-
-	return pos;
-}
-
 static ssize_t rxsense_policy_store(struct device *dev,
 				    struct device_attribute *attr,
 				    const char *buf, size_t count)
@@ -3064,32 +2564,6 @@ static ssize_t hdcp_lstore_store(struct device *dev,
 	return count;
 }
 
-static ssize_t div40_show(struct device *dev,
-			  struct device_attribute *attr, char *buf)
-{
-	int pos = 0;
-	struct hdmitx_dev *hdev = dev_get_drvdata(dev);
-
-	pos += snprintf(buf + pos, PAGE_SIZE, "%d\n", hdev->pre_tmds_clk_div40);
-
-	return pos;
-}
-
-/* echo 1 > div40, force send 1:40 tmds bit clk ratio
- * echo 0 > div40, send 1:10 tmds bit clk ratio if scdc_present
- * echo 2 > div40, force send 1:10 tmds bit clk ratio
- */
-static ssize_t div40_store(struct device *dev,
-			   struct device_attribute *attr,
-			   const char *buf, size_t count)
-{
-	struct hdmitx_dev *hdev = dev_get_drvdata(dev);
-
-	hdmitx_hw_cntl_ddc(&hdev->tx_hw.base, DDC_SCDC_DIV40_SCRAMB, buf[0] - '0');
-
-	return count;
-}
-
 static ssize_t hdcp_mode_show(struct device *dev,
 			      struct device_attribute *attr,
 			      char *buf)
@@ -3111,7 +2585,7 @@ static ssize_t hdcp_mode_show(struct device *dev,
 		break;
 	}
 
-	if (hdev->hdcp_ctl_lvl > 0 && hdcp_mode > 0) {
+	if (hdev->tx_comm.hdcp_ctl_lvl > 0 && hdcp_mode > 0) {
 		if (hdcp_mode == 1)
 			hdcp_ret = get_hdcp1_result();
 		else if (hdcp_mode == 2)
@@ -3475,18 +2949,6 @@ static ssize_t ready_store(struct device *dev,
 	return count;
 }
 
-static ssize_t support_3d_show(struct device *dev,
-			       struct device_attribute *attr,
-			       char *buf)
-{
-	int pos = 0;
-	struct hdmitx_dev *hdev = dev_get_drvdata(dev);
-
-	pos += snprintf(buf + pos, PAGE_SIZE, "%d\n",
-			hdev->tx_comm.rxcap.threeD_present);
-	return pos;
-}
-
 static ssize_t aon_output_show(struct device *dev,
 			  struct device_attribute *attr, char *buf)
 {
@@ -3722,53 +3184,16 @@ static ssize_t sysctrl_enable_store(struct device *dev,
 	return count;
 }
 
-static ssize_t hdcp_ctl_lvl_show(struct device *dev,
-	struct device_attribute *attr, char *buf)
-{
-	int pos = 0;
-	struct hdmitx_dev *hdev = dev_get_drvdata(dev);
-
-	pos += snprintf(buf + pos, PAGE_SIZE, "%d\r\n",
-		hdev->hdcp_ctl_lvl);
-	return pos;
-}
-
-static ssize_t hdcp_ctl_lvl_store(struct device *dev,
-	struct device_attribute *attr, const char *buf, size_t count)
-{
-	unsigned long ctl_lvl = 0xf;
-	struct hdmitx_dev *hdev = dev_get_drvdata(dev);
-
-	pr_info("set hdcp_ctl_lvl: %s\n", buf);
-	if (kstrtoul(buf, 10, &ctl_lvl) == 0) {
-		if (ctl_lvl <= 2)
-			hdev->hdcp_ctl_lvl = ctl_lvl;
-	}
-	return count;
-}
-
-static ssize_t hdmitx21_show(struct device *dev,
-			       struct device_attribute *attr,
-			       char *buf)
-{
-	return snprintf(buf, PAGE_SIZE, "1\n");
-}
-
 static DEVICE_ATTR_RW(disp_mode);
 static DEVICE_ATTR_RW(vid_mute);
-static DEVICE_ATTR_RO(sink_type);
-static DEVICE_ATTR_RW(config);
+static DEVICE_ATTR_WO(config);
 static DEVICE_ATTR_RO(vrr_cap);
 static DEVICE_ATTR_RO(aud_cap);
 static DEVICE_ATTR_RW(aud_mute);
 static DEVICE_ATTR_RO(lipsync_cap);
 static DEVICE_ATTR_RO(hdmi_hdr_status);
-static DEVICE_ATTR_RO(dc_cap);
-static DEVICE_ATTR_RO(allm_cap);
-static DEVICE_ATTR_RW(allm_mode);
 static DEVICE_ATTR_RW(ll_mode);
 static DEVICE_ATTR_RW(ll_user_mode);
-static DEVICE_ATTR_RW(avmute);
 static DEVICE_ATTR_RW(sspll);
 static DEVICE_ATTR_RW(rxsense_policy);
 static DEVICE_ATTR_RW(cedst_policy);
@@ -3777,13 +3202,9 @@ static DEVICE_ATTR_RW(hdcp_mode);
 static DEVICE_ATTR_RO(hdcp_ver);
 static DEVICE_ATTR_RW(hdcp_type_policy);
 static DEVICE_ATTR_RW(hdcp_lstore);
-static DEVICE_ATTR_RW(div40);
 static DEVICE_ATTR_RO(rxsense_state);
 static DEVICE_ATTR_RW(ready);
-static DEVICE_ATTR_RO(support_3d);
-static DEVICE_ATTR_RO(hdmitx21);
 static DEVICE_ATTR_RW(def_stream_type);
-static DEVICE_ATTR_RW(hdcp_ctl_lvl);
 static DEVICE_ATTR_RW(sysctrl_enable);
 static DEVICE_ATTR_RW(aon_output);
 static DEVICE_ATTR_RO(propagate_stream_type);
@@ -3837,7 +3258,8 @@ static int hdmitx21_enable_mode(struct hdmitx_common *tx_comm, struct hdmi_forma
 	ret = hdmitx21_set_display(hdev, para->vic);
 
 	if (ret >= 0) {
-		hdev->hwop.cntl(hdev, HDMITX_AVMUTE_CNTL, AVMUTE_CLEAR);
+		hdmitx_hw_cntl(&hdev->tx_hw.base,
+			HDMITX_AVMUTE_CNTL, AVMUTE_CLEAR);
 		tx_comm->cur_VIC = para->vic;
 		hdev->audio_param_update_flag = 1;
 		restore_mute();
@@ -4645,9 +4067,6 @@ int get21_hpd_state(void)
 	return ret;
 }
 
-/******************************
- *  hdmitx kernel task
- *******************************/
 static void hdmitx_resend_div40(struct hdmitx_dev *hdev)
 {
 	hdmitx_hw_cntl_ddc(&hdev->tx_hw.base, DDC_SCDC_DIV40_SCRAMB, 1);
@@ -4698,95 +4117,6 @@ static int get_dt_vend_init_data(struct device_node *np,
 	if (ret)
 		pr_info("not find product desc\n");
 	return 0;
-}
-
-void hdmitx21_rebuild_fmt_attr_str(struct hdmitx_dev *hdev, struct hdmi_format_para *para)
-{
-	struct hdmitx_common *tx_comm = &hdev->tx_comm;
-
-	if (strlen(tx_comm->fmt_attr) >= 8) {
-		pr_info("fmt_attr %s\n", tx_comm->fmt_attr);
-		return;
-	}
-	memset(tx_comm->fmt_attr, 0, sizeof(tx_comm->fmt_attr));
-	switch (para->cs) {
-	case HDMI_COLORSPACE_RGB:
-		memcpy(tx_comm->fmt_attr, "rgb,", 5);
-		break;
-	case HDMI_COLORSPACE_YUV422:
-		memcpy(tx_comm->fmt_attr, "422,", 5);
-		break;
-	case HDMI_COLORSPACE_YUV444:
-		memcpy(tx_comm->fmt_attr, "444,", 5);
-		break;
-	case HDMI_COLORSPACE_YUV420:
-		memcpy(tx_comm->fmt_attr, "420,", 5);
-		break;
-	default:
-		break;
-	}
-	switch (para->cd) {
-	case COLORDEPTH_24B:
-		strcat(tx_comm->fmt_attr, "8bit");
-		break;
-	case COLORDEPTH_30B:
-		strcat(tx_comm->fmt_attr, "10bit");
-		break;
-	case COLORDEPTH_36B:
-		strcat(tx_comm->fmt_attr, "12bit");
-		break;
-	case COLORDEPTH_48B:
-		strcat(tx_comm->fmt_attr, "16bit");
-		break;
-	default:
-		break;
-	}
-	pr_info("fmt_attr %s\n", tx_comm->fmt_attr);
-}
-
-static void hdmitx_init_fmt_attr(struct hdmitx_dev *hdev)
-{
-	struct hdmitx_common *tx_comm = &hdev->tx_comm;
-	struct hdmi_format_para *para = &tx_comm->fmt_para;
-
-	if (strlen(tx_comm->fmt_attr) >= 8) {
-		pr_info("fmt_attr %s\n", tx_comm->fmt_attr);
-		return;
-	}
-	memset(tx_comm->fmt_attr, 0, sizeof(tx_comm->fmt_attr));
-	switch (para->cs) {
-	case HDMI_COLORSPACE_RGB:
-		memcpy(tx_comm->fmt_attr, "rgb,", 5);
-		break;
-	case HDMI_COLORSPACE_YUV422:
-		memcpy(tx_comm->fmt_attr, "422,", 5);
-		break;
-	case HDMI_COLORSPACE_YUV444:
-		memcpy(tx_comm->fmt_attr, "444,", 5);
-		break;
-	case HDMI_COLORSPACE_YUV420:
-		memcpy(tx_comm->fmt_attr, "420,", 5);
-		break;
-	default:
-		break;
-	}
-	switch (para->cd) {
-	case COLORDEPTH_24B:
-		strcat(tx_comm->fmt_attr, "8bit");
-		break;
-	case COLORDEPTH_30B:
-		strcat(tx_comm->fmt_attr, "10bit");
-		break;
-	case COLORDEPTH_36B:
-		strcat(tx_comm->fmt_attr, "12bit");
-		break;
-	case COLORDEPTH_48B:
-		strcat(tx_comm->fmt_attr, "16bit");
-		break;
-	default:
-		break;
-	}
-	pr_debug("fmt_attr %s\n", tx_comm->fmt_attr);
 }
 
 /* for notify to cec */
@@ -4876,7 +4206,6 @@ static int amhdmitx21_device_init(struct hdmitx_dev *hdev)
 	hdev->not_restart_hdcp = false;
 	/* wait for upstream start hdcp auth 5S */
 	hdev->up_hdcp_timeout_sec = 5;
-	hdev->debug_param.avmute_frame = 0;
 	hdev->tx_comm.ctrl_ops = &tx21_ctrl_ops;
 
 	return 0;
@@ -5031,11 +4360,11 @@ static int amhdmitx_get_dt_info(struct platform_device *pdev, struct hdmitx_dev 
 
 		/* hdcp ctrl 0:sysctrl, 1: drv, 2: linux app */
 		ret = of_property_read_u32(pdev->dev.of_node,
-			   "hdcp_ctl_lvl", &hdev->hdcp_ctl_lvl);
-		pr_info("hdcp_ctl_lvl[%d-%d]\n", hdev->hdcp_ctl_lvl, ret);
+			   "hdcp_ctl_lvl", &hdev->tx_comm.hdcp_ctl_lvl);
+		pr_info("hdcp_ctl_lvl[%d-%d]\n", hdev->tx_comm.hdcp_ctl_lvl, ret);
 
 		if (ret)
-			hdev->hdcp_ctl_lvl = 0;
+			hdev->tx_comm.hdcp_ctl_lvl = 0;
 
 		/* Get vendor information */
 		ret = of_property_read_u32(pdev->dev.of_node,
@@ -5292,14 +4621,12 @@ static int amhdmitx_probe(struct platform_device *pdev)
 	hdev->hdtx_dev = dev;
 	ret = device_create_file(dev, &dev_attr_disp_mode);
 	ret = device_create_file(dev, &dev_attr_vid_mute);
-	ret = device_create_file(dev, &dev_attr_sink_type);
 	ret = device_create_file(dev, &dev_attr_config);
 	ret = device_create_file(dev, &dev_attr_vrr_cap);
 	ret = device_create_file(dev, &dev_attr_aud_cap);
 	ret = device_create_file(dev, &dev_attr_lipsync_cap);
 	ret = device_create_file(dev, &dev_attr_hdmi_hdr_status);
 	ret = device_create_file(dev, &dev_attr_aud_mute);
-	ret = device_create_file(dev, &dev_attr_avmute);
 	ret = device_create_file(dev, &dev_attr_sspll);
 	ret = device_create_file(dev, &dev_attr_rxsense_policy);
 	ret = device_create_file(dev, &dev_attr_rxsense_state);
@@ -5309,18 +4636,11 @@ static int amhdmitx_probe(struct platform_device *pdev)
 	ret = device_create_file(dev, &dev_attr_hdcp_ver);
 	ret = device_create_file(dev, &dev_attr_hdcp_type_policy);
 	ret = device_create_file(dev, &dev_attr_hdcp_lstore);
-	ret = device_create_file(dev, &dev_attr_div40);
 	ret = device_create_file(dev, &dev_attr_ready);
-	ret = device_create_file(dev, &dev_attr_support_3d);
-	ret = device_create_file(dev, &dev_attr_dc_cap);
-	ret = device_create_file(dev, &dev_attr_allm_cap);
-	ret = device_create_file(dev, &dev_attr_allm_mode);
 	ret = device_create_file(dev, &dev_attr_ll_mode);
 	ret = device_create_file(dev, &dev_attr_ll_user_mode);
-	ret = device_create_file(dev, &dev_attr_hdmitx21);
 	ret = device_create_file(dev, &dev_attr_aon_output);
 	ret = device_create_file(dev, &dev_attr_def_stream_type);
-	ret = device_create_file(dev, &dev_attr_hdcp_ctl_lvl);
 	ret = device_create_file(dev, &dev_attr_sysctrl_enable);
 	ret = device_create_file(dev, &dev_attr_propagate_stream_type);
 	ret = device_create_file(dev, &dev_attr_cont_smng_method);
@@ -5358,7 +4678,8 @@ static int amhdmitx_probe(struct platform_device *pdev)
 		hdev->ready = 1;
 	}
 	/* update fmt_attr string from fmt_para*/
-	hdmitx_init_fmt_attr(hdev);
+	hdmitx_format_para_rebuild_fmtattr_str(&hdev->tx_comm.fmt_para,
+		hdev->tx_comm.fmt_attr, sizeof(hdev->tx_comm.fmt_attr));
 
 	mutex_init(&hdev->tx_comm.hdmimode_mutex);
 	tx_comm->hpd_state = !!(hdmitx_hw_cntl_misc(&hdev->tx_hw.base,
@@ -5482,31 +4803,22 @@ static int amhdmitx_remove(struct platform_device *pdev)
 	/* Remove the cdev */
 	device_remove_file(dev, &dev_attr_disp_mode);
 	device_remove_file(dev, &dev_attr_vid_mute);
-	device_remove_file(dev, &dev_attr_sink_type);
 	device_remove_file(dev, &dev_attr_config);
 	device_remove_file(dev, &dev_attr_vrr_cap);
-	device_remove_file(dev, &dev_attr_dc_cap);
-	device_remove_file(dev, &dev_attr_allm_cap);
-	device_remove_file(dev, &dev_attr_allm_mode);
 	device_remove_file(dev, &dev_attr_ll_mode);
 	device_remove_file(dev, &dev_attr_ll_user_mode);
 	device_remove_file(dev, &dev_attr_ready);
-	device_remove_file(dev, &dev_attr_support_3d);
 	device_remove_file(dev, &dev_attr_aud_mute);
-	device_remove_file(dev, &dev_attr_avmute);
 	device_remove_file(dev, &dev_attr_sspll);
 	device_remove_file(dev, &dev_attr_rxsense_policy);
 	device_remove_file(dev, &dev_attr_rxsense_state);
 	device_remove_file(dev, &dev_attr_cedst_policy);
 	device_remove_file(dev, &dev_attr_cedst_count);
-	device_remove_file(dev, &dev_attr_div40);
 	device_remove_file(dev, &dev_attr_hdcp_type_policy);
 	device_remove_file(dev, &dev_attr_hdmi_hdr_status);
-	device_remove_file(dev, &dev_attr_hdmitx21);
 	device_remove_file(dev, &dev_attr_hdcp_ver);
 	device_remove_file(dev, &dev_attr_def_stream_type);
 	device_remove_file(dev, &dev_attr_aon_output);
-	device_remove_file(dev, &dev_attr_hdcp_ctl_lvl);
 	device_remove_file(dev, &dev_attr_sysctrl_enable);
 	device_remove_file(dev, &dev_attr_propagate_stream_type);
 	device_remove_file(dev, &dev_attr_cont_smng_method);
@@ -5692,11 +5004,7 @@ static void drm_hdmitx_register_hdcp_notify(struct connector_hdcp_cb *cb)
 }
 
 static struct meson_hdmitx_dev drm_hdmitx_instance = {
-	.base = {
-		.ver = MESON_DRM_CONNECTOR_V10,
-	},
 	.get_hdmi_hdr_status = hdmi_hdr_status_to_drm,
-	.drm_set_allm_mode = drm_set_allm_mode,
 
 	/*hdcp apis*/
 	.hdcp_init = drm_hdmitx_hdcp_init,
@@ -5709,7 +5017,6 @@ static struct meson_hdmitx_dev drm_hdmitx_instance = {
 	.register_hdcp_notify = drm_hdmitx_register_hdcp_notify,
 	.get_vrr_cap = drm_hdmitx_get_vrr_cap,
 	.get_vrr_mode_group = drm_hdmitx_get_vrr_mode_group,
-	.get_hdcp_ctl_lvl = get_hdmitx_hdcp_ctl_lvl_to_drm,
 };
 
 int hdmitx_hook_drm(struct device *device)

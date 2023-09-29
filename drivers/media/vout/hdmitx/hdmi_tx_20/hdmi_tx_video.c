@@ -68,9 +68,6 @@ int hdmitx_set_display(struct hdmitx_dev *hdev, enum hdmi_vic videocode)
 	for (i = 0; i < 32; i++)
 		AVI_DB[i] = 0;
 
-	if (hdev->vend_id_hit)
-		pr_info(VID "special tv detected\n");
-
 	pr_info(VID "%s set VIC = %d\n", __func__, videocode);
 
 	if (para) {
@@ -80,7 +77,7 @@ int hdmitx_set_display(struct hdmitx_dev *hdev, enum hdmi_vic videocode)
 			para->cd = COLORDEPTH_24B;
 		}
 
-		if (hdev->hwop.setdispmode(hdev) >= 0) {
+		if (hdev->tx_hw.base.setdispmode(&hdev->tx_hw.base) >= 0) {
 			/* HDMI CT 7-33 DVI Sink, no HDMI VSDB nor any
 			 * other VSDB, No GB or DI expected
 			 * TMDS_MODE[hdmi_config]

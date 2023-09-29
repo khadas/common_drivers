@@ -18,14 +18,15 @@
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_tracer.h>
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_event_mgr.h>
 
-#define HDMI_PACKET_TYPE_GCP 0x3
-#define HDMI_INFOFRAME_TYPE_VENDOR2 (0x81 | 0x100)
-
 struct hdmitx_ctrl_ops {
 	int (*pre_enable_mode)(struct hdmitx_common *tx_comm, struct hdmi_format_para *para);
 	int (*enable_mode)(struct hdmitx_common *tx_comm, struct hdmi_format_para *para);
 	int (*post_enable_mode)(struct hdmitx_common *tx_comm, struct hdmi_format_para *para);
 	int (*disable_mode)(struct hdmitx_common *tx_comm, struct hdmi_format_para *para);
+};
+
+struct st_debug_param {
+	unsigned int avmute_frame;
 };
 
 struct hdmitx_common {
@@ -101,10 +102,13 @@ struct hdmitx_common {
 	struct mutex hdmimode_mutex;
 
 	u32 repeater_mode;
+	/*hdcp control type config*/
+	u32 hdcp_ctl_lvl;
 
 	/*debug & log*/
 	struct hdmitx_tracer *tx_tracer;
 	struct hdmitx_event_mgr *event_mgr;
+	struct st_debug_param debug_param;
 };
 
 struct hdmitx_base_state *hdmitx_get_mod_state(struct hdmitx_common *tx_common,
@@ -164,6 +168,23 @@ int hdmitx_common_trace_event(struct hdmitx_common *tx_comm,
 
 /*Notify hpd event to all outer modules: vpp by vout, drm, userspace*/
 int hdmitx_common_notify_hpd_status(struct hdmitx_common *tx_comm);
+
+/*packet api*/
+/* mode = 0 , disable allm; mode 1: set allm; mode -1: */
+int hdmitx_common_set_allm_mode(struct hdmitx_common *tx_comm, int mode);
+
+/* avmute function with lock:
+ * do set mute when mute cmd from any path;
+ * do clear when all path have cleared avmute;
+ */
+#define AVMUTE_PATH_1 0x80 //mute by avmute sysfs node
+#define AVMUTE_PATH_2 0x40 //mute by upstream side request re-auth
+#define AVMUTE_PATH_DRM 0x20 //called by drm;
+#define AVMUTE_PATH_HDMITX 0x10 //internal use
+
+int hdmitx_common_avmute_locked(struct hdmitx_common *tx_comm,
+		int mute_flag, int mute_path_hint);
+
 /*******************************hdmitx common api end*******************************/
 
 int hdmitx_hpd_notify_unlocked(struct hdmitx_common *tx_comm);

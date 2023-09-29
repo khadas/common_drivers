@@ -13,6 +13,7 @@
 #include <linux/workqueue.h>
 #include <linux/amlogic/media/vout/vout_notify.h>
 #include <linux/amlogic/media/vout/hdmi_tx/hdmi_tx_module.h>
+#include <linux/amlogic/media/vout/hdmi_tx/hdmi_tx_ddc.h>
 #include <drm/amlogic/meson_connector_dev.h>
 #include <linux/arm-smccc.h>
 #include <linux/workqueue.h>
@@ -84,7 +85,7 @@ static struct meson_hdmitx_hdcp meson_hdcp;
 
 static unsigned int get_hdcp_downstream_ver(void)
 {
-	unsigned int hdcp_downstream_type = drm_get_rx_hdcp_cap();
+	unsigned int hdcp_downstream_type = meson_hdcp_get_rx_cap();
 
 	pr_info("downstream support hdcp14: %d\n",
 		 hdcp_downstream_type & 0x1);
@@ -96,7 +97,7 @@ static unsigned int get_hdcp_downstream_ver(void)
 
 static unsigned int meson_hdcp_get_key_version(void)
 {
-	unsigned int hdcp_tx_type = drm_hdmitx_get_hdcp_cap();
+	unsigned int hdcp_tx_type = meson_hdcp_get_tx_cap();
 
 	pr_info("hdmitx support hdcp14: %d\n",
 		 hdcp_tx_type & 0x1);
@@ -430,10 +431,9 @@ static void am_hdmitx_set_out_mode(void)
 		return;
 	}
 
-	if (hdmitx_dev->hdcp_ctl_lvl > 0) {
-		hdmitx_hw_avmute(&hdmitx_dev->tx_hw.base, 1);
-		/* may reduce */
-		msleep(100);
+	if (hdmitx_dev->tx_comm.hdcp_ctl_lvl > 0) {
+		hdmitx_common_avmute_locked(&hdmitx_dev->tx_comm,
+			SET_AVMUTE, AVMUTE_PATH_HDMITX);
 		last_hdcp_mode = meson_hdcp.hdcp_execute_type;
 		meson_hdcp_disable();
 	}
@@ -441,8 +441,9 @@ static void am_hdmitx_set_out_mode(void)
 	set_vout_vmode(vmode);
 	set_vout_mode_post_process(vmode);
 	/* msleep(1000); */
-	if (hdmitx_dev->hdcp_ctl_lvl > 0) {
-		hdmitx_hw_avmute(&hdmitx_dev->tx_hw.base, 0);
+	if (hdmitx_dev->tx_comm.hdcp_ctl_lvl > 0) {
+		hdmitx_common_avmute_locked(&hdmitx_dev->tx_comm,
+			CLR_AVMUTE, AVMUTE_PATH_HDMITX);
 		meson_hdcp_enable(last_hdcp_mode);
 	}
 }
@@ -451,7 +452,7 @@ static void am_hdmitx_hdcp_disable(void)
 {
 	struct hdmitx_dev *hdmitx_dev = get_hdmitx_device();
 
-	if (hdmitx_dev->hdcp_ctl_lvl >= 1)
+	if (hdmitx_dev->tx_comm.hdcp_ctl_lvl >= 1)
 		meson_hdcp_disable();
 	pr_info("hdcp disable manually\n");
 }
@@ -461,7 +462,7 @@ static void am_hdmitx_hdcp_enable(void)
 	struct hdmitx_dev *hdmitx_dev = get_hdmitx_device();
 	int hdcp_type = HDCP_NULL;
 
-	if (hdmitx_dev->hdcp_ctl_lvl >= 1) {
+	if (hdmitx_dev->tx_comm.hdcp_ctl_lvl >= 1) {
 		hdcp_type = am_get_hdcp_exe_type();
 		meson_hdcp_enable(hdcp_type);
 	}
@@ -472,7 +473,7 @@ static void am_hdmitx_hdcp_disconnect(void)
 {
 	struct hdmitx_dev *hdmitx_dev = get_hdmitx_device();
 
-	if (hdmitx_dev->hdcp_ctl_lvl >= 1)
+	if (hdmitx_dev->tx_comm.hdcp_ctl_lvl >= 1)
 		meson_hdcp_disconnect();
 	pr_info("hdcp disconnect manually\n");
 }
@@ -523,6 +524,17 @@ bool hdcp_tx22_daemon_ready(void)
 	return ret;
 }
 
+static int drm_hdmitx_register_hdcp_cb(struct drm_hdmitx_hdcp_cb *hdcp_cb)
+{
+	struct hdmitx_dev *hdev = get_hdmitx_device();
+
+	mutex_lock(&hdev->tx_comm.setclk_mutex);
+	hdev->drm_hdcp_cb.callback = hdcp_cb->callback;
+	hdev->drm_hdcp_cb.data = hdcp_cb->data;
+	mutex_unlock(&hdev->tx_comm.setclk_mutex);
+	return 0;
+}
+
 void meson_hdcp_init(void)
 {
 	int ret;
@@ -568,5 +580,113 @@ void meson_hdcp_exit(void)
 	misc_deregister(&meson_hdcp.hdcp_comm_device);
 	del_timer_sync(&meson_hdcp.daemon_load_timer);
 	cancel_delayed_work(&meson_hdcp.notify_work);
+}
+
+/* bit[1]: hdcp22, bit[0]: hdcp14 */
+unsigned int meson_hdcp_get_tx_cap(void)
+{
+	struct hdmitx_dev *hdev = get_hdmitx_device();
+
+	if (hdev->lstore < 0x10) {
+		hdev->lstore = 0;
+		if (hdmitx_hw_cntl_ddc(&hdev->tx_hw.base, DDC_HDCP_14_LSTORE, 0))
+			hdev->lstore += 1;
+		if (hdmitx_hw_cntl_ddc(&hdev->tx_hw.base,
+			DDC_HDCP_22_LSTORE, 0))
+			hdev->lstore += 2;
+	}
+	return hdev->lstore & 0x3;
+}
+
+/* bit[1]: hdcp22, bit[0]: hdcp14 */
+unsigned int meson_hdcp_get_rx_cap(void)
+{
+	unsigned int ver = 0x0;
+	struct hdmitx_dev *hdev = get_hdmitx_device();
+
+	/* note that during hdcp1.4 authentication, read hdcp version
+	 * of connected TV set(capable of hdcp2.2) may cause TV
+	 * switch its hdcp mode, and flash screen. should not
+	 * read hdcp version of sink during hdcp1.4 authentication.
+	 * if hdcp1.4 authentication currently, force return hdcp1.4
+	 */
+
+	/* if TX don't have HDCP22 key, skip RX hdcp22 ver */
+	if (hdmitx_hw_cntl_ddc(&hdev->tx_hw.base,
+		DDC_HDCP_22_LSTORE, 0) == 0 || !hdcp_tx22_daemon_ready())
+		return 0x1;
+
+	/* Detect RX support HDCP22 */
+	mutex_lock(&getedid_mutex);
+	ver = hdcp_rd_hdcp22_ver();
+	mutex_unlock(&getedid_mutex);
+	/* Here, must assume RX support HDCP14, otherwise affect 1A-03 */
+	if (ver)
+		return 0x3;
+	else
+		return 0x1;
+}
+
+/* after TEE hdcp key valid, do hdcp22 init before tx22 start */
+void drm_hdmitx_hdcp22_init(void)
+{
+	struct hdmitx_dev *hdev = get_hdmitx_device();
+
+	hdmitx_hdcp_do_work(hdev);
+	hdmitx_hw_cntl_ddc(&hdev->tx_hw.base,
+		DDC_HDCP_MUX_INIT, 2);
+}
+
+/* echo 1/2 > hdcp_mode */
+int drm_hdmitx_hdcp_enable(unsigned int content_type)
+{
+	struct hdmitx_dev *hdev = get_hdmitx_device();
+	enum hdmi_vic vic = HDMI_0_UNKNOWN;
+
+	vic = hdmitx_hw_get_state(&hdev->tx_hw.base, STAT_VIDEO_VIC, 0);
+	hdmitx_hw_cntl_ddc(&hdev->tx_hw.base, DDC_HDCP_GET_AUTH, 0);
+
+	if (content_type == 1) {
+		hdmitx_hw_cntl_ddc(&hdev->tx_hw.base, DDC_HDCP_MUX_INIT, 1);
+		if (vic == HDMI_17_720x576p50_4x3 || vic == HDMI_18_720x576p50_16x9)
+			usleep_range(500000, 500010);
+		hdev->hdcp_mode = 1;
+		hdmitx_hdcp_do_work(hdev);
+		hdmitx_hw_cntl_ddc(&hdev->tx_hw.base,
+			DDC_HDCP_OP, HDCP14_ON);
+	} else if (content_type == 2) {
+		hdev->hdcp_mode = 2;
+		hdmitx_hdcp_do_work(hdev);
+		/* for drm hdcp_tx22, esm init only once
+		 * don't do HDCP22 IP reset after init done!
+		 */
+		hdmitx_hw_cntl_ddc(&hdev->tx_hw.base,
+			DDC_HDCP_MUX_INIT, 3);
+	}
+
+	return 0;
+}
+
+/* echo -1 > hdcp_mode;echo stop14/22 > hdcp_ctrl */
+int drm_hdmitx_hdcp_disable(unsigned int content_type)
+{
+	struct hdmitx_dev *hdev = get_hdmitx_device();
+
+	hdmitx_hw_cntl_ddc(&hdev->tx_hw.base, DDC_HDCP_MUX_INIT, 1);
+	hdmitx_hw_cntl_ddc(&hdev->tx_hw.base, DDC_HDCP_GET_AUTH, 0);
+
+	if (content_type == 1) {
+		hdmitx_hw_cntl_ddc(&hdev->tx_hw.base,
+			DDC_HDCP_OP, HDCP14_OFF);
+	} else if (content_type == 2) {
+		hdmitx_hw_cntl_ddc(&hdev->tx_hw.base,
+			DDC_HDCP_OP, HDCP22_OFF);
+	}
+
+	hdev->hdcp_mode = 0;
+	hdmitx_hdcp_do_work(hdev);
+	hdmitx_current_status(HDMITX_HDCP_NOT_ENABLED);
+
+	return 0;
 }
 

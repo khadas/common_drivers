@@ -88,10 +88,6 @@ struct hdmitx_clk_tree_s {
 	struct clk *venci_1_gate;
 };
 
-struct st_debug_param {
-	unsigned int avmute_frame;
-};
-
 struct hdmitx_dev {
 	struct cdev cdev; /* The cdev structure */
 	dev_t hdmitx_id;
@@ -134,7 +130,6 @@ struct hdmitx_dev {
 	int hdcp_hpd_stick;	/* 1 not init & reset at plugout */
 	int hdcp_tst_sig;
 	unsigned int lstore;
-	unsigned int hdcp_ctl_lvl;
 	unsigned char hdcp_max_exceed_state;
 	unsigned int hdcp_max_exceed_cnt;
 	bool hdcp22_type;
@@ -143,46 +138,39 @@ struct hdmitx_dev {
 	/*hdcp end*/
 
 	struct {
-		int (*setdispmode)(struct hdmitx_dev *hdmitx_device);
-		int (*setaudmode)(struct hdmitx_dev *hdmitx_device,
-				  struct aud_para *audio_param);
-		void (*setupirq)(struct hdmitx_dev *hdmitx_device);
-		int (*cntl)(struct hdmitx_dev *hdmitx_device, unsigned int cmd,
-			    unsigned int arg); /* Other control */
+		/*hdcp debug function, not common api, keep here.*/
 		void (*am_hdmitx_set_hdcp_mode)(unsigned int user_type);
 		void (*am_hdmitx_set_hdmi_mode)(void);
 		void (*am_hdmitx_set_out_mode)(void);
 		void (*am_hdmitx_hdcp_disable)(void);
 		void (*am_hdmitx_hdcp_enable)(void);
 		void (*am_hdmitx_hdcp_disconnect)(void);
+
 		void (*setaudioinfoframe)(unsigned char *AUD_DB,
 					  unsigned char *CHAN_STAT_BUF);
 	} hwop;
 	struct hdmi_config_platform_data config_data;
 	enum hdmi_event_t hdmitx_event;
+
+	unsigned char hpd_event; /* 1, plugin; 2, plugout */
+	unsigned char rhpd_state; /* For repeater use only, no delay */
+	unsigned char mux_hpd_if_pin_high_flag;
+	unsigned int rxsense_policy;
+	unsigned int cedst_policy;
+	struct ced_cnt ced_cnt;
+	struct scdc_locked_st chlocked_st;
+	unsigned int sspll;
+
 	/*audio*/
 	/* if switching from 48k pcm to 48k DD, the ACR/N parameter is same,
 	 * so there is no need to update ACR/N. but for mode change, different
 	 * sample rate, need to update ACR/N.
 	 */
 	struct aud_para cur_audio_param;
-	int audio_param_update_flag;
-	unsigned char hpd_event; /* 1, plugin; 2, plugout */
-	unsigned char rhpd_state; /* For repeater use only, no delay */
 	unsigned char force_audio_flag;
-	unsigned char mux_hpd_if_pin_high_flag;
-
-	/*audio*/
+	int audio_param_update_flag;
 	int auth_process_timer;
 	unsigned int tx_aud_cfg; /* 0, off; 1, on */
-	/* 0: RGB444  1: Y444  2: Y422  3: Y420 */
-	/* 4: 24bit  5: 30bit  6: 36bit  7: 48bit */
-	/* if equals to 1, means current video & audio output are blank */
-	unsigned int rxsense_policy;
-	unsigned int cedst_policy;
-	struct ced_cnt ced_cnt;
-	struct scdc_locked_st chlocked_st;
-	unsigned int sspll;
 	/* configure for I2S: 8ch in, 2ch out */
 	/* 0: default setting  1:ch0/1  2:ch2/3  3:ch4/5  4:ch6/7 */
 	unsigned int aud_output_ch;
@@ -215,7 +203,6 @@ struct hdmitx_dev {
 	unsigned int flag_3dss:1;
 	unsigned int cedst_en:1; /* configure in DTS */
 	unsigned int bist_lock:1;
-	unsigned int vend_id_hit:1;
 
 	bool systemcontrol_on;
 	unsigned char vid_mute_op;
@@ -243,8 +230,6 @@ struct hdmitx_dev {
 	struct vpu_dev_s *hdmitx_vpu_clk_gate_dev;
 #endif
 	/*Platform related end.*/
-
-	struct st_debug_param debug_param;
 };
 
 /* reduce a little time, previous setting is 4000/10 */
@@ -258,6 +243,7 @@ void hdmitx_current_status(enum hdmitx_event_log_bits event);
 extern struct aud_para hdmiaud_config_data;
 extern struct aud_para hsty_hdmiaud_config_data[8];
 extern unsigned int hsty_hdmiaud_config_loc, hsty_hdmiaud_config_num;
+extern struct mutex getedid_mutex;
 
 int hdmitx_set_display(struct hdmitx_dev *hdmitx_device,
 		       enum hdmi_vic videocode);

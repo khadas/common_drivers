@@ -5,7 +5,9 @@
 
 #include <linux/kernel.h>
 #include <linux/types.h>
+#include <linux/amlogic/media/vout/vinfo.h>
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_common.h>
+
 #include "hdmitx_sysfs_common.h"
 
 /*!!Only one instance supported.*/
@@ -750,6 +752,56 @@ static ssize_t vesa_cap_show(struct device *dev,
 
 static DEVICE_ATTR_RO(vesa_cap);
 
+static ssize_t dc_cap_show(struct device *dev,
+			   struct device_attribute *attr, char *buf)
+{
+	int pos = 0;
+	struct rx_cap *prxcap = &global_tx_common->rxcap;
+	const struct dv_info *dv =  &prxcap->dv_info;
+	const struct dv_info *dv2 = &prxcap->dv_info2;
+	int i;
+
+	if (prxcap->dc_36bit_420)
+		pos += snprintf(buf + pos, PAGE_SIZE, "420,12bit\n");
+	if (prxcap->dc_30bit_420)
+		pos += snprintf(buf + pos, PAGE_SIZE, "420,10bit\n");
+
+	for (i = 0; i < Y420_VIC_MAX_NUM; i++) {
+		if (prxcap->y420_vic[i]) {
+			pos += snprintf(buf + pos, PAGE_SIZE,
+				"420,8bit\n");
+			break;
+		}
+	}
+
+	if (prxcap->native_Mode & (1 << 5)) {
+		if (prxcap->dc_y444) {
+			if (prxcap->dc_36bit || dv->sup_10b_12b_444 == 0x2 ||
+			    dv2->sup_10b_12b_444 == 0x2)
+				pos += snprintf(buf + pos, PAGE_SIZE, "444,12bit\n");
+			if (prxcap->dc_30bit || dv->sup_10b_12b_444 == 0x1 ||
+			    dv2->sup_10b_12b_444 == 0x1) {
+				pos += snprintf(buf + pos, PAGE_SIZE, "444,10bit\n");
+			}
+		}
+		pos += snprintf(buf + pos, PAGE_SIZE, "444,8bit\n");
+	}
+	/* y422, not check dc */
+	if (prxcap->native_Mode & (1 << 4))
+		pos += snprintf(buf + pos, PAGE_SIZE, "422,12bit\n");
+
+	if (prxcap->dc_36bit || dv->sup_10b_12b_444 == 0x2 ||
+	    dv2->sup_10b_12b_444 == 0x2)
+		pos += snprintf(buf + pos, PAGE_SIZE, "rgb,12bit\n");
+	if (prxcap->dc_30bit || dv->sup_10b_12b_444 == 0x1 ||
+	    dv2->sup_10b_12b_444 == 0x1)
+		pos += snprintf(buf + pos, PAGE_SIZE, "rgb,10bit\n");
+	pos += snprintf(buf + pos, PAGE_SIZE, "rgb,8bit\n");
+	return pos;
+}
+
+static DEVICE_ATTR_RO(dc_cap);
+
 static ssize_t preferred_mode_show(struct device *dev,
 				   struct device_attribute *attr,
 				   char *buf)
@@ -944,10 +996,148 @@ static ssize_t fake_plug_store(struct device *dev,
 
 static DEVICE_ATTR_RW(fake_plug);
 
-/*************************tx20 sysfs*************************/
+static ssize_t allm_cap_show(struct device *dev,
+			     struct device_attribute *attr, char *buf)
+{
+	int pos = 0;
+	struct rx_cap *prxcap = &global_tx_common->rxcap;
 
-/*************************tx21 sysfs*************************/
+	pos += snprintf(buf + pos, PAGE_SIZE, "%d\n\r", prxcap->allm);
+	return pos;
+}
 
+static DEVICE_ATTR_RO(allm_cap);
+
+/*
+ * sink_type attr
+ * sink, or repeater
+ */
+static ssize_t sink_type_show(struct device *dev,
+	struct device_attribute *attr, char *buf)
+{
+	int pos = 0;
+
+	if (!global_tx_common->hpd_state) {
+		pos += snprintf(buf + pos, PAGE_SIZE, "none\n");
+		return pos;
+	}
+
+	if (global_tx_common->rxcap.vsdb_phy_addr.b)
+		pos += snprintf(buf + pos, PAGE_SIZE, "repeater\n");
+	else
+		pos += snprintf(buf + pos, PAGE_SIZE, "sink\n");
+
+	return pos;
+}
+
+static DEVICE_ATTR_RO(sink_type);
+
+static ssize_t support_3d_show(struct device *dev,
+			       struct device_attribute *attr,
+			       char *buf)
+{
+	int pos = 0;
+
+	pos += snprintf(buf + pos, PAGE_SIZE, "%d\n",
+			global_tx_common->rxcap.threeD_present);
+	return pos;
+}
+
+static DEVICE_ATTR_RO(support_3d);
+
+static ssize_t allm_mode_show(struct device *dev,
+			      struct device_attribute *attr, char *buf)
+{
+	int pos = 0;
+
+	pos += snprintf(buf + pos, PAGE_SIZE, "%d\n\r",
+		global_tx_common->allm_mode);
+
+	return pos;
+}
+
+static ssize_t allm_mode_store(struct device *dev,
+			       struct device_attribute *attr,
+			       const char *buf,
+			       size_t count)
+{
+	int mode = 0;
+
+	pr_info("hdmitx: store allm_mode as %s\n", buf);
+
+	if (com_str(buf, "0"))
+		mode = 0;
+	else if (com_str(buf, "1"))
+		mode = 1;
+	else if (com_str(buf, "1"))
+		mode = -1;
+
+	hdmitx_common_set_allm_mode(global_tx_common, mode);
+
+	return count;
+}
+
+static DEVICE_ATTR_RW(allm_mode);
+
+static ssize_t avmute_show(struct device *dev,
+				struct device_attribute *attr, char *buf)
+{
+	int ret = 0;
+	int pos = 0;
+
+	ret = hdmitx_hw_cntl_misc(global_tx_hw, MISC_READ_AVMUTE_OP, 0);
+	pos += snprintf(buf + pos, PAGE_SIZE, "%d", ret);
+
+	return pos;
+}
+
+/*
+ *  1: set avmute
+ * -1: clear avmute
+ *  0: off avmute
+ */
+static ssize_t avmute_store(struct device *dev,
+				struct device_attribute *attr,
+				const char *buf, size_t count)
+{
+	int cmd = OFF_AVMUTE;
+	static int mask0;
+	static int mask1;
+
+	pr_info("%s %s\n", __func__, buf);
+	if (strncmp(buf, "-1", 2) == 0) {
+		cmd = CLR_AVMUTE;
+		mask0 = -1;
+	} else if (strncmp(buf, "0", 1) == 0) {
+		cmd = OFF_AVMUTE;
+		mask0 = 0;
+	} else if (strncmp(buf, "1", 1) == 0) {
+		cmd = SET_AVMUTE;
+		mask0 = 1;
+	}
+	if (strncmp(buf, "r-1", 3) == 0) {
+		cmd = CLR_AVMUTE;
+		mask1 = -1;
+	} else if (strncmp(buf, "r0", 2) == 0) {
+		cmd = OFF_AVMUTE;
+		mask1 = 0;
+	} else if (strncmp(buf, "r1", 2) == 0) {
+		cmd = SET_AVMUTE;
+		mask1 = 1;
+	}
+	if (mask0 == 1 || mask1 == 1)
+		cmd = SET_AVMUTE;
+	else if ((mask0 == -1) && (mask1 == -1))
+		cmd = CLR_AVMUTE;
+
+	hdmitx_common_avmute_locked(global_tx_common, cmd, AVMUTE_PATH_1);
+
+	return count;
+}
+
+static DEVICE_ATTR_RW(avmute);
+
+/*********************************************************/
 int hdmitx_sysfs_common_create(struct device *dev,
 		struct hdmitx_common *tx_comm,
 		struct hdmitx_hw_common *tx_hw)
@@ -968,17 +1158,23 @@ int hdmitx_sysfs_common_create(struct device *dev,
 	ret = device_create_file(dev, &dev_attr_preferred_mode);
 	ret = device_create_file(dev, &dev_attr_cea_cap);
 	ret = device_create_file(dev, &dev_attr_vesa_cap);
+	ret = device_create_file(dev, &dev_attr_dc_cap);
 	ret = device_create_file(dev, &dev_attr_valid_mode);
 
+	ret = device_create_file(dev, &dev_attr_support_3d);
+	ret = device_create_file(dev, &dev_attr_allm_cap);
 	ret = device_create_file(dev, &dev_attr_contenttype_cap);
 	ret = device_create_file(dev, &dev_attr_hdr_cap);
 	ret = device_create_file(dev, &dev_attr_hdr_cap2);
 	ret = device_create_file(dev, &dev_attr_dv_cap);
 	ret = device_create_file(dev, &dev_attr_dv_cap2);
+	ret = device_create_file(dev, &dev_attr_sink_type);
 
 	ret = device_create_file(dev, &dev_attr_phy);
+	ret = device_create_file(dev, &dev_attr_avmute);
 
 	ret = device_create_file(dev, &dev_attr_contenttype_mode);
+	ret = device_create_file(dev, &dev_attr_allm_mode);
 
 	ret = device_create_file(dev, &dev_attr_hdmitx_cur_status);
 	ret = device_create_file(dev, &dev_attr_hdmi_repeater_tx);
@@ -1003,17 +1199,23 @@ int hdmitx_sysfs_common_destroy(struct device *dev)
 	device_remove_file(dev, &dev_attr_preferred_mode);
 	device_remove_file(dev, &dev_attr_cea_cap);
 	device_remove_file(dev, &dev_attr_vesa_cap);
+	device_remove_file(dev, &dev_attr_dc_cap);
 	device_remove_file(dev, &dev_attr_valid_mode);
 
+	device_remove_file(dev, &dev_attr_support_3d);
+	device_remove_file(dev, &dev_attr_allm_cap);
 	device_remove_file(dev, &dev_attr_contenttype_cap);
 	device_remove_file(dev, &dev_attr_hdr_cap);
 	device_remove_file(dev, &dev_attr_hdr_cap2);
 	device_remove_file(dev, &dev_attr_dv_cap);
 	device_remove_file(dev, &dev_attr_dv_cap2);
+	device_remove_file(dev, &dev_attr_sink_type);
 
 	device_remove_file(dev, &dev_attr_phy);
+	device_remove_file(dev, &dev_attr_avmute);
 
 	device_remove_file(dev, &dev_attr_contenttype_mode);
+	device_remove_file(dev, &dev_attr_allm_mode);
 
 	device_remove_file(dev, &dev_attr_hdmitx_cur_status);
 	device_remove_file(dev, &dev_attr_hdmi_repeater_tx);

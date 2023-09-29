@@ -237,6 +237,8 @@ struct hdmitx_hw_common {
 	/*uninit when destroy*/
 	void (*uninit)(struct hdmitx_hw_common *tx_hw);
 
+	int (*setupirq)(struct hdmitx_hw_common *tx_hw);
+
 	int (*cntlmisc)(struct hdmitx_hw_common *tx_hw,
 			u32 cmd, u32 arg);
 	/* Configure control */
@@ -244,7 +246,10 @@ struct hdmitx_hw_common {
 			u32 cmd, u32 arg);
 	/* Control ddc for hdcp/edid functions */
 	int (*cntlddc)(struct hdmitx_hw_common *tx_hw,
-			   unsigned int cmd, unsigned long arg);
+		unsigned int cmd, unsigned long arg);
+	/* Other control */
+	int (*cntl)(struct hdmitx_hw_common *tx_hw,
+		unsigned int cmd, unsigned int arg);
 
 	/* In original setpacket, there are many policies, like
 	 *	if ((DB[4] >> 4) == T3D_FRAME_PACKING)
@@ -263,8 +268,12 @@ struct hdmitx_hw_common {
 	/*calc formatpara hw info config*/
 	int (*calcformatpara)(struct hdmitx_hw_common *tx_hw, struct hdmi_format_para *para);
 
+	int (*setaudmode)(struct hdmitx_hw_common *tx_hw,
+			struct aud_para *audio_param);
+
 	/*debug function*/
 	void (*debugfun)(struct hdmitx_hw_common *tx_hw, const char *cmd_str);
+	int (*setdispmode)(struct hdmitx_hw_common *tx_hw);
 };
 
 int hdmitx_hw_cntl_config(struct hdmitx_hw_common *tx_hw,
@@ -272,7 +281,9 @@ int hdmitx_hw_cntl_config(struct hdmitx_hw_common *tx_hw,
 int hdmitx_hw_cntl_misc(struct hdmitx_hw_common *tx_hw,
 	u32 cmd, u32 arg);
 int hdmitx_hw_cntl_ddc(struct hdmitx_hw_common *tx_hw,
-	u32 cmd, u32 arg);
+	unsigned int cmd, unsigned long arg);
+int hdmitx_hw_cntl(struct hdmitx_hw_common *tx_hw,
+	unsigned int cmd, unsigned long arg);
 int hdmitx_hw_get_state(struct hdmitx_hw_common *tx_hw,
 	u32 cmd, u32 arg);
 int hdmitx_hw_validate_mode(struct hdmitx_hw_common *tx_hw,
@@ -283,8 +294,6 @@ int hdmitx_hw_set_packet(struct hdmitx_hw_common *tx_hw,
 	int type, unsigned char *DB, unsigned char *HB);
 int hdmitx_hw_disable_packet(struct hdmitx_hw_common *tx_hw,
 	int type);
-int hdmitx_hw_avmute(struct hdmitx_hw_common *tx_hw,
-	int muteflag);
 int hdmitx_hw_set_phy(struct hdmitx_hw_common *tx_hw,
 	int flag);
 
@@ -293,6 +302,5 @@ enum hdmi_tf_type hdmitx_hw_get_dv_st(struct hdmitx_hw_common *tx_hw);
 enum hdmi_tf_type hdmitx_hw_get_hdr10p_st(struct hdmitx_hw_common *tx_hw);
 
 /*utils functions shared for hdmitx hw module.*/
-u32 hdmitx_hw_get_audio_n_paras(enum hdmi_audio_fs fs, enum hdmi_color_depth cd, u32 tmds_clk);
 
 #endif

@@ -747,12 +747,12 @@ static void hdcp_req_reauth_whandler(struct work_struct *work)
 	if (hdcp_reauth_dbg == 1) {
 		/* before re-auth, do both video mute + avmute */
 		hdmitx21_video_mute_op(0, VIDEO_MUTE_PATH_3);
-		hdmitx21_av_mute_op(SET_AVMUTE, AVMUTE_PATH_2);
+		hdmitx_common_avmute_locked(&hdev->tx_comm, SET_AVMUTE, AVMUTE_PATH_2);
 		msleep_interruptible(avmute_ms);
 		hdmitx21_disable_hdcp(hdev);
 		hdmitx21_video_mute_op(1, VIDEO_MUTE_PATH_3);
 		//msleep_interruptible(vid_mute_ms);
-		hdmitx21_av_mute_op(CLR_AVMUTE, AVMUTE_PATH_2);
+		hdmitx_common_avmute_locked(&hdev->tx_comm, CLR_AVMUTE, AVMUTE_PATH_2);
 	} else if (hdcp_reauth_dbg == 4) {
 		if (hdev->hdcp_mode) {
 			if (p_hdcp->req_reauth_ver == 0 ||
@@ -765,12 +765,13 @@ static void hdcp_req_reauth_whandler(struct work_struct *work)
 		}
 		hdmitx21_video_mute_op(0, VIDEO_MUTE_PATH_3);
 		mdelay(20);
-		hdmitx21_av_mute_op(SET_AVMUTE, AVMUTE_PATH_2);
+
+		hdmitx_common_avmute_locked(&hdev->tx_comm, SET_AVMUTE, AVMUTE_PATH_2);
 		msleep_interruptible(avmute_ms);
 		hdmitx21_disable_hdcp(hdev);
 		hdmitx21_video_mute_op(1, VIDEO_MUTE_PATH_3);
 		msleep_interruptible(vid_mute_ms);
-		hdmitx21_av_mute_op(CLR_AVMUTE, AVMUTE_PATH_2);
+		hdmitx_common_avmute_locked(&hdev->tx_comm, CLR_AVMUTE, AVMUTE_PATH_2);
 	}
 	if (p_hdcp->req_reauth_ver == 0) {
 		/* auto mode, need to use ds hdcp version */

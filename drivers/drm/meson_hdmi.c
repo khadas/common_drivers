@@ -1159,7 +1159,8 @@ void meson_hdmitx_update(struct drm_connector_state *new_state,
 	}
 
 	if (new_hdmitx_state->allm_mode != old_hdmitx_state->allm_mode)
-		am_hdmi_info.hdmitx_dev->drm_set_allm_mode(new_hdmitx_state->allm_mode);
+		hdmitx_common_set_allm_mode(am_hdmi_info.hdmitx_dev->hdmitx_common,
+			new_hdmitx_state->allm_mode);
 
 	if (am_hdmi_info.android_path)
 		return;
@@ -1980,6 +1981,7 @@ static void meson_hdmitx_hpd_cb(void *data)
 		am_hdmi_info.hdmitx_on = 0;
 		drm_modeset_unlock(mode_lock);
 	}
+
 #ifdef CONFIG_CEC_NOTIFIER
 	if (am_hdmi->hdmitx_dev->detect()) {
 		DRM_DEBUG("%s[%d]\n", __func__, __LINE__);
@@ -2014,12 +2016,9 @@ int meson_hdmitx_dev_bind(struct drm_device *drm,
 	DRM_DEBUG("%s [%d]\n", __func__, __LINE__);
 	memset(&am_hdmi_info, 0, sizeof(am_hdmi_info));
 	am_hdmi_info.hdmitx_dev = to_meson_hdmitx_dev(intf);
-	if (am_hdmi_info.hdmitx_dev->get_hdcp_ctl_lvl)
-		hdcp_ctl_lvl = am_hdmi_info.hdmitx_dev->get_hdcp_ctl_lvl();
-	else
-		hdcp_ctl_lvl = 0;
-
+	hdcp_ctl_lvl = am_hdmi_info.hdmitx_dev->hdmitx_common->hdcp_ctl_lvl;
 	DRM_DEBUG("hdcp_ctl_lvl=%d\n", hdcp_ctl_lvl);
+
 	if (hdcp_ctl_lvl == 0) {
 		am_hdmi_info.android_path = true;
 	} else if (am_hdmi_info.hdmitx_dev->hdcp_init) {

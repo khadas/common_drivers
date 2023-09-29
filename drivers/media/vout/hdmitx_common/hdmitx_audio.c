@@ -528,3 +528,165 @@ u32 hdmitx_hw_get_audio_n_paras(enum hdmi_audio_fs fs,
 	return n * N_multiples;
 }
 
+int hdmitx_audio_para_print(struct aud_para *audio_para, char *log_buf)
+{
+	char buf[256];
+	const char *conf;
+	ssize_t pos = 0;
+	int len = sizeof(buf);
+
+	switch (audio_para->aud_src_if) {
+	case AUD_SRC_IF_SPDIF:
+		conf = "SPDIF";
+		break;
+	case AUD_SRC_IF_I2S:
+		conf = "I2S";
+		break;
+	case AUD_SRC_IF_TDM:
+		conf = "TDM";
+		break;
+	default:
+		conf = "none";
+	}
+	pos += snprintf(buf + pos, len - pos, "audio source: %s\n", conf);
+
+	switch (audio_para->type) {
+	case CT_REFER_TO_STREAM:
+		conf = "refer to stream header";
+		break;
+	case CT_PCM:
+		conf = "L-PCM";
+		break;
+	case CT_AC_3:
+		conf = "AC-3";
+		break;
+	case CT_MPEG1:
+		conf = "MPEG1";
+		break;
+	case CT_MP3:
+		conf = "MP3";
+		break;
+	case CT_MPEG2:
+		conf = "MPEG2";
+		break;
+	case CT_AAC:
+		conf = "AAC";
+		break;
+	case CT_DTS:
+		conf = "DTS";
+		break;
+	case CT_ATRAC:
+		conf = "ATRAC";
+		break;
+	case CT_ONE_BIT_AUDIO:
+		conf = "One Bit Audio";
+		break;
+	case CT_DD_P:
+		conf = "Dobly Digital+";
+		break;
+	case CT_DTS_HD:
+		conf = "DTS_HD";
+		break;
+	case CT_MAT:
+		conf = "MAT";
+		break;
+	case CT_DST:
+		conf = "DST";
+		break;
+	case CT_WMA:
+		conf = "WMA";
+		break;
+	default:
+		conf = "MAX";
+	}
+	pos += snprintf(buf + pos, len - pos, "audio type: %s\n", conf);
+
+	switch (audio_para->chs) {
+	case CC_REFER_TO_STREAM:
+		conf = "refer to stream header";
+		break;
+	case CC_2CH:
+		conf = "2 channels";
+		break;
+	case CC_3CH:
+		conf = "3 channels";
+		break;
+	case CC_4CH:
+		conf = "4 channels";
+		break;
+	case CC_5CH:
+		conf = "5 channels";
+		break;
+	case CC_6CH:
+		conf = "6 channels";
+		break;
+	case CC_7CH:
+		conf = "7 channels";
+		break;
+	case CC_8CH:
+		conf = "8 channels";
+		break;
+	default:
+		conf = "MAX";
+	}
+	pos += snprintf(buf + pos, len - pos, "audio channel num: %s\n", conf);
+
+	switch (audio_para->rate) {
+	case FS_REFER_TO_STREAM:
+		conf = "refer to stream header";
+		break;
+	case FS_32K:
+		conf = "32kHz";
+		break;
+	case FS_44K1:
+		conf = "44.1kHz";
+		break;
+	case FS_48K:
+		conf = "48kHz";
+		break;
+	case FS_88K2:
+		conf = "88.2kHz";
+		break;
+	case FS_96K:
+		conf = "96kHz";
+		break;
+	case FS_176K4:
+		conf = "176.4kHz";
+		break;
+	case FS_192K:
+		conf = "192kHz";
+		break;
+	case FS_768K:
+		conf = "768kHz";
+		break;
+	default:
+		conf = "MAX";
+	}
+	pos += snprintf(buf + pos, len - pos, "audio sample rate: %s\n", conf);
+
+	switch (audio_para->size) {
+	case SS_REFER_TO_STREAM:
+		conf = "refer to stream header";
+		break;
+	case SS_16BITS:
+		conf = "16bit";
+		break;
+	case SS_20BITS:
+		conf = "20bit";
+		break;
+	case SS_24BITS:
+		conf = "24bit";
+		break;
+	default:
+		conf = "MAX";
+	}
+	pos += snprintf(buf + pos, len - pos, "audio sample size: %s\n", conf);
+
+	if (log_buf)
+		sprintf(log_buf, "%s", buf);
+	else
+		pr_info("%s", buf);
+
+	return pos;
+}
+

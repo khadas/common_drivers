@@ -50,12 +50,12 @@ static void hdmitx_csc_config(u8 input_color_format,
 static int hdmitx_hdmi_dvi_config(struct hdmitx_dev *hdev,
 				  u32 dvi_mode);
 
-static int hdmitx_set_dispmode(struct hdmitx_dev *hdev);
-static int hdmitx_set_audmode(struct hdmitx_dev *hdev,
+static int hdmitx_set_dispmode(struct hdmitx_hw_common *tx_hw);
+static int hdmitx_set_audmode(struct hdmitx_hw_common *tx_hw,
 			      struct aud_para *audio_param);
 static void hdmitx_debug(struct hdmitx_hw_common *tx_hw, const char *buf);
 static void hdmitx_uninit(struct hdmitx_hw_common *tx_hw);
-static int hdmitx_cntl(struct hdmitx_dev *hdev, u32 cmd,
+static int hdmitx_cntl(struct hdmitx_hw_common *tx_hw, u32 cmd,
 		       u32 argv);
 static int hdmitx_cntl_ddc(struct hdmitx_hw_common *tx_hw, u32 cmd,
 			   unsigned long argv);
@@ -578,9 +578,6 @@ void hdmitx21_meson_init(struct hdmitx_dev *hdev)
 	global_txhw = &hdev->tx_hw;
 	global_txhw->infoframes = &hdev->infoframes;
 
-	hdev->hwop.setdispmode = hdmitx_set_dispmode;
-	hdev->hwop.setaudmode = hdmitx_set_audmode;
-	hdev->hwop.cntl = hdmitx_cntl;	/* todo */
 	global_txhw->base.cntlconfig = hdmitx_cntl_config;
 	global_txhw->base.cntlmisc = hdmitx_cntl_misc;
 	global_txhw->base.getstate = hdmitx_get_state;
@@ -588,8 +585,11 @@ void hdmitx21_meson_init(struct hdmitx_dev *hdev)
 	global_txhw->base.calcformatpara = hdmitx21_calc_formatpara;
 	global_txhw->base.setpacket = hdmitx_set_packet;
 	global_txhw->base.cntlddc = hdmitx_cntl_ddc;
-	global_txhw->base.debugfun = hdmitx_debug;
+	global_txhw->base.cntl = hdmitx_cntl;
+	global_txhw->base.setaudmode = hdmitx_set_audmode;
 	global_txhw->base.uninit = hdmitx_uninit;
+	global_txhw->base.debugfun = hdmitx_debug;
+	global_txhw->base.setdispmode = hdmitx_set_dispmode;
 	hdmi_hwp_init(hdev, 0);
 	hdmitx21_debugfs_init();
 	hdmitx_hw_cntl_misc(&hdev->tx_hw.base, MISC_AVMUTE_OP, CLR_AVMUTE);
@@ -900,8 +900,9 @@ static int dfm_type = 2;
 module_param(dfm_type, int, 0644);
 MODULE_PARM_DESC(dfm_type, "for dfm debug");
 
-static int hdmitx_set_dispmode(struct hdmitx_dev *hdev)
+static int hdmitx_set_dispmode(struct hdmitx_hw_common *tx_hw)
 {
+	struct hdmitx_dev *hdev = get_hdmitx21_device();
 	struct hdmi_format_para *para = &hdev->tx_comm.fmt_para;
 	u32 data32;
 	enum hdmi_vic vic = para->timing.vic;
@@ -1487,9 +1488,10 @@ static void audio_mute_op(bool flag)
 	}
 }
 
-static int hdmitx_set_audmode(struct hdmitx_dev *hdev,
+static int hdmitx_set_audmode(struct hdmitx_hw_common *tx_hw,
 			      struct aud_para *audio_param)
 {
+	struct hdmitx_dev *hdev = get_hdmitx21_device();
 	u32 data32;
 	bool hbr_audio = false;
 	u8 div_n = 1;
@@ -1701,8 +1703,8 @@ static void hw_reset_dbg(void)
 {
 }
 
-static int hdmitx_cntl(struct hdmitx_dev *hdev, u32 cmd,
-		       u32 argv)
+static int hdmitx_cntl(struct hdmitx_hw_common *tx_hw,
+	u32 cmd, u32 argv)
 {
 	if (cmd == HDMITX_AVMUTE_CNTL) {
 		return 0;
@@ -1971,7 +1973,7 @@ static void hdmitx_debug(struct hdmitx_hw_common *tx_hw, const char *buf)
 		hd21_write_reg(VENC_VIDEO_TST_CLRBAR_WIDTH, value / 8);
 		return;
 	} else if (strncmp(tmpbuf, "testaudio", 9) == 0) {
-		hdmitx_set_audmode(hdev, NULL);
+		hdmitx_set_audmode(&hdev->tx_hw.base, NULL);
 	} else if (strncmp(tmpbuf, "dumpintr", 8) == 0) {
 		hdmitx_dump_intr();
 	} else if (strncmp(tmpbuf, "chkfmt", 6) == 0) {
@@ -2082,7 +2084,7 @@ static void hdmitx_debug(struct hdmitx_hw_common *tx_hw, const char *buf)
 		pr_info("aud_mute :%lu\n", value);
 	} else if (strncmp(tmpbuf, "avmute_frame", 12) == 0) {
 		ret = kstrtoul(tmpbuf + 12, 10, &value);
-		hdev->debug_param.avmute_frame = value;
+		hdev->tx_comm.debug_param.avmute_frame = value;
 		pr_info(HW "avmute_frame = %lu\n", value);
 	} else if (strncmp(tmpbuf, "hdcp_timeout", 12) == 0) {
 		ret = kstrtoul(tmpbuf + 12, 10, &value);
@@ -2101,6 +2103,19 @@ static void hdmitx_debug(struct hdmitx_hw_common *tx_hw, const char *buf)
 		ret = kstrtoul(tmpbuf + 15, 10, &value);
 		set_output_mute(!!value);
 		pr_info("set VPP output mute :%d\n", !!value);
+	}  else if (strncmp(tmpbuf, "set_div40", 9) == 0) {
+		/* echo 1 > div40, force send 1:40 tmds bit clk ratio
+		 * echo 0 > div40, send 1:10 tmds bit clk ratio if scdc_present
+		 * echo 2 > div40, force send 1:10 tmds bit clk ratio
+		 */
+		ret = kstrtoul(tmpbuf + 9, 10, &value);
+		if (value != 0 && value != 1 && value != 2) {
+			pr_err("set div40 value in 0 ~ 2\n");
+		} else {
+			pr_info("set div40 to %lu\n", value);
+			hdmitx_hw_cntl_ddc(&hdev->tx_hw.base,
+				DDC_SCDC_DIV40_SCRAMB, value);
+		}
 	}
 }
 

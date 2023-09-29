@@ -91,7 +91,7 @@ static void drm_hdmitx_avmute(unsigned char mute)
 	else
 		muteflag = SET_AVMUTE;
 
-	hdmitx_hw_avmute(global_tx_hw, muteflag);
+	hdmitx_common_avmute_locked(global_tx_base, muteflag, AVMUTE_PATH_DRM);
 }
 
 static void drm_hdmitx_set_phy(unsigned char en)

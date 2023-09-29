@@ -5,6 +5,7 @@
 
 #include <linux/errno.h>
 #include <linux/mm.h>
+#include <linux/delay.h>
 #include <linux/amlogic/media/vout/hdmi_tx_ext.h>
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_common.h>
 #include <hdmitx_boot_parameters.h>
@@ -52,6 +53,9 @@ int hdmitx_common_init(struct hdmitx_common *tx_comm, struct hdmitx_hw_common *h
 
 	tx_comm->tx_hw = hw_comm;
 	tx_comm->repeater_mode = 0;
+
+	tx_comm->rxcap.physical_addr = 0xffff;
+	tx_comm->debug_param.avmute_frame = 0;
 
 	hdmitx_format_para_reset(&tx_comm->fmt_para);
 
@@ -188,7 +192,7 @@ int hdmitx_common_build_format_para(struct hdmitx_common *tx_comm,
 	if (ret == 0)
 		ret = hdmitx_hw_calc_format_para(tx_comm->tx_hw, para);
 	if (ret < 0)
-		hdmitx_format_para_print(para);
+		hdmitx_format_para_print(para, NULL);
 
 	return ret;
 }
@@ -210,7 +214,7 @@ int hdmitx_common_init_bootup_format_para(struct hdmitx_common *tx_comm,
 			HDMI_QUANTIZATION_RANGE_FULL);
 		if (ret == 0) {
 			pr_info("%s init ok\n", __func__);
-			hdmitx_format_para_print(para);
+			hdmitx_format_para_print(para, NULL);
 		} else {
 			pr_info("%s: init uboot format para fail (%d,%d,%d)\n",
 				__func__, para->vic, para->cs, para->cd);
@@ -467,6 +471,79 @@ int hdmitx_common_notify_hpd_status(struct hdmitx_common *tx_comm)
 	 *else
 	 *	hdmitx_event_mgr_notify(tx_comm->event_mgr, HDMITX_UNPLUG, NULL);
 	 */
+	return 0;
+}
+
+int hdmitx_common_set_allm_mode(struct hdmitx_common *tx_comm, int mode)
+{
+	struct hdmitx_hw_common *tx_hw_base = tx_comm->tx_hw;
+
+	if (mode == 0) {
+		tx_comm->allm_mode = 0;
+		hdmitx_common_setup_vsif_packet(tx_comm, VT_ALLM, 0, NULL);
+		hdmitx_common_setup_vsif_packet(tx_comm, VT_HDMI14_4K, 1, NULL);
+	}
+	if (mode == 1) {
+		tx_comm->allm_mode = 1;
+		hdmitx_common_setup_vsif_packet(tx_comm, VT_ALLM, 1, NULL);
+		hdmitx_hw_cntl_config(tx_hw_base, CONF_CT_MODE, SET_CT_OFF);
+	}
+
+	if (mode == -1) {
+		if (tx_comm->allm_mode == 1) {
+			tx_comm->allm_mode = 0;
+			hdmitx_hw_disable_packet(tx_hw_base, HDMI_PACKET_VEND);
+		}
+	}
+	return 0;
+}
+EXPORT_SYMBOL(hdmitx_common_set_allm_mode);
+
+static unsigned int get_frame_duration(struct vinfo_s *vinfo)
+{
+	unsigned int frame_duration;
+
+	if (!vinfo || !vinfo->sync_duration_num)
+		return 0;
+
+	frame_duration =
+		1000000 * vinfo->sync_duration_den / vinfo->sync_duration_num;
+	return frame_duration;
+}
+
+int hdmitx_common_avmute_locked(struct hdmitx_common *tx_comm,
+	int mute_flag, int mute_path_hint)
+{
+	static DEFINE_MUTEX(avmute_mutex);
+	static unsigned int global_avmute_mask;
+	unsigned int mute_us =
+		tx_comm->debug_param.avmute_frame * get_frame_duration(&tx_comm->hdmitx_vinfo);
+
+	mutex_lock(&avmute_mutex);
+
+	if (mute_flag == SET_AVMUTE) {
+		global_avmute_mask |= mute_path_hint;
+		pr_info("%s: AVMUTE path=0x%x\n", __func__, mute_path_hint);
+		hdmitx_hw_cntl_misc(tx_comm->tx_hw, MISC_AVMUTE_OP, SET_AVMUTE);
+	} else if (mute_flag == CLR_AVMUTE) {
+		global_avmute_mask &= ~mute_path_hint;
+		/* unmute only if none of the paths are muted */
+		if (global_avmute_mask == 0) {
+			pr_info("%s: AV UNMUTE path=0x%x\n", __func__, mute_path_hint);
+			hdmitx_hw_cntl_misc(tx_comm->tx_hw, MISC_AVMUTE_OP, CLR_AVMUTE);
+		}
+	} else if (mute_flag == OFF_AVMUTE) {
+		hdmitx_hw_cntl_misc(tx_comm->tx_hw, MISC_AVMUTE_OP, OFF_AVMUTE);
+	}
+	if (mute_flag == SET_AVMUTE) {
+		if (tx_comm->debug_param.avmute_frame > 0)
+			msleep(mute_us / 1000);
+		else if (mute_path_hint == AVMUTE_PATH_HDMITX)
+			msleep(100);
+	}
+
+	mutex_unlock(&avmute_mutex);
+
 	return 0;
 }
 

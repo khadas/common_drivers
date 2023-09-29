@@ -18,9 +18,15 @@ int hdmitx_hw_cntl_misc(struct hdmitx_hw_common *tx_hw,
 }
 
 int hdmitx_hw_cntl_ddc(struct hdmitx_hw_common *tx_hw,
-	u32 cmd, u32 arg)
+	unsigned int cmd, unsigned long arg)
 {
 	return tx_hw->cntlddc(tx_hw, cmd, arg);
+}
+
+int hdmitx_hw_cntl(struct hdmitx_hw_common *tx_hw,
+	unsigned int cmd, unsigned long arg)
+{
+	return tx_hw->cntl(tx_hw, cmd, arg);
 }
 
 int hdmitx_hw_get_state(struct hdmitx_hw_common *tx_hw,
@@ -52,11 +58,6 @@ int hdmitx_hw_disable_packet(struct hdmitx_hw_common *tx_hw,
 {
 	tx_hw->disablepacket(type);
 	return 0;
-}
-
-int hdmitx_hw_avmute(struct hdmitx_hw_common *tx_hw, int muteflag)
-{
-	return hdmitx_hw_cntl_misc(tx_hw, MISC_AVMUTE_OP, muteflag);
 }
 
 int hdmitx_hw_set_phy(struct hdmitx_hw_common *tx_hw, int flag)

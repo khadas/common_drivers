@@ -143,7 +143,6 @@ struct meson_hdmitx_dev {
 	void (*set_phy)(unsigned char en);
 	void (*set_aspect_ratio)(int aspect_ratio);
 	int (*get_aspect_ratio)(void);
-	void (*drm_set_allm_mode)(int mode);
 
 	/*hdcp apis*/
 	void (*hdcp_init)(void);
@@ -159,7 +158,7 @@ struct meson_hdmitx_dev {
 	/*vrr apis*/
 	bool (*get_vrr_cap)(void);
 	int (*get_vrr_mode_group)(struct drm_vrr_mode_group *groups, int max_group);
-	int (*get_hdcp_ctl_lvl)(void);
+
 	int (*get_hdmi_hdr_status)(void);
 };
 

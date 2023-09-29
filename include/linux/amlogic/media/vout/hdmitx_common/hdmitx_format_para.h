@@ -32,7 +32,16 @@ struct hdmi_format_para {
 };
 
 int hdmitx_format_para_reset(struct hdmi_format_para *para);
-int hdmitx_format_para_print(struct hdmi_format_para *para);
+
+/* log_buf = null, will print with printk. or will write to log_buf.
+ * return is the log len.
+ */
+int hdmitx_format_para_print(struct hdmi_format_para *para, char *log_buf);
+
+/* fmt_attr is still used by userspace, need rebuild this string from formatpara.
+ * TODO: remove it when we delete fmt_attr sysfs.
+ */
+int hdmitx_format_para_rebuild_fmtattr_str(struct hdmi_format_para *para, char *attr_str, int len);
 
 void hdmitx_parse_color_attr(char const *attr_str,
 	enum hdmi_colorspace *cs, enum hdmi_color_depth *cd,

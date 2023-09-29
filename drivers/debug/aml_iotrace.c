@@ -826,6 +826,13 @@ static void get_first_record_type(struct prz_record_iter **iter, int cpu,
 		}
 	}
 
+	if (aml_oops_cxt.record_iter[type][cpu].size + sizeof(struct record_head)
+		+ ((struct record_head *)aml_oops_cxt.record_iter[type][cpu].ptr)->size
+		> aml_oops_cxt.record_iter[type][cpu].total_size) {
+		aml_oops_cxt.record_iter[type][cpu].over = 1;
+		return;
+	}
+
 	if (!aml_oops_cxt.record_iter[type][cpu].over &&
 		((struct record_head *)aml_oops_cxt.record_iter[type][cpu].ptr)->time < *min_time) {
 		*min_time = ((struct record_head *)aml_oops_cxt.record_iter[type][cpu].ptr)->time;
@@ -887,6 +894,13 @@ static void get_next_record_type(struct prz_record_iter **iter, int cpu,
 				aml_oops_cxt.record_iter[type][cpu].over = 1;
 				break;
 			}
+		}
+
+		if (aml_oops_cxt.record_iter[type][cpu].size + sizeof(struct record_head)
+			+ ((struct record_head *)aml_oops_cxt.record_iter[type][cpu].ptr)->size
+			> aml_oops_cxt.record_iter[type][cpu].total_size) {
+			aml_oops_cxt.record_iter[type][cpu].over = 1;
+			return;
 		}
 
 		if (!aml_oops_cxt.record_iter[type][cpu].over &&

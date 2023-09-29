@@ -7296,6 +7296,11 @@ static void osd_pan_display_update_info(struct layer_fence_map_s *layer_map)
 			osd_hw.screen_base[index] = ext_addr;
 			osd_hw.screen_size[index] =
 				layer_map->byte_stride * layer_map->src_h;
+			osd_log_dbg(MODULE_BLEND,
+				     "osd%d byte_stride:%d src_h:%d src_y:%d\n",
+				     index, layer_map->byte_stride, layer_map->src_h,
+				     layer_map->src_y);
+
 		} else {
 			if (!osd_hw.afbc_support[index])
 				pr_err("osd%d: not support afbc\n", index);
@@ -8257,6 +8262,7 @@ static void matrix_RGB2YUV(u32 index, int mtx_csc, int mtx_on)
 static void osd_update_color_mode(u32 index)
 {
 	u32  data32 = 0;
+	u8 hw_colormat = 0;
 	struct hw_osd_reg_s *osd_reg = &hw_osd_reg_array[index];
 	u32 output_index = get_output_device_id(index);
 
@@ -8281,7 +8287,14 @@ static void osd_update_color_mode(u32 index)
 			data32 |= OSD_DATA_BIG_ENDIAN << 15;
 		else
 			data32 |= OSD_DATA_LITTLE_ENDIAN << 15;
-		data32 |= osd_hw.color_info[index]->hw_colormat << 2;
+
+		hw_colormat = osd_hw.color_info[index]->hw_colormat;
+		/*after t3x VIU_OSD1_BLK0_CFG_W0 rgb16 format bit(bit2-bit5) has change*/
+		if (osd_hw.color_info[index]->color_index == COLOR_INDEX_16_565 &&
+			osd_hw.osd_meson_dev.cpu_id >= __MESON_CPU_MAJOR_ID_T3X)
+			hw_colormat = 2;
+
+		data32 |= hw_colormat << 2;
 
 		/* Todo: what about osd3 */
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD

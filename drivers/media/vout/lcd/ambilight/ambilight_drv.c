@@ -28,6 +28,7 @@
 #include <linux/dma-mapping.h>
 #include <linux/sched/clock.h>
 #include <linux/amlogic/pm.h>
+#include <linux/amlogic/media/vout/lcd/lcd_vout.h>
 #include "ambilight.h"
 #include "../lcd_reg.h"
 
@@ -74,6 +75,8 @@ static void amblt_hw_ctrl(struct amblt_drv_s *amblt_drv)
 	if (amblt_drv->en) {
 		set_vpu_lut_dma_mif_wr(&amblt_drv->lut_dma, 1);
 
+		lcd_vcbus_setb(LCD_OLED_SIZE, amblt_drv->hsize, 0, 13);  //hsize
+		lcd_vcbus_setb(LCD_OLED_SIZE, amblt_drv->vsize, 16, 13);  //vsize
 		lcd_vcbus_setb(LDC_REG_INPUT_STAT_NUM, amblt_drv->zone_h, 0, 6);  //x num
 		lcd_vcbus_setb(LDC_REG_INPUT_STAT_NUM, amblt_drv->zone_v, 8, 5);  //y num
 		lcd_vcbus_setb(LDC_REG_INPUT_STAT_NUM, 1, 15, 1);  //reverse vs pol
@@ -91,7 +94,7 @@ static void amblt_hw_ctrl(struct amblt_drv_s *amblt_drv)
 		lcd_vcbus_setb(LDC_REG_INPUT_STAT_NUM, 0, 16, 1);
 		set_vpu_lut_dma_mif_wr(&amblt_drv->lut_dma, 0);
 		if (amblt_debug_print)
-			AMBLTPR("ambilight disable\n");
+			AMBLTPR("ambilight disabled\n");
 	}
 }
 
@@ -129,6 +132,7 @@ int amblt_function_disable(struct amblt_drv_s *amblt_drv)
 	}
 
 	amblt_drv->en = 0;
+	AMBLTPR("amblt function disable\n");
 
 	return 0;
 }
@@ -240,10 +244,14 @@ void amblt_zone_pixel_init(struct amblt_drv_s *amblt_drv)
 	h_active = pdrv->config.basic.h_active;
 	v_active = pdrv->config.basic.v_active;
 
+	amblt_drv->hsize = h_active;
+	amblt_drv->vsize = v_active;
 	h_pixel = h_active / amblt_drv->zone_h;
 	v_pixel = v_active / amblt_drv->zone_v;
 	amblt_drv->zone_pixel = h_pixel * v_pixel;
-	AMBLTPR("%s: %d x %d = %d\n", __func__, h_pixel, v_pixel, amblt_drv->zone_pixel);
+	AMBLTPR("%s: %d x %d / %d x %d: %d x %d = %d\n",
+		__func__, h_active, v_active, amblt_drv->zone_h, amblt_drv->zone_v,
+		h_pixel, v_pixel, amblt_drv->zone_pixel);
 
 	kfree(amblt_drv->buf);
 	amblt_drv->buf = kcalloc(amblt_drv->zone_size, sizeof(struct amblt_data_s), GFP_KERNEL);

@@ -80,6 +80,8 @@ struct amblt_drv_data_s {
 struct amblt_drv_s {
 	unsigned int state;
 	unsigned int en;
+	unsigned int hsize;
+	unsigned int vsize;
 	unsigned int zone_h;
 	unsigned int zone_v;
 	unsigned int zone_size;

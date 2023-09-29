@@ -140,7 +140,7 @@ ssize_t amblt_status_show(struct device *dev, struct device_attribute *attr, cha
 		"zone_h:      %d\n"
 		"zone_v:      %d\n"
 		"zone_size:   %d\n"
-		"zone_size:   %d\n"
+		"zone_pixel:  %d\n"
 		"dbg_level:   0x%x\n\n",
 		amblt_drv->en,
 		amblt_drv->state,

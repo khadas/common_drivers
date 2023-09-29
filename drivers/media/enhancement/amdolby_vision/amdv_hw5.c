@@ -1109,7 +1109,7 @@ void enable_amdv_hw5(int enable)
 			}
 			if (dolby_vision_flags & FLAG_CERTIFICATION) {
 				/* bypass dither/PPS/SR/CM, EO/OE */
-				if (!vd_proc_info || vd_proc_info->slice_num != 2) {
+				if ((!vd_proc_info || vd_proc_info->slice_num == 1) && !need_pps) {
 					bypass_pps_sr_gamma_gainoff(5);
 				} else {
 					/*black screen when bypass from preblend*/
@@ -1160,7 +1160,8 @@ void enable_amdv_hw5(int enable)
 				pr_dv_dbg("TV top2 turn on\n");
 				if (dolby_vision_flags & FLAG_CERTIFICATION) {
 					/* bypass dither/PPS/SR/CM, EO/OE */
-					if (!vd_proc_info || vd_proc_info->slice_num == 1) {
+					if ((!vd_proc_info || vd_proc_info->slice_num == 1) &&
+						!need_pps) {
 						bypass_pps_sr_gamma_gainoff(5);
 					} else {
 						/*black screen when bypass from preblend*/

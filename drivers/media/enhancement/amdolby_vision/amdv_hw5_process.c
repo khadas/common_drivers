@@ -225,6 +225,13 @@ void update_num_downsamplers(u32 w, u32 h)
 	} else {
 		num_downsamplers = 0;
 	}
+	if (w == (top1_vd_info.width * 4) && h == (top1_vd_info.height * 4)) {
+		num_downsamplers = 2;/*number of times video was downscaled before top1*/
+		if (debug_dolby & 0x80000)
+			pr_info("1/4 * 1/4 dw, set num_downsamplers=2\n");
+	} else if (w == top1_vd_info.width && h == top1_vd_info.height) {
+		num_downsamplers = 0;
+	}
 }
 //todo
 void update_top1_onoff(struct vframe_s *vf)
@@ -264,10 +271,10 @@ void update_top1_onoff(struct vframe_s *vf)
 		else if (force_top1_enable == 2)
 			enable_top1 = false;
 
-		update_num_downsamplers(w, h);
-
 		if (enable_top1)
 			get_top1_vd_info(vf, &top1_vd_info);
+
+		update_num_downsamplers(w, h);
 
 		if (last_enable_top1 != enable_top1) {
 			if (debug_dolby & 1)
@@ -1764,12 +1771,13 @@ int amdv_parse_metadata_hw5(struct vframe_s *vf,
 			total_comp_size = v_inst_info->last_total_comp_size;
 		}
 		if (debug_dolby & 1)
-			pr_dv_dbg("top2 frame %d, %px, pts %lld, format: %s\n",
+			pr_dv_dbg("top2 frame %d, %px,pts %lld,format:%s,type %x\n",
 			v_inst_info->frame_count, vf, vf->pts_us64,
 			(src_format == FORMAT_HDR10) ? "HDR10" :
 			((src_format == FORMAT_DOVI) ? "DOVI" :
 			((src_format == FORMAT_DOVI_LL) ? "DOVI_LL" :
-			((src_format == FORMAT_HLG) ? "HLG" : "SDR"))));
+			((src_format == FORMAT_HLG) ? "HLG" : "SDR"))),
+			vf->type);
 
 		if (toggle_mode == 1) {
 			if (debug_dolby & 2)
@@ -2496,6 +2504,23 @@ int amdolby_vision_process_hw5_top1(struct vframe_s *vf_top1,
 
 	vf = vf_top1;
 
+	if (dolby_vision_flags & FLAG_CERTIFICATION) {
+		if (vf && (vf->type & VIDTYPE_COMPRESS)) {
+			if (is_src_crop_valid(vf->src_crop)) {
+				h_size = vf->compWidth -
+					vf->src_crop.left - vf->src_crop.right;
+				v_size = vf->compHeight -
+					vf->src_crop.top - vf->src_crop.bottom;
+			} else {
+				h_size = vf->compWidth;
+				v_size = vf->compHeight;
+			}
+		} else if (vf) {
+			h_size = vf->width;
+			v_size = vf->height;
+		}
+	}
+
 	if (vf && (debug_dolby & 0x8))
 		pr_dv_dbg("top1_proc: vf %px(index %d),mode %d,core_on %d %d,flag %x\n",
 				  vf, vf->omx_index, dolby_vision_mode,
@@ -2588,6 +2613,26 @@ int amdolby_vision_process_hw5(struct vframe_s *vf_top1,
 	}
 
 	if (dolby_vision_flags & FLAG_CERTIFICATION) {
+		if (vf && vf->type & VIDTYPE_COMPRESS) {
+			if (is_src_crop_valid(vf->src_crop)) {
+				h_size = vf->compWidth -
+					vf->src_crop.left - vf->src_crop.right;
+				v_size = vf->compHeight -
+					vf->src_crop.top - vf->src_crop.bottom;
+				if (debug_dolby & 0x8)
+					pr_dv_dbg("size %d %d, crop %d %d %d %d\n",
+							  vf->compWidth, vf->compHeight,
+							  vf->src_crop.left, vf->src_crop.right,
+							  vf->src_crop.top, vf->src_crop.bottom);
+			} else {
+				h_size = vf->compWidth;
+				v_size = vf->compHeight;
+			}
+		} else if (vf) {
+			h_size = vf->width;
+			v_size = vf->height;
+		}
+
 		top2_info.run_mode_count = 1 +	amdv_run_mode_delay;
 	} else {
 		//if (vf && vf != last_vf && tv_hw5_setting)
@@ -2596,8 +2641,6 @@ int amdolby_vision_process_hw5(struct vframe_s *vf_top1,
 	}
 
 	if (dolby_vision_flags & FLAG_TOGGLE_FRAME) {
-		h_size = (display_size >> 16) & 0xffff;
-		v_size = display_size & 0xffff;
 		/* tv control path case */
 		if (top2_info.core_disp_hsize != h_size ||
 			top2_info.core_disp_vsize != v_size) {
@@ -2676,17 +2719,16 @@ int amdolby_vision_process_hw5(struct vframe_s *vf_top1,
 		if (vf &&
 		    !amdv_parse_metadata
 		    (vf, VD1_PATH, toggle_mode, false, false)) {
-			h_size = (display_size >> 16) & 0xffff;
-			v_size = display_size & 0xffff;
 			amdv_set_toggle_flag(1);
 		}
 		need_update_cfg = false;
 	}
 
 	if (debug_dolby & 2)
-		pr_dv_dbg("vf %p, turn_off %d, video_status %d, toggle %d, flag %x\n",
+		pr_dv_dbg("vf %p,turn_off %d,video_status %d,toggle %d,flag %x,size %d %d\n",
 			vf, video_turn_off, video_status,
-			toggle_mode, dolby_vision_flags);
+			toggle_mode, dolby_vision_flags,
+			h_size, v_size);
 
 	if ((!vf && video_turn_off) ||
 	    (video_status == -1)) {

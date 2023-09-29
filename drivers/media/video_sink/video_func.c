@@ -1825,7 +1825,8 @@ s32 primary_render_frame(struct video_layer_s *layer,
 	update_vd2 = false;
 #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
 	if (for_amdv_certification() &&
-	    !is_multi_dv_mode())/*some idk2.6 cert cases need pps scaler*/
+	    !get_idk_need_pps())
+	    /*some idk2.6 cert cases need pps scaler, idk5.1 5364 need pps*/
 		layer->sc_setting.sc_top_enable = false;
 
 	if (is_amdv_on() && cur_dispbuf2) {

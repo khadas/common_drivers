@@ -423,6 +423,8 @@ int force_hdmin_fmt;
 
 u32 force_sdr10;
 
+u32 need_pps;/*idk5.1 case5364 2160x3840 need pps*/
+
 /*1: force bypass 1d93 bit0=1; 2: force not bypass 1d93 bit0=0;*/
 static int force_bypass_pps_sr_cm;
 
@@ -13143,6 +13145,14 @@ bool support_multi_core1(void)
 }
 EXPORT_SYMBOL(support_multi_core1);
 
+bool get_idk_need_pps(void)
+{
+	/*some idk2.6 pip cert cases need pps scaler*/
+	/*idk5.1 6364 need pps*/
+	return need_pps || is_multi_dv_mode();
+}
+EXPORT_SYMBOL(get_idk_need_pps);
+
 bool is_amdv_el_disable(void)
 {
 	return amdv_el_disable;
@@ -14914,6 +14924,11 @@ static ssize_t amdolby_vision_debug_store
 			return -EINVAL;
 		force_sdr10 = val;
 		pr_info("set force_sdr10 %d\n", force_sdr10);
+	} else if (!strcmp(parm[0], "need_pps")) {
+		if (kstrtoul(parm[1], 10, &val) < 0)
+			return -EINVAL;
+		need_pps = val;
+		pr_info("set need_pps %d\n", need_pps);
 	} else if (!strcmp(parm[0], "venc_crc_enable")) {
 		if (kstrtoul(parm[1], 10, &val) < 0)
 			return -EINVAL;

@@ -1547,6 +1547,7 @@ static int vpp_set_filters_internal
 	bool crop_adjust = false;
 	bool hskip_adjust = false;
 	bool src_crop_adjust = false;
+	bool force_dw = false;
 	u32 force_skip_cnt = 0, slice_num = 0;
 	bool vd1s1_vd2_prebld_en = false;
 
@@ -2411,6 +2412,19 @@ RESTART:
 		}
 	}
 
+	/* for 8k 4slice case, if scaler down too much, eg. 720x576*/
+	/* used force dw */
+	slice_num = get_slice_num(input->layer_id);
+	if (slice_num == 4 &&
+		w_in > 4096 &&
+		filter->vpp_hsc_start_phase_step > 0x9500000) {
+		force_dw = 1;
+		if (cur_super_debug)
+			pr_info("slice_num=%d, w_in=%d, h_phase_step:0x%x\n",
+				slice_num, w_in,
+				filter->vpp_hsc_start_phase_step);
+	}
+
 	if ((vf->type & VIDTYPE_COMPRESS) &&
 	    !(vf->type & VIDTYPE_NO_DW) &&
 	    !IS_DI_PRELINK(vf->di_flag) &&
@@ -2425,7 +2439,8 @@ RESTART:
 		if ((vpp_flags & VPP_FLAG_FORCE_NO_COMPRESS) ||
 		    next_frame_par->vscale_skip_count > 1 ||
 		    !afbc_support ||
-		    force_no_compress)
+		    force_no_compress ||
+		    force_dw)
 			no_compress = true;
 	} else {
 		no_compress = false;

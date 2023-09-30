@@ -32,10 +32,10 @@ bool hdmitx_find_vendor_6g(struct hdmitx_dev *hdev)
 {
 	int i;
 
-	if (!hdev || !hdev->tx_comm.edid_ptr)
+	if (!hdev)
 		return false;
 	for (i = 0; i < ARRAY_SIZE(vendor_6g); i++) {
-		if (memcmp(&hdev->tx_comm.edid_ptr[8], vendor_6g[i].data,
+		if (memcmp(&hdev->tx_comm.EDID_buf[8], vendor_6g[i].data,
 			   sizeof(vendor_6g[i].data)) == 0)
 			return true;
 	}
@@ -47,10 +47,10 @@ bool hdmitx_find_vendor_ratio(struct hdmitx_dev *hdev)
 {
 	int i;
 
-	if (!hdev || !hdev->tx_comm.edid_ptr)
+	if (!hdev)
 		return false;
 	for (i = 0; i < ARRAY_SIZE(vendor_ratio); i++) {
-		if (memcmp(&hdev->tx_comm.edid_ptr[8], vendor_ratio[i].data,
+		if (memcmp(&hdev->tx_comm.EDID_buf[8], vendor_ratio[i].data,
 			   sizeof(vendor_ratio[i].data)) == 0)
 			return true;
 	}
@@ -62,10 +62,10 @@ bool hdmitx_find_vendor_null_pkt(struct hdmitx_dev *hdev)
 {
 	int i;
 
-	if (!hdev || !hdev->tx_comm.edid_ptr)
+	if (!hdev)
 		return false;
 	for (i = 0; i < ARRAY_SIZE(vendor_null_pkt); i++) {
-		if (memcmp(&hdev->tx_comm.edid_ptr[8], vendor_null_pkt[i].data,
+		if (memcmp(&hdev->tx_comm.EDID_buf[8], vendor_null_pkt[i].data,
 		    sizeof(vendor_null_pkt[i].data)) == 0)
 			return true;
 	}

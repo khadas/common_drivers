@@ -199,9 +199,10 @@ struct rx_cap {
 	bool ifdb_present;
 	/* IFDB, currently only use below node */
 	u8 additional_vsif_num;
+	u8 edid_parsing;
 	/*blk0 check sum*/
 	u8 blk0_chksum;
-	u8 chksum[10];
+	u8 hdmichecksum[11]; /* string with 0xAABBCCDD */
 	u8 head_err;
 	u8 chksum_err;
 };
@@ -261,5 +262,12 @@ bool hdmitx_edid_is_all_zeros(unsigned char *rawedid);
 int _check_base_structure(unsigned char *buf);
 int _check_edid_blk_chksum(unsigned char *block);
 int check_dvi_hdmi_edid_valid(unsigned char *buf);
+int hdmitx_edid_parse(struct rx_cap *prxcap, u8 *edid_buf);
+unsigned int hdmitx_edid_valid_block_num(unsigned char *edid_buf);
+bool hdmitx_validate_y420_vic(enum hdmi_vic vic);
+void hdmitx_edid_print(u8 *edid_buf);
+void hdmitx_edid_buffer_clear(u8 *edid_buf, int size);
+void hdmitx_edid_rxcap_clear(struct rx_cap *prxcap);
+bool hdmitx_edid_only_support_sd(struct rx_cap *prxcap);
 
 #endif

@@ -52,8 +52,6 @@
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_audio.h>
 
 #include <linux/of_gpio.h>
-#include <linux/rtc.h>
-#include <linux/timekeeping.h>
 
 #include "hw/tvenc_conf.h"
 #include "hw/common.h"
@@ -82,7 +80,6 @@
 #define to_hdmitx20_dev(x)	container_of(x, struct hdmitx_dev, tx_comm)
 
 static struct class *hdmitx_class;
-static void hdmitx_get_edid(struct hdmitx_dev *hdev);
 static void hdmitx_set_drm_pkt(struct master_display_info_s *data);
 static void hdmitx_set_vsif_pkt(enum eotf_type type, enum mode_type
 	tunnel_mode, struct dv_vsif_para *data, bool signal_sdr);
@@ -169,13 +166,9 @@ static const struct of_device_id meson_amhdmitx_of_match[] = {
 #define meson_amhdmitx_dt_match NULL
 #endif
 
-/*global getedid mutex*/
-DEFINE_MUTEX(getedid_mutex);
-
 static struct hdmitx_dev *tx20_dev;
 static const struct dv_info dv_dummy;
 int hdmitx_log_level;
-static bool hdmitx_edid_done;
 
 /* for SONY-KD-55A8F TV, need to mute more frames
  * when switch DV(LL)->HLG
@@ -264,9 +257,9 @@ static void hdmitx_early_suspend(struct early_suspend *h)
 	hdmitx_set_drm_pkt(NULL);
 	hdmitx_set_vsif_pkt(0, 0, NULL, true);
 	hdmitx_set_hdr10plus_pkt(0, NULL);
-	hdmitx_edid_buffer_clear(&hdev->tx_comm);
-	hdmitx_edid_rxcap_clear(&hdev->tx_comm);
-	hdmitx_edid_done = false;
+	hdmitx_edid_buffer_clear(hdev->tx_comm.EDID_buf, sizeof(hdev->tx_comm.EDID_buf));
+	hdmitx_edid_rxcap_clear(&hdev->tx_comm.rxcap);
+	hdev->tx_comm.hdmitx_edid_done = false;
 	edidinfo_detach_to_vinfo(hdev);
 
 	hdmitx_set_uevent(HDMITX_HDCPPWR_EVENT, HDMI_SUSPEND);
@@ -318,12 +311,12 @@ static void hdmitx_late_resume(struct early_suspend *h)
 		hdmitx_hw_cntl_ddc(&hdev->tx_hw.base, DDC_GLITCH_FILTER_RESET, 0);
 		if (hdev->tx_hw.chip_data->chip_type >= MESON_CPU_ID_G12A)
 			hdmitx_hw_cntl_misc(&hdev->tx_hw.base, MISC_I2C_RESET, 0);
-		hdmitx_get_edid(hdev);
-		hdmitx_edid_done = true;
+		hdmitx_get_edid(&hdev->tx_comm, &hdev->tx_hw.base);
+		hdev->tx_comm.hdmitx_edid_done = true;
 	}
 	hdmitx_notify_hpd(hpd_state,
-			  hdev->tx_comm.edid_parsing ?
-			  hdev->tx_comm.edid_ptr : NULL);
+			  hdev->tx_comm.rxcap.edid_parsing ?
+			  hdev->tx_comm.EDID_buf : NULL);
 
 	/* recover attr (especially for HDR case) */
 	if (info && drm_hdmitx_chk_mode_attr_sup(info->name,
@@ -477,29 +470,29 @@ static void edidinfo_attach_to_vinfo(struct hdmitx_dev *hdev)
 {
 	struct vinfo_s *info = &hdev->tx_comm.hdmitx_vinfo;
 
-	mutex_lock(&getedid_mutex);
+	mutex_lock(&hdev->tx_comm.getedid_mutex);
 	hdrinfo_to_vinfo(&info->hdr_info, hdev);
 	if (hdev->tx_comm.fmt_para.cd == COLORDEPTH_24B)
 		memset(&info->hdr_info, 0, sizeof(struct hdr_info));
 	rxlatency_to_vinfo(info, &hdev->tx_comm.rxcap);
 	hdmitx_vdev.dv_info = &hdev->tx_comm.rxcap.dv_info;
 	hdmi_physical_size_to_vinfo(hdev);
-	memcpy(info->hdmichecksum, hdev->tx_comm.rxcap.chksum, 10);
-	mutex_unlock(&getedid_mutex);
+	memcpy(info->hdmichecksum, hdev->tx_comm.rxcap.hdmichecksum, 10);
+	mutex_unlock(&hdev->tx_comm.getedid_mutex);
 }
 
 static void edidinfo_detach_to_vinfo(struct hdmitx_dev *hdev)
 {
 	struct vinfo_s *info = &hdev->tx_comm.hdmitx_vinfo;
 
-	mutex_lock(&getedid_mutex);
+	mutex_lock(&hdev->tx_comm.getedid_mutex);
 	memset(&info->hdr_info, 0, sizeof(info->hdr_info));
 	memset(&info->rx_latency, 0, sizeof(info->rx_latency));
 	hdmitx_vdev.dv_info = &dv_dummy;
 
 	info->screen_real_width = 0;
 	info->screen_real_height = 0;
-	mutex_unlock(&getedid_mutex);
+	mutex_unlock(&hdev->tx_comm.getedid_mutex);
 }
 
 /*disp_mode attr*/
@@ -881,7 +874,7 @@ static void hdmitx_set_drm_pkt(struct master_display_info_s *data)
 	struct hdmitx_hw_common *tx_hw_base = &hdev->tx_hw.base;
 
 	hdmi_debug();
-	spin_lock_irqsave(&hdev->edid_spinlock, flags);
+	spin_lock_irqsave(&hdev->tx_comm.edid_spinlock, flags);
 	if (data)
 		memcpy(&drm_config_data, data,
 		       sizeof(struct master_display_info_s));
@@ -962,7 +955,7 @@ static void hdmitx_set_drm_pkt(struct master_display_info_s *data)
 		hdmitx_hw_set_packet(tx_hw_base, HDMI_PACKET_DRM, NULL, NULL);
 		hdmitx_hw_cntl_config(tx_hw_base,
 			CONF_AVI_BT2020, hdev->colormetry);
-		spin_unlock_irqrestore(&hdev->edid_spinlock, flags);
+		spin_unlock_irqrestore(&hdev->tx_comm.edid_spinlock, flags);
 		return;
 	}
 
@@ -1003,7 +996,7 @@ static void hdmitx_set_drm_pkt(struct master_display_info_s *data)
 				__func__, hdev->tx_comm.fmt_para.cs,
 				hdev->tx_comm.fmt_para.cd);
 		}
-		spin_unlock_irqrestore(&hdev->edid_spinlock, flags);
+		spin_unlock_irqrestore(&hdev->tx_comm.edid_spinlock, flags);
 		return;
 	}
 
@@ -1054,7 +1047,7 @@ static void hdmitx_set_drm_pkt(struct master_display_info_s *data)
 			hdmitx_hw_cntl_config(tx_hw_base,
 				CONF_AVI_BT2020, SET_AVI_BT2020);
 		}
-		spin_unlock_irqrestore(&hdev->edid_spinlock, flags);
+		spin_unlock_irqrestore(&hdev->tx_comm.edid_spinlock, flags);
 		return;
 	}
 
@@ -1146,7 +1139,7 @@ static void hdmitx_set_drm_pkt(struct master_display_info_s *data)
 			pr_info("%s: switch to 422,12bit\n", __func__);
 		}
 	}
-	spin_unlock_irqrestore(&hdev->edid_spinlock, flags);
+	spin_unlock_irqrestore(&hdev->tx_comm.edid_spinlock, flags);
 }
 
 static int calc_vinfo_from_hdmi_timing(const struct hdmi_timing *timing, struct vinfo_s *tx_vinfo)
@@ -1233,9 +1226,9 @@ static void hdmitx_set_vsif_pkt(enum eotf_type type,
 	unsigned long flags = 0;
 
 	hdmi_debug();
-	spin_lock_irqsave(&hdev->edid_spinlock, flags);
+	spin_lock_irqsave(&hdev->tx_comm.edid_spinlock, flags);
 	if (hdev->bist_lock) {
-		spin_unlock_irqrestore(&hdev->edid_spinlock, flags);
+		spin_unlock_irqrestore(&hdev->tx_comm.edid_spinlock, flags);
 		return;
 	}
 	if (!data)
@@ -1260,7 +1253,7 @@ static void hdmitx_set_vsif_pkt(enum eotf_type type,
 	if (hdev->ready == 0) {
 		ltype = EOTF_T_NULL;
 		ltmode = -1;
-		spin_unlock_irqrestore(&hdev->edid_spinlock, flags);
+		spin_unlock_irqrestore(&hdev->tx_comm.edid_spinlock, flags);
 		return;
 	}
 	if (hdev->tx_comm.rxcap.dv_info.ieeeoui != DV_IEEE_OUI) {
@@ -1270,7 +1263,7 @@ static void hdmitx_set_vsif_pkt(enum eotf_type type,
 
 	if (hdev->tx_hw.chip_data->chip_type < MESON_CPU_ID_GXL) {
 		pr_info("hdmitx: not support DolbyVision\n");
-		spin_unlock_irqrestore(&hdev->edid_spinlock, flags);
+		spin_unlock_irqrestore(&hdev->tx_comm.edid_spinlock, flags);
 		return;
 	}
 
@@ -1341,7 +1334,7 @@ static void hdmitx_set_vsif_pkt(enum eotf_type type,
 		}
 		if (type == EOTF_T_DV_AHEAD) {
 			hdmitx_hw_set_packet(tx_hw_base, HDMI_PACKET_VEND, VEN_DB1, VEN_HB);
-			spin_unlock_irqrestore(&hdev->edid_spinlock, flags);
+			spin_unlock_irqrestore(&hdev->tx_comm.edid_spinlock, flags);
 			return;
 		}
 		if (type == EOTF_T_DOLBYVISION) {
@@ -1447,7 +1440,7 @@ static void hdmitx_set_vsif_pkt(enum eotf_type type,
 		}
 		if (type == EOTF_T_DV_AHEAD) {
 			hdmitx_hw_set_packet(tx_hw_base, HDMI_PACKET_VEND, VEN_DB2, VEN_HB);
-			spin_unlock_irqrestore(&hdev->edid_spinlock, flags);
+			spin_unlock_irqrestore(&hdev->tx_comm.edid_spinlock, flags);
 			return;
 		}
 		/*Dolby Vision standard case*/
@@ -1529,7 +1522,7 @@ static void hdmitx_set_vsif_pkt(enum eotf_type type,
 			}
 		}
 	}
-	spin_unlock_irqrestore(&hdev->edid_spinlock, flags);
+	spin_unlock_irqrestore(&hdev->tx_comm.edid_spinlock, flags);
 }
 
 struct hdr10plus_para hdr10p_config_data;
@@ -1632,14 +1625,14 @@ static void hdmitx_set_cuva_hdr_vsif(struct cuva_hdr_vsif_para *data)
 	const struct cuva_info *cuva = &hdev->tx_comm.rxcap.hdr_info.cuva_info;
 	struct hdmitx_hw_common *tx_hw_base = &hdev->tx_hw.base;
 
-	spin_lock_irqsave(&hdev->edid_spinlock, flags);
+	spin_lock_irqsave(&hdev->tx_comm.edid_spinlock, flags);
 	if (cuva->ieeeoui != CUVA_IEEEOUI) {
-		spin_unlock_irqrestore(&hdev->edid_spinlock, flags);
+		spin_unlock_irqrestore(&hdev->tx_comm.edid_spinlock, flags);
 		return;
 	}
 	if (!data) {
 		hdmitx_hw_set_packet(tx_hw_base, HDMI_PACKET_VEND, NULL, NULL);
-		spin_unlock_irqrestore(&hdev->edid_spinlock, flags);
+		spin_unlock_irqrestore(&hdev->tx_comm.edid_spinlock, flags);
 		return;
 	}
 	ven_db[0] = GET_OUI_BYTE0(CUVA_IEEEOUI);
@@ -1648,7 +1641,7 @@ static void hdmitx_set_cuva_hdr_vsif(struct cuva_hdr_vsif_para *data)
 	ven_db[3] = data->system_start_code;
 	ven_db[4] = (data->version_code & 0xf) << 4;
 	hdmitx_hw_set_packet(tx_hw_base, HDMI_PACKET_VEND, ven_db, ven_hb);
-	spin_unlock_irqrestore(&hdev->edid_spinlock, flags);
+	spin_unlock_irqrestore(&hdev->tx_comm.edid_spinlock, flags);
 }
 
 struct hdmi_packet_t {
@@ -1667,10 +1660,10 @@ static void hdmitx_set_cuva_hdr_vs_emds(struct cuva_hdr_vs_emds_para *data)
 	unsigned long phys_ptr;
 
 	memset(vs_emds, 0, sizeof(vs_emds));
-	spin_lock_irqsave(&hdev->edid_spinlock, flags);
+	spin_lock_irqsave(&hdev->tx_comm.edid_spinlock, flags);
 	if (!data) {
 		hdmitx_hw_cntl_config(&hdev->tx_hw.base, CONF_EMP_NUMBER, 0);
-		spin_unlock_irqrestore(&hdev->edid_spinlock, flags);
+		spin_unlock_irqrestore(&hdev->tx_comm.edid_spinlock, flags);
 		return;
 	}
 
@@ -1771,7 +1764,7 @@ static void hdmitx_set_cuva_hdr_vs_emds(struct cuva_hdr_vs_emds_para *data)
 	hdmitx_hw_cntl_config(&hdev->tx_hw.base, CONF_EMP_NUMBER,
 			      sizeof(vs_emds) / (sizeof(struct hdmi_packet_t)));
 	hdmitx_hw_cntl_config(&hdev->tx_hw.base, CONF_EMP_PHY_ADDR, phys_ptr);
-	spin_unlock_irqrestore(&hdev->edid_spinlock, flags);
+	spin_unlock_irqrestore(&hdev->tx_comm.edid_spinlock, flags);
 }
 
 #define  EMP_FIRST 0x80
@@ -3988,70 +3981,6 @@ static int hdmitx_notify_callback_a(struct notifier_block *block,
 
 #endif
 
-static void hdmitx_get_edid(struct hdmitx_dev *hdev)
-{
-	unsigned long flags = 0;
-	struct hdmitx_common *tx_comm = &hdev->tx_comm;
-
-	mutex_lock(&getedid_mutex);
-	hdmitx_edid_buffer_clear(&hdev->tx_comm);
-	hdmitx_hw_cntl_ddc(&hdev->tx_hw.base, DDC_RESET_EDID, 0);
-	hdmitx_hw_cntl_ddc(&hdev->tx_hw.base, DDC_PIN_MUX_OP, PIN_MUX);
-	/* start reading edid first time */
-	hdmitx_hw_cntl_ddc(&hdev->tx_hw.base, DDC_EDID_READ_DATA, 0);
-	if (hdmitx_edid_is_all_zeros(hdev->tx_comm.EDID_buf)) {
-		hdmitx_hw_cntl_ddc(&hdev->tx_hw.base, DDC_GLITCH_FILTER_RESET, 0);
-		hdmitx_hw_cntl_ddc(&hdev->tx_hw.base, DDC_EDID_READ_DATA, 0);
-	}
-	/* If EDID is not correct at first time, then retry */
-	if (!check_dvi_hdmi_edid_valid(hdev->tx_comm.EDID_buf)) {
-		struct timespec64 kts;
-		struct rtc_time tm;
-
-		msleep(20);
-		ktime_get_real_ts64(&kts);
-		rtc_time64_to_tm(kts.tv_sec, &tm);
-		if (hdev->hdmitx_gpios_scl != -EPROBE_DEFER)
-			pr_info("UTC+0 %ptRd %ptRt DDC SCL %s\n", &tm, &tm,
-			gpio_get_value(hdev->hdmitx_gpios_scl) ? "HIGH" : "LOW");
-		if (hdev->hdmitx_gpios_sda != -EPROBE_DEFER)
-			pr_info("UTC+0 %ptRd %ptRt DDC SDA %s\n", &tm, &tm,
-			gpio_get_value(hdev->hdmitx_gpios_sda) ? "HIGH" : "LOW");
-		msleep(80);
-
-		/* start reading edid second time */
-		hdmitx_hw_cntl_ddc(&hdev->tx_hw.base, DDC_EDID_READ_DATA, 0);
-		if (hdmitx_edid_is_all_zeros(hdev->tx_comm.EDID_buf)) {
-			hdmitx_hw_cntl_ddc(&hdev->tx_hw.base, DDC_GLITCH_FILTER_RESET, 0);
-			hdmitx_hw_cntl_ddc(&hdev->tx_hw.base, DDC_EDID_READ_DATA, 0);
-		}
-	}
-	spin_lock_irqsave(&hdev->edid_spinlock, flags);
-	hdmitx_edid_rxcap_clear(&hdev->tx_comm);
-	hdmitx_edid_parse(&hdev->tx_comm);
-
-	if (tx_comm->hdr_priority == 1) { /* clear dv_info */
-		struct dv_info *dv = &hdev->tx_comm.rxcap.dv_info;
-
-		memset(dv, 0, sizeof(struct dv_info));
-		pr_info("clear dv_info\n");
-	}
-	if (tx_comm->hdr_priority == 2) { /* clear dv_info/hdr_info */
-		struct dv_info *dv = &hdev->tx_comm.rxcap.dv_info;
-		struct hdr_info *hdr = &hdev->tx_comm.rxcap.hdr_info;
-
-		memset(dv, 0, sizeof(struct dv_info));
-		memset(hdr, 0, sizeof(struct hdr_info));
-		pr_info("clear dv_info/hdr_info\n");
-	}
-	spin_unlock_irqrestore(&hdev->edid_spinlock, flags);
-	hdmitx_event_mgr_notify(hdev->tx_comm.event_mgr,
-		HDMITX_PHY_ADDR_VALID, &hdev->tx_comm.rxcap.physical_addr);
-	hdmitx_edid_print(&hdev->tx_comm);
-
-	mutex_unlock(&getedid_mutex);
-}
-
 static void hdmitx_rxsense_process(struct work_struct *work)
 {
 	int sense;
@@ -4087,9 +4016,8 @@ bool is_tv_changed(void)
 	struct hdmitx_dev *hdev = get_hdmitx_device();
 	struct hdmitx_common *tx_comm = &hdev->tx_comm;
 
-	if (memcmp(tx_comm->hdmichecksum, hdev->tx_comm.rxcap.chksum, 10) &&
-		memcmp(emptychecksum, hdev->tx_comm.rxcap.chksum, 10) &&
-		memcmp(invalidchecksum, tx_comm->hdmichecksum, 10)) {
+	if (memcmp(emptychecksum, tx_comm->rxcap.hdmichecksum, 10) &&
+		memcmp(invalidchecksum, tx_comm->rxcap.hdmichecksum, 10)) {
 		ret = true;
 		pr_info("hdmi crc is diff between uboot and kernel\n");
 	}
@@ -4152,11 +4080,11 @@ static void hdmitx_hpd_plugin_handler(struct work_struct *work)
 	 * EDID, now EDID already read done and hdcp already started,
 	 * not read EDID again.
 	 */
-	if (!hdmitx_edid_done) {
+	if (!hdev->tx_comm.hdmitx_edid_done) {
 		if (hdev->tx_hw.chip_data->chip_type >= MESON_CPU_ID_G12A)
 			hdmitx_hw_cntl_misc(&hdev->tx_hw.base, MISC_I2C_RESET, 0);
-		hdmitx_get_edid(hdev);
-		hdmitx_edid_done = true;
+		hdmitx_get_edid(&hdev->tx_comm, &hdev->tx_hw.base);
+		hdev->tx_comm.hdmitx_edid_done = true;
 	}
 	/* start reading E-EDID */
 	hdev->cedst_policy = hdev->cedst_en & hdev->tx_comm.rxcap.scdc_present;
@@ -4166,10 +4094,10 @@ static void hdmitx_hpd_plugin_handler(struct work_struct *work)
 	else
 		hdmitx_hw_cntl_config(&hdev->tx_hw.base,
 			CONF_HDMI_DVI_MODE, HDMI_MODE);
-	mutex_lock(&getedid_mutex);
+	mutex_lock(&hdev->tx_comm.getedid_mutex);
 	if (hdev->tx_hw.chip_data->chip_type < MESON_CPU_ID_G12A)
 		hdmitx_hw_cntl_misc(&hdev->tx_hw.base, MISC_I2C_REACTIVE, 0);
-	mutex_unlock(&getedid_mutex);
+	mutex_unlock(&hdev->tx_comm.getedid_mutex);
 	if (hdev->tx_comm.repeater_mode) {
 		rx_set_repeater_support(1);
 		hdmitx_hw_cntl_ddc(&hdev->tx_hw.base, DDC_HDCP_GET_BKSV,
@@ -4205,8 +4133,8 @@ static void hdmitx_hpd_plugin_handler(struct work_struct *work)
 	}
 	hdev->tx_comm.hpd_state = 1;
 	hdmitx_notify_hpd(hdev->tx_comm.hpd_state,
-			  hdev->tx_comm.edid_parsing ?
-			  hdev->tx_comm.edid_ptr : NULL);
+			  hdev->tx_comm.rxcap.edid_parsing ?
+			  hdev->tx_comm.EDID_buf : NULL);
 	/* audio uevent is used for android to
 	 * register hdmi audio device, it should
 	 * sync with hdmi hpd state.
@@ -4266,9 +4194,9 @@ static void hdmitx_hpd_plugout_handler(struct work_struct *work)
 		edidinfo_detach_to_vinfo(hdev);
 		hdev->hdmitx_event &= ~HDMI_TX_HPD_PLUGOUT;
 		rx_edid_physical_addr(0, 0, 0, 0);
-		hdmitx_edid_buffer_clear(&hdev->tx_comm);
-		hdmitx_edid_rxcap_clear(&hdev->tx_comm);
-		hdmitx_edid_done = false;
+		hdmitx_edid_buffer_clear(hdev->tx_comm.EDID_buf, sizeof(hdev->tx_comm.EDID_buf));
+		hdmitx_edid_rxcap_clear(&hdev->tx_comm.rxcap);
+		hdev->tx_comm.hdmitx_edid_done = false;
 		hdev->tx_comm.hpd_state = 0;
 		hdmitx_notify_hpd(hdev->tx_comm.hpd_state, NULL);
 		hdmitx_hw_cntl_misc(&hdev->tx_hw.base, MISC_AVMUTE_OP, SET_AVMUTE);
@@ -4292,9 +4220,9 @@ static void hdmitx_hpd_plugout_handler(struct work_struct *work)
 
 /*edid info clear*/
 	rx_edid_physical_addr(0, 0, 0, 0);
-	hdmitx_edid_buffer_clear(&hdev->tx_comm);
-	hdmitx_edid_rxcap_clear(&hdev->tx_comm);
-	hdmitx_edid_done = false;
+	hdmitx_edid_buffer_clear(hdev->tx_comm.EDID_buf, sizeof(hdev->tx_comm.EDID_buf));
+	hdmitx_edid_rxcap_clear(&hdev->tx_comm.rxcap);
+	hdev->tx_comm.hdmitx_edid_done = false;
 	edidinfo_detach_to_vinfo(hdev);
 
 /*update hpd state*/
@@ -4432,8 +4360,8 @@ int hdmitx20_event_notifier_regist(struct notifier_block *nb)
 	/* update status when register */
 	if (!ret && nb->notifier_call) {
 		hdmitx_notify_hpd(hdev->tx_comm.hpd_state,
-				  hdev->tx_comm.edid_parsing ?
-				  hdev->tx_comm.edid_ptr : NULL);
+				  hdev->tx_comm.rxcap.edid_parsing ?
+				  hdev->tx_comm.EDID_buf : NULL);
 		if (hdev->tx_comm.rxcap.physical_addr != 0xffff)
 			hdmitx_event_mgr_notify(hdev->tx_comm.event_mgr,
 					HDMITX_PHY_ADDR_VALID, &hdev->tx_comm.rxcap.physical_addr);
@@ -4587,17 +4515,17 @@ static int amhdmitx_get_dt_info(struct platform_device *pdev, struct hdmitx_dev 
 				     hdev->pinctrl_default);
 	}
 
-	hdev->hdmitx_gpios_hpd = of_get_named_gpio_flags(pdev->dev.of_node,
+	hdev->tx_comm.hdmitx_gpios_hpd = of_get_named_gpio_flags(pdev->dev.of_node,
 		"hdmitx-gpios-hpd", 0, NULL);
-	if (hdev->hdmitx_gpios_hpd == -EPROBE_DEFER)
+	if (hdev->tx_comm.hdmitx_gpios_hpd == -EPROBE_DEFER)
 		pr_err("get hdmitx-gpios-hpd error\n");
-	hdev->hdmitx_gpios_scl = of_get_named_gpio_flags(pdev->dev.of_node,
+	hdev->tx_comm.hdmitx_gpios_scl = of_get_named_gpio_flags(pdev->dev.of_node,
 		"hdmitx-gpios-scl", 0, NULL);
-	if (hdev->hdmitx_gpios_scl == -EPROBE_DEFER)
+	if (hdev->tx_comm.hdmitx_gpios_scl == -EPROBE_DEFER)
 		pr_err("get hdmitx-gpios-scl error\n");
-	hdev->hdmitx_gpios_sda = of_get_named_gpio_flags(pdev->dev.of_node,
+	hdev->tx_comm.hdmitx_gpios_sda = of_get_named_gpio_flags(pdev->dev.of_node,
 		"hdmitx-gpios-sda", 0, NULL);
-	if (hdev->hdmitx_gpios_sda == -EPROBE_DEFER)
+	if (hdev->tx_comm.hdmitx_gpios_sda == -EPROBE_DEFER)
 		pr_err("get hdmitx-gpios-sda error\n");
 
 #ifdef CONFIG_OF
@@ -4947,8 +4875,8 @@ static int amhdmitx_probe(struct platform_device *pdev)
 		hdev->tx_comm.fmt_attr, sizeof(hdev->tx_comm.fmt_attr));
 
 	/* When init hdmi, clear the hdmitx module edid ram and edid buffer. */
-	hdmitx_edid_buffer_clear(&hdev->tx_comm);
-	hdmitx_edid_rxcap_clear(&hdev->tx_comm);
+	hdmitx_edid_buffer_clear(hdev->tx_comm.EDID_buf, sizeof(hdev->tx_comm.EDID_buf));
+	hdmitx_edid_rxcap_clear(&hdev->tx_comm.rxcap);
 
 	hdmitx_hdr_state_init(hdev);
 #ifdef CONFIG_AMLOGIC_VOUT_SERVE
@@ -4969,7 +4897,7 @@ static int amhdmitx_probe(struct platform_device *pdev)
 	hdmitx20_audio_mute_op(1); /* default audio clock is ON */
 	aout_register_client(&hdmitx_notifier_nb_a);
 #endif
-	spin_lock_init(&hdev->edid_spinlock);
+	spin_lock_init(&hdev->tx_comm.edid_spinlock);
 
 	hdev->tx_comm.hpd_state = !!hdmitx_hw_cntl_misc(&hdev->tx_hw.base,
 		MISC_HPD_GPI_ST, 0);
@@ -5002,7 +4930,7 @@ static int amhdmitx_probe(struct platform_device *pdev)
 	if (hdev->tx_comm.hpd_state) {
 		/* need to get edid before vout probe */
 		hdev->tx_comm.already_used = 1;
-		hdmitx_get_edid(hdev);
+		hdmitx_get_edid(&hdev->tx_comm, &hdev->tx_hw.base);
 		edidinfo_attach_to_vinfo(hdev);
 
 		/* When bootup mbox and TV simultaneously,

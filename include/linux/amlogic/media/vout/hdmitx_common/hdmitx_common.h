@@ -36,8 +36,6 @@ struct hdmitx_common {
 	 */
 	u32 hdr_priority;
 
-	char hdmichecksum[11];
-
 	char fmt_attr[16];
 
 	/* 0.1% clock shift, 1080p60hz->59.94hz */
@@ -63,13 +61,18 @@ struct hdmitx_common {
 	u32 already_used;
 
 	/*edid related*/
-	unsigned char *edid_ptr;
 	unsigned char EDID_buf[EDID_MAX_BLOCK * 128]; // TODO
-	unsigned char EDID_hash[20];
+	/* the checksum of current edid */
 	/* indicate RX edid data integrated, HEAD valid and checksum pass */
-	unsigned int edid_parsing;
 	struct rx_cap rxcap;
-	/*edid related end*/
+	bool hdmitx_edid_done;
+	/* edid related end */
+	struct mutex getedid_mutex;
+	spinlock_t edid_spinlock; /* edid hdr/dv cap lock */
+	/* GPIO hpd/scl/sda members*/
+	int hdmitx_gpios_hpd;
+	int hdmitx_gpios_scl;
+	int hdmitx_gpios_sda;
 
 	/*DRM related*/
 	struct connector_hpd_cb drm_hpd_cb;
@@ -197,13 +200,7 @@ int hdmitx_get_attr(struct hdmitx_common *tx_comm, char attr[16]);
 int hdmitx_get_hdrinfo(struct hdmitx_common *tx_comm, struct hdr_info *hdrinfo);
 
 /*edid related function.*/
-int hdmitx_update_edid_chksum(u8 *buf, u32 block_cnt, struct rx_cap *rxcap);
-int hdmitx_edid_parse(struct hdmitx_common *tx_comm); // TODO
-void hdmitx_edid_print(struct hdmitx_common *tx_comm); // TODO, remove compare
-void hdmitx_edid_buffer_clear(struct hdmitx_common *tx_comm);
-void hdmitx_edid_rxcap_clear(struct hdmitx_common *tx_comm);
-bool hdmitx_edid_only_support_sd(struct rx_cap *prxcap);
-bool hdmitx_validate_y420_vic(enum hdmi_vic vic);
+void hdmitx_get_edid(struct hdmitx_common *tx_comm, struct hdmitx_hw_common *tx_hw_base);
 
 /*debug functions*/
 int hdmitx_load_edid_file(char *path);

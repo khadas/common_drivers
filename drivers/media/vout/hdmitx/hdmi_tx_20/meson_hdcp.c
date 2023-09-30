@@ -617,9 +617,9 @@ unsigned int meson_hdcp_get_rx_cap(void)
 		return 0x1;
 
 	/* Detect RX support HDCP22 */
-	mutex_lock(&getedid_mutex);
+	mutex_lock(&hdev->tx_comm.getedid_mutex);
 	ver = hdcp_rd_hdcp22_ver();
-	mutex_unlock(&getedid_mutex);
+	mutex_unlock(&hdev->tx_comm.getedid_mutex);
 	/* Here, must assume RX support HDCP14, otherwise affect 1A-03 */
 	if (ver)
 		return 0x3;

@@ -58,24 +58,17 @@ static ssize_t rawedid_show(struct device *dev,
 	int pos = 0;
 	int i;
 	int num;
-	int ext_block_num = 0;
+	int block_num = 0;
 
-	/* prevent null prt */
-	if (!global_tx_common->edid_ptr)
-		global_tx_common->edid_ptr = global_tx_common->EDID_buf;
-
-	ext_block_num = global_tx_common->edid_ptr[126];
-	if (ext_block_num && global_tx_common->edid_ptr[128 + 4] == EXTENSION_EEODB_EXT_TAG &&
-		global_tx_common->edid_ptr[128 + 5] == EXTENSION_EEODB_EXT_CODE)
-		ext_block_num = global_tx_common->edid_ptr[128 + 6];	//EEODB
-	if (ext_block_num < 8)
-		num = (ext_block_num + 1) * 128;
+	block_num = hdmitx_edid_valid_block_num(global_tx_common->EDID_buf);
+	if (block_num <= 8)
+		num = block_num * 128;
 	else
 		num = 8 * 128;
 
 	for (i = 0; i < num; i++)
 		pos += snprintf(buf + pos, PAGE_SIZE, "%02x",
-				global_tx_common->edid_ptr[i]);
+			global_tx_common->EDID_buf[i]);
 
 	pos += snprintf(buf + pos, PAGE_SIZE, "\n");
 
@@ -98,7 +91,7 @@ static ssize_t edid_parsing_show(struct device *dev,
 {
 	int pos = 0;
 
-	if (check_dvi_hdmi_edid_valid(global_tx_common->edid_ptr))
+	if (check_dvi_hdmi_edid_valid(global_tx_common->EDID_buf))
 		pos += snprintf(buf + pos, PAGE_SIZE, "ok\n");
 	else
 		pos += snprintf(buf + pos, PAGE_SIZE, "ng\n");

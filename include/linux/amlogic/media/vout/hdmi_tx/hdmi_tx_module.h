@@ -207,12 +207,7 @@ struct hdmitx_dev {
 	bool systemcontrol_on;
 	unsigned char vid_mute_op;
 	atomic_t kref_video_mute;
-	spinlock_t edid_spinlock; /* edid hdr/dv cap lock */
 
-	/*hw members*/
-	int hdmitx_gpios_hpd;
-	int hdmitx_gpios_scl;
-	int hdmitx_gpios_sda;
 	unsigned int hdmi_rext; /* Rext resistor */
 	struct hdmitx_clk_tree_s hdmitx_clk_tree;
 	bool pre_tmds_clk_div40;
@@ -243,7 +238,6 @@ void hdmitx_current_status(enum hdmitx_event_log_bits event);
 extern struct aud_para hdmiaud_config_data;
 extern struct aud_para hsty_hdmiaud_config_data[8];
 extern unsigned int hsty_hdmiaud_config_loc, hsty_hdmiaud_config_num;
-extern struct mutex getedid_mutex;
 
 int hdmitx_set_display(struct hdmitx_dev *hdmitx_device,
 		       enum hdmi_vic videocode);

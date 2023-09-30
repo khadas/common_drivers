@@ -719,14 +719,14 @@ static irqreturn_t intr_handler(int irq, void *dev)
 
 	pr_info(SYS "irq %x %x\n", dat_top, dat_dwc);
 	/* bit[2:1] of dat_top means HPD falling and rising */
-	if ((dat_top & 0x6) && hdev->hdmitx_gpios_hpd != -EPROBE_DEFER) {
+	if ((dat_top & 0x6) && hdev->tx_comm.hdmitx_gpios_hpd != -EPROBE_DEFER) {
 		struct timespec64 kts;
 		struct rtc_time tm;
 
 		ktime_get_real_ts64(&kts);
 		rtc_time64_to_tm(kts.tv_sec, &tm);
 		pr_info("UTC+0 %ptRd %ptRt HPD %s\n", &tm, &tm,
-			gpio_get_value(hdev->hdmitx_gpios_hpd) ? "HIGH" : "LOW");
+			gpio_get_value(hdev->tx_comm.hdmitx_gpios_hpd) ? "HIGH" : "LOW");
 	}
 
 	if (hdev->tx_hw.debug_hpd_lock == 1) {

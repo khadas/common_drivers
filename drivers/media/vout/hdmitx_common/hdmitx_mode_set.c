@@ -23,7 +23,7 @@ static int hdmitx_common_pre_enable_mode(struct hdmitx_common *tx_comm,
 		return -1;
 	}
 
-	memcpy(vinfo->hdmichecksum, tx_comm->rxcap.chksum, 10);
+	memcpy(vinfo->hdmichecksum, tx_comm->rxcap.hdmichecksum, 10);
 	if (vinfo->mode == VMODE_HDMI) {
 		width = tx_comm->rxcap.physical_width;
 		height = tx_comm->rxcap.physical_height;

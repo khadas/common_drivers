@@ -107,6 +107,23 @@ int hdmitx_common_destroy(struct hdmitx_common *tx_comm)
 	return 0;
 }
 
+bool soc_resolution_limited(const struct hdmi_timing *timing, u32 res_v)
+{
+	if (timing->v_active > res_v)
+		return 0;
+	return 1;
+}
+
+bool soc_freshrate_limited(const struct hdmi_timing *timing, u32 vsync)
+{
+	if (!timing)
+		return 0;
+
+	if (timing->v_freq / 1000 > vsync)
+		return 0;
+	return 1;
+}
+
 int hdmitx_common_validate_vic(struct hdmitx_common *tx_comm, u32 vic)
 {
 	const struct hdmi_timing *timing = hdmitx_mode_vic_to_hdmi_timing(vic);
@@ -553,7 +570,7 @@ int hdmitx_print_sink_cap(struct hdmitx_common *tx_comm,
 		char *buffer, int buffer_len)
 {
 	int i, pos = 0;
-	struct rx_cap *prxcap = &tx_comm->rxcap;
+	const struct rx_cap *prxcap = &tx_comm->rxcap;
 
 	pos += snprintf(buffer + pos, buffer_len - pos,
 		"Rx Manufacturer Name: %s\n", prxcap->IDManufacturerName);
@@ -585,8 +602,6 @@ int hdmitx_print_sink_cap(struct hdmitx_common *tx_comm,
 
 	pos += snprintf(buffer + pos, buffer_len - pos,
 		"EDID block number: 0x%x\n", tx_comm->EDID_buf[0x7e]);
-	pos += snprintf(buffer + pos, buffer_len - pos,
-		"blk0 chksum: 0x%02x\n", prxcap->blk0_chksum);
 
 /*
  *	pos += snprintf(buffer + pos, buffer_len - pos,
@@ -629,13 +644,14 @@ int hdmitx_print_sink_cap(struct hdmitx_common *tx_comm,
 		"MaxTMDSClock1 %d MHz\n", prxcap->Max_TMDS_Clock1 * 5);
 
 	if (prxcap->hf_ieeeoui) {
-		pos +=
-		snprintf(buffer + pos,
-			 buffer_len - pos, "Vendor2: 0x%x\n",
+		pos += snprintf(buffer + pos, buffer_len - pos, "Vendor2: 0x%x\n",
 			prxcap->hf_ieeeoui);
-		pos += snprintf(buffer + pos, buffer_len - pos,
-			"MaxTMDSClock2 %d MHz\n", prxcap->Max_TMDS_Clock2 * 5);
+		pos += snprintf(buffer + pos, buffer_len - pos, "MaxTMDSClock2 %d MHz\n",
+			prxcap->Max_TMDS_Clock2 * 5);
 	}
+	if (prxcap->max_frl_rate)
+		pos += snprintf(buffer + pos, buffer_len - pos, "MaxFRLRate: %d\n",
+			prxcap->max_frl_rate);
 
 	if (prxcap->allm)
 		pos += snprintf(buffer + pos, buffer_len - pos, "ALLM: %x\n",

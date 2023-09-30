@@ -814,7 +814,7 @@ static DEVICE_ATTR_RO(preferred_mode);
 static bool pre_process_str(const char *name, char *mode, char *attr)
 {
 	int i;
-	char *color_format[4] = {"444", "422", "420", "rgb"};
+	const char *color_format[4] = {"444", "422", "420", "rgb"};
 	char *search_pos = 0;
 
 	if (!mode || !attr)
@@ -904,7 +904,7 @@ static ssize_t valid_mode_store(struct device *dev,
 	if (valid_mode) {
 		ret = count;
 	} else {
-		pr_err("hdmitx: valid_mode input:%s\n", cvalid_mode);
+		pr_err("hdmitx: invalid_mode input:%s\n", cvalid_mode);
 		ret = -1;
 	}
 

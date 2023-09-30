@@ -187,6 +187,9 @@ int hdmitx_common_set_allm_mode(struct hdmitx_common *tx_comm, int mode);
 
 int hdmitx_common_avmute_locked(struct hdmitx_common *tx_comm,
 		int mute_flag, int mute_path_hint);
+/* For different SOC, different output limited capabilities */
+bool soc_resolution_limited(const struct hdmi_timing *timing, u32 res_v);
+bool soc_freshrate_limited(const struct hdmi_timing *timing, u32 vsync);
 
 /*******************************hdmitx common api end*******************************/
 

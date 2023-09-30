@@ -513,15 +513,15 @@ static int hdmitx_validate_mode(struct hdmitx_hw_common *tx_hw, u32 vic)
 
 	switch (global_txhw->chip_data->chip_type) {
 	case MESON_CPU_ID_T7:
-		ret = resolution_limited_2160p(timing) && freshrate_limited_60hz(timing);
+		ret = soc_resolution_limited(timing, 2160) && soc_freshrate_limited(timing, 60);
 		break;
 	case MESON_CPU_ID_S5:
 		/* for S5, the MAX capabilities are 8K60, and 4k120, and below */
-		ret = (resolution_limited_4320p(timing) && freshrate_limited_60hz(timing)) ||
-			(resolution_limited_2160p(timing) && freshrate_limited_120hz(timing));
+		ret = (soc_resolution_limited(timing, 4320) && soc_freshrate_limited(timing, 60)) ||
+		       (soc_resolution_limited(timing, 2160) && soc_freshrate_limited(timing, 120));
 		break;
 	case MESON_CPU_ID_S1A:
-		ret = resolution_limited_1080p(timing) && freshrate_limited_60hz(timing);
+		ret = soc_resolution_limited(timing, 1080) && soc_freshrate_limited(timing, 60);
 		break;
 	default:
 		break;
@@ -532,15 +532,14 @@ static int hdmitx_validate_mode(struct hdmitx_hw_common *tx_hw, u32 vic)
 static int hdmitx21_calc_formatpara(struct hdmitx_hw_common *tx_hw,
 	struct hdmi_format_para *para)
 {
-	bool frl_enable = true;
+	enum frl_rate_enum frl_rate;
+	enum frl_rate_enum tx_max_frl_rate = global_txhw->tx_max_frl_rate;
 
-	if (global_txhw->chip_data->chip_type < MESON_CPU_ID_S5)	//TODO, not in parse
-		frl_enable = false;	//t7 not support frl
-
+	/* check current tx para with TMDS mode */
 	para->tmds_clk = hdmitx_calc_tmds_clk(para->timing.pixel_freq,
 		para->cs, para->cd);
 
-	if (para->tmds_clk > 340000) {
+	if (para->tmds_clk > 340000) { // TODO, if tmds_clk = 1180000, then ??
 		para->scrambler_en = 1;
 		para->tmds_clk_div40 = 1;
 	} else {
@@ -548,17 +547,13 @@ static int hdmitx21_calc_formatpara(struct hdmitx_hw_common *tx_hw,
 		para->tmds_clk_div40 = 0;
 	}
 
-	if (frl_enable) {
-		u32 tx_frl_bandwidth = 0;
+	if (para->tmds_clk > 600000 && !tx_max_frl_rate)
+		return -EINVAL;
 
-		para->frl_clk = hdmitx_calc_frl_clk(para->timing.pixel_freq,
-			para->cs, para->cd);
-		tx_frl_bandwidth = para->frl_clk / 1000;
-		if (tx_frl_bandwidth > hdmitx_get_frl_bandwidth(global_txhw->tx_max_frl_rate))
-			para->frl_clk = 0;
-	} else {
-		para->frl_clk = 0;
-	}
+	/* check current tx para with FRL mode */
+	frl_rate = hdmitx_select_frl_rate(0, para->timing.vic, para->cs, para->cd);
+	if (frl_rate > tx_max_frl_rate) // TODO, need check dsc_en
+		return -EINVAL;
 
 	return 0;
 }

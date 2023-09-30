@@ -101,6 +101,9 @@ int hdmitx_format_para_init(struct hdmi_format_para *para,
 	else
 		para->frac_mode = frac_rate_policy;
 
+	para->dsc_en = 0; // TODO
+	para->frl_rate = hdmitx_select_frl_rate(0, vic, cs, cd);
+
 	return 0;
 }
 
@@ -113,6 +116,7 @@ int hdmitx_format_para_reset(struct hdmi_format_para *para)
 	para->cs = HDMI_COLORSPACE_RESERVED4;
 	para->cd = COLORDEPTH_RESERVED;
 	para->cr = HDMI_QUANTIZATION_RANGE_RESERVED;
+	para->frl_rate = FRL_NONE;
 
 	return 0;
 }
@@ -157,7 +161,8 @@ int hdmitx_format_para_print(struct hdmi_format_para *para, char *log_buf)
 
 		pos += snprintf(buf + pos, len - pos, "format_para: TMDS %d DIV40 %d,%d\n",
 			para->tmds_clk, para->tmds_clk_div40, para->scrambler_en);
-		pos += snprintf(buf + pos, len - pos, "format_para: FRL %d\n", para->frl_clk);
+
+		pr_info("format_para: frl_rate %d\n", para->frl_rate);
 	}
 
 	if (log_buf)

@@ -508,7 +508,7 @@ void frl_tx_tx_init(void);
 void frl_tx_tx_phy_set(void);
 void tmds_tx_phy_set(void);
 
-enum frl_rate_enum hdmitx21_select_frl_rate(bool dsc_en, enum hdmi_vic vic,
+enum frl_rate_enum hdmitx_select_frl_rate(bool dsc_en, enum hdmi_vic vic,
 		enum hdmi_colorspace cs, enum hdmi_color_depth cd);
 void frl_tx_training_handler(struct hdmitx_dev *hdev);
 void frl_tx_stop(struct hdmitx_dev *hdev);

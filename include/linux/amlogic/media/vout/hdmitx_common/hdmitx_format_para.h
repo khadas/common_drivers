@@ -26,8 +26,8 @@ struct hdmi_format_para {
 	u32 scrambler_en:1;
 	u32 tmds_clk_div40:1;
 	u32 tmds_clk; /* Unit: 1000 */
-	u32 frl_clk;
 	u32 dsc_en;
+	enum frl_rate_enum frl_rate;
 	/*hw related information end*/
 };
 
@@ -49,8 +49,8 @@ void hdmitx_parse_color_attr(char const *attr_str,
 
 u32 hdmitx_calc_tmds_clk(u32 pixel_freq,
 	enum hdmi_colorspace cs, enum hdmi_color_depth cd);
-u32 hdmitx_calc_frl_clk(u32 pixel_freq,
-	enum hdmi_colorspace cs, enum hdmi_color_depth cd);
 u32 hdmitx_get_frl_bandwidth(const enum frl_rate_enum rate);
+enum frl_rate_enum hdmitx_select_frl_rate(bool dsc_en, enum hdmi_vic vic,
+	enum hdmi_colorspace cs, enum hdmi_color_depth cd);
 
 #endif

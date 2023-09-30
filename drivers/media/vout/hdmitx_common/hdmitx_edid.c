@@ -345,7 +345,7 @@ int hdmitx_edid_validate_format_para(struct rx_cap *prxcap,
 	case HDMI_107_3840x2160p60_64x27:
 		if (para->cs == HDMI_COLORSPACE_RGB ||
 		    para->cs == HDMI_COLORSPACE_YUV444)
-			if (para->cd != COLORDEPTH_24B && !para->frl_clk)
+			if (para->cd != COLORDEPTH_24B && !prxcap->max_frl_rate)
 				return -EPERM;
 		break;
 	case HDMI_6_720x480i60_4x3:
@@ -381,11 +381,9 @@ int hdmitx_edid_validate_format_para(struct rx_cap *prxcap,
 	 * FOR hdmi 2.1 : check frl limitation.
 	 */
 	if (ret != 0) {
-		u32 rx_frl_bandwidth = hdmitx_get_frl_bandwidth(prxcap->max_frl_rate);
-		u32 tx_frl_bandwidth = para->frl_clk / 1000;
+		u32 frl_rate = hdmitx_select_frl_rate(0, para->timing.vic, para->cs, para->cd);
 
-		if (tx_frl_bandwidth > 0 && rx_frl_bandwidth > 0 &&
-			tx_frl_bandwidth <= rx_frl_bandwidth)
+		if (frl_rate && prxcap->max_frl_rate >= frl_rate)
 			ret = 0;
 	}
 	/*TDMS/FRL all failed, return;*/

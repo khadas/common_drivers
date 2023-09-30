@@ -3228,7 +3228,7 @@ static int hdmitx21_pre_enable_mode(struct hdmitx_common *tx_comm, struct hdmi_f
 		hdmitx21_disable_hdcp(hdev);
 
 	if (tx_comm->rxcap.max_frl_rate) {
-		hdev->frl_rate = hdmitx21_select_frl_rate(hdev->dsc_en, para->vic,
+		hdev->frl_rate = hdmitx_select_frl_rate(hdev->dsc_en, para->vic,
 			para->cs, para->cd);
 		if (hdev->frl_rate > hdev->tx_hw.tx_max_frl_rate)
 			pr_info("Current frl_rate %d is larger than tx_max_frl_rate %d\n",
@@ -3323,7 +3323,7 @@ static int hdmitx_set_current_vmode(enum vmode_e mode, void *data)
 		 * output mode, which may be used later
 		 */
 		if (tx_comm->rxcap.max_frl_rate) {
-			hdev->frl_rate = hdmitx21_select_frl_rate(hdev->dsc_en,
+			hdev->frl_rate = hdmitx_select_frl_rate(hdev->dsc_en,
 				tx_comm->cur_VIC, hdev->tx_comm.fmt_para.cs,
 				hdev->tx_comm.fmt_para.cd);
 			if (hdev->frl_rate > hdev->tx_hw.tx_max_frl_rate)

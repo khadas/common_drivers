@@ -24,44 +24,6 @@ ulong g_flt_1_e; /* record the clear time of FLT_UPDATE */
 static bool frl_schedule_work(struct frl_train_t *p, u32 delay_ms, u32 period_ms);
 static bool frl_stop_work(struct frl_train_t *p);
 
-/* for legacy HDMI2.0 or earlier modes, still select TMDS */
-/* TODO DSC modes */
-enum frl_rate_enum hdmitx21_select_frl_rate(bool dsc_en, enum hdmi_vic vic,
-	enum hdmi_colorspace cs, enum hdmi_color_depth cd)
-{
-	const struct hdmi_timing *timing;
-	enum frl_rate_enum rate = FRL_NONE;
-	u32 tx_frl_bandwidth = 0;
-	u32 tx_tmds_bandwidth = 0;
-
-	pr_info("dsc_en %d  vic %d  cs %d  cd %d\n", dsc_en, vic, cs, cd);
-	timing = hdmitx_mode_vic_to_hdmi_timing(vic);
-	if (!timing)
-		return FRL_NONE;
-
-	tx_tmds_bandwidth = hdmitx_calc_tmds_clk(timing->pixel_freq / 1000, cs, cd);
-	pr_info("Hactive=%d Vactive=%d Vfreq=%d TMDS_BandWidth=%d\n",
-		timing->h_active, timing->v_active,
-		timing->v_freq, tx_tmds_bandwidth);
-	/* If the tmds bandwidth is less than 594MHz, then select the tmds mode */
-	/* the HxVp48hz is new introduced in HDMI 2.1 / CEA-861-H */
-	if (timing->h_active <= 4096 && timing->v_active <= 2160 &&
-		timing->v_freq != 48000 && tx_tmds_bandwidth <= 594 &&
-		timing->pixel_freq / 1000 < 600)
-		return FRL_NONE;
-	/* tx_frl_bandwidth = tmds_bandwidth * 24 * 1.122 */
-	tx_frl_bandwidth = tx_tmds_bandwidth * 24;
-	tx_frl_bandwidth = tx_frl_bandwidth * 561 / 500;
-	for (rate = FRL_3G3L; rate < FRL_12G4L + 1; rate++) {
-		if (tx_frl_bandwidth <= hdmitx_get_frl_bandwidth(rate)) {
-			pr_info("select frl_rate as %d\n", rate);
-			return rate;
-		}
-	}
-
-	return FRL_NONE;
-}
-
 /* In LTS:3, increase FFE level for the specified lane */
 static bool check_ffe_change_request(struct frl_train_t *p, u8 lane)
 {

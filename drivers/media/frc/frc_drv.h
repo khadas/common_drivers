@@ -103,8 +103,9 @@
 // frc_20230921 fix frc security abnormal
 // frc_20230920 remove hme buffer in t3x/t5m
 // frc_20231009 delay frc function on boot
+// frc_20231016 add frc pattern dbg ctrl
 
-#define FRC_FW_VER			"2023-1016 add frc pattern dbg ctrl"
+#define FRC_FW_VER			"2023-1016 set disable with input is 120Hz"
 #define FRC_KERDRV_VER                  2976
 
 #define FRC_DEVNO	1
@@ -210,12 +211,13 @@ extern int frc_dbg_en;
 #define FRC_VD_FPS_24    24
 #define FRC_VD_FPS_120   120
 #define FRC_VD_FPS_100   100
+#define FRC_VD_FPS_144   144
+#define FRC_VD_FPS_288   288
 
 // ddr shift bits
 #define DDR_SHFT_0_BITS   0
 #define DDR_SHFT_2_BITS   2
 #define DDR_SHFT_4_BITS   4
-
 
 // frc flag define
 #define FRC_FLAG_NORM_VIDEO		0x00
@@ -226,7 +228,10 @@ extern int frc_dbg_en;
 #define FRC_FLAG_LIMIT_SIZE		0x10
 #define FRC_FLAG_VLOCK_ST		0x20
 #define FRC_FLAG_INSIZE_ERR		0x40
-#define FRC_FLAG_OTHER			0x80
+#define FRC_FLAG_HIGH_FREQ		0x80
+#define FRC_FLAG_ZERO_FREQ		0x100
+#define FRC_FLAG_LIMIT_FREQ		0x200 // 144hz 288hz
+#define FRC_FLAG_OTHER			0x400
 
 #define FRC_BUF_MC_Y_IDX	0
 #define FRC_BUF_MC_C_IDX	1

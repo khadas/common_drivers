@@ -847,6 +847,20 @@ void frc_input_vframe_handle(struct frc_dev_s *devp, struct vframe_s *vf,
 				devp->in_sts.st_flag & (~FRC_FLAG_INSIZE_ERR);
 		}
 
+		if (devp->out_sts.out_framerate == FRC_VD_FPS_144 ||
+			devp->out_sts.out_framerate == FRC_VD_FPS_288) {
+			if ((devp->in_sts.st_flag & FRC_FLAG_LIMIT_FREQ) !=
+						FRC_FLAG_LIMIT_FREQ) {
+				devp->in_sts.st_flag =
+				devp->in_sts.st_flag | FRC_FLAG_LIMIT_FREQ;
+				pr_frc(1, "video = limit_freq");
+			}
+			no_input = true;
+		} else {
+			devp->in_sts.st_flag =
+				devp->in_sts.st_flag & (~FRC_FLAG_LIMIT_FREQ);
+		}
+
 		if ((vf->flag & VFRAME_FLAG_VIDEO_SECURE) ==
 				 VFRAME_FLAG_VIDEO_SECURE) {
 			devp->in_sts.secure_mode = true;
@@ -864,6 +878,33 @@ void frc_input_vframe_handle(struct frc_dev_s *devp, struct vframe_s *vf,
 				frc_char_flash_check();
 			else
 				frc_set_seamless_proc(0); // tvin close seamless
+		}
+
+		if (devp->in_sts.frc_vf_rate == FRC_VD_FPS_100 ||
+			devp->in_sts.frc_vf_rate == FRC_VD_FPS_120) {
+			if ((devp->in_sts.st_flag & FRC_FLAG_HIGH_FREQ) !=
+						FRC_FLAG_HIGH_FREQ) {
+				devp->in_sts.st_flag =
+					devp->in_sts.st_flag | FRC_FLAG_HIGH_FREQ;
+				pr_frc(1, "high freq\n");
+			}
+			no_input = true;
+		} else {
+			devp->in_sts.st_flag =
+				devp->in_sts.st_flag & (~FRC_FLAG_HIGH_FREQ);
+		}
+
+		if (devp->in_sts.frc_vf_rate == FRC_VD_FPS_00) {
+			if ((devp->in_sts.st_flag & FRC_FLAG_ZERO_FREQ) !=
+						FRC_FLAG_ZERO_FREQ) {
+				devp->in_sts.st_flag =
+					devp->in_sts.st_flag | FRC_FLAG_ZERO_FREQ;
+				pr_frc(1, "zero freq\n");
+			}
+			no_input = true;
+		} else {
+			devp->in_sts.st_flag =
+				devp->in_sts.st_flag & (~FRC_FLAG_ZERO_FREQ);
 		}
 	}
 

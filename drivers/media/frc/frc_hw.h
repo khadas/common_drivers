@@ -51,7 +51,7 @@
 #define FORCE_MC_PHASE             0x08000000
 #define FORCE_INPUT_BUFIDX         0x10000000
 
-#define FRAME_RATE_CNT      14
+#define FRAME_RATE_CNT      16
 #define FRC_DBG_DUMP_TABLE_NUM       18
 
 extern void __iomem *frc_clk_base;

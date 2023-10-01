@@ -51,7 +51,9 @@ MODULE_PARM_DESC(FRC_PARAM_NUM, "FRC_PARAM_NUM");
 
 const struct vf_rate_table vf_rate_table[FRAME_RATE_CNT] = {
 	{800,   FRC_VD_FPS_120},
+	{801,   FRC_VD_FPS_120},
 	{960,	FRC_VD_FPS_100},
+	{961,	FRC_VD_FPS_100},
 	{1600,  FRC_VD_FPS_60},
 	{1601,	FRC_VD_FPS_60},
 	{1920,  FRC_VD_FPS_50},

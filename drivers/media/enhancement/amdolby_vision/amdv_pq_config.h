@@ -342,5 +342,7 @@ void set_cfg_id(uint id);
 void update_cp_cfg(void);
 void update_cp_cfg_hw5(bool update_pyramid);
 void get_dv_bin_config_hw5(void);
+u32 check_cfg_enabled_top1(void);
+u32 check_dynamic_cfg_enabled_top1(void);
 
 #endif

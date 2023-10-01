@@ -424,6 +424,7 @@ int force_hdmin_fmt;
 u32 force_sdr10;
 
 u32 need_pps;/*idk5.1 case5364 2160x3840 need pps*/
+u32 trace_amdv_isr;/*3ms 4ms 8ms 16ms*/
 
 /*1: force bypass 1d93 bit0=1; 2: force not bypass 1d93 bit0=0;*/
 static int force_bypass_pps_sr_cm;
@@ -14953,6 +14954,11 @@ static ssize_t amdolby_vision_debug_store
 		else
 			WRITE_VPP_DV_REG_BITS(T3X_VENC_CRC, 0, 16, 1);
 		pr_info("set venc_crc_enable %d\n", venc_crc_enable);
+	} else if (!strcmp(parm[0], "trace_amdv_isr")) {
+		if (kstrtoul(parm[1], 10, &val) < 0)
+			return -EINVAL;
+		trace_amdv_isr = val;
+		pr_info("set trace_amdv_isr %d\n", trace_amdv_isr);
 	} else {
 		pr_info("unsupport cmd\n");
 	}
@@ -16135,7 +16141,7 @@ static ssize_t amdolby_vision_inst_status_show
 			dolby_vision_enable, dolby_vision_on);
 
 		if (tv_hw5_setting && tv_hw5_setting->pq_config) {
-			len += sprintf(buf + len, "cur cfg: precision %d %d,l1l4:%d\n",
+			len += sprintf(buf + len, "cur controlpath cfg:precision %d %d,l1l4:%d\n",
 			tv_hw5_setting->pq_config->tdc.pr_config.supports_precision_rendering,
 			tv_hw5_setting->pq_config->tdc.pr_config.precision_rendering_strength,
 			tv_hw5_setting->pq_config->tdc.ana_config.enalbe_l1l4_gen);

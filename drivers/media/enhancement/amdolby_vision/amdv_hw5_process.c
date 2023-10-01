@@ -239,6 +239,7 @@ void update_top1_onoff(struct vframe_s *vf)
 	u32 w;
 	u32 h;
 	static bool last_enable_top1 = true;
+	bool cfg_enable_top1 = false;
 
 	if (vf) {
 		if (vf->type & VIDTYPE_COMPRESS) {
@@ -256,20 +257,30 @@ void update_top1_onoff(struct vframe_s *vf)
 			h = vf->height;
 		}
 
-		if (w <= 256 || h <= 144)
-			enable_top1 = false;
-		else if ((w % 4) || (h % 4))
-			enable_top1 = false;
-		//else
-		//	enable_top1 = true;
+		cfg_enable_top1 = check_cfg_enabled_top1() && check_dynamic_cfg_enabled_top1();
 
-		if (w <= h)/*hw bug, need disable top1*/
+		if (w <= 256 || h <= 144) {
 			enable_top1 = false;
+		} else if ((w % 4) || (h % 4)) {
+			enable_top1 = false;
+		} else if (w <= h) {/*hw bug, need disable top1*/
+			enable_top1 = false;
+		} else if (cfg_enable_top1) {
+			enable_top1 = true;/*cur cfg enable pyramid*/
+		} else {
+			enable_top1 = false;
+		}
 
-		if (force_top1_enable == 1)
-			enable_top1 = true;
-		else if (force_top1_enable == 2)
+		if (force_top1_enable == 1) {
+			if (cfg_enable_top1 == 0) {
+				if (debug_dolby & 1)
+					pr_dv_dbg("warning: cfg not enable top1, not allow force enable!\n");
+			} else {
+				enable_top1 = true;
+			}
+		} else if (force_top1_enable == 2) {
 			enable_top1 = false;
+		}
 
 		if (enable_top1)
 			get_top1_vd_info(vf, &top1_vd_info);
@@ -278,13 +289,16 @@ void update_top1_onoff(struct vframe_s *vf)
 
 		if (last_enable_top1 != enable_top1) {
 			if (debug_dolby & 1)
-				pr_dv_dbg("top1 status changed %d=>%d, update pyramid in cfg\n",
+				pr_dv_dbg("top1 status changed %d=>%d\n",
 					last_enable_top1, enable_top1);
-			/*disable pyramid in cfg if !enable_top1, otherwise resotre it*/
+			last_enable_top1 = enable_top1;
+		}
+		if (cfg_enable_top1 && !enable_top1) {
+			if (debug_dolby & 1)
+				pr_dv_dbg("cfg enable top1 %d while kernel disable,disable cfg for cp\n",
+						   cfg_enable_top1);
 			update_cp_cfg_hw5(true);
 		}
-
-		last_enable_top1 = enable_top1;
 	}
 }
 
@@ -862,6 +876,7 @@ int amdv_parse_metadata_hw5_top1(struct vframe_s *vf)
 	bool video_frame = false;
 	int i;
 	struct vframe_master_display_colour_s *p_mdc;
+	unsigned int current_mode = dolby_vision_mode;
 	enum input_mode_enum input_mode = IN_MODE_OTT;
 	int ret_flags = 0;
 	int ret = -1;
@@ -1083,12 +1098,13 @@ int amdv_parse_metadata_hw5_top1(struct vframe_s *vf)
 			v_inst_info->last_total_comp_size = total_comp_size;
 		}
 		if (debug_dolby & 1)
-			pr_dv_dbg("top1 frame %d, %p, pts %lld, format: %s\n",
+			pr_dv_dbg("top1 frame %d, %p, pts %lld, format: %s, type %x\n",
 			v_inst_info->frame_count, vf, vf->pts_us64,
 			(src_format == FORMAT_HDR10) ? "HDR10" :
 			((src_format == FORMAT_DOVI) ? "DOVI" :
 			((src_format == FORMAT_DOVI_LL) ? "DOVI_LL" :
-			((src_format == FORMAT_HLG) ? "HLG" : "SDR"))));
+			((src_format == FORMAT_HLG) ? "HLG" : "SDR"))),
+			vf->type);
 
 	} else if (vf && (vf->source_type == VFRAME_SOURCE_TYPE_OTHERS)) {
 		enum vframe_signal_fmt_e fmt;
@@ -1130,9 +1146,9 @@ int amdv_parse_metadata_hw5_top1(struct vframe_s *vf)
 			}
 		}
 		if (debug_dolby & 1)
-			pr_dv_dbg("top1:%s get vf %px(%d), fmt %d, aux %p %x, el %d\n",
+			pr_dv_dbg("top1:%s get vf %px(%d), fmt %d, aux %p %x, el %d, type %x\n",
 				     dv_provider[0], vf, vf->discard_dv_data, fmt,
-				     req.aux_buf, req.aux_size, req.dv_enhance_exist);
+				     req.aux_buf, req.aux_size, req.dv_enhance_exist, vf->type);
 		/* parse meta in base layer */
 		ret = get_md_from_src_fmt(vf);
 		if (ret == 1) { /*parse succeeded*/
@@ -1280,9 +1296,31 @@ int amdv_parse_metadata_hw5_top1(struct vframe_s *vf)
 		return -1;
 	}
 
+	current_mode = dolby_vision_mode;
+	if (amdv_policy_process
+		(vf, &current_mode, src_format)) {
+		amdv_set_toggle_flag(1);
+		pr_dv_dbg("[%s]output change from %d to %d(%px, %d)\n",
+			     __func__, dolby_vision_mode, current_mode,
+			     vf, src_format);
+		amdv_target_mode = current_mode;
+		dolby_vision_mode = current_mode;
+	}
 	if (vf && (debug_dolby & 8))
 		pr_dv_dbg("top1 parse_metadata: vf %px(index %d), mode %d\n",
 			      vf, vf->omx_index, dolby_vision_mode);
+
+	if (dolby_vision_mode == AMDV_OUTPUT_MODE_BYPASS) {
+		if (amdv_target_mode == AMDV_OUTPUT_MODE_BYPASS)
+			amdv_wait_on = false;
+		if (debug_dolby & 8)
+			pr_dv_dbg("now bypass mode, target %d, wait %d\n",
+				  amdv_target_mode,
+				  amdv_wait_on);
+		if (get_hdr_module_status(VD1_PATH, VPP_TOP0) == HDR_MODULE_BYPASS)
+			return 1;
+		return -1;
+	}
 
 	if (src_format != tv_hw5_setting->top1.src_format ||
 		(dolby_vision_flags & FLAG_CERTIFICATION)) {
@@ -1826,9 +1864,9 @@ int amdv_parse_metadata_hw5(struct vframe_s *vf,
 			}
 		}
 		if (debug_dolby & 1)
-			pr_dv_dbg("top2:%s get vf %px(%d), fmt %d, aux %px %x, el %d\n",
+			pr_dv_dbg("top2:%s get vf %px(%d),fmt %d,aux %px %x,el %d,type %x\n",
 				     dv_provider[0], vf, vf->discard_dv_data, fmt,
-				     req.aux_buf, req.aux_size, req.dv_enhance_exist);
+				     req.aux_buf, req.aux_size, req.dv_enhance_exist, vf->type);
 		/* parse meta in base layer */
 		if (toggle_mode != 2) {
 			ret = get_md_from_src_fmt(vf);
@@ -2222,6 +2260,8 @@ int amdv_parse_metadata_hw5(struct vframe_s *vf,
 	if (debug_cp_res > 0) {
 		tv_hw5_setting->top2.video_width = (debug_cp_res & 0xffff0000) >> 16;
 		tv_hw5_setting->top2.video_height = debug_cp_res & 0xffff;
+		v_inst_info->video_width = (debug_cp_res & 0xffff0000) >> 16;
+		v_inst_info->video_height = debug_cp_res & 0xffff;
 	}
 	tv_hw5_setting->top2.input_mode = input_mode;
 	tv_hw5_setting->top2.in_md = v_inst_info->md_buf[v_inst_info->current_id];
@@ -2313,6 +2353,7 @@ int amdv_parse_metadata_hw5(struct vframe_s *vf,
 int amdv_wait_metadata_hw5(struct vframe_s *vf)
 {
 	int ret = 0;
+	int tmp = 0;
 	unsigned int mode = dolby_vision_mode;
 	enum signal_format_enum check_format;
 	bool vd1_on = false;
@@ -2348,20 +2389,6 @@ int amdv_wait_metadata_hw5(struct vframe_s *vf)
 		}
 	}
 
-	if (get_top1_onoff() && !hw5_reg_from_file) {
-		if (!top1_info.core_on) {
-			if (vf && (debug_dolby & 8))
-				pr_dv_dbg("wait top1 and need to do top1\n");
-			return 4;
-		}
-		if (top1_info.core_on &&
-			(!top1_done && !ignore_top1_result/*&& !temp_done*/)) {//todo
-			if (vf && (debug_dolby & 8))
-				pr_dv_dbg("wait top1\n");
-			return 5;
-		}
-	}
-
 	if (!top2_v_info.amdv_wait_init && !top2_info.core_on) {
 		ret = is_amdv_frame(vf);
 		if (ret) {
@@ -2384,6 +2411,27 @@ int amdv_wait_metadata_hw5(struct vframe_s *vf)
 			check_format = FORMAT_CUVA;
 		} else {
 			check_format = FORMAT_SDR;
+		}
+
+		if (get_top1_onoff() && !hw5_reg_from_file) {
+			if (dolby_vision_mode == AMDV_OUTPUT_MODE_BYPASS)
+				tmp = amdv_policy_process(vf, &mode, check_format);
+
+			/*wait top1 only when dv will on*/
+			if (dolby_vision_mode != AMDV_OUTPUT_MODE_BYPASS ||
+				(tmp == 1 && mode != AMDV_OUTPUT_MODE_BYPASS)) {
+				if (!top1_info.core_on) {
+					if (vf && (debug_dolby & 8))
+						pr_dv_dbg("wait top1 and need to do top1\n");
+					return 4;
+				}
+				if (top1_info.core_on &&
+					(!top1_done && !ignore_top1_result/*&& !temp_done*/)) {
+					if (vf && (debug_dolby & 8))
+						pr_dv_dbg("wait top1\n");
+					return 5;
+				}
+			}
 		}
 
 		if (vf)
@@ -2525,6 +2573,9 @@ int amdolby_vision_process_hw5_top1(struct vframe_s *vf_top1,
 		pr_dv_dbg("top1_proc: vf %px(index %d),mode %d,core_on %d %d,flag %x\n",
 				  vf, vf->omx_index, dolby_vision_mode,
 				  top1_info.core_on, top2_info.core_on, dolby_vision_flags);
+
+	if (dolby_vision_mode == AMDV_OUTPUT_MODE_BYPASS)
+		return 0;
 	reset_flag =
 		(amdv_reset & 1) &&
 		(!top2_info.core_on) &&
@@ -2725,10 +2776,10 @@ int amdolby_vision_process_hw5(struct vframe_s *vf_top1,
 	}
 
 	if (debug_dolby & 2)
-		pr_dv_dbg("vf %p,turn_off %d,video_status %d,toggle %d,flag %x,size %d %d\n",
+		pr_dv_dbg("vf %p,turn_off %d,video_status %d,toggle %d,flag %x,size %d %d,st %d\n",
 			vf, video_turn_off, video_status,
 			toggle_mode, dolby_vision_flags,
-			h_size, v_size);
+			h_size, v_size, dolby_vision_status);
 
 	if ((!vf && video_turn_off) ||
 	    (video_status == -1)) {

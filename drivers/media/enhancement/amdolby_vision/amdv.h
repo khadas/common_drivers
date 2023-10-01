@@ -9,7 +9,7 @@
 /*#define V2_4_3*/
 
 /*  driver version */
-#define DRIVER_VER "202300928"
+#define DRIVER_VER "202301013"
 
 #include <linux/types.h>
 #include "amdv_pq_config.h"
@@ -896,6 +896,7 @@ extern u32 content_fps;
 extern u32 num_downsamplers;
 extern u32 force_sdr10;
 extern u32 need_pps;
+extern u32 trace_amdv_isr;
 extern bool py_enabled;
 extern bool l1l4_enabled;
 extern u32 l1l4_distance;

@@ -1009,6 +1009,29 @@ static void update_vsvdb_to_rx(void)
 	}
 }
 
+u32 check_cfg_enabled_top1(void)
+{
+	struct target_config_dvp *tdc;
+	u32 ret = 0;
+
+	if (bin_to_cfg_dvp) {
+		tdc = &bin_to_cfg_dvp[cur_pic_mode].tdc;
+
+		if (tdc && tdc->pr_config.supports_precision_rendering)
+			ret |= 1;
+		else if (tdc && tdc->ana_config.enalbe_l1l4_gen)
+			ret |= 2;
+	}
+
+	return ret;
+}
+
+/*todo, update from dynamic_cfg_s*/
+u32 check_dynamic_cfg_enabled_top1(void)
+{
+	return true;
+}
+
 void update_cp_cfg_hw5(bool update_pyramid)
 {
 	struct target_config_dvp *tdc;

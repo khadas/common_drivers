@@ -754,7 +754,7 @@ static struct vframe_s *recv_common_dequeue_frame(struct video_recv_s *ins,
 				    ins->path_id || is_multi_dv_mode()) {
 					if (!get_top1_onoff() || !vf_top1) {/*no top1*/
 						dv_toggle_frame(vf, vd_path, true);
-					} else if (vf_top1) {/*top1 + top2*/
+					} else if (vf_top1) {/*top1 next + top2 cur*/
 						amdv_parse_metadata_hw5_top1(vf_top1);
 						dv_toggle_frame(vf, vd_path, true);
 					}

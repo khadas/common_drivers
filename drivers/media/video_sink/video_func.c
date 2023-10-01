@@ -774,8 +774,8 @@ static void amdolby_vision_proc
 			}
 		}
 		/*************************************************/
-		if (!disp_vf_1) /*reset vf_top1 when video disable*/
-			layer_1->vf_top1 = NULL;
+		if (!disp_vf_1 || is_local_vf(disp_vf_1))
+			layer_1->vf_top1 = NULL;/*reset vf_top1 when video disable or keep*/
 		if (is_aml_hw5())
 			amdolby_vision_process_hw5
 				(layer_1->vf_top1,

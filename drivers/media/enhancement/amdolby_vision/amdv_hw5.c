@@ -431,9 +431,10 @@ static void dolby5_top1_rdmif
 	//}
 };
 
-/*check pyramid is enable in cfg case5350 5353 5354*/
-/*if disabled, we force enable pyramid for top1+top1b due to hw5 not support bypass top1b*/
-static void check_pr_enabled_in_cfg(void)
+/*check pyramid and l1l4 is enable in setting, case5350 5353 5354*/
+/*if pyramid disabled while l1l4 enable,*/
+/*force enable top1+top1b related regs due to hw5 not support bypass top1b only*/
+static void check_pr_enabled_in_setting(void)
 {
 	bool pr_enabled = true;
 	bool l1l4 = true;
@@ -448,7 +449,7 @@ static void check_pr_enabled_in_cfg(void)
 				!tv_hw5_setting->dynamic_cfg->precision_rendering_mode);
 	}
 	if (!pr_enabled && (debug_dolby & 0x80000))
-		pr_dv_dbg("top1 enabled but pyramid disabled!\n");
+		pr_dv_dbg("kernel top1 enabled but pyramid disabled!\n");
 
 	py_enabled = pr_enabled;
 	l1l4_enabled = l1l4;
@@ -462,7 +463,7 @@ static void check_pr_enabled_in_cfg(void)
 
 /*Check pyramid is enable in reg, case5343*/
 /*For low res(w<480), even if cfg enable pyramid, controlpath will disable*/
-/*intensity image and pyramid*/
+/*intensity image and pyramid. top2 no need to wait top1*/
 static void check_pr_enabled_in_reg(u32 *p_reg_top1, u32 *p_reg_top1b)
 {
 	int reg_val, reg_addr;
@@ -530,7 +531,7 @@ static void dolby5_ahb_reg_config(u32 *reg_baddr,
 
 		reg_addr = reg_addr >> 2;
 		if (core_sel == 0) {//core1
-			if (reg_addr == 1 && !py_enabled) {
+			if (reg_addr == 1 && !py_enabled && l1l4_enabled) {
 				if ((debug_dolby & 0x80000))
 					pr_dv_dbg("update top1 reg_addr 0x%x value from 0x%x to 0x%x\n",
 						reg_addr << 2, reg_val, reg_val & ~(0x4));
@@ -549,14 +550,14 @@ static void dolby5_ahb_reg_config(u32 *reg_baddr,
 				ves_top1 = reg_val;
 		} else if (core_sel == 1) {//core1b
 
-			if (reg_addr == 1 && !py_enabled) {
+			if (reg_addr == 1 && !py_enabled && l1l4_enabled) {
 				if ((debug_dolby & 0x80000))
 					pr_dv_dbg("update top1b reg_addr 0x%x from %x to 0xe6a\n",
 						reg_addr << 2, reg_val);
 				reg_val = 0xe6a; /*CNTRL_REGADDR:force enable pyramid/intensity*/
 			}
 
-			if (reg_addr == 6 && reg_val == 0 && !py_enabled) {
+			if (reg_addr == 6 && reg_val == 0 && !py_enabled && l1l4_enabled) {
 				tmp = calc_top1b_size(ves_top1);/*VDR_RES_REGADDR*/
 				if ((debug_dolby & 0x80000))
 					pr_dv_dbg("update top1b reg_addr 0x%x from %x to %x\n",
@@ -617,7 +618,7 @@ static void dolby5_top1_ini(struct dolby5_top1_type *dolby5_top1)
 		top1b_ahb_num = dolby5_top1->core1b_ahb_num;
 	}
 
-	check_pr_enabled_in_cfg();
+	check_pr_enabled_in_setting();
 	if (py_enabled && (dolby_vision_flags & FLAG_CERTIFICATION))
 		check_pr_enabled_in_reg(p_reg_top1, p_reg_top1b);
 
@@ -1067,8 +1068,6 @@ void enable_amdv_hw5(int enable)
 				/* start dv core */
 				if (dolby_vision_flags & FLAG_CERTIFICATION)
 					hdr_vd1_off(VPP_TOP0);
-				if (!top2_info.core_on)
-					set_frame_count(0);
 				if (enable_top1 && (amdv_mask & 1) &&
 					top1_info.amdv_setting_video_flag) {
 					VSYNC_WR_DV_REG_BITS
@@ -1429,12 +1428,17 @@ int tv_top1_set(u64 *top1_reg,
 	top1_type.py_stride[5] = top1_stride_rdmif(32, 10);
 	top1_type.py_stride[6] = top1_stride_rdmif(16, 10);
 
-	if (top1_vd_info.type & VIDTYPE_VIU_NV21)
+	if ((top1_vd_info.type & VIDTYPE_VIU_NV21) || (top1_vd_info.type & VIDTYPE_VIU_NV12)) {
 		top1_type.fmt_mode = 2;
-	else if (top1_vd_info.type & VIDTYPE_VIU_422)
+	} else if (top1_vd_info.type & VIDTYPE_VIU_422) {
 		top1_type.fmt_mode = 1;
-	else if (top1_vd_info.type & VIDTYPE_VIU_444)
+	} else if (top1_vd_info.type & VIDTYPE_VIU_444) {
 		top1_type.fmt_mode = 0;
+	} else {
+		top1_type.fmt_mode = 2;
+		if (debug_dolby & 0x80000)
+			pr_dv_dbg("err type, pls check decoder!\n");
+	}
 
 	if (top1_vd_info.bitdepth == 10)
 		top1_type.bit_mode = 0;
@@ -1619,8 +1623,10 @@ int tv_top2_set(u64 *reg_data,
 			vd1_slice0_vsize = vd_proc_info->slice[0].vsize;
 		}
 	}
-	if (test_dv & DEBUG_5065_RGB_BUG) /*rgb*/
-		tv_hw5_setting->top2_reg[23] = 0x00000058000002c1;
+	if ((test_dv & DEBUG_5065_RGB_BUG) &&
+		tv_hw5_setting->top2.color_format == CP_RGB &&
+		tv_hw5_setting->top2_reg[23] == 0x00000058000002c0)
+		tv_hw5_setting->top2_reg[23] = 0x00000058000002c1;/*bit0 change from yuv to rgb*/
 
 	//update_top2_reg(vd1_slice0_hsize, vsize);
 	py_level = NO_LEVEL;//todo
@@ -2038,10 +2044,25 @@ irqreturn_t amdv_isr(int irq, void *dev_id)
 	/*1:top1 done;2+3:top1+top2 done;4+5:top1+top2 done*/
 
 	//bool reset = false;
+	static struct timeval last_time;
+	struct timeval cur_time;
+	unsigned long time_use = 0;
 
 	isr_cnt++;
 	if (debug_dolby & 0x1)
 		pr_info("amdv_isr_cnt %d\n", isr_cnt);
+
+	if (trace_amdv_isr) {
+		do_gettimeofday(&cur_time);
+		if (isr_cnt > 1) {
+			time_use = (cur_time.tv_sec - last_time.tv_sec) * 1000000 +
+				(cur_time.tv_usec - last_time.tv_usec);
+			pr_dv_dbg("amdv isr time: %5ld us\n", time_use);
+			if (time_use > trace_amdv_isr * 1000 * 3 / 2)
+				pr_dv_dbg("amdv isr too late: %5ld us\n", time_use);
+		}
+		last_time = cur_time;
+	}
 
 	if (enable_top1) {
 		top1_done = true;

@@ -734,10 +734,6 @@ static void set_vsdb_phy_addr(struct rx_cap *prxcap,
 		   ((vsdb->c & 0xf) <<  4) |
 		   ((vsdb->d & 0xf) <<  0);
 	prxcap->physical_addr = phy_addr;
-/* TODO
- *	if (hdev->tv_usage == 0)
- *		hdmitx21_event_notify(HDMITX_PHY_ADDR_VALID, &phy_addr);
- */
 }
 
 static void set_vsdb_dc_cap(struct rx_cap *prxcap)
@@ -1547,10 +1543,6 @@ static void hdmitx_edid_parse_hdmi14(struct rx_cap *prxcap,
 
 	prxcap->ieeeoui = HDMI_IEEE_OUI;
 	set_vsdb_phy_addr(prxcap, &block_buf[offset + 3]);
-	rx_edid_physical_addr(prxcap->vsdb_phy_addr.a,
-			      prxcap->vsdb_phy_addr.b,
-			      prxcap->vsdb_phy_addr.c,
-			      prxcap->vsdb_phy_addr.d);
 
 	prxcap->ColorDeepSupport =
 	(count > 5) ? block_buf[offset + 5] : 0;

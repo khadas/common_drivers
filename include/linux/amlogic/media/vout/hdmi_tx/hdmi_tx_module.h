@@ -47,13 +47,6 @@ extern int hdmitx_log_level;
  *    hdmitx device structure
  *************************************/
 
-enum hdmi_event_t {
-	HDMI_TX_NONE = 0,
-	HDMI_TX_HPD_PLUGIN = 1,
-	HDMI_TX_HPD_PLUGOUT = 2,
-	HDMI_TX_INTERNAL_INTR = 4,
-};
-
 struct ced_cnt {
 	bool ch0_valid;
 	u16 ch0_cnt:15;
@@ -99,27 +92,20 @@ struct hdmitx_dev {
 
 	struct task_struct *task_hdcp;
 	struct workqueue_struct *hdmi_wq;
-	struct workqueue_struct *rxsense_wq;
-	struct workqueue_struct *cedst_wq;
 	struct pinctrl_state *pinctrl_i2c;
 	struct pinctrl_state *pinctrl_default;
 	struct delayed_work work_hpd_plugin;
 	struct delayed_work work_hpd_plugout;
-	struct delayed_work work_rxsense;
 	struct delayed_work work_internal_intr;
-	struct delayed_work work_cedst;
 	struct work_struct work_hdr;
 	struct work_struct work_hdr_unmute;
 	struct delayed_work work_do_hdcp;
 	/*for event tracer*/
 	struct delayed_work work_do_event_logs;
 	int hdmi_init;
-	int ready;	/* 1, hdmi stable output, others are 0 */
 
 	/*hdcp */
 	struct timer_list hdcp_timer;
-	/* -1, no hdcp; 0, NULL; 1, 1.4; 2, 2.2 */
-	int hdcp_mode;
 	/* in board dts file, here can add
 	 * &amhdmitx {
 	 *     hdcp_type_policy = <1>;
@@ -152,13 +138,10 @@ struct hdmitx_dev {
 					  unsigned char *CHAN_STAT_BUF);
 	} hwop;
 	struct hdmi_config_platform_data config_data;
-	enum hdmi_event_t hdmitx_event;
 
+	/* for hdcp thread */
 	unsigned char hpd_event; /* 1, plugin; 2, plugout */
-	unsigned char rhpd_state; /* For repeater use only, no delay */
-	unsigned char mux_hpd_if_pin_high_flag;
-	unsigned int rxsense_policy;
-	unsigned int cedst_policy;
+
 	struct ced_cnt ced_cnt;
 	struct scdc_locked_st chlocked_st;
 	unsigned int sspll;

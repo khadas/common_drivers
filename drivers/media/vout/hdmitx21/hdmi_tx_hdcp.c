@@ -158,42 +158,42 @@ void hdmitx21_enable_hdcp(struct hdmitx_dev *hdev)
 	 * 0x11: force hdcp1.x
 	 */
 	mutex_lock(&hdcp_mutex);
-	if (hdev->hdcp_mode != 0) {
+	if (hdev->tx_comm.hdcp_mode != 0) {
 		pr_hdcp_info(L_1, "[%s] hdcp %d already enabled, exit\n",
-			__func__, hdev->hdcp_mode);
+			__func__, hdev->tx_comm.hdcp_mode);
 		mutex_unlock(&hdcp_mutex);
 		return;
 	}
 
 	if (hdev->lstore == 0) {
 		if (get_hdcp2_lstore() && is_rx_hdcp2ver()) {
-			hdev->hdcp_mode = 2;
+			hdev->tx_comm.hdcp_mode = 2;
 			rx_hdcp2_ver = 1;
 			hdcp_mode_set(2);
 		} else {
 			rx_hdcp2_ver = 0;
 			if (get_hdcp1_lstore()) {
-				hdev->hdcp_mode = 1;
+				hdev->tx_comm.hdcp_mode = 1;
 				hdcp_mode_set(1);
 			} else {
-				hdev->hdcp_mode = 0;
+				hdev->tx_comm.hdcp_mode = 0;
 			}
 		}
 	} else if (hdev->lstore & 0x2) {
 		if (get_hdcp2_lstore() && is_rx_hdcp2ver()) {
-			hdev->hdcp_mode = 2;
+			hdev->tx_comm.hdcp_mode = 2;
 			rx_hdcp2_ver = 1;
 			hdcp_mode_set(2);
 		} else {
 			rx_hdcp2_ver = 0;
-			hdev->hdcp_mode = 0;
+			hdev->tx_comm.hdcp_mode = 0;
 		}
 	} else if (hdev->lstore & 0x1) {
 		if (get_hdcp1_lstore()) {
-			hdev->hdcp_mode = 1;
+			hdev->tx_comm.hdcp_mode = 1;
 			hdcp_mode_set(1);
 		} else {
-			hdev->hdcp_mode = 0;
+			hdev->tx_comm.hdcp_mode = 0;
 		}
 	} else {
 		pr_hdcp_info(L_2, "debug: not enable hdcp as no key stored\n");
@@ -213,8 +213,8 @@ void hdmitx21_disable_hdcp(struct hdmitx_dev *hdev)
 	mutex_lock(&hdcp_mutex);
 	cancel_delayed_work(&hdev->work_up_hdcp_timeout);
 	cancel_delayed_work(&hdev->work_start_hdcp);
-	if (hdev->hdcp_mode != 0) {
-		hdev->hdcp_mode = 0;
+	if (hdev->tx_comm.hdcp_mode != 0) {
+		hdev->tx_comm.hdcp_mode = 0;
 		hdcp_mode_set(0);
 		mdelay(10);
 	}
@@ -227,7 +227,7 @@ u32 hdmitx21_get_hdcp_mode(void)
 	u32 hdcp_mode;
 
 	mutex_lock(&hdcp_mutex);
-	hdcp_mode = hdev->hdcp_mode;
+	hdcp_mode = hdev->tx_comm.hdcp_mode;
 	mutex_unlock(&hdcp_mutex);
 	return hdcp_mode;
 }
@@ -731,7 +731,7 @@ static void hdcp_req_reauth_whandler(struct work_struct *work)
 		mutex_unlock(&hdev->tx_comm.hdmimode_mutex);
 		return;
 	}
-	if (!hdev->ready) {
+	if (!hdev->tx_comm.ready) {
 		schedule_delayed_work(&p_hdcp->req_reauth_wk, HZ);
 		pr_hdcp_info(L_1, "hdmitx signal not done, delay hdcp re-auth\n");
 		mutex_unlock(&hdev->tx_comm.hdmimode_mutex);
@@ -754,9 +754,9 @@ static void hdcp_req_reauth_whandler(struct work_struct *work)
 		//msleep_interruptible(vid_mute_ms);
 		hdmitx_common_avmute_locked(&hdev->tx_comm, CLR_AVMUTE, AVMUTE_PATH_2);
 	} else if (hdcp_reauth_dbg == 4) {
-		if (hdev->hdcp_mode) {
+		if (hdev->tx_comm.hdcp_mode) {
 			if (p_hdcp->req_reauth_ver == 0 ||
-				p_hdcp->req_reauth_ver == hdev->hdcp_mode) {
+				p_hdcp->req_reauth_ver == hdev->tx_comm.hdcp_mode) {
 				pr_info("topology not changed, no need hdcp re-auth\n");
 				schedule_delayed_work(&p_hdcp->ksv_notify_wk, 0);
 				mutex_unlock(&hdev->tx_comm.hdmimode_mutex);
@@ -780,20 +780,20 @@ static void hdcp_req_reauth_whandler(struct work_struct *work)
 		/* force hdcp1.x mode */
 		mutex_lock(&hdcp_mutex);
 		if (get_hdcp1_lstore()) {
-			hdev->hdcp_mode = 1;
+			hdev->tx_comm.hdcp_mode = 1;
 			hdcp_mode_set(1);
 		} else {
-			hdev->hdcp_mode = 0;
+			hdev->tx_comm.hdcp_mode = 0;
 		}
 		mutex_unlock(&hdcp_mutex);
 	} else if (p_hdcp->req_reauth_ver == 2) {
 		/* force hdcp2.x mode */
 		mutex_lock(&hdcp_mutex);
 		if (get_hdcp2_lstore() && is_rx_hdcp2ver()) {
-			hdev->hdcp_mode = 2;
+			hdev->tx_comm.hdcp_mode = 2;
 			hdcp_mode_set(2);
 		} else {
-			hdev->hdcp_mode = 0;
+			hdev->tx_comm.hdcp_mode = 0;
 		}
 		mutex_unlock(&hdcp_mutex);
 	}
@@ -1786,9 +1786,9 @@ static struct hdcp_t hdcp_hdcp;
 
 static int hdmitx21_get_hdcp_auth_rlt(struct hdmitx_dev *hdev)
 {
-	if (hdev->hdcp_mode == 1)
+	if (hdev->tx_comm.hdcp_mode == 1)
 		return (int)get_hdcp1_result();
-	if (hdev->hdcp_mode == 2)
+	if (hdev->tx_comm.hdcp_mode == 2)
 		return (int)get_hdcp2_result();
 	else
 		return 0;
@@ -1818,7 +1818,7 @@ static int  hdmitx21_hdcp_stat_monitor(void *data)
 				/* pr_hdcp_info(L_0, */
 					/* "hdcptx: %d, auth was failing, */
 					/* after retry auth is: %d\n", */
-					/* hdev->hdcp_mode, hdmi21_authenticated); */
+					/* hdev->tx_comm.hdcp_mode, hdmi21_authenticated); */
 				/* if (hdmi21_authenticated) */
 					/* continue; */
 			/* } */
@@ -1827,7 +1827,8 @@ static int  hdmitx21_hdcp_stat_monitor(void *data)
 					count++) {
 					if (!hdev->need_filter_hdcp_off) {
 						pr_hdcp_info(L_0, "hdcptx: exit filtering, mode %d auth: %d\n",
-							hdev->hdcp_mode, hdmi21_authenticated);
+							hdev->tx_comm.hdcp_mode,
+							hdmi21_authenticated);
 						break;
 					}
 					msleep_interruptible(100);
@@ -1836,11 +1837,11 @@ static int  hdmitx21_hdcp_stat_monitor(void *data)
 						break;
 				}
 				pr_hdcp_info(L_0, "%d, after filtering auth is: %d, time:%dms\n",
-					hdev->hdcp_mode, hdmi21_authenticated, count * 100);
+					hdev->tx_comm.hdcp_mode, hdmi21_authenticated, count * 100);
 				if (hdmi21_authenticated && hdev->need_filter_hdcp_off) {
 					hdev->need_filter_hdcp_off = false;
 					pr_hdcp_info(L_0, "mode: %d, filtered auth: %d\n",
-						hdev->hdcp_mode,
+						hdev->tx_comm.hdcp_mode,
 						hdmi21_authenticated);
 					continue;
 				}
@@ -1855,11 +1856,11 @@ static int  hdmitx21_hdcp_stat_monitor(void *data)
 			/* self cleared after filter period expired */
 			hdev->need_filter_hdcp_off = false;
 			auth_stat = hdmi21_authenticated;
-			pr_hdcp_info(L_0, "mode %d, auth: %d\n", hdev->hdcp_mode,
+			pr_hdcp_info(L_0, "mode %d, auth: %d\n", hdev->tx_comm.hdcp_mode,
 				auth_stat);
 			if (hdev->drm_hdcp_cb.hdcp_notify)
 				hdev->drm_hdcp_cb.hdcp_notify(hdev->drm_hdcp_cb.data,
-					hdev->hdcp_mode, auth_stat);
+					hdev->tx_comm.hdcp_mode, auth_stat);
 		}
 		msleep_interruptible(100);
 	}

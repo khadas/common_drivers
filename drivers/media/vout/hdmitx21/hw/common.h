@@ -177,5 +177,6 @@ enum hpd_op {
 };
 
 int hdmitx21_hpd_hw_op(enum hpd_op cmd);
+void hdmitx_hpd_irq_top_half_process(struct hdmitx_dev *hdev, bool hpd);
 
 #endif

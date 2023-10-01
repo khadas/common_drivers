@@ -528,10 +528,8 @@ static int drm_hdmitx_register_hdcp_cb(struct drm_hdmitx_hdcp_cb *hdcp_cb)
 {
 	struct hdmitx_dev *hdev = get_hdmitx_device();
 
-	mutex_lock(&hdev->tx_comm.setclk_mutex);
 	hdev->drm_hdcp_cb.callback = hdcp_cb->callback;
 	hdev->drm_hdcp_cb.data = hdcp_cb->data;
-	mutex_unlock(&hdev->tx_comm.setclk_mutex);
 	return 0;
 }
 
@@ -621,9 +619,7 @@ unsigned int meson_hdcp_get_rx_cap(void)
 		return 0x1;
 
 	/* Detect RX support HDCP22 */
-	mutex_lock(&hdev->tx_comm.getedid_mutex);
 	ver = hdcp_rd_hdcp22_ver();
-	mutex_unlock(&hdev->tx_comm.getedid_mutex);
 	/* Here, must assume RX support HDCP14, otherwise affect 1A-03 */
 	if (ver)
 		return 0x3;
@@ -654,12 +650,12 @@ int drm_hdmitx_hdcp_enable(unsigned int content_type)
 		hdmitx_hw_cntl_ddc(&hdev->tx_hw.base, DDC_HDCP_MUX_INIT, 1);
 		if (vic == HDMI_17_720x576p50_4x3 || vic == HDMI_18_720x576p50_16x9)
 			usleep_range(500000, 500010);
-		hdev->hdcp_mode = 1;
+		hdev->tx_comm.hdcp_mode = 1;
 		hdmitx_hdcp_do_work(hdev);
 		hdmitx_hw_cntl_ddc(&hdev->tx_hw.base,
 			DDC_HDCP_OP, HDCP14_ON);
 	} else if (content_type == 2) {
-		hdev->hdcp_mode = 2;
+		hdev->tx_comm.hdcp_mode = 2;
 		hdmitx_hdcp_do_work(hdev);
 		/* for drm hdcp_tx22, esm init only once
 		 * don't do HDCP22 IP reset after init done!
@@ -687,7 +683,7 @@ int drm_hdmitx_hdcp_disable(unsigned int content_type)
 			DDC_HDCP_OP, HDCP22_OFF);
 	}
 
-	hdev->hdcp_mode = 0;
+	hdev->tx_comm.hdcp_mode = 0;
 	hdmitx_hdcp_do_work(hdev);
 	hdmitx_current_status(HDMITX_HDCP_NOT_ENABLED);
 

@@ -259,6 +259,10 @@ void hdmitx21_sys_reset(void)
 	}
 }
 
+/* use PLL/phy state
+ * note that PHY_CTRL0 may be enabled for bandgap in plugin top half,
+ * so should not use bangap setting bits for uboot state decision
+ */
 static bool hdmitx21_uboot_already_display(void)
 {
 //	if (hdev->pxp_mode)
@@ -1861,7 +1865,7 @@ static void hdmitx_debug(struct hdmitx_hw_common *tx_hw, const char *buf)
 		hdmitx_hw_cntl_ddc(&hdev->tx_hw.base, DDC_EDID_READ_DATA, 0);
 		return;
 	} else if (strncmp(tmpbuf, "i2c_reactive", 11) == 0) {
-		hdmitx_hw_cntl_misc(&hdev->tx_hw.base, MISC_I2C_REACTIVE, 0);
+		hdmitx_hw_cntl_misc(&hdev->tx_hw.base, MISC_I2C_RESET, 0);
 		return;
 	} else if (strncmp(tmpbuf, "bist", 4) == 0) {
 		if (strncmp(tmpbuf + 4, "off", 3) == 0) {
@@ -1975,10 +1979,10 @@ static void hdmitx_debug(struct hdmitx_hw_common *tx_hw, const char *buf)
 		pr_info("hdev->tx_comm.fmt_para.vic: 0x%x\n", hdev->tx_comm.fmt_para.vic);
 	} else if (strncmp(tmpbuf, "hpd_lock", 8) == 0) {
 		if (tmpbuf[8] == '1') {
-			hdev->tx_hw.debug_hpd_lock = 1;
+			hdev->tx_hw.base.debug_hpd_lock = 1;
 			pr_info(HPD "hdmitx: lock hpd\n");
 		} else {
-			hdev->tx_hw.debug_hpd_lock = 0;
+			hdev->tx_hw.base.debug_hpd_lock = 0;
 			pr_info(HPD "hdmitx: unlock hpd\n");
 		}
 		return;
@@ -2467,7 +2471,8 @@ static int hdmitx_cntl_misc(struct hdmitx_hw_common *tx_hw, u32 cmd,
 		hdmitx21_set_reg_bits(HDMITX_TOP_SW_RESET, 0, 9, 1);
 		usleep_range(1000, 2000);
 		break;
-	case MISC_I2C_REACTIVE:
+	case MISC_HPD_IRQ_TOP_HALF:
+		hdmitx_hpd_irq_top_half_process(hdev, !!argv);
 		break;
 	default:
 		break;

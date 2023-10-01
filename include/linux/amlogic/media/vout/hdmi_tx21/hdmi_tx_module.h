@@ -49,13 +49,6 @@ struct vic_attrmap {
 	u32 tmds_clk;
 };
 
-enum hdmi_event_t {
-	HDMI_TX_NONE = 0,
-	HDMI_TX_HPD_PLUGIN = 1,
-	HDMI_TX_HPD_PLUGOUT = 2,
-	HDMI_TX_INTERNAL_INTR = 4,
-};
-
 struct hdmi_phy_t {
 	unsigned long reg;
 	unsigned long val_sleep;
@@ -108,8 +101,6 @@ struct hdmitx_dev {
 	struct task_struct *task;
 	struct task_struct *task_hdcp;
 	struct workqueue_struct *hdmi_wq;
-	struct workqueue_struct *rxsense_wq;
-	struct workqueue_struct *cedst_wq;
 	struct device *hdtx_dev;
 	struct device *pdev; /* for pinctrl*/
 	struct pinctrl_state *pinctrl_i2c;
@@ -117,19 +108,15 @@ struct hdmitx_dev {
 	struct notifier_block nb;
 	struct delayed_work work_hpd_plugin;
 	struct delayed_work work_hpd_plugout;
-	struct delayed_work work_rxsense;
 	struct delayed_work work_internal_intr;
-	struct delayed_work work_cedst;
 	struct work_struct work_hdr;
 	struct delayed_work work_start_hdcp;
 	struct vrr_device_s hdmitx_vrr_dev;
 	void *am_hdcp;
 	int hdmi_init;
 	int hpdmode;
-	int ready;	/* 1, hdmi stable output, others are 0 */
 	bool pre_tmds_clk_div40;
 	u32 lstore;
-	u32 hdcp_mode;
 	struct hdmitx_infoframe infoframes;
 	struct hdmi_config_platform_data config_data;
 	enum hdmi_event_t hdmitx_event;
@@ -144,8 +131,6 @@ struct hdmitx_dev {
 	atomic_t kref_audio_mute;
 	/**/
 	u8 hpd_event; /* 1, plugin; 2, plugout */
-	u8 rhpd_state; /* For repeater use only, no delay */
-	u8 mux_hpd_if_pin_high_flag;
 	int aspect_ratio;	/* 1, 4:3; 2, 16:9 */
 	u8 manual_frl_rate; /* for manual setting */
 	u8 frl_rate; /* for mode setting */
@@ -154,8 +139,6 @@ struct hdmitx_dev {
 	/* 0: RGB444  1: Y444  2: Y422  3: Y420 */
 	/* 4: 24bit  5: 30bit  6: 36bit  7: 48bit */
 	/* if equals to 1, means current video & audio output are blank */
-	u32 rxsense_policy;
-	u32 cedst_policy;
 	u32 vrr_type; /* 1: GAME-VRR, 2: QMS-VRR */
 	struct ced_cnt ced_cnt;
 	struct scdc_locked_st chlocked_st;
@@ -188,7 +171,6 @@ struct hdmitx_dev {
 	u32 flag_3dtb:1;
 	u32 flag_3dss:1;
 	u32 pxp_mode:1;
-	u32 cedst_en:1; /* configure in DTS */
 	u32 aon_output:1; /* always output in bl30 */
 	u32 bist_lock:1;
 	u32 fr_duration;
@@ -199,7 +181,6 @@ struct hdmitx_dev {
 
 	struct miscdevice hdcp_comm_device;
 	u8 def_stream_type;
-	u8 tv_usage;
 	bool systemcontrol_on;
 	u32 arc_rx_en;
 	bool need_filter_hdcp_off;

@@ -209,6 +209,13 @@ struct rate_map_fs {
 	enum hdmi_audio_fs fs;
 };
 
+enum hdmi_event_t {
+	HDMI_TX_NONE = 0,
+	HDMI_TX_HPD_PLUGIN = 1,
+	HDMI_TX_HPD_PLUGOUT = 2,
+	HDMI_TX_INTERNAL_INTR = 4,
+};
+
 /***********************************************************************
  *                   hdmi debug printk
  **********************************************************************/

@@ -84,8 +84,9 @@
 #define MISC_ESM_RESET          (CMD_MISC_OFFSET + 0x0d)
 #define MISC_HDCP_CLKDIS        (CMD_MISC_OFFSET + 0x0e)
 #define MISC_TMDS_RXSENSE       (CMD_MISC_OFFSET + 0x0f)
-#define MISC_I2C_REACTIVE       (CMD_MISC_OFFSET + 0x10) /* For gxl */
-#define MISC_I2C_RESET          (CMD_MISC_OFFSET + 0x11) /* For g12 */
+/* MISC_I2C_REACTIVE is merged into MISC_I2C_RESET */
+/* #define MISC_I2C_REACTIVE       (CMD_MISC_OFFSET + 0x10) */
+#define MISC_I2C_RESET          (CMD_MISC_OFFSET + 0x11)
 #define MISC_READ_AVMUTE_OP     (CMD_MISC_OFFSET + 0x12)
 #define MISC_TMDS_CEDST         (CMD_MISC_OFFSET + 0x13)
 #define MISC_TRIGGER_HPD        (CMD_MISC_OFFSET + 0X14)
@@ -97,6 +98,7 @@
 #define MISC_AUDIO_PREPARE	(CMD_MISC_OFFSET + 0x1a)
 #define MISC_ESMCLK_CTRL        (CMD_MISC_OFFSET + 0x1b)
 #define MISC_CLK_DIV_RST        (CMD_MISC_OFFSET + 0X20)
+#define MISC_HPD_IRQ_TOP_HALF   (CMD_MISC_OFFSET + 0x21)
 
 /***********************************************************************
  *                          Get State //getstate
@@ -274,6 +276,7 @@ struct hdmitx_hw_common {
 	/*debug function*/
 	void (*debugfun)(struct hdmitx_hw_common *tx_hw, const char *cmd_str);
 	int (*setdispmode)(struct hdmitx_hw_common *tx_hw);
+	u8 debug_hpd_lock;
 };
 
 int hdmitx_hw_cntl_config(struct hdmitx_hw_common *tx_hw,

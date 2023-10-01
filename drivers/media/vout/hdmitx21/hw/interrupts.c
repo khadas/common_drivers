@@ -35,7 +35,7 @@ static pf_callback earc_hdmitx_hpdst;
 void hdmitx21_earc_hpdst(pf_callback cb)
 {
 	earc_hdmitx_hpdst = cb;
-	if (cb && get_hdmitx21_device()->rhpd_state)
+	if (cb && hdmitx21_hpd_hw_op(HPD_READ_HPD_GPIO))
 		cb(true);
 }
 
@@ -154,6 +154,18 @@ static void hdmitx_phy_bandgap_en(struct hdmitx_dev *hdev)
 	}
 }
 
+void hdmitx_hpd_irq_top_half_process(struct hdmitx_dev *hdev, bool hpd)
+{
+	if (hpd) {
+		hdmitx_phy_bandgap_en(hdev);
+		if (earc_hdmitx_hpdst)
+			earc_hdmitx_hpdst(true);
+	} else {
+		if (earc_hdmitx_hpdst)
+			earc_hdmitx_hpdst(false);
+	}
+}
+
 void hdmitx_top_intr_handler(struct work_struct *work)
 {
 	int i;
@@ -161,6 +173,7 @@ void hdmitx_top_intr_handler(struct work_struct *work)
 	u32 val;
 	struct hdmitx_dev *hdev = container_of((struct delayed_work *)work,
 		struct hdmitx_dev, work_internal_intr);
+	bool ret;
 
 	if (pint->st_data) {
 		u32 dat_top;
@@ -174,31 +187,38 @@ void hdmitx_top_intr_handler(struct work_struct *work)
 			else
 				dat_top &= ~(1 << 1);
 		}
-		if ((dat_top & 0x6) && hdev->tx_hw.debug_hpd_lock) {
+		if ((dat_top & 0x6) && hdev->tx_hw.base.debug_hpd_lock) {
 			pr_info("HDMI hpd locked\n");
 			goto next;
 		}
 		/* HPD rising */
 		if (dat_top & (1 << 1)) {
-			hdev->hdmitx_event |= HDMI_TX_HPD_PLUGIN;
-			hdev->hdmitx_event &= ~HDMI_TX_HPD_PLUGOUT;
-			hdev->rhpd_state = 1;
-			hdmitx_phy_bandgap_en(hdev);
-			if (earc_hdmitx_hpdst)
-				earc_hdmitx_hpdst(true);
-			queue_delayed_work(hdev->hdmi_wq,
+			hdmitx_hpd_irq_top_half_process(hdev, true);
+			ret = queue_delayed_work(hdev->hdmi_wq,
 				&hdev->work_hpd_plugin,
 				hdev->pxp_mode ? 0 : HZ / 2);
+			if (!ret)
+				pr_info("HDMI plugin work is already in the queue\n");
 		}
 		/* HPD falling */
 		if (dat_top & (1 << 2)) {
-			hdev->hdmitx_event |= HDMI_TX_HPD_PLUGOUT;
-			hdev->hdmitx_event &= ~HDMI_TX_HPD_PLUGIN;
-			hdev->rhpd_state = 0;
-			queue_delayed_work(hdev->hdmi_wq,
+			hdmitx_hpd_irq_top_half_process(hdev, false);
+			/* Cancel previous hpd work.
+			 * Note that plugout work is not canceled so as to
+			 * prevent plugout work is not sheduled asap in
+			 * critical high cpu loading case. always do
+			 * plugout work to disable output asap.
+			 */
+			ret = cancel_delayed_work(&hdev->work_hpd_plugin);
+			if (ret)
+				pr_info("plugin work is pending and canceled\n");
+			else
+				pr_info("plugin work is not pending\n");
+
+			ret = queue_delayed_work(hdev->hdmi_wq,
 				&hdev->work_hpd_plugout, 0);
-			if (earc_hdmitx_hpdst)
-				earc_hdmitx_hpdst(false);
+			if (!ret)
+				pr_info("HDMI plugout work is already in the queue\n");
 		}
 	}
 next:

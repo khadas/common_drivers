@@ -30,9 +30,6 @@ struct hdmitx21_hw {
 	u32 repeater_mode:1;
 	u32 enc_idx;
 	struct hdmitx_infoframe *infoframes;
-
-	/*for debug*/
-	u32 debug_hpd_lock;
 };
 
 #define to_hdmitx21_hw(x)	container_of(x, struct hdmitx21_hw, base)

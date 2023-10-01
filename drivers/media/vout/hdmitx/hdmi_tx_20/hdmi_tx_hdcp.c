@@ -148,7 +148,7 @@ static void _hdcp_do_work(struct work_struct *work)
 	struct hdmitx_dev *hdev =
 		container_of(work, struct hdmitx_dev, work_do_hdcp.work);
 
-	switch (hdev->hdcp_mode) {
+	switch (hdev->tx_comm.hdcp_mode) {
 	case 2:
 		/* hdev->HWOp.CntlMisc(hdev, MISC_HDCP_CLKDIS, 1); */
 		/* schedule_delayed_work(&hdev->work_do_hdcp, HZ / 50); */
@@ -193,7 +193,7 @@ static int hdmitx_hdcp_task(void *data)
 		hdmitx_hdcp_status(hdmi_authenticated);
 		if (auth_trigger != hdmi_authenticated) {
 			auth_trigger = hdmi_authenticated;
-			pr_info("hdcptx: %d  auth: %d\n", hdev->hdcp_mode, auth_trigger);
+			pr_info("hdcptx: %d  auth: %d\n", hdev->tx_comm.hdcp_mode, auth_trigger);
 			// Only collect the metric when hdmi is plugged in.
 			if (hdev->tx_comm.hpd_state == 1) {
 				hdmitx_current_status(auth_trigger

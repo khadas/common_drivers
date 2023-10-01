@@ -15,6 +15,7 @@ static struct hdmitx_hw_common *global_tx_hw;
 static struct meson_hdmitx_dev hdmitx_drm_instance;
 static int drm_hdmitx_id;
 
+/* TODO: no mutex */
 static int drm_hdmitx_get_hpd_state(void)
 {
 	return global_tx_base->hpd_state;
@@ -25,6 +26,7 @@ static int drm_hdmitx_register_hpd_cb(struct connector_hpd_cb *hpd_cb)
 	return hdmitx_register_hpd_cb(global_tx_base, hpd_cb);
 }
 
+/* TODO: no mutex */
 static unsigned char *drm_hdmitx_get_raw_edid(void)
 {
 	return hdmitx_get_raw_edid(global_tx_base);

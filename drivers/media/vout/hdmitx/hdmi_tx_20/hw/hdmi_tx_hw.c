@@ -116,7 +116,7 @@ static pf_callback earc_hdmitx_hpdst;
 void hdmitx_earc_hpdst(pf_callback cb)
 {
 	earc_hdmitx_hpdst = cb;
-	if (cb && get_hdmitx_device()->rhpd_state)
+	if (cb && hdmitx_hpd_hw_op(HPD_READ_HPD_GPIO))
 		cb(true);
 }
 
@@ -375,6 +375,10 @@ static int hdmitx_uboot_sc2_already_display(void)
 	return ret;
 }
 
+/* hdmitx_get_isaformat() info may be cleared, use phy state instead
+ * note that PHY_CTRL0 may be enabled for bandgap in plugin top half,
+ * so should not use bangap setting bits for uboot state decision
+ */
 static int hdmitx_uboot_already_display(void)
 {
 	int ret = 0;
@@ -706,12 +710,25 @@ static void hdmitx_phy_bandgap_en(struct hdmitx_dev *hdev)
 	}
 }
 
+static void hdmitx_hpd_irq_top_half_process(struct hdmitx_dev *hdev, bool hpd)
+{
+	if (hpd) {
+		hdmitx_phy_bandgap_en(hdev);
+		if (earc_hdmitx_hpdst)
+			earc_hdmitx_hpdst(true);
+	} else {
+		if (earc_hdmitx_hpdst)
+			earc_hdmitx_hpdst(false);
+	}
+}
+
 static irqreturn_t intr_handler(int irq, void *dev)
 {
 	/* get interrupt status */
 	unsigned int dat_top = hdmitx_rd_reg(HDMITX_TOP_INTR_STAT);
 	unsigned int dat_dwc = hdmitx_rd_reg(HDMITX_DWC_HDCP22REG_STAT);
 	struct hdmitx_dev *hdev = (struct hdmitx_dev *)dev;
+	bool ret;
 
 	/* ack INTERNAL_INTR or else we stuck with no interrupts at all */
 	hdmitx_wr_reg(HDMITX_TOP_INTR_STAT_CLR, ~0);
@@ -729,7 +746,7 @@ static irqreturn_t intr_handler(int irq, void *dev)
 			gpio_get_value(hdev->tx_comm.hdmitx_gpios_hpd) ? "HIGH" : "LOW");
 	}
 
-	if (hdev->tx_hw.debug_hpd_lock == 1) {
+	if (hdev->tx_hw.base.debug_hpd_lock == 1) {
 		pr_info(HW "HDMI hpd locked\n");
 		goto next;
 	}
@@ -742,31 +759,36 @@ static irqreturn_t intr_handler(int irq, void *dev)
 	}
 	/* HPD rising */
 	if (dat_top & (1 << 1)) {
-		hdev->hdmitx_event |= HDMI_TX_HPD_PLUGIN;
-		hdev->hdmitx_event &= ~HDMI_TX_HPD_PLUGOUT;
-		hdev->rhpd_state = 1;
-		hdmitx_phy_bandgap_en(hdev);
-		if (earc_hdmitx_hpdst)
-			earc_hdmitx_hpdst(true);
-		queue_delayed_work(hdev->hdmi_wq,
+		hdmitx_hpd_irq_top_half_process(hdev, true);
+		ret = queue_delayed_work(hdev->hdmi_wq,
 				   &hdev->work_hpd_plugin, HZ / 2);
+		if (!ret)
+			pr_info(HW "HDMI plugin work is already in the queue\n");
 	}
 	/* HPD falling */
 	if (dat_top & (1 << 2)) {
-		hdev->hdmitx_event |= HDMI_TX_HPD_PLUGOUT;
-		hdev->hdmitx_event &= ~HDMI_TX_HPD_PLUGIN;
-		hdev->rhpd_state = 0;
-		if (earc_hdmitx_hpdst)
-			earc_hdmitx_hpdst(false);
-		queue_delayed_work(hdev->hdmi_wq,
+		hdmitx_hpd_irq_top_half_process(hdev, false);
+		/* Cancel previous hpd work.
+		 * Note that plugout work is not canceled so as to
+		 * prevent plugout work is not sheduled asap in
+		 * critical high cpu loading case. always do
+		 * plugout work to disable output asap.
+		 */
+		ret = cancel_delayed_work(&hdev->work_hpd_plugin);
+		if (ret)
+			pr_info(HW "plugin work is pending and canceled\n");
+		else
+			pr_info(HW "plugin work is not pending\n");
+
+		ret = queue_delayed_work(hdev->hdmi_wq,
 			&hdev->work_hpd_plugout, 0);
+		if (!ret)
+			pr_info(HW "HDMI plugout work is already in the queue\n");
 	}
 	/* internal interrupt */
-	if (dat_top & (1 << 0)) {
-		hdev->hdmitx_event |= HDMI_TX_INTERNAL_INTR;
-		queue_delayed_work(hdev->hdmi_wq,
-				   &hdev->work_internal_intr, HZ / 10);
-	}
+	if (dat_top & (1 << 0))
+		schedule_delayed_work(&hdev->work_internal_intr, HZ / 10);
+
 	if (dat_top & (1 << 3)) {
 		unsigned int rd_nonce_mode =
 			hdmitx_rd_reg(HDMITX_TOP_SKP_CNTL_STAT) & 0x1;
@@ -3133,7 +3155,7 @@ static void hdmitx_debug(struct hdmitx_hw_common *tx_hw, const char *buf)
 		hdmitx_hw_cntl_ddc(&hdev->tx_hw.base, DDC_EDID_READ_DATA, 0);
 		return;
 	} else if (strncmp(tmpbuf, "i2c_reactive", 12) == 0) {
-		hdmitx_hw_cntl_misc(&hdev->tx_hw.base, MISC_I2C_REACTIVE, 0);
+		hdmitx_hw_cntl_misc(&hdev->tx_hw.base, MISC_I2C_RESET, 0);
 		return;
 	} else if (strncmp(tmpbuf, "bist", 4) == 0) {
 		if (strncmp(tmpbuf + 4, "off", 3) == 0) {
@@ -3193,10 +3215,10 @@ static void hdmitx_debug(struct hdmitx_hw_common *tx_hw, const char *buf)
 		pr_info("hdev->tx_comm.fmt_para.vic: 0x%x\n", hdev->tx_comm.fmt_para.vic);
 	} else if (strncmp(tmpbuf, "hpd_lock", 8) == 0) {
 		if (tmpbuf[8] == '1') {
-			hdev->tx_hw.debug_hpd_lock = 1;
+			hdev->tx_hw.base.debug_hpd_lock = 1;
 			pr_info(HPD "hdmitx: lock hpd\n");
 		} else {
-			hdev->tx_hw.debug_hpd_lock = 0;
+			hdev->tx_hw.base.debug_hpd_lock = 0;
 			pr_info(HPD "hdmitx: unlock hpd\n");
 		}
 		return;
@@ -4525,7 +4547,7 @@ static void hdcptx_events_handle(struct timer_list *t)
 	int bstatus0 = 0;
 	int bstatus1 = 0;
 
-	if (hdev->rxsense_policy && !hdmitx_tmds_rxsense())
+	if (hdev->tx_comm.rxsense_policy && !hdmitx_tmds_rxsense())
 		return;
 	if (hdev->hdcp_max_exceed_cnt == 0) {
 		hdcpobs3_1 = 0;
@@ -4847,9 +4869,9 @@ static int hdmitx_cntl_ddc(struct hdmitx_hw_common *tx_hw,
 		}
 		break;
 	case DDC_HDCP_GET_AUTH:
-		if (hdev->hdcp_mode == 1)
+		if (hdev->tx_comm.hdcp_mode == 1)
 			return hdmitx_hdcp_opr(2);
-		if (hdev->hdcp_mode == 2)
+		if (hdev->tx_comm.hdcp_mode == 2)
 			return hdmitx_hdcp_opr(7);
 		else
 			return 0;
@@ -5641,21 +5663,22 @@ static int hdmitx_cntl_misc(struct hdmitx_hw_common *tx_hw, unsigned int cmd,
 			hdmitx_set_reg_bits(HDMITX_DWC_MC_CLKDIS, !!argv, 6, 1);
 		break;
 	case MISC_I2C_RESET:
-		hdmitx_set_reg_bits(HDMITX_TOP_SW_RESET, 1, 9, 1);
-		usleep_range(1000, 2000);
-		hdmitx_set_reg_bits(HDMITX_TOP_SW_RESET, 0, 9, 1);
-		usleep_range(1000, 2000);
-		hdmi_hwi_init(hdev);
-		break;
-	case MISC_I2C_REACTIVE:
-		hdmitx_hdcp_opr(4);
-		hdmitx_set_reg_bits(HDMITX_DWC_A_HDCPCFG1, 0, 0, 1);
-		hdmitx_set_reg_bits(HDMITX_DWC_HDCP22REG_CTRL, 0, 2, 1);
-		hdmitx_wr_reg(HDMITX_DWC_I2CM_SS_SCL_HCNT_1, 0xff);
-		hdmitx_wr_reg(HDMITX_DWC_I2CM_SS_SCL_HCNT_0, 0xf6);
-		scdc_rd_sink(SINK_VER, &rx_ver);
-		hdmi_hwi_init(hdev);
-		mdelay(5);
+		if (chip_id >= MESON_CPU_ID_G12A) {
+			hdmitx_set_reg_bits(HDMITX_TOP_SW_RESET, 1, 9, 1);
+			usleep_range(1000, 2000);
+			hdmitx_set_reg_bits(HDMITX_TOP_SW_RESET, 0, 9, 1);
+			usleep_range(1000, 2000);
+			hdmi_hwi_init(hdev);
+		} else {
+			hdmitx_hdcp_opr(4);
+			hdmitx_set_reg_bits(HDMITX_DWC_A_HDCPCFG1, 0, 0, 1);
+			hdmitx_set_reg_bits(HDMITX_DWC_HDCP22REG_CTRL, 0, 2, 1);
+			hdmitx_wr_reg(HDMITX_DWC_I2CM_SS_SCL_HCNT_1, 0xff);
+			hdmitx_wr_reg(HDMITX_DWC_I2CM_SS_SCL_HCNT_0, 0xf6);
+			scdc_rd_sink(SINK_VER, &rx_ver);
+			hdmi_hwi_init(hdev);
+			mdelay(5);
+		}
 		break;
 	case MISC_SUSFLAG:
 		if (argv == 1) {
@@ -5708,6 +5731,9 @@ static int hdmitx_cntl_misc(struct hdmitx_hw_common *tx_hw, unsigned int cmd,
 			usleep_range(49, 51);
 			hd_set_reg_bits(pll_cntl, 0, 30, 1);
 		}
+		break;
+	case MISC_HPD_IRQ_TOP_HALF:
+		hdmitx_hpd_irq_top_half_process(hdev, !!argv);
 		break;
 	default:
 		break;

@@ -24,6 +24,7 @@ struct hdmitx_ctrl_ops {
 	int (*post_enable_mode)(struct hdmitx_common *tx_comm, struct hdmi_format_para *para);
 	int (*disable_mode)(struct hdmitx_common *tx_comm, struct hdmi_format_para *para);
 	int (*init_uboot_mode)(enum vmode_e mode);
+	void (*disable_hdcp)(void);
 };
 
 struct st_debug_param {
@@ -61,15 +62,16 @@ struct hdmitx_common {
 	 * for android ott.
 	 */
 	u32 already_used;
+	/* save the last plug out/in work done state */
+	enum hdmi_event_t last_hpd_handle_done_stat;
 
+	pf_callback earc_hdmitx_hpdst;
 	/*edid related*/
 	unsigned char EDID_buf[EDID_MAX_BLOCK * 128]; // TODO
 	/* the checksum of current edid */
 	/* indicate RX edid data integrated, HEAD valid and checksum pass */
 	struct rx_cap rxcap;
-	bool hdmitx_edid_done;
 	/* edid related end */
-	struct mutex getedid_mutex;
 	spinlock_t edid_spinlock; /* edid hdr/dv cap lock */
 	/* GPIO hpd/scl/sda members*/
 	int hdmitx_gpios_hpd;
@@ -96,11 +98,7 @@ struct hdmitx_common {
 
 	struct vout_device_s *vdev;
 
-	/*protect set mode flow*/
-	/*protect hotplug flow and related struct.*/
-	struct mutex setclk_mutex;
-	/*
-	 * Normally, after the HPD in or late resume, there will reading EDID, and
+	/* Normally, after the HPD in or late resume, there will reading EDID, and
 	 * notify application to select a hdmi mode output. But during the mode
 	 * setting moment, there may be HPD out. It will clear the edid data, ..., etc.
 	 * To avoid such case, here adds the hdmimode_mutex to let the HPD in, HPD out
@@ -111,11 +109,27 @@ struct hdmitx_common {
 	u32 repeater_mode;
 	/*hdcp control type config*/
 	u32 hdcp_ctl_lvl;
+	u8 hdcp_mode;
 
 	/*debug & log*/
 	struct hdmitx_tracer *tx_tracer;
 	struct hdmitx_event_mgr *event_mgr;
+
 	struct st_debug_param debug_param;
+
+	/* ced/rxsense related */
+	bool cedst_en;
+	u32 cedst_policy;
+	struct workqueue_struct *cedst_wq;
+	struct delayed_work work_cedst;
+	u32 rxsense_policy;
+	struct workqueue_struct *rxsense_wq;
+	struct delayed_work work_rxsense;
+	/* 1: TV product, 0: stb/soundbar product */
+	u32 tv_usage;
+
+	/* indicate hdmitx output ready, sw/hw mode setting done */
+	bool ready;
 };
 
 struct hdmitx_base_state *hdmitx_get_mod_state(struct hdmitx_common *tx_common,
@@ -208,6 +222,7 @@ int hdmitx_get_hdrinfo(struct hdmitx_common *tx_comm, struct hdr_info *hdrinfo);
 
 /*edid related function.*/
 void hdmitx_get_edid(struct hdmitx_common *tx_comm, struct hdmitx_hw_common *tx_hw_base);
+bool is_tv_changed(char *cur_edid_chksum, char *boot_param_edid_chksum);
 
 /*debug functions*/
 int hdmitx_load_edid_file(char *path);
@@ -232,5 +247,16 @@ void hdmitx_build_fmt_attr_str(struct hdmitx_common *tx_comm);
 /*packet api*/
 int hdmitx_common_setup_vsif_packet(struct hdmitx_common *tx_comm,
 	enum vsif_type type, int on, void *param);
+
+/* common work for plugin/resume, witch is done in lock */
+void hdmitx_plugin_common_work(struct hdmitx_common *tx_comm,
+	struct hdmitx_hw_common *tx_hw_base);
+/* common work for plugout/suspend, witch is done in lock */
+void hdmitx_plugout_common_work(struct hdmitx_common *tx_comm);
+
+void hdmitx_common_pre_early_suspend(struct hdmitx_common *tx_comm,
+	struct hdmitx_hw_common *tx_hw_base);
+void hdmitx_common_late_resume(struct hdmitx_common *tx_comm,
+	struct hdmitx_hw_common *tx_hw_base);
 
 #endif

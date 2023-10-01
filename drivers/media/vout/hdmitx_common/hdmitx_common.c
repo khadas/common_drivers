@@ -46,8 +46,9 @@ int hdmitx_common_init(struct hdmitx_common *tx_comm, struct hdmitx_hw_common *h
 
 	/*load tx boot params*/
 	tx_comm->hdr_priority = boot_param->hdr_mask;
-	memcpy(tx_comm->rxcap.hdmichecksum, boot_param->edid_chksum,
-		sizeof(tx_comm->rxcap.hdmichecksum));
+	/* rxcap.hdmichecksum save the edid checksum of kernel */
+	/* memcpy(tx_comm->rxcap.hdmichecksum, boot_param->edid_chksum, */
+		/* sizeof(tx_comm->rxcap.hdmichecksum)); */
 	memcpy(tx_comm->fmt_attr, boot_param->color_attr, sizeof(tx_comm->fmt_attr));
 
 	tx_comm->frac_rate_policy = boot_param->fraction_refreshrate;
@@ -64,9 +65,7 @@ int hdmitx_common_init(struct hdmitx_common *tx_comm, struct hdmitx_hw_common *h
 	hdmitx_format_para_reset(&tx_comm->fmt_para);
 
 	/*mutex init*/
-	mutex_init(&tx_comm->setclk_mutex);
 	mutex_init(&tx_comm->hdmimode_mutex);
-	mutex_init(&tx_comm->getedid_mutex);
 	return 0;
 }
 
@@ -244,10 +243,8 @@ int hdmitx_hpd_notify_unlocked(struct hdmitx_common *tx_comm)
 
 int hdmitx_register_hpd_cb(struct hdmitx_common *tx_comm, struct connector_hpd_cb *hpd_cb)
 {
-	mutex_lock(&tx_comm->setclk_mutex);
 	tx_comm->drm_hpd_cb.callback = hpd_cb->callback;
 	tx_comm->drm_hpd_cb.data = hpd_cb->data;
-	mutex_unlock(&tx_comm->setclk_mutex);
 	return 0;
 }
 
@@ -407,8 +404,8 @@ int hdmitx_common_notify_hpd_status(struct hdmitx_common *tx_comm)
 {
 	if (!tx_comm->suspend_flag) {
 		/*TOCONFIRM: notify to drm*/
-		if (tx_comm->drm_hpd_cb.callback)
-			tx_comm->drm_hpd_cb.callback(tx_comm->drm_hpd_cb.data);
+		/* if (tx_comm->drm_hpd_cb.callback) */
+			/* tx_comm->drm_hpd_cb.callback(tx_comm->drm_hpd_cb.data); */
 
 		/*notify to userspace by uevent*/
 		hdmitx_event_mgr_send_uevent(tx_comm->event_mgr,
@@ -427,13 +424,16 @@ int hdmitx_common_notify_hpd_status(struct hdmitx_common *tx_comm)
 			HDMITX_AUDIO_EVENT, tx_comm->hpd_state);
 	}
 
-	/*notify to other driver module:cec/rx TODO: need lock for EDID_buf */
-	/*if (tx_comm->hpd_state)
-	 *	hdmitx_event_mgr_notify(tx_comm->event_mgr, HDMITX_PLUG,
-	 *		tx_comm->edid_parsing ? tx_comm->EDID_buf : NULL);
-	 *else
-	 *	hdmitx_event_mgr_notify(tx_comm->event_mgr, HDMITX_UNPLUG, NULL);
+	/*notify to other driver module:cec/rx TODO: need lock for EDID_buf
+	 * note should not be used under TV product
 	 */
+	if (tx_comm->tv_usage == 0) {
+		if (tx_comm->hpd_state)
+			hdmitx_event_mgr_notify(tx_comm->event_mgr, HDMITX_PLUG,
+				tx_comm->rxcap.edid_parsing ? tx_comm->EDID_buf : NULL);
+		else
+			hdmitx_event_mgr_notify(tx_comm->event_mgr, HDMITX_UNPLUG, NULL);
+	}
 	return 0;
 }
 
@@ -736,7 +736,6 @@ void hdmitx_get_edid(struct hdmitx_common *tx_comm, struct hdmitx_hw_common *tx_
 {
 	unsigned long flags = 0;
 
-	mutex_lock(&tx_comm->getedid_mutex);
 	hdmitx_edid_buffer_clear(tx_comm->EDID_buf, sizeof(tx_comm->EDID_buf));
 	hdmitx_hw_cntl_ddc(tx_hw_base, DDC_RESET_EDID, 0);
 	hdmitx_hw_cntl_ddc(tx_hw_base, DDC_PIN_MUX_OP, PIN_MUX);
@@ -791,6 +790,27 @@ void hdmitx_get_edid(struct hdmitx_common *tx_comm, struct hdmitx_hw_common *tx_
 	hdmitx_event_mgr_notify(tx_comm->event_mgr,
 		HDMITX_PHY_ADDR_VALID, &tx_comm->rxcap.physical_addr);
 	hdmitx_edid_print(tx_comm->EDID_buf);
-
-	mutex_unlock(&tx_comm->getedid_mutex);
 }
+
+/*only for first time plugout */
+bool is_tv_changed(char *cur_edid_chksum, char *boot_param_edid_chksum)
+{
+	char invalidchecksum[11] = {
+		'i', 'n', 'v', 'a', 'l', 'i', 'd', 'c', 'r', 'c', '\0'
+	};
+	char emptychecksum[11] = {0};
+	bool ret = false;
+
+	if (!cur_edid_chksum || !boot_param_edid_chksum)
+		return ret;
+
+	if (memcmp(boot_param_edid_chksum, cur_edid_chksum, 10) &&
+		memcmp(emptychecksum, cur_edid_chksum, 10) &&
+		memcmp(invalidchecksum, boot_param_edid_chksum, 10)) {
+		ret = true;
+		pr_info("hdmi crc is diff between uboot and kernel\n");
+	}
+
+	return ret;
+}
+

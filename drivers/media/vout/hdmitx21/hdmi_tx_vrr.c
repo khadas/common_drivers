@@ -1195,7 +1195,7 @@ void hdmitx_unregister_vrr(struct hdmitx_dev *hdev)
 {
 	int ret;
 
-	ret = aml_vrr_unregister_device(hdev->tx_hw.enc_idx);
+	ret = aml_vrr_unregister_device(hdev->tx_comm.enc_idx);
 	pr_info("%s ret = %d\n", __func__, ret);
 }
 
@@ -1232,7 +1232,7 @@ void hdmitx_register_vrr(struct hdmitx_dev *hdev)
 	else
 		vrr->enable = 1;
 	strncpy(vrr->name, name, VRR_NAME_LEN_MAX);
-	ret = aml_vrr_register_device(vrr, hdev->tx_hw.enc_idx);
+	ret = aml_vrr_register_device(vrr, hdev->tx_comm.enc_idx);
 	pr_info("%s ret = %d\n", __func__, ret);
 }
 

@@ -212,9 +212,6 @@ struct rate_map_fs {
 /***********************************************************************
  *                   hdmi debug printk
  **********************************************************************/
-#undef pr_fmt
-#define pr_fmt(fmt) "hdmitx: " fmt
-
 #define VID         "video: "
 #define AUD         "audio: "
 #define CEC         "cec: "

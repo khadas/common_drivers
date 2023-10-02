@@ -2002,7 +2002,7 @@ do { \
 	RESET_HDMI_PHY();
 #undef RESET_HDMI_PHY
 
-	switch (hdev->tx_comm.cur_VIC) {
+	switch (hdev->tx_comm.fmt_para.vic) {
 	case HDMI_96_3840x2160p50_16x9:
 	case HDMI_97_3840x2160p60_16x9:
 	case HDMI_101_4096x2160p50_256x135:
@@ -2165,7 +2165,7 @@ void hdmitx_set_enc_hw(struct hdmitx_dev *hdev)
 		hd_set_reg_bits(P_VPU_HDMI_FMT_CTRL, 2, 0, 2);
 		hd_set_reg_bits(P_VPU_HDMI_SETTING, 0, 4, 4);
 		hd_set_reg_bits(P_VPU_HDMI_SETTING, 1, 8, 1);
-		if ((is_hdmi4k_support_420(hdev->tx_comm.cur_VIC)) &&
+		if ((is_hdmi4k_support_420(hdev->tx_comm.fmt_para.vic)) &&
 		    hdev->tx_hw.chip_data->chip_type >= MESON_CPU_ID_TM2B)
 			hd_set_reg_bits(P_VPU_HDMI_SETTING, 0, 8, 1);
 	}
@@ -2255,8 +2255,6 @@ static int hdmitx_set_dispmode(struct hdmitx_hw_common *tx_hw)
 	if (!hdev) /* disable HDMI */
 		return 0;
 	para = &hdev->tx_comm.fmt_para;
-
-	hdev->tx_comm.cur_VIC = para->vic;
 
 	hdmitx_disable_venc();
 
@@ -3067,7 +3065,7 @@ static void mode420_half_horizontal_para(void)
 static void hdmitx_set_fake_vic(struct hdmitx_dev *hdev)
 {
 	hdev->tx_comm.fmt_para.cs = HDMI_COLORSPACE_YUV444;
-	hdev->tx_comm.cur_VIC = HDMI_VIC_FAKE;
+	hdev->tx_comm.fmt_para.vic = HDMI_VIC_FAKE;
 	set_vmode_clk(hdev);
 }
 
@@ -3127,7 +3125,7 @@ static void hdmitx_debug(struct hdmitx_hw_common *tx_hw, const char *buf)
 
 	if (strncmp(tmpbuf, "testhpll", 8) == 0) {
 		ret = kstrtoul(tmpbuf + 8, 10, &value);
-		hdev->tx_comm.cur_VIC = value;
+		hdev->tx_comm.fmt_para.vic = value;
 		set_vmode_clk(hdev);
 		return;
 	} else if (strncmp(tmpbuf, "testedid", 8) == 0) {
@@ -3192,7 +3190,7 @@ static void hdmitx_debug(struct hdmitx_hw_common *tx_hw, const char *buf)
 		return;
 	} else if (strncmp(tmpbuf, "ss", 2) == 0) {
 		pr_info("hdev->hpd_state: 0x%x\n", hdev->tx_comm.hpd_state);
-		pr_info("hdev->tx_comm.cur_VIC: 0x%x\n", hdev->tx_comm.cur_VIC);
+		pr_info("hdev->tx_comm.fmt_para.vic: 0x%x\n", hdev->tx_comm.fmt_para.vic);
 	} else if (strncmp(tmpbuf, "hpd_lock", 8) == 0) {
 		if (tmpbuf[8] == '1') {
 			hdev->tx_hw.debug_hpd_lock = 1;
@@ -4987,7 +4985,7 @@ static void hdmitx_dith_ctrl(struct hdmitx_dev *hdev)
 			/* force to config sync pol of VPU_HDMI_SETTING
 			 * and VPU_HDMI_DITH_CNTL
 			 */
-			if (is_sync_polarity_negative(hdev->tx_comm.cur_VIC))
+			if (is_sync_polarity_negative(hdev->tx_comm.fmt_para.vic))
 				hs_flag = 0x0;
 			else
 				hs_flag = 0x3;
@@ -5415,7 +5413,7 @@ static int hdmitx_cntl_config(struct hdmitx_hw_common *tx_hw, unsigned int cmd,
 		if ((argv & 0xF) == CSC_Y444_8BIT) {
 			/* 1.vpu->encp */
 			hd_set_reg_bits(P_VPU_HDMI_SETTING, 4, 5, 3);
-			if (is_sync_polarity_negative(hdev->tx_comm.cur_VIC))
+			if (is_sync_polarity_negative(hdev->tx_comm.fmt_para.vic))
 				hd_set_reg_bits(P_VPU_HDMI_SETTING, 0x0, 2, 2);
 			else
 				hd_set_reg_bits(P_VPU_HDMI_SETTING, 0x3, 2, 2);
@@ -5426,7 +5424,7 @@ static int hdmitx_cntl_config(struct hdmitx_hw_common *tx_hw, unsigned int cmd,
 			hdmitx_dith_ctrl(hdev);
 
 			/* 3.vid input remap */
-			hdmitx_in_vid_map(hdev->tx_comm.cur_VIC, COLORDEPTH_24B,
+			hdmitx_in_vid_map(hdev->tx_comm.fmt_para.vic, COLORDEPTH_24B,
 				HDMI_COLORSPACE_YUV444, HDMI_COLORSPACE_YUV444);
 
 			/* 4.Video Packet YCC color remapping/configure */
@@ -5450,7 +5448,7 @@ static int hdmitx_cntl_config(struct hdmitx_hw_common *tx_hw, unsigned int cmd,
 			hdmitx_dith_ctrl(hdev);
 
 			/* 3.vid input remap */
-			hdmitx_in_vid_map(hdev->tx_comm.cur_VIC, COLORDEPTH_36B,
+			hdmitx_in_vid_map(hdev->tx_comm.fmt_para.vic, COLORDEPTH_36B,
 				HDMI_COLORSPACE_YUV444, HDMI_COLORSPACE_YUV422);
 
 			/* 4.Video Packet YCC color remapping/configure */
@@ -5466,7 +5464,7 @@ static int hdmitx_cntl_config(struct hdmitx_hw_common *tx_hw, unsigned int cmd,
 		} else if ((argv & 0xF) == CSC_RGB_8BIT) {
 			/* 1.vpu->encp */
 			hd_set_reg_bits(P_VPU_HDMI_SETTING, 4, 5, 3);
-			if (is_sync_polarity_negative(hdev->tx_comm.cur_VIC))
+			if (is_sync_polarity_negative(hdev->tx_comm.fmt_para.vic))
 				hd_set_reg_bits(P_VPU_HDMI_SETTING, 0x0, 2, 2);
 			else
 				hd_set_reg_bits(P_VPU_HDMI_SETTING, 0x3, 2, 2);
@@ -5477,7 +5475,7 @@ static int hdmitx_cntl_config(struct hdmitx_hw_common *tx_hw, unsigned int cmd,
 			hdmitx_dith_ctrl(hdev);
 
 			/* 3.vid input remap */
-			hdmitx_in_vid_map(hdev->tx_comm.cur_VIC, COLORDEPTH_24B,
+			hdmitx_in_vid_map(hdev->tx_comm.fmt_para.vic, COLORDEPTH_24B,
 			HDMI_COLORSPACE_YUV444, HDMI_COLORSPACE_RGB);
 
 			/* 4.Video Packet YCC color remapping/configure */

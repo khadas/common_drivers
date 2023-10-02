@@ -1647,6 +1647,7 @@ void meson_hdmitx_encoder_atomic_enable(struct drm_encoder *encoder,
 	meson_hdmitx_update_binding_state(am_hdmi_info.hdmitx_dev,
 					  &meson_conn_state->hbs,
 					  &old_meson_conn_state->hbs);
+	meson_conn_state->hbs.mode = vmode;
 	hdmitx_common_do_mode_setting(am_hdmi_info.hdmitx_dev->hdmitx_common,
 				      &meson_conn_state->hbs);
 	meson_vout_notify_mode_change(amcrtc->vout_index,

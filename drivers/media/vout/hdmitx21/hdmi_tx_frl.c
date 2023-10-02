@@ -8,9 +8,6 @@
 #include <linux/amlogic/media/vout/hdmi_tx21/hdmi_tx_ddc.h>
 #include "hw/common.h"
 
-#undef pr_fmt
-#define pr_fmt(fmt) "TX_FRL: " fmt
-
 #define MAX_SUPPORTED_FRL_RATE FRL_12G4L /* TODO */
 #define FRL_RATE_ERR 0xff
 

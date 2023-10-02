@@ -375,7 +375,7 @@ static void clocks_set_vid_clk_div_for_hdmi(int div_sel)
 	/* Disable the output clock */
 	hd21_set_reg_bits(reg_vid_pll, 0, 18, 2);
 	hd21_set_reg_bits(reg_vid_pll, 0, 15, 1);
-	if (hdev->tx_hw.enc_idx == 2)
+	if (hdev->tx_comm.enc_idx == 2)
 		hd21_set_reg_bits(reg_vid_pll, 1, 25, 1); /* vid_pll2_clk_sel_hdmi */
 	else
 		hd21_set_reg_bits(reg_vid_pll, 1, 24, 1); /* vid_pll2_clk_sel_hdmi */
@@ -1092,7 +1092,7 @@ next:
 
 	//configure crt_video V1: in_sel=vid_pll_clk(0),div_n=xd)
 	set_crt_video_enc(0, 0, 1);
-	if (hdev->tx_hw.enc_idx == 2)
+	if (hdev->tx_comm.enc_idx == 2)
 		set_crt_video_enc2(0, 0, 1);
 }
 

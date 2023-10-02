@@ -902,26 +902,25 @@ static int hdmitx_set_dispmode(struct hdmitx_hw_common *tx_hw)
 	u32 data32;
 	enum hdmi_vic vic = para->timing.vic;
 	struct vinfo_s *vinfo = NULL;
-	struct hdmitx21_hw *tx21_hw = &hdev->tx_hw;
 
 	hdmitx21_set_clk(hdev);
 	hdmitx_phy_pre_init(hdev);
 	_hdmitx21_set_clk();
 	hdmitx_set_clkdiv(hdev);
-	if (tx21_hw->enc_idx == 2) {
+	if (hdev->tx_comm.enc_idx == 2) {
 		set_hdmitx_enc_idx(2);
 		hd21_set_reg_bits(VPU_DISP_VIU2_CTRL, 1, 29, 1);
 		//hd21_set_reg_bits(VPU_VIU_VENC_MUX_CTRL, 2, 2, 2);
 	}
 	hdmitx21_venc_en(0, 0);
-	hd21_set_reg_bits(VPU_HDMI_SETTING, 0, (tx21_hw->enc_idx == 0) ? 0 : 1, 1);
-	if (tx21_hw->enc_idx == 0)
+	hd21_set_reg_bits(VPU_HDMI_SETTING, 0, (hdev->tx_comm.enc_idx == 0) ? 0 : 1, 1);
+	if (hdev->tx_comm.enc_idx == 0)
 		enable_crt_video_encp(1, 0);
 	else
 		enable_crt_video_encp2(1, 0);
 	enable_crt_video_hdmi(1,
 			      (TX_INPUT_COLOR_FORMAT == HDMI_COLORSPACE_YUV420) ? 1 : 0,
-			      tx21_hw->enc_idx);
+			      hdev->tx_comm.enc_idx);
 	// configure GCP
 	/* for 8bit depth or y422: non-merge gcp mode + clr_avmute,
 	 * for dc mode: merge gcp mode + clr_avmute
@@ -937,7 +936,7 @@ static int hdmitx_set_dispmode(struct hdmitx_hw_common *tx_hw)
 	// Enable viu vsync interrupt, enable hdmitx interrupt, enable htx_hdcp22 interrupt
 	// --------------------------------------------------------
 	hd21_write_reg(VPU_VENC_CTRL, 1);
-	if (tx21_hw->enc_idx == 2) {
+	if (hdev->tx_comm.enc_idx == 2) {
 		// Enable VENC2 to HDMITX path
 		hd21_set_reg_bits(SYSCTRL_VPU_SECURE_REG0, 1, 16, 1);
 	}
@@ -951,11 +950,11 @@ static int hdmitx_set_dispmode(struct hdmitx_hw_common *tx_hw)
 	if (para->timing.pi_mode == 0 &&
 	    (para->timing.v_active == 480 || para->timing.v_active == 576)) {
 		hd21_write_reg(VPU_VENC_CTRL, 0); // sel enci timming
-		set_tv_enci_new(hdev, tx21_hw->enc_idx, vic, 1);
+		set_tv_enci_new(hdev, hdev->tx_comm.enc_idx, vic, 1);
 		hdmitx_enable_enci_clk();
 	} else {
 		hd21_write_reg(VPU_VENC_CTRL, 1); // sel encp timming
-		set_tv_encp_new(hdev, tx21_hw->enc_idx, vic, 1);
+		set_tv_encp_new(hdev, hdev->tx_comm.enc_idx, vic, 1);
 		hdmitx_enable_encp_clk();
 	}
 
@@ -1033,8 +1032,6 @@ static int hdmitx_set_dispmode(struct hdmitx_hw_common *tx_hw)
 	data32 |= (1920 << 0);  // [13: 0] cntl_hdcp22_min_size_h
 	hdmitx21_wr_reg(HDMITX_TOP_HDCP22_MIN_SIZE, data32);
 
-	hdev->tx_comm.cur_VIC = para->timing.vic;
-
 	//[4] reg_bypass_video_path
 	// For non-DSC, set to bit4 as 0
 	hdmitx21_set_reg_bits(PCLK2TMDS_MISC1_IVCTX, 0, 4, 1);
@@ -1104,7 +1101,7 @@ static int hdmitx_set_dispmode(struct hdmitx_hw_common *tx_hw)
 	if (hdev->tx_hw.chip_data->chip_type >= MESON_CPU_ID_S5 && para->cs == HDMI_COLORSPACE_RGB)
 		hd21_set_reg_bits(VPU_HDMI_SETTING, 4, 16, 3);
 	// [    1] src_sel_encp: Enable ENCI or ENCP output to HDMI
-	hd21_set_reg_bits(VPU_HDMI_SETTING, 1, (tx21_hw->enc_idx == 0) ? 0 : 1, 1);
+	hd21_set_reg_bits(VPU_HDMI_SETTING, 1, (hdev->tx_comm.enc_idx == 0) ? 0 : 1, 1);
 	if (hdev->tx_hw.chip_data->chip_type >= MESON_CPU_ID_S5) {
 		if (hdev->frl_rate) {
 			hd21_set_reg_bits(VPU_HDMI_SETTING, 0, 20, 4);
@@ -1809,7 +1806,7 @@ static void hdmitx_debug(struct hdmitx_hw_common *tx_hw, const char *buf)
 
 	if (strncmp(tmpbuf, "testhpll", 8) == 0) {
 		ret = kstrtoul(tmpbuf + 8, 10, &value);
-		hdev->tx_comm.cur_VIC = value;
+		hdev->tx_comm.fmt_para.vic = value;
 		hdmitx21_set_clk(hdev);
 		return;
 	} else if (strncmp(tmpbuf, "frl", 3) == 0) {
@@ -1975,7 +1972,7 @@ static void hdmitx_debug(struct hdmitx_hw_common *tx_hw, const char *buf)
 		return;
 	} else if (strncmp(tmpbuf, "ss", 2) == 0) {
 		pr_info("hdev->hpd_state: 0x%x\n", hdev->tx_comm.hpd_state);
-		pr_info("hdev->tx_comm.cur_VIC: 0x%x\n", hdev->tx_comm.cur_VIC);
+		pr_info("hdev->tx_comm.fmt_para.vic: 0x%x\n", hdev->tx_comm.fmt_para.vic);
 	} else if (strncmp(tmpbuf, "hpd_lock", 8) == 0) {
 		if (tmpbuf[8] == '1') {
 			hdev->tx_hw.debug_hpd_lock = 1;

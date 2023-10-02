@@ -2902,8 +2902,6 @@ void hdmitx_edid_rxcap_clear(struct rx_cap *prxcap)
 	phy_addr_clear(&prxcap->vsdb_phy_addr);
 }
 
-#undef pr_fmt
-#define pr_fmt(fmt) "" fmt
 /*
  * print one block data of edid
  */

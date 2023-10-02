@@ -56,6 +56,7 @@ struct hdmitx_timing_state {
 struct hdmitx_binding_state {
 	struct hdmitx_timing_state hts;
 	struct hdmi_format_para para;
+	enum vmode_e mode;
 };
 
 struct meson_connector_dev {

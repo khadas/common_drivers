@@ -150,7 +150,7 @@ static u32 get_enc_paddr(unsigned int addr)
 	unsigned int idx = addr >> BASE_REG_OFFSET;
 	unsigned int offset = (addr & 0xffff) >> 2;
 
-	if (hdev->tx_hw.enc_idx == 2 && idx == VPUCTRL_REG_IDX) {
+	if (hdev->tx_comm.enc_idx == 2 && idx == VPUCTRL_REG_IDX) {
 		if (offset >= 0x1b00 && offset < 0x1d00)
 			return addr + (0x800 << 2);
 	}

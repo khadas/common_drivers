@@ -176,12 +176,12 @@ static inline int is_dongle_mode(struct hdmitx_dev *hdev)
 	return hdev->tx_hw.dongle_mode &&
 		(para->cs == HDMI_COLORSPACE_YUV422 ||
 		para->cd == COLORDEPTH_24B) &&
-		(hdev->tx_comm.cur_VIC == HDMI_19_1280x720p50_16x9 ||
-		 hdev->tx_comm.cur_VIC == HDMI_4_1280x720p60_16x9 ||
-		 hdev->tx_comm.cur_VIC == HDMI_5_1920x1080i60_16x9 ||
-		 hdev->tx_comm.cur_VIC == HDMI_20_1920x1080i50_16x9 ||
-		 hdev->tx_comm.cur_VIC == HDMI_16_1920x1080p60_16x9 ||
-		 hdev->tx_comm.cur_VIC == HDMI_31_1920x1080p50_16x9);
+		(hdev->tx_comm.fmt_para.vic == HDMI_19_1280x720p50_16x9 ||
+		 hdev->tx_comm.fmt_para.vic == HDMI_4_1280x720p60_16x9 ||
+		 hdev->tx_comm.fmt_para.vic == HDMI_5_1920x1080i60_16x9 ||
+		 hdev->tx_comm.fmt_para.vic == HDMI_20_1920x1080i50_16x9 ||
+		 hdev->tx_comm.fmt_para.vic == HDMI_16_1920x1080p60_16x9 ||
+		 hdev->tx_comm.fmt_para.vic == HDMI_31_1920x1080p50_16x9);
 }
 
 static void set_hpll_hclk_dongle_5940m(void)

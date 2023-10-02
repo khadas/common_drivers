@@ -25,7 +25,7 @@ int hdmitx_common_setup_vsif_packet(struct hdmitx_common *tx_comm,
 	case VT_HDMI14_4K:
 		ieeeoui = HDMI_IEEE_OUI;
 		len = 5;
-		vic = hdmitx_edid_get_hdmi14_4k_vic(tx_comm->cur_VIC);
+		vic = hdmitx_edid_get_hdmi14_4k_vic(tx_comm->fmt_para.vic);
 		if (vic > 0) {
 			hb[2] = len;
 			db[0] = GET_OUI_BYTE0(ieeeoui);
@@ -51,8 +51,8 @@ int hdmitx_common_setup_vsif_packet(struct hdmitx_common *tx_comm,
 			db[2] = GET_OUI_BYTE2(ieeeoui);
 			db[4] |= 1 << 1; /* set bit1, ALLM_MODE */
 			/*reset vic which may be reset by VT_HDMI14_4K.*/
-			if (hdmitx_edid_get_hdmi14_4k_vic(tx_comm->cur_VIC) > 0)
-				hdmitx_hw_cntl_config(tx_hw, CONF_AVI_VIC, tx_comm->cur_VIC);
+			if (hdmitx_edid_get_hdmi14_4k_vic(tx_comm->fmt_para.vic) > 0)
+				hdmitx_hw_cntl_config(tx_hw, CONF_AVI_VIC, tx_comm->fmt_para.vic);
 			hdmitx_hw_set_packet(tx_hw, HDMI_INFOFRAME_TYPE_VENDOR2, db, hb);
 		} else {
 			db[4] &= ~(1 << 1); /* clear bit1, ALLM_MODE */

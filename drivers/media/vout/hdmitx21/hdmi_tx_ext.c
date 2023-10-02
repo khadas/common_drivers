@@ -155,9 +155,6 @@ EXPORT_SYMBOL(unregister_earcrx_callback);
 
 /* Nofity client */
 
-#undef pr_fmt
-#define pr_fmt(fmt) "snd_notify: " fmt
-
 #include <linux/module.h>
 
 static BLOCKING_NOTIFIER_HEAD(aout_notifier_list);

@@ -96,8 +96,6 @@ int hdmitx21_set_display(struct hdmitx_dev *hdev, enum hdmi_vic videocode)
 
 	pr_info(VID "already init VIC = %d  Now VIC = %d\n",
 		vic, videocode);
-	if (vic != HDMI_0_UNKNOWN && vic == videocode)
-		hdev->tx_comm.cur_VIC = vic;
 
 	if (param->cs == HDMI_COLORSPACE_YUV444)
 		if (!(hdev->tx_comm.rxcap.native_Mode & (1 << 5))) {

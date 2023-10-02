@@ -34,7 +34,7 @@ void hdmitx_get_init_state(struct hdmitx_common *tx_common,
 {
 	struct hdmi_format_para *para = &tx_common->fmt_para;
 
-	state->hts.vic = tx_common->cur_VIC;
+	state->hts.vic = para->vic;
 	state->hts.cd = para->cd;
 	state->hts.cs = para->cs;
 }

@@ -23,6 +23,7 @@ struct hdmitx_ctrl_ops {
 	int (*enable_mode)(struct hdmitx_common *tx_comm, struct hdmi_format_para *para);
 	int (*post_enable_mode)(struct hdmitx_common *tx_comm, struct hdmi_format_para *para);
 	int (*disable_mode)(struct hdmitx_common *tx_comm, struct hdmi_format_para *para);
+	int (*init_uboot_mode)(enum vmode_e mode);
 };
 
 struct st_debug_param {
@@ -41,8 +42,9 @@ struct hdmitx_common {
 	/* 0.1% clock shift, 1080p60hz->59.94hz */
 	u32 frac_rate_policy;
 
-	/*current mode vic.*/
-	u32 cur_VIC;
+	/* enc index */
+	u32 enc_idx;
+
 	/*current format para.*/
 	struct hdmi_format_para fmt_para;
 	struct vinfo_s hdmitx_vinfo;
@@ -91,6 +93,8 @@ struct hdmitx_common {
 	struct hdmitx_hw_common *tx_hw;
 
 	struct hdmitx_ctrl_ops *ctrl_ops;
+
+	struct vout_device_s *vdev;
 
 	/*protect set mode flow*/
 	/*protect hotplug flow and related struct.*/
@@ -212,6 +216,18 @@ int hdmitx_print_sink_cap(struct hdmitx_common *tx_comm, char *buffer, int buffe
 
 /*modesetting function*/
 int hdmitx_common_do_mode_setting(struct hdmitx_common *tx_comm, struct hdmitx_binding_state *new);
+int hdmitx_common_disable_mode(struct hdmitx_common *tx_comm,
+			       struct hdmitx_binding_state *new_state);
+void hdmitx_vout_init(struct hdmitx_common *tx_comm, struct hdmitx_hw_common *tx_hw);
+void hdmitx_vout_uninit(void);
+enum vmode_e hdmitx_validate_vmode(char *mode, unsigned int frac, void *data);
+struct vinfo_s *hdmitx_get_current_vinfo(void *data);
+void update_vinfo_from_formatpara(struct hdmitx_common *tx_comm);
+void edidinfo_detach_to_vinfo(struct hdmitx_common *tx_comm);
+void edidinfo_attach_to_vinfo(struct hdmitx_common *tx_comm);
+void hdrinfo_to_vinfo(struct hdr_info *hdrinfo, struct hdmitx_common *tx_comm);
+void set_dummy_dv_info(struct vout_device_s *vdev);
+void hdmitx_build_fmt_attr_str(struct hdmitx_common *tx_comm);
 
 /*packet api*/
 int hdmitx_common_setup_vsif_packet(struct hdmitx_common *tx_comm,

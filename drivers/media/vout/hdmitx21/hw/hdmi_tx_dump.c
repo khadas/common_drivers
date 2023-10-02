@@ -12,8 +12,8 @@
 #include <linux/device.h>
 #include <linux/debugfs.h>
 #include <linux/seq_file.h>
+#include <linux/amlogic/media/vout/hdmitx_common/hdmitx_version.h>
 #include "common.h"
-#include "hdmi_version.h"
 
 #ifdef DEVICE_NAME
 #undef DEVICE_NAME
@@ -523,10 +523,11 @@ static const struct file_operations dump_hdmipkt_fops = {
 
 static int dump_hdmiver_show(struct seq_file *s, void *p)
 {
-	const char *hdmi_ver = HDMITX21_VERSIONS_LOG;
+	const char *hdmi_ver;
 
+	GET_HDMITX_VER(hdmi_ver);
 	seq_puts(s, "\n--------HDMITX version log--------\n");
-	seq_printf(s, "%s", hdmi_ver);
+	seq_printf(s, "%s\n", hdmi_ver);
 
 	return 0;
 }

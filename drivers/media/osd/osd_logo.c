@@ -14,9 +14,6 @@
 #ifdef CONFIG_AMLOGIC_VOUT
 #include <linux/amlogic/media/vout/vout_notify.h>
 #endif
-#ifdef CONFIG_AMLOGIC_HDMITX
-#include <linux/amlogic/media/vout/hdmi_tx/hdmi_tx_module.h>
-#endif
 
 /* Local Headers */
 #include "osd_hw.h"

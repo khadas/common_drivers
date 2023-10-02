@@ -4,7 +4,6 @@
  */
 
 #include <linux/printk.h>
-#include <linux/amlogic/media/vout/hdmi_tx21/hdmi_tx_module.h>
 #include <linux/delay.h>
 #include <linux/arm-smccc.h>
 #include "common.h"

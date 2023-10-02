@@ -23,7 +23,7 @@ source "$(COMMON_DRIVERS_DIR)/drivers/media/vout/lcd/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/media/vout/hdmitx_common/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/media/vout/peripheral_lcd/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/media/vout/hdmitx21/Kconfig"
-source "$(COMMON_DRIVERS_DIR)/drivers/media/vout/hdmitx/Kconfig"
+source "$(COMMON_DRIVERS_DIR)/drivers/media/vout/hdmitx20/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/media/vout/cvbs/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/media/vout/vdac/Kconfig"
 endif

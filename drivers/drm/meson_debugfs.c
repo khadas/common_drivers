@@ -15,7 +15,7 @@
 #include "meson_debugfs.h"
 #include "meson_vpu_pipeline.h"
 #include <drm/amlogic/meson_connector_dev.h>
-#include <linux/amlogic/media/vout/hdmi_tx/hdmi_tx_module.h>
+
 #define HDMITX_ATTR_LEN_MAX 16
 
 #ifdef CONFIG_DEBUG_FS

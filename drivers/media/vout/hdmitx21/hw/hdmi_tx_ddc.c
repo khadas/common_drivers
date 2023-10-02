@@ -21,9 +21,6 @@
 #include <linux/uaccess.h>
 #include <linux/delay.h>
 #include <linux/clk.h>
-
-#include <linux/amlogic/media/vout/hdmi_tx21/hdmi_tx_ddc.h>
-#include <linux/amlogic/media/vout/hdmi_tx21/hdmi_tx_module.h>
 #include "common.h"
 
 #define TPI_DDC_CMD_ENHANCED_DDC_READ  0x04

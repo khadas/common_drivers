@@ -24,13 +24,12 @@
 #include <linux/reset.h>
 #include <linux/compiler.h>
 #include <linux/arm-smccc.h>
-
 #include <linux/amlogic/media/vout/vinfo.h>
-#include <linux/amlogic/media/vout/hdmi_tx21/enc_clk_config.h>
-#include <linux/amlogic/media/vout/hdmi_tx21/hdmi_tx_module.h>
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_common.h>
 
+#include "hdmi_tx_module.h"
 #include "hdmi_tx.h"
+#include "hw/enc_clk_config.h"
 
 /* now this interface should be not used, otherwise need
  * adjust as hdmi_vend_infoframe_rawset fistly

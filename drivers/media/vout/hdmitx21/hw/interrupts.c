@@ -21,9 +21,6 @@
 #include <linux/uaccess.h>
 #include <linux/delay.h>
 #include <linux/clk.h>
-
-#include <linux/amlogic/media/vout/hdmi_tx21/hdmi_tx_ddc.h>
-#include <linux/amlogic/media/vout/hdmi_tx21/hdmi_tx_module.h>
 #include <linux/amlogic/media/vout/hdmi_tx_ext.h>
 #include "common.h"
 
@@ -205,7 +202,7 @@ void hdmitx_top_intr_handler(struct work_struct *work)
 			hdmitx_hpd_irq_top_half_process(hdev, false);
 			/* Cancel previous hpd work.
 			 * Note that plugout work is not canceled so as to
-			 * prevent plugout work is not sheduled asap in
+			 * prevent plugout work is not scheduled asap in
 			 * critical high cpu loading case. always do
 			 * plugout work to disable output asap.
 			 */

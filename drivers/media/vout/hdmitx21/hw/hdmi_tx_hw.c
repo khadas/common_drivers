@@ -27,12 +27,10 @@
 
 #include <linux/amlogic/media/video_sink/video.h>
 #include <linux/amlogic/media/vout/vinfo.h>
-#include <linux/amlogic/media/vout/hdmi_tx21/enc_clk_config.h>
-#include <linux/amlogic/media/vout/hdmi_tx21/hdmi_tx_module.h>
-#include <linux/amlogic/media/vout/hdmi_tx21/hdmi_tx_ddc.h>
-#include <linux/amlogic/media/vout/hdmi_tx21/hdmi_tx_hw.h>
 #include <linux/arm-smccc.h>
 #include "common.h"
+#include "hdmi_tx_hw.h"
+#include "enc_clk_config.h"
 #include "../hdmi_tx_ext.h"
 #include <linux/amlogic/clk_measure.h>
 

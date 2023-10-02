@@ -16,13 +16,14 @@
 #include <linux/platform_device.h>
 #include <linux/mutex.h>
 #include <linux/cdev.h>
+
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_common.h>
 #include "hdmi_tx_module.h"
 #include "hw/common.h"
 
 #undef PCM_USE_INFOFRAME
 
-static const u8 cs_freq[] = {
+static const unsigned char cs_freq[] = {
 	0x0,
 	0x3, /*32K*/
 	0x0, /*44.1k*/
@@ -33,17 +34,18 @@ static const u8 cs_freq[] = {
 	0xe, /*192k*/
 };
 
-static const u8 cs_sw_len[] = {
+static const unsigned char cs_sw_len[] = {
 	0x0,
 	0x2, /*16 bits*/
 	0x3, /*20 bits*/
-	0xb  /*24 bits*/
+	0xb, /*24 bits*/
+	0xf  /*32 bits*/
 };
 
 static void
 hdmi_tx_construct_aud_packet(struct aud_para *audio_param,
-			     u8 *AUD_DB,
-			     u8 *CHAN_STAT_BUF,
+			     unsigned char *AUD_DB,
+			     unsigned char *CHAN_STAT_BUF,
 			     int hdmi_ch)
 {
 #ifndef PCM_USE_INFOFRAME
@@ -225,22 +227,24 @@ hdmi_tx_construct_aud_packet(struct aud_para *audio_param,
 #endif
 }
 
-int hdmitx21_set_audio(struct hdmitx_dev *hdev,
+int hdmitx_set_audio(struct hdmitx_dev *hdev,
 		     struct aud_para *audio_param)
 {
 	int i, ret = -1;
-	u8 CHAN_STAT_BUF[24 * 2];
-	u32 hdmi_ch = hdev->hdmi_ch;
+	unsigned char AUD_DB[32];
+	unsigned char CHAN_STAT_BUF[24 * 2];
+	unsigned int hdmi_ch = hdev->hdmi_ch;
 
-	/* hdmi_audio_infoframe_init(info); */
+	for (i = 0; i < 32; i++)
+		AUD_DB[i] = 0;
 	for (i = 0; i < (24 * 2); i++)
 		CHAN_STAT_BUF[i] = 0;
-	if (hdev->tx_hw.base.setaudmode(&hdev->tx_hw.base, audio_param) >= 0) {
-		if (0)
-			hdmi_tx_construct_aud_packet(audio_param, NULL,
+	if (hdev->tx_hw.base.setaudmode(&hdev->tx_hw.base,
+					   audio_param) >= 0) {
+		hdmi_tx_construct_aud_packet(audio_param, AUD_DB,
 					     CHAN_STAT_BUF, hdmi_ch);
 
-		/* hdmi_audio_infoframe_set(info); */
+		hdev->hwop.setaudioinfoframe(AUD_DB, CHAN_STAT_BUF);
 		ret = 0;
 	}
 	return ret;

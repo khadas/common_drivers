@@ -16,9 +16,7 @@
 #include <linux/platform_device.h>
 #include <linux/mutex.h>
 #include <linux/cdev.h>
-
-#include <linux/amlogic/media/vout/hdmi_tx21/hdmi_tx_module.h>
-
+#include "hdmi_tx_module.h"
 #include "hw/common.h"
 
 #define to_hdmitx21_dev(x)	container_of(x, struct hdmitx_dev, tx_comm)

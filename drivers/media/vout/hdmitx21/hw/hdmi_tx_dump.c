@@ -13,7 +13,7 @@
 #include <linux/debugfs.h>
 #include <linux/seq_file.h>
 #include "common.h"
-#include <linux/amlogic/media/vout/hdmi_tx21/hdmi_version.h>
+#include "hdmi_version.h"
 
 #ifdef DEVICE_NAME
 #undef DEVICE_NAME

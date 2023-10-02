@@ -18,12 +18,10 @@
 #include <linux/clk.h>
 #include <linux/debugfs.h>
 #include <linux/seq_file.h>
-
 #include <linux/amlogic/media/vout/vinfo.h>
-#include <linux/amlogic/media/vout/hdmi_tx21/enc_clk_config.h>
-#include <linux/amlogic/media/vout/hdmi_tx21/hdmi_tx_module.h>
-
+#include "hdmi_tx_module.h"
 #include "hdmi_tx.h"
+#include "hw/enc_clk_config.h"
 
 /* BRR 720p60hz */
 static const struct mvrr_const_val const_hdmi720p60_6000 = {

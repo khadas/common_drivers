@@ -21,11 +21,7 @@
 #include <linux/uaccess.h>
 #include <linux/delay.h>
 #include <linux/clk.h>
-
 #include <linux/arm-smccc.h>
-
-#include <linux/amlogic/media/vout/hdmi_tx21/hdmi_tx_ddc.h>
-#include <linux/amlogic/media/vout/hdmi_tx21/hdmi_tx_module.h>
 #include "common.h"
 
 static void hdcptx1_load_key(void)

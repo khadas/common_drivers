@@ -22,9 +22,8 @@
 #include <linux/delay.h>
 #include <linux/clk.h>
 #include <linux/amlogic/media/vout/vinfo.h>
-#include <linux/amlogic/media/vout/hdmi_tx21/enc_clk_config.h>
-#include <linux/amlogic/media/vout/hdmi_tx21/hdmi_tx_module.h>
 #include "common.h"
+#include "enc_clk_config.h"
 #include "register.h"
 #include "../hdmi_tx.h"
 

@@ -8,7 +8,7 @@ include $(COMMON_DRIVERS_DIR)/drivers/media/vout/hdmitx_common/Makefile
 
 include $(COMMON_DRIVERS_DIR)/drivers/media/vout/hdmitx21/Makefile
 
-include $(COMMON_DRIVERS_DIR)/drivers/media/vout/hdmitx/Makefile
+include $(COMMON_DRIVERS_DIR)/drivers/media/vout/hdmitx20/Makefile
 
 include $(COMMON_DRIVERS_DIR)/drivers/media/vout/cvbs/Makefile
 

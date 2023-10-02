@@ -8,7 +8,6 @@
 #include <linux/kernel.h>
 #include <linux/delay.h>
 #include <linux/amlogic/clk_measure.h>
-#include <linux/amlogic/media/vout/hdmi_tx21/hdmi_tx_module.h>
 #include "common.h"
 
 #ifdef CONFIG_AMLOGIC_VPU

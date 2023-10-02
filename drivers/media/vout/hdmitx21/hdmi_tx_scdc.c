@@ -4,8 +4,7 @@
  */
 
 #include <linux/delay.h>
-#include <linux/amlogic/media/vout/hdmi_tx21/hdmi_tx_module.h>
-#include <linux/amlogic/media/vout/hdmi_tx21/hdmi_tx_ddc.h>
+#include "hdmi_tx_module.h"
 #include "hw/common.h"
 
 void scdc21_config(struct hdmitx_dev *hdev)

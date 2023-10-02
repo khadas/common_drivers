@@ -21,8 +21,6 @@
 #include <linux/of_address.h>
 #include <linux/arm-smccc.h>
 
-#include <linux/amlogic/media/vout/hdmi_tx21/hdmi_tx_module.h>
-
 #include "common.h"
 
 static int hdmi_dbg;

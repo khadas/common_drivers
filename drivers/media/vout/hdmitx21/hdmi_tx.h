@@ -8,7 +8,7 @@
 #include <linux/hdmi.h>
 #include <linux/interrupt.h>
 #include <linux/spinlock.h>
-#include <linux/amlogic/media/vout/hdmi_tx21/hdmi_tx_module.h>
+#include "hdmi_tx_module.h"
 
 /* L_0 will always be printed, set log level to L_1/2/3 for detail */
 #define L_0 0

@@ -21,10 +21,11 @@
 #include <linux/mutex.h>
 #include <linux/cdev.h>
 #include <linux/io.h>
-#include <linux/amlogic/media/vout/hdmi_tx21/hdmi_tx_ddc.h>
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_types.h>
 #include "../hdmi_tx.h"
+#include "../hdmi_tx_module.h"
 #include "hdmi_tx_reg.h"
+#include "hdmi_tx_ddc.h"
 #include "register.h"
 
 enum map_addr_idx_e {

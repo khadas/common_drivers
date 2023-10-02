@@ -70,6 +70,7 @@ int hdmitx_hw_set_phy(struct hdmitx_hw_common *tx_hw, int flag)
 		cmd = TMDS_PHY_ENABLE;
 	return hdmitx_hw_cntl_misc(tx_hw, MISC_TMDS_PHY_OP, cmd);
 }
+EXPORT_SYMBOL(hdmitx_hw_set_phy);
 
 enum hdmi_tf_type hdmitx_hw_get_hdr_st(struct hdmitx_hw_common *tx_hw)
 {

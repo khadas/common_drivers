@@ -162,7 +162,8 @@ static int hdmitx_common_pre_enable_mode(struct hdmitx_common *tx_comm,
 	return 0;
 }
 
-static int hdmitx_common_enable_mode(struct hdmitx_common *tx_comm, struct hdmi_format_para *para)
+static int hdmitx_common_enable_mode(struct hdmitx_common *tx_comm,
+				     struct hdmi_format_para *para)
 {
 	tx_comm->ctrl_ops->enable_mode(tx_comm, para);
 	return 0;
@@ -178,7 +179,8 @@ static int hdmitx_common_post_enable_mode(struct hdmitx_common *tx_comm,
 }
 
 int hdmitx_common_do_mode_setting(struct hdmitx_common *tx_comm,
-			struct hdmitx_binding_state *new_state)
+				  struct hdmitx_common_state *new_state,
+				  struct hdmitx_common_state *old_state)
 {
 	int ret;
 	struct hdmi_format_para *new_para;
@@ -216,7 +218,7 @@ fail:
 EXPORT_SYMBOL(hdmitx_common_do_mode_setting);
 
 int hdmitx_common_disable_mode(struct hdmitx_common *tx_comm,
-			struct hdmitx_binding_state *new_state)
+			       struct hdmitx_common_state *new_state)
 {
 	struct hdmi_format_para *para;
 
@@ -244,8 +246,7 @@ static int hdmitx_set_current_vmode(enum vmode_e mode, void *data)
 	return 0;
 }
 
-enum vmode_e hdmitx_validate_vmode(char *mode, unsigned int frac,
-					  void *data)
+enum vmode_e hdmitx_validate_vmode(char *mode, unsigned int frac, void *data)
 {
 	struct vinfo_s *vinfo = &global_tx_common->hdmitx_vinfo;
 	const struct hdmi_timing *timing = 0;
@@ -277,7 +278,8 @@ static int hdmitx_vmode_is_supported(enum vmode_e mode, void *data)
 //TODO
 static int hdmitx_module_disable(enum vmode_e cur_vmod, void *data)
 {
-	global_tx_common->ctrl_ops->disable_mode(global_tx_common, &global_tx_common->fmt_para);
+	global_tx_common->ctrl_ops->disable_mode(global_tx_common,
+						 &global_tx_common->fmt_para);
 	return 0;
 }
 

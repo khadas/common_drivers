@@ -1,0 +1,68 @@
+/* SPDX-License-Identifier: (GPL-2.0+ OR MIT) */
+/*
+ * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
+ */
+
+#ifndef __HDMITX_LOG_H
+#define __HDMITX_LOG_H
+
+extern unsigned int __hdmitx_debug;
+
+enum hdmitx_debug_category {
+	CORE_LOG = 0x01,
+	VIDEO_LOG = 0x02,
+	AUDIO_LOG = 0x04,
+	HDCP_LOG = 0x08,
+	PACKET_LOG = 0x10,
+	EDID_LOG = 0x20,
+	PHY_LOG = 0x40,
+	REG_LOG = 0x80,
+	SCDC_LOG = 0x100,
+	VNIFO_LOG = 0x200,
+};
+
+static inline bool hdmitx_debug_enabled(enum hdmitx_debug_category category)
+{
+	return unlikely(__hdmitx_debug & category);
+}
+
+void __hdmitx_info(const char *format, ...);
+void __hdmitx_err(const char *format, ...);
+void __hdmitx_dbg(enum hdmitx_debug_category category, const char *format, ...);
+
+#define HDMITX_INFO(fmt, ...)							\
+	__hdmitx_info(fmt, ##__VA_ARGS__)
+
+#define HDMITX_ERROR(fmt, ...)							\
+	__hdmitx_err(fmt, ##__VA_ARGS__)
+
+#define HDMITX_DEBUG(fmt, ...)							\
+	__hdmitx_dbg(CORE_LOG, fmt, ##__VA_ARGS__)
+
+#define HDMITX_DEBUG_VIDEO(fmt, ...)					\
+	__hdmitx_dbg(VIDEO_LOG, fmt, ##__VA_ARGS__)
+
+#define HDMITX_DEBUG_AUDIO(fmt, ...)					\
+	__hdmitx_dbg(AUDIO_LOG, fmt, ##__VA_ARGS__)
+
+#define HDMITX_DEBUG_HDCP(fmt, ...)						\
+	__hdmitx_dbg(HDCP_LOG, fmt, ##__VA_ARGS__)
+
+#define HDMITX_DEBUG_PACKET(fmt, ...)					\
+	__hdmitx_dbg(PACKET_LOG, fmt, ##__VA_ARGS__)
+
+#define HDMITX_DEBUG_EDID(fmt, ...)						\
+	__hdmitx_dbg(EDID_LOG, fmt, ##__VA_ARGS__)
+
+#define HDMITX_DEBUG_PHY(fmt, ...)						\
+	__hdmitx_dbg(PHY_LOG, fmt, ##__VA_ARGS__)
+
+#define HDMITX_DEBUG_REG(fmt, ...)						\
+	__hdmitx_dbg(REG_LOG, fmt, ##__VA_ARGS__)
+
+#define HDMITX_DEBUG_SCDC(fmt, ...)						\
+	__hdmitx_dbg(SCDC_LOG, fmt, ##__VA_ARGS__)
+
+#define HDMITX_DEBUG_VINFO(fmt, ...)					\
+	__hdmitx_dbg(VINFO_LOG, fmt, ##__VA_ARGS__)
+#endif

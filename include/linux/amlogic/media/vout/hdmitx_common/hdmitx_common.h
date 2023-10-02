@@ -18,6 +18,11 @@
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_tracer.h>
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_event_mgr.h>
 
+struct hdmitx_common_state {
+	struct hdmi_format_para para;
+	enum vmode_e mode;
+};
+
 struct hdmitx_ctrl_ops {
 	int (*pre_enable_mode)(struct hdmitx_common *tx_comm, struct hdmi_format_para *para);
 	int (*enable_mode)(struct hdmitx_common *tx_comm, struct hdmi_format_para *para);
@@ -85,9 +90,6 @@ struct hdmitx_common {
 	bool config_csc_en;
 	bool suspend_flag;
 
-	struct hdmitx_base_state *states[HDMITX_MAX_MODULE];
-	struct hdmitx_base_state *old_states[HDMITX_MAX_MODULE];
-
 	/*soc limitation*/
 	u32 res_1080p;
 	u32 max_refreshrate;
@@ -132,12 +134,8 @@ struct hdmitx_common {
 	bool ready;
 };
 
-struct hdmitx_base_state *hdmitx_get_mod_state(struct hdmitx_common *tx_common,
-					       enum HDMITX_MODULE type);
-struct hdmitx_base_state *hdmitx_get_old_mod_state(struct hdmitx_common *tx_common,
-			enum HDMITX_MODULE type);
 void hdmitx_get_init_state(struct hdmitx_common *tx_common,
-					struct hdmitx_binding_state *state);
+			   struct hdmitx_common_state *state);
 
 /*******************************hdmitx common api*******************************/
 int hdmitx_common_init(struct hdmitx_common *tx_common, struct hdmitx_hw_common *hw_comm);
@@ -214,6 +212,7 @@ bool soc_freshrate_limited(const struct hdmi_timing *timing, u32 vsync);
 int hdmitx_hpd_notify_unlocked(struct hdmitx_common *tx_comm);
 int hdmitx_register_hpd_cb(struct hdmitx_common *tx_comm, struct connector_hpd_cb *hpd_cb);
 
+int hdmitx_get_hpd_state(struct hdmitx_common *tx_comm);
 unsigned char *hdmitx_get_raw_edid(struct hdmitx_common *tx_comm);
 int hdmitx_setup_attr(struct hdmitx_common *tx_comm, const char *buf);
 int hdmitx_get_attr(struct hdmitx_common *tx_comm, char attr[16]);
@@ -230,9 +229,11 @@ int hdmitx_save_edid_file(unsigned char *rawedid, char *path);
 int hdmitx_print_sink_cap(struct hdmitx_common *tx_comm, char *buffer, int buffer_len);
 
 /*modesetting function*/
-int hdmitx_common_do_mode_setting(struct hdmitx_common *tx_comm, struct hdmitx_binding_state *new);
+int hdmitx_common_do_mode_setting(struct hdmitx_common *tx_comm,
+				  struct hdmitx_common_state *new,
+				  struct hdmitx_common_state *old);
 int hdmitx_common_disable_mode(struct hdmitx_common *tx_comm,
-			       struct hdmitx_binding_state *new_state);
+			       struct hdmitx_common_state *new_state);
 void hdmitx_vout_init(struct hdmitx_common *tx_comm, struct hdmitx_hw_common *tx_hw);
 void hdmitx_vout_uninit(void);
 enum vmode_e hdmitx_validate_vmode(char *mode, unsigned int frac, void *data);
@@ -258,5 +259,15 @@ void hdmitx_common_pre_early_suspend(struct hdmitx_common *tx_comm,
 	struct hdmitx_hw_common *tx_hw_base);
 void hdmitx_common_late_resume(struct hdmitx_common *tx_comm,
 	struct hdmitx_hw_common *tx_hw_base);
+
+/*******************************drm hdmitx api*******************************/
+
+unsigned int hdmitx_common_get_contenttypes(void);
+int hdmitx_common_set_contenttype(int content_type);
+const struct dv_info *hdmitx_common_get_dv_info(void);
+const struct hdr_info *hdmitx_common_get_hdr_info(void);
+int hdmitx_common_get_vic_list(int **vics);
+bool hdmitx_common_chk_mode_attr_sup(char *mode, char *attr);
+int hdmitx_common_get_timing_para(int vic, struct drm_hdmitx_timing_para *para);
 
 #endif

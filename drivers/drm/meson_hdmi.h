@@ -11,6 +11,7 @@
 #include <drm/drm_connector.h>
 #include <drm/drm_encoder.h>
 #include <drm/amlogic/meson_connector_dev.h>
+#include <linux/amlogic/media/vout/hdmitx_common/hdmitx_common.h>
 #include <media/cec-notifier.h>
 
 enum {
@@ -73,7 +74,7 @@ struct am_hdmi_tx {
 
 struct am_hdmitx_connector_state {
 	struct drm_connector_state base;
-	struct hdmitx_binding_state hbs;
+	struct hdmitx_common_state hcs;
 
 	/*drm hdmitx attr from external modules,
 	 *ONLY used for once, and reset when duplicate.

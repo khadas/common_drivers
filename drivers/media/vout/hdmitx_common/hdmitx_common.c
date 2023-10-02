@@ -20,23 +20,12 @@ int hdmitx_format_para_init(struct hdmi_format_para *para,
 		enum hdmi_quantization_range cr);
 const struct hdmi_timing *hdmitx_mode_match_timing_name(const char *name);
 
-struct hdmitx_base_state *hdmitx_get_mod_state(struct hdmitx_common *tx_common,
-					       enum HDMITX_MODULE type)
-{
-	if (type < HDMITX_MAX_MODULE)
-		return tx_common->states[type];
-
-	return NULL;
-}
-
 void hdmitx_get_init_state(struct hdmitx_common *tx_common,
-					struct hdmitx_binding_state *state)
+			   struct hdmitx_common_state *state)
 {
 	struct hdmi_format_para *para = &tx_common->fmt_para;
 
-	state->hts.vic = para->vic;
-	state->hts.cd = para->cd;
-	state->hts.cs = para->cs;
+	memcpy(&state->para, para, sizeof(*para));
 }
 EXPORT_SYMBOL(hdmitx_get_init_state);
 
@@ -247,11 +236,21 @@ int hdmitx_register_hpd_cb(struct hdmitx_common *tx_comm, struct connector_hpd_c
 	tx_comm->drm_hpd_cb.data = hpd_cb->data;
 	return 0;
 }
+EXPORT_SYMBOL(hdmitx_register_hpd_cb);
 
+/* TODO: no mutex */
+int hdmitx_get_hpd_state(struct hdmitx_common *tx_comm)
+{
+	return tx_comm->hpd_state;
+}
+EXPORT_SYMBOL(hdmitx_get_hpd_state);
+
+/* TODO: no mutex */
 unsigned char *hdmitx_get_raw_edid(struct hdmitx_common *tx_comm)
 {
 	return tx_comm->EDID_buf;
 }
+EXPORT_SYMBOL(hdmitx_get_raw_edid);
 
 int hdmitx_setup_attr(struct hdmitx_common *tx_comm, const char *buf)
 {
@@ -263,6 +262,7 @@ int hdmitx_setup_attr(struct hdmitx_common *tx_comm, const char *buf)
 	memcpy(tx_comm->fmt_attr, attr, sizeof(tx_comm->fmt_attr));
 	return 0;
 }
+EXPORT_SYMBOL(hdmitx_setup_attr);
 
 int hdmitx_get_attr(struct hdmitx_common *tx_comm, char attr[16])
 {
@@ -509,6 +509,7 @@ int hdmitx_common_avmute_locked(struct hdmitx_common *tx_comm,
 
 	return 0;
 }
+EXPORT_SYMBOL(hdmitx_common_avmute_locked);
 
 /********************************Debug function***********************************/
 int hdmitx_load_edid_file(char *path)

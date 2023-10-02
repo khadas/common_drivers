@@ -275,7 +275,7 @@ static void hdmitx_late_resume(struct early_suspend *h)
 	mutex_unlock(&hdev->tx_comm.hdmimode_mutex);
 
 	/* TODO: special for rdk: recover attr (especially for HDR case) */
-	if (info && drm_hdmitx_chk_mode_attr_sup(info->name,
+	if (info && hdmitx_common_chk_mode_attr_sup(info->name,
 	    suspend_fmt_attr))
 		setup_attr(suspend_fmt_attr);
 

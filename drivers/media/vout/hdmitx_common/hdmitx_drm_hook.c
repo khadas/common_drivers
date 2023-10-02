@@ -15,44 +15,7 @@ static struct hdmitx_hw_common *global_tx_hw;
 static struct meson_hdmitx_dev hdmitx_drm_instance;
 static int drm_hdmitx_id;
 
-/* TODO: no mutex */
-static int drm_hdmitx_get_hpd_state(void)
-{
-	return global_tx_base->hpd_state;
-}
-
-static int drm_hdmitx_register_hpd_cb(struct connector_hpd_cb *hpd_cb)
-{
-	return hdmitx_register_hpd_cb(global_tx_base, hpd_cb);
-}
-
-/* TODO: no mutex */
-static unsigned char *drm_hdmitx_get_raw_edid(void)
-{
-	return hdmitx_get_raw_edid(global_tx_base);
-}
-
-static const struct hdmi_timing *drm_hdmitx_get_timing_by_name(char *mode_name)
-{
-	return hdmitx_mode_match_timing_name(mode_name);
-}
-
-static void drm_hdmitx_setup_attr(const char *buf)
-{
-	hdmitx_setup_attr(global_tx_base, buf);
-}
-
-static void drm_hdmitx_get_attr(char attr[16])
-{
-	hdmitx_get_attr(global_tx_base, attr);
-}
-
-static int drm_hdmitx_get_hdr_priority(void)
-{
-	return global_tx_base->hdr_priority;
-}
-
-static unsigned int drm_hdmitx_get_contenttypes(void)
+unsigned int hdmitx_common_get_contenttypes(void)
 {
 	unsigned int types = 1 << DRM_MODE_CONTENT_TYPE_NO_DATA;/*NONE DATA*/
 	struct rx_cap *prxcap = &global_tx_base->rxcap;
@@ -68,40 +31,26 @@ static unsigned int drm_hdmitx_get_contenttypes(void)
 
 	return types;
 }
+EXPORT_SYMBOL(hdmitx_common_get_contenttypes);
 
-static const struct dv_info *drm_hdmitx_get_dv_info(void)
+const struct dv_info *hdmitx_common_get_dv_info(void)
 {
 	const struct dv_info *dv = &global_tx_base->rxcap.dv_info;
 
 	return dv;
 }
+EXPORT_SYMBOL(hdmitx_common_get_dv_info);
 
-static const struct hdr_info *drm_hdmitx_get_hdr_info(void)
+const struct hdr_info *hdmitx_common_get_hdr_info(void)
 {
 	static struct hdr_info hdrinfo;
 
 	hdmitx_get_hdrinfo(global_tx_base, &hdrinfo);
 	return &hdrinfo;
 }
+EXPORT_SYMBOL(hdmitx_common_get_hdr_info);
 
-static void drm_hdmitx_avmute(unsigned char mute)
-{
-	int muteflag = OFF_AVMUTE;
-
-	if (mute == 0)
-		muteflag = CLR_AVMUTE;
-	else
-		muteflag = SET_AVMUTE;
-
-	hdmitx_common_avmute_locked(global_tx_base, muteflag, AVMUTE_PATH_DRM);
-}
-
-static void drm_hdmitx_set_phy(unsigned char en)
-{
-	hdmitx_hw_set_phy(global_tx_hw, en);
-}
-
-static int drm_hdmitx_set_contenttype(int content_type)
+int hdmitx_common_set_contenttype(int content_type)
 {
 	int ret = 0;
 
@@ -142,8 +91,9 @@ static int drm_hdmitx_set_contenttype(int content_type)
 
 	return ret;
 }
+EXPORT_SYMBOL(hdmitx_common_set_contenttype);
 
-static int drm_hdmitx_get_vic_list(int **vics)
+int hdmitx_common_get_vic_list(int **vics)
 {
 	struct rx_cap *prxcap = &global_tx_base->rxcap;
 	enum hdmi_vic vic;
@@ -202,8 +152,9 @@ static int drm_hdmitx_get_vic_list(int **vics)
 
 	return count;
 }
+EXPORT_SYMBOL(hdmitx_common_get_vic_list);
 
-bool drm_hdmitx_chk_mode_attr_sup(char *mode, char *attr)
+bool hdmitx_common_chk_mode_attr_sup(char *mode, char *attr)
 {
 	struct hdmi_format_para tst_para;
 	enum hdmi_vic vic = HDMI_0_UNKNOWN;
@@ -249,8 +200,9 @@ bool drm_hdmitx_chk_mode_attr_sup(char *mode, char *attr)
 
 	return true;
 }
+EXPORT_SYMBOL(hdmitx_common_chk_mode_attr_sup);
 
-static int drm_hdmitx_get_timing_para(int vic, struct drm_hdmitx_timing_para *para)
+int hdmitx_common_get_timing_para(int vic, struct drm_hdmitx_timing_para *para)
 {
 	const struct hdmi_timing *timing;
 
@@ -284,6 +236,7 @@ static int drm_hdmitx_get_timing_para(int vic, struct drm_hdmitx_timing_para *pa
 
 	return 0;
 }
+EXPORT_SYMBOL(hdmitx_common_get_timing_para);
 
 static int meson_hdmitx_bind(struct device *dev,
 			      struct device *master, void *data)
@@ -339,33 +292,6 @@ int hdmitx_bind_meson_drm(struct device *device,
 
 	hdmitx_drm_instance = *diff;
 	hdmitx_drm_instance.base.ver = MESON_DRM_CONNECTOR_V10;
-
-	hdmitx_drm_instance.detect = drm_hdmitx_get_hpd_state;
-	hdmitx_drm_instance.register_hpd_cb = drm_hdmitx_register_hpd_cb;
-
-	hdmitx_drm_instance.setup_attr = drm_hdmitx_setup_attr;
-	hdmitx_drm_instance.get_attr = drm_hdmitx_get_attr;
-	hdmitx_drm_instance.get_hdr_priority = drm_hdmitx_get_hdr_priority;
-
-	/* timing related*/
-	hdmitx_drm_instance.get_timing_by_name = drm_hdmitx_get_timing_by_name,
-
-	/*edid related.*/
-	hdmitx_drm_instance.get_vic_list = drm_hdmitx_get_vic_list;
-	hdmitx_drm_instance.get_raw_edid = drm_hdmitx_get_raw_edid;
-	hdmitx_drm_instance.get_content_types = drm_hdmitx_get_contenttypes;
-	hdmitx_drm_instance.get_dv_info = drm_hdmitx_get_dv_info;
-	hdmitx_drm_instance.get_hdr_info = drm_hdmitx_get_hdr_info;
-
-	/*validate mode*/
-	hdmitx_drm_instance.test_attr = drm_hdmitx_chk_mode_attr_sup;
-	hdmitx_drm_instance.get_timing_para_by_vic = drm_hdmitx_get_timing_para;
-
-	/*hw related*/
-	hdmitx_drm_instance.avmute = drm_hdmitx_avmute;
-	hdmitx_drm_instance.set_phy = drm_hdmitx_set_phy;
-
-	hdmitx_drm_instance.set_content_type = drm_hdmitx_set_contenttype;
 	hdmitx_drm_instance.hdmitx_common = tx_base;
 	hdmitx_drm_instance.hw_common = tx_hw;
 

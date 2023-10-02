@@ -9,8 +9,6 @@
 
 void drm_hdmitx_hdcp22_init(void);
 
-bool drm_hdmitx_chk_mode_attr_sup(char *mode, char *attr);
-
 unsigned int meson_hdcp_get_tx_cap(void);
 unsigned int meson_hdcp_get_rx_cap(void);
 

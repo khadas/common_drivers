@@ -592,8 +592,12 @@ unsigned int meson_hdcp_get_tx_cap(void)
 		if (hdmitx_hw_cntl_ddc(&hdev->tx_hw.base, DDC_HDCP_14_LSTORE, 0))
 			hdev->lstore += 1;
 		if (hdmitx_hw_cntl_ddc(&hdev->tx_hw.base,
-			DDC_HDCP_22_LSTORE, 0))
-			hdev->lstore += 2;
+			DDC_HDCP_22_LSTORE, 0)) {
+			/*check hdcp daemon: android or daemon is running */
+			if (hdev->tx_comm.hdcp_ctl_lvl == 0 ||
+				hdcp_tx22_daemon_ready())
+				hdev->lstore += 2;
+		}
 	}
 	return hdev->lstore & 0x3;
 }
@@ -613,7 +617,7 @@ unsigned int meson_hdcp_get_rx_cap(void)
 
 	/* if TX don't have HDCP22 key, skip RX hdcp22 ver */
 	if (hdmitx_hw_cntl_ddc(&hdev->tx_hw.base,
-		DDC_HDCP_22_LSTORE, 0) == 0 || !hdcp_tx22_daemon_ready())
+		DDC_HDCP_22_LSTORE, 0) == 0)
 		return 0x1;
 
 	/* Detect RX support HDCP22 */

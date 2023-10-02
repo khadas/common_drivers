@@ -4121,14 +4121,20 @@ void hdmitx_hdcp_status(int hdmi_authenticated)
 			hdmi_authenticated);
 }
 
+static void hdmitx_logevents_handler(struct work_struct *work)
+{
+	static u32 cnt;
+
+	hdmitx_set_uevent(HDMITX_CUR_ST_EVENT, ++cnt);
+}
+
 void hdmitx_current_status(enum hdmitx_event_log_bits event)
 {
 	struct hdmitx_dev *hdev = get_hdmitx_device();
-	//static int cnt;
 
 	hdmitx_tracer_write_event(hdev->tx_comm.tx_tracer, event);
-	//TODO, need queue the msg to kworker
-	//hdmitx_set_uevent(HDMITX_CUR_ST_EVENT, ++cnt);
+	/*Called in irq, dont use lock.*/
+	queue_delayed_work(hdev->hdmi_wq, &hdev->work_do_event_logs, 1);
 }
 
 static void hdmitx_hdr_state_init(struct hdmitx_dev *hdev)
@@ -4628,6 +4634,7 @@ static int amhdmitx_probe(struct platform_device *pdev)
 					WQ_HIGHPRI | WQ_CPU_INTENSIVE, 0);
 	INIT_DELAYED_WORK(&hdev->work_hpd_plugin, hdmitx_hpd_plugin_handler);
 	INIT_DELAYED_WORK(&hdev->work_hpd_plugout, hdmitx_hpd_plugout_handler);
+	INIT_DELAYED_WORK(&hdev->work_do_event_logs, hdmitx_logevents_handler);
 	INIT_DELAYED_WORK(&hdev->work_internal_intr,
 			  hdmitx_internal_intr_handler);
 

@@ -111,6 +111,8 @@ struct hdmitx_dev {
 	struct work_struct work_hdr;
 	struct work_struct work_hdr_unmute;
 	struct delayed_work work_do_hdcp;
+	/*for event tracer*/
+	struct delayed_work work_do_event_logs;
 	int hdmi_init;
 	int ready;	/* 1, hdmi stable output, others are 0 */
 

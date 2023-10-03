@@ -25,6 +25,7 @@
 #include <linux/amlogic/media/frame_provider/tvin/tvin.h>
 #include <linux/amlogic/media/sound/hdmi_earc.h>
 #include <linux/sched/clock.h>
+#include <linux/amlogic/clk_measure.h>
 
 /* Local include */
 #include "hdmi_rx_repeater.h"
@@ -667,7 +668,7 @@ static int rx_dwc_irq_handler(void)
 	}
 	if (intr_hdcp22 != 0) {
 		hdmirx_wr_dwc(DWC_HDMI2_ICLR, intr_hdcp22);
-		skip_frame(skip_frame_cnt, rx_info.main_port);
+		skip_frame(skip_frame_cnt, rx_info.main_port, "dwc hdcp intr");
 		rx_pr("intr=%#x\n", intr_hdcp22);
 		switch (intr_hdcp22) {
 		case _BIT(0):
@@ -1051,7 +1052,7 @@ static int rx_cor3_irq_handler(void)
 		}
 		if (rx_get_bits(rx_hdcp2x_intr1, _BIT(2))) {
 			if (rx[port].hdcp.hdcp_version != HDCP_VER_22)
-				skip_frame(skip_frame_cnt, port);
+				skip_frame(skip_frame_cnt, port, "cor3 irq hdcp intr");
 			rx[port].hdcp.hdcp_version = HDCP_VER_22;
 			if (rx[port].hdcp.repeat && hdmirx_repeat_support())
 				rx[port].hdcp.rpt_reauth_event =
@@ -1323,7 +1324,7 @@ static int rx_cor2_irq_handler(void)
 		}
 		if (rx_get_bits(rx_hdcp2x_intr1, _BIT(2))) {
 			if (rx[port].hdcp.hdcp_version != HDCP_VER_22)
-				skip_frame(skip_frame_cnt, port);
+				skip_frame(skip_frame_cnt, port, "cor2 hdcp intr");
 			rx[port].hdcp.hdcp_version = HDCP_VER_22;
 			if (rx[port].hdcp.repeat && hdmirx_repeat_support())
 				rx[port].hdcp.rpt_reauth_event =
@@ -1595,7 +1596,7 @@ static int rx_cor1_irq_handler(void)
 		}
 		if (rx_get_bits(rx_hdcp2x_intr1, _BIT(2))) {
 			if (rx[port].hdcp.hdcp_version != HDCP_VER_22)
-				skip_frame(skip_frame_cnt, port);
+				skip_frame(skip_frame_cnt, port, "cor1 hdcp intr");
 			rx[port].hdcp.hdcp_version = HDCP_VER_22;
 			if (rx[port].hdcp.repeat && hdmirx_repeat_support())
 				rx[port].hdcp.rpt_reauth_event =
@@ -1868,7 +1869,7 @@ static int rx_cor_irq_handler(void)
 		}
 		if (rx_get_bits(rx_hdcp2x_intr1, _BIT(2))) {
 			if (rx[port].hdcp.hdcp_version != HDCP_VER_22)
-				skip_frame(skip_frame_cnt, port);
+				skip_frame(skip_frame_cnt, port, "cor hdcp intr");
 			rx[port].hdcp.hdcp_version = HDCP_VER_22;
 			if (rx[port].hdcp.repeat && hdmirx_repeat_support())
 				rx[port].hdcp.rpt_reauth_event =
@@ -2034,7 +2035,7 @@ reisr:hdmirx_top_intr_stat = hdmirx_rd_top(TOP_INTR_STAT, port);
 				if (log_level & 0x100)
 					rx_pr("vpp mute\n");
 			}
-			skip_frame(skip_frame_cnt, port);
+			skip_frame(skip_frame_cnt, port, "irq0 sqofclk_fall");
 			if (log_level & 0x100)
 				rx_pr("[isr] sqofclk_fall\n");
 		}
@@ -2197,7 +2198,7 @@ irqreturn_t irq1_handler(int irq, void *params)
 				if (log_level & 0x100)
 					rx_pr("vpp mute\n");
 			}
-			skip_frame(skip_frame_cnt, E_PORT1);
+			skip_frame(skip_frame_cnt, E_PORT1, "irq1 sqofclk_fall");
 			if (log_level & 0x100)
 				rx_pr("[isr] sqofclk_fall\n");
 		}
@@ -2317,21 +2318,33 @@ irqreturn_t irq2_handler(int irq, void *params)
 	}
 	/* modify interrupt flow for isr loading */
 	/* top interrupt handler */
-	if (hdmirx_top_intr_stat & (1 << 20)) {
-		if (video_mute_enabled(E_PORT2)) {
-			rx[E_PORT2].vpp_mute = true;
-			set_video_mute(true);
+	if (rx[E_PORT2].var.frl_rate == 0) {
+		if (hdmirx_top_intr_stat & (1 << 20)) {
+			if (video_mute_enabled(E_PORT2)) {
+				rx[E_PORT2].vpp_mute = true;
+				set_video_mute(true);
 				rx[E_PORT2].var.mute_cnt = 0;
 				if (log_level & 0x100)
 					rx_pr("vpp mute\n");
 			}
-			skip_frame(skip_frame_cnt, E_PORT2);
+			skip_frame(skip_frame_cnt, E_PORT2, "irq2 sqofclk_fall");
 			if (log_level & 0x100)
 				rx_pr("[isr] sqofclk_fall\n");
 		}
-	if (hdmirx_top_intr_stat & (1 << 28)) {
-		if (log_level & 0x100)
-			rx_pr("[isr] sqofclk_rise\n");
+	}
+	if (rx[E_PORT2].var.frl_rate) {
+		if (hdmirx_top_intr_stat & (1 << 29)) {
+			if (video_mute_enabled(E_PORT2)) {
+				rx[E_PORT2].vpp_mute = true;
+				set_video_mute(true);
+				rx[E_PORT2].var.mute_cnt = 0;
+				if (log_level & 0x100)
+					rx_pr("vpp mute\n");
+			}
+			skip_frame(skip_frame_cnt, E_PORT2, "irq2 valid_m_fall");
+			if (log_level & 0x100)
+				rx_pr("[isr] valid_m_fall\n");
+		}
 	}
 	if (hdmirx_top_intr_stat & (1 << 23)) {
 		if (rx[E_PORT2].var.de_stable)
@@ -2450,21 +2463,33 @@ irqreturn_t irq3_handler(int irq, void *params)
 	}
 	/* modify interrupt flow for isr loading */
 	/* top interrupt handler */
-	if (hdmirx_top_intr_stat & (1 << 20)) {
-		if (video_mute_enabled(E_PORT3)) {
-			rx[E_PORT3].vpp_mute = true;
-			set_video_mute(true);
+	if (rx[E_PORT3].var.frl_rate == 0) {
+		if (hdmirx_top_intr_stat & (1 << 20)) {
+			if (video_mute_enabled(E_PORT3)) {
+				rx[E_PORT3].vpp_mute = true;
+				set_video_mute(true);
 				rx[E_PORT3].var.mute_cnt = 0;
 				if (log_level & 0x100)
 					rx_pr("vpp mute\n");
 			}
-			skip_frame(skip_frame_cnt, E_PORT3);
+			skip_frame(skip_frame_cnt, E_PORT3, "irq3 sqofclk_fall");
 			if (log_level & 0x100)
 				rx_pr("[isr] sqofclk_fall\n");
 		}
-	if (hdmirx_top_intr_stat & (1 << 28)) {
-		if (log_level & 0x100)
-			rx_pr("[isr] sqofclk_rise\n");
+	}
+	if (rx[E_PORT3].var.frl_rate) {
+		if (hdmirx_top_intr_stat & (1 << 29)) {
+			if (video_mute_enabled(E_PORT3)) {
+				rx[E_PORT3].vpp_mute = true;
+				set_video_mute(true);
+				rx[E_PORT3].var.mute_cnt = 0;
+				if (log_level & 0x100)
+					rx_pr("vpp mute\n");
+			}
+			skip_frame(skip_frame_cnt, E_PORT3, "irq3 valid_m_fail");
+			if (log_level & 0x100)
+				rx_pr("[isr] valid_m_fall\n");
+		}
 	}
 	if (hdmirx_top_intr_stat & (1 << 23)) {
 		if (rx[E_PORT3].var.de_stable)
@@ -3232,7 +3257,7 @@ static bool rx_fps_is_changed(u8 port)
 			rx[port].pre.frame_rate,
 			rx[port].cur.frame_rate);
 	}
-	return false;
+	return ret;
 }
 
 static int get_timing_fmt(u8 port)
@@ -4507,13 +4532,15 @@ int rx_set_global_variable(const char *buf, int size)
 	return 0;
 }
 
-void skip_frame(unsigned int cnt, u8 port)
+void skip_frame(unsigned int cnt, u8 port, char *str)
 {
 	if (rx[port].state == FSM_SIG_READY) {
 		rx[port].skip =
 			(1000 * 100 / rx[port].pre.frame_rate / 12) + 1;
 		rx[port].skip = cnt * rx[port].skip;
 		rx_pr("rx[%d].skip = %d\n", port, rx[port].skip);
+		if (log_level & VIDEO_LOG)
+			rx_pr("skip reason is %s\n", str);
 	}
 	//do not depend on state mechine condition
 	tvin_notify_vdin_skip_frame(skip_frame_cnt);
@@ -4890,7 +4917,7 @@ static void hdcp22_decrypt_monitor(u8 port)
 		if (rx[port].last_hdcp22_state !=
 			rx[port].cur.hdcp22_state) {
 			if (rx[port].state == FSM_SIG_READY)
-				skip_frame(skip_frame_cnt, port);
+				skip_frame(skip_frame_cnt, port, "hdcp22_decrypt");
 			if (log_level & VIDEO_LOG)
 				rx_pr("hdcp22 decrypt chg(%d->%d)\n",
 				      rx[port].last_hdcp22_state,
@@ -5247,7 +5274,7 @@ void rx_main_state_machine(void)
 				if (log_level & 0x100)
 					rx_pr("vpp mute\n");
 			}
-			skip_frame(skip_frame_cnt, port);
+			skip_frame(skip_frame_cnt, port, "fsm tmds skip");
 			rx[port].unready_timestamp = rx[port].timestamp;
 			rx_i2c_div_init();
 			dump_unnormal_info(port);
@@ -5275,7 +5302,7 @@ void rx_main_state_machine(void)
 			hdr_err_chk_en = 1;
 			break;
 		} else if (!rx_is_timing_stable(port)) {
-			skip_frame(skip_frame_cnt, port);
+			skip_frame(skip_frame_cnt, port, "fsm timing skip");
 			if (++rx[port].var.sig_unready_cnt >= sig_unready_max) {
 				/*sig_lost_lock_cnt = 0;*/
 				rx[port].unready_timestamp = rx[port].timestamp;
@@ -5307,7 +5334,7 @@ void rx_main_state_machine(void)
 			}
 		} else if (!rx_is_color_space_stable(port)) {
 			//Color space changes, no need to do EQ training
-			skip_frame(skip_frame_cnt, port);
+			skip_frame(skip_frame_cnt, port, "fsm color skip");
 			if (++rx[port].var.sig_unready_cnt >= sig_unready_max) {
 				/*sig_lost_lock_cnt = 0;*/
 				rx[port].unready_timestamp = rx[port].timestamp;
@@ -5743,7 +5770,7 @@ void rx_port0_main_state_machine(void)
 				if (log_level & 0x100)
 					rx_pr("vpp mute\n");
 			}
-			skip_frame(skip_frame_cnt, port);
+			skip_frame(skip_frame_cnt, port, "fsm0 tmds skip");
 			rx[port].unready_timestamp = rx[port].timestamp;
 			rx_i2c_div_init();
 			dump_unnormal_info(port);
@@ -5770,7 +5797,7 @@ void rx_port0_main_state_machine(void)
 			rx_esm_reset(0);
 			break;
 		} else if (!rx_is_timing_stable(port)) {
-			skip_frame(skip_frame_cnt, port);
+			skip_frame(skip_frame_cnt, port, "fsm0 timing skip");
 			if (++rx[port].var.sig_unready_cnt >= sig_unready_max) {
 				/*sig_lost_lock_cnt = 0;*/
 				rx[port].unready_timestamp = rx[port].timestamp;
@@ -5801,7 +5828,7 @@ void rx_port0_main_state_machine(void)
 			}
 		} else if (!rx_is_color_space_stable(port)) {
 			//Color space changes, no need to do EQ training
-			skip_frame(skip_frame_cnt, port);
+			skip_frame(skip_frame_cnt, port, "fsm color skip");
 			if (++rx[port].var.sig_unready_cnt >= sig_unready_max) {
 				/*sig_lost_lock_cnt = 0;*/
 				rx[port].unready_timestamp = rx[port].timestamp;
@@ -6220,7 +6247,7 @@ void rx_port1_main_state_machine(void)
 				if (log_level & 0x100)
 					rx_pr("vpp mute\n");
 			}
-			skip_frame(skip_frame_cnt, port);
+			skip_frame(skip_frame_cnt, port, "fsm1 tmds skip");
 			rx[port].unready_timestamp = rx[port].timestamp;
 			rx_i2c_div_init();
 			dump_unnormal_info(port);
@@ -6247,7 +6274,7 @@ void rx_port1_main_state_machine(void)
 			rx_esm_reset(0);
 			break;
 		} else if (!rx_is_timing_stable(port)) {
-			skip_frame(skip_frame_cnt, port);
+			skip_frame(skip_frame_cnt, port, "fsm1 timing skip");
 			if (++rx[port].var.sig_unready_cnt >= sig_unready_max) {
 				/*sig_lost_lock_cnt = 0;*/
 				rx[port].unready_timestamp = rx[port].timestamp;
@@ -6278,7 +6305,7 @@ void rx_port1_main_state_machine(void)
 			}
 		} else if (!rx_is_color_space_stable(port)) {
 			//Color space changes, no need to do EQ training
-			skip_frame(skip_frame_cnt, port);
+			skip_frame(skip_frame_cnt, port, "fsm1 color skip");
 			if (++rx[port].var.sig_unready_cnt >= sig_unready_max) {
 				/*sig_lost_lock_cnt = 0;*/
 				rx[port].unready_timestamp = rx[port].timestamp;
@@ -6446,7 +6473,7 @@ void rx_port2_main_state_machine(void)
 			rx[port].state = FSM_WAIT_CLK_STABLE;
 			break;
 		}
-		rx_frl_train();
+		rx_frl_train(port);
 		rx[port].state = FSM_FRL_TRN;
 		break;
 	case FSM_FRL_TRN:
@@ -6467,8 +6494,6 @@ void rx_port2_main_state_machine(void)
 		if (is_fpll_err(port)) {
 			if (rx[port].var.fpll_stable_cnt++ < fpll_stable_max)
 				break;
-			else
-				rx[port].state = FSM_FRL_FLT_READY;
 		}
 		rx[port].state =  FSM_PCS_RESET;
 		rx[port].var.clk_stable_cnt = 0;
@@ -6601,7 +6626,7 @@ void rx_port2_main_state_machine(void)
 		rx[port].var.sig_unstable_cnt = 0;
 		rx[port].var.sig_stable_err_cnt = 0;
 		rx[port].var.clk_chg_cnt = 0;
-		reset_pcs(port);
+		//reset_pcs(port);
 		rx[port].var.special_wait_max = 0;
 		rx_pkt_initial();
 		rx[port].state = FSM_SIG_HOLD;
@@ -6701,7 +6726,7 @@ void rx_port2_main_state_machine(void)
 				rx[port].var.sig_unstable_cnt++;
 				if (log_level & PHY_LOG)
 					rx_pr("DE not stable\n");
-				if (rx_phy_level & 0x1 &&
+				if (!rx[port].var.frl_rate && rx_phy_level & 0x1 &&
 					(rx[port].var.sig_unstable_cnt >= reset_pcs_flag &&
 					rx[port].var.sig_unstable_cnt <=
 					reset_pcs_flag + reset_pcs_cnt)) {
@@ -6736,6 +6761,7 @@ void rx_port2_main_state_machine(void)
 		#endif
 		/* video info change */
 		if (!is_tmds_valid(port)) {
+			rx[port].clk.t_clk_pre = rx[port].clk.tclk;
 			if (video_mute_enabled(port)) {
 				set_video_mute(true);
 				rx_mute_vpp();
@@ -6744,7 +6770,7 @@ void rx_port2_main_state_machine(void)
 				if (log_level & 0x100)
 					rx_pr("vpp mute\n");
 			}
-			skip_frame(skip_frame_cnt, port);
+			skip_frame(skip_frame_cnt, port, "fsm2 tmds skip");
 			rx[port].unready_timestamp = rx[port].timestamp;
 			rx_i2c_div_init();
 			dump_unnormal_info(port);
@@ -6771,7 +6797,7 @@ void rx_port2_main_state_machine(void)
 			rx_esm_reset(0);
 			break;
 		} else if (!rx_is_timing_stable(port)) {
-			skip_frame(skip_frame_cnt, port);
+			skip_frame(skip_frame_cnt, port, "fsm1 timing skip");
 			if (++rx[port].var.sig_unready_cnt >= sig_unready_max) {
 				/*sig_lost_lock_cnt = 0;*/
 				rx[port].unready_timestamp = rx[port].timestamp;
@@ -6802,7 +6828,7 @@ void rx_port2_main_state_machine(void)
 			}
 		} else if (!rx_is_color_space_stable(port)) {
 			//Color space changes, no need to do EQ training
-			skip_frame(skip_frame_cnt, port);
+			skip_frame(skip_frame_cnt, port, "fsm2 color skip");
 			if (++rx[port].var.sig_unready_cnt >= sig_unready_max) {
 				/*sig_lost_lock_cnt = 0;*/
 				rx[port].unready_timestamp = rx[port].timestamp;
@@ -6971,7 +6997,7 @@ void rx_port3_main_state_machine(void)
 			rx[port].state = FSM_WAIT_CLK_STABLE;
 			break;
 		}
-		rx_frl_train();
+		rx_frl_train(port);
 		rx[port].state = FSM_FRL_TRN;
 		break;
 	case FSM_FRL_TRN:
@@ -6992,8 +7018,6 @@ void rx_port3_main_state_machine(void)
 		if (is_fpll_err(port)) {
 			if (rx[port].var.fpll_stable_cnt++ < fpll_stable_max)
 				break;
-			else
-				rx[port].state = FSM_FRL_FLT_READY;
 		}
 		rx[port].state =  FSM_PCS_RESET;
 		rx[port].var.clk_stable_cnt = 0;
@@ -7126,7 +7150,7 @@ void rx_port3_main_state_machine(void)
 		rx[port].var.sig_unstable_cnt = 0;
 		rx[port].var.sig_stable_err_cnt = 0;
 		rx[port].var.clk_chg_cnt = 0;
-		reset_pcs(port);
+		//reset_pcs(port);
 		rx[port].var.special_wait_max = 0;
 		rx_pkt_initial();
 		rx[port].state = FSM_SIG_HOLD;
@@ -7226,7 +7250,7 @@ void rx_port3_main_state_machine(void)
 				rx[port].var.sig_unstable_cnt++;
 				if (log_level & PHY_LOG)
 					rx_pr("DE not stable\n");
-				if (rx_phy_level & 0x1 &&
+				if (!rx[port].var.frl_rate && rx_phy_level & 0x1 &&
 					(rx[port].var.sig_unstable_cnt >= reset_pcs_flag &&
 					rx[port].var.sig_unstable_cnt <=
 					reset_pcs_flag + reset_pcs_cnt)) {
@@ -7269,7 +7293,7 @@ void rx_port3_main_state_machine(void)
 				if (log_level & 0x100)
 					rx_pr("vpp mute\n");
 			}
-			skip_frame(skip_frame_cnt, port);
+			skip_frame(skip_frame_cnt, port, "fsm3 tmds skip");
 			rx[port].unready_timestamp = rx[port].timestamp;
 			rx_i2c_div_init();
 			dump_unnormal_info(port);
@@ -7296,7 +7320,7 @@ void rx_port3_main_state_machine(void)
 			rx_esm_reset(0);
 			break;
 		} else if (!rx_is_timing_stable(port)) {
-			skip_frame(skip_frame_cnt, port);
+			skip_frame(skip_frame_cnt, port, "fsm3 timing skip");
 			if (++rx[port].var.sig_unready_cnt >= sig_unready_max) {
 				/*sig_lost_lock_cnt = 0;*/
 				rx[port].unready_timestamp = rx[port].timestamp;
@@ -7327,7 +7351,7 @@ void rx_port3_main_state_machine(void)
 			}
 		} else if (!rx_is_color_space_stable(port)) {
 			//Color space changes, no need to do EQ training
-			skip_frame(skip_frame_cnt, port);
+			skip_frame(skip_frame_cnt, port, "fsm3 color skip");
 			if (++rx[port].var.sig_unready_cnt >= sig_unready_max) {
 				/*sig_lost_lock_cnt = 0;*/
 				rx[port].unready_timestamp = rx[port].timestamp;

@@ -85,7 +85,7 @@ int pd_fifo_start_cnt = 0x8;
 /* Controls equalizer reference voltage. */
 int hdcp22_on;
 int audio_debug = 1;
-
+int vpcore1_select = 1;
 MODULE_PARM_DESC(hdcp22_on, "\n hdcp22_on\n");
 module_param(hdcp22_on, int, 0664);
 
@@ -2361,7 +2361,10 @@ void top_common_init(void)
 	data32 |= acr_mode  << 2;
 	data32 |= acr_mode  << 1;
 	data32 |= acr_mode  << 0;
-	hdmirx_wr_top_common(TOP_ACR_CNTL_STAT, data32);
+	if (rx_info.chip_id != CHIP_ID_T3X)
+		hdmirx_wr_top_common(TOP_ACR_CNTL_STAT, data32);
+	else
+		hdmirx_wr_top_common_1(TOP_ACR_CNTL_STAT, data32);
 
 	if (rx_info.chip_id >= CHIP_ID_TL1) {
 		data32 = 0;
@@ -3788,7 +3791,7 @@ void rx_hdcp_monitor(u8 port)
 		if (log_level & VIDEO_LOG)
 			rx_pr("ecc:%d-%d\n", rx[port].ecc_err,
 				  rx[port].ecc_pkt_cnt);
-		skip_frame(1, port);
+		skip_frame(1, port, "hdcp ecc err");
 		rx[port].ecc_err_frames_cnt++;
 	} else {
 		rx[port].ecc_err_frames_cnt = 0;
@@ -4398,8 +4401,10 @@ void hdmirx_hw_probe(void)
 void rx_audio_pll_sw_update(void)
 {
 	//if (rx_info.chip_id >= CHIP_ID_T3X)
-	hdmirx_wr_bits_top_common(TOP_ACR_CNTL_STAT, _BIT(11), 1);
-	hdmirx_wr_bits_top_common_1(TOP_ACR_CNTL_STAT, _BIT(11), 1);
+	if (rx_info.chip_id != CHIP_ID_T3X)
+		hdmirx_wr_bits_top_common(TOP_ACR_CNTL_STAT, _BIT(11), 1);
+	else
+		hdmirx_wr_bits_top_common_1(TOP_ACR_CNTL_STAT, _BIT(11), 1);
 	//else
 		//hdmirx_wr_bits_top(TOP_ACR_CNTL_STAT, _BIT(11), 1);
 }
@@ -4627,27 +4632,29 @@ void rx_aud_pll_ctl(bool en, u8 port)
 			}
 		} else if (rx_info.chip_id >= CHIP_ID_T3X) {
 			if (en) {
-				tmp = hdmirx_rd_top_common(HDMIRX_TOP_FSW_CNTL);
-				if (!rx[port].var.frl_rate)
-					tmp |= _BIT(8 + port * 2);
-				else
-					tmp |= _BIT(9 + port * 2);
-				hdmirx_wr_top_common(HDMIRX_TOP_FSW_CNTL, tmp);
-				if (rx[port].var.frl_rate) {//to do
+				if (port == rx_info.main_port && vpcore1_select) {//to do
 					/* switch to core1 no sound */
 					tmp = rd_reg_clk_ctl(RX_CLK_CTRL2);
 					tmp |= (1 << 24);
 					tmp &= ~(1 << 25);
 					wr_reg_clk_ctl(RX_CLK_CTRL2, tmp);
-					wr_reg_clk_ctl(T3X_CLKCTRL_AUD21_PLL_CTRL0, 0x40009540);
+					wr_reg_clk_ctl(T3X_CLKCTRL_AUD21_PLL_CTRL0, 0x40001540);
 					/* 0:tmds_clk 1:ref_clk 2:mpll_clk */
 					wr_reg_clk_ctl(T3X_CLKCTRL_AUD21_PLL_CTRL1,
 					rx[port].phy.aud_div_1);
 					wr_reg_clk_ctl(T3X_CLKCTRL_AUD21_PLL_CTRL3,
 						rx[port].phy.aud_div);
-					if (rx[port].var.frl_rate)
+					if (rx[port].var.frl_rate) {
 						audio_setting_for_aud21(rx[port].var.frl_rate,
 						port);
+					} else {
+						hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX21PHY_DCHA_PI,
+							MSK(2, 12), 0x0, port);
+						hdmirx_wr_bits_clk_ctl(T3X_CLKCTRL_AUD21_PLL_CTRL0,
+							_BIT(13), 0);
+						hdmirx_wr_bits_clk_ctl(T3X_CLKCTRL_AUD21_PLL_CTRL2,
+							_BIT(19), 0);
+					}
 					//wr_reg_clk_ctl(T3X_CLKCTRL_AUD21_PLL_CTRL0, 0x6000d540);
 					hdmirx_wr_bits_clk_ctl(T3X_CLKCTRL_AUD21_PLL_CTRL0,
 						_BIT(14), 1);
@@ -4665,8 +4672,10 @@ void rx_aud_pll_ctl(bool en, u8 port)
 					rx_audio_pll_sw_update();
 					hdmirx_audio_fifo_rst(port);
 					rx_pr("21 audio cfg\n");
-					return;
-				} else {
+				} else if (!vpcore1_select) {
+					tmp = hdmirx_rd_top_common(HDMIRX_TOP_FSW_CNTL);
+					tmp |= _BIT(8 + port * 2);
+					hdmirx_wr_top_common(HDMIRX_TOP_FSW_CNTL, tmp);
 					tmp = rd_reg_clk_ctl(RX_CLK_CTRL2);
 					tmp |= (1 << 8);// [    8] clk_en for cts_hdmirx_aud_pll_clk
 					wr_reg_clk_ctl(RX_CLK_CTRL2, tmp);
@@ -5475,20 +5484,24 @@ void rx_clkmsr_handler(struct work_struct *work)
 			}
 				//Port-C
 			if (rx[E_PORT2].cur_5v_sts) {
+				rx[E_PORT2].clk.t_clk_pre = rx[E_PORT2].clk.tclk;
 				rx[E_PORT2].clk.cable_clk =
 					meson_clk_measure_with_precision(40, 32);
 				rx[E_PORT2].clk.tmds_clk = meson_clk_measure(45);
 				rx[E_PORT2].clk.aud_pll = aud_pll;
 				rx[E_PORT2].clk.p_clk = p_clk;
+				rx[E_PORT2].clk.tclk = meson_clk_measure(49);
 			}
 				//Port-D
 			if (rx[E_PORT3].cur_5v_sts) {
+				rx[E_PORT3].clk.t_clk_pre = rx[E_PORT3].clk.tclk;
 				rx[E_PORT3].clk.cable_clk =
 					meson_clk_measure_with_precision(41, 32);
 				rx[E_PORT3].clk.tmds_clk =
 					meson_clk_measure_with_precision(46, 32);
 				rx[E_PORT3].clk.aud_pll = aud_pll;
 				rx[E_PORT3].clk.p_clk = p_clk;
+				rx[E_PORT3].clk.tclk = meson_clk_measure(50);
 			}
 		}
 		break;
@@ -5510,7 +5523,7 @@ void rx_earc_hpd_handler(struct work_struct *work)
 	earc_hpd_low_flag = true;
 	usleep_range(30000, 40000);
 	cancel_delayed_work(&eq_dwork);
-	skip_frame(2, rx_info.main_port);
+	skip_frame(2, rx_info.main_port, "earc skip");
 	rx_pr("earc call hpd\n");
 	rx_set_port_hpd(rx_info.arc_port, 0);
 	usleep_range(600000, 650000);
@@ -7107,7 +7120,7 @@ void rx_check_ecc_error(u8 port)
 		if (rx[port].ecc_err_frames_cnt % 20 == 0)
 			rx_pr("ecc:%d\n", rx[port].ecc_err);
 		if (rx[port].ecc_err == ecc_pkt_cnt)
-			skip_frame(2, port);
+			skip_frame(2, port, "ecc err");
 	} else {
 		rx[port].ecc_err_frames_cnt = 0;
 	}

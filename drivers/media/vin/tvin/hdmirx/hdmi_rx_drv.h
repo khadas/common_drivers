@@ -110,7 +110,8 @@
 /* 2023.08.31 add vpp mute cnt */
 /* 2023.9.14 add support for 240p */
 /* 2023 09.28 add trim flow for txhd2 */
-#define RX_VER1 "ver.2023/9/28"
+/* 2023.10.8 t3x some compatibility problem */
+#define RX_VER1 "ver.2023/10/8"
 
 /* 50ms timer for hdmirx main loop (HDMI_STATE_CHECK_FREQ is 20) */
 
@@ -720,6 +721,8 @@ struct clk_msr {
 	u32 adu_div;
 	u32 esm_clk;
 	u32 p_clk;
+	u32 tclk;
+	u32 t_clk_pre;
 };
 
 struct emp_info_s {
@@ -913,6 +916,8 @@ extern struct workqueue_struct *earc_hpd_wq;
 extern struct workqueue_struct	*repeater_wq;
 extern struct work_struct     frl_train_dwork;
 extern struct workqueue_struct *frl_train_wq;
+extern struct work_struct     frl_train_1_dwork;
+extern struct workqueue_struct *frl_train_1_wq;
 
 extern struct tasklet_struct rx_tasklet;
 extern struct device *hdmirx_dev;
@@ -926,7 +931,7 @@ extern struct reg_map rx_reg_maps[MAP_ADDR_MODULE_NUM];
 extern bool downstream_repeat_support;
 extern int vrr_range_dynamic_update_en;
 void rx_tasklet_handler(unsigned long arg);
-void skip_frame(unsigned int cnt, u8 port);
+void skip_frame(unsigned int cnt, u8 port, char *str);
 
 /* reg */
 

@@ -108,6 +108,9 @@ struct work_struct     earc_hpd_dwork;
 struct workqueue_struct *earc_hpd_wq;
 struct work_struct     frl_train_dwork;
 struct workqueue_struct *frl_train_wq;
+struct work_struct     frl_train_1_dwork;
+struct workqueue_struct *frl_train_1_wq;
+
 
 unsigned int hdmirx_addr_port;
 unsigned int hdmirx_data_port;
@@ -3734,6 +3737,8 @@ static int hdmirx_probe(struct platform_device *pdev)
 	frl_train_wq = create_workqueue(hdevp->frontend.name);
 	INIT_WORK(&frl_train_dwork, rx_frl_train_handler);
 
+	frl_train_1_wq = create_workqueue(hdevp->frontend.name);
+	INIT_WORK(&frl_train_1_dwork, rx_frl_train_handler_1);
 	/*repeater_wq = create_singlethread_workqueue(hdevp->frontend.name);*/
 	/*INIT_DELAYED_WORK(&repeater_dwork, repeater_dwork_handle);*/
 	ret = of_property_read_u32(pdev->dev.of_node,

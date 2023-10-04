@@ -179,9 +179,9 @@ void meson_hdcp_disable(void)
 		wake_up(&meson_hdcp.hdcp_comm_queue);
 		/* wait for hdcp_tx22 stop hdcp22 done */
 		msleep(200);
-		drm_hdmitx_hdcp_disable(HDCP_MODE22);
+		drm_hdmitx_disable_hdcp_mode(HDCP_MODE22);
 	} else if (meson_hdcp.hdcp_execute_type  == HDCP_MODE14) {
-		drm_hdmitx_hdcp_disable(HDCP_MODE14);
+		drm_hdmitx_disable_hdcp_mode(HDCP_MODE14);
 	}
 	meson_hdcp.hdcp_execute_type = HDCP_NULL;
 	meson_hdcp.hdcp_auth_result = HDCP_AUTH_UNKNOWN;
@@ -192,9 +192,9 @@ void meson_hdcp_disable(void)
 void meson_hdcp_disconnect(void)
 {
 	/* if (meson_hdcp.hdcp_execute_type == HDCP_MODE22) */
-		/* drm_hdmitx_hdcp_disable(HDCP_MODE22); */
+		/* drm_hdmitx_disable_hdcp_mode(HDCP_MODE22); */
 	/* else if (meson_hdcp.hdcp_execute_type  == HDCP_MODE14) */
-		/* drm_hdmitx_hdcp_disable(HDCP_MODE14); */
+		/* drm_hdmitx_disable_hdcp_mode(HDCP_MODE14); */
 	meson_hdcp.hdcp_report = HDCP_TX22_DISCONNECT;
 	meson_hdcp.hdcp_downstream_type = 0;
 	/* TODO: for suspend/resume, need to stop/start hdcp22
@@ -262,12 +262,12 @@ void meson_hdcp_enable(int hdcp_type)
 			pr_info("[%s]: hdcp_tx22 not ready, delay hdcp auth\n", __func__);
 			return;
 		}
-		drm_hdmitx_hdcp_enable(2);
+		drm_hdmitx_enable_hdcp_mode(2);
 		meson_hdcp.hdcp_report = HDCP_TX22_START;
 		msleep(50);
 		wake_up(&meson_hdcp.hdcp_comm_queue);
 	} else if (meson_hdcp.hdcp_execute_type == HDCP_MODE14) {
-		drm_hdmitx_hdcp_enable(1);
+		drm_hdmitx_enable_hdcp_mode(1);
 	}
 	pr_info("[%s]: report=%d, use_type=%u, execute=%u\n",
 		 __func__, meson_hdcp.hdcp_report,
@@ -638,7 +638,7 @@ void drm_hdmitx_hdcp22_init(void)
 }
 
 /* echo 1/2 > hdcp_mode */
-int drm_hdmitx_hdcp_enable(unsigned int content_type)
+void drm_hdmitx_enable_hdcp_mode(unsigned int content_type)
 {
 	struct hdmitx_dev *hdev = get_hdmitx_device();
 	enum hdmi_vic vic = HDMI_0_UNKNOWN;
@@ -663,12 +663,10 @@ int drm_hdmitx_hdcp_enable(unsigned int content_type)
 		hdmitx_hw_cntl_ddc(&hdev->tx_hw.base,
 			DDC_HDCP_MUX_INIT, 3);
 	}
-
-	return 0;
 }
 
 /* echo -1 > hdcp_mode;echo stop14/22 > hdcp_ctrl */
-int drm_hdmitx_hdcp_disable(unsigned int content_type)
+void drm_hdmitx_disable_hdcp_mode(unsigned int content_type)
 {
 	struct hdmitx_dev *hdev = get_hdmitx_device();
 
@@ -686,7 +684,5 @@ int drm_hdmitx_hdcp_disable(unsigned int content_type)
 	hdev->tx_comm.hdcp_mode = 0;
 	hdmitx_hdcp_do_work(hdev);
 	hdmitx_current_status(HDMITX_HDCP_NOT_ENABLED);
-
-	return 0;
 }
 

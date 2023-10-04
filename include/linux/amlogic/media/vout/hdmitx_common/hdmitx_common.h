@@ -33,7 +33,9 @@ struct hdmitx_ctrl_ops {
 	int (*post_enable_mode)(struct hdmitx_common *tx_comm, struct hdmi_format_para *para);
 	int (*disable_mode)(struct hdmitx_common *tx_comm, struct hdmi_format_para *para);
 	int (*init_uboot_mode)(enum vmode_e mode);
-	void (*disable_hdcp)(void);
+	void (*reset_hdcp)(struct hdmitx_common *tx_comm);
+	void (*clear_pkt)(struct hdmitx_hw_common *tx_hw_base);
+	void (*disable_21_work)(void);
 };
 
 struct st_debug_param {
@@ -79,6 +81,8 @@ struct hdmitx_common {
 	bool suspend_flag;
 	/*current hdcp mode, 2.1 or 1.4*/
 	u8 hdcp_mode;
+	/* hdcp2.2 bcaps */
+	int hdcp_bcaps_repeater;
 	/* allm_mode: 1/on 0/off */
 	u32 allm_mode;
 	/* contenttype:0/off 1/game, 2/graphics, 3/photo, 4/cinema */
@@ -95,12 +99,11 @@ struct hdmitx_common {
 	u32 frac_rate_policy;
 
 	/****** device config ******/
-	/* 1: TV product, 0: stb/soundbar product;
-	 * used to check if need to callback to rx.
+	/* 0: TV product, 1: stb/soundbar product;
+	 * used to check if need to notify edid to
+	 * upstream hdmirx.
 	 */
-	u32 tv_usage;
-	/*hdcp reapter mode.*/
-	u32 repeater_mode;
+	u32 hdmi_repeater;
 	/*hdcp control type config*/
 	u32 hdcp_ctl_lvl;
 	/* enc index: for non-ott product*/
@@ -128,7 +131,6 @@ struct hdmitx_common {
 	int hdmitx_gpios_hpd;
 	int hdmitx_gpios_scl;
 	int hdmitx_gpios_sda;
-	pf_callback earc_hdmitx_hpdst;
 
 	/****** debug & log ******/
 	struct hdmitx_tracer *tx_tracer;
@@ -261,15 +263,14 @@ void set_dummy_dv_info(struct vout_device_s *vdev);
 void hdmitx_build_fmt_attr_str(struct hdmitx_common *tx_comm);
 
 /* common work for plugin/resume, witch is done in lock */
-void hdmitx_plugin_common_work(struct hdmitx_common *tx_comm,
-	struct hdmitx_hw_common *tx_hw_base);
-/* common work for plugout/suspend, witch is done in lock */
-void hdmitx_plugout_common_work(struct hdmitx_common *tx_comm);
-
-void hdmitx_common_pre_early_suspend(struct hdmitx_common *tx_comm,
-	struct hdmitx_hw_common *tx_hw_base);
-void hdmitx_common_late_resume(struct hdmitx_common *tx_comm,
-	struct hdmitx_hw_common *tx_hw_base);
+void hdmitx_plugin_common_work(struct hdmitx_common *tx_comm);
+/* common edid clear, witch is done in lock */
+void hdmitx_common_edid_clear(struct hdmitx_common *tx_comm);
+/* common work for late resume, witch is done in lock */
+void hdmitx_common_late_resume(struct hdmitx_common *tx_comm);
+/* common disable hdmitx output api */
+void hdmitx_common_output_disable(struct hdmitx_common *tx_comm,
+	bool phy_dis, bool hdcp_reset, bool pkt_clear, bool edid_clear);
 
 /*******************************drm hdmitx api*******************************/
 

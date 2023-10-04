@@ -39,7 +39,6 @@ struct hdmitx20_hw {
 	struct hdmitx_hw_common base;
 	struct amhdmitx_data_s *chip_data;
 	u32 dongle_mode:1;
-	u32 repeater_mode:1;
 };
 
 #define to_hdmitx20_hw(x)	container_of(x, struct hdmitx20_hw, base)

@@ -49,7 +49,7 @@
 
 #define HDMITX_VIC_MASK			0xff
 
-static struct hdmitx20_hw *global_txhw;
+static struct hdmitx20_hw *global_tx_hw;
 
 static void mode420_half_horizontal_para(void);
 static void hdmi_phy_suspend(void);
@@ -120,7 +120,7 @@ void hdmitx_earc_hpdst(pf_callback cb)
 
 int hdmitx_hpd_hw_op(enum hpd_op cmd)
 {
-	switch (global_txhw->chip_data->chip_type) {
+	switch (global_tx_hw->chip_data->chip_type) {
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
 	case MESON_CPU_ID_GXBB:
 		return !!hdmitx_hpd_hw_op_gxbb(cmd);
@@ -145,9 +145,10 @@ int hdmitx_hpd_hw_op(enum hpd_op cmd)
 }
 EXPORT_SYMBOL(hdmitx_hpd_hw_op);
 
+/* TODO: removed, it's not correct and not used */
 int read_hpd_gpio(void)
 {
-	switch (global_txhw->chip_data->chip_type) {
+	switch (global_tx_hw->chip_data->chip_type) {
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
 	case MESON_CPU_ID_GXBB:
 		return read_hpd_gpio_gxbb();
@@ -173,7 +174,7 @@ EXPORT_SYMBOL(read_hpd_gpio);
 
 int hdmitx_ddc_hw_op(enum ddc_op cmd)
 {
-	switch (global_txhw->chip_data->chip_type) {
+	switch (global_tx_hw->chip_data->chip_type) {
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
 	case MESON_CPU_ID_GXBB:
 		return hdmitx_ddc_hw_op_gxbb(cmd);
@@ -311,7 +312,7 @@ static unsigned int hdmitx_get_isaformat(void)
 {
 	unsigned int ret = 0;
 
-	switch (global_txhw->chip_data->chip_type) {
+	switch (global_tx_hw->chip_data->chip_type) {
 	case MESON_CPU_ID_SC2:
 		ret = hd_read_reg(P_SYSCTRL_DEBUG_REG0);
 		break;
@@ -337,7 +338,7 @@ static unsigned int hdmitx_get_isaformat(void)
 
 static void hdmitx_set_isaformat(unsigned int val)
 {
-	switch (global_txhw->chip_data->chip_type) {
+	switch (global_tx_hw->chip_data->chip_type) {
 	case MESON_CPU_ID_SC2:
 		hd_write_reg(P_SYSCTRL_DEBUG_REG0, val);
 		break;
@@ -380,7 +381,7 @@ static int hdmitx_uboot_sc2_already_display(void)
 static int hdmitx_uboot_already_display(void)
 {
 	int ret = 0;
-	int type = global_txhw->chip_data->chip_type;
+	int type = global_tx_hw->chip_data->chip_type;
 
 	if (type >= MESON_CPU_ID_SC2)
 		return hdmitx_uboot_sc2_already_display();
@@ -407,7 +408,7 @@ static int hdmitx_uboot_already_display(void)
 /* reset HDMITX APB & TX */
 void hdmitx_sys_reset(void)
 {
-	switch (global_txhw->chip_data->chip_type) {
+	switch (global_tx_hw->chip_data->chip_type) {
 	case MESON_CPU_ID_TXLX:
 	case MESON_CPU_ID_G12A:
 	case MESON_CPU_ID_G12B:
@@ -545,7 +546,7 @@ static void hdmi_hwi_init(struct hdmitx_dev *hdev)
 	hdmitx_wr_reg(HDMITX_DWC_I2CM_SS_SCL_HCNT_0, 0xcf);
 	hdmitx_wr_reg(HDMITX_DWC_I2CM_SS_SCL_LCNT_1, 0);
 	hdmitx_wr_reg(HDMITX_DWC_I2CM_SS_SCL_LCNT_0, 0xff);
-	if (global_txhw->repeater_mode == 1) {
+	if (global_tx_hw->base.hdcp_repeater_en == 1) {
 		hdmitx_wr_reg(HDMITX_DWC_I2CM_SS_SCL_HCNT_0, 0x67);
 		hdmitx_wr_reg(HDMITX_DWC_I2CM_SS_SCL_LCNT_0, 0x78);
 	}
@@ -665,28 +666,31 @@ static int hdmitx_calc_formatpara(struct hdmitx_hw_common *tx_hw,
 	return 0;
 }
 
+/* note: if need to check if global_tx_hw not NULL before use it
+ * in case unexpected call into hw api before we init it.
+ */
 void hdmitx_meson_init(struct hdmitx_dev *hdev)
 {
-	global_txhw = &hdev->tx_hw;
+	global_tx_hw = &hdev->tx_hw;
 
 	hdev->hwop.setaudioinfoframe = hdmitx_setaudioinfoframe;
-	global_txhw->base.getstate = hdmitx_get_state;
-	global_txhw->base.cntlconfig = hdmitx_cntl_config;
-	global_txhw->base.cntlmisc = hdmitx_cntl_misc;
-	global_txhw->base.validatemode = hdmitx_validate_mode;
-	global_txhw->base.calcformatpara = hdmitx_calc_formatpara;
-	global_txhw->base.setpacket = hdmitx_set_packet;
-	global_txhw->base.disablepacket = hdmitx_disable_packet;
-	global_txhw->base.cntlddc = hdmitx_cntl_ddc;
-	global_txhw->base.cntl = hdmitx_cntl;
-	global_txhw->base.setaudmode = hdmitx_set_audmode;
-	global_txhw->base.uninit = hdmitx_uninit;
-	global_txhw->base.setupirq = hdmitx_setupirq;
-	global_txhw->base.debugfun = hdmitx_debug;
-	global_txhw->base.setdispmode = hdmitx_set_dispmode;
+	global_tx_hw->base.getstate = hdmitx_get_state;
+	global_tx_hw->base.cntlconfig = hdmitx_cntl_config;
+	global_tx_hw->base.cntlmisc = hdmitx_cntl_misc;
+	global_tx_hw->base.validatemode = hdmitx_validate_mode;
+	global_tx_hw->base.calcformatpara = hdmitx_calc_formatpara;
+	global_tx_hw->base.setpacket = hdmitx_set_packet;
+	global_tx_hw->base.disablepacket = hdmitx_disable_packet;
+	global_tx_hw->base.cntlddc = hdmitx_cntl_ddc;
+	global_tx_hw->base.cntl = hdmitx_cntl;
+	global_tx_hw->base.setaudmode = hdmitx_set_audmode;
+	global_tx_hw->base.uninit = hdmitx_uninit;
+	global_tx_hw->base.setupirq = hdmitx_setupirq;
+	global_tx_hw->base.debugfun = hdmitx_debug;
+	global_tx_hw->base.setdispmode = hdmitx_set_dispmode;
 	hdmi_hwp_init(hdev);
 	hdmi_hwi_init(hdev);
-	hdmitx_hw_cntl_misc(&global_txhw->base, MISC_AVMUTE_OP, CLR_AVMUTE);
+	hdmitx_hw_cntl_misc(&global_tx_hw->base, MISC_AVMUTE_OP, CLR_AVMUTE);
 	hdmitx_debugfs_init();
 }
 
@@ -758,7 +762,7 @@ static irqreturn_t intr_handler(int irq, void *dev)
 	/* HPD rising */
 	if (dat_top & (1 << 1)) {
 		hdmitx_hpd_irq_top_half_process(hdev, true);
-		ret = queue_delayed_work(hdev->hdmi_wq,
+		ret = queue_delayed_work(hdev->hdmi_hpd_wq,
 				   &hdev->work_hpd_plugin, HZ / 2);
 		if (!ret)
 			pr_info(HW "HDMI plugin work is already in the queue\n");
@@ -778,7 +782,7 @@ static irqreturn_t intr_handler(int irq, void *dev)
 		else
 			pr_info(HW "plugin work is not pending\n");
 
-		ret = queue_delayed_work(hdev->hdmi_wq,
+		ret = queue_delayed_work(hdev->hdmi_hpd_wq,
 			&hdev->work_hpd_plugout, 0);
 		if (!ret)
 			pr_info(HW "HDMI plugout work is already in the queue\n");
@@ -1041,7 +1045,7 @@ static void hdmi_tvenc4k2k_set(struct hdmi_format_para *param)
  * 444->420 conversion will be delayed by 1 line. So for 420 mode,
  * we need to delay Vsync by 1 line as well, to meet the timing
  */
-	if (global_txhw->chip_data->chip_type > MESON_CPU_ID_TM2 &&
+	if (global_tx_hw->chip_data->chip_type > MESON_CPU_ID_TM2 &&
 		is_hdmi4k_support_420(param->vic) &&
 		param->cs == HDMI_COLORSPACE_YUV420)
 		vs_adjust_420 = 1;
@@ -1213,7 +1217,7 @@ static void hdmi_tvenc4k2k_set(struct hdmi_format_para *param)
 
 	if ((is_hdmi4k_support_420(param->vic) &&
 		param->cs == HDMI_COLORSPACE_YUV420) &&
-	    global_txhw->chip_data->chip_type >= MESON_CPU_ID_TM2B) {
+	    global_tx_hw->chip_data->chip_type >= MESON_CPU_ID_TM2B) {
 		hd_set_reg_bits(P_VPU_HDMI_SETTING, 0, 8, 1);
 		hd_set_reg_bits(P_VPU_HDMI_SETTING, 1, 20, 1);
 	}
@@ -1244,7 +1248,7 @@ static void hdmi_tvenc480i_set(struct hdmi_format_para *param)
 		vs_bline_odd = 0, vs_eline_odd = 0;
 	unsigned long vso_begin_evn = 0, vso_begin_odd = 0;
 
-	if (global_txhw->chip_data->chip_type < MESON_CPU_ID_SC2)
+	if (global_tx_hw->chip_data->chip_type < MESON_CPU_ID_SC2)
 		hd_set_reg_bits(P_HHI_GCLK_OTHER, 1, 8, 1);
 
 	switch (param->vic) {
@@ -1940,7 +1944,7 @@ static void hdmitx_set_pll(struct hdmitx_dev *hdev)
 
 static void set_phy_by_mode(unsigned int mode)
 {
-	switch (global_txhw->chip_data->chip_type) {
+	switch (global_tx_hw->chip_data->chip_type) {
 	case MESON_CPU_ID_G12A:
 	case MESON_CPU_ID_G12B:
 		set_phy_by_mode_g12(mode);
@@ -4580,7 +4584,7 @@ static void hdcptx_events_handle(struct timer_list *t)
 			ksv[i] = (unsigned char)
 				hdmitx_rd_reg(HDMITX_DWC_HDCPREG_BKSV0 + i);
 		/* if downstream is only RX */
-		if (global_txhw->repeater_mode == 1 && hdev->topo_info) {
+		if (global_tx_hw->base.hdcp_repeater_en == 1 && hdev->topo_info) {
 			hdcp_ksv_store(hdev->topo_info, ksv, 5);
 			if (tmp_ksv_lists.valid) {
 				int cnt = get_hdcp_device_count();
@@ -5328,10 +5332,6 @@ static int hdmitx_cntl_config(struct hdmitx_hw_common *tx_hw, unsigned int cmd,
 		if (hdmitx_rd_reg(HDMITX_DWC_FC_VSDPAYLOAD0) == 0x20)
 			hdmitx_wr_reg(HDMITX_DWC_FC_VSDPAYLOAD1, 0);
 		hdmitx_set_isaformat(0);
-		break;
-	case CONF_CLR_VSDB_PACKET:
-		if (hdmitx_rd_reg(HDMITX_DWC_FC_VSDPAYLOAD0) == 0x20)
-			hdmitx_wr_reg(HDMITX_DWC_FC_VSDPAYLOAD1, 0);
 		break;
 	case CONF_CLR_AUDINFO_PACKET:
 		break;
@@ -6303,7 +6303,7 @@ static void config_hdmi20_tx(enum hdmi_vic vic,
 	data32 |= (default_phase << 2);
 	data32 |= (0 << 1);
 	data32 |= (0 << 0);
-	if (!global_txhw->repeater_mode)
+	if (!global_tx_hw->base.hdcp_repeater_en)
 		hdmitx_wr_reg(HDMITX_DWC_FC_GCP, data32);
 
 	/* write AVI Infoframe packet configuration */
@@ -6823,7 +6823,7 @@ static void hdmitx_set_hw(struct hdmitx_dev *hdev)
 
 struct hdmitx20_hw *get_hdmitx20_hw_instance(void)
 {
-	return global_txhw;
+	return global_tx_hw;
 }
 
 bool is_hdmi4k_support_420(enum hdmi_vic vic)

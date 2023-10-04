@@ -48,7 +48,7 @@ int hdmitx_common_init(struct hdmitx_common *tx_comm, struct hdmitx_hw_common *h
 	tx_comm->max_refreshrate = 60;
 
 	tx_comm->tx_hw = hw_comm;
-	tx_comm->repeater_mode = 0;
+	hw_comm->hdcp_repeater_en = 0;
 
 	tx_comm->rxcap.physical_addr = 0xffff;
 	tx_comm->debug_param.avmute_frame = 0;
@@ -249,8 +249,8 @@ EXPORT_SYMBOL(hdmitx_get_attr);
 /* hdr_priority definition:
  *   strategy1: bit[3:0]
  *       0: original cap
- *       1: disable dolby vision cap
- *       2: disable dolby vision and hdr cap
+ *       1: disable DV cap
+ *       2: disable DV and hdr cap
  *   strategy2:
  *       bit4: 1: disable dv  0:enable dv
  *       bit5: 1: disable hdr10/hdr10+  0: enable hdr10/hdr10+
@@ -588,7 +588,7 @@ int hdmitx_common_notify_hpd_status(struct hdmitx_common *tx_comm, bool force_ue
 	 * TODO: need lock for EDID_buf
 	 * note should not be used under TV product
 	 */
-	if (tx_comm->tv_usage == 0) {
+	if (tx_comm->hdmi_repeater == 1) {
 		if (tx_comm->hpd_state)
 			hdmitx_event_mgr_notify(tx_comm->event_mgr, HDMITX_PLUG,
 				tx_comm->rxcap.edid_parsing ? tx_comm->EDID_buf : NULL);
@@ -779,13 +779,13 @@ int hdmitx_common_get_edid(struct hdmitx_common *tx_comm)
 
 	hdmitx_event_mgr_notify(tx_comm->event_mgr,
 		HDMITX_PHY_ADDR_VALID, &tx_comm->rxcap.physical_addr);
+
 	/*notify edid info to rx*/
-	if (tx_comm->tv_usage == 0)
+	if (tx_comm->hdmi_repeater == 1)
 		rx_edid_physical_addr(tx_comm->rxcap.vsdb_phy_addr.a,
 			tx_comm->rxcap.vsdb_phy_addr.b,
 			tx_comm->rxcap.vsdb_phy_addr.c,
 			tx_comm->rxcap.vsdb_phy_addr.d);
-
 	hdmitx_edid_print(tx_comm->EDID_buf);
 
 	return 0;
@@ -813,3 +813,13 @@ bool is_tv_changed(char *cur_edid_chksum, char *boot_param_edid_chksum)
 	return ret;
 }
 
+/* common work for plugout/suspend, witch is done in lock */
+void hdmitx_common_edid_clear(struct hdmitx_common *tx_comm)
+{
+	/* clear edid and related vinfo */
+	hdmitx_edid_buffer_clear(tx_comm->EDID_buf, sizeof(tx_comm->EDID_buf));
+	hdmitx_edid_rxcap_clear(&tx_comm->rxcap);
+	edidinfo_detach_to_vinfo(tx_comm);
+	if (tx_comm->hdmi_repeater == 1)
+		rx_edid_physical_addr(0, 0, 0, 0);
+}

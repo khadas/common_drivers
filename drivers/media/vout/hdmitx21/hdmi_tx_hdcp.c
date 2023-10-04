@@ -120,7 +120,7 @@ bool __weak get_rx_active_sts(void)
 
 bool hdcp_need_control_by_upstream(struct hdmitx_dev *hdev)
 {
-	if (!hdev->tx_comm.repeater_mode)
+	if (!hdev->tx_hw.base.hdcp_repeater_en)
 		return false;
 
 	if (!get_rx_active_sts())
@@ -296,7 +296,7 @@ static void hdcp_topology_update(struct hdcp_t *p_hdcp)
 	} else if (p_hdcp->hdcp_type == HDCP_VER_HDCP1X) {
 		if (p_hdcp->ds_repeater) {
 			u8 bstatus[2];
-			u8 max_devices = hdev->tx_comm.repeater_mode ?
+			u8 max_devices = hdev->tx_hw.base.hdcp_repeater_en ?
 				HDCP1X_MAX_TX_DEV_RPT : HDCP1X_MAX_TX_DEV_SRC;
 
 			hdcptx1_bstatus_get(bstatus);
@@ -457,7 +457,7 @@ static bool is_topology_correct(struct hdcp_t *p_hdcp)
 {
 	u8 max_depth = HDCP1X_MAX_DEPTH;
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
-	u8 max_device_count = hdev->tx_comm.repeater_mode ?
+	u8 max_device_count = hdev->tx_hw.base.hdcp_repeater_en ?
 		HDCP1X_MAX_TX_DEV_RPT : HDCP1X_MAX_TX_DEV_SRC;
 
 	if (p_hdcp->hdcp_type == HDCP_VER_HDCP2X) {
@@ -657,7 +657,7 @@ static void hdcp_notify_rpt_info(struct work_struct *work)
 		}
 	} else if (p_hdcp->hdcp_type == HDCP_VER_HDCP1X) {
 		if (p_hdcp->ds_repeater) {
-			u8 max_devices = hdev->tx_comm.repeater_mode ?
+			u8 max_devices = hdev->tx_hw.base.hdcp_repeater_en ?
 				HDCP1X_MAX_TX_DEV_RPT : HDCP1X_MAX_TX_DEV_SRC;
 			/* include the count/depth of downstream repeater itself.
 			 * the bksv of downstream repeater will be added to notify
@@ -1910,7 +1910,7 @@ int hdmitx21_hdcp_init(void)
 	return 0;
 }
 
-void __exit hdmitx21_hdcp_exit(void)
+void hdmitx21_hdcp_exit(void)
 {
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
 

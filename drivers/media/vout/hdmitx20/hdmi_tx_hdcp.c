@@ -314,10 +314,14 @@ int hdmitx_hdcp_init(struct hdmitx_dev *hdev)
 	return 0;
 }
 
-void __exit hdmitx_hdcp_exit(struct hdmitx_dev *hdev)
+void hdmitx_hdcp_exit(struct hdmitx_dev *hdev)
 {
-	if (hdev)
+	if (hdev) {
+		kthread_stop(hdev->task_hdcp);
 		cancel_delayed_work_sync(&hdev->work_do_hdcp);
+		kfree(hdev->topo_info);
+		hdev->topo_info = NULL;
+	}
 }
 
 MODULE_PARM_DESC(hdmi_authenticated, "\n hdmi_authenticated\n");

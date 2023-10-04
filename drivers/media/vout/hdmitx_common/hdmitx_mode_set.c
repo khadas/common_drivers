@@ -241,31 +241,57 @@ fail:
 }
 EXPORT_SYMBOL(hdmitx_common_do_mode_setting);
 
+void hdmitx_common_output_disable(struct hdmitx_common *tx_comm,
+	bool phy_dis, bool hdcp_reset, bool pkt_clear, bool edid_clear)
+{
+	struct hdmitx_hw_common *tx_hw_base = tx_comm->tx_hw;
+
+	/* step1: HW: disable hdmitx phy, SW: clear status */
+	if (phy_dis) {
+		tx_comm->ready = 0;
+		hdmitx_hw_cntl_misc(tx_hw_base, MISC_TMDS_PHY_OP, TMDS_PHY_DISABLE);
+	}
+	/* disable frl/dsc/vrr */
+	if (tx_comm->ctrl_ops->disable_21_work)
+		tx_comm->ctrl_ops->disable_21_work();
+
+	/* step2: clear edid vinfo */
+	if (edid_clear)
+		hdmitx_common_edid_clear(tx_comm);
+
+	/* step3: HW: clear packets */
+	if (pkt_clear)
+		tx_comm->ctrl_ops->clear_pkt(tx_hw_base);
+
+	/* step4: reset hdcp */
+	if (hdcp_reset)
+		tx_comm->ctrl_ops->reset_hdcp(tx_comm);
+
+	/* step5: SW: cancel ced work */
+	if (tx_comm->cedst_en)
+		cancel_delayed_work(&tx_comm->work_cedst);
+}
+
 int hdmitx_common_disable_mode(struct hdmitx_common *tx_comm,
 			       struct hdmitx_common_state *new_state)
 {
 	struct hdmi_format_para *para;
 
 	HDMITX_DEBUG("%s to disable ready state\n", __func__);
-	tx_comm->ready = 0;
+	/* TODO: clear pkt */
+	hdmitx_common_output_disable(tx_comm,
+		true, true, false, false);
+
 	hdmitx_format_para_reset(&tx_comm->fmt_para);
 	reset_vinfo(&tx_comm->hdmitx_vinfo);
-
-	if (tx_comm->cedst_policy)
-		cancel_delayed_work(&tx_comm->work_cedst);
-	if (tx_comm->rxsense_policy)
-		queue_delayed_work(tx_comm->rxsense_wq, &tx_comm->work_rxsense, 0);
-
-	hdmitx_hw_cntl_config(tx_comm->tx_hw, CONF_CLR_AVI_PACKET, 0);
-	hdmitx_hw_cntl_config(tx_comm->tx_hw, CONF_CLR_VSDB_PACKET, 0);
-	hdmitx_hw_cntl_misc(tx_comm->tx_hw, MISC_TMDS_PHY_OP, TMDS_PHY_DISABLE);
 
 	if (new_state)
 		para = &new_state->para;
 	else
 		para = NULL;
 
-	tx_comm->ctrl_ops->disable_mode(tx_comm, para);
+	if (tx_comm->ctrl_ops->disable_mode)
+		tx_comm->ctrl_ops->disable_mode(tx_comm, para);
 
 	return 0;
 }
@@ -482,27 +508,8 @@ void hdmitx_vout_uninit(void)
 #endif
 }
 
-/* common work for plugout/suspend, witch is done in lock */
-void hdmitx_plugout_common_work(struct hdmitx_common *tx_comm)
-{
-	/* trace event */
-	hdmitx_tracer_write_event(tx_comm->tx_tracer, HDMITX_HPD_PLUGOUT);
-
-	/* cancel ced work */
-	if (tx_comm->cedst_policy)
-		cancel_delayed_work(&tx_comm->work_cedst);
-
-	/* clear edid and related vinfo */
-	hdmitx_edid_buffer_clear(tx_comm->EDID_buf, sizeof(tx_comm->EDID_buf));
-	hdmitx_edid_rxcap_clear(&tx_comm->rxcap);
-	edidinfo_detach_to_vinfo(tx_comm);
-	if (tx_comm->tv_usage == 0)
-		rx_edid_physical_addr(0, 0, 0, 0);
-}
-
 /* common work for plugin/resume, witch is done in lock */
-void hdmitx_plugin_common_work(struct hdmitx_common *tx_comm,
-	struct hdmitx_hw_common *tx_hw_base)
+void hdmitx_plugin_common_work(struct hdmitx_common *tx_comm)
 {
 	/* trace event */
 	hdmitx_tracer_write_event(tx_comm->tx_tracer, HDMITX_HPD_PLUGIN);
@@ -527,66 +534,33 @@ void hdmitx_plugin_common_work(struct hdmitx_common *tx_comm,
 	 * as hdcp auth is running and may access DDC when reading EDID.
 	 * so need to disable hdcp auth before EDID reading
 	 */
-	if (tx_comm->hdcp_mode != 0 && !tx_comm->ready) {
+	if (tx_comm->hdcp_mode != 0) {
 		pr_info("hdcp: %d should not be enabled before signal ready\n",
 			tx_comm->hdcp_mode);
-		tx_comm->ctrl_ops->disable_hdcp();
+		tx_comm->ctrl_ops->reset_hdcp(tx_comm);
 	}
 
-	/* reset i2c before edid read */
-	hdmitx_hw_cntl_misc(tx_hw_base, MISC_I2C_RESET, 0);
+	/*read edid*/
 	hdmitx_common_get_edid(tx_comm);
-	if (tx_comm->tv_usage == 0)
-		rx_edid_physical_addr(tx_comm->rxcap.vsdb_phy_addr.a,
-			tx_comm->rxcap.vsdb_phy_addr.b,
-			tx_comm->rxcap.vsdb_phy_addr.c,
-			tx_comm->rxcap.vsdb_phy_addr.d);
 
 	/* SW: update flags */
-	/* TODO: cedst_policy update method */
-	tx_comm->cedst_policy = tx_comm->cedst_en & tx_comm->rxcap.scdc_present;
+	if (tx_comm->cedst_policy == 1)
+		tx_comm->cedst_en = !!tx_comm->rxcap.scdc_present;
 
 	tx_comm->hpd_state = 1;
 	tx_comm->already_used = 1;
 
 	/* SW: special for hdcp repeater */
-	if (tx_comm->repeater_mode)
+	if (tx_comm->tx_hw->hdcp_repeater_en)
 		rx_set_repeater_support(1);
 
 	tx_comm->last_hpd_handle_done_stat = HDMI_TX_HPD_PLUGIN;
 }
 
-/* common pre suspend flow, which is done in lock */
-void hdmitx_common_pre_early_suspend(struct hdmitx_common *tx_comm,
-	struct hdmitx_hw_common *tx_hw_base)
+void hdmitx_common_late_resume(struct hdmitx_common *tx_comm)
 {
-	/* step1: SW: status/flag set asap */
-	tx_comm->ready = 0;
-	hdmitx_hw_cntl_misc(tx_hw_base, MISC_SUSFLAG, 1);
-	/* under suspend, driver should not respond to mode setting,
-	 * as it may cause logic abnormal, most importantly,
-	 * it will enable hdcp and occupy DDC channel with high
-	 * priority, though there's protection in system control,
-	 * driver still need protection in case of old android version
-	 */
-	tx_comm->suspend_flag = true;
+	struct hdmitx_hw_common *tx_hw_base = tx_comm->tx_hw;
 
-	/* step2: HW: set avmute asap and wait, now avmute is set by system */
-	/* hdmitx_common_avmute_locked(tx_comm, SET_AVMUTE, AVMUTE_PATH_HDMITX); */
-	/* On  Android T/U, set dummy_l before early suspend, and add set
-	 * avmute before set dummy_l. No need to add delay here.
-	 *
-	 * if (tx_comm->debug_param.avmute_frame > 0)
-	 * msleep(mute_us / 1000);
-	 * else
-	 * msleep(100);
-	 */
-	hdmitx_plugout_common_work(tx_comm);
-}
-
-void hdmitx_common_late_resume(struct hdmitx_common *tx_comm,
-	struct hdmitx_hw_common *tx_hw_base)
-{
 	tx_hw_base->debug_hpd_lock = 0;
 
 	/* TODO: special for RDK */
@@ -613,14 +587,14 @@ void hdmitx_common_late_resume(struct hdmitx_common *tx_comm,
 		 * no need to call again except edid abnormal
 		 */
 		if (tx_comm->rxcap.edid_parsing == 0)
-			hdmitx_plugin_common_work(tx_comm, tx_hw_base);
+			hdmitx_plugin_common_work(tx_comm);
 	} else {
 		/* Note: if plugout event and resume come together
 		 * here clear edid info, as later will post
 		 * plugout uevent and system may check edid/cap
 		 * and find it not in clear state.
 		 */
-		hdmitx_plugout_common_work(tx_comm);
+		hdmitx_common_edid_clear(tx_comm);
 		/* other work will be done in plugout handler */
 	}
 
@@ -636,8 +610,5 @@ void hdmitx_common_late_resume(struct hdmitx_common *tx_comm,
 	hdmitx_common_notify_hpd_status(tx_comm, true);
 	hdmitx_event_mgr_send_uevent(tx_comm->event_mgr,
 		HDMITX_HDCPPWR_EVENT, HDMI_WAKEUP, false);
-
-	/* trace event */
-	hdmitx_tracer_write_event(tx_comm->tx_tracer,
-		tx_comm->hpd_state ? HDMITX_HPD_PLUGIN : HDMITX_HPD_PLUGOUT);
 }
+

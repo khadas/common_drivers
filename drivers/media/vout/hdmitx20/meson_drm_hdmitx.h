@@ -12,7 +12,7 @@ void drm_hdmitx_hdcp22_init(void);
 unsigned int meson_hdcp_get_tx_cap(void);
 unsigned int meson_hdcp_get_rx_cap(void);
 
-int drm_hdmitx_hdcp_enable(unsigned int content_type);
-int drm_hdmitx_hdcp_disable(unsigned int content_type);
+void drm_hdmitx_enable_hdcp_mode(unsigned int content_type);
+void drm_hdmitx_disable_hdcp_mode(unsigned int content_type);
 
 #endif

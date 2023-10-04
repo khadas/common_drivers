@@ -36,7 +36,7 @@
 
 #define to_hdmitx21_dev(x)     container_of(x, struct hdmitx_dev, tx_hw.base)
 
-static struct hdmitx21_hw *global_txhw;
+static struct hdmitx21_hw *global_tx_hw;
 
 static void hdmi_phy_suspend(void);
 static void hdmi_phy_wakeup(struct hdmitx_dev *hdev);
@@ -81,9 +81,10 @@ static DEFINE_MUTEX(aud_mutex);
 /* Pixel bit width: 4=24-bit; 5=30-bit; 6=36-bit; 7=48-bit. */
 #define TX_COLOR_DEPTH		 COLORDEPTH_24B
 
+/* only for hpd level */
 int hdmitx21_hpd_hw_op(enum hpd_op cmd)
 {
-	switch (global_txhw->chip_data->chip_type) {
+	switch (global_tx_hw->chip_data->chip_type) {
 	case MESON_CPU_ID_S5:
 		return !!(hd21_read_reg(PADCTRL_GPIOH_I) & (1 << 2));
 	case MESON_CPU_ID_S1A:
@@ -95,9 +96,10 @@ int hdmitx21_hpd_hw_op(enum hpd_op cmd)
 	return 0;
 }
 
+/* TODO: removed, it's not correct and not used */
 int read21_hpd_gpio(void)
 {
-	switch (global_txhw->chip_data->chip_type) {
+	switch (global_tx_hw->chip_data->chip_type) {
 	case MESON_CPU_ID_T7:
 	case MESON_CPU_ID_S1A:
 	default:
@@ -109,7 +111,7 @@ EXPORT_SYMBOL(read21_hpd_gpio);
 
 int hdmitx21_ddc_hw_op(enum ddc_op cmd)
 {
-	switch (global_txhw->chip_data->chip_type) {
+	switch (global_tx_hw->chip_data->chip_type) {
 	case MESON_CPU_ID_T7:
 	default:
 		return 1;
@@ -245,7 +247,7 @@ static void config_video_mapping(enum hdmi_colorspace cs,
 /* reset HDMITX APB & TX */
 void hdmitx21_sys_reset(void)
 {
-	switch (global_txhw->chip_data->chip_type) {
+	switch (global_tx_hw->chip_data->chip_type) {
 	case MESON_CPU_ID_T7:
 	case MESON_CPU_ID_S1A:
 		hdmitx21_sys_reset_t7();
@@ -472,7 +474,7 @@ static int hdmitx_validate_mode(struct hdmitx_hw_common *tx_hw, u32 vic)
 	int ret = 0;
 	const struct hdmi_timing *timing;
 
-	if (!tx_hw || !global_txhw->chip_data)
+	if (!tx_hw || !global_tx_hw->chip_data)
 		return -EINVAL;
 
 	/*hdmitx21 VESA mode is not supported yet*/
@@ -483,7 +485,7 @@ static int hdmitx_validate_mode(struct hdmitx_hw_common *tx_hw, u32 vic)
 	if (!timing)
 		return -EINVAL;
 
-	switch (global_txhw->chip_data->chip_type) {
+	switch (global_tx_hw->chip_data->chip_type) {
 	case MESON_CPU_ID_T7:
 		ret = soc_resolution_limited(timing, 2160) && soc_freshrate_limited(timing, 60);
 		break;
@@ -504,7 +506,7 @@ static int hdmitx_validate_mode(struct hdmitx_hw_common *tx_hw, u32 vic)
 static int hdmitx21_calc_formatpara(struct hdmitx_hw_common *tx_hw,
 	struct hdmi_format_para *para)
 {
-	enum frl_rate_enum tx_max_frl_rate = global_txhw->tx_max_frl_rate;
+	enum frl_rate_enum tx_max_frl_rate = global_tx_hw->tx_max_frl_rate;
 
 	/* check current tx para with TMDS mode */
 	para->tmds_clk = hdmitx_calc_tmds_clk(para->timing.pixel_freq,
@@ -540,24 +542,27 @@ static void hdmitx_set_packet(int type,
 		hdmi_vend_infoframe_rawset(HB, DB);
 }
 
+/* note: if need to check if global_tx_hw not NULL before use it
+ * in case unexpected call into hw api before HW init.
+ */
 void hdmitx21_meson_init(struct hdmitx_dev *hdev)
 {
 	pr_info("%s%d\n", __func__, __LINE__);
-	global_txhw = &hdev->tx_hw;
-	global_txhw->infoframes = &hdev->infoframes;
+	global_tx_hw = &hdev->tx_hw;
+	global_tx_hw->infoframes = &hdev->infoframes;
 
-	global_txhw->base.cntlconfig = hdmitx_cntl_config;
-	global_txhw->base.cntlmisc = hdmitx_cntl_misc;
-	global_txhw->base.getstate = hdmitx_get_state;
-	global_txhw->base.validatemode = hdmitx_validate_mode;
-	global_txhw->base.calcformatpara = hdmitx21_calc_formatpara;
-	global_txhw->base.setpacket = hdmitx_set_packet;
-	global_txhw->base.cntlddc = hdmitx_cntl_ddc;
-	global_txhw->base.cntl = hdmitx_cntl;
-	global_txhw->base.setaudmode = hdmitx_set_audmode;
-	global_txhw->base.uninit = hdmitx_uninit;
-	global_txhw->base.debugfun = hdmitx_debug;
-	global_txhw->base.setdispmode = hdmitx_set_dispmode;
+	global_tx_hw->base.cntlconfig = hdmitx_cntl_config;
+	global_tx_hw->base.cntlmisc = hdmitx_cntl_misc;
+	global_tx_hw->base.getstate = hdmitx_get_state;
+	global_tx_hw->base.validatemode = hdmitx_validate_mode;
+	global_tx_hw->base.calcformatpara = hdmitx21_calc_formatpara;
+	global_tx_hw->base.setpacket = hdmitx_set_packet;
+	global_tx_hw->base.cntlddc = hdmitx_cntl_ddc;
+	global_tx_hw->base.cntl = hdmitx_cntl;
+	global_tx_hw->base.setaudmode = hdmitx_set_audmode;
+	global_tx_hw->base.uninit = hdmitx_uninit;
+	global_tx_hw->base.debugfun = hdmitx_debug;
+	global_tx_hw->base.setdispmode = hdmitx_set_dispmode;
 	hdmi_hwp_init(hdev, 0);
 	hdmitx21_debugfs_init();
 	hdmitx_hw_cntl_misc(&hdev->tx_hw.base, MISC_AVMUTE_OP, CLR_AVMUTE);
@@ -2302,8 +2307,6 @@ static int hdmitx_cntl_config(struct hdmitx_hw_common *tx_hw, u32 cmd,
 		break;
 	case CONF_CLR_AVI_PACKET:
 		break;
-	case CONF_CLR_VSDB_PACKET:
-		break;
 	case CONF_VIDEO_MAPPING:
 		config_video_mapping(hdev->tx_comm.fmt_para.cs,
 			hdev->tx_comm.fmt_para.cd);
@@ -2448,7 +2451,7 @@ static enum hdmi_colorspace get_cs_from_pkt(void)
 {
 	int ret;
 	u8 body[32] = {0};
-	union hdmi_infoframe *infoframe = &global_txhw->infoframes->avi;
+	union hdmi_infoframe *infoframe = &global_tx_hw->infoframes->avi;
 	struct hdmi_avi_infoframe *avi = &infoframe->avi;
 	enum hdmi_colorspace cs = HDMI_COLORSPACE_RESERVED6;
 
@@ -2471,7 +2474,7 @@ static enum hdmi_color_depth get_cd_from_pkt(void)
 {
 	int ret;
 	u8 body[32] = {0};
-	union hdmi_infoframe *infoframe = &global_txhw->infoframes->avi;
+	union hdmi_infoframe *infoframe = &global_tx_hw->infoframes->avi;
 	struct hdmi_avi_infoframe *avi = &infoframe->avi;
 	enum hdmi_color_depth cd = COLORDEPTH_RESERVED;
 	enum hdmi_colorspace cs = HDMI_COLORSPACE_RESERVED6;

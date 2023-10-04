@@ -100,7 +100,10 @@ struct hdmitx_dev {
 	struct hdmitx21_hw tx_hw;
 	struct task_struct *task;
 	struct task_struct *task_hdcp;
-	struct workqueue_struct *hdmi_wq;
+	/* dedicated for hpd */
+	struct workqueue_struct *hdmi_hpd_wq;
+	/* dedicated for intr */
+	struct workqueue_struct *hdmi_intr_wq;
 	struct device *hdtx_dev;
 	struct device *pdev; /* for pinctrl*/
 	struct pinctrl_state *pinctrl_i2c;

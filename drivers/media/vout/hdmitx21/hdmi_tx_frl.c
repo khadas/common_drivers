@@ -544,7 +544,7 @@ static struct frl_train_t frl_train_inst;
 static struct frl_train_t *p_frl_train;
 
 /* Stop TX training FSM when HPD is out or in the beginning of mode setting */
-void frl_tx_stop(struct hdmitx_dev *hdev)
+void frl_tx_stop(void)
 {
 	if (!p_frl_train)
 		return;

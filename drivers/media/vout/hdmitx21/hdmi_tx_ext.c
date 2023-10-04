@@ -91,6 +91,14 @@ void setup_attr(const char *buf)
 }
 EXPORT_SYMBOL(setup_attr);
 
+/* ARC IN audio capture not working due to init
+ * sequence issue of eARC driver and HDMI Tx driver.
+ * when eARC driver try to register_earcrx_callback,
+ * HDMI Tx driver probe/init is not finish, that lead
+ * register_earcrx_callback fail and eARC driver
+ * doesn't know if HDMI Tx cable plug in/out.
+ * so don't check hdmitx init or not. TODO
+ */
 int register_earcrx_callback(pf_callback callback)
 {
 #if defined(CONFIG_AMLOGIC_HDMITX)

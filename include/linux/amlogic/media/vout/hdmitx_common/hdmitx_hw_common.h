@@ -142,7 +142,6 @@
 
 /* Audio part */
 #define CONF_CLR_AVI_PACKET     (CMD_CONF_OFFSET + 0x04)
-#define CONF_CLR_VSDB_PACKET    (CMD_CONF_OFFSET + 0x05)
 #define CONF_VIDEO_MAPPING      (CMD_CONF_OFFSET + 0x06)
 #define CONF_GET_HDMI_DVI_MODE  (CMD_CONF_OFFSET + 0x07)
 #define CONF_CLR_DV_VS10_SIG    (CMD_CONF_OFFSET + 0x10)
@@ -276,6 +275,9 @@ struct hdmitx_hw_common {
 	int hdmitx_gpios_hpd;
 	int hdmitx_gpios_scl;
 	int hdmitx_gpios_sda;
+
+	/* hdcp repeater enable, such as on T7 platform */
+	u32 hdcp_repeater_en:1;
 };
 
 int hdmitx_hw_cntl_config(struct hdmitx_hw_common *tx_hw,

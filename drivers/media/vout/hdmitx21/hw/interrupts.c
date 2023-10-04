@@ -191,7 +191,7 @@ void hdmitx_top_intr_handler(struct work_struct *work)
 		/* HPD rising */
 		if (dat_top & (1 << 1)) {
 			hdmitx_hpd_irq_top_half_process(hdev, true);
-			ret = queue_delayed_work(hdev->hdmi_wq,
+			ret = queue_delayed_work(hdev->hdmi_hpd_wq,
 				&hdev->work_hpd_plugin,
 				hdev->pxp_mode ? 0 : HZ / 2);
 			if (!ret)
@@ -212,7 +212,7 @@ void hdmitx_top_intr_handler(struct work_struct *work)
 			else
 				pr_info("plugin work is not pending\n");
 
-			ret = queue_delayed_work(hdev->hdmi_wq,
+			ret = queue_delayed_work(hdev->hdmi_hpd_wq,
 				&hdev->work_hpd_plugout, 0);
 			if (!ret)
 				pr_info("HDMI plugout work is already in the queue\n");
@@ -254,7 +254,7 @@ RE_ISR:
 	intr_status_save_and_clear();
 	top_intr_state = hdmitx21_rd_reg(HDMITX_TOP_INTR_STAT);
 	/* for hdcp cts test, need handle ASAP w/o any delay */
-	queue_delayed_work(hdev->hdmi_wq, &hdev->work_internal_intr, 0);
+	queue_delayed_work(hdev->hdmi_intr_wq, &hdev->work_internal_intr, 0);
 
 	/* if TX Controller interrupt shadowing is true,
 	 * it means there's interrupt not cleared/handled

@@ -923,7 +923,7 @@ static ssize_t hdmi_repeater_tx_show(struct device *dev,
 	int pos = 0;
 
 	pos += snprintf(buf + pos, PAGE_SIZE, "%d\n",
-		!!global_tx_common->repeater_mode);
+		!!global_tx_common->tx_hw->hdcp_repeater_en);
 
 	return pos;
 }

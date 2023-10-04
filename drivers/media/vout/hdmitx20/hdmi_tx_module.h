@@ -91,7 +91,8 @@ struct hdmitx_dev {
 	struct hdmitx20_hw tx_hw;
 
 	struct task_struct *task_hdcp;
-	struct workqueue_struct *hdmi_wq;
+	/* dedicated for hpd event */
+	struct workqueue_struct *hdmi_hpd_wq;
 	struct pinctrl_state *pinctrl_i2c;
 	struct pinctrl_state *pinctrl_default;
 	struct delayed_work work_hpd_plugin;
@@ -112,7 +113,6 @@ struct hdmitx_dev {
 	 */
 	/* -1, fixed 0; 0, NTS 0->1; 1, fixed 1 */
 	int hdcp_type_policy;
-	int hdcp_bcaps_repeater;
 	int hdcp_hpd_stick;	/* 1 not init & reset at plugout */
 	int hdcp_tst_sig;
 	unsigned int lstore;

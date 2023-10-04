@@ -16,6 +16,7 @@
  */
 int hdcp_ksv_valid(unsigned char *dat);
 int hdmitx_hdcp_init(struct hdmitx_dev *hdev);
+void hdmitx_hdcp_exit(struct hdmitx_dev *hdev);
 
 #endif
 

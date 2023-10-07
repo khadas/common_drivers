@@ -1,0 +1,54 @@
+From a5a5b5520e490a3a0339c97831e7380b73a48417 Mon Sep 17 00:00:00 2001
+From: Hanjie Lin <hanjie.lin@amlogic.com>
+Date: Sat, 7 Oct 2023 20:38:57 +0800
+Subject: [PATCH] system_heap: optimize allocate orders [1/1]
+
+PD#SWPL-139378
+
+Problem:
+MID_ORDER_GFP may cost a lot of CPU time in memor compaction when allocate
+big system heap.
+
+Solution:
+change to HIGH_ORDER_GFP can prevent this cost.
+Change order 4 to 3 let system heap can allocate more contiguous memory.
+
+Verify:
+ohm
+
+Change-Id: I54799ad624fa2db3d63311209371654e35b2f5c3
+Signed-off-by: Hanjie Lin <hanjie.lin@amlogic.com>
+---
+ drivers/dma-buf/heaps/system_heap.c | 16 ++++++++++------
+ 1 file changed, 10 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/dma-buf/heaps/system_heap.c b/drivers/dma-buf/heaps/system_heap.c
+index ae7c5a6df037..beb6ec19091c 100644
+--- a/drivers/dma-buf/heaps/system_heap.c
++++ b/drivers/dma-buf/heaps/system_heap.c
+@@ -52,12 +52,16 @@ struct dma_heap_attachment {
+ #define HIGH_ORDER_GFP  (((GFP_HIGHUSER | __GFP_ZERO | __GFP_NOWARN \
+ 				| __GFP_NORETRY) & ~__GFP_RECLAIM) \
+ 				| __GFP_COMP)
+-#ifdef CONFIG_AMLOGIC_MEMORY_EXTEND
+-#define LOW_ORDER_GFP_NO_WARN (GFP_HIGHUSER | __GFP_ZERO | __GFP_COMP | __GFP_NOWARN)
+-static gfp_t order_flags[] = {HIGH_ORDER_GFP,
+-				LOW_ORDER_GFP_NO_WARN, LOW_ORDER_GFP_NO_WARN,
+-				LOW_ORDER_GFP, LOW_ORDER_GFP};
+-static const unsigned int orders[] = {8, 6, 4, 2, 0};
++
++#if IS_ENABLED(CONFIG_AMLOGIC_MEMORY_DEBUG)
++/*
++ * For middle order:
++ * MID_ORDER_GFP may cost a lot of CPU time in memory compaction when allocate
++ * big system heap, change to HIGH_ORDER_GFP can prevent this cost.
++ * Change order 4 to 3 let system heap can allocate more contiguous memory.
++ */
++static gfp_t order_flags[] = {HIGH_ORDER_GFP, HIGH_ORDER_GFP, LOW_ORDER_GFP};
++static const unsigned int orders[] = {8, 3, 0};
+ #else
+ static gfp_t order_flags[] = {HIGH_ORDER_GFP, MID_ORDER_GFP, LOW_ORDER_GFP};
+ /*
+-- 
+2.29.0
+

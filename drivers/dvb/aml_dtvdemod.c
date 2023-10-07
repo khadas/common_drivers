@@ -464,17 +464,15 @@ int aml_get_dts_demod_config(struct device_node *node,
 		cfg->i2c_adap = of_find_i2c_adapter_by_node(node_i2c);
 		of_node_put(node_i2c);
 		if (IS_ERR_OR_NULL(cfg->i2c_adap)) {
-			pr_err("Demod: can't get i2c_adapter ret[NULL].\n");
+			//pr_err("Demod: can't get i2c_adapter ret[NULL].\n");
 
 			//return -1;
 		} else
 			cfg->i2c_id = i2c_adapter_id(cfg->i2c_adap);
 	} else {
-		pr_err("Demod: can't get %s ret[NULL].\n", buf);
+		//pr_err("Demod: can't get %s ret[NULL].\n", buf);
 
 		cfg->i2c_adap = NULL;
-
-		//return -1;
 	}
 
 	memset(buf, 0, 32);
@@ -483,12 +481,9 @@ int aml_get_dts_demod_config(struct device_node *node,
 	if (!ret) {
 		cfg->i2c_addr = value;
 	} else {
-		pr_err("Demod: can't get %s ret[%d].\n", buf, ret);
+		//pr_err("Demod: can't get %s ret[%d].\n", buf, ret);
 
 		cfg->i2c_addr = 0;
-		ret = 0;
-
-		//return ret;
 	}
 
 	memset(buf, 0, 32);
@@ -497,12 +492,9 @@ int aml_get_dts_demod_config(struct device_node *node,
 	if (!ret) {
 		cfg->ts = value;
 	} else {
-		pr_err("Demod: can't get %s ret[%d].\n", buf, ret);
+		//pr_err("Demod: can't get %s ret[%d].\n", buf, ret);
 
 		cfg->ts = 0;
-		ret = 0;
-
-		//return ret;
 	}
 
 	memset(buf, 0, 32);
@@ -514,7 +506,6 @@ int aml_get_dts_demod_config(struct device_node *node,
 		//pr_err("Demod: can't get %s ret[%d].\n", buf, ret);
 
 		cfg->code = 0;
-		ret = 0;
 	}
 
 	memset(buf, 0, 32);
@@ -526,7 +517,6 @@ int aml_get_dts_demod_config(struct device_node *node,
 		//pr_err("Demod: can't get %s ret[%d].\n", buf, ret);
 
 		cfg->xtal = 0;
-		ret = 0;
 	}
 
 	memset(buf, 0, 32);
@@ -538,7 +528,6 @@ int aml_get_dts_demod_config(struct device_node *node,
 		//pr_err("Demod: can't get %s ret[%d].\n", buf, ret);
 
 		cfg->ts_out_mode = 0;
-		ret = 0;
 	}
 
 	memset(buf, 0, 32);
@@ -550,7 +539,6 @@ int aml_get_dts_demod_config(struct device_node *node,
 		//pr_err("Demod: can't get %s ret[%d].\n", buf, ret);
 
 		cfg->ts_data_pin = 0;
-		ret = 0;
 	}
 
 	memset(buf, 0, 32);
@@ -562,7 +550,6 @@ int aml_get_dts_demod_config(struct device_node *node,
 		//pr_err("Demod: can't get %s ret[%d].\n", buf, ret);
 
 		cfg->ts_wire_mode = 0;
-		ret = 0;
 	}
 
 	memset(buf, 0, 32);
@@ -574,7 +561,6 @@ int aml_get_dts_demod_config(struct device_node *node,
 		//pr_err("Demod: can't get %s ret[%d].\n", buf, ret);
 
 		cfg->ts_mux_mode = 0;
-		ret = 0;
 	}
 
 	memset(buf, 0, 32);
@@ -586,7 +572,6 @@ int aml_get_dts_demod_config(struct device_node *node,
 		//pr_err("Demod: can't get %s ret[%d].\n", buf, ret);
 
 		cfg->ts_out_order = 0;
-		ret = 0;
 	}
 
 	memset(buf, 0, 32);
@@ -598,7 +583,6 @@ int aml_get_dts_demod_config(struct device_node *node,
 		//pr_err("Demod: can't get %s ret[%d].\n", buf, ret);
 
 		cfg->ts_out_bits = 0;
-		ret = 0;
 	}
 
 	memset(buf, 0, 32);
@@ -610,7 +594,6 @@ int aml_get_dts_demod_config(struct device_node *node,
 		//pr_err("Demod: can't get %s ret[%d].\n", buf, ret);
 
 		cfg->ts_sync_width = 0;
-		ret = 0;
 	}
 
 	memset(buf, 0, 32);
@@ -622,7 +605,6 @@ int aml_get_dts_demod_config(struct device_node *node,
 		//pr_err("Demod: can't get %s ret[%d].\n", buf, ret);
 
 		cfg->ts_packet_mode = 0;
-		ret = 0;
 	}
 
 	memset(buf, 0, 32);
@@ -635,7 +617,6 @@ int aml_get_dts_demod_config(struct device_node *node,
 			//pr_err("Demod: can't get %s ret[%d].\n", buf, ret);
 
 			cfg->ts_remap_cnt = 0;
-			ret = 0;
 		}
 
 		if (cfg->ts_remap_cnt)
@@ -650,7 +631,6 @@ int aml_get_dts_demod_config(struct device_node *node,
 			//pr_err("Demod: can't get %s ret[%d].\n", buf, ret);
 
 			cfg->ts_header_bytes = 0;
-			ret = 0;
 		}
 
 		if (cfg->ts_header_bytes) {
@@ -667,8 +647,6 @@ int aml_get_dts_demod_config(struct device_node *node,
 
 				memset(cfg->ts_header_data, 0,
 						sizeof(cfg->ts_header_data));
-
-				ret = 0;
 			}
 		}
 	}
@@ -682,7 +660,6 @@ int aml_get_dts_demod_config(struct device_node *node,
 		//pr_err("Demod: can't get %s ret[%d].\n", buf, ret);
 
 		cfg->ts_clk = 0;
-		ret = 0;
 	}
 
 	memset(buf, 0, 32);
@@ -694,7 +671,6 @@ int aml_get_dts_demod_config(struct device_node *node,
 		//pr_err("Demod: can't get %s ret[%d].\n", buf, ret);
 
 		cfg->ts_clk_pol = 0;
-		ret = 0;
 	}
 
 	memset(buf, 0, 32);
@@ -706,7 +682,6 @@ int aml_get_dts_demod_config(struct device_node *node,
 		//pr_err("Demod: can't get %s ret[%d].\n", buf, ret);
 
 		cfg->detect = 0;
-		ret = 0;
 	}
 
 	memset(buf, 0, 32);
@@ -717,10 +692,9 @@ int aml_get_dts_demod_config(struct device_node *node,
 		//pr_err("Demod: can't get %s ret[%d].\n", buf, ret);
 
 		cfg->reset.pin = -1;
-		ret = 0;
 	} else {
 		cfg->reset.pin = of_get_named_gpio_flags(node, buf, 0, NULL);
-		pr_err("Demod: get %s: %d.\n", buf, cfg->reset.pin);
+		//pr_err("Demod: get %s: %d.\n", buf, cfg->reset.pin);
 	}
 
 	memset(buf, 0, 32);
@@ -730,7 +704,6 @@ int aml_get_dts_demod_config(struct device_node *node,
 		//pr_err("Demod: can't get %s ret[%d].\n", buf, ret);
 
 		cfg->reset.dir = 0;
-		ret = 0;
 	} else
 		cfg->reset.dir = value;
 
@@ -741,7 +714,6 @@ int aml_get_dts_demod_config(struct device_node *node,
 		//pr_err("Demod: can't get %s ret[%d].\n", buf, ret);
 
 		cfg->reset.value = 0;
-		ret = 0;
 	} else
 		cfg->reset.value = value;
 
@@ -753,11 +725,10 @@ int aml_get_dts_demod_config(struct device_node *node,
 		//pr_err("Demod: can't get %s ret[%d].\n", buf, ret);
 
 		cfg->ant_power.pin = -1;
-		ret = 0;
 	} else {
 		cfg->ant_power.pin = of_get_named_gpio_flags(
 				node, buf, 0, NULL);
-		pr_err("Demod: get %s: %d\n", buf, cfg->ant_power.pin);
+		//pr_err("Demod: get %s: %d\n", buf, cfg->ant_power.pin);
 	}
 
 	memset(buf, 0, 32);
@@ -767,7 +738,6 @@ int aml_get_dts_demod_config(struct device_node *node,
 		//pr_err("Demod: can't get %s ret[%d].\n", buf, ret);
 
 		cfg->ant_power.dir = 0;
-		ret = 0;
 	} else
 		cfg->ant_power.dir = value;
 
@@ -778,7 +748,6 @@ int aml_get_dts_demod_config(struct device_node *node,
 		//pr_err("Demod: can't get %s ret[%d].\n", buf, ret);
 
 		cfg->ant_power.value = 0;
-		ret = 0;
 	} else
 		cfg->ant_power.value = value;
 
@@ -790,11 +759,10 @@ int aml_get_dts_demod_config(struct device_node *node,
 		//pr_err("Demod: can't get %s ret[%d].\n", buf, ret);
 
 		cfg->lnb_en.pin = -1;
-		ret = 0;
 	} else {
 		cfg->lnb_en.pin = of_get_named_gpio_flags(
 				node, buf, 0, NULL);
-		pr_err("Demod: get %s: %d\n", buf, cfg->lnb_en.pin);
+		//pr_err("Demod: get %s: %d\n", buf, cfg->lnb_en.pin);
 	}
 
 	memset(buf, 0, 32);
@@ -804,7 +772,6 @@ int aml_get_dts_demod_config(struct device_node *node,
 		//pr_err("Demod: can't get %s ret[%d].\n", buf, ret);
 
 		cfg->lnb_en.dir = 0;
-		ret = 0;
 	} else {
 		cfg->lnb_en.dir = value;
 	}
@@ -816,7 +783,6 @@ int aml_get_dts_demod_config(struct device_node *node,
 		//pr_err("Demod: can't get %s ret[%d].\n", buf, ret);
 
 		cfg->lnb_en.value = 0;
-		ret = 0;
 	} else {
 		cfg->lnb_en.value = value;
 	}
@@ -829,11 +795,10 @@ int aml_get_dts_demod_config(struct device_node *node,
 		//pr_err("Demod: can't get %s ret[%d].\n", buf, ret);
 
 		cfg->lnb_sel.pin = -1;
-		ret = 0;
 	} else {
 		cfg->lnb_sel.pin = of_get_named_gpio_flags(
 				node, buf, 0, NULL);
-		pr_err("Demod: get %s: %d\n", buf, cfg->lnb_sel.pin);
+		//pr_err("Demod: get %s: %d\n", buf, cfg->lnb_sel.pin);
 	}
 
 	memset(buf, 0, 32);
@@ -843,7 +808,6 @@ int aml_get_dts_demod_config(struct device_node *node,
 		//pr_err("Demod: can't get %s ret[%d].\n", buf, ret);
 
 		cfg->lnb_sel.dir = 0;
-		ret = 0;
 	} else {
 		cfg->lnb_sel.dir = value;
 	}
@@ -855,7 +819,6 @@ int aml_get_dts_demod_config(struct device_node *node,
 		//pr_err("Demod: can't get %s ret[%d].\n", buf, ret);
 
 		cfg->lnb_sel.value = 0;
-		ret = 0;
 	} else {
 		cfg->lnb_sel.value = value;
 	}
@@ -868,11 +831,10 @@ int aml_get_dts_demod_config(struct device_node *node,
 		//pr_err("Demod: can't get %s ret[%d].\n", buf, ret);
 
 		cfg->other.pin = -1;
-		ret = 0;
 	} else {
 		cfg->other.pin = of_get_named_gpio_flags(
 				node, buf, 0, NULL);
-		pr_err("Demod: get %s: %d\n", buf, cfg->other.pin);
+		//pr_err("Demod: get %s: %d\n", buf, cfg->other.pin);
 	}
 
 	memset(buf, 0, 32);
@@ -882,7 +844,6 @@ int aml_get_dts_demod_config(struct device_node *node,
 		//pr_err("Demod: can't get %s ret[%d].\n", buf, ret);
 
 		cfg->other.dir = 0;
-		ret = 0;
 	} else {
 		cfg->other.dir = value;
 	}
@@ -894,7 +855,6 @@ int aml_get_dts_demod_config(struct device_node *node,
 		//pr_err("Demod: can't get %s ret[%d].\n", buf, ret);
 
 		cfg->other.value = 0;
-		ret = 0;
 	} else {
 		cfg->other.value = value;
 	}
@@ -906,7 +866,6 @@ int aml_get_dts_demod_config(struct device_node *node,
 		//pr_err("Demod: can't get %s ret[%d].\n", buf, ret);
 
 		cfg->reserved0 = 0;
-		ret = 0;
 	} else {
 		cfg->reserved0 = value;
 	}
@@ -918,7 +877,6 @@ int aml_get_dts_demod_config(struct device_node *node,
 		//pr_err("Demod: can't get %s ret[%d].\n", buf, ret);
 
 		cfg->reserved1 = 0;
-		ret = 0;
 	} else {
 		cfg->reserved1 = value;
 	}

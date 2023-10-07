@@ -769,16 +769,14 @@ int aml_get_dts_tuner_config(struct device_node *node,
 		cfg->i2c_adap = of_find_i2c_adapter_by_node(node_i2c);
 		of_node_put(node_i2c);
 		if (IS_ERR_OR_NULL(cfg->i2c_adap)) {
-			pr_err("Tuner: can't get i2c_get_adapter ret[NULL].\n");
+			//pr_err("Tuner: can't get i2c_get_adapter ret[NULL].\n");
 
 			/* return -1; */
 		}
 	} else {
-		pr_err("Tuner: can't get %s ret[NULL].\n", buf);
+		//pr_err("Tuner: can't get %s ret[NULL].\n", buf);
 
 		cfg->i2c_adap = NULL;
-
-		/* return -1; */
 	}
 
 	memset(buf, 0, 32);
@@ -787,12 +785,9 @@ int aml_get_dts_tuner_config(struct device_node *node,
 	if (!ret) {
 		cfg->i2c_addr = value;
 	} else {
-		pr_err("Tuner: can't get %s ret[%d].\n", buf, ret);
+		//pr_err("Tuner: can't get %s ret[%d].\n", buf, ret);
 
 		cfg->i2c_addr = 0;
-		ret = 0;
-
-		/* return ret; */
 	}
 
 	memset(buf, 0, 32);
@@ -804,7 +799,6 @@ int aml_get_dts_tuner_config(struct device_node *node,
 		/* pr_err("Tuner: can't get %s ret[%d].\n", buf, ret); */
 
 		cfg->code = 0;
-		ret = 0;
 	}
 
 	memset(buf, 0, 32);
@@ -814,7 +808,6 @@ int aml_get_dts_tuner_config(struct device_node *node,
 		/* pr_err("Tuner: can't get %s ret[%d].\n", buf, ret); */
 
 		cfg->xtal = 0;
-		ret = 0;
 	} else {
 		cfg->xtal = value;
 	}
@@ -826,7 +819,6 @@ int aml_get_dts_tuner_config(struct device_node *node,
 		/* pr_err("Tuner: can't get %s ret[%d].\n", buf, ret); */
 
 		cfg->xtal_mode = 0;
-		ret = 0;
 	} else {
 		cfg->xtal_mode = value;
 	}
@@ -838,7 +830,6 @@ int aml_get_dts_tuner_config(struct device_node *node,
 		/* pr_err("Tuner: can't get %s ret[%d].\n", buf, ret); */
 
 		cfg->xtal_cap = 0;
-		ret = 0;
 	} else {
 		cfg->xtal_cap = value;
 	}
@@ -850,7 +841,6 @@ int aml_get_dts_tuner_config(struct device_node *node,
 		/* pr_err("Tuner: can't get %s ret[%d].\n", buf, ret); */
 
 		cfg->lt_out = 0;
-		ret = 0;
 	} else {
 		cfg->lt_out = value;
 	}
@@ -862,7 +852,6 @@ int aml_get_dts_tuner_config(struct device_node *node,
 		/* pr_err("Tuner: can't get %s ret[%d].\n", buf, ret); */
 
 		cfg->dual_power = 0;
-		ret = 0;
 	} else {
 		cfg->dual_power = value;
 	}
@@ -874,7 +863,6 @@ int aml_get_dts_tuner_config(struct device_node *node,
 		/* pr_err("Tuner: can't get %s ret[%d].\n", buf, ret); */
 
 		cfg->if_agc = 0;
-		ret = 0;
 	} else {
 		cfg->if_agc = value;
 	}
@@ -886,7 +874,6 @@ int aml_get_dts_tuner_config(struct device_node *node,
 		/* pr_err("Tuner: can't get %s ret[%d].\n", buf, ret); */
 
 		cfg->if_hz = 0;
-		ret = 0;
 	} else {
 		cfg->if_hz = value;
 	}
@@ -898,7 +885,6 @@ int aml_get_dts_tuner_config(struct device_node *node,
 		/* pr_err("Tuner: can't get %s ret[%d].\n", buf, ret); */
 
 		cfg->if_invert = 0;
-		ret = 0;
 	} else {
 		cfg->if_invert = value;
 	}
@@ -910,7 +896,6 @@ int aml_get_dts_tuner_config(struct device_node *node,
 		/* pr_err("Tuner: can't get %s ret[%d].\n", buf, ret); */
 
 		cfg->if_amp = 0;
-		ret = 0;
 	} else {
 		cfg->if_amp = value;
 	}
@@ -922,7 +907,6 @@ int aml_get_dts_tuner_config(struct device_node *node,
 		/* pr_err("Tuner: can't get %s ret[%d].\n", buf, ret); */
 
 		cfg->detect = 0;
-		ret = 0;
 	} else {
 		cfg->detect = value;
 	}
@@ -935,10 +919,9 @@ int aml_get_dts_tuner_config(struct device_node *node,
 		/* pr_err("Tuner: can't get %s ret[%d].\n", buf, ret); */
 
 		cfg->reset.pin = -1;
-		ret = 0;
 	} else {
 		cfg->reset.pin = of_get_named_gpio_flags(node, buf, 0, NULL);
-		pr_err("Tuner: get %s: %d.\n", buf, cfg->reset.pin);
+		//pr_err("Tuner: get %s: %d.\n", buf, cfg->reset.pin);
 	}
 
 	memset(buf, 0, 32);
@@ -948,7 +931,6 @@ int aml_get_dts_tuner_config(struct device_node *node,
 		/* pr_err("Tuner: can't get %s ret[%d].\n", buf, ret); */
 
 		cfg->reset.dir = 0;
-		ret = 0;
 	} else {
 		cfg->reset.dir = value;
 	}
@@ -960,7 +942,6 @@ int aml_get_dts_tuner_config(struct device_node *node,
 		/* pr_err("Tuner: can't get %s ret[%d].\n", buf, ret); */
 
 		cfg->reset.value = 0;
-		ret = 0;
 	} else {
 		cfg->reset.value = value;
 	}
@@ -973,10 +954,9 @@ int aml_get_dts_tuner_config(struct device_node *node,
 		/* pr_err("Tuner: can't get %s ret[%d].\n", buf, ret); */
 
 		cfg->power.pin = -1;
-		ret = 0;
 	} else {
 		cfg->power.pin = of_get_named_gpio_flags(node, buf, 0, NULL);
-		pr_err("Tuner: get %s: %d.\n", buf, cfg->power.pin);
+		//pr_err("Tuner: get %s: %d.\n", buf, cfg->power.pin);
 	}
 
 	memset(buf, 0, 32);
@@ -986,7 +966,6 @@ int aml_get_dts_tuner_config(struct device_node *node,
 		/* pr_err("Tuner: can't get %s ret[%d].\n", buf, ret); */
 
 		cfg->power.dir = 0;
-		ret = 0;
 	} else {
 		cfg->power.dir = value;
 	}
@@ -998,7 +977,6 @@ int aml_get_dts_tuner_config(struct device_node *node,
 		/* pr_err("Tuner: can't get %s ret[%d].\n", buf, ret); */
 
 		cfg->power.value = 0;
-		ret = 0;
 	} else {
 		cfg->power.value = value;
 	}
@@ -1010,7 +988,6 @@ int aml_get_dts_tuner_config(struct device_node *node,
 		/* pr_err("Tuner: can't get %s ret[%d].\n", buf, ret); */
 
 		cfg->reserved0 = 0;
-		ret = 0;
 	} else {
 		cfg->reserved0 = value;
 	}
@@ -1022,7 +999,6 @@ int aml_get_dts_tuner_config(struct device_node *node,
 		/* pr_err("Tuner: can't get %s ret[%d].\n", buf, ret); */
 
 		cfg->reserved1 = 0;
-		ret = 0;
 	} else {
 		cfg->reserved1 = value;
 	}

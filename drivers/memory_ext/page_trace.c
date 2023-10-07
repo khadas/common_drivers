@@ -1791,7 +1791,7 @@ static int __init page_trace_module_init(void)
 	aml_kallsyms_lookup_name = (unsigned long (*)(const char *name))kp_lookup_name.addr;
 
 #ifdef CONFIG_RANDOMIZE_BASE
-	aml_module_alloc_base = aml_kallsyms_lookup_name("module_alloc_base");
+	aml_module_alloc_base = *(unsigned long *)aml_kallsyms_lookup_name("module_alloc_base");
 #endif
 	aml_text = aml_kallsyms_lookup_name("_text");
 	page_trace_mem_init();

@@ -4941,6 +4941,8 @@ void rx_main_state_machine(void)
 		rx[port].state = FSM_INIT;
 		break;
 	case FSM_INIT:
+		if (rx[port].cur_5v_sts == 0)
+			break;
 		signal_status_init(port);
 		rx[port].clk.cable_clk = 0;
 		rx[port].state = FSM_HPD_HIGH;

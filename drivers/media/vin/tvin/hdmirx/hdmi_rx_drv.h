@@ -54,7 +54,9 @@
 //2023 9.8 t3x reb bring up
 //2023 9.13 add gcp mute cnt when fps change
 //2023.9.22 t3x 480p aud clk settings
-#define RX_VER0 "ver.2023/09/22"
+//2023.10.07 CTS2-79 for IP2.0
+#define RX_VER0 "ver.2023/10/07"
+
 
 /*print type*/
 #define COR1_LOG	0x10000

@@ -9,7 +9,7 @@
 #include <linux/clk.h>
 #include "hdmi_tx_cec_20.h"
 
-#define CEC_DRIVER_VERSION     "2023/08/06: add protection for store buffer"
+#define CEC_DRIVER_VERSION     "2023/10/18: Handle mailbox wakeup data by thread"
 
 #define CEC_DEV_NAME		"cec"
 
@@ -196,11 +196,13 @@ struct ao_cec_dev {
 	struct workqueue_struct *hdmi_plug_wq;
 	struct workqueue_struct *cec_tx_event_wq;
 	struct workqueue_struct *cec_rx_event_wq;
+	struct workqueue_struct *cec_wakeup_wq;
 	struct device *dbg_dev;
 	const char *pin_name;
 	struct delayed_work cec_work;
 	struct delayed_work work_hdmi_plug;
 	struct delayed_work work_cec_rx;
+	struct delayed_work work_cec_wakeup;
 	struct completion rx_ok;
 	struct completion tx_ok;
 	spinlock_t cec_reg_lock;/*cec register access*/

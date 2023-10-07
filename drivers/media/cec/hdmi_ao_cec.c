@@ -849,6 +849,26 @@ static void cec_task(struct work_struct *work)
 	queue_delayed_work(cec_dev->cec_thread, dwork, CEC_FRAME_DELAY);
 }
 
+static void cec_wakeup_task(struct work_struct *work)
+{
+	cec_dev->msg_idx = 0;
+	cec_dev->msg_num = 0;
+	cec_dev->framework_on = 0;
+
+	cec_get_wakeup_reason();
+	/* shutdown->resme, need to read stick regs to get info */
+	cec_get_wakeup_data();
+	/* store and push otp/active source msg from uboot */
+	if (cec_dev->wakeup_reason == CEC_WAKEUP) {
+		if (cec_dev->cec_wk_otp_msg[0] > 0)
+			cec_store_msg_to_buff(cec_dev->cec_wk_otp_msg[0],
+					      &cec_dev->cec_wk_otp_msg[1]);
+		if (cec_dev->cec_wk_as_msg[0] > 0)
+			cec_store_msg_to_buff(cec_dev->cec_wk_as_msg[0],
+					      &cec_dev->cec_wk_as_msg[1]);
+	}
+}
+
 /******************** cec class interface *************************/
 static ssize_t device_type_show(struct class *cla,
 				struct class_attribute *attr, char *buf)
@@ -2919,21 +2939,14 @@ static int aml_cec_probe(struct platform_device *pdev)
 	register_cec_callback(hdmirx_notify_callback);
 #endif
 	#ifdef CEC_MAIL_BOX
-	cec_get_wakeup_reason();
-	cec_dev->msg_idx = 0;
-	cec_dev->msg_num = 0;
-	cec_dev->framework_on = 0;
-	/* shutdown->resme, need to read stick regs to get info */
-	cec_get_wakeup_data();
-	/* store and push otp/active source msg from uboot */
-	if (cec_dev->wakeup_reason == CEC_WAKEUP) {
-		if (cec_dev->cec_wk_otp_msg[0] > 0)
-			cec_store_msg_to_buff(cec_dev->cec_wk_otp_msg[0],
-					      &cec_dev->cec_wk_otp_msg[1]);
-		if (cec_dev->cec_wk_as_msg[0] > 0)
-			cec_store_msg_to_buff(cec_dev->cec_wk_as_msg[0],
-					      &cec_dev->cec_wk_as_msg[1]);
+	cec_dev->cec_wakeup_wq = create_workqueue("cec_wakeup");
+	if (!cec_dev->cec_wakeup_wq) {
+		CEC_INFO("create work queue failed\n");
+		ret = -EFAULT;
+		goto tag_cec_wakeup_err;
 	}
+	INIT_DELAYED_WORK(&cec_dev->work_cec_wakeup, cec_wakeup_task);
+	queue_delayed_work(cec_dev->cec_wakeup_wq, &cec_dev->work_cec_wakeup, CEC_FRAME_DELAY);
 	#endif
 	cec_debug_fs_init();
 	cec_irq_enable(true);
@@ -2944,6 +2957,8 @@ static int aml_cec_probe(struct platform_device *pdev)
 	cec_dev->probe_finish = true;
 	return 0;
 
+tag_cec_wakeup_err:
+	destroy_workqueue(cec_dev->cec_wakeup_wq);
 tag_cec_rx_event_wq_err:
 	destroy_workqueue(cec_dev->hdmi_plug_wq);
 tag_hdmi_plug_wq_err:
@@ -2990,7 +3005,12 @@ static int aml_cec_remove(struct platform_device *pdev)
 			free_irq(cec_dev->irq_ceca, (void *)cec_dev);
 	}
 	kfree(last_cec_msg);
-
+#ifdef CEC_MAIL_BOX
+	if (cec_dev->cec_wakeup_wq) {
+		cancel_delayed_work_sync(&cec_dev->work_cec_wakeup);
+		destroy_workqueue(cec_dev->cec_wakeup_wq);
+	}
+#endif
 	if (cec_dev->cec_thread) {
 		cancel_delayed_work_sync(&cec_dev->cec_work);
 		destroy_workqueue(cec_dev->cec_thread);

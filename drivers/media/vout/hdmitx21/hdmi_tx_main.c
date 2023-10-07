@@ -2798,6 +2798,8 @@ static ssize_t hdr_priority_mode_store(struct device *dev,
 	unsigned int val = 0;
 	struct vinfo_s *info = NULL;
 
+	pr_info("%s[%d] buf:%s hdr_priority:0x%x\n", __func__, __LINE__, buf,
+		hdev->tx_comm.hdr_priority);
 	if ((strncmp("0", buf, 1) == 0) || (strncmp("1", buf, 1) == 0) ||
 	    (strncmp("2", buf, 1) == 0)) {
 		val = buf[0] - '0';
@@ -2810,35 +2812,6 @@ static ssize_t hdr_priority_mode_store(struct device *dev,
 		return count;
 	mutex_lock(&hdev->tx_comm.hdmimode_mutex);
 	tx_comm->hdr_priority = val;
-	if (tx_comm->hdr_priority == 1) {
-		//clear dv support
-		memset(&tx_comm->rxcap.dv_info, 0x00, sizeof(struct dv_info));
-		set_dummy_dv_info(&hdmitx_vdev);
-		//restore hdr support
-		memcpy(&tx_comm->rxcap.hdr_info, &tx_comm->rxcap.hdr_info2,
-			sizeof(struct hdr_info));
-		//restore BT2020 support
-		tx_comm->rxcap.colorimetry_data = tx_comm->rxcap.colorimetry_data2;
-		hdrinfo_to_vinfo(&info->hdr_info, &hdev->tx_comm);
-	} else if (tx_comm->hdr_priority == 2) {
-		//clear dv support
-		memset(&tx_comm->rxcap.dv_info, 0x00, sizeof(struct dv_info));
-		set_dummy_dv_info(&hdmitx_vdev);
-		//clear hdr support
-		memset(&tx_comm->rxcap.hdr_info, 0x00, sizeof(struct hdr_info));
-		//clear BT2020 support
-		tx_comm->rxcap.colorimetry_data = tx_comm->rxcap.colorimetry_data2 & 0x1F;
-		memset(&info->hdr_info, 0, sizeof(struct hdr_info));
-	} else {
-		//restore dv support
-		memcpy(&tx_comm->rxcap.dv_info, &tx_comm->rxcap.dv_info2, sizeof(struct dv_info));
-		//restore hdr support
-		memcpy(&tx_comm->rxcap.hdr_info, &tx_comm->rxcap.hdr_info2,
-			sizeof(struct hdr_info));
-		//restore BT2020 support
-		tx_comm->rxcap.colorimetry_data = tx_comm->rxcap.colorimetry_data2;
-		edidinfo_attach_to_vinfo(&hdev->tx_comm);
-	}
 	/* hdmitx21_event_notify(HDMITX_HDR_PRIORITY, &hdev->hdr_priority); */
 	/* force trigger plugin event
 	 * hdmitx21_set_uevent_state(HDMITX_HPD_EVENT, 0);
@@ -3024,6 +2997,10 @@ static int hdmitx21_pre_enable_mode(struct hdmitx_common *tx_comm, struct hdmi_f
 	hdmitx_vrr_disable();
 
 	memcpy(&tx_comm->fmt_para, para, sizeof(struct hdmi_format_para));
+
+	/* update fmt_attr string from fmt_para*/
+	hdmitx_format_para_rebuild_fmtattr_str(&tx_comm->fmt_para, tx_comm->fmt_attr,
+					       sizeof(tx_comm->fmt_attr));
 
 	/* disable hdcp before set mode if hdcp enabled.
 	 * normally hdcp is disabled before setting mode

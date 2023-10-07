@@ -21,6 +21,7 @@
 struct hdmitx_common_state {
 	struct hdmi_format_para para;
 	enum vmode_e mode;
+	u32 hdr_priority;
 };
 
 struct hdmitx_ctrl_ops {
@@ -218,6 +219,9 @@ int hdmitx_setup_attr(struct hdmitx_common *tx_comm, const char *buf);
 int hdmitx_get_attr(struct hdmitx_common *tx_comm, char attr[16]);
 
 int hdmitx_get_hdrinfo(struct hdmitx_common *tx_comm, struct hdr_info *hdrinfo);
+
+int hdmitx_set_hdr_priority(struct hdmitx_common *tx_comm, u32 hdr_priority);
+int hdmitx_get_hdr_priority(struct hdmitx_common *tx_comm, u32 *hdr_priority);
 
 /*edid related function.*/
 void hdmitx_get_edid(struct hdmitx_common *tx_comm, struct hdmitx_hw_common *tx_hw_base);

@@ -167,10 +167,17 @@ __setup("frac_rate_policy=", parse_hdmitx_fraction_rate);
 
 static int parse_hdmitx_hdr_priority(char *str)
 {
-	if ((strncmp("1", str, 1) == 0) || (strncmp("2", str, 1) == 0))
-		tx_params.hdr_mask = str[0] - '0';
-	else
+	int err;
+	u32 value;
+
+	err = kstrtou32(str, 10, &value);
+	if (err) {
+		pr_err("%s fail\n", __func__);
 		tx_params.hdr_mask = 0;
+		return err;
+	}
+
+	tx_params.hdr_mask = value;
 
 	pr_debug("hdmitx_param:[hdr_priority]=[%d]\n",
 		tx_params.hdr_mask);

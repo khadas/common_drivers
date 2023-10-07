@@ -29,15 +29,7 @@ static ssize_t attr_show(struct device *dev,
 	return pos;
 }
 
-static ssize_t attr_store(struct device *dev,
-		   struct device_attribute *attr,
-		   const char *buf, size_t count)
-{
-	hdmitx_setup_attr(global_tx_common, buf);
-	return count;
-}
-
-static DEVICE_ATTR_RW(attr);
+static DEVICE_ATTR_RO(attr);
 
 static ssize_t hpd_state_show(struct device *dev,
 			      struct device_attribute *attr, char *buf)
@@ -367,14 +359,7 @@ static ssize_t _hdr_cap_show(struct device *dev,
 static ssize_t hdr_cap_show(struct device *dev,
 			    struct device_attribute *attr, char *buf)
 {
-	int pos = 0;
 	const struct hdr_info *info = &global_tx_common->rxcap.hdr_info;
-
-	if (global_tx_common->hdr_priority == 2) {
-		pos += snprintf(buf + pos, PAGE_SIZE,
-			"mask rx hdr capability\n");
-		return pos;
-	}
 
 	return _hdr_cap_show(dev, attr, buf, info);
 }
@@ -501,14 +486,8 @@ static ssize_t dv_cap_show(struct device *dev,
 			   struct device_attribute *attr,
 			   char *buf)
 {
-	int pos = 0;
 	const struct dv_info *dv = &global_tx_common->rxcap.dv_info;
 
-	if (dv->ieeeoui != DV_IEEE_OUI || global_tx_common->hdr_priority) {
-		pos += snprintf(buf + pos, PAGE_SIZE,
-			"The Rx don't support DolbyVision\n");
-		return pos;
-	}
 	return _show_dv_cap(dev, attr, buf, dv);
 }
 

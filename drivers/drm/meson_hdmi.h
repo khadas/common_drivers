@@ -62,6 +62,7 @@ struct am_hdmi_tx {
 	struct drm_property *dv_cap_property;
 	struct drm_property *hdcp_ver_prop;
 	struct drm_property *hdcp_mode_property;
+	struct drm_property *hdr_priority_prop;
 	struct drm_property *contenttype_cap_prop;
 	struct drm_property *allm_prop;
 
@@ -82,6 +83,7 @@ struct am_hdmitx_connector_state {
 	struct hdmitx_color_attr color_attr_para;
 	/*HDR Priority: dv,hdr,sdr*/
 	int pref_hdr_policy;
+	u32 hdr_priority;
 
 	bool update : 1;
 	bool color_force : 1;

@@ -2686,6 +2686,8 @@ static ssize_t hdr_priority_mode_store(struct device *dev,
 	unsigned int val = 0;
 	struct vinfo_s *info = NULL;
 
+	pr_info("%s[%d] buf:%s hdr_priority:0x%x\n", __func__, __LINE__, buf,
+		hdev->tx_comm.hdr_priority);
 	if ((strncmp("0", buf, 1) == 0) || (strncmp("1", buf, 1) == 0) ||
 	    (strncmp("2", buf, 1) == 0)) {
 		val = buf[0] - '0';
@@ -2698,36 +2700,6 @@ static ssize_t hdr_priority_mode_store(struct device *dev,
 		return count;
 	mutex_lock(&hdev->tx_comm.hdmimode_mutex);
 	hdev->tx_comm.hdr_priority = val;
-	if (hdev->tx_comm.hdr_priority == 1) {
-		//clear dv support
-		memset(&hdev->tx_comm.rxcap.dv_info, 0x00, sizeof(struct dv_info));
-		set_dummy_dv_info(&hdmitx_vdev);
-		//restore hdr support
-		memcpy(&hdev->tx_comm.rxcap.hdr_info,
-			&hdev->tx_comm.rxcap.hdr_info2, sizeof(struct hdr_info));
-		//restore BT2020 support
-		hdev->tx_comm.rxcap.colorimetry_data = hdev->tx_comm.rxcap.colorimetry_data2;
-		hdrinfo_to_vinfo(&info->hdr_info, &hdev->tx_comm);
-	} else if (hdev->tx_comm.hdr_priority == 2) {
-		//clear dv support
-		memset(&hdev->tx_comm.rxcap.dv_info, 0x00, sizeof(struct dv_info));
-		set_dummy_dv_info(&hdmitx_vdev);
-		//clear hdr support
-		memset(&hdev->tx_comm.rxcap.hdr_info, 0x00, sizeof(struct hdr_info));
-		//clear BT2020 support
-		hdev->tx_comm.rxcap.colorimetry_data = hdev->tx_comm.rxcap.colorimetry_data2 & 0x1F;
-		memset(&info->hdr_info, 0, sizeof(struct hdr_info));
-	} else {
-		//restore dv support
-		memcpy(&hdev->tx_comm.rxcap.dv_info,
-			&hdev->tx_comm.rxcap.dv_info2, sizeof(struct dv_info));
-		//restore hdr support
-		memcpy(&hdev->tx_comm.rxcap.hdr_info, &hdev->tx_comm.rxcap.hdr_info2,
-			sizeof(struct hdr_info));
-		//restore BT2020 support
-		hdev->tx_comm.rxcap.colorimetry_data = hdev->tx_comm.rxcap.colorimetry_data2;
-		edidinfo_attach_to_vinfo(&hdev->tx_comm);
-	}
 	/* force trigger plugin event
 	 * hdmitx_set_uevent_state(HDMITX_HPD_EVENT, 0);
 	 * hdmitx_set_uevent(HDMITX_HPD_EVENT, 1);
@@ -3358,6 +3330,10 @@ static int hdmitx20_pre_enable_mode(struct hdmitx_common *tx_comm, struct hdmi_f
 	tx_comm->ready = 0;
 	//TODO format para will be moved
 	memcpy(&tx_comm->fmt_para, para, sizeof(struct hdmi_format_para));
+
+	/* update fmt_attr: userspace still need this.*/
+	hdmitx_format_para_rebuild_fmtattr_str(&tx_comm->fmt_para, tx_comm->fmt_attr,
+					       sizeof(tx_comm->fmt_attr));
 
 	hdmitx_pre_display_init(hdev);
 	return 0;

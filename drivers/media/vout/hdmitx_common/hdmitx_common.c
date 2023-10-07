@@ -403,10 +403,6 @@ EXPORT_SYMBOL(hdmitx_common_parse_vic_in_edid);
 int hdmitx_common_notify_hpd_status(struct hdmitx_common *tx_comm)
 {
 	if (!tx_comm->suspend_flag) {
-		/*TOCONFIRM: notify to drm*/
-		/* if (tx_comm->drm_hpd_cb.callback) */
-			/* tx_comm->drm_hpd_cb.callback(tx_comm->drm_hpd_cb.data); */
-
 		/*notify to userspace by uevent*/
 		hdmitx_event_mgr_send_uevent(tx_comm->event_mgr,
 					HDMITX_HPD_EVENT, tx_comm->hpd_state);

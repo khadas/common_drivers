@@ -133,7 +133,7 @@ int register_earcrx_callback(pf_callback callback)
 	 * doesn't know if HDMI Tx cable plug in/out.
 	 * so don't check hdmitx21 init or not
 	 */
-	/*if (get_hdmitx21_init() == 1)*/
+	if (get_hdmitx21_init() == 1)
 		hdmitx21_earc_hpdst(callback);
 #endif
 	return 0;

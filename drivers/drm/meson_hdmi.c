@@ -114,8 +114,8 @@ struct hdmitx_color_attr other_color_attr_list[] = {
 void convert_attrstr(char *attr_str,
 	struct hdmitx_color_attr *attr_param)
 {
-	attr_param->colorformat = HDMI_COLORSPACE_RESERVED6;
-	attr_param->bitdepth = COLORDEPTH_RESERVED;
+	attr_param->colorformat = HDMI_COLORSPACE_YUV444;
+	attr_param->bitdepth = 8;
 
 	if (strstr(attr_str, "420"))
 		attr_param->colorformat = HDMI_COLORSPACE_YUV420;

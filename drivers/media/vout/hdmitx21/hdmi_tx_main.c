@@ -3631,11 +3631,13 @@ static void hdmitx_hpd_plugout_irq_handler(struct work_struct *work)
 		mutex_unlock(&hdev->tx_comm.hdmimode_mutex);
 		return;
 	}
+
 	hdmitx_plugout_handler(hdev);
 	mutex_unlock(&hdev->tx_comm.hdmimode_mutex);
 
-	/*notify event to user space and other modules*/
-	hdmitx_common_notify_hpd_status(&hdev->tx_comm);
+	/* notify to drm hdmi, TO CONFIRM: if need the suspend flag? */
+	if (!hdev->tx_comm.suspend_flag)
+		hdmitx_hpd_notify_unlocked(&hdev->tx_comm);
 }
 
 int get21_hpd_state(void)

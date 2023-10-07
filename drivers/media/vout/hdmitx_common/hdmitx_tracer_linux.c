@@ -6,12 +6,16 @@
 #include <linux/vmalloc.h>
 #include <linux/kfifo.h>
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_tracer.h>
+#include <linux/amlogic/media/vout/hdmitx_common/hdmitx_event_mgr.h>
 
-#define HDMI_LOG_SIZE (BIT(12)) /* 4k */
+#define HDMI_TRACE_SIZE (BIT(12)) /* 4k */
 
 struct hdmitx_tracer {
 	int previous_error_event;
 	struct kfifo log_fifo;
+	struct hdmitx_event_mgr *eventmgr;
+	/*to trigger userspace read fifo logs.*/
+	struct work_struct uevent_work;
 };
 
 const char *hdmitx_event_to_str(enum hdmitx_event_log_bits event)
@@ -64,7 +68,17 @@ const char *hdmitx_event_to_str(enum hdmitx_event_log_bits event)
 	}
 }
 
-struct hdmitx_tracer *hdmitx_tracer_create(void)
+static void hdmitx_logevents_handler(struct work_struct *work)
+{
+	static u32 cnt;
+	struct hdmitx_tracer *tracer =
+		container_of(work, struct hdmitx_tracer, uevent_work);
+
+	hdmitx_event_mgr_send_uevent(tracer->eventmgr,
+		HDMITX_CUR_ST_EVENT, ++cnt, false);
+}
+
+struct hdmitx_tracer *hdmitx_tracer_create(struct hdmitx_event_mgr *event_mgr)
 {
 	struct hdmitx_tracer *instance = vmalloc(sizeof(*instance));
 	int ret = 0;
@@ -72,10 +86,12 @@ struct hdmitx_tracer *hdmitx_tracer_create(void)
 	if (!instance) {
 		pr_err("%s FAIL\n", __func__);
 	} else {
+		instance->eventmgr = event_mgr;
 		instance->previous_error_event = 0;
-		ret = kfifo_alloc(&instance->log_fifo, HDMI_LOG_SIZE, GFP_KERNEL);
+		ret = kfifo_alloc(&instance->log_fifo, HDMI_TRACE_SIZE, GFP_KERNEL);
 		if (ret)
 			pr_err("hdmitx: alloc hdmi_log_kfifo fail [%d]\n", ret);
+		INIT_WORK(&instance->uevent_work, hdmitx_logevents_handler);
 	}
 
 	return instance;
@@ -115,6 +131,9 @@ int hdmitx_tracer_write_event(struct hdmitx_tracer *tracer,
 	ret = kfifo_in(&tracer->log_fifo, log_str, strlen(log_str));
 	if (!ret)
 		pr_err("%s fifo error %d\n", __func__, ret);
+
+	/*after write trace, trigger uevent to save trace log.*/
+	schedule_work(&tracer->uevent_work);
 
 	return ret;
 }

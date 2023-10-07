@@ -97,7 +97,7 @@ static ssize_t edid_show(struct device *dev,
 			 struct device_attribute *attr,
 			 char *buf)
 {
-	return hdmitx_print_sink_cap(global_tx_common, buf, PAGE_SIZE);
+	return hdmitx_edid_print_sink_cap(&global_tx_common->rxcap, buf, PAGE_SIZE);
 }
 
 static ssize_t edid_store(struct device *dev,
@@ -960,8 +960,9 @@ static ssize_t fake_plug_store(struct device *dev,
 	if (strncmp(buf, "0", 1) == 0)
 		global_tx_common->hpd_state = 0;
 
-	/*notify to drm hdmi*/
-	hdmitx_common_notify_hpd_status(global_tx_common);
+	hdmitx_common_notify_hpd_status(global_tx_common, false);
+	/* notify to drm hdmi */
+	hdmitx_fire_drm_hpd_cb_unlocked(global_tx_common);
 
 	return count;
 }

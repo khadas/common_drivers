@@ -13,6 +13,7 @@
 #include <linux/amlogic/media/vout/hdmi_tx_ext.h>
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_common.h>
 #include <hdmitx_boot_parameters.h>
+#include "hdmitx_log.h"
 
 int hdmitx_format_para_init(struct hdmi_format_para *para,
 		enum hdmi_vic vic, u32 frac_rate_policy,
@@ -77,16 +78,6 @@ int hdmitx_common_attch_platform_data(struct hdmitx_common *tx_comm,
 	return 0;
 }
 
-int hdmitx_common_trace_event(struct hdmitx_common *tx_comm,
-	enum hdmitx_event_log_bits event)
-{
-	static int cnt;
-
-	hdmitx_tracer_write_event(tx_comm->tx_tracer, event);
-	return hdmitx_event_mgr_send_uevent(tx_comm->event_mgr,
-				HDMITX_CUR_ST_EVENT, ++cnt);
-}
-
 int hdmitx_common_destroy(struct hdmitx_common *tx_comm)
 {
 	if (tx_comm->tx_tracer)
@@ -94,23 +85,6 @@ int hdmitx_common_destroy(struct hdmitx_common *tx_comm)
 	if (tx_comm->event_mgr)
 		hdmitx_event_mgr_destroy(tx_comm->event_mgr);
 	return 0;
-}
-
-bool soc_resolution_limited(const struct hdmi_timing *timing, u32 res_v)
-{
-	if (timing->v_active > res_v)
-		return 0;
-	return 1;
-}
-
-bool soc_freshrate_limited(const struct hdmi_timing *timing, u32 vsync)
-{
-	if (!timing)
-		return 0;
-
-	if (timing->v_freq / 1000 > vsync)
-		return 0;
-	return 1;
 }
 
 int hdmitx_common_validate_vic(struct hdmitx_common *tx_comm, u32 vic)
@@ -223,7 +197,7 @@ int hdmitx_common_init_bootup_format_para(struct hdmitx_common *tx_comm,
 	}
 }
 
-int hdmitx_hpd_notify_unlocked(struct hdmitx_common *tx_comm)
+int hdmitx_fire_drm_hpd_cb_unlocked(struct hdmitx_common *tx_comm)
 {
 	if (tx_comm->drm_hpd_cb.callback)
 		tx_comm->drm_hpd_cb.callback(tx_comm->drm_hpd_cb.data);
@@ -590,14 +564,14 @@ int hdmitx_common_parse_vic_in_edid(struct hdmitx_common *tx_comm, const char *m
 }
 EXPORT_SYMBOL(hdmitx_common_parse_vic_in_edid);
 
-int hdmitx_common_notify_hpd_status(struct hdmitx_common *tx_comm)
+int hdmitx_common_notify_hpd_status(struct hdmitx_common *tx_comm, bool force_uevent)
 {
 	if (!tx_comm->suspend_flag) {
 		/*notify to userspace by uevent*/
 		hdmitx_event_mgr_send_uevent(tx_comm->event_mgr,
-					HDMITX_HPD_EVENT, tx_comm->hpd_state);
+					HDMITX_HPD_EVENT, tx_comm->hpd_state, force_uevent);
 		hdmitx_event_mgr_send_uevent(tx_comm->event_mgr,
-					HDMITX_AUDIO_EVENT, tx_comm->hpd_state);
+					HDMITX_AUDIO_EVENT, tx_comm->hpd_state, force_uevent);
 	} else {
 		/* under early suspend, only update uevent state, not
 		 * post to system, in case 1.old android system will
@@ -610,7 +584,8 @@ int hdmitx_common_notify_hpd_status(struct hdmitx_common *tx_comm)
 			HDMITX_AUDIO_EVENT, tx_comm->hpd_state);
 	}
 
-	/*notify to other driver module:cec/rx TODO: need lock for EDID_buf
+	/* notify to other driver module:cec/rx
+	 * TODO: need lock for EDID_buf
 	 * note should not be used under TV product
 	 */
 	if (tx_comm->tv_usage == 0) {
@@ -753,177 +728,14 @@ PROCESS_END:
 	return 0;
 }
 
-int hdmitx_print_sink_cap(struct hdmitx_common *tx_comm,
-		char *buffer, int buffer_len)
+int hdmitx_common_get_edid(struct hdmitx_common *tx_comm)
 {
-	int i, pos = 0;
-	const struct rx_cap *prxcap = &tx_comm->rxcap;
-
-	pos += snprintf(buffer + pos, buffer_len - pos,
-		"Rx Manufacturer Name: %s\n", prxcap->IDManufacturerName);
-	pos += snprintf(buffer + pos, buffer_len - pos,
-		"Rx Product Code: %02x%02x\n",
-		prxcap->IDProductCode[0],
-		prxcap->IDProductCode[1]);
-	pos += snprintf(buffer + pos, buffer_len - pos,
-		"Rx Serial Number: %02x%02x%02x%02x\n",
-		prxcap->IDSerialNumber[0],
-		prxcap->IDSerialNumber[1],
-		prxcap->IDSerialNumber[2],
-		prxcap->IDSerialNumber[3]);
-	pos += snprintf(buffer + pos, buffer_len - pos,
-		"Rx Product Name: %s\n", prxcap->ReceiverProductName);
-
-	pos += snprintf(buffer + pos, buffer_len - pos,
-		"Manufacture Week: %d\n", prxcap->manufacture_week);
-	pos += snprintf(buffer + pos, buffer_len - pos,
-		"Manufacture Year: %d\n", prxcap->manufacture_year + 1990);
-
-	pos += snprintf(buffer + pos, buffer_len - pos,
-		"Physical size(mm): %d x %d\n",
-		prxcap->physical_width, prxcap->physical_height);
-
-	pos += snprintf(buffer + pos, buffer_len - pos,
-		"EDID Version: %d.%d\n",
-		prxcap->edid_version, prxcap->edid_revision);
-
-	pos += snprintf(buffer + pos, buffer_len - pos,
-		"EDID block number: 0x%x\n", tx_comm->EDID_buf[0x7e]);
-
-/*
- *	pos += snprintf(buffer + pos, buffer_len - pos,
- *		"Source Physical Address[a.b.c.d]: %x.%x.%x.%x\n",
- *		hdmitx_device->hdmi_info.vsdb_phy_addr.a,
- *		hdmitx_device->hdmi_info.vsdb_phy_addr.b,
- *		hdmitx_device->hdmi_info.vsdb_phy_addr.c,
- *		hdmitx_device->hdmi_info.vsdb_phy_addr.d);
- */
-	// TODO native_vic2
-	pos += snprintf(buffer + pos, buffer_len - pos,
-		"native Mode %x, VIC (native %d):\n",
-		prxcap->native_Mode, prxcap->native_vic);
-
-	pos += snprintf(buffer + pos, buffer_len - pos,
-		"ColorDeepSupport %x\n", prxcap->ColorDeepSupport);
-
-	for (i = 0; i < prxcap->VIC_count ; i++) {
-		pos += snprintf(buffer + pos, buffer_len - pos, "%d ",
-		prxcap->VIC[i]);
-	}
-	pos += snprintf(buffer + pos, buffer_len - pos, "\n");
-	pos += snprintf(buffer + pos, buffer_len - pos,
-		"Audio {format, channel, freq, cce}\n");
-	for (i = 0; i < prxcap->AUD_count; i++) {
-		pos += snprintf(buffer + pos, buffer_len - pos,
-			"{%d, %d, %x, %x}\n",
-			prxcap->RxAudioCap[i].audio_format_code,
-			prxcap->RxAudioCap[i].channel_num_max,
-			prxcap->RxAudioCap[i].freq_cc,
-			prxcap->RxAudioCap[i].cc3);
-	}
-	pos += snprintf(buffer + pos, buffer_len - pos,
-		"Speaker Allocation: %x\n", prxcap->RxSpeakerAllocation);
-	pos += snprintf(buffer + pos, buffer_len - pos,
-		"Vendor: 0x%x ( %s device)\n",
-		prxcap->ieeeoui, (prxcap->ieeeoui) ? "HDMI" : "DVI");
-
-	pos += snprintf(buffer + pos, buffer_len - pos,
-		"MaxTMDSClock1 %d MHz\n", prxcap->Max_TMDS_Clock1 * 5);
-
-	if (prxcap->hf_ieeeoui) {
-		pos += snprintf(buffer + pos, buffer_len - pos, "Vendor2: 0x%x\n",
-			prxcap->hf_ieeeoui);
-		pos += snprintf(buffer + pos, buffer_len - pos, "MaxTMDSClock2 %d MHz\n",
-			prxcap->Max_TMDS_Clock2 * 5);
-	}
-	if (prxcap->max_frl_rate)
-		pos += snprintf(buffer + pos, buffer_len - pos, "MaxFRLRate: %d\n",
-			prxcap->max_frl_rate);
-
-	if (prxcap->allm)
-		pos += snprintf(buffer + pos, buffer_len - pos, "ALLM: %x\n",
-				prxcap->allm);
-
-	pos += snprintf(buffer + pos, buffer_len - pos, "vLatency: ");
-	if (prxcap->vLatency == LATENCY_INVALID_UNKNOWN)
-		pos += snprintf(buffer + pos, buffer_len - pos,
-				" Invalid/Unknown\n");
-	else if (prxcap->vLatency == LATENCY_NOT_SUPPORT)
-		pos += snprintf(buffer + pos, buffer_len - pos,
-			" UnSupported\n");
-	else
-		pos += snprintf(buffer + pos, buffer_len - pos,
-			" %d\n", prxcap->vLatency);
-
-	pos += snprintf(buffer + pos, buffer_len - pos, "aLatency: ");
-	if (prxcap->aLatency == LATENCY_INVALID_UNKNOWN)
-		pos += snprintf(buffer + pos, buffer_len - pos,
-				" Invalid/Unknown\n");
-	else if (prxcap->aLatency == LATENCY_NOT_SUPPORT)
-		pos += snprintf(buffer + pos, buffer_len - pos,
-			" UnSupported\n");
-	else
-		pos += snprintf(buffer + pos, buffer_len - pos, " %d\n",
-			prxcap->aLatency);
-
-	pos += snprintf(buffer + pos, buffer_len - pos, "i_vLatency: ");
-	if (prxcap->i_vLatency == LATENCY_INVALID_UNKNOWN)
-		pos += snprintf(buffer + pos, buffer_len - pos,
-				" Invalid/Unknown\n");
-	else if (prxcap->i_vLatency == LATENCY_NOT_SUPPORT)
-		pos += snprintf(buffer + pos, buffer_len - pos,
-			" UnSupported\n");
-	else
-		pos += snprintf(buffer + pos, buffer_len - pos, " %d\n",
-			prxcap->i_vLatency);
-
-	pos += snprintf(buffer + pos, buffer_len - pos, "i_aLatency: ");
-	if (prxcap->i_aLatency == LATENCY_INVALID_UNKNOWN)
-		pos += snprintf(buffer + pos, buffer_len - pos,
-				" Invalid/Unknown\n");
-	else if (prxcap->i_aLatency == LATENCY_NOT_SUPPORT)
-		pos += snprintf(buffer + pos, buffer_len - pos,
-			" UnSupported\n");
-	else
-		pos += snprintf(buffer + pos, buffer_len - pos, " %d\n",
-			prxcap->i_aLatency);
-
-	if (prxcap->colorimetry_data)
-		pos += snprintf(buffer + pos, buffer_len - pos,
-			"ColorMetry: 0x%x\n", prxcap->colorimetry_data);
-	pos += snprintf(buffer + pos, buffer_len - pos, "SCDC: %x\n",
-		prxcap->scdc_present);
-	pos += snprintf(buffer + pos, buffer_len - pos, "RR_Cap: %x\n",
-		prxcap->scdc_rr_capable);
-	pos +=
-	snprintf(buffer + pos, buffer_len - pos, "LTE_340M_Scramble: %x\n",
-		 prxcap->lte_340mcsc_scramble);
-
-	if (prxcap->dv_info.ieeeoui == DOVI_IEEEOUI)
-		pos += snprintf(buffer + pos, buffer_len - pos,
-			"  DolbyVision%d", prxcap->dv_info.ver);
-
-	if (prxcap->hdr_info2.hdr_support)
-		pos += snprintf(buffer + pos, buffer_len - pos, "  HDR/%d",
-			prxcap->hdr_info2.hdr_support);
-	if (prxcap->dc_y444 || prxcap->dc_30bit || prxcap->dc_30bit_420)
-		pos += snprintf(buffer + pos, buffer_len - pos, "  DeepColor");
-	pos += snprintf(buffer + pos, buffer_len - pos, "\n");
-
-	/* for checkvalue which maybe used by application to adjust
-	 * whether edid is changed
-	 */
-	pos += snprintf(buffer + pos, buffer_len - pos,
-			"checkvalue: %s\n", prxcap->hdmichecksum);
-
-	return pos;
-}
-
-void hdmitx_get_edid(struct hdmitx_common *tx_comm, struct hdmitx_hw_common *tx_hw_base)
-{
+	struct hdmitx_hw_common *tx_hw_base = tx_comm->tx_hw;
 	unsigned long flags = 0;
 
 	hdmitx_edid_buffer_clear(tx_comm->EDID_buf, sizeof(tx_comm->EDID_buf));
+
+	hdmitx_hw_cntl_misc(tx_hw_base, MISC_I2C_RESET, 0); /* reset i2c before edid read */
 	hdmitx_hw_cntl_ddc(tx_hw_base, DDC_RESET_EDID, 0);
 	hdmitx_hw_cntl_ddc(tx_hw_base, DDC_PIN_MUX_OP, PIN_MUX);
 	/* start reading edid first time */
@@ -941,10 +753,10 @@ void hdmitx_get_edid(struct hdmitx_common *tx_comm, struct hdmitx_hw_common *tx_
 		ktime_get_real_ts64(&kts);
 		rtc_time64_to_tm(kts.tv_sec, &tm);
 		if (tx_comm->hdmitx_gpios_scl != -EPROBE_DEFER)
-			pr_info("UTC+0 %ptRd %ptRt DDC SCL %s\n", &tm, &tm,
+			HDMITX_INFO("UTC+0 %ptRd %ptRt DDC SCL %s\n", &tm, &tm,
 			gpio_get_value(tx_comm->hdmitx_gpios_scl) ? "HIGH" : "LOW");
 		if (tx_comm->hdmitx_gpios_sda != -EPROBE_DEFER)
-			pr_info("UTC+0 %ptRd %ptRt DDC SDA %s\n", &tm, &tm,
+			HDMITX_INFO("UTC+0 %ptRd %ptRt DDC SDA %s\n", &tm, &tm,
 			gpio_get_value(tx_comm->hdmitx_gpios_sda) ? "HIGH" : "LOW");
 		msleep(80);
 
@@ -955,6 +767,7 @@ void hdmitx_get_edid(struct hdmitx_common *tx_comm, struct hdmitx_hw_common *tx_
 			hdmitx_hw_cntl_ddc(tx_hw_base, DDC_EDID_READ_DATA, 0);
 		}
 	}
+
 	spin_lock_irqsave(&tx_comm->edid_spinlock, flags);
 	hdmitx_edid_rxcap_clear(&tx_comm->rxcap);
 	hdmitx_edid_parse(&tx_comm->rxcap, tx_comm->EDID_buf);
@@ -963,9 +776,19 @@ void hdmitx_get_edid(struct hdmitx_common *tx_comm, struct hdmitx_hw_common *tx_
 	hdmitx_set_hdr_priority(tx_comm, tx_comm->hdr_priority);
 
 	spin_unlock_irqrestore(&tx_comm->edid_spinlock, flags);
+
 	hdmitx_event_mgr_notify(tx_comm->event_mgr,
 		HDMITX_PHY_ADDR_VALID, &tx_comm->rxcap.physical_addr);
+	/*notify edid info to rx*/
+	if (tx_comm->tv_usage == 0)
+		rx_edid_physical_addr(tx_comm->rxcap.vsdb_phy_addr.a,
+			tx_comm->rxcap.vsdb_phy_addr.b,
+			tx_comm->rxcap.vsdb_phy_addr.c,
+			tx_comm->rxcap.vsdb_phy_addr.d);
+
 	hdmitx_edid_print(tx_comm->EDID_buf);
+
+	return 0;
 }
 
 /*only for first time plugout */

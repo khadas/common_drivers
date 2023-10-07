@@ -30,8 +30,12 @@ enum hdmitx_event {
 struct hdmitx_event_mgr;
 struct hdmitx_notifier_client;
 
+/* send uevent:
+ * force = 0: only send uevent when val changed;
+ * force = 1: force send uevent even val didnot change;
+ */
 int hdmitx_event_mgr_send_uevent(struct hdmitx_event_mgr *event_mgr,
-	enum hdmitx_event type, int val);
+	enum hdmitx_event type, int val, bool force);
 int hdmitx_event_mgr_set_uevent_state(struct hdmitx_event_mgr *event_mgr,
 	enum hdmitx_event type, int state);
 

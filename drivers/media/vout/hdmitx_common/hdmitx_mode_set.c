@@ -7,6 +7,7 @@
 #include <linux/mm.h>
 #include <linux/printk.h>
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_common.h>
+#include "hdmitx_log.h"
 
 const struct hdmi_timing *hdmitx_mode_match_timing_name(const char *name);
 
@@ -140,24 +141,32 @@ void update_vinfo_from_formatpara(struct hdmitx_common *tx_comm)
 	vinfo->cd = fmtpara->cd;
 }
 
+static void reset_vinfo(struct vinfo_s *tx_vinfo)
+{
+	tx_vinfo->name = "invalid";
+	tx_vinfo->mode = VMODE_MAX;
+}
+
 static int hdmitx_common_pre_enable_mode(struct hdmitx_common *tx_comm,
 					 struct hdmi_format_para *para)
 {
-	struct vinfo_s *vinfo = &tx_comm->hdmitx_vinfo;
+	if (tx_comm->ready)
+		HDMITX_ERROR("Should run disable_mode before enable new mode.\n");
 
-	if (tx_comm->hpd_state == 0) {
-		pr_info("current hpd_state0, exit %s\n", __func__);
+	if (tx_comm->hpd_state == 0 || tx_comm->suspend_flag) {
+		HDMITX_ERROR("current hpd_state/suspend (%d,%d), exit %s\n",
+			__func__, tx_comm->hpd_state, tx_comm->suspend_flag);
 		return -1;
 	}
-	if (tx_comm->suspend_flag) {
-		pr_info("currently under suspend, exit %s\n", __func__);
-		return -1;
-	}
 
-	memcpy(vinfo->hdmichecksum, tx_comm->rxcap.hdmichecksum, 10);
-	hdmi_physical_size_to_vinfo(tx_comm);
+	/*TODO: keep for hw module to read formatpara, remove later.*/
+	memcpy(&tx_comm->fmt_para, para, sizeof(struct hdmi_format_para));
+	/* update fmt_attr: userspace still need this.*/
+	hdmitx_format_para_rebuild_fmtattr_str(&tx_comm->fmt_para, tx_comm->fmt_attr,
+					       sizeof(tx_comm->fmt_attr));
 
-	tx_comm->ctrl_ops->pre_enable_mode(tx_comm, para);
+	if (tx_comm->ctrl_ops->pre_enable_mode)
+		tx_comm->ctrl_ops->pre_enable_mode(tx_comm, para);
 
 	return 0;
 }
@@ -172,9 +181,18 @@ static int hdmitx_common_enable_mode(struct hdmitx_common *tx_comm,
 static int hdmitx_common_post_enable_mode(struct hdmitx_common *tx_comm,
 					  struct hdmi_format_para *para)
 {
-	tx_comm->ctrl_ops->post_enable_mode(tx_comm, para);
+	if (tx_comm->ctrl_ops->post_enable_mode)
+		tx_comm->ctrl_ops->post_enable_mode(tx_comm, para);
+
+	if (tx_comm->cedst_policy) {
+		cancel_delayed_work(&tx_comm->work_cedst);
+		queue_delayed_work(tx_comm->cedst_wq, &tx_comm->work_cedst, 0);
+	}
+
 	edidinfo_attach_to_vinfo(tx_comm);
 	update_vinfo_from_formatpara(tx_comm);
+
+	tx_comm->ready = 1;
 	return 0;
 }
 
@@ -182,38 +200,44 @@ int hdmitx_common_do_mode_setting(struct hdmitx_common *tx_comm,
 				  struct hdmitx_common_state *new_state,
 				  struct hdmitx_common_state *old_state)
 {
-	int ret;
+	int ret = 0;
 	struct hdmi_format_para *new_para;
 
 	new_para = &new_state->para;
 
-	if (new_state->mode & VMODE_INIT_BIT_MASK) {
-		tx_comm->ctrl_ops->init_uboot_mode(new_state->mode);
-		return 0;
+	if (0) {
+		if (new_state->mode & VMODE_INIT_BIT_MASK) {
+			tx_comm->ctrl_ops->init_uboot_mode(new_state->mode);
+			return 0;
+		}
 	}
+
 	mutex_lock(&tx_comm->hdmimode_mutex);
 	ret = hdmitx_common_pre_enable_mode(tx_comm, new_para);
 	if (ret < 0) {
-		pr_err("pre mode enable fail\n");
-		goto fail;
-	}
-	ret = hdmitx_common_enable_mode(tx_comm, new_para);
-	if (ret < 0) {
-		pr_err("mode enable fail\n");
-		goto fail;
-	}
-	ret = hdmitx_common_post_enable_mode(tx_comm, new_para);
-	if (ret < 0) {
-		pr_err("post mode enable fail\n");
+		HDMITX_ERROR("pre mode enable fail\n");
 		goto fail;
 	}
 
-	mutex_unlock(&tx_comm->hdmimode_mutex);
-	return 0;
+	if (new_state->mode & VMODE_INIT_BIT_MASK) {
+		HDMITX_INFO("skip real mode setting for uboot init\n");
+	} else {
+		ret = hdmitx_common_enable_mode(tx_comm, new_para);
+		if (ret < 0) {
+			HDMITX_ERROR("mode enable fail\n");
+			goto fail;
+		}
+	}
+
+	ret = hdmitx_common_post_enable_mode(tx_comm, new_para);
+	if (ret < 0) {
+		HDMITX_ERROR("post mode enable fail\n");
+		goto fail;
+	}
 
 fail:
 	mutex_unlock(&tx_comm->hdmimode_mutex);
-	return -1;
+	return ret;
 }
 EXPORT_SYMBOL(hdmitx_common_do_mode_setting);
 
@@ -222,10 +246,25 @@ int hdmitx_common_disable_mode(struct hdmitx_common *tx_comm,
 {
 	struct hdmi_format_para *para;
 
+	HDMITX_DEBUG("%s to disable ready state\n", __func__);
+	tx_comm->ready = 0;
+	hdmitx_format_para_reset(&tx_comm->fmt_para);
+	reset_vinfo(&tx_comm->hdmitx_vinfo);
+
+	if (tx_comm->cedst_policy)
+		cancel_delayed_work(&tx_comm->work_cedst);
+	if (tx_comm->rxsense_policy)
+		queue_delayed_work(tx_comm->rxsense_wq, &tx_comm->work_rxsense, 0);
+
+	hdmitx_hw_cntl_config(tx_comm->tx_hw, CONF_CLR_AVI_PACKET, 0);
+	hdmitx_hw_cntl_config(tx_comm->tx_hw, CONF_CLR_VSDB_PACKET, 0);
+	hdmitx_hw_cntl_misc(tx_comm->tx_hw, MISC_TMDS_PHY_OP, TMDS_PHY_DISABLE);
+
 	if (new_state)
 		para = &new_state->para;
 	else
 		para = NULL;
+
 	tx_comm->ctrl_ops->disable_mode(tx_comm, para);
 
 	return 0;
@@ -238,15 +277,17 @@ struct vinfo_s *hdmitx_get_current_vinfo(void *data)
 	return &global_tx_common->hdmitx_vinfo;
 }
 
-//TODO
 static int hdmitx_set_current_vmode(enum vmode_e mode, void *data)
 {
-	global_tx_common->ctrl_ops->init_uboot_mode(mode);
+	if (!(mode & VMODE_INIT_BIT_MASK))
+		HDMITX_INFO("warning, echo /sys/class/display/mode is disabled\n");
+	else
+		HDMITX_INFO("already display in uboot\n");
 
 	return 0;
 }
 
-enum vmode_e hdmitx_validate_vmode(char *mode, unsigned int frac, void *data)
+static enum vmode_e hdmitx_validate_vmode(char *mode, unsigned int frac, void *data)
 {
 	struct vinfo_s *vinfo = &global_tx_common->hdmitx_vinfo;
 	const struct hdmi_timing *timing = 0;
@@ -275,11 +316,9 @@ static int hdmitx_vmode_is_supported(enum vmode_e mode, void *data)
 		return false;
 }
 
-//TODO
 static int hdmitx_module_disable(enum vmode_e cur_vmod, void *data)
 {
-	global_tx_common->ctrl_ops->disable_mode(global_tx_common,
-						 &global_tx_common->fmt_para);
+	hdmitx_common_disable_mode(global_tx_common, NULL);
 	return 0;
 }
 
@@ -304,7 +343,7 @@ static int hdmitx_vout_get_state(void *data)
 /* if cs/cd/frac_rate is changed, then return 0 */
 static int hdmitx_check_same_vmodeattr(char *name, void *data)
 {
-	pr_info("not support anymore\n");
+	HDMITX_ERROR("not support anymore\n");
 	return 0;
 }
 
@@ -318,18 +357,18 @@ static int hdmitx_vout_get_disp_cap(char *buf, void *data)
 
 static void hdmitx_set_bist(u32 num, void *data)
 {
-	pr_err("Not Support: try debug sysfs node in amhdmitx\n");
+	HDMITX_ERROR("Not Support: try debug sysfs node in amhdmitx\n");
 }
 
 static int hdmitx_vout_set_vframe_rate_hint(int duration, void *data)
 {
-	pr_info("not support currently\n");
+	HDMITX_ERROR("not support %S\n", __func__);
 	return 0;
 }
 
 static int hdmitx_vout_get_vframe_rate_hint(void *data)
 {
-	pr_info("not support currently\n");
+	HDMITX_ERROR("not support %S\n", __func__);
 	return 0;
 }
 
@@ -446,6 +485,9 @@ void hdmitx_vout_uninit(void)
 /* common work for plugout/suspend, witch is done in lock */
 void hdmitx_plugout_common_work(struct hdmitx_common *tx_comm)
 {
+	/* trace event */
+	hdmitx_tracer_write_event(tx_comm->tx_tracer, HDMITX_HPD_PLUGOUT);
+
 	/* cancel ced work */
 	if (tx_comm->cedst_policy)
 		cancel_delayed_work(&tx_comm->work_cedst);
@@ -462,6 +504,9 @@ void hdmitx_plugout_common_work(struct hdmitx_common *tx_comm)
 void hdmitx_plugin_common_work(struct hdmitx_common *tx_comm,
 	struct hdmitx_hw_common *tx_hw_base)
 {
+	/* trace event */
+	hdmitx_tracer_write_event(tx_comm->tx_tracer, HDMITX_HPD_PLUGIN);
+
 	/* SW: start rxsense check */
 	if (tx_comm->rxsense_policy) {
 		cancel_delayed_work(&tx_comm->work_rxsense);
@@ -488,18 +533,13 @@ void hdmitx_plugin_common_work(struct hdmitx_common *tx_comm,
 		tx_comm->ctrl_ops->disable_hdcp();
 	}
 
-	/* reset i2c before edid read */
-	hdmitx_hw_cntl_misc(tx_hw_base, MISC_I2C_RESET, 0);
-	hdmitx_get_edid(tx_comm, tx_hw_base);
-	if (tx_comm->tv_usage == 0)
-		rx_edid_physical_addr(tx_comm->rxcap.vsdb_phy_addr.a,
-			tx_comm->rxcap.vsdb_phy_addr.b,
-			tx_comm->rxcap.vsdb_phy_addr.c,
-			tx_comm->rxcap.vsdb_phy_addr.d);
+	/*read edid*/
+	hdmitx_common_get_edid(tx_comm);
 
 	/* SW: update flags */
 	/* TODO: cedst_policy update method */
 	tx_comm->cedst_policy = tx_comm->cedst_en & tx_comm->rxcap.scdc_present;
+
 	tx_comm->hpd_state = 1;
 	tx_comm->already_used = 1;
 
@@ -510,7 +550,7 @@ void hdmitx_plugin_common_work(struct hdmitx_common *tx_comm,
 	tx_comm->last_hpd_handle_done_stat = HDMI_TX_HPD_PLUGIN;
 }
 
-/* common pre suspend flow, witch is done in lock */
+/* common pre suspend flow, which is done in lock */
 void hdmitx_common_pre_early_suspend(struct hdmitx_common *tx_comm,
 	struct hdmitx_hw_common *tx_hw_base)
 {
@@ -587,13 +627,11 @@ void hdmitx_common_late_resume(struct hdmitx_common *tx_comm,
 		HDMITX_LATE_RESUME);
 
 	/* step4: SW: post uevent to system */
-	/* force revert state to trigger uevent send */
-	hdmitx_event_mgr_set_uevent_state(tx_comm->event_mgr,
-		HDMITX_HPD_EVENT, !tx_comm->hpd_state);
-	hdmitx_event_mgr_set_uevent_state(tx_comm->event_mgr,
-		HDMITX_AUDIO_EVENT, !tx_comm->hpd_state);
-
-	hdmitx_common_notify_hpd_status(tx_comm);
+	hdmitx_common_notify_hpd_status(tx_comm, true);
 	hdmitx_event_mgr_send_uevent(tx_comm->event_mgr,
-		HDMITX_HDCPPWR_EVENT, HDMI_WAKEUP);
+		HDMITX_HDCPPWR_EVENT, HDMI_WAKEUP, false);
+
+	/* trace event */
+	hdmitx_tracer_write_event(tx_comm->tx_tracer,
+		tx_comm->hpd_state ? HDMITX_HPD_PLUGIN : HDMITX_HPD_PLUGOUT);
 }

@@ -91,7 +91,7 @@ static int hdmitx_hook_drm(struct device *device);
 static int hdmitx_unhook_drm(struct device *device);
 const char *hdmitx_mode_get_timing_name(enum hdmi_vic vic);
 const struct hdmi_timing *hdmitx_mode_match_timing_name(const char *name);
-static void hdmitx_notify_hpd(int hpd, void *p);
+static void hdmitx_notify_hpd_to_rx(int hpd, void *p);
 
 static inline int com_str(const char *buf, const char *str)
 {
@@ -185,7 +185,7 @@ int hdmitx_set_uevent(enum hdmitx_event type, int val)
 	struct hdmitx_dev *hdev = get_hdmitx_device();
 
 	return hdmitx_event_mgr_send_uevent(hdev->tx_comm.event_mgr,
-				type, val);
+				type, val, false);
 }
 
 /* There are 3 callback functions for front HDR/DV/HDR10+ modules to notify
@@ -266,8 +266,6 @@ static void hdmitx_late_resume(struct early_suspend *h)
 
 	mutex_lock(&hdev->tx_comm.hdmimode_mutex);
 	hdmitx_common_late_resume(&hdev->tx_comm, &hdev->tx_hw.base);
-	/* trace event */
-	hdmitx_current_status(hdev->tx_comm.hpd_state ? HDMITX_HPD_PLUGIN : HDMITX_HPD_PLUGOUT);
 	pr_info(SYS "HDMITX: Late Resume\n");
 	mutex_unlock(&hdev->tx_comm.hdmimode_mutex);
 
@@ -289,7 +287,7 @@ static void hdmitx_late_resume(struct early_suspend *h)
 	}
 
 	/* notify to drm hdmi */
-	hdmitx_hpd_notify_unlocked(&hdev->tx_comm);
+	hdmitx_fire_drm_hpd_cb_unlocked(&hdev->tx_comm);
 }
 
 /* Set avmute_set signal to HDMIRX */
@@ -316,8 +314,6 @@ static struct early_suspend hdmitx_early_suspend_handler = {
 };
 #endif
 
-#undef DISABLE_AUDIO
-
 static  int  set_disp_mode(struct hdmitx_dev *hdev, const char *mode)
 {
 	int ret =  -1;
@@ -341,24 +337,9 @@ static  int  set_disp_mode(struct hdmitx_dev *hdev, const char *mode)
 	if (ret >= 0) {
 		hdmitx_hw_cntl(&hdev->tx_hw.base, HDMITX_AVMUTE_CNTL, AVMUTE_CLEAR);
 		hdev->audio_param_update_flag = 1;
-		hdev->auth_process_timer = AUTH_PROCESS_TIME;
 	}
 
 	return ret;
-}
-
-static void hdmitx_pre_display_init(struct hdmitx_dev *hdev)
-{
-	hdev->auth_process_timer = AUTH_PROCESS_TIME;
-	hdmitx_hw_cntl_ddc(&hdev->tx_hw.base, DDC_HDCP_MUX_INIT, 1);
-	hdmitx_hw_cntl_ddc(&hdev->tx_hw.base, DDC_HDCP_OP, HDCP14_OFF);
-	/* msleep(10); */
-	hdmitx_hw_cntl_misc(&hdev->tx_hw.base, MISC_TMDS_PHY_OP,
-		TMDS_PHY_DISABLE);
-	hdmitx_hw_cntl_config(&hdev->tx_hw.base,
-		CONF_CLR_AVI_PACKET, 0);
-	hdmitx_hw_cntl_config(&hdev->tx_hw.base,
-		CONF_CLR_VSDB_PACKET, 0);
 }
 
 /*disp_mode attr*/
@@ -3323,22 +3304,6 @@ static DEVICE_ATTR_RO(dump_debug_reg);
 static DEVICE_ATTR_RW(hdr_priority_mode);
 static DEVICE_ATTR_WO(hdcp22_top_reset);
 
-static int hdmitx20_pre_enable_mode(struct hdmitx_common *tx_comm, struct hdmi_format_para *para)
-{
-	struct hdmitx_dev *hdev = to_hdmitx20_dev(tx_comm);
-
-	tx_comm->ready = 0;
-	//TODO format para will be moved
-	memcpy(&tx_comm->fmt_para, para, sizeof(struct hdmi_format_para));
-
-	/* update fmt_attr: userspace still need this.*/
-	hdmitx_format_para_rebuild_fmtattr_str(&tx_comm->fmt_para, tx_comm->fmt_attr,
-					       sizeof(tx_comm->fmt_attr));
-
-	hdmitx_pre_display_init(hdev);
-	return 0;
-}
-
 static int hdmitx20_enable_mode(struct hdmitx_common *tx_comm, struct hdmi_format_para *para)
 {
 	int ret;
@@ -3349,20 +3314,8 @@ static int hdmitx20_enable_mode(struct hdmitx_common *tx_comm, struct hdmi_forma
 
 	if (ret >= 0) {
 		hdev->audio_param_update_flag = 1;
-		hdev->auth_process_timer = AUTH_PROCESS_TIME;
 	}
 	hdmitx_set_audio(hdev, &hdev->cur_audio_param);
-
-	return 0;
-}
-
-static int hdmitx20_post_enable_mode(struct hdmitx_common *tx_comm, struct hdmi_format_para *para)
-{
-	if (tx_comm->cedst_policy) {
-		cancel_delayed_work(&tx_comm->work_cedst);
-		queue_delayed_work(tx_comm->cedst_wq, &tx_comm->work_cedst, 0);
-	}
-	tx_comm->ready = 1;
 
 	return 0;
 }
@@ -3371,18 +3324,8 @@ static int hdmitx20_disable_mode(struct hdmitx_common *tx_comm, struct hdmi_form
 {
 	struct hdmitx_dev *hdev = get_hdmitx_device();
 
-	hdmitx_hw_cntl_config(&hdev->tx_hw.base, CONF_CLR_AVI_PACKET, 0);
-	hdmitx_hw_cntl_config(&hdev->tx_hw.base, CONF_CLR_VSDB_PACKET, 0);
-	hdmitx_hw_cntl_misc(&hdev->tx_hw.base, MISC_TMDS_PHY_OP, TMDS_PHY_DISABLE);
-
-	hdmitx_format_para_reset(&hdev->tx_comm.fmt_para);
-
-	hdmitx_validate_vmode("null", 0, NULL);
-	if (hdev->tx_comm.cedst_policy)
-		cancel_delayed_work(&tx_comm->work_cedst);
-	if (hdev->tx_comm.rxsense_policy)
-		queue_delayed_work(tx_comm->rxsense_wq, &tx_comm->work_rxsense, 0);
-
+	hdmitx_hw_cntl_ddc(&hdev->tx_hw.base, DDC_HDCP_MUX_INIT, 1);
+	hdmitx_hw_cntl_ddc(&hdev->tx_hw.base, DDC_HDCP_OP, HDCP14_OFF);
 	return 0;
 }
 
@@ -3410,9 +3353,9 @@ static int hdmitx20_init_uboot_mode(enum vmode_e mode)
 }
 
 static struct hdmitx_ctrl_ops tx20_ctrl_ops = {
-	.pre_enable_mode = hdmitx20_pre_enable_mode,
+	.pre_enable_mode = NULL,
 	.enable_mode = hdmitx20_enable_mode,
-	.post_enable_mode = hdmitx20_post_enable_mode,
+	.post_enable_mode = NULL,
 	.disable_mode = hdmitx20_disable_mode,
 	.init_uboot_mode = hdmitx20_init_uboot_mode,
 	.disable_hdcp = meson_hdcp_disable,
@@ -3648,8 +3591,6 @@ static void hdmitx_plugin_handler(struct hdmitx_dev *hdev, bool set_audio, bool 
 
 	/* step1: SW: EDID read/parse, notify client modules */
 	hdmitx_plugin_common_work(&hdev->tx_comm, &hdev->tx_hw.base);
-	/* trace event */
-	hdmitx_current_status(HDMITX_HPD_PLUGIN);
 
 	/* TODO: need remove/optimised, keep it temporarily */
 	if (set_audio) {
@@ -3684,7 +3625,7 @@ static void hdmitx_plugin_handler(struct hdmitx_dev *hdev, bool set_audio, bool 
 	}
 
 	/* step3: SW: notify client modules and update uevent state */
-	hdmitx_common_notify_hpd_status(&hdev->tx_comm);
+	hdmitx_common_notify_hpd_status(&hdev->tx_comm, false);
 }
 
 /* action witch is done in lock, it copy the flow of plugin handler.
@@ -3735,7 +3676,7 @@ static void hdmitx_hpd_plugin_irq_handler(struct work_struct *work)
 
 	/*notify to drm hdmi*/
 	if (!hdev->tx_comm.suspend_flag)
-		hdmitx_hpd_notify_unlocked(&hdev->tx_comm);
+		hdmitx_fire_drm_hpd_cb_unlocked(&hdev->tx_comm);
 }
 
 /* common work for plugout flow, witch should be done in lock */
@@ -3745,8 +3686,6 @@ static void hdmitx_plugout_handler(struct hdmitx_dev *hdev)
 
 	/* step1: SW: clear edid/vinfo */
 	hdmitx_plugout_common_work(&hdev->tx_comm);
-	/* trace event */
-	hdmitx_current_status(HDMITX_HPD_PLUGOUT);
 
 	/* step2: HW/SW: reset hdcp hw/sw setting */
 	hdmitx_hw_cntl_ddc(&hdev->tx_hw.base, DDC_HDCP_MUX_INIT, 1);
@@ -3771,7 +3710,7 @@ static void hdmitx_plugout_handler(struct hdmitx_dev *hdev)
 
 		hdmitx_hw_cntl_misc(&hdev->tx_hw.base, MISC_AVMUTE_OP, SET_AVMUTE);
 		/* notify event to user space and other modules */
-		hdmitx_common_notify_hpd_status(&hdev->tx_comm);
+		hdmitx_common_notify_hpd_status(&hdev->tx_comm, false);
 		return;
 	}
 	/* step5: HW: packet clean */
@@ -3785,7 +3724,7 @@ static void hdmitx_plugout_handler(struct hdmitx_dev *hdev)
 	hdev->tx_comm.ready = 0;
 
 	/* step7: SW: notify event to user space and other modules */
-	hdmitx_common_notify_hpd_status(&hdev->tx_comm);
+	hdmitx_common_notify_hpd_status(&hdev->tx_comm, false);
 }
 
 /* plugout handle only for bootup stage */
@@ -3811,7 +3750,7 @@ static void hdmitx_hpd_plugout_irq_handler(struct work_struct *work)
 
 	/* notify to drm hdmi, TO CONFIRM: if need the suspend flag? */
 	if (!hdev->tx_comm.suspend_flag)
-		hdmitx_hpd_notify_unlocked(&hdev->tx_comm);
+		hdmitx_fire_drm_hpd_cb_unlocked(&hdev->tx_comm);
 }
 
 static void hdmitx_internal_intr_handler(struct work_struct *work)
@@ -3932,7 +3871,7 @@ int hdmitx20_event_notifier_regist(struct notifier_block *nb)
 
 	/* update status when register */
 	if (!ret && nb->notifier_call) {
-		hdmitx_notify_hpd(hdev->tx_comm.hpd_state,
+		hdmitx_notify_hpd_to_rx(hdev->tx_comm.hpd_state,
 				  hdev->tx_comm.rxcap.edid_parsing ?
 				  hdev->tx_comm.EDID_buf : NULL);
 		/* TODO: actually notify phy_addr is not used by CEC/hdmirx,
@@ -3954,7 +3893,7 @@ int hdmitx20_event_notifier_unregist(struct notifier_block *nb)
 		(struct hdmitx_notifier_client *)nb);
 }
 
-static void hdmitx_notify_hpd(int hpd, void *p)
+static void hdmitx_notify_hpd_to_rx(int hpd, void *p)
 {
 	struct hdmitx_dev *hdev = get_hdmitx_device();
 
@@ -3976,20 +3915,11 @@ void hdmitx_hdcp_status(int hdmi_authenticated)
 			hdmi_authenticated);
 }
 
-static void hdmitx_logevents_handler(struct work_struct *work)
-{
-	static u32 cnt;
-
-	hdmitx_set_uevent(HDMITX_CUR_ST_EVENT, ++cnt);
-}
-
 void hdmitx_current_status(enum hdmitx_event_log_bits event)
 {
 	struct hdmitx_dev *hdev = get_hdmitx_device();
 
 	hdmitx_tracer_write_event(hdev->tx_comm.tx_tracer, event);
-	/*Called in irq, dont use lock.*/
-	queue_delayed_work(hdev->hdmi_wq, &hdev->work_do_event_logs, 1);
 }
 
 static void hdmitx_hdr_state_init(struct hdmitx_dev *hdev)
@@ -4035,7 +3965,6 @@ static int amhdmitx_device_init(struct hdmitx_dev *hdmi_dev)
 	hdmi_dev->hdmi_current_eotf_type = EOTF_T_NULL;
 	hdmi_dev->hdmi_current_tunnel_mode = 0;
 	hdmi_dev->hdmi_current_signal_sdr = true;
-	hdmi_dev->auth_process_timer = 0;
 	hdmi_dev->force_audio_flag = 0;
 	hdmi_dev->tx_comm.hdcp_mode = 0;
 	hdmi_dev->tx_comm.ready = 0;
@@ -4439,12 +4368,12 @@ static int amhdmitx_probe(struct platform_device *pdev)
 #endif
 
 	/*platform related functions*/
-	tx_tracer = hdmitx_tracer_create();
-	hdmitx_common_attch_platform_data(tx_comm,
-		HDMITX_PLATFORM_TRACER, tx_tracer);
 	tx_uevent_mgr = hdmitx_event_mgr_create(pdev, hdev->hdtx_dev);
 	hdmitx_common_attch_platform_data(tx_comm,
 		HDMITX_PLATFORM_UEVENT, tx_uevent_mgr);
+	tx_tracer = hdmitx_tracer_create(tx_uevent_mgr);
+	hdmitx_common_attch_platform_data(tx_comm,
+		HDMITX_PLATFORM_TRACER, tx_tracer);
 
 #ifdef CONFIG_AMLOGIC_LEGACY_EARLY_SUSPEND
 	hdmitx_early_suspend_handler.param = hdev;
@@ -4489,7 +4418,6 @@ static int amhdmitx_probe(struct platform_device *pdev)
 					WQ_HIGHPRI | __WQ_LEGACY | WQ_MEM_RECLAIM);
 	INIT_DELAYED_WORK(&hdev->work_hpd_plugin, hdmitx_hpd_plugin_irq_handler);
 	INIT_DELAYED_WORK(&hdev->work_hpd_plugout, hdmitx_hpd_plugout_irq_handler);
-	INIT_DELAYED_WORK(&hdev->work_do_event_logs, hdmitx_logevents_handler);
 	INIT_DELAYED_WORK(&hdev->work_internal_intr, hdmitx_internal_intr_handler);
 
 	/* for rx sense feature */
@@ -4531,7 +4459,7 @@ static int amhdmitx_probe(struct platform_device *pdev)
 	/* after unlock, now can take actions of bottom half of hpd irq */
 	mutex_unlock(&hdev->tx_comm.hdmimode_mutex);
 	/* notify to drm hdmi */
-	hdmitx_hpd_notify_unlocked(&hdev->tx_comm);
+	hdmitx_fire_drm_hpd_cb_unlocked(&hdev->tx_comm);
 
 	pr_debug(SYS "%s end\n", __func__);
 	/*everything is ready, create sysfs here.*/

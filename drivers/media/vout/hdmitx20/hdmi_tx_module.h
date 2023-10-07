@@ -100,8 +100,6 @@ struct hdmitx_dev {
 	struct work_struct work_hdr;
 	struct work_struct work_hdr_unmute;
 	struct delayed_work work_do_hdcp;
-	/*for event tracer*/
-	struct delayed_work work_do_event_logs;
 	int hdmi_init;
 
 	/*hdcp */
@@ -154,7 +152,6 @@ struct hdmitx_dev {
 	struct aud_para cur_audio_param;
 	unsigned char force_audio_flag;
 	int audio_param_update_flag;
-	int auth_process_timer;
 	unsigned int tx_aud_cfg; /* 0, off; 1, on */
 	/* configure for I2S: 8ch in, 2ch out */
 	/* 0: default setting  1:ch0/1  2:ch2/3  3:ch4/5  4:ch6/7 */

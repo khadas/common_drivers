@@ -101,9 +101,6 @@ int hdmitx_format_para_init(struct hdmi_format_para *para,
 	else
 		para->frac_mode = frac_rate_policy;
 
-	para->dsc_en = 0; // TODO
-	para->frl_rate = hdmitx_select_frl_rate(0, vic, cs, cd);
-
 	return 0;
 }
 

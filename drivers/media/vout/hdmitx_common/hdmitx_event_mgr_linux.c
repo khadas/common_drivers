@@ -157,7 +157,7 @@ int hdmitx_event_mgr_set_uevent_state(struct hdmitx_event_mgr *event_mgr,
 }
 
 int hdmitx_event_mgr_send_uevent(struct hdmitx_event_mgr *uevent_mgr,
-	enum hdmitx_event type, int val)
+	enum hdmitx_event type, int val, bool force)
 {
 	char env[MAX_UEVENT_LEN];
 	struct hdmitx_uevent *event = hdmi_events;
@@ -173,7 +173,7 @@ int hdmitx_event_mgr_send_uevent(struct hdmitx_event_mgr *uevent_mgr,
 	if (event->type == HDMITX_NONE_EVENT)
 		return -EINVAL;
 
-	if (event->state == val)
+	if (event->state == val && !force)
 		return 0;
 
 	event->state = val;

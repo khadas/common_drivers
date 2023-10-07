@@ -6,8 +6,6 @@
 #ifndef __HDMITX_LOG_H
 #define __HDMITX_LOG_H
 
-extern unsigned int __hdmitx_debug;
-
 enum hdmitx_debug_category {
 	CORE_LOG = 0x01,
 	VIDEO_LOG = 0x02,
@@ -20,18 +18,6 @@ enum hdmitx_debug_category {
 	SCDC_LOG = 0x100,
 	VNIFO_LOG = 0x200,
 };
-
-static inline bool hdmitx_debug_enabled(enum hdmitx_debug_category category)
-{
-	return unlikely(__hdmitx_debug & category);
-}
-
-void __hdmitx_info(const char *format, ...);
-void __hdmitx_err(const char *format, ...);
-void __hdmitx_dbg(enum hdmitx_debug_category category, const char *format, ...);
-
-#define HDMITX_INFO(fmt, ...)							\
-	__hdmitx_info(fmt, ##__VA_ARGS__)
 
 #define HDMITX_ERROR(fmt, ...)							\
 	__hdmitx_err(fmt, ##__VA_ARGS__)
@@ -65,4 +51,13 @@ void __hdmitx_dbg(enum hdmitx_debug_category category, const char *format, ...);
 
 #define HDMITX_DEBUG_VINFO(fmt, ...)					\
 	__hdmitx_dbg(VINFO_LOG, fmt, ##__VA_ARGS__)
+
+#define HDMITX_INFO(fmt, ...)							\
+	__hdmitx_info(fmt, ##__VA_ARGS__)
+
+/*DONT USE API directly, use macro define instead.*/
+void __hdmitx_info(const char *format, ...);
+void __hdmitx_err(const char *format, ...);
+void __hdmitx_dbg(enum hdmitx_debug_category category, const char *format, ...);
+
 #endif

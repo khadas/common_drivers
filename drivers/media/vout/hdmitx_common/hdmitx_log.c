@@ -25,6 +25,11 @@ MODULE_PARM_DESC(hdmitx_debug, "Enable debug output, where each bit enables a de
 "\t\tBit 7 (0x80)  will enable REG messages (hdmitx register rd/wr)");
 module_param_named(hdmitx_debug, __hdmitx_debug, int, 0600);
 
+static bool hdmitx_debug_enabled(enum hdmitx_debug_category category)
+{
+	return unlikely(__hdmitx_debug & category);
+}
+
 void __hdmitx_info(const char *format, ...)
 {
 	struct va_format vaf;

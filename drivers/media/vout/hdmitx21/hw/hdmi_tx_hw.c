@@ -447,52 +447,19 @@ int hdmitx21_uboot_audio_en(void)
 	return 0;
 }
 
-bool resolution_limited_1080p(const struct hdmi_timing *timing)
+static bool soc_resolution_limited(const struct hdmi_timing *timing, u32 res_v)
 {
-	if (!timing)
-		return 0;
-
-	if (timing->h_active > 1920 || timing->v_active > 1080)
+	if (timing->v_active > res_v)
 		return 0;
 	return 1;
 }
 
-bool resolution_limited_2160p(const struct hdmi_timing *timing)
+static bool soc_freshrate_limited(const struct hdmi_timing *timing, u32 vsync)
 {
 	if (!timing)
 		return 0;
 
-	if (timing->h_active > 4096 || timing->v_active > 2160)
-		return 0;
-	return 1;
-}
-
-bool resolution_limited_4320p(const struct hdmi_timing *timing)
-{
-	if (!timing)
-		return 0;
-
-	if (timing->h_active > 7680 || timing->v_active > 4320)
-		return 0;
-	return 1;
-}
-
-bool freshrate_limited_60hz(const struct hdmi_timing *timing)
-{
-	if (!timing)
-		return 0;
-
-	if (timing->v_freq / 1000 > 60)
-		return 0;
-	return 1;
-}
-
-bool freshrate_limited_120hz(const struct hdmi_timing *timing)
-{
-	if (!timing)
-		return 0;
-
-	if (timing->v_freq / 1000 > 120)
+	if (timing->v_freq / 1000 > vsync)
 		return 0;
 	return 1;
 }
@@ -534,7 +501,6 @@ static int hdmitx_validate_mode(struct hdmitx_hw_common *tx_hw, u32 vic)
 static int hdmitx21_calc_formatpara(struct hdmitx_hw_common *tx_hw,
 	struct hdmi_format_para *para)
 {
-	enum frl_rate_enum frl_rate;
 	enum frl_rate_enum tx_max_frl_rate = global_txhw->tx_max_frl_rate;
 
 	/* check current tx para with TMDS mode */
@@ -552,9 +518,11 @@ static int hdmitx21_calc_formatpara(struct hdmitx_hw_common *tx_hw,
 	if (para->tmds_clk > 600000 && !tx_max_frl_rate)
 		return -EINVAL;
 
+	para->dsc_en = 0; // TODO
+
 	/* check current tx para with FRL mode */
-	frl_rate = hdmitx_select_frl_rate(0, para->timing.vic, para->cs, para->cd);
-	if (frl_rate > tx_max_frl_rate) // TODO, need check dsc_en
+	para->frl_rate = hdmitx_select_frl_rate(0, para->timing.vic, para->cs, para->cd);
+	if (para->frl_rate > tx_max_frl_rate) // TODO, need check dsc_en
 		return -EINVAL;
 
 	return 0;
@@ -903,7 +871,6 @@ static int hdmitx_set_dispmode(struct hdmitx_hw_common *tx_hw)
 	struct hdmi_format_para *para = &hdev->tx_comm.fmt_para;
 	u32 data32;
 	enum hdmi_vic vic = para->timing.vic;
-	struct vinfo_s *vinfo = NULL;
 
 	hdmitx21_set_clk(hdev);
 	hdmitx_phy_pre_init(hdev);
@@ -1131,12 +1098,6 @@ static int hdmitx_set_dispmode(struct hdmitx_hw_common *tx_hw)
 		}
 	}
 
-	vinfo = get_current_vinfo();
-	if (vinfo) {
-		vinfo->cur_enc_ppc = 1;
-		if (hdmitx21_rd_reg(HDMITX_TOP_BIST_CNTL) & (1 << 19))
-			vinfo->cur_enc_ppc = 4;
-	}
 	hdmitx_set_phy(hdev);
 
 	if (hdev->tx_hw.chip_data->chip_type >= MESON_CPU_ID_S5) {

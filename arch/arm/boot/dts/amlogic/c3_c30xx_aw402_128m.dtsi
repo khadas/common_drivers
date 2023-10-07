@@ -99,9 +99,9 @@
 		rtos_reserved:linux,rtos_reserved {
 			compatible = "amlogic, aml_rtos_memory";
 			status = "okay";
-			size = <0x300000>;
+			size = <0x700000>;
 			alignment = <0x100000>;
-			reg = <0x7500000 0x300000>;
+			reg = <0x2200000 0x700000>;
 		};
 
 		dsp_fw_reserved:linux,dsp_fw {

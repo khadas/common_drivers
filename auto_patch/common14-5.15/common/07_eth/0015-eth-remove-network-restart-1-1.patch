@@ -1,0 +1,43 @@
+From ec8bbb059e022e948e1de4bdae19a4c5c028e106 Mon Sep 17 00:00:00 2001
+From: Zhuo Wang <zhuo.wang@amlogic.com>
+Date: Sun, 8 Oct 2023 10:44:29 +0800
+Subject: [PATCH] eth: remove network restart [1/1]
+
+PD#SWPL-138314
+
+Problem:
+restart network will involve too much
+problem, remove this flow, left only for txhd2
+
+Solution:
+remove network restart when resume
+only txhd2 will use this function
+
+Verify:
+BE311
+
+Change-Id: Ib8773adf20f0176b053fc22802426725d83d2ccc
+Signed-off-by: Zhuo Wang <zhuo.wang@amlogic.com>
+---
+ drivers/net/ethernet/stmicro/stmmac/dwmac-meson8b.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/ethernet/stmicro/stmmac/dwmac-meson8b.c b/drivers/net/ethernet/stmicro/stmmac/dwmac-meson8b.c
+index eb32cd994545..8fc25d849c20 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/dwmac-meson8b.c
++++ b/drivers/net/ethernet/stmicro/stmmac/dwmac-meson8b.c
+@@ -775,8 +775,9 @@ static int meson8b_resume(struct device *dev)
+ 		/*our phy not support wol by now*/
+ 		phydev->irq_suspended = 0;
+ 		ret = stmmac_resume(dev);
+-		pr_info("wzh %s\n", __func__);
+-		stmmac_global_err(priv);
++		/*this flow only for txhd2, not for common anymore*/
++		if (phy_mode == 2)
++			stmmac_global_err(priv);
+ 	}
+ 	return ret;
+ }
+-- 
+2.42.0
+

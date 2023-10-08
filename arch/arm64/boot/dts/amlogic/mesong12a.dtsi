@@ -1731,7 +1731,7 @@
 	};
 
 	ddr_bandwidth {
-		compatible = "amlogic, ddr-bandwidth";
+		compatible = "amlogic,ddr-bandwidth-g12a";
 		status = "okay";
 		reg = <0x0 0xff638000 0x0 0x100
 		       0x0 0xff638c00 0x0 0x100>;
@@ -1740,7 +1740,7 @@
 		interrupt-names = "ddr_bandwidth";
 	};
 	dmc_monitor {
-		compatible = "amlogic, dmc_monitor";
+		compatible = "amlogic,dmc_monitor-g12a";
 		status = "okay";
 		reg_base = <0xff639000>;
 		interrupts = <0 51 IRQ_TYPE_LEVEL_HIGH>;

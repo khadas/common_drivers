@@ -8469,6 +8469,11 @@ u32 get_pi_enabled(u32 layer_id)
 	return 0;
 }
 
+u32 get_vd1s1_vd2_prebld_en(u32 layer_id)
+{
+	return 0;
+}
+
 void vd_s5_hw_set(struct video_layer_s *layer,
 	struct vframe_s *dispbuf, struct vpp_frame_par_s *frame_par)
 {

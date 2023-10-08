@@ -4807,6 +4807,38 @@ static bool pq_save_db(unsigned int addr, unsigned int val, unsigned int mask)
 	return ret;
 }
 
+void di_s1a_load_pq(void)
+{
+	if (!(DIM_IS_IC(S4) && cfgg(SUB_V)))
+		return;
+	if (dimp_get(edi_mp_pq_load_dbg) == 1)
+		return;
+
+	/*
+	 * s1a remove pq server
+	 * driver no need load pq table
+	 * driver write dead Registers controlled by pq
+	 * reg value from pq team
+	 */
+
+	DIM_RDMA_WR(DI_EI_CTRL0, 0xFF0100);
+	DIM_RDMA_WR(DI_EI_CTRL1, 0x5A0A0F2D);
+	DIM_RDMA_WR(DI_EI_CTRL2, 0x50A0A5A);
+	DIM_RDMA_WR(DI_NR_CTRL0, 0x0);
+	DIM_RDMA_WR(DI_NR_CTRL1, 0xBF3F1010);
+	DIM_RDMA_WR(DI_NR_CTRL2, 0x3F3F4040);
+	DIM_RDMA_WR(DI_EI_CTRL4, 0x151B3084);
+	DIM_RDMA_WR(DI_EI_CTRL5, 0x5273204F);
+	DIM_RDMA_WR(DI_EI_CTRL6, 0x50231C15);
+	DIM_RDMA_WR(DI_EI_CTRL7, 0x2FB56650);
+	DIM_RDMA_WR(DI_EI_CTRL8, 0x230019A4);
+	DIM_RDMA_WR(DI_EI_CTRL9, 0x7CB9BB33);
+	DIM_RDMA_WR(DI_EI_CTRL10, 0x842C6A9);
+	DIM_RDMA_WR(DI_EI_CTRL11, 0x486AB07A);
+	DIM_RDMA_WR(DI_EI_CTRL12, 0xAB0F250C);
+	DIM_RDMA_WR(DI_EI_CTRL13, 0xF021414);
+}
+
 void dimh_load_regs(struct di_pq_parm_s *di_pq_ptr)
 {
 	unsigned int i = 0, j = 0, addr = 0, value = 0, mask = 0, len;

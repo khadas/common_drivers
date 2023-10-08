@@ -660,6 +660,7 @@ void dimh_calc_lmv_base_mcinfo(unsigned int vf_height,
 void dimh_init_field_mode(unsigned short height);
 void dim_film_mode_win_config(unsigned int width, unsigned int height);
 void dimh_pulldown_vof_win_config(struct pulldown_detected_s *wins);
+void di_s1a_load_pq(void);
 void dimh_load_regs(struct di_pq_parm_s *di_pq_ptr);
 void dim_pre_frame_reset_g12(unsigned char madi_en, unsigned char mcdi_en);
 void dim_pre_frame_reset(void);

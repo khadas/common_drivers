@@ -4051,9 +4051,6 @@ void dim_pre_de_process(unsigned int channel)
 	dimh_txl_patch_prog(ppre->cur_prog_flag,
 			    ppre->field_count_for_cont,
 			    dimp_get(edi_mp_mcpre_en));
-	/****************value from pq****************/
-	if (IS_IC(dil_get_cpuver_flag(), S4) && cfgg(SUB_V))
-		DIM_DI_WR(DI_NR_CTRL2, 0x3f3f4040);
 	if (ppre->di_wr_buf->en_hf	&&
 	    ppre->di_wr_buf->hf_adr	&&
 	    di_hf_size_check(&ppre->di_nrwr_mif) &&
@@ -6767,8 +6764,10 @@ unsigned char dim_pre_de_buf_config(unsigned int channel)
 
 		return 24;
 	}
-	if (!ppre->is_disable_nr)
+	if (!ppre->is_disable_nr) {
+		di_s1a_load_pq();
 		di_load_pq_table();
+	}
 
 	if (is_meson_tl1_cpu()			&&
 	    ppre->comb_mode			&&

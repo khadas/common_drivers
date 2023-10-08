@@ -1606,20 +1606,22 @@ static void tvafe_user_parameters_config(struct device_node *of_node)
 		tvafe_pr_err("Can't get cutwindow_val_v\n");
 	ret = of_property_read_u32_array(of_node, "horizontal_dir0",
 			tvafe_user_param.horizontal_dir0, 5);
-	if (ret)
-		tvafe_pr_err("Can't get horizontal_dir0\n");
-	ret = of_property_read_u32_array(of_node, "horizontal_dir1",
-			tvafe_user_param.horizontal_dir1, 5);
-	if (ret)
-		tvafe_pr_err("Can't get horizontal_dir1\n");
-	ret = of_property_read_u32_array(of_node, "horizontal_stp0",
-			tvafe_user_param.horizontal_stp0, 5);
-	if (ret)
-		tvafe_pr_err("Can't get horizontal_stp0\n");
-	ret = of_property_read_u32_array(of_node, "horizontal_stp1",
-			tvafe_user_param.horizontal_stp1, 5);
-	if (ret)
-		tvafe_pr_err("Can't get horizontal_stp1\n");
+	if (tvafe_dbg_print & TVAFE_DBG_HORSTP_REGBASE) {
+		if (ret)
+			tvafe_pr_err("Can't get horizontal_dir0\n");
+		ret = of_property_read_u32_array(of_node, "horizontal_dir1",
+				tvafe_user_param.horizontal_dir1, 5);
+		if (ret)
+			tvafe_pr_err("Can't get horizontal_dir1\n");
+		ret = of_property_read_u32_array(of_node, "horizontal_stp0",
+				tvafe_user_param.horizontal_stp0, 5);
+		if (ret)
+			tvafe_pr_err("Can't get horizontal_stp0\n");
+		ret = of_property_read_u32_array(of_node, "horizontal_stp1",
+				tvafe_user_param.horizontal_stp1, 5);
+		if (ret)
+			tvafe_pr_err("Can't get horizontal_stp1\n");
+	}
 
 	ret = of_property_read_u32(of_node, "auto_adj_en", &val[0]);
 	if (ret == 0) {
@@ -1924,8 +1926,9 @@ static int tvafe_drv_probe(struct platform_device *pdev)
 		return -ENODEV;
 	}
 	size_io_reg = resource_size(res);
-	tvafe_pr_info("%s:tvafe reg base=%p,size=0x%x\n",
-		__func__, (void *)res->start, size_io_reg);
+	if (tvafe_dbg_print & TVAFE_DBG_HORSTP_REGBASE)
+		tvafe_pr_info("%s:tvafe reg base=%p,size=0x%x\n",
+			__func__, (void *)res->start, size_io_reg);
 	if (!devm_request_mem_region(&pdev->dev,
 				res->start, size_io_reg, pdev->name)) {
 		dev_err(&pdev->dev, "Memory region busy\n");
@@ -1937,22 +1940,25 @@ static int tvafe_drv_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "tvafe ioremap failed\n");
 		return -ENOMEM;
 	}
-	tvafe_pr_info("%s: tvafe maped reg_base =%p, size=0x%x\n",
-			__func__, tvafe_reg_base, size_io_reg);
+	if (tvafe_dbg_print & TVAFE_DBG_HORSTP_REGBASE)
+		tvafe_pr_info("%s: tvafe maped reg_base =%p, size=0x%x\n",
+				__func__, tvafe_reg_base, size_io_reg);
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
 	if (res) {
 		size_io_reg = resource_size(res);
-		tvafe_pr_info("%s: hiu reg base=0x%p,size=0x%x\n",
-			__func__, (void *)res->start, size_io_reg);
+		if (tvafe_dbg_print & TVAFE_DBG_HORSTP_REGBASE)
+			tvafe_pr_info("%s: hiu reg base=0x%p,size=0x%x\n",
+				__func__, (void *)res->start, size_io_reg);
 		hiu_reg_base =
 			devm_ioremap(&pdev->dev, res->start, size_io_reg);
 		if (!hiu_reg_base) {
 			dev_err(&pdev->dev, "hiu ioremap failed\n");
 			return -ENOMEM;
 		}
-		tvafe_pr_info("%s: hiu maped reg_base =0x%p, size=0x%x\n",
-			__func__, hiu_reg_base, size_io_reg);
+		if (tvafe_dbg_print & TVAFE_DBG_HORSTP_REGBASE)
+			tvafe_pr_info("%s: hiu maped reg_base =0x%p, size=0x%x\n",
+				__func__, hiu_reg_base, size_io_reg);
 	} else {
 		dev_err(&pdev->dev, "missing hiu memory resource\n");
 		hiu_reg_base = NULL;

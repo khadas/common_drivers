@@ -1913,7 +1913,7 @@ int vdin_v4l2_probe(struct platform_device *pl_dev,
 
 	ret = of_property_read_u32(pl_dev->dev.of_node, "v4l_vd_num",
 			&v4l_vd_num);
-	dprintk(0, "vdin%d,ret = %d,v4l_vd_num=%d\n",
+	dprintk(1, "vdin%d,ret = %d,v4l_vd_num=%d\n",
 		devp->index, ret, v4l_vd_num);
 	if (ret)
 		v4l_vd_num = VDIN_VD_NUMBER + (devp->index);
@@ -1943,15 +1943,15 @@ int vdin_v4l2_probe(struct platform_device *pl_dev,
 	video_dev->dev.of_node = pl_dev->dev.of_node;
 	ret = of_reserved_mem_device_init(&video_dev->dev);
 	if (ret == 0)
-		dprintk(0, "rev memory resource ok\n");
+		dprintk(1, "rev memory resource ok\n");
 	else
-		dprintk(0, "rev memory resource undefined!!!\n");
+		dprintk(1, "rev memory resource undefined!!!\n");
 
 	vdin_v4l2_init(devp, pl_dev);
 
-	dprintk(0, "dev registered as %s\n",
+	dprintk(1, "dev registered as %s\n",
 		video_device_node_name(video_dev));
-	dprintk(0, "vdin[%d] %s ok\n", devp->index, __func__);
+	dprintk(1, "vdin[%d] %s ok\n", devp->index, __func__);
 
 	return 0;
 
@@ -2135,12 +2135,12 @@ void vdin_v4l2_init(struct vdin_dev_s *devp, struct platform_device *pl_dev)
 		ret = of_property_read_u32_index(pl_dev->dev.of_node, "fe_ports", i,
 				&tmp_u32);
 		if (ret || tmp_u32 <= TVIN_PORT_NULL || tmp_u32 >= TVIN_PORT_MAX) {
-			dprintk(0, "Invalid fe_port:%#x in property\n", tmp_u32);
+			dprintk(1, "Invalid fe_port:%#x in property\n", tmp_u32);
 			continue;
 		}
 		devp->v4l2_port[devp->v4l2_port_num] = tmp_u32;
 		devp->v4l2_port_num++;
-		dprintk(0, "index:%d,fe_port[%d]:%#x\n", i, devp->v4l2_port_num,
+		dprintk(1, "index:%d,fe_port[%d]:%#x\n", i, devp->v4l2_port_num,
 			devp->v4l2_port[i]);
 	}
 	/* default port */
@@ -2150,39 +2150,39 @@ void vdin_v4l2_init(struct vdin_dev_s *devp, struct platform_device *pl_dev)
 	if (ret == 0) {
 		strscpy(g_vdin_v4l2_cap[devp->index].driver, str,
 			sizeof(g_vdin_v4l2_cap[devp->index].driver));
-		dprintk(0, "vdin%d,driver:%s\n", devp->index, str);
+		dprintk(1, "vdin%d,driver:%s\n", devp->index, str);
 	}
 
 	ret = of_property_read_string(pl_dev->dev.of_node, "card", &str);
 	if (ret == 0) {
 		strscpy(g_vdin_v4l2_cap[devp->index].card, str,
 			sizeof(g_vdin_v4l2_cap[devp->index].card));
-		dprintk(0, "vdin%d,card:%s\n", devp->index, str);
+		dprintk(1, "vdin%d,card:%s\n", devp->index, str);
 	}
 
 	ret = of_property_read_string(pl_dev->dev.of_node, "bus_info", &str);
 	if (ret == 0) {
 		strscpy(g_vdin_v4l2_cap[devp->index].bus_info, str,
 			sizeof(g_vdin_v4l2_cap[devp->index].bus_info));
-		dprintk(0, "vdin%d,bus_info:%s\n", devp->index, str);
+		dprintk(1, "vdin%d,bus_info:%s\n", devp->index, str);
 	}
 
 	ret = of_property_read_u32(pl_dev->dev.of_node, "version", &tmp_u32);
 	if (ret == 0) {
 		g_vdin_v4l2_cap[devp->index].version = tmp_u32;
-		dprintk(0, "vdin%d,version:%#x\n", devp->index, tmp_u32);
+		dprintk(1, "vdin%d,version:%#x\n", devp->index, tmp_u32);
 	}
 
 	ret = of_property_read_u32(pl_dev->dev.of_node, "capabilities", &tmp_u32);
 	if (ret == 0) {
 		g_vdin_v4l2_cap[devp->index].capabilities = tmp_u32;
-		dprintk(0, "vdin%d,capabilities:%#x\n", devp->index, tmp_u32);
+		dprintk(1, "vdin%d,capabilities:%#x\n", devp->index, tmp_u32);
 	}
 
 	ret = of_property_read_u32(pl_dev->dev.of_node, "device_caps", &tmp_u32);
 	if (ret == 0) {
 		g_vdin_v4l2_cap[devp->index].device_caps = tmp_u32;
-		dprintk(0, "vdin%d,device_caps:%#x\n", devp->index, tmp_u32);
+		dprintk(1, "vdin%d,device_caps:%#x\n", devp->index, tmp_u32);
 	}
 	/* fill struct v4l2_ext_capture_capability_info with default value */
 	devp->ext_cap_cap_info.flags =

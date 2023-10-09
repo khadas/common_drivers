@@ -289,7 +289,7 @@
 
 	deinterlace {
 		compatible = "amlogic, deinterlace";
-		status = "disable";
+		status = "disabled";
 		/* 0:use reserved; 1:use cma; 2:use cma as reserved */
 		flag_cma = <4>; //<1>;
 		//memory-region = <&di_reserved>;
@@ -312,7 +312,7 @@
 		pps-enable = <1>;
 	};
 	multi-di {
-		compatible = "amlogic, amlogic, dim-g12b";
+		compatible = "amlogic, dim-g12b";
 		status = "okay";
 		/* 0:use reserved; 1:use cma; 2:use cma as reserved */
 		flag_cma = <4>;	//<1>;
@@ -320,7 +320,7 @@
 		memory-region = <&di_cma_reserved>;
 		interrupts = <0 46 1
 				0 40 1>;
-		interrupt-names = "pre_irq", "aisr_irq";
+		interrupt-names = "pre_irq", "post_irq";
 		clocks = <&clkc CLKID_VPU_CLKB_TMP>,
 			<&clkc CLKID_VPU_CLKB>;
 		clock-names = "vpu_clkb",

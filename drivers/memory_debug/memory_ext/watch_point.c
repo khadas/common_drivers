@@ -647,7 +647,7 @@ static int __init aml_watch_point_probe(struct platform_device *pdev)
 	int r;
 
 	r = aml_hw_breakpoint_slots(TYPE_DATA);
-	pr_info("%s, in, wp:%d\n", __func__, r);
+	pr_debug("%s, in, wp:%d\n", __func__, r);
 	if (!r)
 		return -ENODEV;
 

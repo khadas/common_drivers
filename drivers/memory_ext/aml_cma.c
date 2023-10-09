@@ -1855,7 +1855,7 @@ static void *get_symbol_addr(const char *symbol_name)
 		pr_err("register_kprobe:%s failed, returned %d\n", symbol_name, ret);
 		return NULL;
 	}
-	pr_info("symbol_name:%s addr=%px\n", symbol_name, kp.addr);
+	pr_debug("symbol_name:%s addr=%px\n", symbol_name, kp.addr);
 	unregister_kprobe(&kp);
 
 	return kp.addr;

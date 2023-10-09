@@ -1959,7 +1959,7 @@ static void mark_free_pages(struct zone *zone)
 		}
 	}
 	spin_unlock_irqrestore(&zone->lock, flags);
-	pr_info("free pages: %dkb\n", count * 4);
+	pr_debug("free pages: %dkb\n", count * 4);
 }
 
 static int statistic_before_insmod_mem(void)
@@ -1989,7 +1989,7 @@ static int statistic_before_insmod_mem(void)
 			}
 		}
 	}
-	pr_info("before insmod pagetrace used size: %dKb\n", count * 4);
+	pr_debug("before insmod pagetrace used size: %dKb\n", count * 4);
 
 	kfree(free_pages_bitmap);
 

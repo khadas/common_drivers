@@ -78,7 +78,7 @@ void free_iotrace_reserved_memory(void)
 	if (!ramoops_io_en) {
 		aml_free_reserved_area(__va(res.start), __va(PAGE_ALIGN(res.end)), 0,
 								"free_reserved");
-		pr_info("free iotrace reserved_memory\n");
+		pr_debug("free iotrace reserved_memory\n");
 	}
 }
 #endif

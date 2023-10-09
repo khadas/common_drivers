@@ -1,4 +1,4 @@
-From bbe725e730818c2cb588eb4a6fc9d28c170950ed Mon Sep 17 00:00:00 2001
+From eaa195e7f59a6e7373346dc40a1a42028ead92fd Mon Sep 17 00:00:00 2001
 From: Tao Zeng <tao.zeng@amlogic.com>
 Date: Wed, 26 Jan 2022 16:04:08 +0800
 Subject: [PATCH] mm: porting CMA optimization from 5.4 [1/2]
@@ -139,7 +139,7 @@ index b86ae05b4282..5723bfd6f2a7 100644
  /**
   * DOC: Useful GFP flag combinations
 diff --git a/mm/cma.c b/mm/cma.c
-index 9a23246a8a1c..2072403a509f 100644
+index 9743ade56872..702fd055eaf8 100644
 --- a/mm/cma.c
 +++ b/mm/cma.c
 @@ -41,6 +41,16 @@
@@ -183,10 +183,10 @@ index 9a23246a8a1c..2072403a509f 100644
  
  /**
   * cma_init_reserved_mem() - create custom contiguous area from reserved memory
-@@ -446,6 +470,13 @@ struct page *cma_alloc(struct cma *cma, unsigned long count,
- 	int max_retries = 5;
+@@ -447,6 +471,13 @@ struct page *cma_alloc(struct cma *cma, unsigned long count,
  	s64 ts;
  	struct cma_alloc_info cma_info = {0};
+ 	bool bypass = false;
 +#ifdef CONFIG_AMLOGIC_CMA
 +	int dummy;
 +	unsigned long tick = 0;
@@ -195,9 +195,9 @@ index 9a23246a8a1c..2072403a509f 100644
 +	in_tick = sched_clock();
 +#endif
  
- 	trace_android_vh_cma_alloc_start(&ts);
- 
-@@ -455,6 +486,13 @@ struct page *cma_alloc(struct cma *cma, unsigned long count,
+ 	trace_android_vh_cma_alloc_bypass(cma, count, align, gfp_mask,
+ 				&page, &bypass);
+@@ -461,6 +492,13 @@ struct page *cma_alloc(struct cma *cma, unsigned long count,
  	pr_debug("%s(cma %p, count %lu, align %d gfp_mask 0x%x)\n", __func__,
  			(void *)cma, count, align, gfp_mask);
  
@@ -211,7 +211,7 @@ index 9a23246a8a1c..2072403a509f 100644
  	if (!count)
  		goto out;
  
-@@ -468,6 +506,10 @@ struct page *cma_alloc(struct cma *cma, unsigned long count,
+@@ -474,6 +512,10 @@ struct page *cma_alloc(struct cma *cma, unsigned long count,
  	if (bitmap_count > bitmap_maxno)
  		goto out;
  
@@ -222,7 +222,7 @@ index 9a23246a8a1c..2072403a509f 100644
  	for (;;) {
  		struct acr_info info = {0};
  
-@@ -510,7 +552,11 @@ struct page *cma_alloc(struct cma *cma, unsigned long count,
+@@ -516,7 +558,11 @@ struct page *cma_alloc(struct cma *cma, unsigned long count,
  
  		pfn = cma->base_pfn + (bitmap_no << cma->order_per_bit);
  		mutex_lock(&cma_mutex);
@@ -234,7 +234,7 @@ index 9a23246a8a1c..2072403a509f 100644
  		cma_info.nr_migrated += info.nr_migrated;
  		cma_info.nr_reclaimed += info.nr_reclaimed;
  		cma_info.nr_mapped += info.nr_mapped;
-@@ -538,6 +584,7 @@ struct page *cma_alloc(struct cma *cma, unsigned long count,
+@@ -545,6 +591,7 @@ struct page *cma_alloc(struct cma *cma, unsigned long count,
  		trace_cma_alloc_busy_retry(cma->name, pfn, pfn_to_page(pfn),
  					   count, align);
  
@@ -242,7 +242,7 @@ index 9a23246a8a1c..2072403a509f 100644
  		if (info.failed_pfn && gfp_mask & __GFP_NORETRY) {
  			/* try again from following failed page */
  			start = (pfn_max_align_up(info.failed_pfn + 1) -
-@@ -547,6 +594,16 @@ struct page *cma_alloc(struct cma *cma, unsigned long count,
+@@ -554,6 +601,16 @@ struct page *cma_alloc(struct cma *cma, unsigned long count,
  			/* try again with a bit different memory target */
  			start = bitmap_no + mask + 1;
  		}
@@ -259,7 +259,7 @@ index 9a23246a8a1c..2072403a509f 100644
  	}
  
  	trace_cma_alloc_finish(cma->name, pfn, page, count, align);
-@@ -579,6 +636,9 @@ struct page *cma_alloc(struct cma *cma, unsigned long count,
+@@ -586,6 +643,9 @@ struct page *cma_alloc(struct cma *cma, unsigned long count,
  		if (cma)
  			cma_sysfs_account_fail_pages(cma, count);
  	}
@@ -269,7 +269,7 @@ index 9a23246a8a1c..2072403a509f 100644
  
  	return page;
  }
-@@ -611,7 +671,11 @@ bool cma_release(struct cma *cma, const struct page *pages,
+@@ -618,7 +678,11 @@ bool cma_release(struct cma *cma, const struct page *pages,
  
  	VM_BUG_ON(pfn + count > cma->base_pfn + cma->count);
  
@@ -712,7 +712,7 @@ index 6ed8c744f091..804686ccb64c 100644
  			}
  		}
 diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 30947b22a772..d0609fb4d4f4 100644
+index aa9b7d5d1311..909123a1f580 100644
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
 @@ -84,6 +84,9 @@
@@ -861,7 +861,7 @@ index 30947b22a772..d0609fb4d4f4 100644
  	/*
  	 * Check watermarks for an order-0 allocation request. If these
  	 * are not met, then a high-order request also cannot go ahead
-@@ -5636,6 +5733,9 @@ struct page *__alloc_pages(gfp_t gfp, unsigned int order, int preferred_nid,
+@@ -5642,6 +5739,9 @@ struct page *__alloc_pages(gfp_t gfp, unsigned int order, int preferred_nid,
  	gfp_t alloc_gfp; /* The gfp_t that was actually used for allocation */
  	struct alloc_context ac = { };
  
@@ -946,7 +946,7 @@ index 122a37cbc081..816b746cb0d8 100644
  			return NULL;
  
 diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 5968e19e9441..9a343d5e78cc 100644
+index 08aadc1f03eb..1dd7e4365f73 100644
 --- a/mm/vmscan.c
 +++ b/mm/vmscan.c
 @@ -74,6 +74,10 @@
@@ -992,7 +992,7 @@ index 5968e19e9441..9a343d5e78cc 100644
  	mod_node_page_state(zone->zone_pgdat, NR_ISOLATED_FILE,
  			    -(long)nr_reclaimed);
  	/*
-@@ -2124,6 +2139,9 @@ static int too_many_isolated(struct pglist_data *pgdat, int file,
+@@ -2144,6 +2159,9 @@ static int too_many_isolated(struct pglist_data *pgdat, int file,
  	if ((sc->gfp_mask & (__GFP_IO | __GFP_FS)) == (__GFP_IO | __GFP_FS))
  		inactive >>= 3;
  
@@ -1002,7 +1002,7 @@ index 5968e19e9441..9a343d5e78cc 100644
  	return isolated > inactive;
  }
  
-@@ -7343,6 +7361,9 @@ int kswapd(void *p)
+@@ -7375,6 +7393,9 @@ int kswapd(void *p)
  
  	WRITE_ONCE(pgdat->kswapd_order, 0);
  	WRITE_ONCE(pgdat->kswapd_highest_zoneidx, MAX_NR_ZONES);
@@ -1013,5 +1013,5 @@ index 5968e19e9441..9a343d5e78cc 100644
  		bool ret;
  
 -- 
-2.25.1
+2.42.0
 

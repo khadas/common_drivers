@@ -1,4 +1,4 @@
-From 2dd1519689c67d4db4098649ebb2c1127579bd3c Mon Sep 17 00:00:00 2001
+From c7f2ef53b3924b7133b52d17eac4119080d444c7 Mon Sep 17 00:00:00 2001
 From: Wanwei Jiang <wanwei.jiang@amlogic.com>
 Date: Tue, 7 Feb 2023 17:19:36 +0800
 Subject: [PATCH] Merge branch 'android14-5.15' into amlogic-5.15-dev [1/1]
@@ -26,7 +26,7 @@ Signed-off-by: Wanwei Jiang <wanwei.jiang@amlogic.com>
 
 diff --git a/include/linux/upstream_version.h b/include/linux/upstream_version.h
 new file mode 100644
-index 000000000000..c414a9c0994c
+index 000000000000..d28197250d45
 --- /dev/null
 +++ b/include/linux/upstream_version.h
 @@ -0,0 +1,14 @@
@@ -38,12 +38,12 @@ index 000000000000..c414a9c0994c
 +#ifndef _LINUX_UPSTREAM_VERSION_H
 +#define _LINUX_UPSTREAM_VERSION_H
 +
-+#define AML_KERNEL_VERSION	7
-+#define UPSTREAM_VERSION	"ca527661da60"
-+#define AML_PATCH_VERSION	"ca527661da60"
-+#define MERGE_DATE		"2023-09-04"
++#define AML_KERNEL_VERSION	8
++#define UPSTREAM_VERSION	"f0fb694baae6"
++#define AML_PATCH_VERSION	"f0fb694baae6"
++#define MERGE_DATE		"2023-10-09"
 +
 +#endif
 -- 
-2.25.1
+2.42.0
 

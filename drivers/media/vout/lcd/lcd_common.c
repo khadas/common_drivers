@@ -2451,36 +2451,6 @@ static int lcd_config_load_init(struct aml_lcd_drv_s *pdrv)
 	if (pdrv->status & LCD_STATUS_ENCL_ON)
 		lcd_clk_gate_switch(pdrv, 1);
 
-	/* lock pinmux if lcd in on */
-	if (pdrv->status & LCD_STATUS_IF_ON) {
-		switch (pdrv->config.basic.lcd_type) {
-		case LCD_RGB:
-			lcd_rgb_pinmux_set(pdrv, 1);
-			break;
-		case LCD_BT656:
-		case LCD_BT1120:
-			lcd_bt_pinmux_set(pdrv, 1);
-			break;
-		case LCD_VBYONE:
-			lcd_vbyone_pinmux_set(pdrv, 1);
-			break;
-		case LCD_MLVDS:
-			lcd_mlvds_pinmux_set(pdrv, 1);
-			break;
-		case LCD_P2P:
-			lcd_p2p_pinmux_set(pdrv, 1);
-			break;
-		case LCD_EDP:
-			lcd_edp_pinmux_set(pdrv, 1);
-			break;
-		case LCD_MIPI:
-			lcd_mipi_pinmux_set(pdrv, 1);
-			break;
-		default:
-			break;
-		}
-	}
-
 	return 0;
 }
 

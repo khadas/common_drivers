@@ -111,7 +111,8 @@
 /* 2023.9.14 add support for 240p */
 /* 2023 09.28 add trim flow for txhd2 */
 /* 2023.10.8 t3x some compatibility problem */
-#define RX_VER1 "ver.2023/10/8"
+/* 2023.10.10 fix t3x frl audio problem */
+#define RX_VER1 "ver.2023/10/10"
 
 /* 50ms timer for hdmirx main loop (HDMI_STATE_CHECK_FREQ is 20) */
 
@@ -723,6 +724,7 @@ struct clk_msr {
 	u32 p_clk;
 	u32 tclk;
 	u32 t_clk_pre;
+	u32 fpll_clk;
 };
 
 struct emp_info_s {

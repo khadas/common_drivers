@@ -1764,9 +1764,15 @@ void rx_get_aud_info(struct aud_info_s *audio_info, u8 port)
 		audio_info->n = hdmirx_rd_dwc(DWC_PDEC_ACR_N);
 	}
 	if (audio_info->cts != 0) {
-		audio_info->arc =
-			(rx[rx_info.main_port].clk.tmds_clk / audio_info->cts) *
-			audio_info->n / 128;
+		if (rx[port].var.frl_rate == 0) {
+			audio_info->arc =
+				(rx[rx_info.main_port].clk.tmds_clk / audio_info->cts) *
+				audio_info->n / 128;
+		} else {
+			audio_info->arc =
+				(rx[rx_info.main_port].clk.fpll_clk / audio_info->cts) *
+				audio_info->n / 128;
+		}
 	} else {
 		audio_info->arc = 0;
 	}
@@ -5491,6 +5497,7 @@ void rx_clkmsr_handler(struct work_struct *work)
 				rx[E_PORT2].clk.aud_pll = aud_pll;
 				rx[E_PORT2].clk.p_clk = p_clk;
 				rx[E_PORT2].clk.tclk = meson_clk_measure(49);
+				rx[E_PORT2].clk.fpll_clk = meson_clk_measure(9);
 			}
 				//Port-D
 			if (rx[E_PORT3].cur_5v_sts) {
@@ -5502,6 +5509,7 @@ void rx_clkmsr_handler(struct work_struct *work)
 				rx[E_PORT3].clk.aud_pll = aud_pll;
 				rx[E_PORT3].clk.p_clk = p_clk;
 				rx[E_PORT3].clk.tclk = meson_clk_measure(50);
+				rx[E_PORT3].clk.fpll_clk = meson_clk_measure(11);
 			}
 		}
 		break;

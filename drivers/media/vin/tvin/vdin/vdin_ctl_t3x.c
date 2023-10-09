@@ -697,6 +697,10 @@ void vdin_set_top_t3x(struct vdin_dev_s *devp, enum tvin_port_e port,
 		wr_bits(0, VPU_VDIN_HDMI0_CTRL1, 1, 4, 2); /* reg_hskip_mode */
 	if (devp->v_skip_en)
 		wr_bits(0, VPU_VDIN_HDMI0_CTRL1, 1, 7, 1); /* reg_vskip_en */
+	if (input_cfmt == TVIN_YUV420)
+		wr_bits(0, VPU_VDIN_HDMI0_CTRL1, 1, 30, 1);
+	else
+		wr_bits(0, VPU_VDIN_HDMI0_CTRL1, 0, 30, 1);
 }
 
 /*this function will set the bellow parameters of devp:

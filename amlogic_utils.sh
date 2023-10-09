@@ -1,6 +1,7 @@
 #!/bin/bash
 
 function real_path() {
+	export PATH=${ROOT_DIR}/build/kernel/build-tools/path/linux-x86:$PATH
 	if [[ "${FULL_KERNEL_VERSION}" == "common13-5.15" ]]; then
 		rel_path $@
 	else

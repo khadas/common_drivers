@@ -342,6 +342,12 @@ static const struct dma_buf_ops codec_mm_heap_buf_ops = {
 	.release = codec_mm_heap_dma_buf_release,
 };
 
+bool dmabuf_is_codec_mm_heap_buf(struct dma_buf *dmabuf)
+{
+	return dmabuf->ops == &codec_mm_heap_buf_ops;
+}
+EXPORT_SYMBOL(dmabuf_is_codec_mm_heap_buf);
+
 static struct dma_buf *codec_mm_heap_do_allocate(struct dma_heap *heap,
 					       unsigned long len,
 					       unsigned long fd_flags,

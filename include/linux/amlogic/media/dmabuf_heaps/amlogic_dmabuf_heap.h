@@ -16,5 +16,7 @@
 
 #define SYSTEM_SECURE_UNCACHE_HEAP_NAME		"system-secure-uncached"
 
+bool dmabuf_is_codec_mm_heap_buf(struct dma_buf *dmabuf);
+
 #endif /**/
 

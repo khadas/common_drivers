@@ -421,7 +421,6 @@ static u32 tvp_dynamic_alloc_max_size;
 static u32 tvp_dynamic_alloc_force_small_segment;
 static u32 tvp_dynamic_alloc_force_small_segment_size;
 static u32 tvp_pool_early_release_switch;
-static bool dbuf_trace;
 
 #define TVP_POOL_SEGMENT_MAX_USED 4
 #define TVP_MAX_SLOT 8
@@ -3717,6 +3716,42 @@ static ssize_t dbuf_trace_store(struct class *class,
 	return size;
 }
 
+static ssize_t dbuf_dump_show(struct class *class,
+			     struct class_attribute *attr, char *buf)
+{
+	codec_mm_walk_dbuf();
+
+	return 0;
+}
+
+static ssize_t dbuf_dump_store(struct class *class,
+			     struct class_attribute *attr,
+			     const char *buf, size_t size)
+{
+	u32 type = UINT_MAX;
+	ssize_t ret;
+
+	switch (buf[0]) {
+	case 'a':
+		codec_mm_track_type_store(type);
+		return size;
+	case 'h':
+		pr_info("Help for dmabuf status dumping.\n"
+			"Bit-0: enable UVM dmabuf status dumping.\n"
+			"Bit-1: enable ES  dmabuf status dumping.\n"
+			"Bit-2: enable Codec mm heap dmabuf status dumping.\n");
+		return -EINVAL;
+	}
+
+	ret = kstrtouint(buf, 0, &type);
+	if (ret != 0)
+		return -EINVAL;
+
+	codec_mm_track_type_store(type);
+
+	return size;
+}
+
 static CLASS_ATTR_RO(codec_mm_dump);
 static CLASS_ATTR_RO(codec_mm_scatter_dump);
 static CLASS_ATTR_RO(codec_mm_keeper_dump);
@@ -3729,6 +3764,7 @@ static CLASS_ATTR_RW(debug);
 static CLASS_ATTR_RW(debug_sc_mode);
 static CLASS_ATTR_RW(debug_keep_mode);
 static CLASS_ATTR_RW(dbuf_trace);
+static CLASS_ATTR_RW(dbuf_dump);
 
 static struct attribute *codec_mm_class_attrs[] = {
 	&class_attr_codec_mm_dump.attr,
@@ -3743,6 +3779,7 @@ static struct attribute *codec_mm_class_attrs[] = {
 	&class_attr_debug_sc_mode.attr,
 	&class_attr_debug_keep_mode.attr,
 	&class_attr_dbuf_trace.attr,
+	&class_attr_dbuf_dump.attr,
 	NULL
 };
 
@@ -3760,8 +3797,7 @@ static struct mconfig codec_mm_configs[] = {
 	MC_PI32("default_tvp_pool_size_0", &default_tvp_pool_size_0),
 	MC_PI32("default_tvp_pool_size_1", &default_tvp_pool_size_1),
 	MC_PI32("default_tvp_pool_size_2", &default_tvp_pool_size_2),
-	MC_PI32("tvp_pool_segment_maxsize_0", &tvp_pool_segment_maxsize_0),
-	MC_PBOOL("dmabuf_trace_enable", &dbuf_trace)
+	MC_PI32("tvp_pool_segment_maxsize_0", &tvp_pool_segment_maxsize_0)
 };
 
 static struct mconfig_node codec_mm_trigger_node;

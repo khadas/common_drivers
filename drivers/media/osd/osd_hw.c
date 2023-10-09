@@ -10585,15 +10585,26 @@ static void set_blend_path(struct hw_osd_blending_s *blending)
 			     "after blend: set osd%d freescale\n", index);
 		osd_set_freescale(index, blending);
 		/* save freescale output */
-		output1_data.x =
-			osd_hw.free_dst_data[index].x_start +
-			position_x;
+		if (osd_hw.osd_meson_dev.cpu_id ==
+			__MESON_CPU_MAJOR_ID_TXHD2 &&
+			blending->osd_blend_mode == OSD_BLEND_A_C &&
+			osd_hw.osd_reverse[index] != REVERSE_FALSE) {
+			/*txhd2 no osd blend need add offset*/
+			output1_data.x =
+				osd_hw.dst_data[index].x + position_x;
+			output1_data.y =
+				osd_hw.dst_data[index].y + position_y;
+		} else {
+			output1_data.x =
+				osd_hw.free_dst_data[index].x_start +
+				position_x;
+			output1_data.y =
+				osd_hw.free_dst_data[index].y_start +
+				position_y;
+		}
 		output1_data.w =
 			osd_hw.free_dst_data[index].x_end -
 			osd_hw.free_dst_data[index].x_start + 1;
-		output1_data.y =
-			osd_hw.free_dst_data[index].y_start +
-			position_y;
 		output1_data.h =
 			osd_hw.free_dst_data[index].y_end -
 			osd_hw.free_dst_data[index].y_start + 1;

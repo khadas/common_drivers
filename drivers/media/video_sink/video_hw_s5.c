@@ -11650,7 +11650,7 @@ void set_video_slice_policy(struct video_layer_s *layer,
 				(vinfo->sync_duration_num /
 			    vinfo->sync_duration_den > 60)) {
 				/* 4k120hz and frc_n2m_worked && aisr enable 1 slice */
-				if (frc_n2m_1st_frame_worked(layer)) {
+				if (frc_n2m_is_stable(layer)) {
 					if (is_aisr_enable(layer))
 						slice_num = 1;
 					else

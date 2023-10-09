@@ -1357,6 +1357,16 @@ bool frc_n2m_1st_frame_worked(struct video_layer_s *layer)
 	return ret;
 }
 
+bool frc_n2m_is_stable(struct video_layer_s *layer)
+{
+	if (cur_dev->vsync_2to1_enable)
+		return frc_n2m_1st_frame_worked(layer);
+	else if (cur_dev->pre_vsync_enable)
+		return frc_n2m_worked();
+	else
+		return false;
+}
+
 bool check_aisr_need_disable(struct video_layer_s *layer)
 {
 	bool ret = false;

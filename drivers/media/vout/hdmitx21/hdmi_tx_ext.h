@@ -31,10 +31,6 @@ int get20_hpd_state(void);
 struct vsdb_phyaddr *get_hdmitx20_phy_addr(void);
 void hdmitx20_audio_mute_op(unsigned int flag);
 void hdmitx20_video_mute_op(unsigned int flag);
-void hdmitx20_ext_set_audio_output(int enable);
-int hdmitx20_ext_get_audio_status(void);
-void hdmitx20_ext_set_i2s_mask(char ch_num, char ch_msk);
-char hdmitx20_ext_get_i2s_mask(void);
 #endif
 
 #ifdef CONFIG_AMLOGIC_HDMITX21
@@ -46,10 +42,6 @@ int get21_hpd_state(void);
 struct vsdb_phyaddr *get_hdmitx21_phy_addr(void);
 void hdmitx21_video_mute_op(u32 flag, unsigned int path);
 void hdmitx21_audio_mute_op(u32 flag, unsigned int path);
-void hdmitx21_ext_set_audio_output(int enable);
-int hdmitx21_ext_get_audio_status(void);
-void hdmitx21_ext_set_i2s_mask(char ch_num, char ch_msk);
-char hdmitx21_ext_get_i2s_mask(void);
 #endif
 
 #endif

@@ -155,7 +155,6 @@ struct aud_para {
 	enum hdmi_audio_source_if aud_src_if; /* 0: spdif 1: i2s */
 
 	unsigned char status[24]; /* AES/IEC958 channel status bits */
-	struct mutex aud_mutex;
 	/* aud_output_i2s_ch: bit[3:0] ch_msk  bit[7:4] ch_num
 	 * configure for I2S: 8ch in, 2ch out
 	 * 0: default setting  1:ch0/1  2:ch2/3  3:ch4/5  4:ch6/7

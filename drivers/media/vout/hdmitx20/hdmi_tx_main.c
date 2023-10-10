@@ -1732,12 +1732,8 @@ static ssize_t config_store(struct device *dev,
 
 static void hdmitx20_ext_set_audio_output(bool enable)
 {
-	struct hdmitx_dev *hdev = get_hdmitx_device();
-
 	pr_info("%s[%d] enable = %d\n", __func__, __LINE__, enable);
-	mutex_lock(&hdev->tx_comm.cur_audio_param.aud_mutex);
 	hdmitx20_audio_mute_op(enable);
-	mutex_unlock(&hdev->tx_comm.cur_audio_param.aud_mutex);
 }
 
 static int hdmitx20_ext_get_audio_status(void)
@@ -1746,13 +1742,11 @@ static int hdmitx20_ext_get_audio_status(void)
 	int val;
 	static int val_st;
 
-	mutex_lock(&hdev->tx_comm.cur_audio_param.aud_mutex);
 	val = !!(hdmitx_hw_cntl_config(&hdev->tx_hw.base, CONF_GET_AUDIO_MUTE_ST, 0));
 	if (val_st != val) {
 		val_st = val;
 		pr_info("%s[%d] val = %d\n", __func__, __LINE__, val);
 	}
-	mutex_unlock(&hdev->tx_comm.cur_audio_param.aud_mutex);
 	return val;
 }
 

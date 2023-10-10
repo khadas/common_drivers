@@ -71,7 +71,8 @@ u8 hdmi_ddc_busy_check(void);
 void hdmi_ddc_error_reset(void);
 
 int hdmitx21_hdcp_init(void);
-int hdmitx21_uboot_audio_en(void);
+void hdmitx21_hdcp_exit(void);
+bool hdmitx21_uboot_audio_en(void);
 
 int hdmitx21_init_reg_map(struct platform_device *pdev);
 void hdmitx21_set_audioclk(u8 hdmitx_aud_clk_div);

@@ -562,16 +562,16 @@ static void hdmi_hwi_init(struct hdmitx_dev *hdev)
 	hdmitx_wr_reg(HDMITX_DWC_I2CM_SCDC_UPDATE,  data32);
 }
 
-int hdmitx_uboot_audio_en(void)
+bool hdmitx_uboot_audio_en(void)
 {
 	unsigned int data;
 
 	data = hdmitx_rd_reg(HDMITX_DWC_FC_PACKET_TX_EN);
 	pr_debug("%s[%d] data = 0x%x\n", __func__, __LINE__, data);
 	if ((data & 1) || ((data >> 3) & 1))
-		return 1;
+		return true;
 	else
-		return 0;
+		return false;
 }
 
 static int hdmitx_validate_mode(struct hdmitx_hw_common *tx_hw, u32 vic)
@@ -2539,8 +2539,7 @@ static unsigned char aud_csb_ori_sampfreq[FS_MAX + 1] = {
 	[FS_192K] = 0x1, /* FS_192K */
 };
 
-static void set_aud_chnls(struct hdmitx_dev *hdev,
-			  struct aud_para *audio_param)
+static void set_aud_chnls(struct aud_para *audio_param)
 {
 	int i;
 
@@ -2583,15 +2582,18 @@ static void set_aud_chnls(struct hdmitx_dev *hdev,
 #define GET_OUTCHN_NO(a)	(((a) >> 4) & 0xf)
 #define GET_OUTCHN_MSK(a)	((a) & 0xf)
 
-static void set_aud_info_pkt(struct hdmitx_dev *hdev,
-	struct aud_para *audio_param)
+static void set_aud_info_pkt(struct aud_para *audio_param)
 {
+	u8 aud_output_i2s_ch;
+
+	if (!audio_param)
+		return;
+	aud_output_i2s_ch = audio_param->aud_output_i2s_ch;
 	hdmitx_set_reg_bits(HDMITX_DWC_FC_AUDICONF0, 0, 0, 4); /* CT */
-	hdmitx_set_reg_bits(HDMITX_DWC_FC_AUDICONF0, audio_param->chs,
-		4, 3); /* CC */
-	if (GET_OUTCHN_NO(hdev->aud_output_ch))
+	hdmitx_set_reg_bits(HDMITX_DWC_FC_AUDICONF0, audio_param->chs, 4, 3); /* CC */
+	if (GET_OUTCHN_NO(aud_output_i2s_ch))
 		hdmitx_set_reg_bits(HDMITX_DWC_FC_AUDICONF0,
-			GET_OUTCHN_NO(hdev->aud_output_ch) - 1, 4, 3);
+			GET_OUTCHN_NO(aud_output_i2s_ch) - 1, 4, 3);
 	hdmitx_set_reg_bits(HDMITX_DWC_FC_AUDICONF1, 0, 0, 3); /* SF */
 	hdmitx_set_reg_bits(HDMITX_DWC_FC_AUDICONF1, 0, 4, 2); /* SS */
 	switch (audio_param->type) {
@@ -2602,15 +2604,14 @@ static void set_aud_info_pkt(struct hdmitx_dev *hdev,
 		hdmitx_wr_reg(HDMITX_DWC_FC_AUDICONF2, 0x13);
 		break;
 	case CT_PCM:
-		if (!hdev->aud_output_ch)
-			hdmitx_set_reg_bits(HDMITX_DWC_FC_AUDICONF0,
-					    audio_param->chs, 4, 3);
-		if (audio_param->chs == 0x7 && !hdev->aud_output_ch)
+		if (!aud_output_i2s_ch)
+			hdmitx_set_reg_bits(HDMITX_DWC_FC_AUDICONF0, audio_param->chs, 4, 3);
+		if (audio_param->chs == 0x7 && !aud_output_i2s_ch)
 			hdmitx_wr_reg(HDMITX_DWC_FC_AUDICONF2, 0x13);
 		else
 			hdmitx_wr_reg(HDMITX_DWC_FC_AUDICONF2, 0x00);
 		/* Refer to CEA861-D P90 */
-		switch (GET_OUTCHN_NO(hdev->aud_output_ch)) {
+		switch (GET_OUTCHN_NO(aud_output_i2s_ch)) {
 		case 2:
 			hdmitx_wr_reg(HDMITX_DWC_FC_AUDICONF2, 0x00);
 			break;
@@ -2638,7 +2639,7 @@ static void set_aud_info_pkt(struct hdmitx_dev *hdev,
 	hdmitx_wr_reg(HDMITX_DWC_FC_AUDICONF3, 0);
 }
 
-static int set_aud_acr_pkt(struct hdmitx_dev *hdev,
+static bool set_aud_acr_pkt(struct hdmitx_dev *hdev,
 			    struct aud_para *audio_param)
 {
 	unsigned int data32;
@@ -2650,8 +2651,7 @@ static int set_aud_acr_pkt(struct hdmitx_dev *hdev,
 	/* audio packetizer config */
 	hdmitx_wr_reg(HDMITX_DWC_AUD_INPUTCLKFS, audio_param->aud_src_if ? 4 : 0);
 
-	if (audio_param->type == CT_MAT ||
-	    audio_param->type == CT_DTS_HD_MA)
+	if (audio_param->type == CT_MAT || audio_param->type == CT_DTS_HD_MA)
 		hdmitx_wr_reg(HDMITX_DWC_AUD_INPUTCLKFS, 2);
 
 	if (para->cs == HDMI_COLORSPACE_YUV422)
@@ -2693,8 +2693,8 @@ static int set_aud_acr_pkt(struct hdmitx_dev *hdev,
 	/* if only audio module update and previous n_para is same as current
 	 * value, then skip update audio_n_para
 	 */
-	if (hdev->aud_notify_update && pre_aud_n_para == aud_n_para)
-		return 0;
+	if (hdev->tx_comm.cur_audio_param.aud_notify_update && pre_aud_n_para == aud_n_para)
+		return false;
 	/* update audio_n_para */
 	pre_aud_n_para = aud_n_para;
 	hdmitx_wr_reg(HDMITX_DWC_AUD_N3, data32);
@@ -2702,7 +2702,7 @@ static int set_aud_acr_pkt(struct hdmitx_dev *hdev,
 		      (aud_n_para >> 8) & 0xff); /* AudN[15:8] */
 	hdmitx_wr_reg(HDMITX_DWC_AUD_N1, aud_n_para & 0xff); /* AudN[7:0] */
 	pr_info("update audio N %d", aud_n_para);
-	return 1;
+	return true;
 }
 
 static void set_aud_fifo_rst(void)
@@ -2718,9 +2718,13 @@ static void set_aud_fifo_rst(void)
 	hdmitx_set_reg_bits(HDMITX_DWC_AUD_SPDIF0, 0, 7, 1);
 }
 
-static void set_aud_samp_pkt(struct hdmitx_dev *hdev,
-			     struct aud_para *audio_param)
+static void set_aud_samp_pkt(struct aud_para *audio_param)
 {
+	u8 aud_output_i2s_ch;
+
+	if (!audio_param)
+		return;
+	aud_output_i2s_ch = audio_param->aud_output_i2s_ch;
 	switch (audio_param->type) {
 	case CT_MAT: /* HBR */
 	case CT_DTS_HD_MA:
@@ -2733,11 +2737,11 @@ static void set_aud_samp_pkt(struct hdmitx_dev *hdev,
 		hdmitx_set_reg_bits(HDMITX_DWC_AUD_SPDIF1, 0, 7, 1);
 		hdmitx_set_reg_bits(HDMITX_DWC_AUD_SPDIF1, 0, 6, 1);
 		hdmitx_set_reg_bits(HDMITX_DWC_AUD_SPDIF1, 24, 0, 5);
-		if (audio_param->chs == 0x7 && !hdev->aud_output_ch)
+		if (audio_param->chs == 0x7 && !aud_output_i2s_ch)
 			hdmitx_set_reg_bits(HDMITX_DWC_FC_AUDSCONF, 1, 0, 1);
 		else
 			hdmitx_set_reg_bits(HDMITX_DWC_FC_AUDSCONF, 0, 0, 1);
-		switch (GET_OUTCHN_NO(hdev->aud_output_ch)) {
+		switch (GET_OUTCHN_NO(aud_output_i2s_ch)) {
 		case 2:
 			hdmitx_set_reg_bits(HDMITX_DWC_FC_AUDSCONF, 0, 0, 1);
 			break;
@@ -2763,14 +2767,8 @@ static void set_aud_samp_pkt(struct hdmitx_dev *hdev,
 	}
 }
 
-static int amute_flag = -1;
 static void audio_mute_op(bool flag)
 {
-	if (amute_flag != flag)
-		amute_flag = flag;
-	else
-		return;
-
 	mutex_lock(&aud_mutex);
 	if (flag == 0) {
 		hdmitx_set_reg_bits(HDMITX_TOP_CLK_CNTL, 0, 2, 2);
@@ -2794,9 +2792,9 @@ static bool audio_get_mute_st(void)
 	st[3] = hdmitx_get_bit(HDMITX_DWC_FC_PACKET_TX_EN, 3);
 
 	if (st[0] && st[1] && st[2] && st[3])
-		return 1;
+		return true;
 
-	return 0;
+	return false;
 }
 
 struct aud_para hdmiaud_config_data;
@@ -2807,13 +2805,14 @@ static int hdmitx_set_audmode(struct hdmitx_hw_common *tx_hw,
 {
 	struct hdmitx_dev *hdev = get_hdmitx_device();
 	unsigned int data32;
+	u8 aud_output_i2s_ch;
 	int acr_update = 0;
 
-	if (!hdev)
-		return 0;
-	if (!audio_param)
-		return 0;
+	if (!hdev || !audio_param)
+		return -1;
+
 	pr_debug(HW "set audio\n");
+	aud_output_i2s_ch = hdev->tx_comm.cur_audio_param.aud_output_i2s_ch;
 	mutex_lock(&aud_mutex);
 	memcpy(&hdmiaud_config_data,
 		   audio_param, sizeof(struct aud_para));
@@ -2869,11 +2868,11 @@ static int hdmitx_set_audmode(struct hdmitx_hw_common *tx_hw,
 	data32 |= (0 << 7);  /* [  7] sw_audio_fifo_rst */
 	hdmitx_wr_reg(HDMITX_DWC_AUD_SPDIF0, data32);
 
-	set_aud_info_pkt(hdev, audio_param);
+	set_aud_info_pkt(audio_param);
 	acr_update = set_aud_acr_pkt(hdev, audio_param);
-	set_aud_samp_pkt(hdev, audio_param);
+	set_aud_samp_pkt(audio_param);
 
-	set_aud_chnls(hdev, audio_param);
+	set_aud_chnls(audio_param);
 
 	if (audio_param->aud_src_if == 1) {
 		/* Enable audi2s_fifo_overrun interrupt */
@@ -2886,9 +2885,9 @@ static int hdmitx_set_audmode(struct hdmitx_hw_common *tx_hw,
 	usleep_range(9, 11);
 	hdmitx_wr_reg(HDMITX_DWC_AUD_N1, hdmitx_rd_reg(HDMITX_DWC_AUD_N1));
 	hdmitx_set_reg_bits(HDMITX_DWC_FC_DATAUTO3, 1, 0, 1);
-	if (GET_OUTCHN_MSK(hdev->aud_output_ch))
+	if (GET_OUTCHN_MSK(aud_output_i2s_ch))
 		hdmitx_set_reg_bits(HDMITX_DWC_AUD_CONF0,
-			GET_OUTCHN_MSK(hdev->aud_output_ch), 0, 4);
+			GET_OUTCHN_MSK(aud_output_i2s_ch), 0, 4);
 	else
 		hdmitx_set_reg_bits(HDMITX_DWC_AUD_CONF0, 0xf, 0, 4);
 	hdmitx_set_reg_bits(HDMITX_DWC_AUD_CONF0, !!audio_param->aud_src_if, 5, 1);
@@ -2896,7 +2895,7 @@ static int hdmitx_set_audmode(struct hdmitx_hw_common *tx_hw,
 	hdmitx_set_reg_bits(HDMITX_DWC_FC_PACKET_TX_EN, 1, 0, 1);
 	mutex_unlock(&aud_mutex);
 
-	return 1;
+	return 0;
 }
 
 static int hdmitx_setupirq(struct hdmitx_hw_common *tx_hw)

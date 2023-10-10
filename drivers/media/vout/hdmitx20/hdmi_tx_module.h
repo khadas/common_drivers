@@ -144,20 +144,6 @@ struct hdmitx_dev {
 	struct scdc_locked_st chlocked_st;
 	unsigned int sspll;
 
-	/*audio*/
-	/* if switching from 48k pcm to 48k DD, the ACR/N parameter is same,
-	 * so there is no need to update ACR/N. but for mode change, different
-	 * sample rate, need to update ACR/N.
-	 */
-	struct aud_para cur_audio_param;
-	int audio_param_update_flag;
-	unsigned int tx_aud_cfg; /* 0, off; 1, on */
-	/* configure for I2S: 8ch in, 2ch out */
-	/* 0: default setting  1:ch0/1  2:ch2/3  3:ch4/5  4:ch6/7 */
-	unsigned int aud_output_ch;
-	bool aud_notify_update;
-	/*audio end*/
-
 	/*hdr/dv*/
 	enum hdmi_hdr_transfer hdr_transfer_feature;
 	enum hdmi_hdr_color hdr_color_feature;
@@ -201,9 +187,6 @@ struct hdmitx_dev {
 #endif
 	/*Platform related end.*/
 };
-
-/* reduce a little time, previous setting is 4000/10 */
-#define AUTH_PROCESS_TIME   (1000 / 100)
 
 /***********************************************************************
  *    hdmitx protocol level interface

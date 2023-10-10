@@ -64,6 +64,9 @@ static int hdmitx_cntl_config(struct hdmitx_hw_common *tx_hw, u32 cmd,
 static int hdmitx_cntl_misc(struct hdmitx_hw_common *tx_hw, u32 cmd,
 			    u32  argv);
 static enum hdmi_vic get_vic_from_pkt(void);
+static void audio_mute_op(bool flag);
+
+static DEFINE_MUTEX(aud_mutex);
 
 #define EDID_RAM_ADDR_SIZE	 (8)
 
@@ -353,6 +356,7 @@ static void hdmi_hwp_init(struct hdmitx_dev *hdev, u8 reset)
 	pr_info("%s%d\n", __func__, __LINE__);
 	if (!reset && hdmitx21_uboot_already_display()) {
 		pr_info("uboot already displayed\n");
+		audio_mute_op(1); /* enable audio default */
 		return;
 	}
 
@@ -434,17 +438,16 @@ static void hdmi_hwp_init(struct hdmitx_dev *hdev, u8 reset)
 	hdmitx21_wr_reg(hdev->tx_hw.chip_data->chip_type == MESON_CPU_ID_T7 ?
 		HDMITX_T7_TOP_INFILTER : HDMITX_S5_TOP_INFILTER, data32);
 	hdmitx21_set_reg_bits(AON_CYP_CTL_IVCTX, 2, 0, 2);
+	audio_mute_op(1); /* enable audio default */
 }
 
-int hdmitx21_uboot_audio_en(void)
+bool hdmitx21_uboot_audio_en(void)
 {
 	u32 data;
 
 	data = hdmitx21_rd_reg(AUD_EN_IVCTX);
 	pr_info("%s[%d] data = 0x%x\n", __func__, __LINE__, data);
-	if (data & 1)
-		return 1;
-	return 0;
+	return (data & 1) == 1;
 }
 
 static bool soc_resolution_limited(const struct hdmi_timing *timing, u32 res_v)
@@ -1255,15 +1258,16 @@ static enum hdmi_tf_type hdmitx21_get_cur_hdr10p_st(void)
 #define GET_OUTCHN_NO(a)	(((a) >> 4) & 0xf)
 #define GET_OUTCHN_MSK(a)	((a) & 0xf)
 
-static void set_aud_info_pkt(struct hdmitx_dev *hdev,
-	struct aud_para *audio_param)
+static void set_aud_info_pkt(struct aud_para *audio_param)
 {
+	struct hdmitx_dev *hdev = get_hdmitx21_device();
 	struct hdmi_audio_infoframe *info = &hdev->infoframes.aud.audio;
+	u8 aud_output_i2s_ch = hdev->tx_comm.cur_audio_param.aud_output_i2s_ch;
 
 	hdmi_audio_infoframe_init(info);
 	info->channels = audio_param->chs + 1;
-	if (GET_OUTCHN_NO(hdev->aud_output_ch))
-		info->channels = GET_OUTCHN_NO(hdev->aud_output_ch);
+	if (GET_OUTCHN_NO(aud_output_i2s_ch))
+		info->channels = GET_OUTCHN_NO(aud_output_i2s_ch);
 	info->channel_allocation = 0;
 	/* Refer to Stream Header */
 	info->coding_type = 0;
@@ -1301,7 +1305,7 @@ static void set_aud_info_pkt(struct hdmitx_dev *hdev,
 		default:
 			break;
 		}
-		switch (GET_OUTCHN_NO(hdev->aud_output_ch)) {
+		switch (GET_OUTCHN_NO(aud_output_i2s_ch)) {
 		case 2:
 			info->channel_allocation = 0x00;
 			break;
@@ -1386,15 +1390,12 @@ u32 hdmi21_get_frl_aud_n_paras(enum hdmi_audio_fs fs,
 	}
 }
 
-static void set_aud_acr_pkt(struct hdmitx_dev *hdev,
-			    struct aud_para *audio_param)
+static void set_aud_acr_pkt(struct aud_para *audio_param)
 {
 	u32 aud_n_para;
 	u32 char_rate = 0;
+	struct hdmitx_dev *hdev = get_hdmitx21_device();
 	struct hdmi_format_para *para = &hdev->tx_comm.fmt_para;
-
-	if (!hdev || !para)
-		return;
 
 	if (para->vic == HDMI_0_UNKNOWN)
 		return;
@@ -1432,6 +1433,7 @@ static void set_aud_acr_pkt(struct hdmitx_dev *hdev,
 /* flag: 0 means mute */
 static void audio_mute_op(bool flag)
 {
+	mutex_lock(&aud_mutex);
 	if (flag == 0) {
 		hdmitx21_wr_reg(AUD_EN_IVCTX, 0);
 		hdmitx21_set_reg_bits(AUDP_TXCTRL_IVCTX, 1, 7, 1);
@@ -1441,29 +1443,30 @@ static void audio_mute_op(bool flag)
 		hdmitx21_set_reg_bits(AUDP_TXCTRL_IVCTX, 0, 7, 1);
 		hdmitx21_set_reg_bits(TPI_AUD_CONFIG_IVCTX, 0, 4, 1);
 	}
+	mutex_unlock(&aud_mutex);
 }
 
 static int hdmitx_set_audmode(struct hdmitx_hw_common *tx_hw,
 			      struct aud_para *audio_param)
 {
-	struct hdmitx_dev *hdev = get_hdmitx21_device();
 	u32 data32;
 	bool hbr_audio = false;
 	u8 div_n = 1;
 	u32 sample_rate_k;
 	u8 i2s_line_mask = 0;
 	u8 hdmitx_aud_clk_div = 18;
+	u8 aud_output_i2s_ch;
 
-	if (!hdev)
-		return 0;
 	if (!audio_param)
-		return 0;
-	pr_info(HW "set audio\n");
+		return -1;
 
-	/* if hdev->aud_output_ch is true, select I2S as 8ch in, 2ch out */
-	if (hdev->aud_output_ch) {
+	aud_output_i2s_ch = audio_param->aud_output_i2s_ch;
+	pr_info(HW "set audio\n");
+	mutex_lock(&aud_mutex);
+	/* if hdev->aud_output_i2s_ch is true, select I2S as 8ch in, 2ch out */
+	if (aud_output_i2s_ch) {
 		audio_param->aud_src_if = 1;
-		pr_info("hdmitx aud_output_ch 0x%x\n", hdev->aud_output_ch);
+		pr_info("hdmitx aud_output_i2s_ch 0x%x\n", aud_output_i2s_ch);
 	}
 
 	hdmitx21_set_reg_bits(AIP_RST_IVCTX, 1, 0, 1);
@@ -1492,28 +1495,20 @@ static int hdmitx_set_audmode(struct hdmitx_hw_common *tx_hw,
 		//pr_info("Error:no audio clk setting for sample rate: %d\n",
 			//audio_param->rate);
 	hdmitx21_set_audioclk(hdmitx_aud_clk_div);
-	//audio_mute_op(hdev->tx_aud_cfg);
+	//audio_mute_op(hdev->tx_comm.cur_audio_param.aud_output_en);
 	//pr_info("audio_param->type = %d\n", audio_param->type);
 	pr_info("audio_param->chs = %d\n", audio_param->chs);
-	/* I2S: hbr and lpcm 2~8ch
-	 * spdif: lpcm 2ch, aml_ac3/aml_eac3/aml_dts
-	 */
-	if (audio_param->aud_src_if == AUD_SRC_IF_I2S)
-		hdev->tx_aud_src = 1;
-	else
-		hdev->tx_aud_src = 0;
-
 	hdmitx21_set_reg_bits(SPDIF_SSMPL2_IVCTX, 0, 5, 1);
 
-	/* if hdev->aud_output_ch is true, select I2S as 8ch in, 2ch out */
-	//if (hdev->aud_output_ch)
-		//hdev->tx_aud_src = 1;
+	/* if hdev->aud_output_i2s_ch is true, select I2S as 8ch in, 2ch out */
+	//if (hdev->aud_output_i2s_ch)
+		//hdev->tx_comm.cur_audio_param.aud_src_if = 1;
 	/* aud_mclk_sel: Select to use which clock for ACR measurement.
 	 * 0= Use i2s_mclk; 1=Use spdif_clk.
 	 */
-	hdmitx21_set_reg_bits(HDMITX_TOP_CLK_CNTL, 1 - hdev->tx_aud_src, 13, 1);
+	hdmitx21_set_reg_bits(HDMITX_TOP_CLK_CNTL, 1 - audio_param->aud_src_if, 13, 1);
 
-	pr_info(HW "hdmitx tx_aud_src = %d\n", hdev->tx_aud_src);
+	pr_info(HW "hdmitx aud_src_if = %d\n", audio_param->aud_src_if);
 
 	// config I2S
 	//---------------
@@ -1527,8 +1522,8 @@ static int hdmitx_set_audmode(struct hdmitx_hw_common *tx_hw,
 	if (hbr_audio) {
 		/* hbr no layout, see hdmi1.4 spec table 5-28 */
 		data32 = (0 << 1);
-	} else if (hdev->tx_aud_src == 1) {
-		unsigned char mask = GET_OUTCHN_MSK(hdev->aud_output_ch);
+	} else if (audio_param->aud_src_if == 1) {
+		unsigned char mask = GET_OUTCHN_MSK(aud_output_i2s_ch);
 
 		/* multi-channel lpcm use layout 1 */
 		if (audio_param->type == CT_PCM && audio_param->chs >= 2)
@@ -1547,7 +1542,7 @@ static int hdmitx_set_audmode(struct hdmitx_hw_common *tx_hw,
 	//AUDP_TXCTRL : [1] layout; [7] aud_mute_en
 	hdmitx21_wr_reg(AUDP_TXCTRL_IVCTX, data32 & 0xff);
 
-	set_aud_acr_pkt(hdev, audio_param);
+	set_aud_acr_pkt(audio_param);
 	//FREQ 00:mclk=128*Fs;01:mclk=256*Fs;10:mclk=384*Fs;11:mclk=512*Fs;...
 	hdmitx21_wr_reg(FREQ_SVAL_IVCTX, 0);
 
@@ -1559,8 +1554,8 @@ static int hdmitx_set_audmode(struct hdmitx_hw_common *tx_hw,
 	hdmitx21_wr_reg(TPI_AUD_CONFIG_IVCTX, data32);
 
 	/* for i2s: 2~8ch lpcm, hbr */
-	if (hdev->tx_aud_src == 1) {
-		unsigned char mask = GET_OUTCHN_MSK(hdev->aud_output_ch);
+	if (audio_param->aud_src_if == 1) {
+		unsigned char mask = GET_OUTCHN_MSK(aud_output_i2s_ch);
 		int i = 0;
 		int j = 0;
 		const unsigned char map[] = {
@@ -1609,7 +1604,7 @@ static int hdmitx_set_audmode(struct hdmitx_hw_common *tx_hw,
 	//[  1] SPID_EN  Enable later in test.c, otherwise initial junk data will be sent
 	//[ 0] PKT_EN
 	data32 = 0;
-	if (hdev->tx_aud_src == 1) {
+	if (audio_param->aud_src_if == 1) {
 		/* TODO: other channel num(4/6ch) */
 		if (audio_param->chs == 2 - 1) {
 			i2s_line_mask = 1;
@@ -1623,8 +1618,8 @@ static int hdmitx_set_audmode(struct hdmitx_hw_common *tx_hw,
 			/* SD0/1/2/3 */
 			i2s_line_mask = 0xf;
 		}
-		if (GET_OUTCHN_MSK(hdev->aud_output_ch))
-			i2s_line_mask = GET_OUTCHN_MSK(hdev->aud_output_ch);
+		if (GET_OUTCHN_MSK(aud_output_i2s_ch))
+			i2s_line_mask = GET_OUTCHN_MSK(aud_output_i2s_ch);
 		data32 |= (i2s_line_mask << 4);
 		data32 |= (0 << 3);
 		data32 |= (hbr_audio << 2);
@@ -1637,10 +1632,11 @@ static int hdmitx_set_audmode(struct hdmitx_hw_common *tx_hw,
 
 	hdmitx21_wr_reg(AUD_EN_IVCTX, 0x03);           //AUD_EN
 
-	set_aud_info_pkt(hdev, audio_param);
+	set_aud_info_pkt(audio_param);
 	hdmitx21_set_reg_bits(AIP_RST_IVCTX, 0, 0, 1);
-	audio_mute_op(hdev->tx_aud_cfg);
-	return 1;
+	mutex_unlock(&aud_mutex);
+	audio_mute_op(audio_param->aud_output_en);
+	return 0;
 }
 
 static void hdmitx_uninit(struct hdmitx_hw_common *tx_hw)
@@ -2739,7 +2735,7 @@ static void config_hdmi21_tx(struct hdmitx_dev *hdev)
 	//---------------
 	// config I2S
 	//---------------
-	hdmitx21_set_audio(hdev, &hdev->cur_audio_param);
+	hdmitx21_set_audio(hdev, &hdev->tx_comm.cur_audio_param);
 
 	//---------------
 	// config Packet

@@ -289,7 +289,6 @@ static void hdmitx_late_resume(struct early_suspend *h)
 	}
 
 	mutex_lock(&hdev->tx_comm.hdmimode_mutex);
-	/* TO CONFIRM */
 	hdmitx_hw_cntl_config(&hdev->tx_hw.base, CONF_AUDIO_MUTE_OP, AUDIO_MUTE);
 	hdmitx_common_late_resume(&hdev->tx_comm, &hdev->tx_hw.base);
 	pr_info("HDMITX: Late Resume\n");
@@ -363,7 +362,6 @@ static int set_disp_mode(struct hdmitx_dev *hdev, const char *mode)
 	ret = hdmitx21_set_display(hdev, vic);
 	if (ret >= 0) {
 		hdmitx_hw_cntl(&hdev->tx_hw.base, HDMITX_AVMUTE_CNTL, AVMUTE_CLEAR);
-		hdev->audio_param_update_flag = 1;
 		restore_mute();
 	}
 
@@ -545,7 +543,7 @@ void hdmitx21_audio_mute_op(u32 flag, unsigned int path)
 		aud_mute_path |= path;
 	else
 		aud_mute_path &= ~path;
-	hdev->tx_aud_cfg = !aud_mute_path;
+	hdev->tx_comm.cur_audio_param.aud_output_en = !aud_mute_path;
 
 	if (flag == 0) {
 		pr_info("%s: AUD_MUTE path=0x%x\n", __func__, path);
@@ -1454,49 +1452,17 @@ static ssize_t config_store(struct device *dev,
 	return count;
 }
 
-void hdmitx21_ext_set_audio_output(int enable)
+static void hdmitx21_ext_set_audio_output(bool enable)
 {
 	hdmitx21_audio_mute_op(enable, AUDIO_MUTE_PATH_1);
 	pr_info("%s enable:%d\n", __func__, enable);
 }
 
-int hdmitx21_ext_get_audio_status(void)
+static int hdmitx21_ext_get_audio_status(void)
 {
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
 
-	return !!hdev->tx_aud_cfg;
-}
-
-void hdmitx21_ext_set_i2s_mask(char ch_num, char ch_msk)
-{
-	struct hdmitx_dev *hdev = get_hdmitx21_device();
-	static u32 update_flag = -1;
-
-	if (!(ch_num == 2 || ch_num == 4 ||
-	      ch_num == 6 || ch_num == 8)) {
-		pr_info("err chn setting, must be 2, 4, 6 or 8, Rst as def\n");
-		hdev->aud_output_ch = 0;
-		if (update_flag != hdev->aud_output_ch) {
-			update_flag = hdev->aud_output_ch;
-			hdmitx21_set_audio(hdev, &hdev->cur_audio_param);
-		}
-	}
-	if (ch_msk == 0) {
-		pr_info("err chn msk, must larger than 0\n");
-		return;
-	}
-	hdev->aud_output_ch = (ch_num << 4) + ch_msk;
-	if (update_flag != hdev->aud_output_ch) {
-		update_flag = hdev->aud_output_ch;
-		hdmitx21_set_audio(hdev, &hdev->cur_audio_param);
-	}
-}
-
-char hdmitx21_ext_get_i2s_mask(void)
-{
-	struct hdmitx_dev *hdev = get_hdmitx21_device();
-
-	return hdev->aud_output_ch & 0xf;
+	return !!hdev->tx_comm.cur_audio_param.aud_output_en;
 }
 
 static ssize_t aud_mute_show(struct device *dev,
@@ -3005,11 +2971,9 @@ static int hdmitx21_enable_mode(struct hdmitx_common *tx_comm, struct hdmi_forma
 
 	ret = hdmitx21_set_display(hdev, para->vic);
 
-	if (ret >= 0) {
-		hdev->audio_param_update_flag = 1;
+	if (ret >= 0)
 		restore_mute();
-	}
-	hdmitx21_set_audio(hdev, &hdev->cur_audio_param);
+	hdmitx21_set_audio(hdev, &hdev->tx_comm.cur_audio_param);
 
 	return 0;
 }
@@ -3184,98 +3148,6 @@ static int drm_hdmitx_get_vrr_mode_group(struct drm_vrr_mode_group *group, int m
 
 #if IS_ENABLED(CONFIG_AMLOGIC_SND_SOC)
 
-#include <linux/soundcard.h>
-#include <sound/core.h>
-#include <sound/pcm.h>
-#include <sound/initval.h>
-#include <sound/control.h>
-
-static struct rate_map_fs map_fs[] = {
-	{0,	  FS_REFER_TO_STREAM},
-	{32000,  FS_32K},
-	{44100,  FS_44K1},
-	{48000,  FS_48K},
-	{88200,  FS_88K2},
-	{96000,  FS_96K},
-	{176400, FS_176K4},
-	{192000, FS_192K},
-};
-
-static enum hdmi_audio_fs aud_samp_rate_map(u32 rate)
-{
-	int i = 0;
-
-	for (i = 0; i < ARRAY_SIZE(map_fs); i++) {
-		if (map_fs[i].rate == rate)
-			return map_fs[i].fs;
-	}
-	pr_info("get FS_MAX\n");
-	return FS_MAX;
-}
-
-static u8 *aud_type_string[] = {
-	"CT_REFER_TO_STREAM",
-	"CT_PCM",
-	"CT_AC_3",
-	"CT_MPEG1",
-	"CT_MP3",
-	"CT_MPEG2",
-	"CT_AAC",
-	"CT_DTS",
-	"CT_ATRAC",
-	"CT_ONE_BIT_AUDIO",
-	"CT_DOLBY_D",
-	"CT_DTS_HD",
-	"CT_MAT",
-	"CT_DST",
-	"CT_WMA",
-	"CT_MAX",
-};
-
-static struct size_map aud_size_map_ss[] = {
-	{0,	 SS_REFER_TO_STREAM},
-	{16,	SS_16BITS},
-	{20,	SS_20BITS},
-	{24,	SS_24BITS},
-	{32,	SS_MAX},
-};
-
-static enum hdmi_audio_sampsize aud_size_map(u32 bits)
-{
-	int i;
-
-	for (i = 0; i < ARRAY_SIZE(aud_size_map_ss); i++) {
-		if (bits == aud_size_map_ss[i].sample_bits)
-			return aud_size_map_ss[i].ss;
-	}
-	pr_info("get SS_MAX\n");
-	return SS_MAX;
-}
-
-static bool hdmitx_set_i2s_mask(char ch_num, char ch_msk)
-{
-	struct hdmitx_dev *hdev = get_hdmitx21_device();
-	static u32 update_flag = -1;
-
-	if (!(ch_num == 2 || ch_num == 4 ||
-	      ch_num == 6 || ch_num == 8)) {
-		pr_info("err chn setting, must be 2, 4, 6 or 8, Rst as def\n");
-		hdev->aud_output_ch = 0;
-		if (update_flag != hdev->aud_output_ch) {
-			update_flag = hdev->aud_output_ch;
-		}
-		return 0;
-	}
-	if (ch_msk == 0) {
-		pr_info("err chn msk, must larger than 0\n");
-		return 0;
-	}
-	hdev->aud_output_ch = (ch_num << 4) + ch_msk;
-	if (update_flag != hdev->aud_output_ch)
-		update_flag = hdev->aud_output_ch;
-	return 1;
-}
-
 static int hdmitx_notify_callback_a(struct notifier_block *block,
 				    unsigned long cmd, void *para);
 static struct notifier_block hdmitx_notifier_nb_a = {
@@ -3285,83 +3157,9 @@ static struct notifier_block hdmitx_notifier_nb_a = {
 static int hdmitx_notify_callback_a(struct notifier_block *block,
 				    unsigned long cmd, void *para)
 {
-	int i, audio_check = 0;
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
-	struct rx_cap *prxcap = &hdev->tx_comm.rxcap;
-	struct aud_para *aud_param = (struct aud_para *)para;
-	struct aud_para *audio_param = &hdev->cur_audio_param;
-	enum hdmi_audio_fs n_rate = aud_samp_rate_map(aud_param->rate);
-	enum hdmi_audio_sampsize n_size = aud_size_map(aud_param->size);
 
-	hdev->audio_param_update_flag = 0;
-
-	if (hdmitx_set_i2s_mask(aud_param->chs, aud_param->i2s_ch_mask))
-		hdev->audio_param_update_flag = 1;
-	if (audio_param->rate != n_rate) {
-		audio_param->rate = n_rate;
-		hdev->audio_param_update_flag = 1;
-		pr_info("aout notify sample rate: %d\n", n_rate);
-	}
-
-	if (audio_param->type != cmd) {
-		audio_param->type = cmd;
-		pr_info("aout notify format %s\n",
-			aud_type_string[audio_param->type & 0xff]);
-		hdev->audio_param_update_flag = 1;
-	}
-
-	if (audio_param->size != n_size) {
-		audio_param->size = n_size;
-		hdev->audio_param_update_flag = 1;
-		pr_info("aout notify sample size: %d\n", n_size);
-	}
-
-	if (audio_param->chs != (aud_param->chs - 1)) {
-		audio_param->chs = aud_param->chs - 1;
-		hdev->audio_param_update_flag = 1;
-		pr_info("aout notify channel num: %d\n", aud_param->chs);
-	}
-	if (audio_param->aud_src_if != aud_param->aud_src_if) {
-		pr_info("cur aud_src_if %d, new aud_src_if: %d\n",
-			audio_param->aud_src_if, aud_param->aud_src_if);
-		audio_param->aud_src_if = aud_param->aud_src_if;
-		hdev->audio_param_update_flag = 1;
-	}
-	memcpy(audio_param->status, aud_param->status, sizeof(aud_param->status));
-	if (log21_level == 1) {
-		for (i = 0; i < sizeof(audio_param->status); i++)
-			pr_info("%02x", audio_param->status[i]);
-		pr_info("\n");
-	}
-	if (hdev->tx_aud_cfg == 2) {
-		pr_info("auto mode\n");
-		/* Detect whether Rx is support current audio format */
-		for (i = 0; i < prxcap->AUD_count; i++) {
-			if (prxcap->RxAudioCap[i].audio_format_code == cmd)
-				audio_check = 1;
-		}
-		/* sink don't support current audio mode */
-		if (!audio_check && cmd != CT_PCM) {
-			pr_info("Sink not support this audio format %lu\n",
-				cmd);
-			hdmitx_hw_cntl_config(&hdev->tx_hw.base,
-				CONF_AUDIO_MUTE_OP, AUDIO_MUTE);
-			hdev->audio_param_update_flag = 0;
-		}
-	}
-
-	if (hdev->audio_param_update_flag) {
-		/* plug-in & update audio param */
-		if (hdev->tx_comm.hpd_state == 1) {
-			hdmitx21_set_audio(hdev,
-					 &hdev->cur_audio_param);
-			hdev->audio_param_update_flag = 0;
-			pr_info("set audio param\n");
-		}
-	}
-	if (aud_param->fifo_rst)
-		; /* hdmitx_hw_cntl_misc(&hdev->tx_hw.base, MISC_AUDIO_RESET, 1); */
-
+	hdmitx_audio_notify_callback(&hdev->tx_comm, &hdev->tx_hw.base, block, cmd, para);
 	return 0;
 }
 #endif
@@ -3404,7 +3202,7 @@ static void hdmitx_plugin_handler(struct hdmitx_dev *hdev, bool set_audio, bool 
 	if (set_audio) {
 		info = hdmitx_get_current_vinfo(NULL);
 		if (info && info->mode == VMODE_HDMI)
-			hdmitx21_set_audio(hdev, &hdev->cur_audio_param);
+			hdmitx21_set_audio(hdev, &hdev->tx_comm.cur_audio_param);
 	}
 
 	/* step2: SW: special process */
@@ -3709,7 +3507,7 @@ static int amhdmitx21_device_init(struct hdmitx_dev *hdev)
 	hdev->def_stream_type = DEFAULT_STREAM_TYPE;
 
 	/* default audio configure is on */
-	hdev->tx_aud_cfg = 1;
+	hdev->tx_comm.cur_audio_param.aud_output_en = 1;
 	hdev->need_filter_hdcp_off = false;
 	/* default 6S */
 	hdev->filter_hdcp_off_period = 6;
@@ -4112,6 +3910,8 @@ static int amhdmitx_probe(struct platform_device *pdev)
 	amhdmitx_clktree_probe(&pdev->dev, hdev);
 	if (0) /* TODO */
 		amhdmitx21_vpu_dev_register(hdev);
+	hdmitx_audio_register_ctrl_callback(hdmitx21_ext_set_audio_output,
+		hdmitx21_ext_get_audio_status);
 
 	r = alloc_chrdev_region(&hdev->hdmitx_id, 0, HDMI_TX_COUNT,
 				DEVICE_NAME);
@@ -4201,7 +4001,7 @@ static int amhdmitx_probe(struct platform_device *pdev)
 
 #if IS_ENABLED(CONFIG_AMLOGIC_SND_SOC)
 	if (!hdev->pxp_mode && hdmitx21_uboot_audio_en()) {
-		struct aud_para *audpara = &hdev->cur_audio_param;
+		struct aud_para *audpara = &hdev->tx_comm.cur_audio_param;
 
 		audpara->rate = FS_48K;
 		audpara->type = CT_PCM;

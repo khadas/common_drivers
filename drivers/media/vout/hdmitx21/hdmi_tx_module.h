@@ -126,7 +126,6 @@ struct hdmitx_dev {
 	struct hdmitx_clk_tree_s hdmitx_clk_tree;
 	/*audio*/
 	struct aud_para cur_audio_param;
-	int audio_param_update_flag;
 	atomic_t kref_video_mute;
 	atomic_t kref_audio_mute;
 	/**/
@@ -135,7 +134,6 @@ struct hdmitx_dev {
 	u8 manual_frl_rate; /* for manual setting */
 	u8 frl_rate; /* for mode setting */
 	u8 dsc_en;
-	u32 tx_aud_cfg; /* 0, off; 1, on */
 	/* 0: RGB444  1: Y444  2: Y422  3: Y420 */
 	/* 4: 24bit  5: 30bit  6: 36bit  7: 48bit */
 	/* if equals to 1, means current video & audio output are blank */
@@ -148,8 +146,6 @@ struct hdmitx_dev {
 	u32 sspll;
 	/* configure for I2S: 8ch in, 2ch out */
 	/* 0: default setting  1:ch0/1  2:ch2/3  3:ch4/5  4:ch6/7 */
-	u32 aud_output_ch;
-	u32 tx_aud_src; /* 0: SPDIF  1: I2S */
 	enum hdmi_hdr_transfer hdr_transfer_feature;
 	enum hdmi_hdr_color hdr_color_feature;
 	/* 0: sdr 1:standard HDR 2:non standard 3:HLG*/

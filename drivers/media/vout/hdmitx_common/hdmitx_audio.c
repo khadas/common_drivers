@@ -801,19 +801,16 @@ void hdmitx_audio_notify_callback(struct hdmitx_common *tx_comm,
 	enum hdmi_audio_sampsize n_size = aud_size_map(tx_aud_param->size);
 	int audio_param_update_flag = 0;
 
-	mutex_lock(&tx_aud_param->aud_mutex);
 	if (tx_aud_param->prepare) {
 		tx_aud_param->prepare = 0;
 		hdmitx_hw_cntl_misc(tx_hw_base, MISC_AUDIO_ACR_CTRL, 0);
 		hdmitx_hw_cntl_misc(tx_hw_base, MISC_AUDIO_PREPARE, 0);
 		tx_aud_param->type = CT_PREPARE;
 		pr_info("%s[%d] audio prepare\n", __func__, __LINE__);
-		mutex_unlock(&tx_aud_param->aud_mutex);
 		return;
 	}
 	if (aud_param->fifo_rst) {
 		hdmitx_hw_cntl_misc(tx_hw_base, MISC_AUDIO_RESET, 1);
-		mutex_unlock(&tx_aud_param->aud_mutex);
 		return;
 	}
 	pr_info("%s[%d] type:%lu rate:%d size:%d chs:%d i2s_ch_mask:%d aud_src_if:%d\n",
@@ -857,7 +854,6 @@ void hdmitx_audio_notify_callback(struct hdmitx_common *tx_comm,
 			pr_info(AUD "set audio param\n");
 		}
 	}
-	mutex_unlock(&tx_aud_param->aud_mutex);
 }
 
 static audio_en_callback cb_set_audio_output_en;

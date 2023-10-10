@@ -57,7 +57,6 @@ int hdmitx_common_init(struct hdmitx_common *tx_comm, struct hdmitx_hw_common *h
 
 	/*mutex init*/
 	mutex_init(&tx_comm->hdmimode_mutex);
-	mutex_init(&tx_comm->cur_audio_param.aud_mutex);
 	return 0;
 }
 

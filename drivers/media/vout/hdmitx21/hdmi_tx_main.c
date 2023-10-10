@@ -3213,18 +3213,6 @@ static enum hdmi_audio_fs aud_samp_rate_map(u32 rate)
 	return FS_MAX;
 }
 
-u32 aud_sr_idx_to_val(enum hdmi_audio_fs e_sr_idx)
-{
-	int i = 0;
-
-	for (i = 0; i < ARRAY_SIZE(map_fs); i++) {
-		if (map_fs[i].fs == e_sr_idx)
-			return map_fs[i].rate / 1000;
-	}
-	pr_info("wrong idx: %d\n", e_sr_idx);
-	return 1;
-}
-
 static u8 *aud_type_string[] = {
 	"CT_REFER_TO_STREAM",
 	"CT_PCM",

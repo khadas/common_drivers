@@ -696,3 +696,192 @@ int hdmitx_audio_para_print(struct aud_para *audio_para, char *log_buf)
 	return pos;
 }
 
+static struct rate_map_fs map_fs[] = {
+	{48000, FS_REFER_TO_STREAM}, /* default is 48k */
+	{32000, FS_32K},
+	{44100, FS_44K1},
+	{48000, FS_48K},
+	{88200, FS_88K2},
+	{96000, FS_96K},
+	{176400, FS_176K4},
+	{192000, FS_192K},
+};
+
+static enum hdmi_audio_fs aud_samp_rate_map(u32 rate)
+{
+	int i = 0;
+
+	for (i = 0; i < ARRAY_SIZE(map_fs); i++) {
+		if (map_fs[i].rate == rate)
+			return map_fs[i].fs;
+	}
+	return FS_MAX;
+}
+
+static u8 *aud_type_string[] = {
+	"CT_REFER_TO_STREAM",
+	"CT_PCM",
+	"CT_AC_3",
+	"CT_MPEG1",
+	"CT_MP3",
+	"CT_MPEG2",
+	"CT_AAC",
+	"CT_DTS",
+	"CT_ATRAC",
+	"CT_ONE_BIT_AUDIO",
+	"CT_DOLBY_D",
+	"CT_DTS_HD",
+	"CT_MAT",
+	"CT_DST",
+	"CT_WMA",
+	"CT_MAX",
+};
+
+static struct size_map aud_size_map_ss[] = {
+	{0,	 SS_REFER_TO_STREAM},
+	{16,	SS_16BITS},
+	{20,	SS_20BITS},
+	{24,	SS_24BITS},
+	{32,	SS_MAX},
+};
+
+static enum hdmi_audio_sampsize aud_size_map(u32 bits)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(aud_size_map_ss); i++) {
+		if (bits == aud_size_map_ss[i].sample_bits)
+			return aud_size_map_ss[i].ss;
+	}
+	return SS_MAX;
+}
+
+u32 aud_sr_idx_to_val(enum hdmi_audio_fs e_sr_idx)
+{
+	int i = 0;
+
+	for (i = 0; i < ARRAY_SIZE(map_fs); i++) {
+		if (map_fs[i].fs == e_sr_idx)
+			return map_fs[i].rate / 1000;
+	}
+	pr_info("wrong idx: %d\n", e_sr_idx);
+	return -1;
+}
+
+static bool hdmitx_set_i2s_mask(struct aud_para *tx_aud_param, char ch_num, char ch_msk)
+{
+	unsigned int update_flag;
+
+	if (!(ch_num == 2 || ch_num == 4 ||
+	      ch_num == 6 || ch_num == 8)) {
+		pr_info("err chn setting, must be 2, 4, 6 or 8, Rst as def\n");
+		return 0;
+	}
+	if (ch_msk == 0) {
+		pr_info("err chn msk, must larger than 0\n");
+		return 0;
+	}
+	update_flag = (ch_num << 4) + ch_msk;
+	if (update_flag != tx_aud_param->aud_output_i2s_ch) {
+		tx_aud_param->aud_output_i2s_ch = update_flag;
+		return 1;
+	}
+	return 0;
+}
+
+void hdmitx_audio_notify_callback(struct hdmitx_common *tx_comm,
+	struct hdmitx_hw_common *tx_hw_base,
+	struct notifier_block *block,
+	unsigned long cmd, void *para)
+{
+	struct aud_para *tx_aud_param = &tx_comm->cur_audio_param;
+	/* front audio module callback parameters */
+	struct aud_para *aud_param = (struct aud_para *)para;
+	enum hdmi_audio_fs n_rate = aud_samp_rate_map(tx_aud_param->rate);
+	enum hdmi_audio_sampsize n_size = aud_size_map(tx_aud_param->size);
+	int audio_param_update_flag = 0;
+
+	mutex_lock(&tx_aud_param->aud_mutex);
+	if (tx_aud_param->prepare) {
+		tx_aud_param->prepare = 0;
+		hdmitx_hw_cntl_misc(tx_hw_base, MISC_AUDIO_ACR_CTRL, 0);
+		hdmitx_hw_cntl_misc(tx_hw_base, MISC_AUDIO_PREPARE, 0);
+		tx_aud_param->type = CT_PREPARE;
+		pr_info("%s[%d] audio prepare\n", __func__, __LINE__);
+		mutex_unlock(&tx_aud_param->aud_mutex);
+		return;
+	}
+	if (aud_param->fifo_rst) {
+		hdmitx_hw_cntl_misc(tx_hw_base, MISC_AUDIO_RESET, 1);
+		mutex_unlock(&tx_aud_param->aud_mutex);
+		return;
+	}
+	pr_info("%s[%d] type:%lu rate:%d size:%d chs:%d i2s_ch_mask:%d aud_src_if:%d\n",
+		__func__, __LINE__, cmd, n_rate, n_size, aud_param->chs,
+		aud_param->i2s_ch_mask, aud_param->aud_src_if);
+	/* check audio parameters changing, if true, update hdmitx audio hw */
+	if (hdmitx_set_i2s_mask(tx_aud_param, aud_param->chs, aud_param->i2s_ch_mask))
+		audio_param_update_flag = 1;
+	if (tx_aud_param->rate != n_rate) {
+		tx_aud_param->rate = n_rate;
+		audio_param_update_flag = 1;
+	}
+
+	if (tx_aud_param->type != cmd) {
+		tx_aud_param->type = cmd;
+		audio_param_update_flag = 1;
+		pr_info(AUD "aout notify format %s\n",
+			aud_type_string[tx_aud_param->type & 0xff]);
+	}
+
+	if (tx_aud_param->size != n_size) {
+		tx_aud_param->size = n_size;
+		audio_param_update_flag = 1;
+	}
+
+	if (tx_aud_param->chs != (aud_param->chs - 1)) {
+		tx_aud_param->chs = aud_param->chs - 1;
+		audio_param_update_flag = 1;
+	}
+	if (tx_aud_param->aud_src_if != aud_param->aud_src_if) {
+		tx_aud_param->aud_src_if = aud_param->aud_src_if;
+		audio_param_update_flag = 1;
+	}
+
+	if (audio_param_update_flag) {
+		/* plug-in & update audio param */
+		if (tx_comm->hpd_state == 1) {
+			tx_aud_param->aud_notify_update = 1;
+			tx_hw_base->setaudmode(tx_hw_base, tx_aud_param);
+			tx_aud_param->aud_notify_update = 0;
+			pr_info(AUD "set audio param\n");
+		}
+	}
+	mutex_unlock(&tx_aud_param->aud_mutex);
+}
+
+static audio_en_callback cb_set_audio_output_en;
+static audio_st_callback cb_get_audio_status;
+
+int hdmitx_audio_register_ctrl_callback(audio_en_callback cb1, audio_st_callback cb2)
+{
+	if (!cb1 || !cb2)
+		return -1;
+	cb_set_audio_output_en = cb1;
+	cb_get_audio_status = cb2;
+	return 0;
+}
+
+void hdmitx_ext_set_audio_output(int enable)
+{
+	cb_set_audio_output_en ? cb_set_audio_output_en(enable) : 0;
+}
+EXPORT_SYMBOL(hdmitx_ext_set_audio_output);
+
+int hdmitx_ext_get_audio_status(void)
+{
+	if (cb_get_audio_status)
+		return cb_get_audio_status();
+	return 0;
+}
+EXPORT_SYMBOL(hdmitx_ext_get_audio_status);

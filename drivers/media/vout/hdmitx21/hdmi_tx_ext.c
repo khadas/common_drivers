@@ -91,33 +91,6 @@ void setup_attr(const char *buf)
 }
 EXPORT_SYMBOL(setup_attr);
 
-void hdmitx_ext_set_audio_output(int enable)
-{
-#if defined(CONFIG_AMLOGIC_HDMITX)
-	if (get_hdmitx20_init() == 1)
-		hdmitx20_ext_set_audio_output(enable);
-#endif
-#if defined(CONFIG_AMLOGIC_HDMITX21)
-	if (get_hdmitx21_init() == 1)
-		hdmitx21_ext_set_audio_output(enable);
-#endif
-}
-EXPORT_SYMBOL(hdmitx_ext_set_audio_output);
-
-int hdmitx_ext_get_audio_status(void)
-{
-#if defined(CONFIG_AMLOGIC_HDMITX)
-	if (get_hdmitx20_init() == 1)
-		return hdmitx20_ext_get_audio_status();
-#endif
-#if defined(CONFIG_AMLOGIC_HDMITX21)
-	if (get_hdmitx21_init() == 1)
-		return hdmitx21_ext_get_audio_status();
-#endif
-	return 0;
-}
-EXPORT_SYMBOL(hdmitx_ext_get_audio_status);
-
 int register_earcrx_callback(pf_callback callback)
 {
 #if defined(CONFIG_AMLOGIC_HDMITX)

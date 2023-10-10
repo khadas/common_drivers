@@ -2035,7 +2035,7 @@ static void hdmitx_debug(struct hdmitx_hw_common *tx_hw, const char *buf)
 		pr_info("set en_fake_rcv_id :%lu\n", en_fake_rcv_id);
 	} else if (strncmp(tmpbuf, "aud_mute", 8) == 0) {
 		ret = kstrtoul(tmpbuf + 8, 10, &value);
-		hdmitx21_ext_set_audio_output(value);
+		hdmitx_ext_set_audio_output(value);
 		pr_info("aud_mute :%lu\n", value);
 	} else if (strncmp(tmpbuf, "avmute_frame", 12) == 0) {
 		ret = kstrtoul(tmpbuf + 12, 10, &value);

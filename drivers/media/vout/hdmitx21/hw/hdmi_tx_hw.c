@@ -96,19 +96,6 @@ int hdmitx21_hpd_hw_op(enum hpd_op cmd)
 	return 0;
 }
 
-/* TODO: removed, it's not correct and not used */
-int read21_hpd_gpio(void)
-{
-	switch (global_tx_hw->chip_data->chip_type) {
-	case MESON_CPU_ID_T7:
-	case MESON_CPU_ID_S1A:
-	default:
-		return 1;
-	}
-	return 0;
-}
-EXPORT_SYMBOL(read21_hpd_gpio);
-
 int hdmitx21_ddc_hw_op(enum ddc_op cmd)
 {
 	switch (global_tx_hw->chip_data->chip_type) {

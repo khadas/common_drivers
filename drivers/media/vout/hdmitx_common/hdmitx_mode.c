@@ -561,21 +561,21 @@ const struct hdmi_timing *hdmitx_mode_match_timing_name(const char *name)
 }
 EXPORT_SYMBOL(hdmitx_mode_match_timing_name);
 
-bool hdmitx_validate_y420_vic(enum hdmi_vic vic)
+bool hdmitx_mode_validate_y420_vic(enum hdmi_vic vic)
 {
 	const struct hdmi_timing *timing;
 
 	/* In Spec2.1 Table 7-34, greater than 2160p30hz will support y420 */
 	timing = hdmitx_mode_vic_to_hdmi_timing(vic);
 	if (!timing)
-		return 0;
+		return false;
 	if (timing->v_active >= 2160 && timing->v_freq > 30000)
-		return 1;
+		return true;
 	if (timing->v_active >= 4320)
-		return 1;
-	return 0;
+		return true;
+	return false;
 }
-EXPORT_SYMBOL(hdmitx_validate_y420_vic);
+EXPORT_SYMBOL(hdmitx_mode_validate_y420_vic);
 
 const char *hdmitx_mode_get_timing_name(enum hdmi_vic vic)
 {

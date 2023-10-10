@@ -265,13 +265,11 @@ int hdmitx_edid_print_sink_cap(const struct rx_cap *prxcap, char *buffer, int bu
 
 /*edid is good return 0, otherwise return < 0.*/
 bool hdmitx_edid_is_all_zeros(unsigned char *rawedid);
-int _check_base_structure(unsigned char *buf);
-int _check_edid_blk_chksum(unsigned char *block);
 bool hdmitx_edid_check_data_valid(unsigned char *buf);
 ssize_t _show_aud_cap(struct rx_cap *prxcap, char *buf);
 int hdmitx_edid_parse(struct rx_cap *prxcap, u8 *edid_buf);
 unsigned int hdmitx_edid_valid_block_num(unsigned char *edid_buf);
-bool hdmitx_validate_y420_vic(enum hdmi_vic vic);
+bool hdmitx_mode_validate_y420_vic(enum hdmi_vic vic);
 void hdmitx_edid_print(u8 *edid_buf);
 void hdmitx_edid_buffer_clear(u8 *edid_buf, int size);
 void hdmitx_edid_rxcap_clear(struct rx_cap *prxcap);

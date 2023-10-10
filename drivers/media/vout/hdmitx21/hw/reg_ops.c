@@ -333,23 +333,6 @@ void hdmitx21_poll_reg(u32 addr, u8 exp_data, u8 mask, ulong timeout)
 } /* hdmitx21_poll_reg */
 EXPORT_SYMBOL(hdmitx21_poll_reg);
 
-u32 hdmitx21_rd_check_reg(u32 addr, u32 exp_data,
-				 u32 mask)
-{
-	unsigned long rd_data;
-
-	rd_data = hdmitx21_rd_reg(addr);
-	if ((rd_data | mask) != (exp_data | mask)) {
-		HDMITX_DEBUG_REG("HDMITX-DWC addr=0x%04x rd_data=0x%02x\n",
-			(unsigned int)addr, (unsigned int)rd_data);
-		HDMITX_DEBUG_REG("HDMITX-DWC exp_data=0x%02x mask=0x%02x\n",
-			(unsigned int)exp_data, (unsigned int)mask);
-		return 1;
-	}
-	return 0;
-}
-EXPORT_SYMBOL(hdmitx21_rd_check_reg);
-
 void hdmitx21_seq_rd_reg(u16 offset, u8 *buf, u16 cnt)
 {
 	int i = 0;

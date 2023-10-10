@@ -158,43 +158,43 @@ bool hdmitx_edid_is_all_zeros(u8 *rawedid)
 	return true;
 }
 
-/* check the first edid block */
-int _check_base_structure(unsigned char *buf)
-{
-	unsigned int i = 0;
-
-	if (!buf)
-		return 0;
-	/* check block 0 first 8 bytes */
-	if (buf[0] != 0 && buf[7] != 0)
-		return 0;
-
-	for (i = 1; i < 7; i++) {
-		if (buf[i] != 0xff)
-			return 0;
-	}
-
-	if (_check_edid_blk_chksum(buf) == 0)
-		return 0;
-
-	return 1;
-}
-
 /* check the checksum for each sub block */
-int _check_edid_blk_chksum(unsigned char *block)
+static bool _check_edid_blk_chksum(unsigned char *block)
 {
 	unsigned int chksum = 0;
 	unsigned int i = 0;
 
 	if (!block)
-		return 0;
+		return false;
 
 	for (chksum = 0, i = 0; i < 0x80; i++)
 		chksum += block[i];
 	if ((chksum & 0xff) != 0)
-		return 0;
+		return false;
 	else
-		return 1;
+		return true;
+}
+
+/* check the first edid block */
+static bool _check_base_structure(unsigned char *buf)
+{
+	unsigned int i = 0;
+
+	if (!buf)
+		return false;
+	/* check block 0 first 8 bytes */
+	if (buf[0] != 0 && buf[7] != 0)
+		return false;
+
+	for (i = 1; i < 7; i++) {
+		if (buf[i] != 0xff)
+			return false;
+	}
+
+	if (_check_edid_blk_chksum(buf) == false)
+		return false;
+
+	return true;
 }
 
 /*
@@ -229,7 +229,7 @@ bool hdmitx_edid_check_data_valid(unsigned char *buf)
 	for (i = 1; i < blk_cnt; i++) {
 		if (buf[i * 0x80] == 0)
 			return false;
-		if (_check_edid_blk_chksum(&buf[i * 0x80]) == 0)
+		if (_check_edid_blk_chksum(&buf[i * 0x80]) == false)
 			return false;
 	}
 
@@ -376,6 +376,13 @@ ssize_t _show_aud_cap(struct rx_cap *prxcap, char *buf)
 	return pos;
 }
 
+/* HDMI 1.4 introduces the 4 types of 4K resolutions
+ * 3840x2160@30/25/24Hz and 4096x2160@24Hz
+ * but no corresponding CEA-861-D VIC.
+ * so it uses VSIF.hdmi_vic as 1/2/3/4 to represent 4 types
+ * In CEA-861-F, here assigns the VIC 95/94/93/98 later
+ * this function converts 861-F 4k vic to VSIF.hdmi_vic
+ */
 u32 hdmitx_edid_get_hdmi14_4k_vic(u32 vic)
 {
 	bool ret = 0;
@@ -400,7 +407,7 @@ bool hdmitx_edid_check_y420_support(struct rx_cap *prxcap, enum hdmi_vic vic)
 	if (!timing || !prxcap)
 		return false;
 
-	if (hdmitx_validate_y420_vic(vic)) {
+	if (hdmitx_mode_validate_y420_vic(vic)) {
 		for (i = 0; i < Y420_VIC_MAX_NUM; i++) {
 			if (prxcap->y420_vic[i]) {
 				if (prxcap->y420_vic[i] == vic) {
@@ -1145,7 +1152,7 @@ static int edid_parsingy420vdb(struct rx_cap *prxcap, u8 *buf)
 	pos++;
 	while (pos < data_end) {
 		if (prxcap->VIC_count < VIC_MAX_NUM) {
-			if (hdmitx_validate_y420_vic(buf[pos])) {
+			if (hdmitx_mode_validate_y420_vic(buf[pos])) {
 				store_cea_idx(prxcap, buf[pos]);
 				store_y420_idx(prxcap, buf[pos]);
 			}
@@ -1217,7 +1224,7 @@ static int edid_parsedrmsb(struct rx_cap *prxcap, u8 *buf)
 	hdr2 = &prxcap->hdr_info2;
 	_edid_parsedrmsb(hdr, buf);
 	_edid_parsedrmsb(hdr2, buf);
-	return 1;
+	return 0;
 }
 
 static int _edid_parsedrmdb(struct hdr_info *info, u8 *buf)
@@ -1292,7 +1299,7 @@ static int edid_parsedrmdb(struct rx_cap *prxcap, u8 *buf)
 	hdr2 = &prxcap->hdr_info2;
 	_edid_parsedrmdb(hdr, buf);
 	_edid_parsedrmdb(hdr2, buf);
-	return 1;
+	return 0;
 }
 
 static int edid_parsingvfpdb(struct rx_cap *prxcap, u8 *buf)
@@ -1415,18 +1422,18 @@ static void edid_parsingdolbyvsadb(struct rx_cap *prxcap, unsigned char *buf)
 	cap->mat_48k_pcm_only = (buf[pos] >> 0) & 1;
 }
 
-static int edid_y420cmdb_fill_all_vic(struct rx_cap *rxcap)
+static bool edid_y420cmdb_fill_all_vic(struct rx_cap *rxcap)
 {
 	u32 count;
 	u32 a, b;
 
 	if (!rxcap)
-		return 0;
+		return false;
 
 	count = rxcap->VIC_count;
 
 	if (rxcap->y420_all_vic != 1)
-		return 1;
+		return false;
 
 	a = count / 8;
 	a = (a >= Y420CMDB_MAX) ? Y420CMDB_MAX : a;
@@ -1441,17 +1448,17 @@ static int edid_y420cmdb_fill_all_vic(struct rx_cap *rxcap)
 	rxcap->bitmap_length = (b == 0) ? a : (a + 1);
 	rxcap->bitmap_valid = (rxcap->bitmap_length != 0) ? 1 : 0;
 
-	return 0;
+	return true;
 }
 
-static int edid_y420cmdb_postprocess(struct rx_cap *rxcap)
+static bool edid_y420cmdb_postprocess(struct rx_cap *rxcap)
 {
 	u32 i = 0, j = 0, valid = 0;
 	u8 *p = NULL;
 	enum hdmi_vic vic;
 
 	if (!rxcap)
-		return 0;
+		return false;
 
 	if (rxcap->y420_all_vic == 1)
 		return edid_y420cmdb_fill_all_vic(rxcap);
@@ -1465,15 +1472,15 @@ static int edid_y420cmdb_postprocess(struct rx_cap *rxcap)
 			valid = ((*p >> j) & 0x1);
 			vic = rxcap->VIC[i * 8 + j];
 			if (valid != 0 &&
-			    hdmitx_validate_y420_vic(rxcap->VIC[i * 8 + j])) {
+			    hdmitx_mode_validate_y420_vic(rxcap->VIC[i * 8 + j])) {
 				store_cea_idx(rxcap, vic);
 				store_y420_idx(rxcap, vic);
 			}
 		}
 	}
-
+	return true;
 PROCESS_END:
-	return 0;
+	return false;
 }
 
 static void edid_y420cmdb_reset(struct rx_cap *prxcap)
@@ -1517,7 +1524,7 @@ static void hdmitx_3d_update(struct rx_cap *prxcap)
 }
 
 /* parse Sink 3D information */
-static int hdmitx_edid_3d_parse(struct rx_cap *prxcap, u8 *dat,
+static bool hdmitx_edid_3d_parse(struct rx_cap *prxcap, u8 *dat,
 				u32 size)
 {
 	int j = 0;
@@ -1526,7 +1533,7 @@ static int hdmitx_edid_3d_parse(struct rx_cap *prxcap, u8 *dat,
 	u32 index = 0;
 
 	if (!prxcap || !dat)
-		return 0;
+		return false;
 
 	if (dat[base] & (1 << 7))
 		pos += 2;
@@ -1589,7 +1596,7 @@ static int hdmitx_edid_3d_parse(struct rx_cap *prxcap, u8 *dat,
 	} else {
 		hdmitx_3d_update(prxcap);
 	}
-	return 1;
+	return true;
 }
 
 /* parse Sink 4k2k information */
@@ -1600,9 +1607,7 @@ static void hdmitx_edid_4k2k_parse(struct rx_cap *prxcap, u8 *dat,
 		return;
 
 	if (size > 4 || size == 0) {
-		pr_debug(EDID
-			"4k2k in edid out of range, SIZE = %d\n",
-			size);
+		pr_debug(EDID "4k2k in edid out of range, SIZE = %d\n", size);
 		return;
 	}
 	while (size--) {
@@ -1709,8 +1714,7 @@ static void hdmitx_edid_parse_hdmi14(struct rx_cap *prxcap,
 			}
 			/* valid 3D */
 			if (block_buf[idx - 1] & 0xe0) {
-				hdmitx_edid_3d_parse(prxcap,
-						     &block_buf[offset + 7],
+				hdmitx_edid_3d_parse(prxcap, &block_buf[offset + 7],
 				count - 7);
 			}
 		}
@@ -2129,8 +2133,7 @@ static int hdmitx_edid_cta_block_parse(struct rx_cap *prxcap, u8 *block_buf)
 							 0x1f) + 1);
 					break;
 				case EXTENSION_DRM_DYNAMIC_TAG:
-					edid_parsedrmdb(prxcap,
-							&block_buf[offset]);
+					edid_parsedrmdb(prxcap, &block_buf[offset]);
 					break;
 				case EXTENSION_VFPDB_TAG:
 /* Just record VFPDB offset address, call Edid_ParsingVFPDB() after DTD
@@ -2250,34 +2253,19 @@ static void hdmitx_edid_set_default_vic(struct rx_cap *prxcap)
 	HDMITX_INFO("set default vic\n");
 }
 
-static int hdmitx_edid_search_IEEEOUI(char *buf)
+static bool hdmitx_edid_search_IEEEOUI(char *buf)
 {
 	int i;
 
 	if (!buf)
-		return 0;
+		return false;
 
 	for (i = 0; i < 0x180 - 2; i++) {
 		if (buf[i] == 0x03 && buf[i + 1] == 0x0c &&
 		    buf[i + 2] == 0x00)
-			return 1;
+			return true;
 	}
-	return 0;
-}
-
-int check_hdmi_edid_sub_block_valid(unsigned char *buf, int blk_no)
-{
-	if (!buf)
-		return 0;
-
-	/* check block 0 */
-	if (blk_no == 0)
-		return _check_base_structure(buf);
-
-	/* check block n */
-	if (buf[0] == 0)
-		return 0;
-	return _check_edid_blk_chksum(buf);
+	return false;
 }
 
 static void edid_manufacture_date_parse(struct rx_cap *prxcap,
@@ -2339,21 +2327,21 @@ static void edid_physical_size_parse(struct rx_cap *prxcap,
 }
 
 /* if edid block 0 are all zeros, then consider RX as HDMI device */
-static int edid_zero_data(u8 *buf)
+static bool edid_zero_data(u8 *buf)
 {
 	int sum = 0;
 	int i = 0;
 
 	if (!buf)
-		return 0;
+		return false;
 
 	for (i = 0; i < 128; i++)
 		sum += buf[i];
 
 	if (sum == 0)
-		return 1;
+		return true;
 	else
-		return 0;
+		return false;
 }
 
 static void dump_dtd_info(struct dtd *t)
@@ -2662,19 +2650,19 @@ static void check_dv_truly_support(struct rx_cap *prxcap, struct dv_info *dv)
 	}
 }
 
-int hdmitx_find_philips(u8 *edid_buf)
+bool hdmitx_find_philips(u8 *edid_buf)
 {
 	int j;
 	int length = sizeof(vendor_id) / sizeof(struct edid_venddat_t);
 
 	if (!edid_buf)
-		return 0;
+		return false;
 
 	for (j = 0; j < length; j++) {
 		if (memcmp(edid_buf, &vendor_id[j], sizeof(struct edid_venddat_t)) == 0)
-			return 1;
+			return true;
 	}
-	return 0;
+	return false;
 }
 
 /*

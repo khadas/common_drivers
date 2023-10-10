@@ -1478,7 +1478,6 @@ void hdmitx21_ext_set_i2s_mask(char ch_num, char ch_msk)
 		hdev->aud_output_ch = 0;
 		if (update_flag != hdev->aud_output_ch) {
 			update_flag = hdev->aud_output_ch;
-			hdev->hdmi_ch = 0;
 			hdmitx21_set_audio(hdev, &hdev->cur_audio_param);
 		}
 	}
@@ -1489,7 +1488,6 @@ void hdmitx21_ext_set_i2s_mask(char ch_num, char ch_msk)
 	hdev->aud_output_ch = (ch_num << 4) + ch_msk;
 	if (update_flag != hdev->aud_output_ch) {
 		update_flag = hdev->aud_output_ch;
-		hdev->hdmi_ch = 0;
 		hdmitx21_set_audio(hdev, &hdev->cur_audio_param);
 	}
 }
@@ -3277,7 +3275,6 @@ static bool hdmitx_set_i2s_mask(char ch_num, char ch_msk)
 		hdev->aud_output_ch = 0;
 		if (update_flag != hdev->aud_output_ch) {
 			update_flag = hdev->aud_output_ch;
-			hdev->hdmi_ch = 0;
 		}
 		return 0;
 	}
@@ -3286,10 +3283,8 @@ static bool hdmitx_set_i2s_mask(char ch_num, char ch_msk)
 		return 0;
 	}
 	hdev->aud_output_ch = (ch_num << 4) + ch_msk;
-	if (update_flag != hdev->aud_output_ch) {
+	if (update_flag != hdev->aud_output_ch)
 		update_flag = hdev->aud_output_ch;
-		hdev->hdmi_ch = 0;
-	}
 	return 1;
 }
 
@@ -3367,7 +3362,7 @@ static int hdmitx_notify_callback_a(struct notifier_block *block,
 		}
 	}
 
-	if ((!(hdev->hdmi_audio_off_flag)) && hdev->audio_param_update_flag) {
+	if (hdev->audio_param_update_flag) {
 		/* plug-in & update audio param */
 		if (hdev->tx_comm.hpd_state == 1) {
 			hdmitx21_set_audio(hdev,
@@ -3725,9 +3720,6 @@ static int amhdmitx21_device_init(struct hdmitx_dev *hdev)
 	hdev->flag_3dtb = 0;
 	hdev->def_stream_type = DEFAULT_STREAM_TYPE;
 
-	hdev->audio_param_update_flag = 0;
-	/* 1: 2ch */
-	hdev->hdmi_ch = 1;
 	/* default audio configure is on */
 	hdev->tx_aud_cfg = 1;
 	hdev->need_filter_hdcp_off = false;

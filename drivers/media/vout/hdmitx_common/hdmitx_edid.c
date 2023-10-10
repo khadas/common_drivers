@@ -201,13 +201,13 @@ int _check_edid_blk_chksum(unsigned char *block)
  * base structure: header, checksum
  * extension: the first non-zero byte, checksum
  */
-int check_dvi_hdmi_edid_valid(unsigned char *buf)
+bool hdmitx_edid_check_data_valid(unsigned char *buf)
 {
 	int i;
 	int blk_cnt;
 
 	if (!buf)
-		return 0;
+		return false;
 
 	blk_cnt = buf[0x7e] + 1;
 	/* limit blk_cnt to EDID_MAX_BLOCK  */
@@ -216,23 +216,23 @@ int check_dvi_hdmi_edid_valid(unsigned char *buf)
 
 	/* check block 0 */
 	if (_check_base_structure(&buf[0]) == 0)
-		return 0;
+		return false;
 
 	if (blk_cnt == 1)
-		return 1;
+		return true;
 	/* check block 1 extension tag */
 	if (!(buf[0x80] == 0x2 || buf[0x80] == 0xf0))
-		return 0;
+		return false;
 
 	/* check extension block 1 and more */
 	for (i = 1; i < blk_cnt; i++) {
 		if (buf[i * 0x80] == 0)
-			return 0;
+			return false;
 		if (_check_edid_blk_chksum(&buf[i * 0x80]) == 0)
-			return 0;
+			return false;
 	}
 
-	return 1;
+	return true;
 }
 
 /*index is hdmi 1.4 vic in vsif, value is hdmi2.0 vic*/
@@ -290,7 +290,7 @@ bool hdmitx_edid_check_y420_support(struct rx_cap *prxcap, enum hdmi_vic vic)
 	return ret;
 }
 
-int hdmitx_edid_validate_mode(struct rx_cap *rxcap, u32 vic)
+bool hdmitx_edid_validate_mode(struct rx_cap *rxcap, u32 vic)
 {
 	int i = 0;
 	bool edid_matched = false;
@@ -317,7 +317,7 @@ int hdmitx_edid_validate_mode(struct rx_cap *rxcap, u32 vic)
 		}
 	}
 
-	return edid_matched ? 0 : -EINVAL;
+	return edid_matched;
 }
 
 /* For some TV's EDID, there maybe exist some information ambiguous.
@@ -2691,10 +2691,7 @@ int hdmitx_edid_parse(struct rx_cap *prxcap, u8 *edid_buf)
 		return -1;
 
 	dv = &prxcap->dv_info;
-	if (check_dvi_hdmi_edid_valid(edid_buf))
-		prxcap->edid_parsing = 1;
-	else
-		prxcap->edid_parsing = 0;
+	prxcap->edid_parsing = hdmitx_edid_check_data_valid(edid_buf);
 
 	prxcap->head_err = hdmitx_edid_header_invalid(&edid_buf[0]);
 	// TODO
@@ -2707,7 +2704,7 @@ int hdmitx_edid_parse(struct rx_cap *prxcap, u8 *edid_buf)
 
 	pr_debug(EDID "EDID Parser:\n");
 
-	if (!check_dvi_hdmi_edid_valid(edid_buf)) {
+	if (hdmitx_edid_check_data_valid(edid_buf) == false) {
 		edid_set_fallback_mode(prxcap);
 		pr_info("set fallback mode\n");
 		return 0;
@@ -2801,7 +2798,7 @@ int hdmitx_edid_parse(struct rx_cap *prxcap, u8 *edid_buf)
 
 	/* strictly DVI device judgement */
 	/* valid EDID & no audio tag & no IEEEOUI */
-	if (check_dvi_hdmi_edid_valid(&edid_buf[0]) &&
+	if (hdmitx_edid_check_data_valid(&edid_buf[0]) &&
 		!hdmitx_edid_search_IEEEOUI(&edid_buf[128])) {
 		prxcap->ieeeoui = 0x0;
 		pr_debug(EDID "sink is DVI device\n");
@@ -3014,8 +3011,7 @@ int hdmitx_edid_print_sink_cap(const struct rx_cap *prxcap,
 		"Rx Manufacturer Name: %s\n", prxcap->IDManufacturerName);
 	pos += snprintf(buffer + pos, buffer_len - pos,
 		"Rx Product Code: %02x%02x\n",
-		prxcap->IDProductCode[0],
-		prxcap->IDProductCode[1]);
+		prxcap->IDProductCode[0], prxcap->IDProductCode[1]);
 	pos += snprintf(buffer + pos, buffer_len - pos,
 		"Rx Serial Number: %02x%02x%02x%02x\n",
 		prxcap->IDSerialNumber[0],
@@ -3143,13 +3139,16 @@ int hdmitx_edid_print_sink_cap(const struct rx_cap *prxcap,
 	if (prxcap->colorimetry_data)
 		pos += snprintf(buffer + pos, buffer_len - pos,
 			"ColorMetry: 0x%x\n", prxcap->colorimetry_data);
-	pos += snprintf(buffer + pos, buffer_len - pos, "SCDC: %x\n",
-		prxcap->scdc_present);
-	pos += snprintf(buffer + pos, buffer_len - pos, "RR_Cap: %x\n",
-		prxcap->scdc_rr_capable);
-	pos +=
-	snprintf(buffer + pos, buffer_len - pos, "LTE_340M_Scramble: %x\n",
-		 prxcap->lte_340mcsc_scramble);
+	if (prxcap->scdc_present)
+		pos += snprintf(buffer + pos, buffer_len - pos, "SCDC: %x\n",
+			prxcap->scdc_present);
+	if (prxcap->scdc_rr_capable)
+		pos += snprintf(buffer + pos, buffer_len - pos, "RR_Cap: %x\n",
+			prxcap->scdc_rr_capable);
+	if (prxcap->lte_340mcsc_scramble)
+		pos += snprintf(buffer + pos, buffer_len - pos,
+				"LTE_340M_Scramble: %x\n",
+				prxcap->lte_340mcsc_scramble);
 
 	if (prxcap->dv_info.ieeeoui == DOVI_IEEEOUI)
 		pos += snprintf(buffer + pos, buffer_len - pos,

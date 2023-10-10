@@ -150,18 +150,11 @@ struct hdmitx_dev {
 	 * sample rate, need to update ACR/N.
 	 */
 	struct aud_para cur_audio_param;
-	unsigned char force_audio_flag;
 	int audio_param_update_flag;
 	unsigned int tx_aud_cfg; /* 0, off; 1, on */
 	/* configure for I2S: 8ch in, 2ch out */
 	/* 0: default setting  1:ch0/1  2:ch2/3  3:ch4/5  4:ch6/7 */
 	unsigned int aud_output_ch;
-	unsigned int hdmi_ch;
-	/* if set to 1, then HDMI will output no audio */
-	/* In KTV case, HDMI output Picture only, and Audio is driven by other
-	 * sources.
-	 */
-	unsigned char hdmi_audio_off_flag;
 	bool aud_notify_update;
 	/*audio end*/
 

@@ -83,7 +83,7 @@ static ssize_t edid_parsing_show(struct device *dev,
 {
 	int pos = 0;
 
-	if (check_dvi_hdmi_edid_valid(global_tx_common->EDID_buf))
+	if (hdmitx_edid_check_data_valid(global_tx_common->EDID_buf))
 		pos += snprintf(buf + pos, PAGE_SIZE, "ok\n");
 	else
 		pos += snprintf(buf + pos, PAGE_SIZE, "ng\n");
@@ -660,7 +660,7 @@ static ssize_t disp_cap_show(struct device *dev,
 			vic == HDMI_6_720x480i60_4x3 ||
 			vic == HDMI_17_720x576p50_4x3 ||
 			vic == HDMI_21_720x576i50_4x3) {
-			if (hdmitx_edid_validate_mode(prxcap, vic + 1) == 0) {
+			if (hdmitx_edid_validate_mode(prxcap, vic + 1) == true) {
 				/*pr_info("%s: check vic exist, handle [%d] later.\n",
 				 *	__func__, vic + 1);
 				 */

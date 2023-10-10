@@ -122,7 +122,7 @@ int hdmitx_common_get_vic_list(int **vics)
 			vic == HDMI_6_720x480i60_4x3 ||
 			vic == HDMI_17_720x576p50_4x3 ||
 			vic == HDMI_21_720x576i50_4x3) {
-			if (hdmitx_edid_validate_mode(prxcap, vic + 1) == 0) {
+			if (hdmitx_edid_validate_mode(prxcap, vic + 1) == true) {
 				//pr_info("%s: check vic exist, handle [%d] later.\n",
 				//	__func__, vic + 1);
 				continue;

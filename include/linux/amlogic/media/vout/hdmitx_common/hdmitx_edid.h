@@ -253,7 +253,7 @@ u32 hdmitx_edid_get_hdmi14_4k_vic(u32 vic);
 bool hdmitx_edid_check_y420_support(struct rx_cap *prxcap,
 	enum hdmi_vic vic);
 
-int hdmitx_edid_validate_mode(struct rx_cap *rxcap, u32 vic);
+bool hdmitx_edid_validate_mode(struct rx_cap *rxcap, u32 vic);
 int hdmitx_edid_validate_format_para(struct rx_cap *prxcap,
 		struct hdmi_format_para *para);
 
@@ -264,7 +264,7 @@ int hdmitx_edid_print_sink_cap(const struct rx_cap *prxcap, char *buffer, int bu
 bool hdmitx_edid_is_all_zeros(unsigned char *rawedid);
 int _check_base_structure(unsigned char *buf);
 int _check_edid_blk_chksum(unsigned char *block);
-int check_dvi_hdmi_edid_valid(unsigned char *buf);
+bool hdmitx_edid_check_data_valid(unsigned char *buf);
 int hdmitx_edid_parse(struct rx_cap *prxcap, u8 *edid_buf);
 unsigned int hdmitx_edid_valid_block_num(unsigned char *edid_buf);
 bool hdmitx_validate_y420_vic(enum hdmi_vic vic);

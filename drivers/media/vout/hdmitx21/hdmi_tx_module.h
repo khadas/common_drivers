@@ -149,13 +149,7 @@ struct hdmitx_dev {
 	/* configure for I2S: 8ch in, 2ch out */
 	/* 0: default setting  1:ch0/1  2:ch2/3  3:ch4/5  4:ch6/7 */
 	u32 aud_output_ch;
-	u32 hdmi_ch;
 	u32 tx_aud_src; /* 0: SPDIF  1: I2S */
-/* if set to 1, then HDMI will output no audio */
-/* In KTV case, HDMI output Picture only, and Audio is driven by other
- * sources.
- */
-	u8 hdmi_audio_off_flag;
 	enum hdmi_hdr_transfer hdr_transfer_feature;
 	enum hdmi_hdr_color hdr_color_feature;
 	/* 0: sdr 1:standard HDR 2:non standard 3:HLG*/

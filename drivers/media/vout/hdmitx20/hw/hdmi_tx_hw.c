@@ -734,14 +734,14 @@ static irqreturn_t intr_handler(int irq, void *dev)
 
 	pr_info(SYS "irq %x %x\n", dat_top, dat_dwc);
 	/* bit[2:1] of dat_top means HPD falling and rising */
-	if ((dat_top & 0x6) && hdev->tx_comm.hdmitx_gpios_hpd != -EPROBE_DEFER) {
+	if ((dat_top & 0x6) && hdev->tx_hw.base.hdmitx_gpios_hpd != -EPROBE_DEFER) {
 		struct timespec64 kts;
 		struct rtc_time tm;
 
 		ktime_get_real_ts64(&kts);
 		rtc_time64_to_tm(kts.tv_sec, &tm);
 		pr_info("UTC+0 %ptRd %ptRt HPD %s\n", &tm, &tm,
-			gpio_get_value(hdev->tx_comm.hdmitx_gpios_hpd) ? "HIGH" : "LOW");
+			gpio_get_value(hdev->tx_hw.base.hdmitx_gpios_hpd) ? "HIGH" : "LOW");
 	}
 
 	if (hdev->tx_hw.base.debug_hpd_lock == 1) {
@@ -3262,13 +3262,6 @@ static void hdmitx_debug(struct hdmitx_hw_common *tx_hw, const char *buf)
 			if (val)
 				pr_info("VCBUS[0x%x]: 0x%x\n", i, val);
 		}
-		return;
-	} else if (strncmp(tmpbuf, "hdmiaudio", 9) == 0) {
-		ret = kstrtoul(tmpbuf + 9, 16, &value);
-		if (value == 1)
-			hdev->hdmi_audio_off_flag = 0;
-		else if (value == 0)
-			;
 		return;
 	} else if (strncmp(tmpbuf, "cfgreg", 6) == 0) {
 		ret = kstrtoul(tmpbuf + 6, 16, &adr);

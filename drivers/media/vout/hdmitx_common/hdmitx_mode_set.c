@@ -533,8 +533,14 @@ void hdmitx_plugin_common_work(struct hdmitx_common *tx_comm,
 		tx_comm->ctrl_ops->disable_hdcp();
 	}
 
-	/*read edid*/
+	/* reset i2c before edid read */
+	hdmitx_hw_cntl_misc(tx_hw_base, MISC_I2C_RESET, 0);
 	hdmitx_common_get_edid(tx_comm);
+	if (tx_comm->tv_usage == 0)
+		rx_edid_physical_addr(tx_comm->rxcap.vsdb_phy_addr.a,
+			tx_comm->rxcap.vsdb_phy_addr.b,
+			tx_comm->rxcap.vsdb_phy_addr.c,
+			tx_comm->rxcap.vsdb_phy_addr.d);
 
 	/* SW: update flags */
 	/* TODO: cedst_policy update method */

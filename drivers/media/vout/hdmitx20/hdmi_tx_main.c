@@ -334,10 +334,8 @@ static  int  set_disp_mode(struct hdmitx_dev *hdev, const char *mode)
 	}
 
 	ret = hdmitx_set_display(hdev, vic);
-	if (ret >= 0) {
+	if (ret >= 0)
 		hdmitx_hw_cntl(&hdev->tx_hw.base, HDMITX_AVMUTE_CNTL, AVMUTE_CLEAR);
-		hdev->audio_param_update_flag = 1;
-	}
 
 	return ret;
 }
@@ -361,42 +359,6 @@ static ssize_t disp_mode_store(struct device *dev,
 	struct hdmitx_dev *hdev = dev_get_drvdata(dev);
 
 	set_disp_mode(hdev, buf);
-	return count;
-}
-
-static ssize_t aud_mode_show(struct device *dev,
-			     struct device_attribute *attr,
-			     char *buf)
-{
-	return 0;
-}
-
-static ssize_t aud_mode_store(struct device *dev,
-			      struct device_attribute *attr,
-			      const char *buf, size_t count)
-{
-	struct hdmitx_dev *hdev = dev_get_drvdata(dev);
-
-	/* set_disp_mode(buf); */
-	struct aud_para *audio_param =
-		&hdev->cur_audio_param;
-	if (strncmp(buf, "32k", 3) == 0) {
-		audio_param->rate = FS_32K;
-	} else if (strncmp(buf, "44.1k", 5) == 0) {
-		audio_param->rate = FS_44K1;
-	} else if (strncmp(buf, "48k", 3) == 0) {
-		audio_param->rate = FS_48K;
-	} else {
-		hdev->force_audio_flag = 0;
-		return count;
-	}
-	audio_param->type = CT_PCM;
-	audio_param->chs = CC_2CH;
-	audio_param->size = SS_16BITS;
-
-	hdev->audio_param_update_flag = 1;
-	hdev->force_audio_flag = 1;
-
 	return count;
 }
 
@@ -2041,40 +2003,6 @@ static int hdmi_hdr_status_to_drm(void)
 	return SDR;
 }
 
-static ssize_t aud_ch_show(struct device *dev,
-			   struct device_attribute *attr,
-			   char *buf)
-{
-	int pos = 0;
-	struct hdmitx_dev *hdev = dev_get_drvdata(dev);
-
-	pos += snprintf(buf + pos, PAGE_SIZE,
-		"hdmi_channel = %d ch\n",
-		hdev->hdmi_ch ? hdev->hdmi_ch + 1 : 0);
-	return pos;
-}
-
-static ssize_t aud_ch_store(struct device *dev,
-			    struct device_attribute *attr,
-			    const char *buf, size_t count)
-{
-	struct hdmitx_dev *hdev = dev_get_drvdata(dev);
-
-	if (strncmp(buf, "6ch", 3) == 0)
-		hdev->hdmi_ch = 5;
-	else if (strncmp(buf, "8ch", 3) == 0)
-		hdev->hdmi_ch = 7;
-	else if (strncmp(buf, "2ch", 3) == 0)
-		hdev->hdmi_ch = 1;
-	else
-		return count;
-
-	hdev->audio_param_update_flag = 1;
-	hdev->force_audio_flag = 1;
-
-	return count;
-}
-
 static ssize_t rxsense_policy_store(struct device *dev,
 				    struct device_attribute *attr,
 				    const char *buf, size_t count)
@@ -2923,18 +2851,6 @@ static ssize_t hdmitx_basic_config_show(struct device *dev,
 	}
 	pos += snprintf(buf + pos, PAGE_SIZE, "audio config: %s\n", conf);
 
-	switch (hdev->hdmi_audio_off_flag) {
-	case 0:
-		conf = "on";
-		break;
-	case 1:
-		conf = "off";
-		break;
-	default:
-		conf = "none";
-	}
-	pos += snprintf(buf + pos, PAGE_SIZE, "audio on/off: %s\n", conf);
-
 	pos += hdmitx_audio_para_print(&hdev->cur_audio_param, buf + pos);
 
 	if (hdev->flag_3dfp)
@@ -3269,12 +3185,10 @@ static ssize_t hdcp22_top_reset_store(struct device *dev,
 }
 
 static DEVICE_ATTR_RW(disp_mode);
-static DEVICE_ATTR_RW(aud_mode);
 static DEVICE_ATTR_RW(vid_mute);
 static DEVICE_ATTR_WO(config);
 static DEVICE_ATTR_RO(aud_cap);
 static DEVICE_ATTR_RO(hdmi_hdr_status);
-static DEVICE_ATTR_RW(aud_ch);
 static DEVICE_ATTR_RW(sspll);
 static DEVICE_ATTR_RW(rxsense_policy);
 static DEVICE_ATTR_RW(cedst_policy);
@@ -3312,9 +3226,6 @@ static int hdmitx20_enable_mode(struct hdmitx_common *tx_comm, struct hdmi_forma
 	/* if vic is HDMI_UNKNOWN, hdmitx_set_display will disable HDMI */
 	ret = hdmitx_set_display(hdev, para->vic);
 
-	if (ret >= 0) {
-		hdev->audio_param_update_flag = 1;
-	}
 	hdmitx_set_audio(hdev, &hdev->cur_audio_param);
 
 	return 0;
@@ -3441,10 +3352,8 @@ static bool hdmitx_set_i2s_mask(char ch_num, char ch_msk)
 	      ch_num == 6 || ch_num == 8)) {
 		pr_info("err chn setting, must be 2, 4, 6 or 8, Rst as def\n");
 		hdev->aud_output_ch = 0;
-		if (update_flag != hdev->aud_output_ch) {
+		if (update_flag != hdev->aud_output_ch)
 			update_flag = hdev->aud_output_ch;
-			hdev->hdmi_ch = 0;
-		}
 		return 0;
 	}
 	if (ch_msk == 0) {
@@ -3452,10 +3361,8 @@ static bool hdmitx_set_i2s_mask(char ch_num, char ch_msk)
 		return 0;
 	}
 	hdev->aud_output_ch = (ch_num << 4) + ch_msk;
-	if (update_flag != hdev->aud_output_ch) {
+	if (update_flag != hdev->aud_output_ch)
 		update_flag = hdev->aud_output_ch;
-		hdev->hdmi_ch = 0;
-	}
 	return 1;
 }
 
@@ -3539,8 +3446,7 @@ static int hdmitx_notify_callback_a(struct notifier_block *block,
 		hdev->audio_param_update_flag = 1;
 	}
 
-	if ((!(hdev->hdmi_audio_off_flag)) &&
-	    hdev->audio_param_update_flag) {
+	if (hdev->audio_param_update_flag) {
 		/* plug-in & update audio param */
 		if (hdev->tx_comm.hpd_state == 1) {
 			hdev->aud_notify_update = 1;
@@ -3965,7 +3871,6 @@ static int amhdmitx_device_init(struct hdmitx_dev *hdmi_dev)
 	hdmi_dev->hdmi_current_eotf_type = EOTF_T_NULL;
 	hdmi_dev->hdmi_current_tunnel_mode = 0;
 	hdmi_dev->hdmi_current_signal_sdr = true;
-	hdmi_dev->force_audio_flag = 0;
 	hdmi_dev->tx_comm.hdcp_mode = 0;
 	hdmi_dev->tx_comm.ready = 0;
 	hdmi_dev->systemcontrol_on = 0;
@@ -3977,9 +3882,6 @@ static int amhdmitx_device_init(struct hdmitx_dev *hdmi_dev)
 	hdmi_dev->flag_3dss = 0;
 	hdmi_dev->flag_3dtb = 0;
 
-	hdmi_dev->audio_param_update_flag = 0;
-	/* 1: 2ch */
-	hdmi_dev->hdmi_ch = 1;
 	/* default audio configure is on */
 	hdmi_dev->tx_aud_cfg = 1;
 	hdmi_dev->topo_info =
@@ -4008,6 +3910,7 @@ static int amhdmitx_get_dt_info(struct platform_device *pdev, struct hdmitx_dev 
 	struct hdmi_config_platform_data *hdmi_pdata;
 #endif
 	u32 refreshrate_limit = 0;
+	struct hdmitx_hw_common *tx_hw_base;
 
 	/* HDMITX pinctrl config for hdp and ddc*/
 	if (pdev->dev.pins) {
@@ -4027,17 +3930,18 @@ static int amhdmitx_get_dt_info(struct platform_device *pdev, struct hdmitx_dev 
 				     hdev->pinctrl_default);
 	}
 
-	hdev->tx_comm.hdmitx_gpios_hpd = of_get_named_gpio_flags(pdev->dev.of_node,
+	tx_hw_base = &hdev->tx_hw.base;
+	tx_hw_base->hdmitx_gpios_hpd = of_get_named_gpio_flags(pdev->dev.of_node,
 		"hdmitx-gpios-hpd", 0, NULL);
-	if (hdev->tx_comm.hdmitx_gpios_hpd == -EPROBE_DEFER)
+	if (tx_hw_base->hdmitx_gpios_hpd == -EPROBE_DEFER)
 		pr_err("get hdmitx-gpios-hpd error\n");
-	hdev->tx_comm.hdmitx_gpios_scl = of_get_named_gpio_flags(pdev->dev.of_node,
+	tx_hw_base->hdmitx_gpios_scl = of_get_named_gpio_flags(pdev->dev.of_node,
 		"hdmitx-gpios-scl", 0, NULL);
-	if (hdev->tx_comm.hdmitx_gpios_scl == -EPROBE_DEFER)
+	if (tx_hw_base->hdmitx_gpios_scl == -EPROBE_DEFER)
 		pr_err("get hdmitx-gpios-scl error\n");
-	hdev->tx_comm.hdmitx_gpios_sda = of_get_named_gpio_flags(pdev->dev.of_node,
+	tx_hw_base->hdmitx_gpios_sda = of_get_named_gpio_flags(pdev->dev.of_node,
 		"hdmitx-gpios-sda", 0, NULL);
-	if (hdev->tx_comm.hdmitx_gpios_sda == -EPROBE_DEFER)
+	if (tx_hw_base->hdmitx_gpios_sda == -EPROBE_DEFER)
 		pr_err("get hdmitx-gpios-sda error\n");
 
 #ifdef CONFIG_OF
@@ -4297,8 +4201,8 @@ static int amhdmitx_probe(struct platform_device *pdev)
 	hdmitx_common_init(tx_comm, &hdev->tx_hw.base);
 
 	ret = amhdmitx_get_dt_info(pdev, hdev);
-	if (ret)
-		return ret;
+	/* if (ret) */
+	/*	return ret; */
 
 	amhdmitx_clktree_probe(device, hdev);
 
@@ -4325,12 +4229,10 @@ static int amhdmitx_probe(struct platform_device *pdev)
 	}
 	hdev->hdtx_dev = dev;
 	ret = device_create_file(dev, &dev_attr_disp_mode);
-	ret = device_create_file(dev, &dev_attr_aud_mode);
 	ret = device_create_file(dev, &dev_attr_vid_mute);
 	ret = device_create_file(dev, &dev_attr_config);
 	ret = device_create_file(dev, &dev_attr_aud_cap);
 	ret = device_create_file(dev, &dev_attr_hdmi_hdr_status);
-	ret = device_create_file(dev, &dev_attr_aud_ch);
 	ret = device_create_file(dev, &dev_attr_sspll);
 	ret = device_create_file(dev, &dev_attr_rxsense_policy);
 	ret = device_create_file(dev, &dev_attr_rxsense_state);
@@ -4493,7 +4395,6 @@ static int amhdmitx_remove(struct platform_device *pdev)
 
 	/* Remove the cdev */
 	device_remove_file(dev, &dev_attr_disp_mode);
-	device_remove_file(dev, &dev_attr_aud_mode);
 	device_remove_file(dev, &dev_attr_vid_mute);
 	device_remove_file(dev, &dev_attr_config);
 	device_remove_file(dev, &dev_attr_max_exceed);

@@ -24,6 +24,9 @@ struct hdmitx_common_state {
 	u32 hdr_priority;
 };
 
+typedef void (*audio_en_callback)(bool enable);
+typedef int (*audio_st_callback)(void);
+
 struct hdmitx_ctrl_ops {
 	int (*pre_enable_mode)(struct hdmitx_common *tx_comm, struct hdmi_format_para *para);
 	int (*enable_mode)(struct hdmitx_common *tx_comm, struct hdmi_format_para *para);
@@ -131,6 +134,14 @@ struct hdmitx_common {
 	struct hdmitx_tracer *tx_tracer;
 	struct hdmitx_event_mgr *event_mgr;
 	struct st_debug_param debug_param;
+
+	/* audio */
+	/* if switching from 48k pcm to 48k DD, the ACR/N parameter is same,
+	 * so there is no need to update ACR/N. but for mode change, different
+	 * sample rate, need to update ACR/N.
+	 */
+	struct aud_para cur_audio_param;
+	/*audio end*/
 };
 
 void hdmitx_get_init_state(struct hdmitx_common *tx_common,
@@ -220,6 +231,7 @@ int hdmitx_common_setup_vsif_packet(struct hdmitx_common *tx_comm,
 
 int hdmitx_register_hpd_cb(struct hdmitx_common *tx_comm, struct connector_hpd_cb *hpd_cb);
 int hdmitx_fire_drm_hpd_cb_unlocked(struct hdmitx_common *tx_comm);
+int hdmitx_audio_register_ctrl_callback(audio_en_callback cb1, audio_st_callback cb2);
 
 int hdmitx_get_hpd_state(struct hdmitx_common *tx_comm);
 unsigned char *hdmitx_get_raw_edid(struct hdmitx_common *tx_comm);
@@ -268,5 +280,9 @@ const struct hdr_info *hdmitx_common_get_hdr_info(void);
 int hdmitx_common_get_vic_list(int **vics);
 bool hdmitx_common_chk_mode_attr_sup(char *mode, char *attr);
 int hdmitx_common_get_timing_para(int vic, struct drm_hdmitx_timing_para *para);
+void hdmitx_audio_notify_callback(struct hdmitx_common *tx_comm,
+	struct hdmitx_hw_common *tx_hw_base,
+	struct notifier_block *block,
+	unsigned long cmd, void *para);
 
 #endif

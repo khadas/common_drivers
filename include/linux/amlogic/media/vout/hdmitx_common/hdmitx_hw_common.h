@@ -241,42 +241,41 @@ struct hdmitx_hw_common {
 
 	int (*setupirq)(struct hdmitx_hw_common *tx_hw);
 
-	int (*cntlmisc)(struct hdmitx_hw_common *tx_hw,
-			u32 cmd, u32 arg);
+	int (*cntlmisc)(struct hdmitx_hw_common *tx_hw, u32 cmd, u32 arg);
 	/* Configure control */
-	int (*cntlconfig)(struct hdmitx_hw_common *tx_hw,
-			u32 cmd, u32 arg);
+	int (*cntlconfig)(struct hdmitx_hw_common *tx_hw, u32 cmd, u32 arg);
 	/* Control ddc for hdcp/edid functions */
 	int (*cntlddc)(struct hdmitx_hw_common *tx_hw,
 		unsigned int cmd, unsigned long arg);
 	/* Other control */
-	int (*cntl)(struct hdmitx_hw_common *tx_hw,
-		unsigned int cmd, unsigned int arg);
+	int (*cntl)(struct hdmitx_hw_common *tx_hw, unsigned int cmd, unsigned int arg);
 
 	/* In original setpacket, there are many policies, like
 	 *	if ((DB[4] >> 4) == T3D_FRAME_PACKING)
 	 * Need a only pure data packet to call
 	 */
-	void (*setpacket)(int type, unsigned char *DB,
-			unsigned char *HB);
+	void (*setpacket)(int type, unsigned char *DB, unsigned char *HB);
 	void (*disablepacket)(int type);
 
 	/* Audio/Video/System Status */
-	int (*getstate)(struct hdmitx_hw_common *tx_hw,
-			u32 cmd, u32 arg);
+	int (*getstate)(struct hdmitx_hw_common *tx_hw, u32 cmd, u32 arg);
 
 	/*validate if vic is supported by hw ip/phy*/
 	int (*validatemode)(struct hdmitx_hw_common *tx_hw, u32 vic);
 	/*calc formatpara hw info config*/
 	int (*calcformatpara)(struct hdmitx_hw_common *tx_hw, struct hdmi_format_para *para);
 
-	int (*setaudmode)(struct hdmitx_hw_common *tx_hw,
-			struct aud_para *audio_param);
+	int (*setaudmode)(struct hdmitx_hw_common *tx_hw, struct aud_para *audio_param);
 
 	/*debug function*/
 	void (*debugfun)(struct hdmitx_hw_common *tx_hw, const char *cmd_str);
 	int (*setdispmode)(struct hdmitx_hw_common *tx_hw);
 	u8 debug_hpd_lock;
+
+	/* GPIO hpd/scl/sda members*/
+	int hdmitx_gpios_hpd;
+	int hdmitx_gpios_scl;
+	int hdmitx_gpios_sda;
 };
 
 int hdmitx_hw_cntl_config(struct hdmitx_hw_common *tx_hw,

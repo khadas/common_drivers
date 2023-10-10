@@ -57,6 +57,7 @@ int hdmitx_common_init(struct hdmitx_common *tx_comm, struct hdmitx_hw_common *h
 
 	/*mutex init*/
 	mutex_init(&tx_comm->hdmimode_mutex);
+	mutex_init(&tx_comm->cur_audio_param.aud_mutex);
 	return 0;
 }
 
@@ -539,7 +540,7 @@ int hdmitx_common_parse_vic_in_edid(struct hdmitx_common *tx_comm, const char *m
 	}
 
 	/*check if vic supported by rx*/
-	if (hdmitx_edid_validate_mode(&tx_comm->rxcap, vic) == 0)
+	if (hdmitx_edid_validate_mode(&tx_comm->rxcap, vic) == true)
 		return vic;
 
 	/* for compatibility: 480p/576p, will get 0 if there is no alternate vic;*/
@@ -549,7 +550,7 @@ int hdmitx_common_parse_vic_in_edid(struct hdmitx_common *tx_comm, const char *m
 		vic = alternate_vic;
 	}
 
-	if (vic != HDMI_0_UNKNOWN && hdmitx_edid_validate_mode(&tx_comm->rxcap, vic) != 0)
+	if (vic != HDMI_0_UNKNOWN && hdmitx_edid_validate_mode(&tx_comm->rxcap, vic) == false)
 		vic = HDMI_0_UNKNOWN;
 
 	/* Dont call hdmitx_common_check_valid_para_of_vic anymore.
@@ -745,7 +746,7 @@ int hdmitx_common_get_edid(struct hdmitx_common *tx_comm)
 		hdmitx_hw_cntl_ddc(tx_hw_base, DDC_EDID_READ_DATA, 0);
 	}
 	/* If EDID is not correct at first time, then retry */
-	if (!check_dvi_hdmi_edid_valid(tx_comm->EDID_buf)) {
+	if (hdmitx_edid_check_data_valid(tx_comm->EDID_buf) == false) {
 		struct timespec64 kts;
 		struct rtc_time tm;
 

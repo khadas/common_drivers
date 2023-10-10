@@ -5,6 +5,12 @@
 
 #include <linux/kernel.h>
 #include <linux/string.h>
+#include <linux/soundcard.h>
+#include <linux/mutex.h>
+#include <sound/core.h>
+#include <sound/pcm.h>
+#include <sound/initval.h>
+#include <sound/control.h>
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_common.h>
 
 /* Recommended N and Expected CTS for 32kHz */

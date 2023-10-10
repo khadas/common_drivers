@@ -60,7 +60,7 @@ enum vdin_vdi_x_t3x_e {
 // Bit 27:16    reg_rdwin_manual
 // Bit 28       reg_dbv422_mode
 // Bit 29       reg_afifo_rate
-// Bit 30       reg_upsmp_en    :   0:disable   1: 4ppc to 2ppc (not skip)
+// Bit 30       reg_upsmp_en:0:disable 1:4ppc to 2ppc(not skip) (420+2ppc or 420+4ppc need 1)
 // bit 31       disable_rst_afifo
 #define VPU_VDIN_HDMI1_CTRL0                       0x272e
 // Bit 27:24    reg_yuv_swap

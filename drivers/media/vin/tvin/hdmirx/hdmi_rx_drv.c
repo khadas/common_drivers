@@ -1570,6 +1570,15 @@ void hdmirx_get_avi_ext_colorimetry(struct tvin_sig_property_s *prop, u8 port)
 	}
 }
 
+/* frl is 2ppc or 4ppc; tmds is 1ppc (420+2ppc;420+4ppc up_sample_en need enable to 1) */
+void hdmirx_get_up_sample_en(struct tvin_sig_property_s *prop, u8 port)
+{
+	if (rx[port].var.frl_rate && rx[port].cur.colorspace == E_COLOR_YUV420)
+		prop->up_sample_en = 1;
+	else
+		prop->up_sample_en = 0;
+}
+
 /***************************************************
  *func: hdmirx_get_sig_property - get signal property
  **************************************************/
@@ -1595,6 +1604,7 @@ void hdmirx_get_sig_prop(struct tvin_frontend_s *fe,
 	hdmirx_get_hdcp_sts(prop, rx_info.main_port);
 	hdmirx_get_hw_vic(prop, rx_info.main_port);
 	hdmirx_get_avi_ext_colorimetry(prop, rx_info.main_port);
+	hdmirx_get_up_sample_en(prop, rx_info.main_port);
 	prop->skip_vf_num = vdin_drop_frame_cnt;
 	if (log_level & SIG_PROP_LOG) {
 		rx_pr("dvi:%#x,color[%d,%#x,%#x,%#x],fps:%d,spd[%#x,%#x]\n",

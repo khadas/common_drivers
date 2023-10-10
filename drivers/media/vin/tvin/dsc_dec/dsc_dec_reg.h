@@ -8,6 +8,9 @@
 
 //pll clk register
 #define CLKCTRL_DSC_CLK_CTRL			0x0040
+// BIT 6 gate = 1
+// BIT 16 N = 0 : cts_dsc_pix_clk_sel
+// BIT 7:9 = 3:dsc_pix_pll 5:hifi1
 #define CLKCTRL_PIX_PLL_CTRL0			0x02f0
 #define CLKCTRL_PIX_PLL_CTRL1			0x02f1
 #define CLKCTRL_PIX_PLL_CTRL2			0x02f2

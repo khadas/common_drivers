@@ -80,9 +80,11 @@ void set_dsc_dec_en(unsigned int enable)
 	if (enable) {
 		W_DSC_DEC_BIT(DSC_ASIC_CTRL0, 1, DSC_DEC_EN, DSC_DEC_EN_WID);
 		W_DSC_DEC_BIT(DSC_ASIC_CTRL3, 1, TMG_EN, TMG_EN_WID);
+		W_DSC_DEC_CLKCTRL_REG(CLKCTRL_DSC_CLK_CTRL, 0x1c0);
 	} else {
 		W_DSC_DEC_BIT(DSC_ASIC_CTRL0, 0, DSC_DEC_EN, DSC_DEC_EN_WID);
 		W_DSC_DEC_BIT(DSC_ASIC_CTRL3, 0, TMG_EN, TMG_EN_WID);
+		W_DSC_DEC_CLKCTRL_REG(CLKCTRL_DSC_CLK_CTRL, 0x2c0);
 	}
 }
 
@@ -322,7 +324,6 @@ void dsc_dec_config_fix_pll_clk(unsigned int value)
 		usleep_range(20, 30);
 		W_DSC_DEC_CLKCTRL_REG(CLKCTRL_PIX_PLL_CTRL3, 0x090da200);
 	}
-	W_DSC_DEC_CLKCTRL_REG(CLKCTRL_DSC_CLK_CTRL, 0x1c0);
 }
 
 void dsc_dec_config_pll_clk(unsigned int od, unsigned int dpll_m,

@@ -555,8 +555,8 @@ static ssize_t dsc_dec_debug_store(struct device *dev,
 		init_pps_data_8k_60hz_10bpc(dsc_dec_drv);
 	} else if (!strcmp(parm[0], "is_enable_dsc_dec")) {
 		if (parm[1] && (kstrtouint(parm[1], 10, &temp) == 0))
-			set_dsc_dec_en(temp);
-		DSC_DEC_PR("is_enable_dsc value:%d\n", temp);
+			dsc_dec_drv->dsc_dec_en = temp;
+		DSC_DEC_PR("is_enable_dsc value:%d\n", dsc_dec_drv->dsc_dec_en);
 	} else if (!strcmp(parm[0], "manual_dsc_tmg")) {
 		set_dsc_tmg_ctrl(dsc_dec_drv, (char **)&parm);
 	} else if (!strcmp(parm[0], "clr_dsc_dec_status")) {

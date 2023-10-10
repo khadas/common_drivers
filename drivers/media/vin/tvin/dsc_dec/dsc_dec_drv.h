@@ -62,7 +62,7 @@ struct aml_dsc_dec_drv_s {
 	unsigned int slice_num_m1;//pic_width/slice_width;
 	unsigned int dsc_dec_en;
 	unsigned int dsc_dec_frm_latch_en;// need to check ucode
-	unsigned int pix_per_clk;//input 0:1pix 1:2pix 2:4pix
+	u8 pix_per_clk;//input 0:1pix 1:2pix 2:4pix
 	bool c3_clk_en;
 	bool c2_clk_en;
 	bool c1_clk_en;

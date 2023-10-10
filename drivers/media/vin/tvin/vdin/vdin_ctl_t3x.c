@@ -527,11 +527,9 @@ void vdin_set_top_t3x(struct vdin_dev_s *devp, enum tvin_port_e port,
 	unsigned int offset = devp->addr_offset;
 	unsigned int vdin_mux = VDIN_MUX_NULL;
 	unsigned int vdi_size = 0;
-	unsigned int value = 0;
 	unsigned int vdin_data_bus_0 = VDIN_MAP_Y_G;
 	unsigned int vdin_data_bus_1 = VDIN_MAP_BPB;
 	unsigned int vdin_data_bus_2 = VDIN_MAP_RCR;
-	void __iomem *dsc_clk;
 
 	pr_info("%s %d:port:%#x,input_cfmt:%d\n",
 		__func__, __LINE__, port, input_cfmt);
@@ -573,19 +571,6 @@ void vdin_set_top_t3x(struct vdin_dev_s *devp, enum tvin_port_e port,
 			vdin_mux = VDIN_VDI4A_HDMIRX_T3X;
 			wr(0, VDIN_INTF_VDI4A_CTRL, 0xe4);
 			wr(0, VDIN_INTF_VDI4A_SIZE, vdi_size);
-			/* Move DSC clock setting to DSC decoder in the future */
-			//bit6=1,bit16=0;non-dsc bit7:9 = 5;dsc = 3
-			//value = codecio_read_nocbus(DSC_CLK_CTRL_OFFSET);
-			dsc_clk = ioremap(CLKCTRL_DSC_CLK_CTRL, sizeof(CLKCTRL_DSC_CLK_CTRL));
-			value = readl(dsc_clk);
-			value |= (1 << 6);
-			value &= ~(1 << 16);
-			value &= ~(7 << 7);
-			value |= (5 << 7);
-			writel(value, dsc_clk);
-			iounmap(dsc_clk);
-			//codecio_write_nocbus(DSC_CLK_CTRL_OFFSET, value);
-			pr_info("%s %d:value:%#x\n", __func__, __LINE__, value);
 //		}
 		vdin_data_bus_0 = VDIN_MAP_RCR;
 		vdin_data_bus_1 = VDIN_MAP_Y_G;
@@ -697,10 +682,7 @@ void vdin_set_top_t3x(struct vdin_dev_s *devp, enum tvin_port_e port,
 		wr_bits(0, VPU_VDIN_HDMI0_CTRL1, 1, 4, 2); /* reg_hskip_mode */
 	if (devp->v_skip_en)
 		wr_bits(0, VPU_VDIN_HDMI0_CTRL1, 1, 7, 1); /* reg_vskip_en */
-	if (input_cfmt == TVIN_YUV420)
-		wr_bits(0, VPU_VDIN_HDMI0_CTRL1, 1, 30, 1);
-	else
-		wr_bits(0, VPU_VDIN_HDMI0_CTRL1, 0, 30, 1);
+	wr_bits(0, VPU_VDIN_HDMI0_CTRL1, devp->pre_prop.up_sample_en, 30, 1);
 }
 
 /*this function will set the bellow parameters of devp:

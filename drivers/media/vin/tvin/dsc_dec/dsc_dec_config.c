@@ -202,10 +202,11 @@ void init_pps_data_4k_120hz(struct aml_dsc_dec_drv_s *dsc_dec_drv)
 	dsc_dec_drv->tmg_ctrl.tmg_vso_eline = 13;
 	dsc_dec_drv->tmg_cb_von_bline = 85;
 	dsc_dec_drv->tmg_cb_von_eline = 2245;
-
-	dsc_dec_config_register(dsc_dec_drv);
-	dsc_dec_config_vpu_mux(dsc_dec_drv);
-	set_dsc_dec_en(1);
+	if (dsc_dec_drv->dsc_dec_en) {
+		dsc_dec_config_register(dsc_dec_drv);
+		dsc_dec_config_vpu_mux(dsc_dec_drv);
+		set_dsc_dec_en(1);
+	}
 }
 
 //config 4k60hz rgb 8bpc 12bpp
@@ -368,10 +369,11 @@ void init_pps_data_4k_60hz(struct aml_dsc_dec_drv_s *dsc_dec_drv)
 	dsc_dec_drv->tmg_ctrl.tmg_vso_eline = 13;
 	dsc_dec_drv->tmg_cb_von_bline = 85;
 	dsc_dec_drv->tmg_cb_von_eline = 2245;
-
-	dsc_dec_config_register(dsc_dec_drv);
-	dsc_dec_config_vpu_mux(dsc_dec_drv);
-	set_dsc_dec_en(1);
+	if (dsc_dec_drv->dsc_dec_en) {
+		dsc_dec_config_register(dsc_dec_drv);
+		dsc_dec_config_vpu_mux(dsc_dec_drv);
+		set_dsc_dec_en(1);
+	}
 }
 
 //config 8k30hz rgb 8bpc 12bpp
@@ -534,10 +536,11 @@ void init_pps_data_8k_30hz(struct aml_dsc_dec_drv_s *dsc_dec_drv)
 	dsc_dec_drv->tmg_ctrl.tmg_vso_eline = 22;
 	dsc_dec_drv->tmg_cb_von_bline = 65;
 	dsc_dec_drv->tmg_cb_von_eline = 4385;
-
-	dsc_dec_config_register(dsc_dec_drv);
-	dsc_dec_config_vpu_mux(dsc_dec_drv);
-	set_dsc_dec_en(1);
+	if (dsc_dec_drv->dsc_dec_en) {
+		dsc_dec_config_register(dsc_dec_drv);
+		dsc_dec_config_vpu_mux(dsc_dec_drv);
+		set_dsc_dec_en(1);
+	}
 }
 
 //config 8k60hz rgb 8bpc 9.9375bpp
@@ -701,10 +704,11 @@ void init_pps_data_8k_60hz_8bpc(struct aml_dsc_dec_drv_s *dsc_dec_drv)
 	dsc_dec_drv->tmg_ctrl.tmg_vso_eline = 22;
 	dsc_dec_drv->tmg_cb_von_bline = 65;
 	dsc_dec_drv->tmg_cb_von_eline = 4385;
-
-	dsc_dec_config_register(dsc_dec_drv);
-	dsc_dec_config_vpu_mux(dsc_dec_drv);
-	set_dsc_dec_en(1);
+	if (dsc_dec_drv->dsc_dec_en) {
+		dsc_dec_config_register(dsc_dec_drv);
+		dsc_dec_config_vpu_mux(dsc_dec_drv);
+		set_dsc_dec_en(1);
+	}
 }
 
 //config 8k60hz YUV444 10bpc 9.9375bpp
@@ -868,10 +872,11 @@ void init_pps_data_8k_60hz_10bpc(struct aml_dsc_dec_drv_s *dsc_dec_drv)
 	dsc_dec_drv->tmg_ctrl.tmg_vso_eline = 22;
 	dsc_dec_drv->tmg_cb_von_bline = 65;
 	dsc_dec_drv->tmg_cb_von_eline = 4385;
-
-	dsc_dec_config_register(dsc_dec_drv);
-	dsc_dec_config_vpu_mux(dsc_dec_drv);
-	set_dsc_dec_en(1);
+	if (dsc_dec_drv->dsc_dec_en) {
+		dsc_dec_config_register(dsc_dec_drv);
+		dsc_dec_config_vpu_mux(dsc_dec_drv);
+		set_dsc_dec_en(1);
+	}
 }
 
 /* integer: clk integer (M)

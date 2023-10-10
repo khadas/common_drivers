@@ -399,6 +399,7 @@ static void meson_sar_adc_clear_fifo(struct iio_dev *indio_dev)
 	}
 }
 
+#if defined(CONFIG_IIO_KFIFO_BUF)
 static int
 meson_sar_adc_read_raw_sample_from_chnl(struct iio_dev *indio_dev,
 					const struct iio_chan_spec *chan,
@@ -417,6 +418,7 @@ meson_sar_adc_read_raw_sample_from_chnl(struct iio_dev *indio_dev,
 
 	return 0;
 }
+#endif
 
 static int meson_sar_adc_get_sample(struct iio_dev *indio_dev,
 				    const struct iio_chan_spec *chan,
@@ -434,6 +436,7 @@ static int meson_sar_adc_get_sample(struct iio_dev *indio_dev,
 	if (ret)
 		return ret;
 
+#if defined(CONFIG_IIO_KFIFO_BUF)
 	if (iio_buffer_enabled(indio_dev)) {
 		ret = meson_sar_adc_read_raw_sample_from_chnl(indio_dev,
 							      chan,
@@ -442,6 +445,7 @@ static int meson_sar_adc_get_sample(struct iio_dev *indio_dev,
 
 		return (ret == 0) ? IIO_VAL_INT : ret;
 	}
+#endif
 
 	if (meson_sar_adc_pm_runtime_supported(indio_dev)) {
 		ret = pm_runtime_get_sync(indio_dev->dev.parent);
@@ -900,6 +904,7 @@ static int meson_sar_adc_hw_disable(struct iio_dev *indio_dev)
 	return 0;
 }
 
+#if defined(CONFIG_IIO_KFIFO_BUF)
 static irqreturn_t meson_sar_adc_irq(int irq, void *data)
 {
 	struct iio_dev *indio_dev = data;
@@ -958,6 +963,7 @@ static irqreturn_t meson_sar_adc_worker(int irq, void *data)
 
 	return IRQ_HANDLED;
 }
+#endif
 
 static int meson_sar_adc_calib(struct iio_dev *indio_dev)
 {
@@ -1002,6 +1008,7 @@ out:
 	return ret;
 }
 
+#if defined(CONFIG_IIO_KFIFO_BUF)
 static int meson_sar_adc_sample_mode_set(struct iio_dev *indio_dev,
 					 enum meson_sar_adc_sampling_mode mode)
 {
@@ -1204,6 +1211,7 @@ static const struct iio_buffer_setup_ops meson_buffer_setup_ops = {
 	.postenable  = meson_sar_adc_buffer_postenable,
 	.predisable = meson_sar_adc_buffer_predisable,
 };
+#endif
 
 static ssize_t chan7_mux_show(struct device *dev, struct device_attribute *attr,
 			      char *buf)
@@ -1263,7 +1271,9 @@ static const struct attribute_group meson_sar_adc_attr_group = {
 
 static const struct iio_info meson_sar_adc_iio_info = {
 	.read_raw = meson_sar_adc_iio_info_read_raw,
+#if defined(CONFIG_IIO_KFIFO_BUF)
 	.update_scan_mode = meson_sar_adc_update_scan_mode,
+#endif
 	.attrs = &meson_sar_adc_attr_group,
 };
 
@@ -1499,6 +1509,7 @@ static int meson_sar_adc_probe(struct platform_device *pdev)
 	indio_dev->channels = priv->param->channels;
 	indio_dev->num_channels = priv->param->num_channels;
 
+#if defined(CONFIG_IIO_KFIFO_BUF)
 	ret = of_property_read_bool(pdev->dev.of_node,
 				    "amlogic,enable-continuous-sampling");
 
@@ -1535,6 +1546,7 @@ static int meson_sar_adc_probe(struct platform_device *pdev)
 		if (ret)
 			return ret;
 	}
+#endif
 
 	platform_set_drvdata(pdev, indio_dev);
 
@@ -1587,8 +1599,10 @@ static int meson_sar_adc_probe(struct platform_device *pdev)
 err_hw:
 	meson_sar_adc_hw_disable(indio_dev);
 err:
+#if defined(CONFIG_IIO_KFIFO_BUF)
 	if (iio_buffer_enabled(indio_dev))
 		meson_sar_adc_iio_buffer_cleanup(indio_dev);
+#endif
 
 	pm_runtime_put_noidle(&pdev->dev);
 	pm_runtime_disable(&pdev->dev);
@@ -1599,7 +1613,9 @@ err:
 static int meson_sar_adc_remove(struct platform_device *pdev)
 {
 	struct iio_dev *indio_dev = platform_get_drvdata(pdev);
+#if defined(CONFIG_IIO_KFIFO_BUF)
 	struct meson_sar_adc_priv *priv = iio_priv(indio_dev);
+#endif
 
 	if (meson_sar_adc_pm_runtime_supported(indio_dev)) {
 		pm_runtime_dont_use_autosuspend(&pdev->dev);
@@ -1607,10 +1623,13 @@ static int meson_sar_adc_remove(struct platform_device *pdev)
 	}
 
 	iio_device_unregister(indio_dev);
+
+#if defined(CONFIG_IIO_KFIFO_BUF)
 	if (iio_buffer_enabled(indio_dev)) {
 		meson_sar_adc_iio_buffer_cleanup(indio_dev);
 		kfree(priv->datum_buf);
 	}
+#endif
 
 	meson_sar_adc_hw_disable(indio_dev);
 
@@ -1622,8 +1641,10 @@ static int __maybe_unused meson_sar_adc_suspend(struct device *dev)
 	struct iio_dev *indio_dev = dev_get_drvdata(dev);
 	struct meson_sar_adc_priv *priv = iio_priv(indio_dev);
 
+#if defined(CONFIG_IIO_KFIFO_BUF)
 	if (iio_buffer_enabled(indio_dev))
 		meson_sar_adc_buffer_predisable(indio_dev);
+#endif
 
 	if (meson_sar_adc_pm_runtime_supported(indio_dev)) {
 		pm_runtime_force_suspend(indio_dev->dev.parent);
@@ -1651,8 +1672,10 @@ static int __maybe_unused meson_sar_adc_resume(struct device *dev)
 			return ret;
 	}
 
+#if defined(CONFIG_IIO_KFIFO_BUF)
 	if (iio_buffer_enabled(indio_dev))
 		return meson_sar_adc_buffer_postenable(indio_dev);
+#endif
 
 	return 0;
 }

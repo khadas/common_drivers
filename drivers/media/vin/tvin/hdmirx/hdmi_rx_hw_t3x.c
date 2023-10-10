@@ -44,7 +44,7 @@ int frl_scrambler_en = 1;
 //int frl_rate;
 int phy_rate;
 //for t3x debug,todo
-u32 frl_sync_cnt = 1600;
+u32 frl_sync_cnt = 300;
 u32 odn_reg_n_mul = 6;
 int vpcore_debug = 3;
 u32 ext_cnt = 2000;

@@ -855,7 +855,7 @@ void hdmirx_wr_bits_cor(u32 addr, u32 mask, u8 value, u8 port)
 
 bool hdmirx_flt_update_cleared_wait(u32 addr, u8 port)
 {
-	unsigned long timeout = jiffies + 8 * HZ;
+	unsigned long timeout = jiffies + HZ / 10;
 
 	if (log_level & FRL_LOG)
 		rx_pr("before flt cor = 0x%x\n", hdmirx_rd_cor(addr, port));
@@ -2827,6 +2827,7 @@ void rx_set_term_value(unsigned char port, bool value)
 int rx_set_port_hpd(u8 port_id, bool val)
 {
 	u8 port;
+
 	if (port_id < E_PORT_NUM) {
 		if (val) {
 			if (rx_info.chip_id >= CHIP_ID_T7)

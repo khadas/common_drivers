@@ -224,6 +224,7 @@ void frc_isr_print_zero(struct frc_dev_s *devp)
 	devp->out_sts.vs_timestamp = 0;
 	devp->out_sts.vs_cnt = 0;
 	devp->out_sts.vs_tsk_cnt = 0;
+	devp->frc_sts.vs_cnt = 0;
 
 	devp->frc_sts.changed_flag = 0;
 }
@@ -2343,5 +2344,26 @@ void set_frc_demo_window(u8 demo_num)
 		}
 		pr_frc(0, "FRC_REG_MC_DEBUG1 value = 0x%x\n", READ_FRC_REG(FRC_REG_MC_DEBUG1));
 		pr_frc(0, "FRC_MC_DEMO_WINDOW value = 0x%x\n", READ_FRC_REG(FRC_MC_DEMO_WINDOW));
+	}
+}
+
+/*bug: t3x 120Hz boot video flash*/
+void frc_boot_timestamp_check(struct frc_dev_s *devp)
+{
+	u64 timestamp;
+
+	if (get_chip_type() != ID_T3X ||
+		devp->in_sts.boot_check_finished)
+		return;
+
+	timestamp = sched_clock();
+	timestamp = div64_u64(timestamp, 1000000000); // sec
+	if (timestamp > FRC_BOOT_TIMESTAMP &&
+		devp->in_sts.boot_timestamp_en) {
+		if (devp->in_sts.auto_ctrl_reserved)
+			devp->frc_sts.auto_ctrl = true;
+		devp->in_sts.boot_check_finished = 1;
+		pr_frc(0, "boot check finished, auto-ctrl:%d\n",
+			devp->in_sts.auto_ctrl_reserved);
 	}
 }

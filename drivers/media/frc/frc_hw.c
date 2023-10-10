@@ -57,6 +57,7 @@ const struct vf_rate_table vf_rate_table[FRAME_RATE_CNT] = {
 	{1920,  FRC_VD_FPS_50},
 	{2000,  FRC_VD_FPS_48},
 	{3200,	FRC_VD_FPS_30},
+	{3203,	FRC_VD_FPS_30},
 	{3840,	FRC_VD_FPS_25},
 	{3999,	FRC_VD_FPS_24},
 	{4000,	FRC_VD_FPS_24},

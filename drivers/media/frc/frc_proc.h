@@ -75,5 +75,6 @@ int get_chip_type(void);
 void frc_set_seamless_proc(u32 seamless);
 void set_frc_demo_window(u8 demo_num);
 void frc_lge_memc_init(void);
+void frc_boot_timestamp_check(struct frc_dev_s *devp);
 
 #endif

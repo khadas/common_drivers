@@ -101,8 +101,9 @@
 // frc_20230908 t3x revB configure set_2
 // frc_20230918 t3x revB use pre_vsync from vpu
 // frc_20230921 fix frc security abnormal
+// frc_20230920 remove hme buffer in t3x/t5m
 
-#define FRC_FW_VER			"2023-0920 remove hme buffer in t3x/t5m"
+#define FRC_FW_VER			"2023-1009 delay frc function on boot"
 #define FRC_KERDRV_VER                  2976
 
 #define FRC_DEVNO	1
@@ -247,6 +248,8 @@ extern int frc_dbg_en;
 
 #define PRE_VSYNC_120HZ   BIT_0
 #define PRE_VSYNC_060HZ   BIT_1
+
+#define FRC_BOOT_TIMESTAMP 35
 
 enum chip_id {
 	ID_NULL = 0,
@@ -455,6 +458,9 @@ struct st_frc_in_sts {
 	u32 frc_hsc_endp;
 	u8 frc_seamless_en;
 	u8 size_chged;
+	u8 boot_timestamp_en;
+	u8 boot_check_finished;
+	u8 auto_ctrl_reserved;
 };
 
 struct st_frc_out_sts {

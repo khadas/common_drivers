@@ -243,11 +243,19 @@ static long frc_ioctl(struct file *file,
 			ret = -EFAULT;
 			break;
 		}
-		pr_frc(1, "set memc_autoctrl:%d\n", data);
+		pr_frc(1, "set memc_autoctrl:%d boot_timestamp_en%d boot_check%d\n",
+		data, devp->in_sts.boot_timestamp_en, devp->in_sts.boot_check_finished);
 		if (data) {
-			if (!devp->frc_sts.auto_ctrl) {
+			if (devp->in_sts.boot_timestamp_en &&
+				!devp->in_sts.boot_check_finished) {
+				devp->in_sts.auto_ctrl_reserved = 1;
+				devp->frc_sts.auto_ctrl = false;
+				frc_change_to_state(FRC_STATE_DISABLE);
+				pr_frc(1, "set memc_autoctrl-1:%d\n", data);
+			} else if (!devp->frc_sts.auto_ctrl) {
 				devp->frc_sts.auto_ctrl = true;
 				devp->frc_sts.re_config = true;
+				pr_frc(1, "set memc_autoctrl-2:%d\n", data);
 			}
 		} else {
 			devp->frc_sts.auto_ctrl = false;
@@ -1086,6 +1094,8 @@ static void frc_drv_initial(struct frc_dev_s *devp)
 	/*used for force in/out size for frc process*/
 	memset(&devp->force_size, 0, sizeof(struct frc_force_size_s));
 	devp->ud_dbg.res2_dbg_en = 3;  // t3x_revB test
+	if (get_chip_type() == ID_T3X)
+		devp->in_sts.boot_timestamp_en = 1;
 }
 
 void get_vout_info(struct frc_dev_s *frc_devp)

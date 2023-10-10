@@ -44,16 +44,12 @@ int dvbt_read_status(struct dvb_frontend *fe, enum fe_status *status)
 {
 	int ilock;
 	unsigned char s = 0;
-	int strength;
+	s16 strength = 0;
 	int strength_limit = THRD_TUNER_STRENGTH_DVBT;
 	struct aml_dtvdemod *demod = (struct aml_dtvdemod *)fe->demodulator_priv;
-	struct amldtvdemod_device_s *devp = (struct amldtvdemod_device_s *)demod->priv;
 	unsigned int tps_coderate, ts_fifo_cnt = 0, ts_cnt = 0, fec_rate = 0;
 
-	strength = tuner_get_ch_power(fe);
-	if (devp->tuner_strength_limit)
-		strength_limit = devp->tuner_strength_limit;
-
+	gxtv_demod_dvbt_read_signal_strength(fe, &strength);
 	if (strength < strength_limit) {
 		*status = FE_TIMEDOUT;
 		demod->last_lock = -1;
@@ -85,9 +81,8 @@ int dvbt_read_status(struct dvb_frontend *fe, enum fe_status *status)
 		*status =
 			FE_HAS_LOCK | FE_HAS_SIGNAL | FE_HAS_CARRIER |
 			FE_HAS_VITERBI | FE_HAS_SYNC;
-		demod->real_para.snr =
-			(((dvbt_t2_rdb(CHC_CIR_SNR1) & 0x7) << 8) |
-			dvbt_t2_rdb(CHC_CIR_SNR0)) * 30 / 64;
+
+		//dBx10.
 		demod->real_para.snr =
 			(((dvbt_t2_rdb(CHC_CIR_SNR1) & 0x7) << 8)
 			| dvbt_t2_rdb(CHC_CIR_SNR0)) * 30 / 64;
@@ -241,7 +236,7 @@ int dvbt_read_status(struct dvb_frontend *fe, enum fe_status *status)
 int dvbt2_read_status(struct dvb_frontend *fe, enum fe_status *status)
 {
 	unsigned char s = 0;
-	int strength;
+	s16 strength = 0;
 	int strength_limit = THRD_TUNER_STRENGTH_DVBT;
 	struct aml_dtvdemod *demod = (struct aml_dtvdemod *)fe->demodulator_priv;
 	struct amldtvdemod_device_s *devp = (struct amldtvdemod_device_s *)demod->priv;
@@ -257,16 +252,11 @@ int dvbt2_read_status(struct dvb_frontend *fe, enum fe_status *status)
 		return 0;
 	}
 
+	if (devp->tuner_strength_limit)
+		strength_limit = devp->tuner_strength_limit;
+
+	gxtv_demod_dvbt_read_signal_strength(fe, &strength);
 	if (!tuner_find_by_name(fe, "mxl661") || demod->last_status != 0x1F) {
-		strength = tuner_get_ch_power(fe);
-		if (devp->tuner_strength_limit)
-			strength_limit = devp->tuner_strength_limit;
-
-		if (tuner_find_by_name(fe, "r842"))
-			strength += 7;
-		else if (tuner_find_by_name(fe, "mxl661"))
-			strength += 3;
-
 		if (strength < strength_limit) {
 			if (!(no_signal_cnt++ % 20))
 				dvbt2_reset(demod, fe);
@@ -316,7 +306,7 @@ int dvbt2_read_status(struct dvb_frontend *fe, enum fe_status *status)
 		plp_num = dvbt_t2_rdb(0x805);
 	}
 	snr &= 0x7ff;
-	snr = snr * 300 / 64;
+	snr = snr * 30 / 64; //dBx10.
 
 #ifdef DVBT2_DEBUG_INFO
 	if (plp_num > 0) {
@@ -327,8 +317,8 @@ int dvbt2_read_status(struct dvb_frontend *fe, enum fe_status *status)
 		PR_DVBT("common plp: %d (0x%x).\n", common_plp, common_plp);
 	}
 
-	PR_DVBT("code_rate=%d, modu=%d, ldpc=%d, snr=%d.%d, l1post=%d.\n",
-		cr, modu, ldpc, snr / 100, snr % 100, l1post);
+	PR_DVBT("code_rate=%d, modu=%d, ldpc=%d, snr=%d dBx10, l1post=%d.\n",
+		cr, modu, ldpc, snr, l1post);
 	if (modu < 4)
 		PR_DVBT("minimum_snr_x10=%d\n", minimum_snr_x10[modu][cr]);
 	else
@@ -375,7 +365,7 @@ int dvbt2_read_status(struct dvb_frontend *fe, enum fe_status *status)
 	if (demod->last_lock == CONTINUE_TIMES_LOCK) {
 		*status = FE_HAS_LOCK | FE_HAS_SIGNAL | FE_HAS_CARRIER |
 				FE_HAS_VITERBI | FE_HAS_SYNC;
-		demod->real_para.snr = snr / 10;
+		demod->real_para.snr = snr;
 		demod->real_para.modulation = modu;
 		demod->real_para.coderate = cr;
 		demod->real_para.plp_num = plp_num;
@@ -413,7 +403,7 @@ int dvbt_read_snr(struct dvb_frontend *fe, u16 *snr)
 
 	*snr = demod->real_para.snr;
 
-	PR_DVBT("demod[%d] snr is %d.%d\n", demod->id, *snr / 10, *snr % 10);
+	PR_DVBT("demod[%d] snr %d dBx10\n", demod->id, *snr);
 
 	return 0;
 }
@@ -424,7 +414,7 @@ int dvbt2_read_snr(struct dvb_frontend *fe, u16 *snr)
 
 	*snr = demod->real_para.snr;
 
-	PR_DVBT("demod[%d] snr is %d.%d\n", demod->id, *snr / 10, *snr % 10);
+	PR_DVBT("demod[%d] snr %d dBx10\n", demod->id, *snr);
 
 	return 0;
 }
@@ -448,13 +438,14 @@ int gxtv_demod_dvbt_read_signal_strength(struct dvb_frontend *fe,
 	struct aml_dtvdemod *demod = (struct aml_dtvdemod *)fe->demodulator_priv;
 
 	*strength = (s16)tuner_get_ch_power(fe);
-
-	if (tuner_find_by_name(fe, "r842"))
+	if (tuner_find_by_name(fe, "r842") ||
+		tuner_find_by_name(fe, "r836") ||
+		tuner_find_by_name(fe, "r850"))
 		*strength += 7;
 	else if (tuner_find_by_name(fe, "mxl661"))
 		*strength += 3;
 
-	PR_DBGL("demod [id %d] tuner strength is %d dbm\n", demod->id, *strength);
+	PR_DVBT("demod [id %d] signal strength %d dBm\n", demod->id, *strength);
 
 	return 0;
 }

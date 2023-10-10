@@ -49,10 +49,10 @@ static u32 dvbc_get_ch_power(struct aml_dtvdemod *demod)
 
 u32 dvbc_get_snr(struct aml_dtvdemod *demod)
 {
-	u32 tmp, snr;
+	u32 tmp = 0, snr = 0;
 
 	tmp = qam_read_reg(demod, 0x5) & 0xfff;
-	snr = tmp * 100 / 32;	/* * 1e2 */
+	snr = tmp * 10 / 32; /* dBx10 */
 
 	return snr;
 }
@@ -600,7 +600,7 @@ u32 dvbc_set_auto_symtrack(struct aml_dtvdemod *demod)
 
 int dvbc_status(struct aml_dtvdemod *demod, struct aml_demod_sts *demod_sts, struct seq_file *seq)
 {
-	demod_sts->ch_sts = qam_read_reg(demod, 0x6);
+	demod_sts->ch_sts = dvbc_get_ch_sts(demod);
 	demod_sts->ch_pow = dvbc_get_ch_power(demod);
 	demod_sts->ch_snr = dvbc_get_snr(demod);
 	demod_sts->ch_ber = dvbc_get_ber(demod);
@@ -610,8 +610,8 @@ int dvbc_status(struct aml_dtvdemod *demod, struct aml_demod_sts *demod_sts, str
 	demod_sts->dat1 = tuner_get_ch_power(&demod->frontend);
 
 	if (seq) {
-		seq_printf(seq, "ch_sts:0x%x,snr:%ddB,ber:%d,per:%d,srate:%d,freqoff:%dkHz\n",
-			demod_sts->ch_sts, demod_sts->ch_snr / 100, demod_sts->ch_ber,
+		seq_printf(seq, "ch_sts:0x%x,snr:%d dBx10,ber:%d,per:%d,srate:%d,freqoff:%dkHz\n",
+			demod_sts->ch_sts, demod_sts->ch_snr, demod_sts->ch_ber,
 			demod_sts->ch_per, demod_sts->symb_rate, demod_sts->freq_off);
 		seq_printf(seq, "strength:%ddb,0xe0 status:%u,b4 status:%u,dagc_gain:%u\n",
 			demod_sts->dat1, qam_read_reg(demod, 0x38) & 0xffff,
@@ -619,8 +619,8 @@ int dvbc_status(struct aml_dtvdemod *demod, struct aml_demod_sts *demod_sts, str
 		seq_printf(seq, "power:%ddb,0x31=0x%x\n", demod_sts->ch_pow & 0xffff,
 			   qam_read_reg(demod, 0x31));
 	} else {
-		PR_DVBC("ch_sts is 0x%x, snr %ddB, ber %d, per %d, srate %d, freqoff %dkHz\n",
-			demod_sts->ch_sts, demod_sts->ch_snr / 100, demod_sts->ch_ber,
+		PR_DVBC("ch_sts is 0x%x, snr %d dBx10, ber %d, per %d, srate %d, freqoff %dkHz\n",
+			demod_sts->ch_sts, demod_sts->ch_snr, demod_sts->ch_ber,
 			demod_sts->ch_per, demod_sts->symb_rate, demod_sts->freq_off);
 		PR_DVBC("strength %ddb,0xe0 status %u,b4 status %u, dagc_gain %u, power %ddb\n",
 			demod_sts->dat1, qam_read_reg(demod, 0x38) & 0xffff,

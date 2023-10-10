@@ -2934,9 +2934,12 @@ static int aml_dtvdm_get_property(struct dvb_frontend *fe,
 	unsigned char cr = 0xFF;
 	struct aml_dtvdemod *demod = (struct aml_dtvdemod *)fe->demodulator_priv;
 	struct amldtvdemod_device_s *devp = (struct amldtvdemod_device_s *)demod->priv;
+	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
 #ifdef AML_DEMOD_SUPPORT_ISDBT
 	struct isdbt_tmcc_info tmcc_info;
 #endif
+	s16 strength = 0;
+	int ret = 0;
 
 	mutex_lock(&devp->lock);
 
@@ -3077,11 +3080,14 @@ static int aml_dtvdm_get_property(struct dvb_frontend *fe,
 		break;
 
 	case DTV_STAT_CNR:
-		if (demod->last_delsys == SYS_DVBS || demod->last_delsys == SYS_DVBS2)
-			tvp->reserved[0] = dvbs_rd_byte(0xd12) / 10;
+		tvp->u.st.len = 1;
+		tvp->u.st.stat[0].scale = FE_SCALE_DECIBEL;
+		tvp->u.st.stat[0].uvalue = demod->real_para.snr * 10;
 
-		PR_DVBS("[id %d] get delsys:%d,cnr:%d.\n",
-				demod->id, tvp->u.data, tvp->reserved[0]);
+		c->cnr = tvp->u.st;
+
+		PR_DBG("demod id [%d] [cnr %d dBx1000].\n",
+				demod->id, demod->real_para.snr * 1000);
 		break;
 
 	case DTV_TS_INPUT:
@@ -3103,6 +3109,62 @@ static int aml_dtvdm_get_property(struct dvb_frontend *fe,
 		}
 		break;
 #endif
+	case DTV_STAT_SIGNAL_STRENGTH:
+		switch (demod->last_delsys) {
+#ifdef AML_DEMOD_SUPPORT_DVBS
+		case SYS_DVBS:
+		case SYS_DVBS2:
+			ret = dtvdemod_dvbs_read_signal_strength(fe, &strength);
+			break;
+#endif
+#ifdef AML_DEMOD_SUPPORT_DVBC
+		case SYS_DVBC_ANNEX_A:
+		case SYS_DVBC_ANNEX_C:
+			ret = gxtv_demod_dvbc_read_signal_strength(fe, &strength);
+			break;
+#endif
+#ifdef AML_DEMOD_SUPPORT_DVBT
+		case SYS_DVBT:
+		case SYS_DVBT2:
+			ret = gxtv_demod_dvbt_read_signal_strength(fe, &strength);
+			break;
+#endif
+#ifdef AML_DEMOD_SUPPORT_ISDBT
+		case SYS_ISDBT:
+			ret = gxtv_demod_isdbt_read_signal_strength(fe, &strength);
+			break;
+#endif
+#ifdef AML_DEMOD_SUPPORT_ATSC
+		case SYS_ATSC:
+		case SYS_ATSCMH:
+			ret = gxtv_demod_atsc_read_signal_strength(fe, &strength);
+			break;
+#endif
+#ifdef AML_DEMOD_SUPPORT_J83B
+		case SYS_DVBC_ANNEX_B:
+			gxtv_demod_atsc_j83b_read_signal_strength(fe, &strength);
+			break;
+#endif
+#ifdef AML_DEMOD_SUPPORT_DTMB
+		case SYS_DTMB:
+			ret = gxtv_demod_dtmb_read_signal_strength(fe, &strength);
+			break;
+#endif
+		default:
+			break;
+		}
+
+		tvp->u.st.len = 1;
+		tvp->u.st.stat[0].scale = FE_SCALE_DECIBEL;
+		tvp->u.st.stat[0].uvalue = (109 + strength) * 1000;
+
+		c->strength = tvp->u.st;
+
+		PR_DBG("demod id [%d] [strength %llu dBx1000].\n",
+				demod->id, tvp->u.st.stat[0].uvalue);
+
+		break;
+
 	default:
 		break;
 	}

@@ -41,6 +41,7 @@
 
 #define ISDBT_TIME_CHECK_SIGNAL 400
 #define ISDBT_RESET_IN_UNLOCK_TIMES 40
+#define ISDBT_FSM_CHECK_SIGNAL 7
 
 //isdb-t
 MODULE_PARM_DESC(isdbt_check_signal_time, "\n\t\t isdbt check signal time");
@@ -148,11 +149,9 @@ int gxtv_demod_dvbt_isdbt_read_snr(struct dvb_frontend *fe, u16 *snr)
 {
 	struct aml_dtvdemod *demod = (struct aml_dtvdemod *)fe->demodulator_priv;
 
-	/* bit[0-9]. */
-	*snr = ((dvbt_isdbt_rd_reg((0x0a << 2))) >> 20) & 0x3ff;
-	*snr = *snr * 10 / 8;
+	*snr = demod->real_para.snr;
 
-	PR_DBGL("demod[%d] snr is %d.%d\n", demod->id, *snr / 10, *snr % 10);
+	PR_ISDBT("demod[%d] snr %d dBx10\n", demod->id, *snr);
 
 	return 0;
 }
@@ -168,13 +167,13 @@ void isdbt_reset_demod(void)
 	dvbt_isdbt_wr_reg_new(0x02, dvbt_isdbt_rd_reg_new(0x02) | (1 << 24));
 }
 
-#define ISDBT_FSM_CHECK_SIGNAL 7
 int dvbt_isdbt_read_status(struct dvb_frontend *fe, enum fe_status *status, bool re_tune)
 {
 	struct aml_dtvdemod *demod = (struct aml_dtvdemod *)fe->demodulator_priv;
 	unsigned char s = 0;
-	unsigned int fsm;
-	int lock, strength, snr10;
+	unsigned int fsm = 0;
+	s16 strength = 0;
+	int lock = 0, snr10 = 0;
 	static int has_signal;
 	static int no_signal_cnt, unlock_cnt;
 	int lock_continuous_cnt = isdbt_lock_continuous_cnt > 1 ? isdbt_lock_continuous_cnt : 1;
@@ -196,31 +195,34 @@ int dvbt_isdbt_read_status(struct dvb_frontend *fe, enum fe_status *status, bool
 		return 0;
 	}
 
-	demod->time_passed = jiffies_to_msecs(jiffies) - demod->time_start;
-
-	strength = tuner_get_ch_power(fe);
-	if (tuner_find_by_name(fe, "r842"))
-		strength += 10;
+	gxtv_demod_isdbt_read_signal_strength(fe, &strength);
 	if (strength < THRD_TUNER_STRENGTH_ISDBT) {
 		*status = FE_TIMEDOUT;
-		PR_ISDBT("no signal, strength=%d, need>%d\n", strength, THRD_TUNER_STRENGTH_ISDBT);
+
+		PR_ISDBT("%s: tuner strength [%d] no signal(%d).\n",
+				__func__, strength, THRD_TUNER_STRENGTH_ISDBT);
+
 		if (!(no_signal_cnt++ % 20))
 			isdbt_reset_demod();
+
 		unlock_cnt = 0;
 
 		goto finish;
 	}
+
 	if (no_signal_cnt) {
 		no_signal_cnt = 0;
 		isdbt_reset_demod();
 	}
 
+	demod->time_passed = jiffies_to_msecs(jiffies) - demod->time_start;
 	fsm = dvbt_isdbt_rd_reg(0x2a << 2);
 	if ((fsm & 0xF) >= ISDBT_FSM_CHECK_SIGNAL)
 		has_signal = 1;
 	snr10 = (((dvbt_isdbt_rd_reg((0x0a << 2))) >> 20) & 0x3ff) * 10 / 8;
-	PR_ISDBT("fsm=0x%x, strength=%ddBm snr=%d.%ddB, time_passed=%dms\n",
-		fsm, strength, snr10 / 10, snr10 % 10, demod->time_passed);
+	demod->real_para.snr = snr10;
+	PR_ISDBT("fsm=0x%x, strength=%ddBm snr=%d dBx10, time_passed=%dms\n",
+		fsm, strength, snr10, demod->time_passed);
 
 	s = dvbt_isdbt_rd_reg(0x0) >> 12 & 1;
 	if (s == 1) {
@@ -338,12 +340,14 @@ int gxtv_demod_isdbt_read_signal_strength(struct dvb_frontend *fe,
 
 	*strength = (s16)tuner_get_ch_power(fe);
 
-	if (tuner_find_by_name(fe, "r842"))
+	if (tuner_find_by_name(fe, "r842") ||
+		tuner_find_by_name(fe, "r836") ||
+		tuner_find_by_name(fe, "r850"))
 		*strength += 7;
 	else if (tuner_find_by_name(fe, "mxl661"))
 		*strength += 3;
 
-	PR_DBGL("demod [id %d] tuner strength is %d dbm\n", demod->id, *strength);
+	PR_ISDBT("demod [id %d] signal strength %d dbm\n", demod->id, *strength);
 
 	return 0;
 }

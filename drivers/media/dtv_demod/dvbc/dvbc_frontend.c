@@ -118,33 +118,19 @@ int gxtv_demod_dvbc_read_status_timer(struct dvb_frontend *fe,
 {
 	struct aml_dtvdemod *demod = (struct aml_dtvdemod *)fe->demodulator_priv;
 	struct aml_demod_sts demod_sts;
-	int strength = 0;
+	s16 strength = 0;
 	int ilock = 0;
 
-	/*check tuner*/
-	if (!timer_tuner_not_enough(demod)) {
-		strength = tuner_get_ch_power(fe);
-
-		/*agc control,fine tune strength*/
-		if (tuner_find_by_name(fe, "r842")) {
-			strength += 22;
-
-			if (strength <= -80)
-				strength = dvbc_get_power_strength(qam_read_reg(demod, 0x27) &
-					0x7ff, strength);
-		}
-
-		if (strength < THRD_TUNER_STRENGTH_DVBC) {
-			PR_DVBC("%s: tuner strength [%d] no signal(%d).\n",
-					__func__, strength, THRD_TUNER_STRENGTH_DVBC);
-			*status = FE_TIMEDOUT;
-			return 0;
-		}
+	gxtv_demod_dvbc_read_signal_strength(fe, &strength);
+	if (strength < THRD_TUNER_STRENGTH_DVBC) {
+		PR_DVBC("%s: tuner strength [%d] no signal(%d).\n",
+				__func__, strength, THRD_TUNER_STRENGTH_DVBC);
+		*status = FE_TIMEDOUT;
+		return 0;
 	}
 
-	/*demod_sts.ch_sts = qam_read_reg(demod, 0x6);*/
-	demod_sts.ch_sts = dvbc_get_ch_sts(demod);
 	dvbc_status(demod, &demod_sts, NULL);
+	demod->real_para.snr = demod_sts.ch_snr;
 
 	if (demod_sts.ch_sts & 0x1) {
 		ilock = 1;
@@ -202,22 +188,25 @@ int gxtv_demod_dvbc_read_signal_strength(struct dvb_frontend *fe,
 	s16 *strength)
 {
 	struct aml_dtvdemod *demod = (struct aml_dtvdemod *)fe->demodulator_priv;
-	int tuner_sr = 0;
+	unsigned int agc_gain = 0;
 
-	tuner_sr = tuner_get_ch_power(fe);
-	if (tuner_find_by_name(fe, "r842")) {
-		tuner_sr += 22;
+	*strength = (s16)tuner_get_ch_power(fe);
+	if (tuner_find_by_name(fe, "r842") ||
+		tuner_find_by_name(fe, "r836") ||
+		tuner_find_by_name(fe, "r850")) {
+		*strength += 22;
 
-		if (tuner_sr <= -80)
-			tuner_sr = dvbc_get_power_strength(qam_read_reg(demod, 0x27) &
-				0x7ff, tuner_sr);
+		if (*strength <= -80) {
+			agc_gain = qam_read_reg(demod, 0x27) & 0x7ff;
+			*strength = dvbc_get_power_strength(agc_gain, *strength);
+		}
 
-		tuner_sr += 10;
+		*strength += 10;
 	} else if (tuner_find_by_name(fe, "mxl661")) {
-		tuner_sr += 3;
+		*strength += 3;
 	}
 
-	*strength = (s16)tuner_sr;
+	PR_DVBC("demod [id %d] signal strength %d dBm\n", demod->id, *strength);
 
 	return 0;
 }
@@ -226,9 +215,9 @@ int gxtv_demod_dvbc_read_snr(struct dvb_frontend *fe, u16 *snr)
 {
 	struct aml_dtvdemod *demod = (struct aml_dtvdemod *)fe->demodulator_priv;
 
-	*snr = (qam_read_reg(demod, 0x5) & 0xfff) * 10 / 32;
+	*snr = demod->real_para.snr;
 
-	PR_DVBC("demod[%d] snr is %d.%d\n", demod->id, *snr / 10, *snr % 10);
+	PR_DVBC("demod[%d] snr %d dBx10\n", demod->id, *snr);
 
 	return 0;
 }
@@ -434,7 +423,8 @@ unsigned int dvbc_auto_fast(struct dvb_frontend *fe, unsigned int *delay, bool r
 	char qam_name[20];
 	unsigned int next_qam = 0xf;
 	unsigned int fsm_state = 0, eq_state = 0;
-	int strength = 0, ret = 0;
+	int ret = 0;
+	s16 strength = 0;
 	static unsigned int time_start;
 	static unsigned int sym_speed_high;
 
@@ -459,7 +449,7 @@ unsigned int dvbc_auto_fast(struct dvb_frontend *fe, unsigned int *delay, bool r
 		return 2;
 	}
 
-	strength = tuner_get_ch_power(fe);
+	gxtv_demod_dvbc_read_signal_strength(fe, &strength);
 	if (strength < THRD_TUNER_STRENGTH_DVBC) {
 		demod->auto_no_sig_cnt = 0;
 		demod->auto_times = 0;
@@ -664,7 +654,7 @@ unsigned int dvbc_fast_search(struct dvb_frontend *fe, unsigned int *delay, bool
 	struct aml_dtvdemod *demod = (struct aml_dtvdemod *)fe->demodulator_priv;
 	static unsigned int time_start;
 	unsigned int fsm_state = 0, eq_state = 0;
-	int strength = 0;
+	s16 strength = 0;
 	static unsigned int sym_speed_high;
 
 	if (re_tune) {
@@ -685,7 +675,7 @@ unsigned int dvbc_fast_search(struct dvb_frontend *fe, unsigned int *delay, bool
 		return 2;
 	}
 
-	strength = tuner_get_ch_power(fe);
+	gxtv_demod_dvbc_read_signal_strength(fe, &strength);
 	if (strength < THRD_TUNER_STRENGTH_DVBC) {
 		demod->auto_times = 0;
 		demod->auto_no_sig_cnt = 0;
@@ -988,11 +978,11 @@ int dvbc_read_status(struct dvb_frontend *fe, enum fe_status *status, bool re_tu
 {
 	struct aml_dtvdemod *demod = (struct aml_dtvdemod *)fe->demodulator_priv;
 	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
-	int str = 0;
-	int fsm_status;//0:none;1:lock;-1:lost
-	unsigned int s;
-	unsigned int sr;
-	unsigned int curTime, time_passed_qam;
+	s16 strength = 0;
+	int fsm_status = 0;//0:none;1:lock;-1:lost
+	unsigned int s = 0;
+	unsigned int sr = 0;
+	unsigned int curtime = 0, time_passed_qam = 0;
 	static int peak;
 	static int AQAM_times;
 	static int ASR_times;
@@ -1027,18 +1017,10 @@ int dvbc_read_status(struct dvb_frontend *fe, enum fe_status *status, bool re_tu
 		return 0;
 	}
 
-	str = tuner_get_ch_power(fe);
-	/*agc control,fine tune strength*/
-	if (tuner_find_by_name(fe, "r842")) {
-		str += 22;
-
-		if (str <= -80)
-			str = dvbc_get_power_strength(qam_read_reg(demod, 0x27) & 0x7ff, str);
-	}
-
-	if (str < THRD_TUNER_STRENGTH_DVBC) {
+	gxtv_demod_dvbc_read_signal_strength(fe, &strength);
+	if (strength < THRD_TUNER_STRENGTH_DVBC) {
 		PR_DVBC("%s: tuner strength [%d] no signal(%d).\n",
-				__func__, str, THRD_TUNER_STRENGTH_DVBC);
+				__func__, strength, THRD_TUNER_STRENGTH_DVBC);
 		*status = FE_TIMEDOUT;
 		demod->last_status = *status;
 		real_para_clear(&demod->real_para);
@@ -1047,8 +1029,8 @@ int dvbc_read_status(struct dvb_frontend *fe, enum fe_status *status, bool re_tu
 		goto finish;
 	}
 
-	curTime = jiffies_to_msecs(jiffies);
-	demod->time_passed = curTime - demod->time_start;
+	curtime = jiffies_to_msecs(jiffies);
+	demod->time_passed = curtime - demod->time_start;
 	s = qam_read_reg(demod, 0x31) & 0xf;
 	sr = dvbc_get_symb_rate(demod);
 	PR_DVBC("s=%d, demod->time_passed=%u\n", s, demod->time_passed);
@@ -1110,14 +1092,14 @@ int dvbc_read_status(struct dvb_frontend *fe, enum fe_status *status, bool re_tu
 		if (c->modulation != QAM_AUTO) {
 			PR_DVBC("Qam is not auto\n");
 		} else if (time_start_qam == 0) {
-			time_start_qam = curTime;
+			time_start_qam = curtime;
 		} else {
-			time_passed_qam = curTime - time_start_qam;
+			time_passed_qam = curtime - time_start_qam;
 			if ((demod->auto_qam_mode == QAM_MODE_256 && time_passed_qam >
 				(650 + 300 * (AQAM_times % 3))) ||
 				(demod->auto_qam_mode != QAM_MODE_256 && time_passed_qam >
 				(350 + 100 * (AQAM_times % 3)))) {
-				time_start_qam = curTime;
+				time_start_qam = curtime;
 				demod->auto_qam_mode = dvbc_switch_qam(demod->auto_qam_mode);
 				PR_DVBC("to next qam:%s\n", get_qam_name(demod->auto_qam_mode));
 				demod_dvbc_set_qam(demod, demod->auto_qam_mode, false);

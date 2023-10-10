@@ -303,6 +303,9 @@ int gxtv_demod_dtmb_read_status_old(struct dvb_frontend *fe,
 		return -1;
 	}
 
+	demod->real_para.snr = convert_snr(dtmb_reg_r_che_snr()) * 10;
+	PR_DTMB("snr %d dBx10.\n", demod->real_para.snr);
+
 	s = amdemod_stat_dtmb_islock(demod, SYS_DTMB);
 
 	if (s == 1) {
@@ -339,26 +342,26 @@ int gxtv_demod_dtmb_read_ber(struct dvb_frontend *fe, u32 *ber)
 int gxtv_demod_dtmb_read_signal_strength(struct dvb_frontend *fe,
 		s16 *strength)
 {
-	int tuner_sr = tuner_get_ch_power(fe);
+	struct aml_dtvdemod *demod = (struct aml_dtvdemod *)fe->demodulator_priv;
 
-	if (tuner_find_by_name(fe, "r842"))
-		tuner_sr += 16;
+	*strength = (s16)tuner_get_ch_power(fe);
+	if (tuner_find_by_name(fe, "r842") ||
+		tuner_find_by_name(fe, "r836") ||
+		tuner_find_by_name(fe, "r850"))
+		*strength += 16;
 
-	*strength = (s16)tuner_sr;
+	PR_DTMB("demod [id %d] signal strength %d dBm\n", demod->id, *strength);
 
 	return 0;
 }
 
 int gxtv_demod_dtmb_read_snr(struct dvb_frontend *fe, u16 *snr)
 {
-	int tmp = 00;
+	struct aml_dtvdemod *demod = (struct aml_dtvdemod *)fe->demodulator_priv;
 
-	/* tmp = dtmb_read_reg(DTMB_TOP_FEC_LOCK_SNR);*/
-	tmp = dtmb_reg_r_che_snr();
+	*snr = demod->real_para.snr;
 
-	*snr = convert_snr(tmp) * 10;
-
-	PR_DTMB("demod snr is %d.%d\n", *snr / 10, *snr % 10);
+	PR_DTMB("demod[%d] snr %d dBx10\n", demod->id, *snr);
 
 	return 0;
 }

@@ -64,10 +64,8 @@ int dtvdemod_dvbs_read_signal_strength(struct dvb_frontend *fe, s16 *strength)
 
 	if (demod->last_status != 0x1F) {
 		*strength = -100;
-		return 0;
-	}
-
-	if (tuner_find_by_name(fe, "av2018")) {
+	} else if (tuner_find_by_name(fe, "av2018") ||
+		tuner_find_by_name(fe, "rda5815m")) {
 		agc_level = dvbs_rd_byte(DVBS_AGC_LEVEL_ADDR);
 		if (agc_level > 183) {
 			*strength = 0;
@@ -88,19 +86,14 @@ int dtvdemod_dvbs_read_signal_strength(struct dvb_frontend *fe, s16 *strength)
 			if (agc_level == 0)
 				*strength = -95;
 		}
-
-		PR_DBGL("demod [id %d] tuner strength is %d dbm\n", demod->id, *strength);
-		return 0;
+	} else {
+		// rt710/720.
+		*strength = (s16)tuner_get_ch_power(fe);
+		if (*strength <= -57)
+			*strength += (s16)dvbs_get_signal_strength_off();
 	}
 
-	*strength = (s16)tuner_get_ch_power(fe);
-
-	if (*strength <= -57) {
-		PR_DBGL("tuner strength = %d dbm\n", *strength);
-		*strength += dvbs_get_signal_strength_off();
-	}
-
-	PR_DBGL("demod [id %d] tuner strength is %d dbm\n", demod->id, *strength);
+	PR_DVBS("demod [id %d] signal strength %d dBm\n", demod->id, *strength);
 
 	return 0;
 }
@@ -111,7 +104,7 @@ int dvbs_read_snr(struct dvb_frontend *fe, u16 *snr)
 
 	*snr = (u16)demod->real_para.snr;
 
-	PR_DVBS("demod[%d] snr is %d.%d\n", demod->id, *snr / 10, *snr % 10);
+	PR_DVBS("demod[%d] snr %d dBx10\n", demod->id, *snr);
 
 	return 0;
 }
@@ -180,7 +173,6 @@ int dtvdemod_dvbs_blind_check_signal(struct dvb_frontend *fe,
 	struct aml_dtvdemod *demod = (struct aml_dtvdemod *)fe->demodulator_priv;
 	struct amldtvdemod_device_s *devp = (struct amldtvdemod_device_s *)demod->priv;
 	int ret = 0, next_step_khz1 = 0, asperity = 0;
-	s16 strength = 0;
 
 #ifdef DVBS_BLIND_SCAN_DEBUG
 	unsigned int fld_value[2] = { 0 };
@@ -212,7 +204,6 @@ int dtvdemod_dvbs_blind_check_signal(struct dvb_frontend *fe,
 
 	usleep_range(2 * 1000, 3 * 1000);//msleep(2);
 
-	dtvdemod_dvbs_read_signal_strength(fe, &strength);
 #ifdef DVBS_BLIND_SCAN_DEBUG
 	fld_value[0] = dvbs_rd_byte(0x91a);
 	fld_value[1] = dvbs_rd_byte(0x91b);
@@ -969,7 +960,8 @@ int dtvdemod_dvbs_read_status(struct dvb_frontend *fe, enum fe_status *status,
 {
 	int ilock = 0;
 	unsigned char s = 0;
-	int strength = 0, offset = 0, polarity = 0;
+	s16 strength = 0;
+	int offset = 0, polarity = 0;
 	struct aml_dtvdemod *demod = (struct aml_dtvdemod *)fe->demodulator_priv;
 	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
 	struct amldtvdemod_device_s *devp =
@@ -992,17 +984,7 @@ int dtvdemod_dvbs_read_status(struct dvb_frontend *fe, enum fe_status *status,
 		return 0;
 	}
 
-	strength = tuner_get_ch_power(fe);
-
-	PR_DVBS("tuner strength: %d\n", strength);
-	if (strength <= -50) {
-		strength = (5 * 100) / 17;
-		strength *= dvbs_rd_byte(0x91a);
-		strength /= 100;
-		strength -= 122;
-	}
-	//PR_DVBS("strength: %d\n", strength);
-
+	dtvdemod_dvbs_read_signal_strength(fe, &strength);
 //	if (strength < THRD_TUNER_STRENGTH_DVBS) {
 //		*status = FE_TIMEDOUT;
 //		demod->last_lock = -1;
@@ -1033,7 +1015,7 @@ int dtvdemod_dvbs_read_status(struct dvb_frontend *fe, enum fe_status *status,
 	//PR_DVBS("calc_ave cnt:%d ==>%d, %d, %d, %d, %d, %d, %d, %d<==\n",
 	//	cnt, snr[0], snr[1], snr[2], snr[3], snr[4], snr[5], snr[6], snr[7]);
 	demod->real_para.snr = calc_ave(snr, 8, 1, 1);
-	PR_DVBS("calc snr = %d\n", demod->real_para.snr);
+	PR_DVBS("calc snr = %d dBx10\n", demod->real_para.snr);
 
 	demod->time_passed = jiffies_to_msecs(jiffies) - demod->time_start;
 	if (demod->time_passed >= 500) {

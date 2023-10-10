@@ -199,19 +199,30 @@ int gxtv_demod_atsc_j83b_read_ber(struct dvb_frontend *fe, u32 *ber)
 int gxtv_demod_atsc_j83b_read_signal_strength(struct dvb_frontend *fe,
 		s16 *strength)
 {
-	int tn_sr = tuner_get_ch_power(fe);
+	struct aml_dtvdemod *demod = (struct aml_dtvdemod *)fe->demodulator_priv;
+	unsigned int agc_gain = 0;
 
-	if (tuner_find_by_name(fe, "r842")) {
+	*strength = (s16)tuner_get_ch_power(fe);
+	if (tuner_find_by_name(fe, "r842") ||
+		tuner_find_by_name(fe, "r836") ||
+		tuner_find_by_name(fe, "r850")) {
 		if (fe->dtv_property_cache.modulation <= QAM_AUTO &&
-			fe->dtv_property_cache.modulation != QPSK) {
-			tn_sr += 18;
+			fe->dtv_property_cache.modulation != QPSK)
+			*strength += 18;
+		else
+			*strength += 15;
+
+		if (*strength <= -80) {
+			agc_gain = atsc_read_reg_v4(0x44) & 0xfff;
+			*strength = (s16)atsc_get_power_strength(agc_gain, *strength);
 		}
-		tn_sr += 8;
+
+		*strength += 8;
 	} else if (tuner_find_by_name(fe, "mxl661")) {
-		tn_sr += 3;
+		*strength += 3;
 	}
 
-	*strength = (s16)tn_sr;
+	PR_ATSC("demod [id %d] signal strength %d dBm\n", demod->id, *strength);
 
 	return 0;
 }
@@ -219,15 +230,10 @@ int gxtv_demod_atsc_j83b_read_signal_strength(struct dvb_frontend *fe,
 int gxtv_demod_atsc_j83b_read_snr(struct dvb_frontend *fe, u16 *snr)
 {
 	struct aml_dtvdemod *demod = (struct aml_dtvdemod *)fe->demodulator_priv;
-	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
-	struct aml_demod_sts demod_sts;
 
-	if (c->modulation <= QAM_AUTO && c->modulation != QPSK) {
-		atsc_j83b_status(demod, &demod_sts, NULL);
-		*snr = demod_sts.ch_snr / 10;
-	}
+	*snr = demod->real_para.snr;
 
-	PR_ATSC("demod [id %d] snr is %d.%d\n", demod->id, *snr / 10, *snr % 10);
+	PR_ATSC("demod[%d] snr %d dBx10\n", demod->id, *snr);
 
 	return 0;
 }
@@ -329,12 +335,12 @@ void atsc_j83b_switch_qam(struct dvb_frontend *fe, enum qam_md_e qam)
 	demod_j83b_fsm_reset(demod);
 }
 
-#define J83B_CHECK_SNR_THRESHOLD 2300
+#define J83B_CHECK_SNR_THRESHOLD 230
 int atsc_j83b_read_status(struct dvb_frontend *fe, enum fe_status *status, bool re_tune)
 {
 	struct aml_dtvdemod *demod = (struct aml_dtvdemod *)fe->demodulator_priv;
 	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
-	int str = 0;
+	s16 strength = 0;
 	unsigned int s;
 	unsigned int curtime, time_passed_qam;
 	static int check_first;
@@ -360,14 +366,10 @@ int atsc_j83b_read_status(struct dvb_frontend *fe, enum fe_status *status, bool 
 		return 0;
 	}
 
-	str = tuner_get_ch_power(fe);
-	/*agc control,fine tune strength*/
-	if (tuner_find_by_name(fe, "r842"))
-		str += 18;
-
-	if (str < THRD_TUNER_STRENGTH_J83) {
+	gxtv_demod_atsc_j83b_read_signal_strength(fe, &strength);
+	if (strength < THRD_TUNER_STRENGTH_J83) {
 		PR_ATSC("%s: tuner strength [%d] no signal(%d).\n",
-				__func__, str, THRD_TUNER_STRENGTH_J83);
+				__func__, strength, THRD_TUNER_STRENGTH_J83);
 		*status = FE_TIMEDOUT;
 		demod->last_status = *status;
 		real_para_clear(&demod->real_para);
@@ -384,8 +386,8 @@ int atsc_j83b_read_status(struct dvb_frontend *fe, enum fe_status *status, bool 
 		real_para_clear(&demod->real_para);
 
 	demod->real_para.snr = atsc_j83b_get_snr(demod);
-	PR_ATSC("fsm=%d, snr=%d.%d, demod->time_passed=%u\n", s,
-		demod->real_para.snr / 100, demod->real_para.snr % 100, demod->time_passed);
+	PR_ATSC("fsm %d, snr %d dBx10, demod->time_passed %u\n", s,
+		demod->real_para.snr, demod->time_passed);
 
 	if (s == 5) {
 		is_signal = true;
@@ -433,8 +435,8 @@ int atsc_j83b_read_status(struct dvb_frontend *fe, enum fe_status *status, bool 
 			*status = 0;
 		} else if (demod->last_status == 0x1F) {
 			*status = 0;
-			PR_ATSC("retry fsm=0x%x, snr=%d\n",
-				qam_read_reg(demod, 0x31), atsc_j83b_get_snr(demod));
+			PR_ATSC("retry fsm 0x%x, snr %d dBx10\n",
+				qam_read_reg(demod, 0x31), demod->real_para.snr);
 		} else {
 			*status = FE_TIMEDOUT;
 		}

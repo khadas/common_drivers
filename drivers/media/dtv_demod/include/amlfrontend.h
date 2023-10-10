@@ -136,6 +136,7 @@
 /*  V3.5.009 fix s1a dvbc dvbs efuse bit */
 /*  V3.5.010 add pm config for s1a */
 /*  V3.5.011 delete debug logs in probe */
+/*  V3.5.012 add DTV_STAT_SIGNAL_STRENGTH and DTV_STAT_CNR */
 /****************************************************/
 /****************************************************************/
 /*               AMLDTVDEMOD_VER  Description:                  */
@@ -152,8 +153,8 @@
 /*->The last four digits indicate the release time              */
 /****************************************************************/
 #define KERNEL_4_9_EN		1
-#define AMLDTVDEMOD_VER "V3.5.011"
-#define DTVDEMOD_VER	"2023/10/11: delete debug logs in probe"
+#define AMLDTVDEMOD_VER "V3.5.012"
+#define DTVDEMOD_VER	"2023/10/16: add DTV_STAT_SIGNAL_STRENGTH and DTV_STAT_CNR"
 #define AMLDTVDEMOD_T2_FW_VER "V1558.20230628"
 #define DEMOD_DEVICE_NAME  "dtvdemod"
 

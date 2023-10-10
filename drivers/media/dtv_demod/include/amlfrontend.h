@@ -135,6 +135,7 @@
 /*  V3.5.008 fix discarding signal when dvbt2 level is very low */
 /*  V3.5.009 fix s1a dvbc dvbs efuse bit */
 /*  V3.5.010 add pm config for s1a */
+/*  V3.5.011 delete debug logs in probe */
 /****************************************************/
 /****************************************************************/
 /*               AMLDTVDEMOD_VER  Description:                  */
@@ -151,8 +152,8 @@
 /*->The last four digits indicate the release time              */
 /****************************************************************/
 #define KERNEL_4_9_EN		1
-#define AMLDTVDEMOD_VER "V3.5.010"
-#define DTVDEMOD_VER	"2023/10/08: add pm config for s1a"
+#define AMLDTVDEMOD_VER "V3.5.011"
+#define DTVDEMOD_VER	"2023/10/11: delete debug logs in probe"
 #define AMLDTVDEMOD_T2_FW_VER "V1558.20230628"
 #define DEMOD_DEVICE_NAME  "dtvdemod"
 

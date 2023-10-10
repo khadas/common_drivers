@@ -1249,6 +1249,34 @@
 		reg = <0x0 0xff940000 0x0 0x10000>;
 	};
 
+	aml_bt: aml_bt {
+		compatible = "amlogic, aml-bt";
+		status = "disabled";
+	};
+
+	aml_wifi: aml_wifi {
+		compatible = "amlogic, aml-wifi";
+		status = "disabled";
+		irq_trigger_type = "IRQF_TRIGGER_LOW";
+		wifi_static_buf = <2>;
+		pinctrl-0 = <&pwm_e_pins>;
+		pinctrl-names = "default";
+		pwm_config = <&wifi_pwm_conf>;
+	};
+
+	wifi_pwm_conf:wifi_pwm_conf{
+		pwm_channel1_conf {
+			pwms = <&pwm_ef MESON_PWM_0 30541 0>;
+			duty-cycle = <15270>;
+			times = <10>;
+		};
+		pwm_channel2_conf {
+			pwms = <&pwm_ef MESON_PWM_2 30500 0>;
+			duty-cycle = <15250>;
+			times = <12>;
+		};
+	};
+
 	meson-amvideom {
 		compatible = "amlogic, amvideom";
 		dev_name = "amvideom";
@@ -1395,7 +1423,7 @@
 
 	sd_emmc_c: emmc@ffe07000 {
 		status = "disabled";
-		compatible = "amlogic,meson-axg-mmc";
+		compatible = "amlogic,meson-g12a-mmc";
 		reg = <0x0 0xffe07000 0x0 0x800>,
 			<0x0 0xff63c25C 0x0 0x800>,
 			<0x0 0xff6346c0 0x0 0x800>;
@@ -1410,7 +1438,7 @@
 				"clkin0", "clkin1", "clkin2";
 
 		card_type = <1>;
-		init_co_phase = <3>;
+		init_core_phase = <3>;
 		hs2_core_phase = <3>;
 		mmc_debug_flag;
 		no-sdio;
@@ -1445,7 +1473,7 @@
 
 	sd_emmc_b2:sd2@ffe05000 {
 		status = "disabled";
-		compatible = "amlogic,meson-axg-mmc";
+		compatible = "amlogic,meson-g12a-mmc";
 		reg = <0x0 0xffe05000 0x0 0x800>,
 			<0x0 0xff63c264 0x0 0x800>,
 			<0x0 0xff6346e4 0x0 0x800>;
@@ -1462,6 +1490,7 @@
 
 		ocr_avail = <0x200080>; /**VDD voltage 3.3 ~ 3.4 */
 		mmc_debug_flag;
+		time-sharing-mult;
 	};
 
 	nand: nfc@0 {
@@ -2034,7 +2063,7 @@
 			output-low;
 		};
 		mux1 {
-			groups = "GPIOC_4";
+			groups = "GPIOX_4";
 			function = "gpio_periphs";
 			output-low;
 		};

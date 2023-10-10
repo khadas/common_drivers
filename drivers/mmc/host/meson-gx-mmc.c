@@ -61,25 +61,25 @@ struct wifi_clk_table wifi_clk[WIFI_CLOCK_TABLE_MAX] = {
 	{"qca6174", 0, 0x50a, 167000000}
 };
 
-static struct mmc_host *sdio_host;
+struct mmc_host *sdio_host;
 static char *caps2_quirks = "none";
 
-#if CONFIG_AMLOGIC_KERNEL_VERSION == 13515
-void mmc_sd_update_cmdline_timing(void *data, struct mmc_card *card, int *err)
-{
-	/* nothing */
-	*err = 0;
-}
-
-void mmc_sd_update_dataline_timing(void *data, struct mmc_card *card, int *err)
-{
-	/* nothing */
-	*err = 0;
-}
-
-#define SD_CMD_TIMING mmc_sd_update_cmdline_timing
-#define SD_DATA_TIMING mmc_sd_update_dataline_timing
-#endif
+//#if CONFIG_AMLOGIC_KERNEL_VERSION == 13515
+//void mmc_sd_update_cmdline_timing(void *data, struct mmc_card *card, int *err)
+//{
+//	/* nothing */
+//	*err = 0;
+//}
+//
+//void mmc_sd_update_dataline_timing(void *data, struct mmc_card *card, int *err)
+//{
+//	/* nothing */
+//	*err = 0;
+//}
+//
+//#define SD_CMD_TIMING mmc_sd_update_cmdline_timing
+//#define SD_DATA_TIMING mmc_sd_update_dataline_timing
+//#endif
 
 static inline u32 aml_mv_dly1_nommc(u32 x)
 {
@@ -4151,11 +4151,19 @@ static int caps2_setup(char *p)
 
 __setup("meson-gx-mmc.caps2_quirks=", caps2_setup);
 
-module_platform_driver(meson_mmc_driver);
+int __init meson_mmc_init(void)
+{
+	return platform_driver_register(&meson_mmc_driver);
+}
+
+void __exit meson_mmc_exit(void)
+{
+	platform_driver_unregister(&meson_mmc_driver);
+}
 
 //module_param(caps2_quirks, charp, 0444);
 //MODULE_PARM_DESC(caps2_quirks, "Force certain caps2.");
 
-MODULE_DESCRIPTION("Amlogic S905*/GX*/AXG SD/eMMC driver");
-MODULE_AUTHOR("Kevin Hilman <khilman@baylibre.com>");
-MODULE_LICENSE("GPL v2");
+//MODULE_DESCRIPTION("Amlogic S905*/GX*/AXG SD/eMMC driver");
+//MODULE_AUTHOR("Kevin Hilman <khilman@baylibre.com>");
+//MODULE_LICENSE("GPL v2");

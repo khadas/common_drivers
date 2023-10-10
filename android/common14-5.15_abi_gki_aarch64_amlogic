@@ -26,3 +26,5 @@
   __drm_puts_seq_file
   __drm_printfn_coredump
   __drm_puts_coredump
+
+  mmc_gpiod_request_cd

@@ -25,6 +25,7 @@ RAMDISK_MODULES_LOAD_LIST=(
 	tee.ko
 	optee.ko
 	amlogic-tee.ko
+	aml_smmu.ko
 	videobuf-core.ko
 	dvb-core.ko
 	amlogic-pm.ko

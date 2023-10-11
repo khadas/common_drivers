@@ -4247,6 +4247,11 @@ bool vdin_write_done_check(unsigned int offset, struct vdin_dev_s *devp)
 {
 	bool ret = false;
 
+	/* If write ddr paused,donot checking write done */
+	if (devp->debug.pause_mif_dec || devp->debug.pause_afbce_dec ||
+		devp->pause_dec || devp->msct_top.sct_pause_dec)
+		return true;
+
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu())
 		return vdin_write_done_check_s5(offset, devp);
@@ -7103,6 +7108,12 @@ void vdin_set_matrix_color(struct vdin_dev_s *devp)
 	unsigned int offset = devp->addr_offset;
 	unsigned int mode = devp->matrix_pattern_mode;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+	if (is_meson_t3x_cpu()) {
+		vdin_set_matrix_color_t3x(devp);
+		return;
+	}
+#endif
 	/*vdin bist mode RGB:black*/
 	wr(offset, VDIN_MATRIX_CTRL, 0x4);
 	wr(offset, VDIN_MATRIX_COEF00_01, 0x0);

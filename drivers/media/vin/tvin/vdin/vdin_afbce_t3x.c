@@ -345,7 +345,7 @@ void vdin_afbce_config_t3x(struct vdin_dev_s *devp)
 	//W_VCBUS_BIT(offset + VDIN0_AFBCE_MMU_RMIF_SCOPE_X, 0x1c4f, 16, 13);
 	W_VCBUS_BIT(offset + VDIN0_AFBCE_MMU_RMIF_SCOPE_X, 0x1ffe, 16, 13);
 	W_VCBUS_BIT(offset + VDIN0_AFBCE_MMU_RMIF_CTRL3, 0x1fff, 0, 13);
-	W_VCBUS_BIT(offset + VDIN0_AFBCE_ENABLE, 1, AFBCE_WORK_MD_BIT, AFBCE_WORK_MD_WID);
+	W_VCBUS_BIT(offset + VDIN0_AFBCE_ENABLE, 0, AFBCE_WORK_MD_BIT, AFBCE_WORK_MD_WID);
 	W_VCBUS_BIT(offset + VDIN0_AFBCE_ROT_CTRL, 0, 1, 0);/* reg_rot_en */
 
 	if (devp->double_wr) {

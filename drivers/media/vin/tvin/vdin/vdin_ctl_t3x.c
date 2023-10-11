@@ -1851,8 +1851,9 @@ void vdin_set_mif_on_off_t3x(struct vdin_dev_s *devp, unsigned int rdma_enable)
 		rdma_write_reg_bits(devp->rdma_handle, VDIN0_PP_CTRL + offset,
 			devp->vframe_wr_en ? 0 : 1, 21, 1);
 		rdma_write_reg_bits(devp->rdma_handle, VDIN0_WRMIF_CTRL + offset,
-				    devp->vframe_wr_en, WR_REQ_EN_BIT,
-				    WR_REQ_EN_WID);
+			devp->vframe_wr_en, WR_REQ_EN_BIT, WR_REQ_EN_WID);
+		rdma_write_reg_bits(devp->rdma_handle, VDIN0_CORE_CTRL + offset,
+			devp->vframe_wr_en, 6, 1);
 	}
 	#endif
 	devp->vframe_wr_en_pre = devp->vframe_wr_en;
@@ -1906,6 +1907,7 @@ void vdin_set_frame_mif_write_addr_t3x(struct vdin_dev_s *devp,
 	u32 stride_luma, stride_chroma = 0;
 	u32 hsize;
 	u32 phy_addr_luma = 0, phy_addr_chroma = 0;
+	bool reg_en = true;
 
 	if (devp->vf_mem_size_small)
 		hsize = devp->h_shrink_out;
@@ -1928,14 +1930,9 @@ void vdin_set_frame_mif_write_addr_t3x(struct vdin_dev_s *devp,
 		pr_info("vf[%d],stride luma:0x%x, chroma:0x%x\n", vfe->vf.index,
 			stride_luma, stride_chroma);
 	}
-	/*if (vdin_ctl_dbg) {*/
-	/*	pr_info("mif fmt:0x%x (0:422,1:444,2:NV21) bit:0x%x h:%d\n",*/
-	/*		devp->mif_fmt, devp->source_bitdepth, hsize);*/
-	/*	pr_info("phy addr luma:0x%x chroma:0x%x\n",*/
-	/*		phy_addr_luma, phy_addr_chroma);*/
-	/*	pr_info("stride luma:0x%x, chroma:0x%x\n",*/
-	/*		stride_luma, stride_chroma);*/
-	/*}*/
+
+	if (devp->pause_dec || devp->debug.pause_mif_dec  || devp->msct_top.sct_pause_dec)
+		reg_en = false;
 
 	if (rdma_enable) {
 		rdma_write_reg(devp->rdma_handle,
@@ -1953,14 +1950,11 @@ void vdin_set_frame_mif_write_addr_t3x(struct vdin_dev_s *devp,
 				       VDIN0_WRMIF_STRIDE_CHROMA + devp->addr_offset,
 				       stride_chroma);
 		}
-		if (devp->pause_dec || devp->debug.pause_mif_dec)
-			rdma_write_reg_bits(devp->rdma_handle,
-				VDIN0_WRMIF_CTRL + devp->addr_offset,
-				0, WR_REQ_EN_BIT, WR_REQ_EN_WID);
-		else
-			rdma_write_reg_bits(devp->rdma_handle,
-				VDIN0_WRMIF_CTRL + devp->addr_offset,
-				1, WR_REQ_EN_BIT, WR_REQ_EN_WID);
+		rdma_write_reg_bits(devp->rdma_handle,
+			VDIN0_CORE_CTRL + devp->addr_offset, reg_en, 6, 1);
+		rdma_write_reg_bits(devp->rdma_handle,
+			VDIN0_WRMIF_CTRL + devp->addr_offset, reg_en,
+			WR_REQ_EN_BIT, WR_REQ_EN_WID);
 	} else {
 		wr(devp->addr_offset, VDIN0_WRMIF_BADDR_LUMA, phy_addr_luma >> 4);
 		wr(devp->addr_offset, VDIN0_WRMIF_STRIDE_LUMA, stride_luma);
@@ -1971,12 +1965,11 @@ void vdin_set_frame_mif_write_addr_t3x(struct vdin_dev_s *devp,
 			wr(devp->addr_offset, VDIN0_WRMIF_STRIDE_CHROMA,
 			   stride_chroma);
 		}
-		if (devp->pause_dec || devp->debug.pause_mif_dec)
-			wr_bits(devp->addr_offset, VDIN0_WRMIF_CTRL,
-				0, WR_REQ_EN_BIT, WR_REQ_EN_WID);
-		else
-			wr_bits(devp->addr_offset, VDIN0_WRMIF_CTRL,
-				1, WR_REQ_EN_BIT, WR_REQ_EN_WID);
+		/* reg_dw_path_en */
+		wr_bits(devp->addr_offset, VDIN0_CORE_CTRL, reg_en, 6, 1);
+		/* reg_wr_req_en */
+		wr_bits(devp->addr_offset, VDIN0_WRMIF_CTRL, reg_en,
+			WR_REQ_EN_BIT, WR_REQ_EN_WID);
 	}
 }
 
@@ -2057,13 +2050,19 @@ void vdin_set_canvas_id_t3x(struct vdin_dev_s *devp, unsigned int rdma_enable,
 void vdin_pause_mif_write_t3x(struct vdin_dev_s *devp, unsigned int rdma_enable)
 {
 #ifdef CONFIG_AMLOGIC_MEDIA_RDMA
-	if (rdma_enable)
+	if (rdma_enable) {
+		rdma_write_reg_bits(devp->rdma_handle,
+			VDIN0_CORE_CTRL + devp->addr_offset, 0, 6, 1);
 		rdma_write_reg_bits(devp->rdma_handle, VDIN0_WRMIF_CTRL + devp->addr_offset,
-				    0, WR_REQ_EN_BIT, WR_REQ_EN_WID);
+			0, WR_REQ_EN_BIT, WR_REQ_EN_WID);
+	}
 	else
 #endif
+	{
+		wr_bits(devp->addr_offset, VDIN0_CORE_CTRL, 0, 6, 1);
 		wr_bits(devp->addr_offset, VDIN0_WRMIF_CTRL, 0,
 			WR_REQ_EN_BIT, WR_REQ_EN_WID);
+	}
 }
 
 void vdin_set_crc_pulse_t3x(struct vdin_dev_s *devp)
@@ -2405,9 +2404,7 @@ void vdin_set_double_write_regs_t3x(struct vdin_dev_s *devp)
 /* vdin interface default setting */
 void vdin_if_default_t3x(struct vdin_dev_s *devp)
 {
-	wr(devp->addr_offset, VDIN0_CORE_CTRL,
-		(1 << 5) | (1 << 6) | (1 << 7));
-
+	wr(devp->addr_offset, VDIN0_CORE_CTRL, (1 << 5) | (1 << 7));
 	//sync convert
 	wr(devp->index * VDIN_TOP_OFFSET, VDIN0_SYNC_CONVERT_SECURE_CTRL, 0x0);
 	wr(devp->index * VDIN_TOP_OFFSET, VDIN0_SYNC_CONVERT_CTRL, 0x0);
@@ -2517,12 +2514,8 @@ void vdin_hw_enable_t3x(struct vdin_dev_s *devp)
  */
 void vdin_hw_disable_t3x(struct vdin_dev_s *devp)
 {
-	//unsigned int def_canvas;
-	//int temp;
-
-	pr_info("%s: vdin[%d] VDIN_PP_TOP_CTRL:%x\n",
-		__func__, devp->index, VDIN_PP_TOP_CTRL);
-	//rdma write may working now! clear req_en will not take effect
+	/* reg_dw_path_en */
+	wr_bits(devp->addr_offset, VDIN0_CORE_CTRL, 0, 6, 1);
 	/* req_en */
 	wr_bits(devp->addr_offset, VDIN0_WRMIF_CTRL, 0, WR_REQ_EN_BIT, WR_REQ_EN_WID);
 	/* reg_enable */
@@ -2530,43 +2523,7 @@ void vdin_hw_disable_t3x(struct vdin_dev_s *devp)
 	/* reg_secure_sel */
 	wr_bits(devp->index * VDIN_TOP_OFFSET, VDIN0_SYNC_CONVERT_SECURE_CTRL, 11, 0, 4);
 
-	//def_canvas = offset ? vdin_canvas_ids[1][0] : vdin_canvas_ids[0][0];
-	/* disable cm2 */
-	//wr(offset, VDIN_PP_TOP_CTRL, 0);
-	//wr_bits(offset, VDIN_CM_BRI_CON_CTRL, 0, CM_TOP_EN_BIT, CM_TOP_EN_WID);
-	/* disable video data input */
-	/* [    4]  top.datapath_en  = 0 */
-	//wr_bits(offset, VDIN_COM_CTRL0, 0,
-	//	VDIN_COMMON_INPUT_EN_BIT, VDIN_COMMON_INPUT_EN_WID);
-
-	/* mux null input */
-	/* [ 3: 0]  top.mux  = 0/(null, mpeg, 656, tvfe, cvd2, hdmi, dvin) */
-	//wr_bits(offset, VDIN_COM_CTRL0, 0, VDIN_SEL_BIT, VDIN_SEL_WID);
-	//wr(offset, VDIN_COM_CTRL0, 0x00000910);
-	//vdin_delay_line_t3x(devp, delay_line_num);
-	//if (enable_reset)
-	//	wr(offset, VDIN_WR_CTRL, 0x0b401000 | def_canvas);
-	//else
-	//	wr(offset, VDIN_WR_CTRL, 0x0bc01000 | def_canvas);
-
-	//vdin_wrmif2_enable(devp, 0);
-
-	/* disable clock of blackbar, histogram, histogram, line fifo1, matrix,
-	 * hscaler, pre hscaler, clock0
-	 */
-	/* [15:14]  Disable blackbar clock      = 01/(auto, off, on, on) */
-	/* [13:12]  Disable histogram clock     = 01/(auto, off, on, on) */
-	/* [11:10]  Disable line fifo1 clock    = 01/(auto, off, on, on) */
-	/* [ 9: 8]  Disable matrix clock        = 01/(auto, off, on, on) */
-	/* [ 7: 6]  Disable hscaler clock       = 01/(auto, off, on, on) */
-	/* [ 5: 4]  Disable pre hscaler clock   = 01/(auto, off, on, on) */
-	/* [ 3: 2]  Disable clock0              = 01/(auto, off, on, on) */
-	/* [    0]  Enable register clock       = 00/(auto, off!!!!!!!!) */
-	/*switch_vpu_clk_gate_vmod(offset == 0 ? VPU_VIU_VDIN0:VPU_VIU_VDIN1,
-	 *VPU_CLK_GATE_OFF);
-	 */
 	vdin_clk_on_off_t3x(devp, false);
-	/* wr(offset, VDIN_COM_GCLK_CTRL, 0x5554); */
 
 	/*if (devp->dtdata->de_tunnel_tunnel) */{
 		//todo vdin_dolby_desc_to_4448bit(devp, 0);
@@ -2700,10 +2657,6 @@ bool vdin_write_done_check_t3x(unsigned int offset, struct vdin_dev_s *devp)
 	bool ret = false;
 
 	devp->stats.write_done_check++;
-
-	/*clear int status*/
-	//wr_bits(offset, VDIN0_WRMIF_CTRL, 1, 18, 1);
-	//wr_bits(offset, VDIN0_WRMIF_CTRL, 0, 18, 1);
 
 	if (vdin_is_wrmif_done_t3x(devp)) {
 		devp->stats.wmif_normal_cnt++;

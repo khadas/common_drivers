@@ -2862,6 +2862,7 @@ extern u32 regdata_inpholdctl_0002;     // FRC_INP_HOLD_CTRL 0x0002
 extern u32 regdata_outholdctl_0003;     // FRC_OUT_HOLD_CTRL 0x0003
 extern u32 regdata_top_ctl_0007;        // FRC_REG_TOP_CTRL7  0x0007
 extern u32 regdata_top_ctl_0009;        // FRC_REG_TOP_CTRL9
+extern u32 regdata_top_ctl_000a;        // FRC_REG_TOP_CTRL10
 extern u32 regdata_top_ctl_0011;        // FRC_REG_TOP_CTRL17
 
 extern u32 regdata_pat_pointer_0102;
@@ -2874,6 +2875,8 @@ extern u32 regdata_blkscale_012c;
 extern u32 regdata_hme_scale_012d;
 
 extern u32 regdata_logodbg_0142;         // FRC_LOGO_DEBUG    0x0142
+extern u32 inp_mcdw_ctl_047a;            // FRC_INP_MCDW_CTRL
+extern u32 inp_path_opt_047c;            // FRC_INP_PATH_OPT
 extern u32 regdata_inpmoden_04f9;        // FRC_REG_INP_MODULE_EN  0x04f9
 extern u32 regdata_iplogo_en_0503;       // FRC_IPLOGO_EN    0x0503
 extern u32 regdata_bbd_t2b_0604;         // FRC_BBD_DETECT_REGION_TOP2BOT  0x0604
@@ -2902,6 +2905,8 @@ extern u32 regdata_mcset1_3000;         // FRC_MC_SETTING1   0x3000
 extern u32 regdata_mcset2_3001;         // FRC_MC_SETTING2   0x3001
 
 extern u32 regdata_mcdemo_win_3200;     // FRC_MC_DEMO_WINDOW  0x3200
+extern u32 mcdw_path_ctl_39fd;          // FRC_MCDW_PATH_CTRL
+
 extern u32 regdata_topctl_3f01;
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -252,6 +252,7 @@ void config_phs_regs(enum frc_ratio_mode_type frc_ratio_mode,
 int frc_drv_get_1st_frm(void);
 int frc_get_n2m_setting(void);
 int frc_is_on(void);
+int frc_get_memc_size(u16 *hsize, u16 *vsize);
 
 #define pr_frc(level, fmt, arg...)			\
 	do {						\

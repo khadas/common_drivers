@@ -104,8 +104,9 @@
 // frc_20230920 remove hme buffer in t3x/t5m
 // frc_20231009 delay frc function on boot
 // frc_20231016 add frc pattern dbg ctrl
+// frc_20231016 set disable with input is 120Hz
 
-#define FRC_FW_VER			"2023-1016 set disable with input is 120Hz"
+#define FRC_FW_VER			"2023-1018 dly frc enable in video window"
 #define FRC_KERDRV_VER                  2976
 
 #define FRC_DEVNO	1
@@ -558,21 +559,19 @@ struct frc_ud_s {
 	unsigned res1_time_en:1;
 	unsigned res2_time_en:5;
 
-	unsigned mc_undone_err:1;
-	unsigned me_undone_err:1;
 	// unsigned yuv444to422_err:1;
 	// unsigned blend_ud_err:1;
 	// unsigned me_dwscl_err:1;
 	// unsigned smp_nr_err:1;
 	// unsigned hme_dwscl_err:1;only t3
-	unsigned inp_undone_err:6;
+	unsigned inp_undone_err:8;
 
-	unsigned other6_err:1;
-	unsigned other5_err:1;
 	unsigned other4_err:1;
 	unsigned other3_err:1;
 	unsigned other2_err:1;
-	unsigned other1_err:1;
+	unsigned other1_err:1; // t3xb used
+	unsigned mc_undone_err:1;
+	unsigned me_undone_err:1;
 	unsigned vp_undone_err:2;
 
 	u8 pr_dbg;

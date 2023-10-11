@@ -239,3 +239,42 @@ int frc_get_n2m_setting(void)
 		return 0;
 }
 EXPORT_SYMBOL(frc_get_n2m_setting);
+
+int frc_get_memc_size(u16 *hsize, u16 *vsize)
+{
+	u32 temp_size;
+	int ret = 0;
+	int in_idx, out_idx, force_flag;
+	struct frc_dev_s *devp = get_frc_devp();
+
+	if (!devp)
+		return 0;
+	if (!devp->probe_ok)
+		return 0;
+//	if (devp->clk_state == FRC_CLOCK_OFF)
+//		ret = 0;
+	if ((READ_FRC_REG(FRC_TOP_CTRL) & 0x01) == 0x01) {
+		in_idx = (READ_FRC_REG(FRC_REG_PAT_POINTER) >> 4) & 0xF,
+		out_idx = (READ_FRC_REG(FRC_REG_OUT_FID) >> 12) & 0xF;
+		force_flag = (READ_FRC_REG(FRC_REG_TOP_CTRL7) >> 24) & 0x1F;
+		if (out_idx > 12 && ((in_idx == 3 - (16 - out_idx)) ||
+			(in_idx == 2 - (16 - out_idx)))) {
+			temp_size = READ_FRC_REG(FRC_FRAME_SIZE);
+			*vsize = (temp_size >> 16) & 0xFFF;
+			*hsize = temp_size & 0xFFF;
+			ret = 1;
+		} else if (((in_idx > out_idx) && (ABS(in_idx - out_idx) == 3 ||
+				ABS(in_idx - out_idx) == 2)) ||
+				force_flag != 0) {
+			temp_size = READ_FRC_REG(FRC_FRAME_SIZE);
+			*vsize = (temp_size >> 16) & 0xFFF;
+			*hsize = temp_size & 0xFFF;
+			ret = 1;
+		} else {
+			ret = 0;
+		}
+	}
+
+	return ret;
+}
+EXPORT_SYMBOL(frc_get_memc_size);

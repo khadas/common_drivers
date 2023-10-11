@@ -84,7 +84,7 @@ void frc_fw_initial(struct frc_dev_s *devp)
 	devp->out_sts.vs_tsk_cnt = 0;
 	devp->out_sts.vs_timestamp = sched_clock();
 	devp->in_sts.vf = NULL;
-	devp->frc_sts.vs_cnt = 0;
+	// devp->frc_sts.vs_cnt = 0;
 	devp->vs_timestamp = sched_clock();
 
 	devp->frc_sts.inp_undone_cnt = 0;
@@ -99,7 +99,7 @@ void frc_hw_initial(struct frc_dev_s *devp)
 	frc_fw_initial(devp);
 	frc_mtx_set(devp);
 	frc_top_init(devp);
-	t3x_verB_set_cfg(0);
+	t3x_verB_set_cfg(0, devp);
 	frc_input_size_align_check(devp);
 	frc_pattern_dbg_ctrl(devp);
 	//if (devp->ud_dbg.res2_dbg_en == 1)
@@ -154,7 +154,7 @@ void frc_out_reg_monitor(struct frc_dev_s *devp)
 				return;
 			}
 			devp->dbg_buf_len++;
-			pr_info("\t\t\t\tovs:%d 0x%x=0x%08x\n", devp->out_sts.vs_cnt,
+			pr_info("ovs:%d 0x%x=0x%08x\n", devp->out_sts.vs_cnt,
 				reg, READ_FRC_REG(reg));
 		}
 	}
@@ -233,11 +233,6 @@ void frc_isr_print_zero(struct frc_dev_s *devp)
 irqreturn_t frc_input_isr(int irq, void *dev_id)
 {
 	struct frc_dev_s *devp = (struct frc_dev_s *)dev_id;
-
-	if (!devp->probe_ok || !devp->power_on_flag)
-		return IRQ_HANDLED;
-	if (devp->clk_state == FRC_CLOCK_OFF)
-		return IRQ_HANDLED;
 
 	u64 timestamp = sched_clock();
 
@@ -430,6 +425,18 @@ void frc_change_to_state(enum frc_state_e state)
 	}
 }
 
+static int frc_osd_window_en(struct st_frc_in_sts *cur_in_sts)
+{
+	if (get_chip_type() != ID_T3X)
+		return 0;
+
+	if ((cur_in_sts->in_hsize < 1500 && cur_in_sts->in_hsize > 900) ||
+		(cur_in_sts->in_vsize < 900 && cur_in_sts->in_vsize > 500))
+		return 1;
+
+	return 0;
+}
+
 const char * const frc_state_ary[] = {
 	"FRC_STATE_DISABLE",
 	"FRC_STATE_ENABLE",
@@ -453,6 +460,7 @@ int frc_update_in_sts(struct frc_dev_s *devp, struct st_frc_in_sts *frc_in_sts,
 	frc_in_sts->signal_type = vf->signal_type;
 	frc_in_sts->source_type = vf->source_type;
 	frc_in_sts->vf = vf;
+	frc_in_sts->vf_index = vf->omx_index;
 
 	if (frc_in_sts->duration > 0 && devp->in_out_ratio != FRC_RATIO_1_1) {
 		pfw_data->frc_top_type.frc_in_frm_rate =
@@ -519,11 +527,13 @@ enum efrc_event frc_input_sts_check(struct frc_dev_s *devp,
 	//enum frc_state_e cur_state = devp->frc_sts.state;
 	u32 cur_sig_in;
 	u32 tmpvalue;
+	int is_osd_window;
 	struct frc_fw_data_s *pfw_data;
 	struct frc_top_type_s *frc_top;
 	struct vinfo_s *vinfo = get_current_vinfo();
 	static u16 seamless_cnt;
 
+	is_osd_window = frc_osd_window_en(cur_in_sts);
 	pfw_data = (struct frc_fw_data_s *)devp->fw_data;
 	frc_top = &pfw_data->frc_top_type;
 
@@ -534,6 +544,7 @@ enum efrc_event frc_input_sts_check(struct frc_dev_s *devp,
 	devp->in_sts.source_type = cur_in_sts->source_type;
 	devp->in_sts.frc_vsc_startp = cur_in_sts->frc_vsc_startp;
 	devp->in_sts.frc_hsc_startp = cur_in_sts->frc_hsc_startp;
+	devp->in_sts.vf_index =	cur_in_sts->vf_index;
 	frc_top->inp_padding_xofst = devp->in_sts.frc_hsc_startp;
 	frc_top->inp_padding_yofst = devp->in_sts.frc_vsc_startp;
 
@@ -543,6 +554,12 @@ enum efrc_event frc_input_sts_check(struct frc_dev_s *devp,
 		pr_frc(1, "hsize change (%d - %d)\n",
 			devp->in_sts.in_hsize, cur_in_sts->in_hsize);
 		devp->in_sts.in_hsize = cur_in_sts->in_hsize;
+		if (devp->frc_sts.state == FRC_STATE_ENABLE) {
+			pr_frc(0, "%s start disable frc", __func__);
+			set_frc_enable(false);
+			frc_change_to_state(FRC_STATE_DISABLE);
+			frc_state_change_finish(devp);
+		}
 		if (devp->in_sts.frc_seamless_en) {
 			if (devp->in_sts.in_hsize == 0) {
 				/*need reconfig*/
@@ -562,6 +579,12 @@ enum efrc_event frc_input_sts_check(struct frc_dev_s *devp,
 		pr_frc(1, "vsize change (%d - %d)\n",
 			devp->in_sts.in_vsize, cur_in_sts->in_vsize);
 		devp->in_sts.in_vsize = cur_in_sts->in_vsize;
+		if (devp->frc_sts.state == FRC_STATE_ENABLE) {
+			pr_frc(0, "%s start disable frc", __func__);
+			set_frc_enable(false);
+			frc_change_to_state(FRC_STATE_DISABLE);
+			frc_state_change_finish(devp);
+		}
 		if (devp->in_sts.frc_seamless_en) {
 			if (devp->in_sts.in_vsize == 0) {
 				/*need reconfig*/
@@ -678,7 +701,8 @@ enum efrc_event frc_input_sts_check(struct frc_dev_s *devp,
 	switch (devp->in_sts.vf_sts) {
 	case VFRAME_NO:
 		if (cur_sig_in == VFRAME_HAVE) {
-			if (devp->in_sts.have_vf_cnt++ >= frc_enable_cnt)  {
+			if (devp->in_sts.have_vf_cnt++ >=
+				(frc_enable_cnt + (is_osd_window ? 200 : 0))) {
 				devp->in_sts.vf_sts = cur_sig_in;
 				//if (FRC_EVENT_VF_IS_GAME)
 				sts_change |= FRC_EVENT_VF_CHG_TO_HAVE;
@@ -1474,7 +1498,7 @@ void frc_state_handle_new(struct frc_dev_s *devp)
 				devp->frc_sts.frame_cnt++;
 				off2on_cnt++;
 			} else if (devp->frc_sts.frame_cnt == bypasscnt) {
-				t3x_verB_set_cfg(1);
+				t3x_verB_set_cfg(1, devp);
 				devp->frc_sts.frame_cnt++;
 				off2on_cnt++;
 			} else if (devp->frc_sts.frame_cnt == bypasscnt + 1) {
@@ -1636,7 +1660,7 @@ void frc_state_handle_new(struct frc_dev_s *devp)
 				devp->frc_sts.frame_cnt++;
 				off2on_cnt++;
 			} else if (devp->frc_sts.frame_cnt == bypasscnt + 1) {
-				t3x_verB_set_cfg(1);
+				t3x_verB_set_cfg(1, devp);
 				devp->frc_sts.frame_cnt++;
 				off2on_cnt++;
 			} else if (devp->frc_sts.frame_cnt == bypasscnt + 2) {

@@ -37,6 +37,8 @@ u32 regdata_top_ctl_0007;                         // FRC_REG_TOP_CTRL7  0x0007
 EXPORT_SYMBOL(regdata_top_ctl_0007);
 u32 regdata_top_ctl_0009;                         // FRC_REG_TOP_CTRL9
 EXPORT_SYMBOL(regdata_top_ctl_0009);
+u32 regdata_top_ctl_000a;                        // FRC_REG_TOP_CTRL10
+EXPORT_SYMBOL(regdata_top_ctl_000a);
 u32 regdata_top_ctl_0011;                        // FRC_REG_TOP_CTRL17
 EXPORT_SYMBOL(regdata_top_ctl_0011);
 u32 regdata_pat_pointer_0102;              // FRC_REG_PAT_POINTER  0x0102
@@ -56,6 +58,11 @@ EXPORT_SYMBOL(regdata_hme_scale_012d);
 
 u32 regdata_logodbg_0142;                  // FRC_LOGO_DEBUG    0x0142
 EXPORT_SYMBOL(regdata_logodbg_0142);
+
+u32 inp_mcdw_ctl_047a;                        // FRC_INP_MCDW_CTRL
+EXPORT_SYMBOL(inp_mcdw_ctl_047a);
+u32 inp_path_opt_047c;                        // FRC_INP_PATH_OPT
+EXPORT_SYMBOL(inp_path_opt_047c);
 
 u32 regdata_inpmoden_04f9;               // FRC_REG_INP_MODULE_EN  0x04f9
 EXPORT_SYMBOL(regdata_inpmoden_04f9);
@@ -143,6 +150,9 @@ EXPORT_SYMBOL(regdata_fd_enable_0700);
 
 u32 regdata_me_stat_glb_apl_156c;       // FRC_ME_STAT_GLB_APL    0x156c
 EXPORT_SYMBOL(regdata_me_stat_glb_apl_156c);
+
+u32 mcdw_path_ctl_39fd;       // FRC_MCDW_PATH_CTRL
+EXPORT_SYMBOL(mcdw_path_ctl_39fd);
 
 /*****************************************************************************/
 //#define FRC_DISABLE_REG_RD_WR

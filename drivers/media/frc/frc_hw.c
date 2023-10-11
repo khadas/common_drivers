@@ -308,8 +308,11 @@ void set_frc_enable(u32 en)
 
 	temp = en ? BIT_0 : BIT_4;
 	regdata_topctl_3f01 = READ_FRC_REG(FRC_TOP_CTRL);
-	frc_config_reg_value(temp, BIT_0 + BIT_4, &regdata_topctl_3f01);
+	frc_config_reg_value(temp, BIT_0, &regdata_topctl_3f01);
 	WRITE_FRC_REG_BY_CPU(FRC_TOP_CTRL, regdata_topctl_3f01);
+//	regdata_topctl_3f01 = READ_FRC_REG(FRC_TOP_CTRL);
+//	frc_config_reg_value(temp, BIT_4, &regdata_topctl_3f01);
+//	WRITE_FRC_REG_BY_CPU(FRC_TOP_CTRL, regdata_topctl_3f01);
 	if (en == 1) {
 		if (chip == ID_T3X) {
 			//frc_mc_reset(1);
@@ -330,6 +333,7 @@ void set_frc_enable(u32 en)
 	} else {
 		gst_frc_param.s2l_en = 0;
 		gst_frc_param.frc_mcfixlines = 0;
+		// WRITE_FRC_REG_BY_CPU(FRC_FRAME_SIZE, 0x0);
 		if (vlock_sync_frc_vporch(gst_frc_param) < 0)
 			pr_frc(1, "frc_off_set maxlnct fail !!!\n");
 		else
@@ -489,9 +493,9 @@ void inp_undone_read(struct frc_dev_s *frc_devp)
 		return;
 	if (frc_devp->frc_sts.re_config)
 		return;
-	if (frc_devp->frc_sts.state != FRC_STATE_ENABLE ||
-		frc_devp->frc_sts.new_state != FRC_STATE_ENABLE)
-		return;
+	//if (frc_devp->frc_sts.state != FRC_STATE_ENABLE ||
+	//	frc_devp->frc_sts.new_state != FRC_STATE_ENABLE)
+	//	return;
 
 	chip = get_chip_type();
 
@@ -522,7 +526,7 @@ void inp_undone_read(struct frc_dev_s *frc_devp)
 				break;
 		} while (timeout++ < 100);
 		if (frc_devp->ud_dbg.res1_time_en == 1) {
-			if (frc_devp->ud_dbg.inp_undone_err == 60) {
+			if (frc_devp->ud_dbg.inp_undone_err == 100) {
 				frc_devp->frc_sts.re_config = true;
 				PR_ERR("inp undo more err, frc will reset\n");
 			}
@@ -546,18 +550,16 @@ void me_undone_read(struct frc_dev_s *frc_devp)
 			frc_devp->frc_sts.me_undone_cnt++;
 			WRITE_FRC_BITS(FRC_MEVP_CTRL0, 1, 31, 1);
 			WRITE_FRC_BITS(FRC_MEVP_CTRL0, 0, 31, 1);
-			if (frc_devp->ud_dbg.me_undone_err == 0) {
-				PR_ERR("me_ud_err=%d, cnt=%d, isr_cnt=(%d,%d), vd_vs_cnt=%d\n",
-					me_ud_flag,
-					frc_devp->frc_sts.me_undone_cnt,
-					frc_devp->in_sts.vs_cnt,
-					frc_devp->out_sts.vs_cnt,
-					frc_devp->frc_sts.vs_cnt);
-				frc_devp->ud_dbg.me_undone_err = 1;
-			}
+			frc_devp->ud_dbg.me_undone_err = me_ud_flag;
 		} else {
 			frc_devp->ud_dbg.me_undone_err = 0;
 		}
+		if (frc_devp->ud_dbg.me_undone_err == 1)
+			PR_ERR("me_ud_err_cnt=%d, isr_cnt=(%d,%d), vd_vs_cnt=%d\n",
+			frc_devp->frc_sts.me_undone_cnt,
+			frc_devp->in_sts.vs_cnt,
+			frc_devp->out_sts.vs_cnt,
+			frc_devp->frc_sts.vs_cnt);
 	}
 }
 
@@ -574,7 +576,7 @@ void mc_undone_read(struct frc_dev_s *frc_devp)
 		mc_ud_flag = (val >> 12) & 0x1;
 		if (mc_ud_flag != 0) {
 			PR_ERR("FRC_RO_MC_STAT= 0x%08X", val);
-			frc_devp->frc_sts.mc_undone_cnt += (val >> 16) & 0xfff;
+			frc_devp->frc_sts.mc_undone_cnt = (val >> 16) & 0xfff;
 			frc_devp->ud_dbg.mc_undone_err = 1;
 			WRITE_FRC_BITS(FRC_MC_HW_CTRL0, 1, 21, 1);
 			WRITE_FRC_BITS(FRC_MC_HW_CTRL0, 0, 21, 1);
@@ -609,7 +611,7 @@ void vp_undone_read(struct frc_dev_s *frc_devp)
 			frc_devp->ud_dbg.vp_undone_err = 0;
 		}
 		if (frc_devp->ud_dbg.vp_undone_err != 0)
-			PR_ERR("vp_err=%x, cnt=%d, outvs_cnt=%d, vd_vs_cnt:%d\n",
+			PR_ERR("vp_err=%x, err_cnt=%d, outvs_cnt=%d, vd_vs_cnt:%d\n",
 				frc_devp->ud_dbg.vp_undone_err,
 				frc_devp->frc_sts.vp_undone_cnt,
 				frc_devp->out_sts.vs_cnt,
@@ -2724,9 +2726,13 @@ void frc_internal_initial(struct frc_dev_s *frc_devp)
 		WRITE_FRC_BITS(FRC_REG_TOP_RESERVE0, 0x14, 0, 8);
 	}
 	if (frc_devp->ud_dbg.res2_dbg_en == 3) {
-		t3x_eco_initial();
-		t3x_eco_qp_cfg(2);
+		if (frc_devp->out_sts.out_framerate > 90) {
+			t3x_eco_initial();
+			t3x_eco_qp_cfg(2);
+		} else if (frc_devp->out_sts.out_framerate < 70)
+			t3x_verB_60hz_patch();
 	}
+
 	// protect mode, enable: memc delay 2 frame
 	if (frc_devp->prot_mode) {
 		regdata_top_ctl_0009 = READ_FRC_REG(FRC_REG_TOP_CTRL9);
@@ -3705,7 +3711,7 @@ void t3x_revB_patch_apply(void)
 	}
 }
 
-void t3x_verB_set_cfg(u8 flag)
+void t3x_verB_set_cfg(u8 flag, struct frc_dev_s *frc_devp)
 {
 	enum chip_id chip;
 	struct frc_dev_s *devp = get_frc_devp();
@@ -3714,8 +3720,9 @@ void t3x_verB_set_cfg(u8 flag)
 	if (!devp->probe_ok || !devp->power_on_flag)
 		return;
 	chip = get_chip_type();
-	if (chip != ID_T3X)
+	if (chip != ID_T3X || frc_devp->out_sts.out_framerate < 70)
 		return;
+
 	if (flag == 0) {   //  set before frc enable
 		WRITE_FRC_BITS(FRC_INP_MCDW_CTRL, 3, 24, 2);
 		WRITE_FRC_BITS(FRC_MCDW_PATH_CTRL, 3, 0, 2);
@@ -3769,4 +3776,32 @@ void frc_pattern_dbg_ctrl(struct frc_dev_s *devp)
 		frc_set_input_pattern(devp->pat_dbg.pat_color);
 	if (devp->pat_dbg.pat_type & BIT_1)
 		frc_set_output_pattern(devp->pat_dbg.pat_color);
+}
+
+void t3x_verB_60hz_patch(void)
+{
+	enum chip_id chip;
+
+	chip = get_chip_type();
+
+	if (chip != ID_T3X)
+		return;
+
+	regdata_top_ctl_000a = READ_FRC_REG(FRC_REG_TOP_CTRL10);
+	frc_config_reg_value(0x7f, 0xff, &regdata_top_ctl_000a);
+	WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL10, regdata_top_ctl_000a);
+
+	inp_mcdw_ctl_047a = READ_FRC_REG(FRC_INP_MCDW_CTRL);
+	inp_mcdw_ctl_047a &= ~0x11;
+	WRITE_FRC_REG_BY_CPU(FRC_INP_MCDW_CTRL, inp_mcdw_ctl_047a);
+
+	inp_path_opt_047c = READ_FRC_REG(FRC_INP_PATH_OPT);
+	inp_path_opt_047c &= ~0x1;
+	WRITE_FRC_REG_BY_CPU(FRC_INP_PATH_OPT, inp_path_opt_047c);
+
+	mcdw_path_ctl_39fd = READ_FRC_REG(FRC_MCDW_PATH_CTRL);
+	mcdw_path_ctl_39fd &= ~0x10;
+	WRITE_FRC_REG_BY_CPU(FRC_MCDW_PATH_CTRL, mcdw_path_ctl_39fd);
+
+	pr_frc(0, "%s ok", __func__);
 }

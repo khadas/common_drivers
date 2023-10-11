@@ -126,6 +126,7 @@ void frc_chg_loss_slice_num(u8 num);
 void t3x_eco_initial(void);
 void t3x_eco_qp_cfg(u32 qp);
 void t3x_revB_patch_apply(void);
-void t3x_verB_set_cfg(u8 flag);
+void t3x_verB_set_cfg(u8 flag, struct frc_dev_s *frc_devp);
 void frc_pattern_dbg_ctrl(struct frc_dev_s *devp);
+void t3x_verB_60hz_patch(void);
 #endif

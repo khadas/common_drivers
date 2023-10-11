@@ -774,6 +774,16 @@ static ssize_t dc_cap_show(struct device *dev,
 
 static DEVICE_ATTR_RO(dc_cap);
 
+static ssize_t aud_cap_show(struct device *dev,
+			   struct device_attribute *attr, char *buf)
+{
+	struct rx_cap *prxcap = &global_tx_common->rxcap;
+
+	return _show_aud_cap(prxcap, buf);
+}
+
+static DEVICE_ATTR_RO(aud_cap);
+
 static ssize_t preferred_mode_show(struct device *dev,
 				   struct device_attribute *attr,
 				   char *buf)
@@ -1132,6 +1142,7 @@ int hdmitx_sysfs_common_create(struct device *dev,
 	ret = device_create_file(dev, &dev_attr_cea_cap);
 	ret = device_create_file(dev, &dev_attr_vesa_cap);
 	ret = device_create_file(dev, &dev_attr_dc_cap);
+	ret = device_create_file(dev, &dev_attr_aud_cap);
 	ret = device_create_file(dev, &dev_attr_valid_mode);
 
 	ret = device_create_file(dev, &dev_attr_support_3d);
@@ -1173,6 +1184,7 @@ int hdmitx_sysfs_common_destroy(struct device *dev)
 	device_remove_file(dev, &dev_attr_cea_cap);
 	device_remove_file(dev, &dev_attr_vesa_cap);
 	device_remove_file(dev, &dev_attr_dc_cap);
+	device_remove_file(dev, &dev_attr_aud_cap);
 	device_remove_file(dev, &dev_attr_valid_mode);
 
 	device_remove_file(dev, &dev_attr_support_3d);

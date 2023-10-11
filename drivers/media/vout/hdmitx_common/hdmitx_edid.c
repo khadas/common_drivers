@@ -249,6 +249,132 @@ static const u32 hdmi14_4k_vics[] = {
 	98,
 };
 
+static void _show_pcm_ch(struct rx_cap *prxcap, int i,
+			 int *ppos, char *buf)
+{
+	const char * const aud_sample_size[] = {"ReferToStreamHeader",
+		"16", "20", "24", NULL};
+	int j = 0;
+
+	for (j = 0; j < 3; j++) {
+		if (prxcap->RxAudioCap[i].cc3 & (1 << j))
+			*ppos += snprintf(buf + *ppos, PAGE_SIZE, "%s/",
+				aud_sample_size[j + 1]);
+	}
+	*ppos += snprintf(buf + *ppos - 1, PAGE_SIZE, " bit\n") - 1;
+}
+
+/**/
+ssize_t _show_aud_cap(struct rx_cap *prxcap, char *buf)
+{
+	int i, pos = 0, j;
+	struct dolby_vsadb_cap *cap = &prxcap->dolby_vsadb_cap;
+
+	static const char * const aud_ct[] =  {
+		"ReferToStreamHeader", "PCM", "AC-3", "MPEG1", "MP3",
+		"MPEG2", "AAC", "DTS", "ATRAC",	"OneBitAudio",
+		"Dolby_Digital+", "DTS-HD", "MAT", "DST", "WMA_Pro",
+		"Reserved", NULL};
+	static const char * const aud_sampling_frequency[] = {
+		"ReferToStreamHeader", "32", "44.1", "48", "88.2", "96",
+		"176.4", "192", NULL};
+
+	pos += snprintf(buf + pos, PAGE_SIZE,
+		"CodingType MaxChannels SamplingFreq SampleSize\n");
+	for (i = 0; i < prxcap->AUD_count; i++) {
+		if (prxcap->RxAudioCap[i].audio_format_code == CT_CXT) {
+			if ((prxcap->RxAudioCap[i].cc3 >> 3) == 0xb) {
+				pos += snprintf(buf + pos, PAGE_SIZE, "MPEG-H, 8ch, ");
+				for (j = 0; j < 7; j++) {
+					if (prxcap->RxAudioCap[i].freq_cc & (1 << j))
+						pos += snprintf(buf + pos, PAGE_SIZE, "%s/",
+							aud_sampling_frequency[j + 1]);
+				}
+				pos += snprintf(buf + pos - 1, PAGE_SIZE, " kHz\n");
+			}
+			continue;
+		}
+		pos += snprintf(buf + pos, PAGE_SIZE, "%s",
+			aud_ct[prxcap->RxAudioCap[i].audio_format_code]);
+		if (prxcap->RxAudioCap[i].audio_format_code == CT_DD_P &&
+		    (prxcap->RxAudioCap[i].cc3 & 1))
+			pos += snprintf(buf + pos, PAGE_SIZE, "/ATMOS");
+		if (prxcap->RxAudioCap[i].audio_format_code != CT_CXT)
+			pos += snprintf(buf + pos, PAGE_SIZE, ", %d ch, ",
+				prxcap->RxAudioCap[i].channel_num_max + 1);
+		for (j = 0; j < 7; j++) {
+			if (prxcap->RxAudioCap[i].freq_cc & (1 << j))
+				pos += snprintf(buf + pos, PAGE_SIZE, "%s/",
+					aud_sampling_frequency[j + 1]);
+		}
+		pos += snprintf(buf + pos - 1, PAGE_SIZE, " kHz, ") - 1;
+		switch (prxcap->RxAudioCap[i].audio_format_code) {
+		case CT_PCM:
+			_show_pcm_ch(prxcap, i, &pos, buf);
+			break;
+		case CT_AC_3:
+		case CT_MPEG1:
+		case CT_MP3:
+		case CT_MPEG2:
+		case CT_AAC:
+		case CT_DTS:
+		case CT_ATRAC:
+		case CT_ONE_BIT_AUDIO:
+			pos += snprintf(buf + pos, PAGE_SIZE,
+				"MaxBitRate %dkHz\n",
+				prxcap->RxAudioCap[i].cc3 * 8);
+			break;
+		case CT_DD_P:
+		case CT_DTS_HD:
+		case CT_MAT:
+		case CT_DST:
+			pos += snprintf(buf + pos, PAGE_SIZE, "DepValue 0x%x\n",
+				prxcap->RxAudioCap[i].cc3);
+			break;
+		case CT_WMA:
+		default:
+			break;
+		}
+	}
+
+	if (cap->ieeeoui == DOVI_IEEEOUI) {
+		/*
+		 *Dolby Vendor Specific:
+		 *  headphone_playback_only:0,
+		 *  center_speaker:1,
+		 *  surround_speaker:1,
+		 *  height_speaker:1,
+		 *  Ver:1.0,
+		 *  MAT_PCM_48kHz_only:1,
+		 *  e61146d0007001,
+		 */
+		pos += snprintf(buf + pos, PAGE_SIZE,
+				"Dolby Vendor Specific:\n");
+		if (cap->dolby_vsadb_ver == 0)
+			pos += snprintf(buf + pos, PAGE_SIZE, "  Ver:1.0,\n");
+		else
+			pos += snprintf(buf + pos, PAGE_SIZE,
+				"  Ver:Reversed,\n");
+		pos += snprintf(buf + pos, PAGE_SIZE,
+			"  center_speaker:%d,\n", cap->spk_center);
+		pos += snprintf(buf + pos, PAGE_SIZE,
+			"  surround_speaker:%d,\n", cap->spk_surround);
+		pos += snprintf(buf + pos, PAGE_SIZE,
+			"  height_speaker:%d,\n", cap->spk_height);
+		pos += snprintf(buf + pos, PAGE_SIZE,
+			"  headphone_playback_only:%d,\n", cap->headphone_only);
+		pos += snprintf(buf + pos, PAGE_SIZE,
+			"  MAT_PCM_48kHz_only:%d,\n", cap->mat_48k_pcm_only);
+
+		pos += snprintf(buf + pos, PAGE_SIZE, "  ");
+		for (i = 0; i < 7; i++)
+			pos += snprintf(buf + pos, PAGE_SIZE, "%02x",
+				cap->rawdata[i]);
+		pos += snprintf(buf + pos, PAGE_SIZE, ",\n");
+	}
+	return pos;
+}
+
 u32 hdmitx_edid_get_hdmi14_4k_vic(u32 vic)
 {
 	bool ret = 0;

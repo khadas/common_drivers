@@ -268,6 +268,7 @@ bool hdmitx_edid_is_all_zeros(unsigned char *rawedid);
 int _check_base_structure(unsigned char *buf);
 int _check_edid_blk_chksum(unsigned char *block);
 bool hdmitx_edid_check_data_valid(unsigned char *buf);
+ssize_t _show_aud_cap(struct rx_cap *prxcap, char *buf);
 int hdmitx_edid_parse(struct rx_cap *prxcap, u8 *edid_buf);
 unsigned int hdmitx_edid_valid_block_num(unsigned char *edid_buf);
 bool hdmitx_validate_y420_vic(enum hdmi_vic vic);

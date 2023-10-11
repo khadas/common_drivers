@@ -712,6 +712,9 @@ static int am_hdmitx_connector_atomic_set_property
 	} else if (property == am_hdmi->hdr_priority_prop) {
 		hdmitx_state->hdr_priority = val;
 		return 0;
+	} else if (property == am_hdmi->ready_prop) {
+		hdmitx_state->ready = val;
+		return 0;
 	}
 
 	return -EINVAL;
@@ -766,6 +769,9 @@ static int am_hdmitx_connector_atomic_get_property
 		return 0;
 	} else if (property == am_hdmi->hdr_priority_prop) {
 		*val = hdmitx_state->hdr_priority;
+		return 0;
+	} else if (property == am_hdmi->ready_prop) {
+		*val = hdmitx_common_get_ready_state(tx_comm);
 		return 0;
 	}
 
@@ -1925,6 +1931,20 @@ static void meson_hdmitx_init_avmute_property(struct drm_device *drm_dev,
 	}
 }
 
+static void meson_hdmitx_init_ready_property(struct drm_device *drm_dev,
+						  struct am_hdmi_tx *am_hdmi)
+{
+	struct drm_property *prop;
+
+	prop = drm_property_create_bool(drm_dev, 0, "ready");
+	if (prop) {
+		am_hdmi->ready_prop = prop;
+		drm_object_attach_property(&am_hdmi->base.connector.base, prop, 0);
+	} else {
+		DRM_ERROR("Failed to init ready property\n");
+	}
+}
+
 static void meson_hdmitx_init_contenttype_cap_property(struct drm_device *drm_dev,
 						  struct am_hdmi_tx *am_hdmi)
 {
@@ -2123,6 +2143,7 @@ int meson_hdmitx_dev_bind(struct drm_device *drm,
 	meson_hdmitx_init_contenttype_cap_property(drm, am_hdmi);
 	meson_hdmitx_init_allm_property(drm, am_hdmi);
 	meson_hdmitx_init_hdr_priority_property(drm, am_hdmi);
+	meson_hdmitx_init_ready_property(drm, am_hdmi);
 
 	/*TODO:update compat_mode for drm driver, remove later.*/
 	priv->compat_mode = am_hdmi_info.android_path;

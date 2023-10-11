@@ -227,6 +227,13 @@ unsigned char *hdmitx_get_raw_edid(struct hdmitx_common *tx_comm)
 }
 EXPORT_SYMBOL(hdmitx_get_raw_edid);
 
+/* TODO: no mutex */
+bool hdmitx_common_get_ready_state(struct hdmitx_common *tx_comm)
+{
+	return tx_comm->ready;
+}
+EXPORT_SYMBOL(hdmitx_common_get_ready_state);
+
 int hdmitx_setup_attr(struct hdmitx_common *tx_comm, const char *buf)
 {
 	char attr[16] = {0};

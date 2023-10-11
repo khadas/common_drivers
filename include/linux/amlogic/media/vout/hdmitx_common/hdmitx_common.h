@@ -237,6 +237,7 @@ int hdmitx_audio_register_ctrl_callback(audio_en_callback cb1, audio_st_callback
 
 int hdmitx_get_hpd_state(struct hdmitx_common *tx_comm);
 unsigned char *hdmitx_get_raw_edid(struct hdmitx_common *tx_comm);
+bool hdmitx_common_get_ready_state(struct hdmitx_common *tx_comm);
 int hdmitx_setup_attr(struct hdmitx_common *tx_comm, const char *buf);
 int hdmitx_get_attr(struct hdmitx_common *tx_comm, char attr[16]);
 

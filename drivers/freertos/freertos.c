@@ -32,6 +32,7 @@
 #include <linux/of_reserved_mem.h>
 #include <linux/amlogic/freertos.h>
 #include <linux/mm.h>
+#include <linux/sched/clock.h>
 
 #define AML_RTOS_NAME "freertos"
 
@@ -68,6 +69,7 @@ static DEFINE_MUTEX(freertos_logbuf_lock);
 
 static int aml_rtos_logbuf_save(void);
 
+static unsigned long long rtos_time_limit = 5000000000;
 static unsigned long rtos_log_save;
 static int rtos_param(char *buf)
 {
@@ -323,12 +325,12 @@ static void freertos_do_finish(int bootup)
 					if (freertos_coreup_prepare(cpu, bootup) < 0)
 						continue;
 
+					aml_rtos_logbuf_save();
 					freertos_coreup(cpu, bootup);
 
 				} else {
 					pr_info("cpu %u already take over\n", cpu);
 				}
-				aml_rtos_logbuf_save();
 #if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_MEMORY_FREE)
 				free_rtos_memory();
 #if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_NOFITIER)
@@ -359,8 +361,7 @@ int freertos_finish(void)
 
 	spin_lock_irqsave(&freertos_chk_lock, flg);
 	cpu = smp_processor_id();
-	if (cpu == 0 && !ipi_rcv && rtosinfo &&
-	    !freertos_finished &&
+	if (cpu == 0 && !ipi_rcv && rtosinfo && !freertos_finished &&
 	    rtosinfo->status == ertosstat_done) {
 		pr_info("ipi received\n");
 #if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_T7)
@@ -530,6 +531,7 @@ static int aml_rtos_logbuf_save(void)
 	}
 
 	tmpbuf = vmalloc(rtosinfo->logbuf_len);
+	pr_info("save logbuf addr: %p, tmpbuf addr: %p\n", logbuf,  tmpbuf);
 	memcpy(tmpbuf, logbuf, rtosinfo->logbuf_len);
 	logbuf = tmpbuf;
 
@@ -626,6 +628,30 @@ static ssize_t ipi_send_store(struct class *cla,
 static CLASS_ATTR_WO(ipi_send);
 #endif
 
+static ssize_t time_limit_store(struct class *cla, struct class_attribute *attr,
+				const char *buf, size_t count)
+{
+	unsigned long val = 0;
+
+	if (kstrtoul(buf, 0, &val)) {
+		pr_err("invalid input:%s\n", buf);
+		return count;
+	}
+	pr_info("set time limit is %ld ns\n", val);
+	rtos_time_limit = val;
+	return count;
+}
+
+static ssize_t time_limit_show(struct class *cla, struct class_attribute *attr,
+			       char *buf)
+{
+	int cnt = 0;
+
+	cnt = sprintf(buf, "time limit value :%lld ns\n", rtos_time_limit);
+	return cnt;
+}
+static CLASS_ATTR_RW(time_limit);
+
 static struct attribute *freertos_attrs[] = {
 #if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_ANDROID_CTRL)
 	&class_attr_android_status.attr,
@@ -633,6 +659,7 @@ static struct attribute *freertos_attrs[] = {
 #if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_IPI_SEND)
 	&class_attr_ipi_send.attr,
 #endif
+	&class_attr_time_limit.attr,
 	NULL
 };
 ATTRIBUTE_GROUPS(freertos);
@@ -647,8 +674,7 @@ static int aml_rtos_probe(struct platform_device *pdev)
 	rtos_debug_dir = debugfs_create_dir("freertos", NULL);
 	rtosinfo_phy = freertos_request_info();
 	pr_info("rtosinfo_phy=%lx\n", rtosinfo_phy);
-	if (rtosinfo_phy == 0 ||
-	    (int)rtosinfo_phy == SMC_UNK)
+	if (rtosinfo_phy == 0 || (int)rtosinfo_phy == SMC_UNK)
 		return 0;
 
 #if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_IS_MAP)
@@ -694,7 +720,21 @@ static int __exit aml_rtos_remove(struct platform_device *pdev)
 #if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_SHUTDOWN)
 static void aml_rtos_shutdown(struct platform_device *pdev)
 {
-	arch_send_ipi_rtos(1);
+	unsigned long long tick_s = 0, tick_e = 0;
+
+	if (!freertos_finished) {
+		arch_send_ipi_rtos(1);
+		tick_s = sched_clock();
+		while (!freertos_finished) {
+			tick_e = sched_clock() - tick_s;
+			if (tick_e > rtos_time_limit)
+				panic("rtos finished time out\n");
+			usleep_range(500, 1000);
+		}
+		tick_e = sched_clock() - tick_s;
+	}
+	pr_info("rtos shutdown out, time %lld ns\n", tick_e);
+
 }
 #endif
 
@@ -741,8 +781,7 @@ static void freertos_get_irqrsved(void)
 		goto exit;
 #endif
 
-	np = of_find_matching_node_and_match(NULL,
-					     aml_freertos_dt_match, NULL);
+	np = of_find_matching_node_and_match(NULL, aml_freertos_dt_match, NULL);
 	if (!np)
 		goto exit;
 	if (!of_device_is_available(np))

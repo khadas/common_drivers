@@ -7,6 +7,7 @@
 
 #include "mesont5m.dtsi"
 #include "mesont5m_drm.dtsi"
+#include "firmware_ab.dtsi"
 #include "mesont5m_ay309-panel.dtsi"
 
 / {

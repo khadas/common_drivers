@@ -68,6 +68,9 @@ static ssize_t measure_write(struct file *file, const char __user *buffer,
 	char input[5];
 	unsigned int id = 0, rate;
 
+	if (count == 1)
+		return -EFAULT;
+
 	count = min_t(size_t, count, (sizeof(input) - 1));
 	if (copy_from_user(input, buffer, count))
 		return -EFAULT;

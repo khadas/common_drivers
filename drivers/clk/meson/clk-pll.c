@@ -77,20 +77,20 @@ static unsigned long __pll_params_to_rate(unsigned long parent_rate,
 	u64 rate = (u64)parent_rate * m;
 	u64 frac_rate;
 
-	if (frac && MESON_PARM_APPLICABLE(&pll->frac)) {
+	if (frac && pll->frac.width > 2) {
 		frac_rate = (u64)parent_rate * frac;
 		if (frac & (1 << (pll->frac.width - 1))) {
 			if (pll->flags & CLK_MESON_PLL_FIXED_FRAC_WEIGHT_PRECISION)
 				rate -= DIV_ROUND_UP_ULL(frac_rate, FIXED_FRAC_WEIGHT_PRECISION);
 			else
 				rate -= DIV_ROUND_UP_ULL(frac_rate,
-						 (1 << (pll->frac.width - 2)));
+						 ((u32)1 << (pll->frac.width - 2)));
 		} else {
 			if (pll->flags & CLK_MESON_PLL_FIXED_FRAC_WEIGHT_PRECISION)
 				rate += DIV_ROUND_UP_ULL(frac_rate, FIXED_FRAC_WEIGHT_PRECISION);
 			else
 				rate += DIV_ROUND_UP_ULL(frac_rate,
-						 (1 << (pll->frac.width - 2)));
+						 ((u32)1 << (pll->frac.width - 2)));
 		}
 	}
 

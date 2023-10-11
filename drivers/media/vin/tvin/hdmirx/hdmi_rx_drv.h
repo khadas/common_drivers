@@ -55,7 +55,8 @@
 //2023 9.13 add gcp mute cnt when fps change
 //2023.9.22 t3x 480p aud clk settings
 //2023.10.07 CTS2-79 for IP2.0
-#define RX_VER0 "ver.2023/10/07"
+//2023.10.11 increase interval time of HPD low
+#define RX_VER0 "ver.2023/10/11"
 
 
 /*print type*/

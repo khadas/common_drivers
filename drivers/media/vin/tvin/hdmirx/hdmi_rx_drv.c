@@ -1797,10 +1797,11 @@ static long hdmirx_ioctl(struct file *file, unsigned int cmd,
 		/* ref board ui can only be set in current hdmi port */
 		if (edid_delivery_mothed == EDID_DELIVERY_ALL_PORT) {
 			rx_irq_en(false, rx_info.main_port);
-			if (rx_info.open_fg)
+			if (rx_info.open_fg) {
 				rx_set_cur_hpd(0, 4, rx_info.main_port);
+				rx[rx_info.main_port].var.edid_update_flag = 1;
+			}
 			port_hpd_rst_flag |= (1 << rx_info.main_port);
-			rx[rx_info.main_port].var.edid_update_flag = 1;
 		}
 		fsm_restart(rx_info.main_port);
 		if (hdmi_cec_en && rx_info.boot_flag)
@@ -1837,6 +1838,7 @@ static long hdmirx_ioctl(struct file *file, unsigned int cmd,
 				port_hpd_rst_flag |= (1 << port_idx);
 				hdmi_rx_top_edid_update();
 			} else {
+				rx[rx_info.main_port].var.edid_update_flag = 1;
 				rx_irq_en(false, port_idx);
 				//rx_set_cur_hpd(0, 4);
 				fsm_restart(port_idx);

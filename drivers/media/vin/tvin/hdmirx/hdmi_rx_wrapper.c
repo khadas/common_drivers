@@ -3512,8 +3512,9 @@ bool rx_hpd_keep_low(u8 port)
 {
 	bool ret = false;
 
-	if (rx[port].var.downstream_hpd_flag) {
-		if (rx[port].var.hpd_wait_cnt <= hpd_wait_max * 4)
+	if (rx[port].var.downstream_hpd_flag ||
+		rx[rx_info.main_port].var.edid_update_flag) {
+		if (rx[port].var.hpd_wait_cnt <= hpd_wait_max * 2)
 			ret = true;
 	} else {
 		if (rx[port].var.hpd_wait_cnt <= hpd_wait_max)

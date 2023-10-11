@@ -45,6 +45,13 @@ config AMLOGIC_FREERTOS_ANDROID_CTRL
 	    help
 	      Say Y here to enable android ctrl support.
 
+config AMLOGIC_FREERTOS_SHUTDOWN
+	    bool "Amlogic Freertos shutdown function"
+	    depends on AMLOGIC_FREERTOS
+	    default n
+	    help
+	      Say Y here to enable shutdown function.
+
 config AMLOGIC_FREERTOS_T7
 	bool "Amlogic Freertos Support with t7"
 	depends on AMLOGIC_BREAK_GKI
@@ -54,6 +61,7 @@ config AMLOGIC_FREERTOS_T7
 	select AMLOGIC_FREERTOS_MEMORY_FREE
 	select AMLOGIC_FREERTOS_IPI_SEND
 	select AMLOGIC_FREERTOS_ANDROID_CTRL
+	select AMLOGIC_FREERTOS_SHUTDOWN
 	default n
 	help
 	  Say Y here to enable freertos support.

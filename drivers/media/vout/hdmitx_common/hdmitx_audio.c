@@ -12,6 +12,7 @@
 #include <sound/initval.h>
 #include <sound/control.h>
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_common.h>
+#include "hdmitx_log.h"
 
 /* Recommended N and Expected CTS for 32kHz */
 static const struct hdmi_audio_fs_ncts aud_32k_para = {
@@ -473,7 +474,7 @@ u32 hdmitx_hw_get_audio_n_paras(enum hdmi_audio_fs fs,
 	u32 i, n;
 	u32 N_multiples = 1;
 
-	pr_info("hdmitx: fs = %d, cd = %d, tmds_clk = %d\n", fs, cd, tmds_clk);
+	HDMITX_INFO("fs = %d, cd = %d, tmds_clk = %d\n", fs, cd, tmds_clk);
 	switch (fs) {
 	case FS_32K:
 		p = all_aud_paras[0];
@@ -691,7 +692,7 @@ int hdmitx_audio_para_print(struct aud_para *audio_para, char *log_buf)
 	if (log_buf)
 		sprintf(log_buf, "%s", buf);
 	else
-		pr_info("%s", buf);
+		HDMITX_INFO("%s", buf);
 
 	return pos;
 }
@@ -764,7 +765,7 @@ u32 aud_sr_idx_to_val(enum hdmi_audio_fs e_sr_idx)
 		if (map_fs[i].fs == e_sr_idx)
 			return map_fs[i].rate / 1000;
 	}
-	pr_info("wrong idx: %d\n", e_sr_idx);
+	HDMITX_INFO("wrong idx: %d\n", e_sr_idx);
 	return -1;
 }
 
@@ -774,11 +775,11 @@ static bool hdmitx_set_i2s_mask(struct aud_para *tx_aud_param, char ch_num, char
 
 	if (!(ch_num == 2 || ch_num == 4 ||
 	      ch_num == 6 || ch_num == 8)) {
-		pr_info("err chn setting, must be 2, 4, 6 or 8, Rst as def\n");
+		HDMITX_INFO("err chn setting, must be 2, 4, 6 or 8, Rst as def\n");
 		return 0;
 	}
 	if (ch_msk == 0) {
-		pr_info("err chn msk, must larger than 0\n");
+		HDMITX_INFO("err chn msk, must larger than 0\n");
 		return 0;
 	}
 	update_flag = (ch_num << 4) + ch_msk;
@@ -806,14 +807,14 @@ void hdmitx_audio_notify_callback(struct hdmitx_common *tx_comm,
 		hdmitx_hw_cntl_misc(tx_hw_base, MISC_AUDIO_ACR_CTRL, 0);
 		hdmitx_hw_cntl_misc(tx_hw_base, MISC_AUDIO_PREPARE, 0);
 		tx_aud_param->type = CT_PREPARE;
-		pr_info("%s[%d] audio prepare\n", __func__, __LINE__);
+		HDMITX_INFO("%s[%d] audio prepare\n", __func__, __LINE__);
 		return;
 	}
 	if (aud_param->fifo_rst) {
 		hdmitx_hw_cntl_misc(tx_hw_base, MISC_AUDIO_RESET, 1);
 		return;
 	}
-	pr_info("%s[%d] type:%lu rate:%d size:%d chs:%d i2s_ch_mask:%d aud_src_if:%d\n",
+	HDMITX_INFO("%s[%d] type:%lu rate:%d size:%d chs:%d i2s_ch_mask:%d aud_src_if:%d\n",
 		__func__, __LINE__, cmd, n_rate, n_size, aud_param->chs,
 		aud_param->i2s_ch_mask, aud_param->aud_src_if);
 	/* check audio parameters changing, if true, update hdmitx audio hw */
@@ -827,7 +828,7 @@ void hdmitx_audio_notify_callback(struct hdmitx_common *tx_comm,
 	if (tx_aud_param->type != cmd) {
 		tx_aud_param->type = cmd;
 		audio_param_update_flag = 1;
-		pr_info(AUD "aout notify format %s\n",
+		HDMITX_INFO("aout notify format %s\n",
 			aud_type_string[tx_aud_param->type & 0xff]);
 	}
 
@@ -851,7 +852,7 @@ void hdmitx_audio_notify_callback(struct hdmitx_common *tx_comm,
 			tx_aud_param->aud_notify_update = 1;
 			tx_hw_base->setaudmode(tx_hw_base, tx_aud_param);
 			tx_aud_param->aud_notify_update = 0;
-			pr_info(AUD "set audio param\n");
+			HDMITX_INFO("set audio param\n");
 		}
 	}
 }

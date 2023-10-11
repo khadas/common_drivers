@@ -120,7 +120,7 @@ static void intr2_sw_handler(struct intr_t *intr)
 	vsync_cnt++;
 	if (vsync_cnt % 64 == 0) {
 		/* blank here */
-		/* pr_info("%s[%d] vsync_cnt %d\n", __func__, __LINE__, vsync_cnt); */
+		/* HDMITX_INFO("%s[%d] vsync_cnt %d\n", __func__, __LINE__, vsync_cnt); */
 	}
 }
 
@@ -185,7 +185,7 @@ void hdmitx_top_intr_handler(struct work_struct *work)
 				dat_top &= ~(1 << 1);
 		}
 		if ((dat_top & 0x6) && hdev->tx_hw.base.debug_hpd_lock) {
-			pr_info("HDMI hpd locked\n");
+			HDMITX_INFO("HDMI hpd locked\n");
 			goto next;
 		}
 		/* HPD rising */
@@ -195,7 +195,7 @@ void hdmitx_top_intr_handler(struct work_struct *work)
 				&hdev->work_hpd_plugin,
 				hdev->pxp_mode ? 0 : HZ / 2);
 			if (!ret)
-				pr_info("HDMI plugin work is already in the queue\n");
+				HDMITX_DEBUG("HDMI plugin work is already in the queue\n");
 		}
 		/* HPD falling */
 		if (dat_top & (1 << 2)) {
@@ -208,21 +208,21 @@ void hdmitx_top_intr_handler(struct work_struct *work)
 			 */
 			ret = cancel_delayed_work(&hdev->work_hpd_plugin);
 			if (ret)
-				pr_info("plugin work is pending and canceled\n");
+				HDMITX_DEBUG("plugin work is pending and canceled\n");
 			else
-				pr_info("plugin work is not pending\n");
+				HDMITX_DEBUG("plugin work is not pending\n");
 
 			ret = queue_delayed_work(hdev->hdmi_hpd_wq,
 				&hdev->work_hpd_plugout, 0);
 			if (!ret)
-				pr_info("HDMI plugout work is already in the queue\n");
+				HDMITX_DEBUG("HDMI plugout work is already in the queue\n");
 		}
 	}
 next:
 	/* already called top_intr.callback, next others */
 	for (i = 1; i < sizeof(union intr_u) / sizeof(struct intr_t); i++) {
 		pint++;
-		/* pr_info("-----i = %d, pint->st_data = %x\n", i, pint->st_data); */
+		/* HDMITX_INFO("-----i = %d, pint->st_data = %x\n", i, pint->st_data); */
 		if (pint->st_data) {
 			val = pint->st_data;
 			if (pint->callback)
@@ -239,7 +239,7 @@ static void intr_status_save_and_clear(void)
 	for (i = 0; i < sizeof(union intr_u) / sizeof(struct intr_t); i++) {
 		pint->st_data = hdmitx21_rd_reg(pint->intr_st_reg);
 		/* if (pint->intr_st_reg == TPI_INTR_ST0_IVCTX) */
-			/*pr_info("TPI_INTR_ST0_IVCTX :0x%x\n", pint->st_data); */
+			/*HDMITX_INFO("TPI_INTR_ST0_IVCTX :0x%x\n", pint->st_data); */
 		hdmitx21_wr_reg(pint->intr_clr_reg, pint->st_data);
 		pint++;
 	}
@@ -264,7 +264,7 @@ RE_ISR:
 		top_intr_state & BIT(2) ||
 		top_intr_state & BIT(1) ||
 		top_intr_state & BIT(0)) {
-		pr_info("interrupt not cleared, re-handle intr\n");
+		HDMITX_INFO("interrupt not cleared, re-handle intr\n");
 		goto RE_ISR;
 	}
 	return IRQ_HANDLED;
@@ -291,5 +291,5 @@ void hdmitx_setupirqs(struct hdmitx_dev *phdev)
 			IRQF_SHARED, "hdmitx_vrr_vsync",
 			(void *)phdev);
 	if (r != 0)
-		pr_info(SYS "can't request vrr_vsync irq\n");
+		HDMITX_INFO(SYS "can't request vrr_vsync irq\n");
 }

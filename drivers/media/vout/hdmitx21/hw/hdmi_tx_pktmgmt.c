@@ -162,7 +162,7 @@ static int _tpi_infoframe_wrrd(u8 wr, u16 info_type, u8 *body)
 		no_chksum_flag = 1;
 		break;
 	default:
-		pr_info("%s[%d] wrong info_type %d\n", __func__, __LINE__, info_type);
+		HDMITX_INFO("%s[%d] wrong info_type %d\n", __func__, __LINE__, info_type);
 		return -1;
 	}
 

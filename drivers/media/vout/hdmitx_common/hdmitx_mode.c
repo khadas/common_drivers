@@ -8,6 +8,7 @@
 #include <linux/string.h>
 #include <linux/math64.h>
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_mode.h>
+#include "hdmitx_log.h"
 
 #define INVALID_HDMI_TIMING (&edid_cea_modes_0[0])
 
@@ -445,14 +446,14 @@ const struct hdmi_timing *hdmitx_mode_vic_to_hdmi_timing(enum hdmi_vic vic)
 			offset = vic - all_timing_list[i].start;
 			timing = &all_timing_list[i].timing_start[offset];
 			if (timing->vic != vic)
-				pr_err("vic %d, offset %d in table %d not Match!\n",
+				HDMITX_ERROR("vic %d, offset %d in table %d not Match!\n",
 						vic, offset, i);
 
 			return timing;
 		}
 	}
 
-	pr_err("unknown vic [%d] in timing table\n", vic);
+	HDMITX_ERROR("unknown vic [%d] in timing table\n", vic);
 	return NULL;
 }
 EXPORT_SYMBOL(hdmitx_mode_vic_to_hdmi_timing);
@@ -643,8 +644,8 @@ int hdmitx_mode_update_timing(struct hdmi_timing *t,
 						mul_u32_u32(t->h_total, t->v_total));
 		t->h_freq = DIV_ROUND_CLOSEST_ULL(mul_u32_u32(t->pixel_freq, 1000), t->h_total);
 
-		/*pr_info("Timing %s update frac_mode(%d):\n", t->name, to_frac_mode);
-		 *pr_info("\tPixel_freq(%d), h_freq (%d), v_freq(%d).\n",
+		/*HDMITX_INFO("Timing %s update frac_mode(%d):\n", t->name, to_frac_mode);
+		 *HDMITX_INFO("\tPixel_freq(%d), h_freq (%d), v_freq(%d).\n",
 		 *	t->pixel_freq, t->h_freq, t->v_freq);
 		 */
 	}
@@ -717,7 +718,7 @@ void hdmitx_mode_print_all_mode_table(void)
 	u32 idx = 0;
 	const struct hdmi_timing *timing = NULL;
 
-	pr_info("-----------------%s start --------------\n", __func__);
+	HDMITX_INFO("-----------------%s start --------------\n", __func__);
 
 	do {
 		timing = hdmitx_mode_index_to_hdmi_timing(idx);
@@ -727,6 +728,6 @@ void hdmitx_mode_print_all_mode_table(void)
 		hdmitx_mode_print_hdmi_timing(timing);
 	} while (idx++);
 
-	pr_info("-----------------%s end --------------\n", __func__);
+	HDMITX_INFO("-----------------%s end --------------\n", __func__);
 }
 

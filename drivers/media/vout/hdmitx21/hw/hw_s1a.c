@@ -32,7 +32,7 @@ void set21_s1a_hpll_clk_out(u32 frac_rate, u32 clk)
 		usleep_range(10, 20);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x331204f7);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL6, 0xf0400000);
-		pr_info("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
+		HDMITX_INFO("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
 		break;
 	case 5850000:
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x030004f3);
@@ -47,7 +47,7 @@ void set21_s1a_hpll_clk_out(u32 frac_rate, u32 clk)
 		usleep_range(10, 20);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x330004f3);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL6, 0x50440000);
-		pr_info("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
+		HDMITX_INFO("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
 		break;
 	case 5680000:
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x030004ec);
@@ -62,7 +62,7 @@ void set21_s1a_hpll_clk_out(u32 frac_rate, u32 clk)
 		usleep_range(10, 20);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x330004ec);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL6, 0x50440000);
-		pr_info("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
+		HDMITX_INFO("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
 		break;
 	case 5600000:
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x030004e9);
@@ -77,7 +77,7 @@ void set21_s1a_hpll_clk_out(u32 frac_rate, u32 clk)
 		usleep_range(10, 20);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x330004e9);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL6, 0x50440000);
-		pr_info("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
+		HDMITX_INFO("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
 		break;
 	case 5405400:
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x030004e1);
@@ -95,7 +95,7 @@ void set21_s1a_hpll_clk_out(u32 frac_rate, u32 clk)
 		usleep_range(10, 20);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x330004e1);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL6, 0x50440000);
-		pr_info("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
+		HDMITX_INFO("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
 		break;
 	case 5371100:
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x030004df);
@@ -110,7 +110,7 @@ void set21_s1a_hpll_clk_out(u32 frac_rate, u32 clk)
 		usleep_range(10, 20);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x330004df);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL6, 0x50440000);
-		pr_info("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
+		HDMITX_INFO("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
 		break;
 	case 5200000:
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x030004d8);
@@ -125,7 +125,7 @@ void set21_s1a_hpll_clk_out(u32 frac_rate, u32 clk)
 		usleep_range(10, 20);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x330004d8);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL6, 0x50440000);
-		pr_info("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
+		HDMITX_INFO("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
 		break;
 	case 5035000:
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x030004d1);
@@ -140,7 +140,7 @@ void set21_s1a_hpll_clk_out(u32 frac_rate, u32 clk)
 		usleep_range(10, 20);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x330004d1);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL6, 0x50440000);
-		pr_info("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
+		HDMITX_INFO("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
 		break;
 	case 4897000:
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x030004cc);
@@ -155,7 +155,7 @@ void set21_s1a_hpll_clk_out(u32 frac_rate, u32 clk)
 		usleep_range(10, 20);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x330004cc);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL6, 0x50440000);
-		pr_info("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
+		HDMITX_INFO("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
 		break;
 	case 4870000:
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x030004ca);
@@ -170,7 +170,7 @@ void set21_s1a_hpll_clk_out(u32 frac_rate, u32 clk)
 		usleep_range(10, 20);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x330004ca);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL6, 0x50440000);
-		pr_info("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
+		HDMITX_INFO("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
 		break;
 	case 4838400:
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x030004c9);
@@ -185,7 +185,7 @@ void set21_s1a_hpll_clk_out(u32 frac_rate, u32 clk)
 		usleep_range(10, 20);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x330004c9);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL6, 0x50440000);
-		pr_info("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
+		HDMITX_INFO("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
 		break;
 	case 4761600:
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x030004c6);
@@ -200,7 +200,7 @@ void set21_s1a_hpll_clk_out(u32 frac_rate, u32 clk)
 		usleep_range(10, 20);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x330004c6);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL6, 0x50440000);
-		pr_info("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
+		HDMITX_INFO("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
 		break;
 	case 4455000:
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x030004b9);
@@ -218,7 +218,7 @@ void set21_s1a_hpll_clk_out(u32 frac_rate, u32 clk)
 		usleep_range(10, 20);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x330004b9);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL6, 0x50440000);
-		pr_info("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
+		HDMITX_INFO("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
 		break;
 	case 4324320:
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x030004b4);
@@ -236,7 +236,7 @@ void set21_s1a_hpll_clk_out(u32 frac_rate, u32 clk)
 		usleep_range(10, 20);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x330004b4);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL6, 0x50440000);
-		pr_info("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
+		HDMITX_INFO("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
 		break;
 	case 4320000:
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x030004b4);
@@ -251,7 +251,7 @@ void set21_s1a_hpll_clk_out(u32 frac_rate, u32 clk)
 		usleep_range(10, 20);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x330004b4);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL6, 0x50440000);
-		pr_info("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
+		HDMITX_INFO("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
 		break;
 	case 4260000:
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x030004b1);
@@ -266,7 +266,7 @@ void set21_s1a_hpll_clk_out(u32 frac_rate, u32 clk)
 		usleep_range(10, 20);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x330004b1);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL6, 0x50440000);
-		pr_info("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
+		HDMITX_INFO("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
 		break;
 	case 4115866:
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x030004a8);
@@ -281,7 +281,7 @@ void set21_s1a_hpll_clk_out(u32 frac_rate, u32 clk)
 		usleep_range(10, 20);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x330004a8);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL6, 0x50440000);
-		pr_info("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
+		HDMITX_INFO("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
 		break;
 	case 4028000:
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x030004a7);
@@ -296,7 +296,7 @@ void set21_s1a_hpll_clk_out(u32 frac_rate, u32 clk)
 		usleep_range(10, 20);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x330004a7);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL6, 0x50440000);
-		pr_info("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
+		HDMITX_INFO("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
 		break;
 	case 3865000:
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x030004a1);
@@ -311,7 +311,7 @@ void set21_s1a_hpll_clk_out(u32 frac_rate, u32 clk)
 		usleep_range(10, 20);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x330004a1);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL6, 0x50440000);
-		pr_info("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
+		HDMITX_INFO("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
 		break;
 	case 3712500:
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x0300049a);
@@ -329,7 +329,7 @@ void set21_s1a_hpll_clk_out(u32 frac_rate, u32 clk)
 		usleep_range(10, 20);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x3300049a);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL6, 0x50440000);
-		pr_info("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
+		HDMITX_INFO("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
 		break;
 	case 3485000:
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x03000491);
@@ -344,7 +344,7 @@ void set21_s1a_hpll_clk_out(u32 frac_rate, u32 clk)
 		usleep_range(10, 20);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x33000491);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL6, 0x50440000);
-		pr_info("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
+		HDMITX_INFO("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
 		break;
 	case 3450000:
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x0300048f);
@@ -359,7 +359,7 @@ void set21_s1a_hpll_clk_out(u32 frac_rate, u32 clk)
 		usleep_range(10, 20);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x3300048f);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL6, 0x50440000);
-		pr_info("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
+		HDMITX_INFO("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
 		break;
 	case 3420000:
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x0300048e);
@@ -374,7 +374,7 @@ void set21_s1a_hpll_clk_out(u32 frac_rate, u32 clk)
 		usleep_range(10, 20);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x3300048e);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL6, 0x50440000);
-		pr_info("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
+		HDMITX_INFO("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
 		break;
 	case 3340000:
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x0300048b);
@@ -389,7 +389,7 @@ void set21_s1a_hpll_clk_out(u32 frac_rate, u32 clk)
 		usleep_range(10, 20);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x3300048b);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL6, 0x50440000);
-		pr_info("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
+		HDMITX_INFO("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
 		break;
 	case 3243240:
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x03000487);
@@ -407,7 +407,7 @@ void set21_s1a_hpll_clk_out(u32 frac_rate, u32 clk)
 		usleep_range(10, 20);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x33000487);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL6, 0x50440000);
-		pr_info("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
+		HDMITX_INFO("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
 		break;
 	case 3240000:
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x03000487);
@@ -422,7 +422,7 @@ void set21_s1a_hpll_clk_out(u32 frac_rate, u32 clk)
 		usleep_range(10, 20);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x33000487);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL6, 0x50440000);
-		pr_info("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
+		HDMITX_INFO("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
 		break;
 	case 3200000:
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x03000485);
@@ -437,7 +437,7 @@ void set21_s1a_hpll_clk_out(u32 frac_rate, u32 clk)
 		usleep_range(10, 20);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x33000485);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL6, 0x50440000);
-		pr_info("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
+		HDMITX_INFO("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
 		break;
 	case 3180000:
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x03000484);
@@ -452,7 +452,7 @@ void set21_s1a_hpll_clk_out(u32 frac_rate, u32 clk)
 		usleep_range(10, 20);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x33000484);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL6, 0x50440000);
-		pr_info("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
+		HDMITX_INFO("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
 		break;
 	case 3021000:
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x0300047d);
@@ -467,7 +467,7 @@ void set21_s1a_hpll_clk_out(u32 frac_rate, u32 clk)
 		usleep_range(10, 20);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x3300047d);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL6, 0x50440000);
-		pr_info("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
+		HDMITX_INFO("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
 		break;
 	case 2970000:
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x0300047b);
@@ -485,10 +485,10 @@ void set21_s1a_hpll_clk_out(u32 frac_rate, u32 clk)
 		usleep_range(10, 20);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x3300047b);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL6, 0x50440000);
-		pr_info("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
+		HDMITX_INFO("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
 		break;
 	default:
-		pr_info("error hpll clk: %d\n", clk);
+		HDMITX_INFO("error hpll clk: %d\n", clk);
 		break;
 	}
 }

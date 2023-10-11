@@ -71,7 +71,7 @@ int hdmitx_common_attch_platform_data(struct hdmitx_common *tx_comm,
 		tx_comm->event_mgr = (struct hdmitx_event_mgr *)plt_data;
 		break;
 	default:
-		pr_err("%s unknown platform api %d\n", __func__, type);
+		HDMITX_ERROR("%s unknown platform api %d\n", __func__, type);
 		break;
 	};
 
@@ -117,7 +117,8 @@ int hdmitx_common_validate_vic(struct hdmitx_common *tx_comm, u32 vic)
 	}
 	/*filter max refreshrate.*/
 	if (timing->v_freq > (tx_comm->max_refreshrate * 1000)) {
-		//pr_info("validate refreshrate (%s)-(%d) fail\n", timing->name, timing->v_freq);
+		//HDMITX_INFO("validate refreshrate (%s)-(%d) fail\n",
+		//timing->name, timing->v_freq);
 		return -EACCES;
 	}
 
@@ -193,16 +194,16 @@ int hdmitx_common_init_bootup_format_para(struct hdmitx_common *tx_comm,
 			tx_comm->frac_rate_policy, para->cs, para->cd,
 			HDMI_QUANTIZATION_RANGE_FULL);
 		if (ret == 0) {
-			pr_info("%s init ok\n", __func__);
+			HDMITX_INFO("%s init ok\n", __func__);
 			hdmitx_format_para_print(para, NULL);
 		} else {
-			pr_info("%s: init uboot format para fail (%d,%d,%d)\n",
+			HDMITX_INFO("%s: init uboot format para fail (%d,%d,%d)\n",
 				__func__, para->vic, para->cs, para->cd);
 		}
 
 		return ret;
 	} else {
-		pr_info("%s hdmi is not enabled\n", __func__);
+		HDMITX_INFO("%s hdmi is not enabled\n", __func__);
 		return hdmitx_format_para_reset(para);
 	}
 }
@@ -426,7 +427,7 @@ int hdmitx_set_hdr_priority(struct hdmitx_common *tx_comm, u32 hdr_priority)
 	u32 strategy = 0;
 
 	tx_comm->hdr_priority = hdr_priority;
-	pr_info("%s, set hdr_prio: %u\n", __func__, hdr_priority);
+	HDMITX_DEBUG("%s, set hdr_prio: %u\n", __func__, hdr_priority);
 	/* choose strategy: bit[31:28] */
 	choose = (tx_comm->hdr_priority >> 28) & 0xf;
 	switch (choose) {
@@ -551,7 +552,7 @@ int hdmitx_common_parse_vic_in_edid(struct hdmitx_common *tx_comm, const char *m
 	 */
 	alternate_vic = get_alternate_ar_vic(vic);
 	if (alternate_vic != HDMI_0_UNKNOWN) {
-		//pr_info("get alternate vic %d->%d\n", vic, alternate_vic);
+		//HDMITX_INFO("get alternate vic %d->%d\n", vic, alternate_vic);
 		vic = alternate_vic;
 	}
 
@@ -562,7 +563,7 @@ int hdmitx_common_parse_vic_in_edid(struct hdmitx_common *tx_comm, const char *m
 	/* for compatibility: 480p/576p, will get 0 if there is no alternate vic;*/
 	alternate_vic = get_alternate_ar_vic(vic);
 	if (alternate_vic != vic) {
-		//pr_info("get alternate vic %d->%d\n", vic, alternate_vic);
+		//HDMITX_INFO("get alternate vic %d->%d\n", vic, alternate_vic);
 		vic = alternate_vic;
 	}
 
@@ -575,7 +576,7 @@ int hdmitx_common_parse_vic_in_edid(struct hdmitx_common *tx_comm, const char *m
 	 */
 
 	if (vic == HDMI_0_UNKNOWN)
-		pr_err("%s: parse mode %s vic %d\n", __func__, mode, vic);
+		HDMITX_ERROR("%s: parse mode %s vic %d\n", __func__, mode, vic);
 
 	return vic;
 }
@@ -664,13 +665,13 @@ int hdmitx_common_avmute_locked(struct hdmitx_common *tx_comm,
 
 	if (mute_flag == SET_AVMUTE) {
 		global_avmute_mask |= mute_path_hint;
-		pr_info("%s: AVMUTE path=0x%x\n", __func__, mute_path_hint);
+		HDMITX_INFO("%s: AVMUTE path=0x%x\n", __func__, mute_path_hint);
 		hdmitx_hw_cntl_misc(tx_comm->tx_hw, MISC_AVMUTE_OP, SET_AVMUTE);
 	} else if (mute_flag == CLR_AVMUTE) {
 		global_avmute_mask &= ~mute_path_hint;
 		/* unmute only if none of the paths are muted */
 		if (global_avmute_mask == 0) {
-			pr_info("%s: AV UNMUTE path=0x%x\n", __func__, mute_path_hint);
+			HDMITX_INFO("%s: AV UNMUTE path=0x%x\n", __func__, mute_path_hint);
 			hdmitx_hw_cntl_misc(tx_comm->tx_hw, MISC_AVMUTE_OP, CLR_AVMUTE);
 		}
 	} else if (mute_flag == OFF_AVMUTE) {
@@ -707,7 +708,7 @@ int hdmitx_save_edid_file(unsigned char *rawedid, char *path)
 
 	filp = filp_open(path, O_RDWR | O_CREAT, 0666);
 	if (IS_ERR(filp)) {
-		pr_info("[%s] failed to open/create file: |%s|\n",
+		HDMITX_INFO("[%s] failed to open/create file: |%s|\n",
 			__func__, path);
 		goto PROCESS_END;
 	}
@@ -733,14 +734,14 @@ int hdmitx_save_edid_file(unsigned char *rawedid, char *path)
 		}
 	}
 
-	pr_info("[%s] write %d bytes to file %s\n", __func__, size, path);
+	HDMITX_INFO("[%s] write %d bytes to file %s\n", __func__, size, path);
 
 	vfs_fsync(filp, 0);
 	filp_close(filp, NULL);
 
 PROCESS_END:
 #else
-	pr_err("Not support write file.\n");
+	HDMITX_ERROR("Not support write file.\n");
 #endif
 	return 0;
 }
@@ -824,7 +825,7 @@ bool is_tv_changed(char *cur_edid_chksum, char *boot_param_edid_chksum)
 		memcmp(emptychecksum, cur_edid_chksum, 10) &&
 		memcmp(invalidchecksum, boot_param_edid_chksum, 10)) {
 		ret = true;
-		pr_info("hdmi crc is diff between uboot and kernel\n");
+		HDMITX_INFO("hdmi crc is diff between uboot and kernel\n");
 	}
 
 	return ret;

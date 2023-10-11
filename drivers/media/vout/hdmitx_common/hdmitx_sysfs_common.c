@@ -7,8 +7,8 @@
 #include <linux/types.h>
 #include <linux/amlogic/media/vout/vinfo.h>
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_common.h>
-
 #include "hdmitx_sysfs_common.h"
+#include "hdmitx_log.h"
 
 /*!!Only one instance supported.*/
 static struct hdmitx_common *global_tx_common;
@@ -126,7 +126,7 @@ static ssize_t edid_store(struct device *dev,
 		u32 type = 0;
 
 		if (argn != 3) {
-			pr_info("[%s] cmd format: save bin/txt edid_file_path\n",
+			HDMITX_INFO("[%s] cmd format: save bin/txt edid_file_path\n",
 				__func__);
 			goto PROCESS_END;
 		}
@@ -145,7 +145,7 @@ static ssize_t edid_store(struct device *dev,
 		}
 	} else if (!strncmp(argv[0], "load", strlen("load"))) {
 		if (argn != 2) {
-			pr_info("[%s] cmd format: load edid_file_path\n",
+			HDMITX_INFO("[%s] cmd format: load edid_file_path\n",
 				__func__);
 			goto PROCESS_END;
 		}
@@ -513,11 +513,11 @@ static ssize_t frac_rate_policy_store(struct device *dev,
 
 	if (isdigit(buf[0])) {
 		val = buf[0] - '0';
-		pr_info("set frac_rate_policy as %d\n", val);
+		HDMITX_INFO("set frac_rate_policy as %d\n", val);
 		if (val == 0 || val == 1)
 			global_tx_common->frac_rate_policy = val;
 		else
-			pr_info("only accept as 0 or 1\n");
+			HDMITX_INFO("only accept as 0 or 1\n");
 	}
 
 	return count;
@@ -547,14 +547,14 @@ static ssize_t phy_store(struct device *dev,
 {
 	int cmd = TMDS_PHY_ENABLE;
 
-	pr_info("%s %s\n", __func__, buf);
+	HDMITX_INFO("%s %s\n", __func__, buf);
 
 	if (strncmp(buf, "0", 1) == 0)
 		cmd = TMDS_PHY_DISABLE;
 	else if (strncmp(buf, "1", 1) == 0)
 		cmd = TMDS_PHY_ENABLE;
 	else
-		pr_info("set phy wrong: %s\n", buf);
+		HDMITX_INFO("set phy wrong: %s\n", buf);
 
 	hdmitx_hw_cntl_misc(global_tx_hw, MISC_TMDS_PHY_OP, cmd);
 	return count;
@@ -604,7 +604,7 @@ static ssize_t contenttype_mode_store(struct device *dev,
 {
 	u32 ct_mode = SET_CT_OFF;
 
-	pr_info("hdmitx: store contenttype_mode as %s\n", buf);
+	HDMITX_INFO("store contenttype_mode as %s\n", buf);
 
 	if (global_tx_common->allm_mode == 1) {
 		global_tx_common->allm_mode = 0;
@@ -661,7 +661,7 @@ static ssize_t disp_cap_show(struct device *dev,
 			vic == HDMI_17_720x576p50_4x3 ||
 			vic == HDMI_21_720x576i50_4x3) {
 			if (hdmitx_edid_validate_mode(prxcap, vic + 1) == true) {
-				/*pr_info("%s: check vic exist, handle [%d] later.\n",
+				/*HDMITX_INFO("%s: check vic exist, handle [%d] later.\n",
 				 *	__func__, vic + 1);
 				 */
 				continue;
@@ -670,12 +670,12 @@ static ssize_t disp_cap_show(struct device *dev,
 
 		timing = hdmitx_mode_vic_to_hdmi_timing(vic);
 		if (!timing) {
-			// pr_err("%s: unsupport vic [%d]\n", __func__, vic);
+			// HDMITX_ERROR("%s: unsupport vic [%d]\n", __func__, vic);
 			continue;
 		}
 
 		if (hdmitx_common_validate_vic(global_tx_common, vic) != 0) {
-			// pr_err("%s: vic[%d] over range.\n", __func__, vic);
+			// HDMITX_ERROR("%s: vic[%d] over range.\n", __func__, vic);
 			continue;
 		}
 
@@ -830,7 +830,7 @@ static bool pre_process_str(const char *name, char *mode, char *attr)
 	/*copy attr str;*/
 	memcpy(attr, search_pos, strlen(search_pos));
 
-	//pr_info("%s parse (%s,%s) from (%s)\n", __func__, mode, attr, name);
+	//HDMITX_INFO("%s parse (%s,%s) from (%s)\n", __func__, mode, attr, name);
 
 	return true;
 }
@@ -858,12 +858,12 @@ static ssize_t valid_mode_store(struct device *dev,
 	if (valid_mode) {
 		vic = hdmitx_common_parse_vic_in_edid(global_tx_common, modename);
 		if (vic == HDMI_0_UNKNOWN) {
-			//pr_err("parse vic fail %s\n", modename);
+			//HDMITX_ERROR("parse vic fail %s\n", modename);
 			valid_mode = false;
 		} else {
 			ret = hdmitx_common_validate_vic(global_tx_common, vic);
 			if (ret != 0) {
-				//pr_err("validate vic %d failed ret %d\n", vic, ret);
+				//HDMITX_ERROR("validate vic %d failed ret %d\n", vic, ret);
 				valid_mode = false;
 			}
 		}
@@ -871,12 +871,12 @@ static ssize_t valid_mode_store(struct device *dev,
 
 	if (valid_mode) {
 		hdmitx_parse_color_attr(attrstr, &tst_para.cs, &tst_para.cd, &tst_para.cr);
-		//pr_err("parse cs %d cd %d\n", tst_para.cs, tst_para.cd);
+		//HDMITX_ERROR("parse cs %d cd %d\n", tst_para.cs, tst_para.cd);
 		ret = hdmitx_common_build_format_para(global_tx_common,
 			&tst_para, vic, global_tx_common->frac_rate_policy,
 			tst_para.cs, tst_para.cd, tst_para.cr);
 		if (ret != 0) {
-			//pr_err("build format para failed %d\n", ret);
+			//HDMITX_ERROR("build format para failed %d\n", ret);
 			hdmitx_format_para_reset(&tst_para);
 			valid_mode = false;
 		}
@@ -885,7 +885,7 @@ static ssize_t valid_mode_store(struct device *dev,
 	if (valid_mode) {
 		ret = hdmitx_common_validate_format_para(global_tx_common, &tst_para);
 		if (ret != 0) {
-			//pr_err("validate format para failed %d\n", ret);
+			//HDMITX_ERROR("validate format para failed %d\n", ret);
 			valid_mode = false;
 		}
 	}
@@ -893,7 +893,7 @@ static ssize_t valid_mode_store(struct device *dev,
 	if (valid_mode) {
 		ret = count;
 	} else {
-		pr_err("hdmitx: invalid_mode input:%s\n", cvalid_mode);
+		HDMITX_DEBUG("invalid_mode input:%s\n", cvalid_mode);
 		ret = -1;
 	}
 
@@ -962,7 +962,7 @@ static ssize_t fake_plug_store(struct device *dev,
 			       struct device_attribute *attr,
 			       const char *buf, size_t count)
 {
-	pr_info("hdmitx: fake plug %s\n", buf);
+	HDMITX_INFO("fake plug %s\n", buf);
 
 	if (strncmp(buf, "1", 1) == 0)
 		global_tx_common->hpd_state = 1;
@@ -1046,7 +1046,7 @@ static ssize_t allm_mode_store(struct device *dev,
 {
 	int mode = 0;
 
-	pr_info("hdmitx: store allm_mode as %s\n", buf);
+	HDMITX_INFO("store allm_mode as %s\n", buf);
 
 	if (com_str(buf, "0"))
 		mode = 0;
@@ -1087,7 +1087,7 @@ static ssize_t avmute_store(struct device *dev,
 	static int mask0;
 	static int mask1;
 
-	pr_info("%s %s\n", __func__, buf);
+	HDMITX_INFO("%s %s\n", __func__, buf);
 	if (strncmp(buf, "-1", 2) == 0) {
 		cmd = CLR_AVMUTE;
 		mask0 = -1;

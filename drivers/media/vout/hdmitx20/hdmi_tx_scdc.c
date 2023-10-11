@@ -29,7 +29,7 @@ void scdc_config(struct hdmitx_dev *hdev)
 		hdev->pre_tmds_clk_div40)
 		scdc_wr_sink(TMDS_CFG, 0);
 	else
-		pr_info("ERR: SCDC not present, should not send 1:10\n");
+		HDMITX_INFO("ERR: SCDC not present, should not send 1:10\n");
 }
 
 /* update CED, 10.4.1.8 */
@@ -60,15 +60,15 @@ static int scdc_ced_cnt(struct hdmitx_dev *hdev)
 
 	/* Do checksum */
 	if (chksum != 0)
-		pr_info("ced check sum error\n");
+		HDMITX_INFO("ced check sum error\n");
 	if (ced->ch0_cnt)
-		pr_info("ced: ch0_cnt = %d %s\n", ced->ch0_cnt,
+		HDMITX_INFO("ced: ch0_cnt = %d %s\n", ced->ch0_cnt,
 			ced->ch0_valid ? "" : "invalid");
 	if (ced->ch1_cnt)
-		pr_info("ced: ch1_cnt = %d %s\n", ced->ch1_cnt,
+		HDMITX_INFO("ced: ch1_cnt = %d %s\n", ced->ch1_cnt,
 			ced->ch1_valid ? "" : "invalid");
 	if (ced->ch2_cnt)
-		pr_info("ced: ch2_cnt = %d %s\n", ced->ch2_cnt,
+		HDMITX_INFO("ced: ch2_cnt = %d %s\n", ced->ch2_cnt,
 			ced->ch2_valid ? "" : "invalid");
 
 	return chksum != 0;
@@ -98,13 +98,13 @@ int scdc_status_flags(struct hdmitx_dev *hdev)
 		scdc_wr_sink(UPDATE_0, st & (STATUS_UPDATE | CED_UPDATE));
 	if (st & STATUS_UPDATE) {
 		if (!hdev->chlocked_st.clock_detected)
-			pr_info("ced: clock undetected\n");
+			HDMITX_INFO("ced: clock undetected\n");
 		if (!hdev->chlocked_st.ch0_locked)
-			pr_info("ced: ch0 unlocked\n");
+			HDMITX_INFO("ced: ch0 unlocked\n");
 		if (!hdev->chlocked_st.ch1_locked)
-			pr_info("ced: ch1 unlocked\n");
+			HDMITX_INFO("ced: ch1 unlocked\n");
 		if (!hdev->chlocked_st.ch2_locked)
-			pr_info("ced: ch2 unlocked\n");
+			HDMITX_INFO("ced: ch2 unlocked\n");
 	}
 
 	return st & (STATUS_UPDATE | CED_UPDATE);

@@ -193,7 +193,8 @@ static int hdmitx_hdcp_task(void *data)
 		hdmitx_hdcp_status(hdmi_authenticated);
 		if (auth_trigger != hdmi_authenticated) {
 			auth_trigger = hdmi_authenticated;
-			pr_info("hdcptx: %d  auth: %d\n", hdev->tx_comm.hdcp_mode, auth_trigger);
+			HDMITX_INFO("hdcptx: %d  auth: %d\n", hdev->tx_comm.hdcp_mode,
+			auth_trigger);
 			// Only collect the metric when hdmi is plugged in.
 			if (hdev->tx_comm.hpd_state == 1) {
 				hdmitx_current_status(auth_trigger
@@ -289,7 +290,7 @@ int hdmitx_hdcp_init(struct hdmitx_dev *hdev)
 
 	pr_debug(HDCP "%s\n", __func__);
 	if (!hdev->hdtx_dev) {
-		pr_info(HDCP "exit for null device of hdmitx!\n");
+		HDMITX_DEBUG_HDCP("exit for null device of hdmitx!\n");
 		return -ENODEV;
 	}
 
@@ -303,14 +304,14 @@ int hdmitx_hdcp_init(struct hdmitx_dev *hdev)
 	if (!hdmitx_dbgfs)
 		hdmitx_dbgfs = debugfs_create_dir(DEVICE_NAME, NULL);
 	if (!hdmitx_dbgfs) {
-		pr_err("can't create %s debugfs dir\n", DEVICE_NAME);
+		HDMITX_ERROR("can't create %s debugfs dir\n", DEVICE_NAME);
 		return 0;
 	}
 	entry = debugfs_create_file("hdcp_log", S_IFREG | 0444,
 			hdmitx_dbgfs, NULL,
 			&hdcplog_ops);
 	if (!entry)
-		pr_err("debugfs create file %s failed\n", "hdcp_log");
+		HDMITX_ERROR("debugfs create file %s failed\n", "hdcp_log");
 	return 0;
 }
 
@@ -326,3 +327,4 @@ void hdmitx_hdcp_exit(struct hdmitx_dev *hdev)
 
 MODULE_PARM_DESC(hdmi_authenticated, "\n hdmi_authenticated\n");
 module_param(hdmi_authenticated, int, 0444);
+

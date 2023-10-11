@@ -27,6 +27,7 @@
 #include <linux/amlogic/media/vout/vinfo.h>
 #include <linux/amlogic/media/vout/vout_notify.h>
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_edid.h>
+#include "hdmitx_log.h"
 
 #define CEA_DATA_BLOCK_COLLECTION_ADDR_1STP 0x04
 #define VIDEO_TAG 0x40
@@ -902,7 +903,7 @@ static void _edid_parsingvendspec(struct dv_info *dv,
 	pos++;
 
 	if (dat[pos] != 1) {
-		pr_err("hdmitx: edid: parsing fail %s[%d]\n", __func__,
+		HDMITX_ERROR("edid: parsing fail %s[%d]\n", __func__,
 			__LINE__);
 		return;
 	}
@@ -1110,7 +1111,7 @@ static void edid_parsingvendspec(struct rx_cap *prxcap, u8 *buf)
 	pos++;
 
 	if (buf[pos] != 1) {
-		pr_info("hdmitx: edid: parsing fail %s[%d]\n", __func__,
+		HDMITX_INFO("edid: parsing fail %s[%d]\n", __func__,
 			__LINE__);
 		return;
 	}
@@ -1155,7 +1156,7 @@ static int edid_parsingy420vdb(struct rx_cap *prxcap, u8 *buf)
 	return 0;
 
 INVALID_Y420VDB:
-	pr_err("[%s] it's not a valid y420vdb!\n", __func__);
+	HDMITX_ERROR("[%s] it's not a valid y420vdb!\n", __func__);
 	return -1;
 }
 
@@ -1200,7 +1201,7 @@ static int _edid_parsedrmsb(struct hdr_info *info, u8 *buf)
 	}
 	return 0;
 INVALID_DRM_STATIC:
-	pr_err("[%s] it's not a valid DRM STATIC BLOCK\n", __func__);
+	HDMITX_ERROR("[%s] it's not a valid DRM STATIC BLOCK\n", __func__);
 	return -1;
 }
 
@@ -1275,7 +1276,7 @@ static int _edid_parsedrmdb(struct hdr_info *info, u8 *buf)
 
 	return 0;
 INVALID_DRM_DYNAMIC:
-	pr_err("[%s] it's not a valid DRM DYNAMIC BLOCK\n", __func__);
+	HDMITX_ERROR("[%s] it's not a valid DRM DYNAMIC BLOCK\n", __func__);
 	return -1;
 }
 
@@ -1367,7 +1368,7 @@ static int edid_parsingy420cmdb(struct rx_cap *prxcap, u8 *buf)
 	return 0;
 
 INVALID_Y420CMDB:
-	pr_err("[%s] it's not a valid y420cmdb!\n", __func__);
+	HDMITX_ERROR("[%s] it's not a valid y420cmdb!\n", __func__);
 	return -1;
 }
 
@@ -1811,13 +1812,13 @@ static void hdmitx_edid_parse_ifdb(struct rx_cap *prxcap, u8 *blockbuf)
 
 	/* begin with an InfoFrame Processing Descriptor */
 	if ((blockbuf[2] & 0x1f) != 0)
-		pr_info(EDID "ERR: IFDB not begin with InfoFrame Processing Descriptor\n");
+		HDMITX_ERROR("ERR: IFDB not begin with InfoFrame Processing Descriptor\n");
 	sum_len = 1; /* Extended Tag Code len */
 
 	len = (blockbuf[2] >> 5) & 0x7;
 	sum_len += (len + 2);
 	if (payload_len < sum_len) {
-		pr_info(EDID "ERR: IFDB length abnormal: %d exceed playload len %d\n",
+		HDMITX_ERROR("ERR: IFDB length abnormal: %d exceed playload len %d\n",
 			sum_len, payload_len);
 		return;
 	}
@@ -1829,7 +1830,7 @@ static void hdmitx_edid_parse_ifdb(struct rx_cap *prxcap, u8 *blockbuf)
 	while (sum_len < payload_len) {
 		if ((blockbuf[sum_len + 1] & 0x1f) == 1) {
 			/* Short Vendor-Specific InfoFrame Descriptor */
-			/* pr_info(EDID "InfoFrame Type Code: 0x1, len: %d, IEEE: %x\n", */
+			/* HDMITX_INFO(EDID "InfoFrame Type Code: 0x1, len: %d, IEEE: %x\n", */
 				/* len, blockbuf[sum_len + 4] << 16 | */
 				/* blockbuf[sum_len + 3] << 8 | blockbuf[sum_len + 2]); */
 			/* number of additional bytes following the 3-byte OUI */
@@ -1837,7 +1838,7 @@ static void hdmitx_edid_parse_ifdb(struct rx_cap *prxcap, u8 *blockbuf)
 			sum_len += (len + 1 + 3);
 		} else {
 			/* Short InfoFrame Descriptor */
-			/* pr_info(EDID "InfoFrame Type Code: %x, len: %d\n", */
+			/* HDMITX_INFO(EDID "InfoFrame Type Code: %x, len: %d\n", */
 				/* blockbuf[sum_len + 1] & 0x1f, len); */
 			len = (blockbuf[sum_len + 1] >> 5) & 0x7;
 			sum_len += (len + 1);
@@ -1901,7 +1902,7 @@ static void hdmitx21_edid_parse_sbtmdb(struct rx_cap *prxcap,
 	blockbuf = blockbuf + offset;
 	/* length should be 2, 3, 5, 7, ... or 29 */
 	if (!(len == 2 || (len <= 29 && ((len % 2) == 1))))
-		pr_info("%s[%d] len is %d\n", __func__, __LINE__, len);
+		HDMITX_INFO("%s[%d] len is %d\n", __func__, __LINE__, len);
 	info = &prxcap->hdr_info.sbtm_info;
 
 	blockbuf++;
@@ -2009,9 +2010,9 @@ static int hdmitx_edid_cta_block_parse(struct rx_cap *prxcap, u8 *block_buf)
 	 * so continue parse as other sources do
 	 */
 	if (block_buf[0] == 0x0) {
-		pr_info(EDID "unknown Extension Tag detected, continue\n");
+		HDMITX_INFO("unknown Extension Tag detected, continue\n");
 	} else if (block_buf[0] != 0x02) {
-		pr_info("skip the block of tag: 0x%02x%02x", block_buf[0], block_buf[1]);
+		HDMITX_INFO("skip the block of tag: 0x%02x%02x", block_buf[0], block_buf[1]);
 		return -1; /* not a CEA BLOCK. */
 	}
 	end = block_buf[2]; /* CEA description. */
@@ -2246,7 +2247,7 @@ static void hdmitx_edid_set_default_vic(struct rx_cap *prxcap)
 	prxcap->VIC[2] = HDMI_5_1920x1080i60_16x9;
 	prxcap->VIC[3] = HDMI_16_1920x1080p60_16x9;
 	prxcap->native_vic = HDMI_3_720x480p60_16x9;
-	pr_info(EDID "set default vic\n");
+	HDMITX_INFO("set default vic\n");
 }
 
 static int hdmitx_edid_search_IEEEOUI(char *buf)
@@ -2712,7 +2713,7 @@ static void edid_set_fallback_mode(struct rx_cap *prxcap)
 	prxcap->VIC[1] = HDMI_4_1280x720p60_16x9;
 	prxcap->VIC[2] = HDMI_3_720x480p60_16x9;
 	prxcap->native_vic = HDMI_4_1280x720p60_16x9;
-	pr_info(EDID "set default vic 720p60hz\n");
+	HDMITX_INFO("set default vic 720p60hz\n");
 
 	hdmitx_edid_set_default_aud(prxcap);
 }
@@ -2743,7 +2744,7 @@ static void _edid_parse_base_structure(struct rx_cap *prxcap, unsigned char *EDI
 	cta_block_count = EDID_buf[0x7E];
 
 	if (cta_block_count == 0) {
-		pr_info(EDID "EDID BlockCount=0\n");
+		HDMITX_INFO("EDID BlockCount=0\n");
 		/* DVI case judgement: only contains one block and
 		 * checksum valid
 		 */
@@ -2754,7 +2755,7 @@ static void _edid_parse_base_structure(struct rx_cap *prxcap, unsigned char *EDI
 			if (EDID_buf[i] == 0)
 				zero_numbers++;
 		}
-		pr_info(EDID "edid blk0 checksum:%d ext_flag:%d\n",
+		HDMITX_DEBUG_EDID("edid blk0 checksum:%d ext_flag:%d\n",
 			checksum, EDID_buf[0x7e]);
 		if ((checksum & 0xff) == 0)
 			prxcap->ieeeoui = 0;
@@ -2832,7 +2833,7 @@ int hdmitx_edid_parse(struct rx_cap *prxcap, u8 *edid_buf)
 
 	if (hdmitx_edid_check_data_valid(edid_buf) == false) {
 		edid_set_fallback_mode(prxcap);
-		pr_info("set fallback mode\n");
+		HDMITX_INFO("set fallback mode\n");
 		return 0;
 	}
 	if (_check_base_structure(edid_buf))
@@ -2946,7 +2947,7 @@ int hdmitx_edid_parse(struct rx_cap *prxcap, u8 *edid_buf)
 
 	if (!hdmitx_edid_valid_block_num(&edid_buf[0])) {
 		prxcap->ieeeoui = HDMI_IEEE_OUI;
-		pr_info(EDID "Invalid edid, consider RX as HDMI device\n");
+		HDMITX_INFO("Invalid edid, consider RX as HDMI device\n");
 	}
 	dv = &prxcap->dv_info;
 	/* if sup_2160p60hz of dv or dv2 is true, check the MAX_TMDS*/
@@ -3034,18 +3035,15 @@ static void hdmitx_edid_blk_print(unsigned char *blk, unsigned int blk_idx)
 		return;
 
 	memset(tmp_buf, 0, TMP_EDID_BUF_SIZE);
-	pr_info("hdmitx: edid: blk%d raw data\n", blk_idx);
+	HDMITX_INFO("edid: blk%d raw data\n", blk_idx);
 	for (i = 0, pos = 0; i < 128; i++) {
 		pos += sprintf(tmp_buf + pos, "%02x", blk[i]);
 		if (((i + 1) & 0x3f) == 0)    /* print 64 bytes a line */
 			pos += sprintf(tmp_buf + pos, "\n");
 	}
-	pr_info("%s", tmp_buf);
+	HDMITX_INFO("%s", tmp_buf);
 	kfree(tmp_buf);
 }
-
-#undef pr_fmt
-#define pr_fmt(fmt) "hdmitx: " fmt
 
 /*
  * check EDID buf contains valid block numbers

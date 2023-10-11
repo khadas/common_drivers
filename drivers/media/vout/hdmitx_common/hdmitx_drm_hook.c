@@ -7,6 +7,7 @@
 #include <drm/amlogic/meson_drm_bind.h>
 #include <linux/component.h>
 #include "hdmitx_drm_hook.h"
+#include "hdmitx_log.h"
 
 /*!!Only one instance supported.*/
 const struct hdmi_timing *hdmitx_mode_match_timing_name(const char *name);
@@ -78,7 +79,7 @@ int hdmitx_common_set_contenttype(int content_type)
 		content_type = SET_CT_GAME;
 		break;
 	default:
-		pr_err("[%s]: [%d] unsupported type\n",
+		HDMITX_ERROR("[%s]: [%d] unsupported type\n",
 			__func__, content_type);
 		content_type = 0;
 		ret = -EINVAL;
@@ -123,19 +124,19 @@ int hdmitx_common_get_vic_list(int **vics)
 			vic == HDMI_17_720x576p50_4x3 ||
 			vic == HDMI_21_720x576i50_4x3) {
 			if (hdmitx_edid_validate_mode(prxcap, vic + 1) == true) {
-				//pr_info("%s: check vic exist, handle [%d] later.\n",
+				//HDMITX_INFO("%s: check vic exist, handle [%d] later.\n",
 				//	__func__, vic + 1);
 				continue;
 			}
 		}
 
 		if (hdmitx_common_validate_vic(global_tx_base, vic) != 0) {
-			//pr_err("%s: vic[%d] over range.\n", __func__, vic);
+			//HDMITX_ERROR("%s: vic[%d] over range.\n", __func__, vic);
 			continue;
 		}
 
 		if (hdmitx_common_check_valid_para_of_vic(global_tx_base, vic) != 0) {
-			//pr_err("%s: vic[%d] check fmt attr failed.\n", __func__, vic);
+			//HDMITX_ERROR("%s: vic[%d] check fmt attr failed.\n", __func__, vic);
 			continue;
 		}
 
@@ -165,13 +166,13 @@ bool hdmitx_common_chk_mode_attr_sup(char *mode, char *attr)
 
 	vic = hdmitx_common_parse_vic_in_edid(global_tx_base, mode);
 	if (vic == HDMI_0_UNKNOWN) {
-		pr_err("%s: get vic from (%s) fail\n", __func__, mode);
+		HDMITX_ERROR("%s: get vic from (%s) fail\n", __func__, mode);
 		return false;
 	}
 
 	ret = hdmitx_common_validate_vic(global_tx_base, vic);
 	if (ret != 0) {
-		pr_err("validate vic [%s,%s]-%d return error %d\n", mode, attr, vic, ret);
+		HDMITX_ERROR("validate vic [%s,%s]-%d return error %d\n", mode, attr, vic, ret);
 		return false;
 	}
 
@@ -181,20 +182,20 @@ bool hdmitx_common_chk_mode_attr_sup(char *mode, char *attr)
 		tst_para.cs, tst_para.cd, tst_para.cr);
 	if (ret != 0) {
 		hdmitx_format_para_reset(&tst_para);
-		pr_err("build formatpara [%s,%s] return error %d\n", mode, attr, ret);
+		HDMITX_ERROR("build formatpara [%s,%s] return error %d\n", mode, attr, ret);
 		return false;
 	}
 
 	if (true) {
-		pr_info("sname = %s\n", tst_para.sname);
-		pr_info("char_clk = %d\n", tst_para.tmds_clk);
-		pr_info("cd = %d\n", tst_para.cd);
-		pr_info("cs = %d\n", tst_para.cs);
+		HDMITX_INFO("sname = %s\n", tst_para.sname);
+		HDMITX_INFO("char_clk = %d\n", tst_para.tmds_clk);
+		HDMITX_INFO("cd = %d\n", tst_para.cd);
+		HDMITX_INFO("cs = %d\n", tst_para.cs);
 	}
 
 	ret = hdmitx_common_validate_format_para(global_tx_base, &tst_para);
 	if (ret != 0) {
-		pr_err("vlidate formatpara [%s,%s] return error %d\n", mode, attr, ret);
+		HDMITX_ERROR("validate formatpara [%s,%s] return error %d\n", mode, attr, ret);
 		return false;
 	}
 
@@ -220,7 +221,7 @@ int hdmitx_common_get_timing_para(int vic, struct drm_hdmitx_timing_para *para)
 		       (strlen(timing->name) < DRM_DISPLAY_MODE_LEN) ?
 		       strlen(timing->name) : DRM_DISPLAY_MODE_LEN);
 	} else {
-		pr_err(" func %s get vic %d without name\n", __func__, vic);
+		HDMITX_ERROR(" func %s get vic %d without name\n", __func__, vic);
 		return -1;
 	}
 
@@ -253,9 +254,9 @@ static int meson_hdmitx_bind(struct device *dev,
 			(bound_data->drm,
 			DRM_MODE_CONNECTOR_HDMIA,
 			&hdmitx_drm_instance.base);
-		pr_err("%s hdmi [%d]\n", __func__, drm_hdmitx_id);
+		HDMITX_ERROR("%s hdmi [%d]\n", __func__, drm_hdmitx_id);
 	} else {
-		pr_err("no bind func from drm.\n");
+		HDMITX_ERROR("no bind func from drm.\n");
 	}
 
 	return 0;
@@ -269,9 +270,9 @@ static void meson_hdmitx_unbind(struct device *dev,
 	if (bound_data->connector_component_unbind) {
 		bound_data->connector_component_unbind(bound_data->drm,
 			DRM_MODE_CONNECTOR_HDMIA, drm_hdmitx_id);
-		pr_err("%s hdmi [%d]\n", __func__, drm_hdmitx_id);
+		HDMITX_ERROR("%s hdmi [%d]\n", __func__, drm_hdmitx_id);
 	} else {
-		pr_err("no unbind func.\n");
+		HDMITX_ERROR("no unbind func.\n");
 	}
 
 	drm_hdmitx_id = 0;
@@ -290,7 +291,7 @@ int hdmitx_bind_meson_drm(struct device *device,
 	struct meson_hdmitx_dev *diff)
 {
 	if (global_tx_base)
-		pr_err("global_tx_base [%p] already hooked.\n", global_tx_base);
+		HDMITX_ERROR("global_tx_base [%p] already hooked.\n", global_tx_base);
 
 	global_tx_base = tx_base;
 	global_tx_hw = tx_hw;

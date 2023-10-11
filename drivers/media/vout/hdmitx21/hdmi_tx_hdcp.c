@@ -97,7 +97,7 @@ static DEFINE_MUTEX(hdcp_mutex);
 #define pr_hdcp_info(level, fmt, arg...) \
 	do { \
 		if (hdcp_verbose >= (level)) \
-			pr_info("hdcptx: " fmt, ## arg); \
+			HDMITX_INFO("hdcptx: " fmt, ## arg); \
 	} while (0)
 
 /* for hdcp repeater, downstream auth should be controlled
@@ -757,7 +757,7 @@ static void hdcp_req_reauth_whandler(struct work_struct *work)
 		if (hdev->tx_comm.hdcp_mode) {
 			if (p_hdcp->req_reauth_ver == 0 ||
 				p_hdcp->req_reauth_ver == hdev->tx_comm.hdcp_mode) {
-				pr_info("topology not changed, no need hdcp re-auth\n");
+				HDMITX_INFO("topology not changed, no need hdcp re-auth\n");
 				schedule_delayed_work(&p_hdcp->ksv_notify_wk, 0);
 				mutex_unlock(&hdev->tx_comm.hdmimode_mutex);
 				return;
@@ -1373,7 +1373,7 @@ static void hdcp2x_process_intr(u8 int_reg[])
 				p_hdcp->csm_updated = true;
 				hdcp_update_csm(p_hdcp);
 				hdcptx2_rpt_smng_xfer_start();
-				pr_info("send smng_times %d\n", smng_times);
+				HDMITX_INFO("send smng_times %d\n", smng_times);
 			} else {
 				smng_times = 0;
 				pr_hdcp_info(L_1, "hdcptx2: M' hash fail, restart auth\n");

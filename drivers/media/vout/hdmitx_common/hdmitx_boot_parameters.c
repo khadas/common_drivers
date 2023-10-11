@@ -9,6 +9,7 @@
 #include <linux/string.h>
 #include <linux/amlogic/gki_module.h>
 #include "hdmitx_boot_parameters.h"
+#include <hdmitx_log.h>
 
 static struct hdmitx_boot_param tx_params = {
 	.fraction_refreshrate = 1,
@@ -103,7 +104,7 @@ static int get_hdmitx_color_attr(char *token, char *color_attr)
 					strcat(attr, cd[i]);
 
 			if (strlen(attr) >= sizeof(attr)) {
-				pr_err("get err attr: %zu-%s\n", strlen(attr), attr);
+				HDMITX_ERROR("get err attr: %zu-%s\n", strlen(attr), attr);
 			} else {
 				strncpy(color_attr, attr, strlen(attr));
 				ret = 0;
@@ -172,7 +173,7 @@ static int parse_hdmitx_hdr_priority(char *str)
 
 	err = kstrtou32(str, 10, &value);
 	if (err) {
-		pr_err("%s fail\n", __func__);
+		HDMITX_ERROR("%s fail\n", __func__);
 		tx_params.hdr_mask = 0;
 		return err;
 	}

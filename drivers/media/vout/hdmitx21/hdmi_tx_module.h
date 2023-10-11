@@ -21,6 +21,7 @@
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_common.h>
 #include <linux/amlogic/media/vout/hdmi_tx_repeater.h>
 #include "hw/hdmi_tx_hw.h"
+#include "../hdmitx_common/hdmitx_log.h"
 
 #define DEVICE_NAME "amhdmitx21"
 

@@ -46,17 +46,17 @@ int hdmitx_hpd_hw_op_txlx(enum hpd_op cmd)
 	struct hdmitx_dev *hdev = get_hdmitx_device();
 
 	if (!(hdev->pdev)) {
-		pr_info("exit for null device of hdmitx!\n");
+		HDMITX_INFO("exit for null device of hdmitx!\n");
 		return -ENODEV;
 	}
 
 	if (!(hdev->pdev->pins)) {
-		pr_info("exit for null pins of hdmitx device!\n");
+		HDMITX_INFO("exit for null pins of hdmitx device!\n");
 		return -ENODEV;
 	}
 
 	if (!(hdev->pdev->pins->p)) {
-		pr_info("exit for null pinctrl of hdmitx device pins!\n");
+		HDMITX_INFO("exit for null pinctrl of hdmitx device pins!\n");
 		return -ENODEV;
 	}
 
@@ -81,7 +81,7 @@ int hdmitx_hpd_hw_op_txlx(enum hpd_op cmd)
 		ret = hdmitx_rd_reg(HDMITX_DWC_PHY_STAT0) & (1 << 1);
 		break;
 	default:
-		pr_err("error hpd cmd %d\n", cmd);
+		HDMITX_ERROR("error hpd cmd %d\n", cmd);
 		break;
 	}
 	return ret;
@@ -98,17 +98,17 @@ int hdmitx_ddc_hw_op_txlx(enum ddc_op cmd)
 	struct hdmitx_dev *hdev = get_hdmitx_device();
 
 	if (!(hdev->pdev)) {
-		pr_info("exit for null device of hdmitx!\n");
+		HDMITX_INFO("exit for null device of hdmitx!\n");
 		return -ENODEV;
 	}
 
 	if (!(hdev->pdev->pins)) {
-		pr_info("exit for null pins of hdmitx device!\n");
+		HDMITX_INFO("exit for null pins of hdmitx device!\n");
 		return -ENODEV;
 	}
 
 	if (!(hdev->pdev->pins->p)) {
-		pr_info("exit for null pinctrl of hdmitx device pins!\n");
+		HDMITX_INFO("exit for null pinctrl of hdmitx device pins!\n");
 		return -ENODEV;
 	}
 
@@ -123,7 +123,7 @@ int hdmitx_ddc_hw_op_txlx(enum ddc_op cmd)
 		pinctrl_select_state(hdev->pdev->pins->p, hdev->pinctrl_i2c);
 		break;
 	default:
-		pr_err("error ddc cmd %d\n", cmd);
+		HDMITX_ERROR("error ddc cmd %d\n", cmd);
 	}
 	return ret;
 }

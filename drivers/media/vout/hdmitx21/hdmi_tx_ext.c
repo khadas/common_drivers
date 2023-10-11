@@ -7,6 +7,7 @@
 #include <linux/string.h>
 #include <linux/amlogic/media/vout/hdmi_tx_ext.h>
 #include "hdmi_tx_ext.h"
+#include "hdmi_tx_module.h"
 
 unsigned int hdmitx_drv_ver(void)
 {
@@ -81,13 +82,13 @@ EXPORT_SYMBOL(get_hdmitx_phy_addr);
 
 void get_attr(char attr[16])
 {
-	pr_err("Not support tx20 %s anymore.\n", __func__);
+	HDMITX_ERROR("Not support tx20 %s anymore.\n", __func__);
 }
 EXPORT_SYMBOL(get_attr);
 
 void setup_attr(const char *buf)
 {
-	pr_err("Not support tx20 %s anymore.\n", __func__);
+	HDMITX_ERROR("Not support tx20 %s anymore.\n", __func__);
 }
 EXPORT_SYMBOL(setup_attr);
 

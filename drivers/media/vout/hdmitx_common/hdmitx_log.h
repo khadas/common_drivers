@@ -16,7 +16,9 @@ enum hdmitx_debug_category {
 	PHY_LOG = 0x40,
 	REG_LOG = 0x80,
 	SCDC_LOG = 0x100,
-	VNIFO_LOG = 0x200,
+	VINFO_LOG = 0x200,
+	EVENT_LOG = 0x400,
+	HPD_LOG = 0x800,
 };
 
 #define HDMITX_ERROR(fmt, ...)							\
@@ -51,6 +53,12 @@ enum hdmitx_debug_category {
 
 #define HDMITX_DEBUG_VINFO(fmt, ...)					\
 	__hdmitx_dbg(VINFO_LOG, fmt, ##__VA_ARGS__)
+
+#define HDMITX_DEBUG_EVENT(fmt, ...)					\
+	__hdmitx_dbg(EVENT_LOG, fmt, ##__VA_ARGS__)
+
+#define HDMITX_DEBUG_HPD(fmt, ...)						\
+	__hdmitx_dbg(HPD_LOG, fmt, ##__VA_ARGS__)
 
 #define HDMITX_INFO(fmt, ...)							\
 	__hdmitx_info(fmt, ##__VA_ARGS__)

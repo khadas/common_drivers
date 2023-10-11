@@ -38,7 +38,7 @@
 			} \
 		} \
 		if (cnt < 9) \
-			pr_info("pll[0x%x] reset %d times\n", reg, 9 - cnt);\
+			HDMITX_INFO("pll[0x%x] reset %d times\n", reg, 9 - cnt);\
 	} while (0)
 
 /* for FPLL_CTRL0 or GP2PLL_CTRL0
@@ -62,7 +62,7 @@
 			} \
 		} \
 		if (cnt < 9) \
-			pr_info("pll[0x%x] reset %d times\n", reg_pll, 9 - cnt);\
+			HDMITX_INFO("pll[0x%x] reset %d times\n", reg_pll, 9 - cnt);\
 	} while (0)
 
 /*
@@ -100,7 +100,7 @@ static void set_s5_htxpll_clk_other(const u32 clk, const bool frl_en)
 	u32 rem_2;
 
 	if (clk < 3000000 || clk >= 6000000) {
-		pr_err("%s[%d] clock should be 4~6G\n", __func__, __LINE__);
+		HDMITX_ERROR("%s[%d] clock should be 4~6G\n", __func__, __LINE__);
 		return;
 	}
 
@@ -151,7 +151,7 @@ static void set_s5_htxpll_clk_4_5_6g(const u32 clk, const bool frl_en)
 	u32 htxpll_ref_clk_od = 0;
 
 	if (clk != 6000000 && clk != 5000000 && clk != 4000000) {
-		pr_err("%s[%d] clock should be 4, 5, or 6G\n", __func__, __LINE__);
+		HDMITX_ERROR("%s[%d] clock should be 4, 5, or 6G\n", __func__, __LINE__);
 		return;
 	}
 
@@ -213,10 +213,10 @@ void set21_s5_htxpll_clk_out(const u32 clk, const u32 div)
 	cs = hdev->tx_comm.fmt_para.cs;
 	cd = hdev->tx_comm.fmt_para.cd;
 
-	pr_info("%s[%d] htxpll vco %d div %d\n", __func__, __LINE__, clk, div);
+	HDMITX_INFO("%s[%d] htxpll vco %d div %d\n", __func__, __LINE__, clk, div);
 
 	if (clk <= 3000000 || clk > 6000000) {
-		pr_info("%s[%d] %d out of htxpll range(3~6G]\n", __func__, __LINE__, clk);
+		HDMITX_INFO("%s[%d] %d out of htxpll range(3~6G]\n", __func__, __LINE__, clk);
 		return;
 	}
 
@@ -255,7 +255,7 @@ void set21_s5_htxpll_clk_out(const u32 clk, const u32 div)
 void set_frl_hpll_od(enum frl_rate_enum rate)
 {
 	if (rate == FRL_NONE || rate > FRL_12G4L) {
-		pr_info("hdmitx: frl: wrong rate %d\n", rate);
+		HDMITX_INFO("frl: wrong rate %d\n", rate);
 		return;
 	}
 
@@ -292,7 +292,7 @@ void hdmitx_set_s5_fpll(u32 clk, u32 div, u32 pixel_od)
 	u32 quotient;
 	u32 remainder;
 
-	pr_info("%s[%d] clk %d div %d pixel_od %d\n", __func__, __LINE__, clk, div, pixel_od);
+	HDMITX_INFO("%s[%d] clk %d div %d pixel_od %d\n", __func__, __LINE__, clk, div, pixel_od);
 	/* setting fpll vco */
 	quotient = clk / 24000;
 	remainder = clk - quotient * 24000;
@@ -335,7 +335,7 @@ void hdmitx_set_s5_gp2pll(u32 clk, u32 div)
 	u32 quotient;
 	u32 remainder;
 
-	pr_info("%s[%d] clk %d div %d\n", __func__, __LINE__, clk, div);
+	HDMITX_INFO("%s[%d] clk %d div %d\n", __func__, __LINE__, clk, div);
 	/* setting fpll vco */
 	quotient = clk / 24000;
 	remainder = clk - quotient * 24000;
@@ -473,7 +473,7 @@ void hdmitx_set_s5_phypara(enum frl_rate_enum frl_rate, u32 tmds_clk)
 	arm_smccc_smc(HDCPTX_IOOPR, HDMITX_GET_RTERM, 0, 0, 0, 0, 0, 0, &res);
 	rterm = (unsigned int)((res.a0) & 0xffffffff);
 	rterm = rterm & 0x3f;
-	pr_info("%s[%d] rterm = %d\n", __func__, __LINE__, rterm);
+	HDMITX_INFO("%s[%d] rterm = %d\n", __func__, __LINE__, rterm);
 	if (!rterm)
 		rterm = 9; /* default value when efuse invalid */
 	hd21_set_reg_bits(ANACTRL_HDMIPHY_CTRL0, rterm, 26, 6);

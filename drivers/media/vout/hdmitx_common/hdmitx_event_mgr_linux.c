@@ -12,6 +12,7 @@
 #include <linux/extcon-provider.h>
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_event_mgr.h>
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_platform_linux.h>
+#include "hdmitx_log.h"
 
 struct hdmitx_event_mgr {
 	/*for uevent*/
@@ -92,12 +93,14 @@ struct hdmitx_event_mgr *hdmitx_event_mgr_create(struct platform_device *extcon_
 										hdmi_extcon_cable);
 	instance->attached_extcon_dev = &extcon_dev->dev;
 	if (IS_ERR(instance->hdmitx_extcon_hdmi)) {
-		pr_info("%s[%d] hdmitx_extcon_hdmi allocated failed\n", __func__, __LINE__);
+		HDMITX_DEBUG_EVENT("%s[%d] hdmitx_extcon_hdmi allocated failed\n",
+			__func__, __LINE__);
 		instance->hdmitx_extcon_hdmi = NULL;
 	} else {
 		ret = devm_extcon_dev_register(&extcon_dev->dev, instance->hdmitx_extcon_hdmi);
 		if (ret < 0) {
-			pr_err("%s[%d] hdmitx_extcon_hdmi register failed\n", __func__, __LINE__);
+			HDMITX_ERROR("%s[%d] hdmitx_extcon_hdmi register failed\n",
+				__func__, __LINE__);
 		//	devm_extcon_dev_free(instance->attached_extcon_dev,
 		//		instance->hdmitx_extcon_hdmi);
 
@@ -150,7 +153,7 @@ int hdmitx_event_mgr_set_uevent_state(struct hdmitx_event_mgr *event_mgr,
 		extcon_event = true;
 	}
 
-	pr_info("[%s] event_type: %s%d, %d\n",
+	HDMITX_DEBUG_EVENT("[%s] event_type: %s%d, %d\n",
 		__func__, event->env, state, extcon_event);
 
 	return 0;
@@ -190,7 +193,7 @@ int hdmitx_event_mgr_send_uevent(struct hdmitx_event_mgr *uevent_mgr,
 		extcon_event = true;
 	}
 
-	pr_info("%s %s %d %d\n", __func__, env, ret, extcon_event);
+	HDMITX_DEBUG_EVENT("%s %s %d %d\n", __func__, env, ret, extcon_event);
 	return ret;
 }
 

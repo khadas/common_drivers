@@ -172,7 +172,7 @@ static void set_hpll_clk_out(u32 clk)
 {
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
 
-	pr_info("config HPLL = %d frac_rate = %d\n", clk, frac_rate);
+	HDMITX_INFO("config HPLL = %d frac_rate = %d\n", clk, frac_rate);
 
 	switch (hdev->tx_hw.chip_data->chip_type) {
 	case MESON_CPU_ID_S1A:
@@ -187,7 +187,7 @@ static void set_hpll_clk_out(u32 clk)
 		break;
 	}
 
-	pr_info("config HPLL done\n");
+	HDMITX_INFO("config HPLL done\n");
 }
 
 /* HERE MUST BE BIT OPERATION!!! */
@@ -206,7 +206,7 @@ static void set_hpll_sspll(enum hdmi_vic vic)
 #endif
 	case MESON_CPU_ID_S1A:
 	default:
-		pr_info("%s%dNot match chip ID\n", __func__, __LINE__);
+		HDMITX_INFO("%s%dNot match chip ID\n", __func__, __LINE__);
 		break;
 	}
 }
@@ -335,7 +335,7 @@ static void set_tmds_vid_clk_div(u8 div_src, u32 div_val)
 		shift_sel = 2;
 		break;
 	default:
-		pr_err("%s[%d] invalid div %d\n", __func__, __LINE__, div_val);
+		HDMITX_ERROR("%s[%d] invalid div %d\n", __func__, __LINE__, div_val);
 	}
 
 	if (shift_val == 0xffff) { // if divide by 1
@@ -369,7 +369,7 @@ static void clocks_set_vid_clk_div_for_hdmi(int div_sel)
 		reg_vid_pll = CLKCTRL_HDMI_VID_PLL_CLK_DIV;
 		break;
 	}
-	pr_info("%s[%d] div = %d\n", __func__, __LINE__, div_sel);
+	HDMITX_INFO("%s[%d] div = %d\n", __func__, __LINE__, div_sel);
 
 	/* Disable the output clock */
 	hd21_set_reg_bits(reg_vid_pll, 0, 18, 2);
@@ -445,7 +445,7 @@ static void clocks_set_vid_clk_div_for_hdmi(int div_sel)
 		shift_sel = 2;
 		break;
 	default:
-		pr_info("Error: clocks_set_vid_clk_div:  Invalid parameter\n");
+		HDMITX_INFO("Error: clocks_set_vid_clk_div:  Invalid parameter\n");
 		break;
 	}
 
@@ -803,7 +803,7 @@ static u32 check_clock_shift(enum hdmi_vic vic, u32 frac_policy)
 
 	timing = hdmitx_mode_vic_to_hdmi_timing(vic);
 	if (!timing) {
-		pr_err("%s[%d] not valid vic %d\n", __func__, __LINE__, vic);
+		HDMITX_ERROR("%s[%d] not valid vic %d\n", __func__, __LINE__, vic);
 		return 0;
 	}
 
@@ -841,19 +841,20 @@ static void set_hdmitx_s5_htx_pll(struct hdmitx_dev *hdev)
 	cs = para->cs;
 	cd = para->cd;
 	if (vic == HDMI_0_UNKNOWN) {
-		pr_err("%s[%d] not valid vic %d\n", __func__, __LINE__, vic);
+		HDMITX_ERROR("%s[%d] not valid vic %d\n", __func__, __LINE__, vic);
 		return;
 	}
 
 	base_pixel_clk = para->timing.pixel_freq;
 	if (base_pixel_clk < 25175 || base_pixel_clk > 5940000) {
-		pr_err("%s[%d] not valid pixel clock %d\n", __func__, __LINE__, base_pixel_clk);
+		HDMITX_ERROR("%s[%d] not valid pixel clock %d\n", __func__, __LINE__,
+			base_pixel_clk);
 		return;
 	}
 
 	/* For FRL modes */
 	if (hdev->frl_rate != FRL_NONE) {
-		pr_info("set hpll for frl_rate %d\n", hdev->frl_rate);
+		HDMITX_INFO("set hpll for frl_rate %d\n", hdev->frl_rate);
 		switch (hdev->frl_rate) {
 		case FRL_3G3L:
 			set21_s5_htxpll_clk_out(6000000, 8);
@@ -874,13 +875,13 @@ static void set_hdmitx_s5_htx_pll(struct hdmitx_dev *hdev)
 			set21_s5_htxpll_clk_out(5000000, 1);
 			break;
 		default:
-			pr_err("not support frl_rate: %d\n", hdev->frl_rate);
+			HDMITX_ERROR("not support frl_rate: %d\n", hdev->frl_rate);
 			break;
 		}
 		return;
 	}
 
-	pr_info("%s[%d] base_pixel_clk %d  cs %d  cd %d  frac_rate %d\n",
+	HDMITX_INFO("%s[%d] base_pixel_clk %d  cs %d  cd %d  frac_rate %d\n",
 		__func__, __LINE__, base_pixel_clk, cs, cd, frac_rate);
 	/* for legacy TMDS modes */
 	if (cs != HDMI_COLORSPACE_YUV422) {
@@ -907,9 +908,9 @@ static void set_hdmitx_s5_htx_pll(struct hdmitx_dev *hdev)
 	base_pixel_clk = base_pixel_clk * 10; /* for tmds modes, here should multi 10 */
 	if (cs == HDMI_COLORSPACE_YUV420)
 		base_pixel_clk /= 2;
-	pr_info("%s[%d] calculate pixel_clk to %d\n", __func__, __LINE__, base_pixel_clk);
+	HDMITX_INFO("%s[%d] calculate pixel_clk to %d\n", __func__, __LINE__, base_pixel_clk);
 	if (base_pixel_clk > MAX_HTXPLL_VCO) {
-		pr_err("%s[%d] base_pixel_clk %d over MAX_HTXPLL_VCO %d\n",
+		HDMITX_ERROR("%s[%d] base_pixel_clk %d over MAX_HTXPLL_VCO %d\n",
 			__func__, __LINE__, base_pixel_clk, MAX_HTXPLL_VCO);
 	}
 
@@ -1007,7 +1008,7 @@ static void set_hdmitx_htx_pll(struct hdmitx_dev *hdev,
 		}
 		if (j == sizeof(setting_3dfp_enc_clk_val)
 			/ sizeof(struct hw_enc_clk_val_group)) {
-			pr_info("Not find VIC = %d for hpll setting\n", vic);
+			HDMITX_INFO("Not find VIC = %d for hpll setting\n", vic);
 			return;
 		}
 	} else if (cd == COLORDEPTH_24B) {
@@ -1022,7 +1023,7 @@ static void set_hdmitx_htx_pll(struct hdmitx_dev *hdev,
 		}
 		if (j == sizeof(setting_enc_clk_val_24)
 			/ sizeof(struct hw_enc_clk_val_group)) {
-			pr_info("Not find VIC = %d for hpll setting\n", vic);
+			HDMITX_INFO("Not find VIC = %d for hpll setting\n", vic);
 			return;
 		}
 	} else if (cd == COLORDEPTH_30B) {
@@ -1037,7 +1038,7 @@ static void set_hdmitx_htx_pll(struct hdmitx_dev *hdev,
 		}
 		if (j == sizeof(setting_enc_clk_val_30) /
 			sizeof(struct hw_enc_clk_val_group)) {
-			pr_info("Not find VIC = %d for hpll setting\n", vic);
+			HDMITX_INFO("Not find VIC = %d for hpll setting\n", vic);
 			return;
 		}
 	} else if (cd == COLORDEPTH_36B) {
@@ -1052,11 +1053,11 @@ static void set_hdmitx_htx_pll(struct hdmitx_dev *hdev,
 		}
 		if (j == sizeof(setting_enc_clk_val_36) /
 			sizeof(struct hw_enc_clk_val_group)) {
-			pr_info("Not find VIC = %d for hpll setting\n", vic);
+			HDMITX_INFO("Not find VIC = %d for hpll setting\n", vic);
 			return;
 		}
 	} else {
-		pr_info("not support colordepth 48bits\n");
+		HDMITX_INFO("not support colordepth 48bits\n");
 		return;
 	}
 next:
@@ -1070,7 +1071,7 @@ next:
 		tmp_clk.pnx_div = 2;
 		tmp_clk.pixel_div = 2;
 	}
-	pr_info("hdmitx sub-clock: %d %d %d %d %d %d %d %d %d %d\n",
+	HDMITX_INFO("hdmitx sub-clock: %d %d %d %d %d %d %d %d %d %d\n",
 		tmp_clk.hpll_clk_out, tmp_clk.od1, tmp_clk.od2, tmp_clk.od3,
 		tmp_clk.vid_pll_div, tmp_clk.vid_clk_div, tmp_clk.enc_div,
 		tmp_clk.fe_div, tmp_clk.pnx_div, tmp_clk.pixel_div);
@@ -1081,7 +1082,7 @@ next:
 	set_hpll_od2(tmp_clk.od2);
 	set_hpll_od3(tmp_clk.od3);
 	clocks_set_vid_clk_div_for_hdmi(tmp_clk.vid_pll_div);
-	pr_info("j = %d  vid_clk_div = %d\n", j, tmp_clk.vid_clk_div);
+	HDMITX_INFO("j = %d  vid_clk_div = %d\n", j, tmp_clk.vid_clk_div);
 	set_vid_clk_div(hdev, tmp_clk.vid_clk_div);
 	set_hdmitx_enc_div(hdev, tmp_clk.enc_div);
 	set_hdmitx_fe_div(hdev, tmp_clk.fe_div);
@@ -1162,16 +1163,16 @@ static void hdmitx_set_fpll_without_dsc(struct hdmitx_dev *hdev)
 
 	fpll_vco = tmp_clk;
 	if (fpll_vco > MAX_FPLL_VCO) {
-		pr_info("hdmitx21: FPLL VCO over clock %d\n", fpll_vco);
+		HDMITX_INFO("hdmitx21: FPLL VCO over clock %d\n", fpll_vco);
 		return;
 	}
 	if (check_clock_shift(vic, frac_rate) == 1) {
 		fpll_vco = fpll_vco - fpll_vco / 1001;
-		pr_info("fpll_vco %d down shift to %d\n", tmp_clk, fpll_vco);
+		HDMITX_INFO("fpll_vco %d down shift to %d\n", tmp_clk, fpll_vco);
 	}
 	if (check_clock_shift(vic, frac_rate) == 2) {
 		fpll_vco = fpll_vco + fpll_vco / 1000;
-		pr_info("fpll_vco %d up shift to %d\n", tmp_clk, fpll_vco);
+		HDMITX_INFO("fpll_vco %d up shift to %d\n", tmp_clk, fpll_vco);
 	}
 	div = 1;
 	do {
@@ -1200,12 +1201,12 @@ static void hdmitx_set_fpll_with_dsc(struct hdmitx_dev *hdev)
 	/* TODO */
 	fpll_vco = tmp_clk;
 	if (fpll_vco > MAX_FPLL_VCO) {
-		pr_info("hdmitx21: FPLL VCO over clock %d\n", fpll_vco);
+		HDMITX_INFO("hdmitx21: FPLL VCO over clock %d\n", fpll_vco);
 		return;
 	}
 	if (0) { /* TODO */
 		fpll_vco = fpll_vco - fpll_vco / 1001;
-		pr_info("fpll_vco %d shift to %d\n", tmp_clk, fpll_vco);
+		HDMITX_INFO("fpll_vco %d shift to %d\n", tmp_clk, fpll_vco);
 	}
 	div = 1;
 	do {
@@ -1268,12 +1269,12 @@ void hdmitx_set_gp2pll(struct hdmitx_dev *hdev)
 
 	gp2pll_vco = tmp_clk;
 	if (gp2pll_vco > MAX_FPLL_VCO) {
-		pr_info("hdmitx21: GP2PLL VCO over clock %d\n", gp2pll_vco);
+		HDMITX_INFO("hdmitx21: GP2PLL VCO over clock %d\n", gp2pll_vco);
 		return;
 	}
 	if (0) { /* TODO */
 		gp2pll_vco = gp2pll_vco * 1000 / 1001;
-		pr_info("gp2pll_vco %d shift to %d\n", tmp_clk, gp2pll_vco);
+		HDMITX_INFO("gp2pll_vco %d shift to %d\n", tmp_clk, gp2pll_vco);
 	}
 	div = 1;
 	do {
@@ -1305,11 +1306,11 @@ static void hdmitx_check_frac_rate(struct hdmitx_dev *hdev)
 	if (para && para->timing.name && likely_frac_rate_mode(para->timing.name)) {
 		;
 	} else {
-		pr_info("this mode doesn't have frac_rate\n");
+		HDMITX_INFO("this mode doesn't have frac_rate\n");
 		frac_rate = 0;
 	}
 
-	pr_info("frac_rate = %d\n", hdev->tx_comm.frac_rate_policy);
+	HDMITX_INFO("frac_rate = %d\n", hdev->tx_comm.frac_rate_policy);
 }
 
 /*
@@ -1405,7 +1406,7 @@ static bool test_pixel_clk(struct hdmitx_dev *hdev, const struct hw_enc_clk_val_
 		return 1;
 	if (calc_pixel_clk < msr_pixel_clk && ((msr_pixel_clk - calc_pixel_clk) <= CLK_TOLERANCE))
 		return 1;
-	pr_info("calc_pixel_clk %dMHz msr_pixel_clk %dMHz\n", calc_pixel_clk, msr_pixel_clk);
+	HDMITX_INFO("calc_pixel_clk %dMHz msr_pixel_clk %dMHz\n", calc_pixel_clk, msr_pixel_clk);
 	return 0;
 }
 
@@ -1426,7 +1427,7 @@ void hdmitx21_set_clk(struct hdmitx_dev *hdev)
 				break;
 		}
 		if (i == SET_CLK_MAX_TIMES)
-			pr_info("need check hdmitx clocks\n");
+			HDMITX_INFO("need check hdmitx clocks\n");
 		break;
 	case MESON_CPU_ID_S1A:
 		/* set the clock and test the pixel clock */

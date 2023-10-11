@@ -7,6 +7,7 @@
 #include <linux/mm.h>
 #include <linux/string.h>
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_format_para.h>
+#include "hdmitx_log.h"
 
 static struct parse_cd parse_cd_[] = {
 	{COLORDEPTH_24B, "8bit",},
@@ -78,7 +79,7 @@ int hdmitx_format_para_init(struct hdmi_format_para *para,
 		hdmitx_mode_vic_to_hdmi_timing(vic);
 
 	if (!timing) {
-		pr_err("%s got unknown vic %d\n", __func__, vic);
+		HDMITX_ERROR("%s got unknown vic %d\n", __func__, vic);
 		return -EINVAL;
 	}
 
@@ -159,13 +160,13 @@ int hdmitx_format_para_print(struct hdmi_format_para *para, char *log_buf)
 		pos += snprintf(buf + pos, len - pos, "format_para: TMDS %d DIV40 %d,%d\n",
 			para->tmds_clk, para->tmds_clk_div40, para->scrambler_en);
 
-		pr_info("format_para: frl_rate %d\n", para->frl_rate);
+		HDMITX_INFO("format_para: frl_rate %d\n", para->frl_rate);
 	}
 
 	if (log_buf)
 		sprintf(log_buf, "%s", buf);
 	else
-		pr_info("%s", buf);
+		HDMITX_INFO("%s", buf);
 
 	return pos;
 }
@@ -186,7 +187,7 @@ int hdmitx_format_para_rebuild_fmtattr_str(struct hdmi_format_para *para, char *
 	}
 
 	if (!conf) {
-		pr_err("UNKNOWN cs %d\n", para->cs);
+		HDMITX_ERROR("UNKNOWN cs %d\n", para->cs);
 		attr_str[0] = 0;
 		return -EINVAL;
 	}
@@ -202,14 +203,14 @@ int hdmitx_format_para_rebuild_fmtattr_str(struct hdmi_format_para *para, char *
 	}
 
 	if (!conf) {
-		pr_err("UNKNOWN cd %d\n", para->cd);
+		HDMITX_ERROR("UNKNOWN cd %d\n", para->cd);
 		attr_str[0] = 0;
 		return -EINVAL;
 	}
 
 	pos += snprintf(attr_str + pos, len - pos, "%s", conf);
 
-	pr_info("rebuild fmt_string %s from (%d,%d)\n", attr_str, para->cs, para->cd);
+	HDMITX_DEBUG("rebuild fmt_string %s from (%d,%d)\n", attr_str, para->cs, para->cd);
 	return 0;
 }
 

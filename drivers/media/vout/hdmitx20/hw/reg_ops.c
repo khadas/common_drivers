@@ -34,7 +34,7 @@ int hdmitx_init_reg_map(struct platform_device *pdev)
 
 	for (i = CBUS_REG_IDX; i < REG_IDX_END; i++) {
 		if (of_address_to_resource(np, i, &res)) {
-			pr_err("not get regbase index %d\n", i);
+			HDMITX_ERROR("not get regbase index %d\n", i);
 			return 0;
 		}
 
@@ -282,7 +282,7 @@ void hdmitx_poll_reg(unsigned int addr, unsigned int val, unsigned long timeout)
 		mdelay(2);
 	}
 	if (time_after(jiffies, time + timeout))
-		pr_info(REG "hdmitx poll:0x%x  val:0x%x T1=%lu t=%lu T2=%lu timeout\n",
+		HDMITX_DEBUG_REG("hdmitx poll:0x%x  val:0x%x T1=%lu t=%lu T2=%lu timeout\n",
 			addr, val, time, timeout, jiffies);
 }
 
@@ -293,9 +293,9 @@ unsigned int hdmitx_rd_check_reg(unsigned int addr, unsigned int exp_data,
 
 	rd_data = hdmitx_rd_reg(addr);
 	if ((rd_data | mask) != (exp_data | mask)) {
-		pr_info(REG "HDMITX-DWC addr=0x%04x rd_data=0x%02x\n",
+		HDMITX_DEBUG_REG("HDMITX-DWC addr=0x%04x rd_data=0x%02x\n",
 			(unsigned int)addr, (unsigned int)rd_data);
-		pr_info(REG "HDMITX-DWC exp_data=0x%02x mask=0x%02x\n",
+		HDMITX_DEBUG_REG("HDMITX-DWC exp_data=0x%02x mask=0x%02x\n",
 			(unsigned int)exp_data, (unsigned int)mask);
 		return 1;
 	}

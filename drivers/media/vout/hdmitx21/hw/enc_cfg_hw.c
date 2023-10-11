@@ -50,10 +50,10 @@ static void config_tv_enc_calc(struct hdmitx_dev *hdev, enum hdmi_vic vic)
 		y420_mode = 1;
 	tp = hdmitx_mode_vic_to_hdmi_timing(vic);
 	if (!tp) {
-		pr_info("not find hdmitx vic %d timing\n", vic);
+		HDMITX_INFO("not find hdmitx vic %d timing\n", vic);
 		return;
 	}
-	pr_info("%s[%d] vic = %d\n", __func__, __LINE__, tp->vic);
+	HDMITX_INFO("%s[%d] vic = %d\n", __func__, __LINE__, tp->vic);
 
 	timing = *tp;
 	tp = &timing;
@@ -257,10 +257,10 @@ static void hdmi_tvenc1080i_set(enum hdmi_vic vic)
 
 	tp = hdmitx_mode_vic_to_hdmi_timing(vic);
 	if (!tp) {
-		pr_info("not find hdmitx vic %d timing\n", vic);
+		HDMITX_INFO("not find hdmitx vic %d timing\n", vic);
 		return;
 	}
-	pr_info("%s[%d] vic = %d\n", __func__, __LINE__, tp->vic);
+	HDMITX_INFO("%s[%d] vic = %d\n", __func__, __LINE__, tp->vic);
 
 	switch (vic) {
 	case HDMI_5_1920x1080i60_16x9:
@@ -603,7 +603,7 @@ static void adjust_enci_for_hdmi(u8 enc_index,
 	// Check if there are duplicate or missing timing settings
 	if (vso_bline_evn_reg_wr_cnt != 1 || vso_bline_odd_reg_wr_cnt != 1 ||
 		vso_eline_evn_reg_wr_cnt != 1 || vso_eline_odd_reg_wr_cnt != 1)
-		pr_info("Multiple or missing timing settings on reg ENCI_DVI_VSO_B(E)LINE_EVN(ODD)!\n");
+		HDMITX_INFO("Multi/miss timing settings on regENCI_DVI_VSO_B(E)LINE_EVN(ODD)!\n");
 }
 
 void set_tv_enci_new(struct hdmitx_dev *hdev, u32 enc_index, enum hdmi_vic vic,

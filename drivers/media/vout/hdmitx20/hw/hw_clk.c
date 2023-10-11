@@ -250,7 +250,7 @@ void hdmitx_set_hdmi_axi_clk(struct hdmitx_dev *hdev)
 
 static void set_hpll_clk_out(struct hdmitx20_hw *tx_hw, unsigned int clk)
 {
-	pr_info("config HPLL = %d frac_rate = %d\n", clk, frac_rate);
+	HDMITX_INFO("config HPLL = %d frac_rate = %d\n", clk, frac_rate);
 
 	switch (tx_hw->chip_data->chip_type) {
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
@@ -530,7 +530,7 @@ static void set_hpll_od3_clk_div(struct hdmitx20_hw *tx_hw, int div_sel)
 		shift_sel = 2;
 		break;
 	default:
-		pr_info("Error: clocks_set_vid_clk_div:  Invalid parameter\n");
+		HDMITX_INFO("Error: clocks_set_vid_clk_div:  Invalid parameter\n");
 		break;
 	}
 
@@ -938,7 +938,7 @@ static void hdmitx_set_clk_(struct hdmitx_dev *hdev,
 		}
 		if (j == sizeof(setting_3dfp_enc_clk_val)
 			/ sizeof(struct hw_enc_clk_val_group)) {
-			pr_info("%d:Not find VIC = %d for hpll setting\n",
+			HDMITX_INFO("%d:Not find VIC = %d for hpll setting\n",
 				__LINE__, vic);
 			return;
 		}
@@ -966,13 +966,13 @@ static void hdmitx_set_clk_(struct hdmitx_dev *hdev,
 		}
 		if (j == sizeof(setting_enc_clk_val_24)
 			/ sizeof(struct hw_enc_clk_val_group)) {
-			pr_info("%d:Not find VIC = %d for hpll setting\n",
+			HDMITX_INFO("%d:Not find VIC = %d for hpll setting\n",
 				__LINE__, vic);
 			return;
 		}
 	} else if (cd == COLORDEPTH_30B) {
 		if (is_hdmi4k_support_420(vic) && cs != HDMI_COLORSPACE_YUV420) {
-			pr_err("%s:%d got non420 4k (%d, %d, 30B)\n",
+			HDMITX_ERROR("%s:%d got non420 4k (%d, %d, 30B)\n",
 				__func__, __LINE__, vic, cs);
 			return;
 		}
@@ -988,13 +988,13 @@ static void hdmitx_set_clk_(struct hdmitx_dev *hdev,
 		}
 		if (j == sizeof(setting_enc_clk_val_30) /
 			sizeof(struct hw_enc_clk_val_group)) {
-			pr_info("%d:Not find VIC = %d for hpll setting\n",
+			HDMITX_INFO("%d:Not find VIC = %d for hpll setting\n",
 				__LINE__, vic);
 			return;
 		}
 	} else if (cd == COLORDEPTH_36B) {
 		if (is_hdmi4k_support_420(vic) && cs != HDMI_COLORSPACE_YUV420) {
-			pr_err("%s:%d got non420 4k (%d, %d, 36B)\n",
+			HDMITX_ERROR("%s:%d got non420 4k (%d, %d, 36B)\n",
 				__func__, __LINE__, vic, cs);
 			return;
 		}
@@ -1010,12 +1010,12 @@ static void hdmitx_set_clk_(struct hdmitx_dev *hdev,
 		}
 		if (j == sizeof(setting_enc_clk_val_36) /
 			sizeof(struct hw_enc_clk_val_group)) {
-			pr_info("%d:Not find VIC = %d for hpll setting\n",
+			HDMITX_INFO("%d:Not find VIC = %d for hpll setting\n",
 				__LINE__, vic);
 			return;
 		}
 	} else {
-		pr_info("not support colordepth 48bits\n");
+		HDMITX_INFO("not support colordepth 48bits\n");
 		return;
 	}
 next:
@@ -1061,11 +1061,11 @@ static void hdmitx_check_frac_rate(struct hdmitx_dev *hdev)
 	if (timing && timing->name && likely_frac_rate_mode(timing->name)) {
 		;
 	} else {
-		pr_info("this mode doesn't have frac_rate\n");
+		HDMITX_INFO("this mode doesn't have frac_rate\n");
 		frac_rate = 0;
 	}
 
-	pr_info("frac_rate = %d\n", hdev->tx_comm.frac_rate_policy);
+	HDMITX_INFO("frac_rate = %d\n", hdev->tx_comm.frac_rate_policy);
 }
 
 /*
@@ -1161,7 +1161,7 @@ static bool test_pixel_clk(struct hdmitx_dev *hdev, const struct hw_enc_clk_val_
 		return 1;
 	if (calc_pixel_clk < msr_pixel_clk && ((msr_pixel_clk - calc_pixel_clk) <= CLK_TOLERANCE))
 		return 1;
-	pr_info("calc_pixel_clk %dMHz msr_pixel_clk %dMHz\n", calc_pixel_clk, msr_pixel_clk);
+	HDMITX_INFO("calc_pixel_clk %dMHz msr_pixel_clk %dMHz\n", calc_pixel_clk, msr_pixel_clk);
 	return 0;
 }
 
@@ -1180,7 +1180,7 @@ void hdmitx_set_clk(struct hdmitx_dev *hdev)
 				break;
 		}
 		if (i == SET_CLK_MAX_TIMES)
-			pr_info("need check hdmitx clocks\n");
+			HDMITX_INFO("need check hdmitx clocks\n");
 	} else {
 		hdmitx_set_clk_(hdev, &test_clks);
 	}

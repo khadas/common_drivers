@@ -61,7 +61,7 @@ int hdmitx_hpd_hw_op_gxl(enum hpd_op cmd)
 	case HPD_READ_HPD_GPIO:
 		break;
 	default:
-		pr_info("error hpd cmd %d\n", cmd);
+		HDMITX_INFO("error hpd cmd %d\n", cmd);
 		break;
 	}
 	return ret;
@@ -84,7 +84,7 @@ int hdmitx_ddc_hw_op_gxl(enum ddc_op cmd)
 	case DDC_UNMUX_DDC:
 		break;
 	default:
-		pr_info("error ddc cmd %d\n", cmd);
+		HDMITX_INFO("error ddc cmd %d\n", cmd);
 	}
 	return ret;
 }
@@ -125,7 +125,7 @@ void set_hpll_od1_gxl(unsigned int div)
 		hd_set_reg_bits(P_HHI_HDMI_PLL_CNTL2, 2, 21, 2);
 		break;
 	default:
-		pr_info("Err %s[%d]\n", __func__, __LINE__);
+		HDMITX_INFO("Err %s[%d]\n", __func__, __LINE__);
 		break;
 	}
 }
@@ -143,7 +143,7 @@ void set_hpll_od2_gxl(unsigned int div)
 		hd_set_reg_bits(P_HHI_HDMI_PLL_CNTL2, 2, 23, 2);
 		break;
 	default:
-		pr_info("Err %s[%d]\n", __func__, __LINE__);
+		HDMITX_INFO("Err %s[%d]\n", __func__, __LINE__);
 		break;
 	}
 }
@@ -161,7 +161,7 @@ void set_hpll_od3_gxl(unsigned int div)
 		hd_set_reg_bits(P_HHI_HDMI_PLL_CNTL2, 2, 19, 2);
 		break;
 	default:
-		pr_info("Err %s[%d]\n", __func__, __LINE__);
+		HDMITX_INFO("Err %s[%d]\n", __func__, __LINE__);
 		break;
 	}
 }

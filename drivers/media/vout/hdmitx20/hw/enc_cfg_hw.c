@@ -1680,11 +1680,11 @@ void set_vmode_enc_hw(struct hdmitx_dev *hdev)
 
 	/*hd_set_reg_bits(P_VENC_VDAC_SETTING, 0x1f, 0, 5);*/
 	if (s) {
-		pr_info("set enc for VIC: %d\n", hdev->tx_comm.fmt_para.vic);
+		HDMITX_INFO("set enc for VIC: %d\n", hdev->tx_comm.fmt_para.vic);
 		while (s->reg != MREG_END_MARKER)
 			setreg(s++);
 	} else {
-		pr_info("set enc not find VIC: %d\n", hdev->tx_comm.fmt_para.vic);
+		HDMITX_ERROR("set enc not find VIC: %d\n", hdev->tx_comm.fmt_para.vic);
 	}
 	if (hdev->bist_lock)
 		hd_set_reg_bits(P_ENCP_VIDEO_MODE_ADV, 0, 3, 1);

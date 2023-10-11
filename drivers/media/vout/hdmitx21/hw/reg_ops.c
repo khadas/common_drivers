@@ -34,7 +34,7 @@ int hdmitx21_init_reg_map(struct platform_device *pdev)
 
 	for (i = 0; i < REG_IDX_END; i++) {
 		if (of_address_to_resource(np, i, &res)) {
-			pr_err("not get regbase index %d\n", i);
+			HDMITX_ERROR("not get regbase index %d\n", i);
 			return 0;
 		}
 
@@ -77,7 +77,7 @@ static void sec_wr(u32 addr, u32 data)
 	struct arm_smccc_res res;
 
 	if (hdmi_dbg)
-		pr_info("sec_wr32[0x%08x] 0x%08x\n", addr, data);
+		HDMITX_INFO("sec_wr32[0x%08x] 0x%08x\n", addr, data);
 	arm_smccc_smc(0x82000019, (unsigned long)addr, data, 32, 0, 0, 0, 0, &res);
 }
 
@@ -86,7 +86,7 @@ static void sec_wr8(u32 addr, u8 data)
 	struct arm_smccc_res res;
 
 	if (hdmi_dbg)
-		pr_info("sec_wr8[0x%08x] 0x%02x\n", addr, data);
+		HDMITX_INFO("%s[0x%08x] 0x%02x\n", __func__, addr, data);
 	arm_smccc_smc(0x82000019, (unsigned long)addr, data & 0xff, 8, 0, 0, 0, 0, &res);
 }
 
@@ -96,12 +96,12 @@ static u32 sec_rd(u32 addr)
 	struct arm_smccc_res res;
 
 	if (hdmi_dbg)
-		pr_info("sec_rd32[0x%08x]\n", addr);
+		HDMITX_INFO("sec_rd32[0x%08x]\n", addr);
 	arm_smccc_smc(0x82000018, (unsigned long)addr, 32, 0, 0, 0, 0, 0, &res);
 	data = (unsigned int)((res.a0) & 0xffffffff);
 
 	if (hdmi_dbg)
-		pr_info("[0x%08x] 0x%08x\n", addr, data);
+		HDMITX_INFO("[0x%08x] 0x%08x\n", addr, data);
 	return data;
 }
 
@@ -111,12 +111,12 @@ static u8 sec_rd8(u32 addr)
 	struct arm_smccc_res res;
 
 	if (hdmi_dbg)
-		pr_info("%s[0x%08x]\n", __func__, addr);
+		HDMITX_INFO("%s[0x%08x]\n", __func__, addr);
 	arm_smccc_smc(0x82000018, (unsigned long)addr, 8, 0, 0, 0, 0, 0, &res);
 	data = (unsigned int)((res.a0) & 0xffffffff);
 
 	if (hdmi_dbg)
-		pr_info("[0x%08x] 0x%02x\n", addr, data);
+		HDMITX_INFO("[0x%08x] 0x%02x\n", addr, data);
 	return data;
 }
 
@@ -162,7 +162,7 @@ u32 hd21_read_reg(u32 vaddr)
 
 	val = readl(TO_PMAP_ADDR(paddr));
 	if (hdmi_dbg)
-		pr_info("Rd32[0x%08x] 0x%08x\n", TO21_PHY_ADDR(paddr), val);
+		HDMITX_INFO("Rd32[0x%08x] 0x%08x\n", TO21_PHY_ADDR(paddr), val);
 	return val;
 }
 EXPORT_SYMBOL(hd21_read_reg);
@@ -177,10 +177,10 @@ void hd21_write_reg(u32 vaddr, u32 val)
 	if (!hdmi_dbg)
 		return;
 	if (val != rval)
-		pr_info("Wr32[0x%08x] 0x%08x != Rd32 0x%08x\n",
+		HDMITX_INFO("Wr32[0x%08x] 0x%08x != Rd32 0x%08x\n",
 			TO21_PHY_ADDR(paddr), val, rval);
 	else
-		pr_info("Wr32[0x%08x] 0x%08x\n",
+		HDMITX_INFO("Wr32[0x%08x] 0x%08x\n",
 			TO21_PHY_ADDR(paddr), val);
 }
 EXPORT_SYMBOL(hd21_write_reg);
@@ -329,7 +329,7 @@ void hdmitx21_poll_reg(u32 addr, u8 exp_data, u8 mask, ulong timeout)
 		usleep_range(10, 20);
 	}
 	if (done == 0)
-		pr_info("%s 0x%x poll time-out!\n", __func__, addr);
+		HDMITX_INFO("%s 0x%x poll time-out!\n", __func__, addr);
 } /* hdmitx21_poll_reg */
 EXPORT_SYMBOL(hdmitx21_poll_reg);
 
@@ -340,9 +340,9 @@ u32 hdmitx21_rd_check_reg(u32 addr, u32 exp_data,
 
 	rd_data = hdmitx21_rd_reg(addr);
 	if ((rd_data | mask) != (exp_data | mask)) {
-		pr_info(REG "HDMITX-DWC addr=0x%04x rd_data=0x%02x\n",
+		HDMITX_DEBUG_REG("HDMITX-DWC addr=0x%04x rd_data=0x%02x\n",
 			(unsigned int)addr, (unsigned int)rd_data);
-		pr_info(REG "HDMITX-DWC exp_data=0x%02x mask=0x%02x\n",
+		HDMITX_DEBUG_REG("HDMITX-DWC exp_data=0x%02x mask=0x%02x\n",
 			(unsigned int)exp_data, (unsigned int)mask);
 		return 1;
 	}

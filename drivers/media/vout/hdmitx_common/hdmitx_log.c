@@ -22,7 +22,12 @@ MODULE_PARM_DESC(hdmitx_debug, "Enable debug output, where each bit enables a de
 "\t\tBit 4 (0x10)  will enable PACKET messages (hdmitx packet)\n"
 "\t\tBit 5 (0x20)  will enable EDID messages (hdmitx edid parse)\n"
 "\t\tBit 6 (0x40)  will enable PHY messages (hdmitx phy control)\n"
-"\t\tBit 7 (0x80)  will enable REG messages (hdmitx register rd/wr)");
+"\t\tBit 7 (0x80)  will enable REG messages (hdmitx register rd/wr)\n"
+"\t\tBit 8 (0x100)  will enable SCDC messages (hdmitx scdc)\n"
+"\t\tBit 9 (0x200)  will enable VINFO messages (hdmitx vinfo)\n"
+"\t\tBit 10 (0x400)  will enable EVENT messages (hdmitx event)\n"
+"\t\tBit 11 (0x800)  will enable HPD messages (hdmitx HPD)");
+
 module_param_named(hdmitx_debug, __hdmitx_debug, int, 0600);
 
 static bool hdmitx_debug_enabled(enum hdmitx_debug_category category)
@@ -43,7 +48,6 @@ void __hdmitx_info(const char *format, ...)
 
 	va_end(args);
 }
-EXPORT_SYMBOL(__hdmitx_info);
 
 void __hdmitx_err(const char *format, ...)
 {
@@ -58,7 +62,6 @@ void __hdmitx_err(const char *format, ...)
 
 	va_end(args);
 }
-EXPORT_SYMBOL(__hdmitx_err);
 
 void __hdmitx_dbg(enum hdmitx_debug_category category, const char *format, ...)
 {
@@ -76,5 +79,4 @@ void __hdmitx_dbg(enum hdmitx_debug_category category, const char *format, ...)
 
 	va_end(args);
 }
-EXPORT_SYMBOL(__hdmitx_dbg);
 

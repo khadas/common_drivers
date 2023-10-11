@@ -66,11 +66,11 @@ int hdmitx_set_display(struct hdmitx_dev *hdev, enum hdmi_vic videocode)
 	for (i = 0; i < 32; i++)
 		AVI_DB[i] = 0;
 
-	pr_info(VID "%s set VIC = %d\n", __func__, videocode);
+	HDMITX_DEBUG_VIDEO("%s set VIC = %d\n", __func__, videocode);
 
 	if (para) {
 		if (videocode >= HDMITX_VESA_OFFSET && para->cs != HDMI_COLORSPACE_RGB) {
-			pr_err("hdmitx: VESA only support RGB format\n");
+			HDMITX_ERROR("VESA only support RGB format\n");
 			para->cs = HDMI_COLORSPACE_RGB;
 			para->cd = COLORDEPTH_24B;
 		}
@@ -82,11 +82,11 @@ int hdmitx_set_display(struct hdmitx_dev *hdev, enum hdmi_vic videocode)
 			 * 0: DVI Mode	   1: HDMI Mode
 			 */
 			if (is_dvi_device(&hdev->tx_comm.rxcap)) {
-				pr_info(VID "Sink is DVI device\n");
+				HDMITX_INFO("Sink is DVI device\n");
 				hdmitx_hw_cntl_config(tx_hw_base,
 					CONF_HDMI_DVI_MODE, DVI_MODE);
 			} else {
-				pr_info(VID "Sink is HDMI device\n");
+				HDMITX_INFO("Sink is HDMI device\n");
 				hdmitx_hw_cntl_config(tx_hw_base,
 					CONF_HDMI_DVI_MODE, HDMI_MODE);
 			}
@@ -204,7 +204,7 @@ static void hdmitx_set_spd_info(struct hdmitx_dev *hdev)
 	if (hdev->config_data.vend_data) {
 		vend_data = hdev->config_data.vend_data;
 	} else {
-		pr_info(VID "packet: can\'t get vendor data\n");
+		HDMITX_DEBUG_VIDEO("packet: can\'t get vendor data\n");
 		return;
 	}
 	if (vend_data->vendor_name) {

@@ -23,25 +23,12 @@
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_hw_common.h>
 #include <linux/amlogic/media/vout/hdmi_tx_repeater.h>
 #include "hw/hdmi_tx_hw.h"
+#include "../hdmitx_common/hdmitx_log.h"
 
 #define DEVICE_NAME "amhdmitx"
 
 /* HDMITX driver version */
 #define HDMITX_VER "20210902"
-
-/* log_level */
-#define LOG_EN 0x01
-#define VIDEO_LOG 0x02
-#define AUDIO_LOG 0x04
-#define HDCP_LOG 0x08
-/* for dv/hdr... */
-#define PACKET_LOG 0x10
-#define EDID_LOG 0x20
-#define PHY_LOG 0x40
-#define REG_LOG 0x80
-#define SCDC_LOG 0x100
-#define VINFO_LOG 0x200
-extern int hdmitx_log_level;
 
 /************************************
  *    hdmitx device structure

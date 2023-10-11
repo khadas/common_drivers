@@ -7,6 +7,7 @@
 #include <linux/printk.h>
 #include <linux/string.h>
 #include "checksha.h"
+#include "../../hdmitx_common/hdmitx_log.h"
 
 static void shamsg_reset(struct shamsg_t *msg)
 {
@@ -99,7 +100,7 @@ static void shamsg_init(struct shamsg_t *msg,
 	int rc = TRUE;
 
 	if (!data || size == 0) {
-		pr_info("invalid parameters\n");
+		HDMITX_INFO("invalid parameters\n");
 		return;
 	}
 	if (msg->shamsg_cmp == 1 || msg->shamsg_crp == 1) {
@@ -173,21 +174,21 @@ int calc_hdcp_ksv_valid(const unsigned char *data, int size)
 	memset(&shamsg, 0, sizeof(struct shamsg_t));
 
 	if (!data || size < (HDCP_HEAD + SHA_MAX_SIZE)) {
-		pr_info("invalid parameters\n");
+		HDMITX_INFO("invalid parameters\n");
 		return FALSE;
 	}
 
 	shamsg_reset(&shamsg);
 	shamsg_init(&shamsg, data, size - SHA_MAX_SIZE);
 	if (get_shamsg_result(&shamsg) == FALSE) {
-		pr_info("hdcp invalid ksv/sha message\n");
+		HDMITX_INFO("hdcp invalid ksv/sha message\n");
 		return FALSE;
 	}
 	for (i = 0; i < SHA_MAX_SIZE; i++) {
 		if (data[size - SHA_MAX_SIZE + i] !=
 			(uint8_t)(shamsg.shamsg_dgt[i / 4]
 			>> ((i % 4) * 8))) {
-			pr_info("hdcp ksv/sha not match\n");
+			HDMITX_INFO("hdcp ksv/sha not match\n");
 			return FALSE;
 		}
 	}

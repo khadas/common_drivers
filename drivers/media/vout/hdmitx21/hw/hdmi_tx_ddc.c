@@ -56,8 +56,8 @@ void hdmitx21_read_edid(u8 *_rx_edid)
 				rx_edid[128 + 5] == EXTENSION_EEODB_EXT_CODE)
 				ext_block_num = rx_edid[128 + 6];
 		if (ext_block_num > 7) {
-			pr_info(HW "edid extension block number:");
-			pr_info(HW " %d, reset to MAX 7\n", ext_block_num);
+			HDMITX_INFO("edid extension block number:");
+			HDMITX_INFO(" %d, reset to MAX 7\n", ext_block_num);
 			ext_block_num = 7; /* Max extended block */
 		}
 		blk_idx++;
@@ -127,7 +127,7 @@ static bool ddc_wait_free(void)
 				return true;
 			usleep_range(2000, 2500);
 		}
-		pr_info("hdmitx: ddc bus busy\n");
+		HDMITX_INFO("ddc bus busy\n");
 		ddc_tx_ddc_error_reset();
 		usleep_range(2000, 2500);
 	}

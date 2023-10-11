@@ -702,7 +702,7 @@ static void vrr_debug_info(const char *fmt, ...)
 	va_end(args);
 
 	if (len)
-		pr_info("%s", temp);
+		HDMITX_INFO("%s", temp);
 }
 
 const static struct mvrr_const_val *search_vrrconf_mconst(enum hdmi_vic brr_vic,
@@ -916,7 +916,7 @@ static void vrr_init_qms_para(struct tx_vrr_params *para)
 	}
 	para->mconst_val = search_vrrconf_mconst(brr_vic, conf->duration);
 	if (!para->mconst_val) {
-		pr_info("use the default const_hdmi1080p60_6000\n");
+		HDMITX_INFO("use the default const_hdmi1080p60_6000\n");
 		para->mconst_val = &const_hdmi1080p60_6000;
 	}
 	para->frame_cnt = 0;
@@ -1116,7 +1116,7 @@ int hdmitx_set_fr_hint(int rate, void *data)
 	/* check current rate, should less or equal than current rate of BRR */
 	tmp_rate = fmt_para->timing.v_freq / 10;
 	if (rate < 2397 || rate > 120000 || rate > tmp_rate) {
-		pr_info("vrr rate over range %d [2397~%d]\n", rate, tmp_rate);
+		HDMITX_INFO("vrr rate over range %d [2397~%d]\n", rate, tmp_rate);
 		return 0;
 	}
 
@@ -1134,18 +1134,18 @@ int hdmitx_set_fr_hint(int rate, void *data)
 	if (para.type == T_VRR_QMS) {
 		tfr = vsync_match_to_tfr(rate);
 		if (tfr == TFR_QMSVRR_INACTIVE || tfr == TFR_MAX) {
-			pr_info("unsupport current rate %d\n", rate);
+			HDMITX_INFO("unsupport current rate %d\n", rate);
 			return 0;
 		}
 		if (!check_qms_brr_format(para.brr_vic)) {
-			pr_info("hdmitx: QMS only support BRR %s\n",
+			HDMITX_INFO("QMS only support BRR %s\n",
 				"720p60/120hz,1080p60/120hz,2160p60hz\n");
-			pr_info("hdmitx: current vic %d\n", para.brr_vic);
+			HDMITX_INFO("current vic %d\n", para.brr_vic);
 			para.vrr_enabled = 0;
 			return 0;
 		}
 		if (!prxcap->qms)
-			pr_info("TODO TV not support QMS\n");
+			HDMITX_INFO("TODO TV not support QMS\n");
 		/* for application, here will set the mode like below
 		 * /sys/class/amhdmitx/amhdmitx0/frac_rate_policy
 		 * /sys/class/display/fr_hint
@@ -1194,7 +1194,7 @@ void hdmitx_unregister_vrr(struct hdmitx_dev *hdev)
 	int ret;
 
 	ret = aml_vrr_unregister_device(hdev->tx_comm.enc_idx);
-	pr_info("%s ret = %d\n", __func__, ret);
+	HDMITX_INFO("%s ret = %d\n", __func__, ret);
 }
 
 static struct vinfo_s *hdmitx_get_curvinfo(void *data)
@@ -1231,7 +1231,7 @@ void hdmitx_register_vrr(struct hdmitx_dev *hdev)
 		vrr->enable = 1;
 	strncpy(vrr->name, name, VRR_NAME_LEN_MAX);
 	ret = aml_vrr_register_device(vrr, hdev->tx_comm.enc_idx);
-	pr_info("%s ret = %d\n", __func__, ret);
+	HDMITX_INFO("%s ret = %d\n", __func__, ret);
 }
 
 static void hdmitx_vrr_game_handler(struct hdmitx_dev *hdev)

@@ -65,28 +65,28 @@ static void pr_scdc_err_info(const char *func_name, u8 slave, u8 offset_addr,
 	/* if operation is writing, then print data */
 	if (wr_flag) {
 		if (slave == SCDC_SLAVE) {
-			pr_err("hdmitx: E: %s %s %s 0x%02x\n",
+			HDMITX_ERROR("E: %s %s %s 0x%02x\n",
 				func_name, slave_msg[SCDC_SLAVE],
 				scdc_msg[offset_addr] ? scdc_msg[offset_addr] : "rsvd", *data);
 		} else {
 			if (slave_msg[slave])
-				pr_err("hdmitx: E: %s %s 0x%02x 0x%02x 0x%02x\n",
+				HDMITX_ERROR("E: %s %s 0x%02x 0x%02x 0x%02x\n",
 					func_name, slave_msg[slave], slave, offset_addr, *data);
 			else
-				pr_err("hdmitx: E: %s unknown slave: <0x%x> 0x%02x 0x%02x\n",
+				HDMITX_ERROR("E: %s unknown slave: <0x%x> 0x%02x 0x%02x\n",
 					func_name, slave, offset_addr, *data);
 		}
 	} else {
 		if (slave == SCDC_SLAVE) {
-			pr_err("hdmitx: E: %s %s %s\n",
+			HDMITX_ERROR("E: %s %s %s\n",
 				func_name, slave_msg[SCDC_SLAVE],
 				scdc_msg[offset_addr] ? scdc_msg[offset_addr] : "rsvd");
 		} else {
 			if (slave_msg[slave])
-				pr_err("hdmitx: E: %s %s 0x%02x 0x%02x\n",
+				HDMITX_ERROR("E: %s %s 0x%02x 0x%02x\n",
 					func_name, slave_msg[slave], slave, offset_addr);
 			else
-				pr_err("hdmitx: E: %s unknown slave: <0x%x> 0x%02x\n",
+				HDMITX_ERROR("E: %s unknown slave: <0x%x> 0x%02x\n",
 					func_name, slave, offset_addr);
 		}
 	}
@@ -265,7 +265,7 @@ void hdmitx_read_edid(unsigned char *rx_edid)
 			timeout++;
 		}
 		if (timeout == EDID_WAIT_TIMEOUT) {
-			pr_info(HW "ddc timeout\n");
+			HDMITX_INFO("ddc timeout\n");
 			hdmitx_current_status(HDMITX_EDID_I2C_ERROR);
 		}
 		hdmitx_wr_reg(HDMITX_DWC_IH_I2CM_STAT0, 1 << 1);
@@ -282,8 +282,8 @@ void hdmitx_read_edid(unsigned char *rx_edid)
 				rx_edid[128 + 5] == EXTENSION_EEODB_EXT_CODE)
 				blk_no = rx_edid[128 + 6] + 1;
 		if (blk_no > 8) {
-			pr_info(HW "edid extension block number:");
-			pr_info(HW " %d, reset to MAX 7\n", blk_no - 1);
+			HDMITX_INFO("edid extension block number:");
+			HDMITX_INFO(" %d, reset to MAX 7\n", blk_no - 1);
 			blk_no = 8; /* Max extended block */
 		}
 	}

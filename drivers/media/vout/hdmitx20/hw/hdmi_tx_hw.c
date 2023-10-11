@@ -389,15 +389,15 @@ static int hdmitx_uboot_already_display(void)
 	if ((hd_read_reg(P_HHI_HDMI_CLK_CNTL) & (1 << 8)) &&
 	    (hd_read_reg(P_HHI_HDMI_PLL_CNTL) & (1 << 31)) &&
 	    (hdmitx_get_isaformat())) {
-		pr_info(HW "alread display in uboot 0x%x\n",
+		HDMITX_INFO("alread display in uboot 0x%x\n",
 			hdmitx_get_isaformat());
 		ret = 1;
 	} else {
-		pr_info(HW "hdmitx_get_isaformat:0x%x\n",
+		HDMITX_INFO("hdmitx_get_isaformat:0x%x\n",
 			hdmitx_get_isaformat());
-		pr_info(HW "P_HHI_HDMI_CLK_CNTL :0x%x\n",
+		HDMITX_INFO("P_HHI_HDMI_CLK_CNTL :0x%x\n",
 			hd_read_reg(P_HHI_HDMI_CLK_CNTL));
-		pr_info(HW "P_HHI_HDMI_PLL_CNTL :0x%x\n",
+		HDMITX_INFO("P_HHI_HDMI_PLL_CNTL :0x%x\n",
 			hd_read_reg(P_HHI_HDMI_PLL_CNTL));
 		ret = 0;
 	}
@@ -496,7 +496,7 @@ static void hdmi_hwi_init(struct hdmitx_dev *hdev)
 	hdmitx_wr_reg(HDMITX_DWC_A_HDCPCFG1, 0x67);
 	if (hdmitx_find_vendor_null_pkt(hdev)) {
 		hdmitx_wr_reg(HDMITX_TOP_DISABLE_NULL, 0x6);
-		pr_info(HW "special TV, need enable NULL packet\n");
+		HDMITX_INFO("special TV, need enable NULL packet\n");
 	} else {
 		hdmitx_wr_reg(HDMITX_TOP_DISABLE_NULL, 0x7); /* disable NULL pkt */
 	}
@@ -736,7 +736,7 @@ static irqreturn_t intr_handler(int irq, void *dev)
 	hdmitx_wr_reg(HDMITX_TOP_INTR_STAT_CLR, ~0);
 	hdmitx_wr_reg(HDMITX_DWC_HDCP22REG_STAT, 0xff);
 
-	pr_info(SYS "irq %x %x\n", dat_top, dat_dwc);
+	HDMITX_INFO(SYS "irq %x %x\n", dat_top, dat_dwc);
 	/* bit[2:1] of dat_top means HPD falling and rising */
 	if ((dat_top & 0x6) && hdev->tx_hw.base.hdmitx_gpios_hpd != -EPROBE_DEFER) {
 		struct timespec64 kts;
@@ -744,12 +744,12 @@ static irqreturn_t intr_handler(int irq, void *dev)
 
 		ktime_get_real_ts64(&kts);
 		rtc_time64_to_tm(kts.tv_sec, &tm);
-		pr_info("UTC+0 %ptRd %ptRt HPD %s\n", &tm, &tm,
+		HDMITX_INFO("UTC+0 %ptRd %ptRt HPD %s\n", &tm, &tm,
 			gpio_get_value(hdev->tx_hw.base.hdmitx_gpios_hpd) ? "HIGH" : "LOW");
 	}
 
 	if (hdev->tx_hw.base.debug_hpd_lock == 1) {
-		pr_info(HW "HDMI hpd locked\n");
+		HDMITX_INFO("HDMI hpd locked\n");
 		goto next;
 	}
 	/* check HPD status */
@@ -765,7 +765,7 @@ static irqreturn_t intr_handler(int irq, void *dev)
 		ret = queue_delayed_work(hdev->hdmi_hpd_wq,
 				   &hdev->work_hpd_plugin, HZ / 2);
 		if (!ret)
-			pr_info(HW "HDMI plugin work is already in the queue\n");
+			HDMITX_DEBUG_HPD("HDMI plugin work is already in the queue\n");
 	}
 	/* HPD falling */
 	if (dat_top & (1 << 2)) {
@@ -778,14 +778,14 @@ static irqreturn_t intr_handler(int irq, void *dev)
 		 */
 		ret = cancel_delayed_work(&hdev->work_hpd_plugin);
 		if (ret)
-			pr_info(HW "plugin work is pending and canceled\n");
+			HDMITX_DEBUG_HPD("plugin work is pending and canceled\n");
 		else
-			pr_info(HW "plugin work is not pending\n");
+			HDMITX_DEBUG_HPD("plugin work is not pending\n");
 
 		ret = queue_delayed_work(hdev->hdmi_hpd_wq,
 			&hdev->work_hpd_plugout, 0);
 		if (!ret)
-			pr_info(HW "HDMI plugout work is already in the queue\n");
+			HDMITX_DEBUG_HPD("HDMI plugout work is already in the queue\n");
 	}
 	/* internal interrupt */
 	if (dat_top & (1 << 0))
@@ -794,8 +794,7 @@ static irqreturn_t intr_handler(int irq, void *dev)
 	if (dat_top & (1 << 3)) {
 		unsigned int rd_nonce_mode =
 			hdmitx_rd_reg(HDMITX_TOP_SKP_CNTL_STAT) & 0x1;
-		if (hdmitx_log_level & HDCP_LOG)
-			pr_info(HW "hdcp22: Nonce %s  Vld: %d\n",
+		HDMITX_DEBUG_HDCP("hdcp22: Nonce %s  Vld: %d\n",
 				rd_nonce_mode ? "HW" : "SW",
 				((hdmitx_rd_reg(HDMITX_TOP_SKP_CNTL_STAT) >> 31) & 1));
 		if (!rd_nonce_mode) {
@@ -810,7 +809,7 @@ static irqreturn_t intr_handler(int irq, void *dev)
 		}
 	}
 	if (dat_top & (1 << 30))
-		pr_info("hdcp22: reg stat: 0x%x\n", dat_dwc);
+		HDMITX_DEBUG_HDCP("hdcp22: reg stat: 0x%x\n", dat_dwc);
 
 next:
 	return IRQ_HANDLED;
@@ -1152,7 +1151,7 @@ static void hdmi_tvenc4k2k_set(struct hdmi_format_para *param)
 		TOTAL_FRAMES = 3;
 		break;
 	default:
-		pr_info("hdmitx20: no setting for VIC = %d\n", param->vic);
+		HDMITX_INFO("hdmitx20: no setting for VIC = %d\n", param->vic);
 		break;
 	}
 
@@ -1431,7 +1430,7 @@ static void hdmi_tvenc_vesa_set(struct hdmi_format_para *param)
 
 	vtiming = hdmitx_mode_vic_to_hdmi_timing(param->vic);
 	if (!vtiming) {
-		pr_info("hdmitx: don't find Paras for VESA %d\n", param->vic);
+		HDMITX_INFO("don't find Paras for VESA %d\n", param->vic);
 		return;
 	}
 
@@ -1560,7 +1559,7 @@ static void hdmi_tvenc_set(struct hdmi_format_para *param)
 
 	hdmi_encp_timing = hdmitx_mode_vic_to_hdmi_timing(param->vic);
 	if (!hdmi_encp_timing) {
-		pr_info("hdmitx: don't find Paras for VIC : %d\n", param->vic);
+		HDMITX_INFO("don't find Paras for VIC : %d\n", param->vic);
 		return;
 	} // TODO
 
@@ -2076,7 +2075,7 @@ do { \
 
 static void set_tmds_clk_div40(unsigned int div40)
 {
-	pr_info(HW "div40: %d\n", div40);
+	HDMITX_INFO("div40: %d\n", div40);
 	if (div40) {
 		hdmitx_wr_reg(HDMITX_TOP_TMDS_CLK_PTTN_01, 0);
 		hdmitx_wr_reg(HDMITX_TOP_TMDS_CLK_PTTN_23, 0x03ff03ff);
@@ -2130,7 +2129,7 @@ static void hdmitx_set_scdc(struct hdmitx_dev *hdev)
 	}
 
 	if (pref_clk_div40 != para->tmds_clk_div40) {
-		pr_err("clk div40 failed!!\n");
+		HDMITX_ERROR("clk div40 failed!!\n");
 		hdmitx_format_para_print(para, NULL);
 	}
 
@@ -2302,7 +2301,7 @@ static int hdmitx_set_dispmode(struct hdmitx_hw_common *tx_hw)
 		enc_vpu_bridge_reset(1);
 		break;
 	}
-	pr_info("adjust decouple fifo\n");
+	HDMITX_DEBUG("adjust decouple fifo\n");
 	/* For 3D, enable phy by SystemControl at last step */
 	if (!hdev->flag_3dfp && !hdev->flag_3dtb && !hdev->flag_3dss)
 		hdmitx_set_phy(hdev);
@@ -2705,7 +2704,7 @@ static bool set_aud_acr_pkt(struct hdmitx_dev *hdev,
 	hdmitx_wr_reg(HDMITX_DWC_AUD_N2,
 		      (aud_n_para >> 8) & 0xff); /* AudN[15:8] */
 	hdmitx_wr_reg(HDMITX_DWC_AUD_N1, aud_n_para & 0xff); /* AudN[7:0] */
-	pr_info("update audio N %d", aud_n_para);
+	HDMITX_INFO("update audio N %d", aud_n_para);
 	return true;
 }
 
@@ -2912,12 +2911,12 @@ static int hdmitx_setupirq(struct hdmitx_hw_common *tx_hw)
 			IRQF_SHARED, "hdmitx",
 			(void *)hdev);
 	if (r != 0)
-		pr_info(SYS "can't request hdmitx irq\n");
+		HDMITX_INFO(SYS "can't request hdmitx irq\n");
 	r = request_irq(hdev->irq_viu1_vsync, &vsync_intr_handler,
 			IRQF_SHARED, "hdmi_vsync",
 			(void *)hdev);
 	if (r != 0)
-		pr_info(SYS "can't request viu1_vsync irq\n");
+		HDMITX_INFO(SYS "can't request viu1_vsync irq\n");
 
 	return r;
 }
@@ -2927,7 +2926,7 @@ static void hdmitx_uninit(struct hdmitx_hw_common *tx_hw)
 	struct hdmitx_dev *hdev = get_hdmitx_device();
 
 	free_irq(hdev->irq_hpd, (void *)hdev);
-	pr_info(HW "power off hdmi, unmux hpd\n");
+	HDMITX_DEBUG("power off hdmi, unmux hpd\n");
 
 	phy_pll_off();
 	hdmitx_hpd_hw_op(HPD_UNMUX_HPD);
@@ -2967,7 +2966,7 @@ static int hdmitx_cntl(struct hdmitx_hw_common *tx_hw,
 			/* No need below, will be set at set_disp_mode_auto() */
 			/* hd_set_reg_bits(P_HHI_HDMI_PLL_CNTL, 1, 30, 1); */
 			hw_reset_dbg();
-			pr_info(HW "swrstzreq\n");
+			HDMITX_DEBUG("swrstzreq\n");
 		}
 		return 0;
 	} else if (cmd == HDMITX_HWCMD_MUX_HPD_IF_PIN_HIGH) {
@@ -2976,7 +2975,7 @@ static int hdmitx_cntl(struct hdmitx_hw_common *tx_hw,
 			if (hdmitx_hpd_hw_op(HPD_READ_HPD_GPIO)) {
 				msleep(500);
 				if (hdmitx_hpd_hw_op(HPD_READ_HPD_GPIO)) {
-					pr_info(HPD "mux hpd\n");
+					HDMITX_DEBUG_HPD("mux hpd\n");
 					hdmitx_set_sys_clk(tx20_hw, 4);
 					msleep(100);
 					hdmitx_hpd_hw_op(HPD_MUX_HPD);
@@ -2990,11 +2989,11 @@ static int hdmitx_cntl(struct hdmitx_hw_common *tx_hw,
 		int unmux_hpd_flag = argv;
 
 		if (unmux_hpd_flag) {
-			pr_info(HW "power off hdmi, unmux hpd\n");
+			HDMITX_DEBUG("power off hdmi, unmux hpd\n");
 			phy_pll_off();
 			hdmitx_hpd_hw_op(HPD_UNMUX_HPD);
 		} else {
-			pr_info(HW "power off hdmi\n");
+			HDMITX_DEBUG("power off hdmi\n");
 			hdmitx_set_sys_clk(tx20_hw, 6);
 			phy_pll_off();
 		}
@@ -3002,11 +3001,11 @@ static int hdmitx_cntl(struct hdmitx_hw_common *tx_hw,
 	return 0;
 }
 
-static void hdmitx_print_info(struct hdmitx_dev *hdev, int pr_info_flag)
+static void hdmitx_print_info(struct hdmitx_dev *hdev, int HDMITX_INFO_flag)
 {
-	pr_info(HW "------------------\nHdmitx driver version: ");
-	pr_info(HW "%s\n", HDMITX_VER);
-	pr_info("------------------\n");
+	HDMITX_DEBUG("------------------\nHdmitx driver version: ");
+	HDMITX_DEBUG("%s\n", HDMITX_VER);
+	HDMITX_DEBUG("------------------\n");
 }
 
 #define DUMP_CVREG_SECTION(_start, _end) \
@@ -3014,16 +3013,16 @@ do { \
 	typeof(_start) start = (_start); \
 	typeof(_end) end = (_end); \
 	if (start > end) { \
-		pr_info("Error start = 0x%x > end = 0x%x\n", \
+		HDMITX_INFO("Error start = 0x%x > end = 0x%x\n", \
 			((start & 0xffff) >> 2), ((end & 0xffff) >> 2)); \
 		break; \
 	} \
-	pr_info("Start = 0x%x[0x%x]   End = 0x%x[0x%x]\n", \
+	HDMITX_INFO("Start = 0x%x[0x%x]   End = 0x%x[0x%x]\n", \
 		start, ((start & 0xffff) >> 2), end, ((end & 0xffff) >> 2)); \
 	for (addr = start; addr < end + 1; addr += 4) {	\
 		val = hd_read_reg(addr); \
 		if (val) \
-			pr_info("0x%08x[0x%04x]: 0x%08x\n", addr, \
+			HDMITX_INFO("0x%08x[0x%04x]: 0x%08x\n", addr, \
 				((addr & 0xffff) >> 2), val); \
 		} \
 } while (0)
@@ -3038,7 +3037,7 @@ do { \
 	for (addr = start; addr < end + 1; addr++) { \
 		val = hdmitx_rd_reg(addr); \
 		if (val) \
-			pr_info("[0x%08x]: 0x%08x\n", addr, val); \
+			HDMITX_INFO("[0x%08x]: 0x%08x\n", addr, val); \
 	} \
 } while (0)
 
@@ -3109,7 +3108,7 @@ int hdmitx_debug_reg_dump(struct hdmitx_dev *hdev, char *buf, int len)
 	for (; *reg; reg++) {
 		if (!(*reg)->rd_reg_func || !(*reg)->get_reg_paddr ||
 			!(*reg)->name || !(*reg)->reg) {
-			pr_err("hdmitx: lack dump reg member\n");
+			HDMITX_ERROR("lack dump reg member\n");
 			continue;
 		}
 		cnt = snprintf(buf + pos, len - pos, "%s\n", (*reg)->name);
@@ -3204,7 +3203,7 @@ static void hdmitx_debug(struct hdmitx_hw_common *tx_hw, const char *buf)
 
 		i = tmpbuf[8] - '0';
 		if (i == 2)
-			pr_info("hdcp rslt = %d", hdmitx_hdcp_opr(2));
+			HDMITX_INFO("hdcp rslt = %d", hdmitx_hdcp_opr(2));
 		if (i == 1)
 			hdmitx_hw_cntl_ddc(&hdev->tx_hw.base, DDC_HDCP_OP, HDCP14_ON);
 		return;
@@ -3212,15 +3211,15 @@ static void hdmitx_debug(struct hdmitx_hw_common *tx_hw, const char *buf)
 		hdmitx_mode_print_all_mode_table();
 		return;
 	} else if (strncmp(tmpbuf, "ss", 2) == 0) {
-		pr_info("hdev->hpd_state: 0x%x\n", hdev->tx_comm.hpd_state);
-		pr_info("hdev->tx_comm.fmt_para.vic: 0x%x\n", hdev->tx_comm.fmt_para.vic);
+		HDMITX_INFO("hdev->hpd_state: 0x%x\n", hdev->tx_comm.hpd_state);
+		HDMITX_INFO("hdev->tx_comm.fmt_para.vic: 0x%x\n", hdev->tx_comm.fmt_para.vic);
 	} else if (strncmp(tmpbuf, "hpd_lock", 8) == 0) {
 		if (tmpbuf[8] == '1') {
 			hdev->tx_hw.base.debug_hpd_lock = 1;
-			pr_info(HPD "hdmitx: lock hpd\n");
+			HDMITX_INFO("lock hpd\n");
 		} else {
 			hdev->tx_hw.base.debug_hpd_lock = 0;
-			pr_info(HPD "hdmitx: unlock hpd\n");
+			HDMITX_INFO("unlock hpd\n");
 		}
 		return;
 	} else if (strncmp(tmpbuf, "hpd_stick", 9) == 0) {
@@ -3228,10 +3227,10 @@ static void hdmitx_debug(struct hdmitx_hw_common *tx_hw, const char *buf)
 			hdev->hdcp_hpd_stick = 1;
 		else
 			hdev->hdcp_hpd_stick = 0;
-		pr_info(HPD "hdmitx: %sstick hpd\n",
+		HDMITX_DEBUG_HPD("%sstick hpd\n",
 			(hdev->hdcp_hpd_stick) ? "" : "un");
 	} else if (strncmp(tmpbuf, "topo", 4) == 0) {
-		pr_info("topo: %d\n", hdmitx_hdcp_opr(0xe));
+		HDMITX_INFO("topo: %d\n", hdmitx_hdcp_opr(0xe));
 		return;
 	} else if (strncmp(tmpbuf, "dumpcecreg", 10) == 0) {
 		unsigned char cec_val = 0;
@@ -3239,12 +3238,12 @@ static void hdmitx_debug(struct hdmitx_hw_common *tx_hw, const char *buf)
 		/* HDMI CEC Regs address range:0xc000~0xc01c;0xc080~0xc094 */
 		for (cec_adr = 0xc000; cec_adr < 0xc01d; cec_adr++) {
 			cec_val = hdmitx_rd_reg(cec_adr);
-			pr_info(CEC "HDMI CEC Regs[0x%x]: 0x%x\n",
+			HDMITX_INFO(CEC "HDMI CEC Regs[0x%x]: 0x%x\n",
 				cec_adr, cec_val);
 		}
 		for (cec_adr = 0xc080; cec_adr < 0xc095; cec_adr++) {
 			cec_val = hdmitx_rd_reg(cec_adr);
-			pr_info(CEC "HDMI CEC Regs[0x%x]: 0x%x\n",
+			HDMITX_INFO(CEC "HDMI CEC Regs[0x%x]: 0x%x\n",
 				cec_adr, cec_val);
 		}
 		return;
@@ -3254,7 +3253,7 @@ static void hdmitx_debug(struct hdmitx_hw_common *tx_hw, const char *buf)
 		for (i = 0; i < 0x3000; i++) {
 			val = hd_read_reg(CBUS_REG_ADDR(i));
 			if (val)
-				pr_info("CBUS[0x%x]: 0x%x\n", i, val);
+				HDMITX_INFO("CBUS[0x%x]: 0x%x\n", i, val);
 		}
 		return;
 	} else if (strncmp(tmpbuf, "dumpvcbusreg", 12) == 0) {
@@ -3263,7 +3262,7 @@ static void hdmitx_debug(struct hdmitx_hw_common *tx_hw, const char *buf)
 		for (i = 0; i < 0x3000; i++) {
 			val = hd_read_reg(VCBUS_REG_ADDR(i));
 			if (val)
-				pr_info("VCBUS[0x%x]: 0x%x\n", i, val);
+				HDMITX_INFO("VCBUS[0x%x]: 0x%x\n", i, val);
 		}
 		return;
 	} else if (strncmp(tmpbuf, "cfgreg", 6) == 0) {
@@ -3283,15 +3282,15 @@ static void hdmitx_debug(struct hdmitx_hw_common *tx_hw, const char *buf)
 			hdmitx_wr_reg((unsigned int)adr, (unsigned int)value);
 			read_back = hdmitx_rd_reg(adr);
 		}
-		pr_info(HW "write %lx to %s reg[%lx]\n", value, "HDMI", adr);
+		HDMITX_INFO("write %lx to %s reg[%lx]\n", value, "HDMI", adr);
 		/* read back in order to check writing is OK or NG. */
-		pr_info(HW "Read Back %s reg[%lx]=%lx\n", "HDMI",
+		HDMITX_INFO("Read Back %s reg[%lx]=%lx\n", "HDMI",
 			adr, read_back);
 	} else if (tmpbuf[0] == 'r') {
 		ret = kstrtoul(tmpbuf + 2, 16, &adr);
 		if (buf[1] == 'h')
 			value = hdmitx_rd_reg(adr);
-		pr_info(HW "%s reg[%lx]=%lx\n", "HDMI", adr, value);
+		HDMITX_INFO("%s reg[%lx]=%lx\n", "HDMI", adr, value);
 	} else if (strncmp(tmpbuf, "prbs", 4) == 0) {
 		unsigned int phy_cntl1;
 		unsigned int phy_cntl4;
@@ -3328,10 +3327,10 @@ static void hdmitx_debug(struct hdmitx_hw_common *tx_hw, const char *buf)
 			hd_write_reg(phy_cntl1, 0xef904002);
 			mdelay(10);
 			if (i > 0)
-				pr_info("prbs D[%d]:%x\n", i - 1,
+				HDMITX_INFO("prbs D[%d]:%x\n", i - 1,
 					hd_read_reg(phy_status));
 			else
-				pr_info("prbs clk :%x\n",
+				HDMITX_INFO("prbs clk :%x\n",
 					hd_read_reg(phy_status));
 		}
 	} else if (strncmp(tmpbuf, "stop_vsif", 9) == 0) {
@@ -3358,7 +3357,7 @@ static void hdmitx_debug(struct hdmitx_hw_common *tx_hw, const char *buf)
 	} else if (strncmp(tmpbuf, "avmute_frame", 12) == 0) {
 		ret = kstrtoul(tmpbuf + 12, 10, &value);
 		hdev->tx_comm.debug_param.avmute_frame = value;
-		pr_info(HW "avmute_frame = %lu\n", value);
+		HDMITX_INFO("avmute_frame = %lu\n", value);
 	} else if (strncmp(tmpbuf, "csc_en", 6) == 0) {
 		ret = kstrtoul(tmpbuf + 6, 0, &value);
 		/* 0: no change
@@ -3367,16 +3366,16 @@ static void hdmitx_debug(struct hdmitx_hw_common *tx_hw, const char *buf)
 		 * 3: force switch color space converter to rgb,8bit
 		 */
 		if (value != 0 && value != 1 && value != 2 && value != 3) {
-			pr_err("set csc in 0 ~ 3\n");
+			HDMITX_ERROR("set csc in 0 ~ 3\n");
 		} else {
-			pr_info("set csc_en as %lu\n", value);
+			HDMITX_INFO("set csc_en as %lu\n", value);
 
 			hdmitx_hw_cntl_config(&hdev->tx_hw.base, CONFIG_CSC,
 				value | CSC_UPDATE_AVI_CS);
 		}
 	} else if (strncmp(tmpbuf, "config_csc_en", 13) == 0) {
 		ret = kstrtoul(tmpbuf + 13, 0, &value);
-		pr_info("config_csc_en to %lu\n", value);
+		HDMITX_INFO("config_csc_en to %lu\n", value);
 
 		if (value == 0)
 			hdev->tx_comm.config_csc_en = false;
@@ -3389,9 +3388,9 @@ static void hdmitx_debug(struct hdmitx_hw_common *tx_hw, const char *buf)
 		 */
 		ret = kstrtoul(tmpbuf + 9, 0, &value);
 		if (value != 0 && value != 1 && value != 2) {
-			pr_err("set div40 value in 0 ~ 2\n");
+			HDMITX_ERROR("set div40 value in 0 ~ 2\n");
 		} else {
-			pr_info("set div40 to %lu\n", value);
+			HDMITX_INFO("set div40 to %lu\n", value);
 			hdmitx_hw_cntl_ddc(&hdev->tx_hw.base,
 				DDC_SCDC_DIV40_SCRAMB, value);
 		}
@@ -4519,7 +4518,7 @@ static void hdcp_ksv_sha1_calc(struct hdmitx_dev *hdev)
 		hdmitx_set_reg_bits(HDMITX_DWC_A_KSVMEMCTRL, 0, 2, 1);
 		kfree(hdcp_mksvlistbuf);
 	} else {
-		pr_info("hdcptx14: KSV List memory not valid\n");
+		HDMITX_INFO("hdcptx14: KSV List memory not valid\n");
 	}
 }
 
@@ -4572,7 +4571,7 @@ static void hdcptx_events_handle(struct timer_list *t)
 
 	if (st_flag != hdmitx_rd_reg(HDMITX_DWC_A_APIINTSTAT)) {
 		st_flag = hdmitx_rd_reg(HDMITX_DWC_A_APIINTSTAT);
-		pr_info("hdcp14: instat: 0x%x\n", st_flag);
+		HDMITX_INFO("hdcp14: instat: 0x%x\n", st_flag);
 	}
 
 	if (st_flag & (1 << 7)) {
@@ -4642,7 +4641,7 @@ static void hdcptx_events_handle(struct timer_list *t)
 		if (hdmitx_rd_reg(HDMITX_DWC_A_KSVMEMCTRL) & (1 << 1)) {
 			hdcp_ksv_sha1_calc(hdev);
 		} else {
-			pr_info("hdcptx14: KSV List memory access denied\n");
+			HDMITX_INFO("hdcptx14: KSV List memory access denied\n");
 			return;
 		}
 		hdmitx_wr_reg(HDMITX_DWC_A_KSVMEMCTRL, 0x4);
@@ -4701,7 +4700,7 @@ static void check_read_ksv_list_st(void)
 		else
 			return;
 	}
-	pr_info("hdcp14: FSM: A9 read ksv list\n");
+	HDMITX_INFO("hdcp14: FSM: A9 read ksv list\n");
 }
 
 static int hdmitx_cntl_ddc(struct hdmitx_hw_common *tx_hw,
@@ -4717,7 +4716,7 @@ static int hdmitx_cntl_ddc(struct hdmitx_hw_common *tx_hw,
 	unsigned char tmp[5];
 
 	if ((cmd & CMD_DDC_OFFSET) != CMD_DDC_OFFSET) {
-		pr_err(HW "ddc: invalid cmd 0x%x\n", cmd);
+		HDMITX_ERROR(HW "ddc: invalid cmd 0x%x\n", cmd);
 		return -1;
 	}
 
@@ -4918,7 +4917,7 @@ static int hdmitx_cntl_ddc(struct hdmitx_hw_common *tx_hw,
 				scdc_wr_sink(TMDS_CFG, 0x0); /* TMDS 1/10 & Scramble */
 				hdmitx_wr_reg(HDMITX_DWC_FC_SCRAMBLER_CTRL, 0);
 			} else {
-				pr_info(HW "ERR: SCDC not present, should not send 1:10\n");
+				HDMITX_INFO("ERR: SCDC not present, should not send 1:10\n");
 			}
 		} else {
 			/* force send 1:10 tmds bit clk ratio, for echo 2 > div40 */
@@ -5294,7 +5293,7 @@ static int hdmitx_cntl_config(struct hdmitx_hw_common *tx_hw, unsigned int cmd,
 	struct hdmitx20_hw *tx20_hw = to_hdmitx20_hw(tx_hw);
 
 	if ((cmd & CMD_CONF_OFFSET) != CMD_CONF_OFFSET) {
-		pr_err(HW "config: invalid cmd 0x%x\n", cmd);
+		HDMITX_ERROR(HW "config: invalid cmd 0x%x\n", cmd);
 		return -1;
 	}
 
@@ -5336,7 +5335,7 @@ static int hdmitx_cntl_config(struct hdmitx_hw_common *tx_hw, unsigned int cmd,
 	case CONF_CLR_AUDINFO_PACKET:
 		break;
 	case CONF_ASPECT_RATIO:
-		pr_info("%s argv = %d\n", __func__, argv);
+		HDMITX_INFO("%s argv = %d\n", __func__, argv);
 		hdmitx_set_reg_bits(HDMITX_DWC_FC_AVICONF1, argv & 0x3, 4, 2);	//aspect_ratio
 		hdmitx_set_reg_bits(HDMITX_DWC_FC_AVIVID, argv >> 2, 0, 7);	//vic
 		break;
@@ -5501,7 +5500,7 @@ static int hdmitx_cntl_config(struct hdmitx_hw_common *tx_hw, unsigned int cmd,
 			hdmitx_pure_csc_config(HDMI_COLORSPACE_YUV444, HDMI_COLORSPACE_RGB,
 				COLORDEPTH_24B);
 		} else {
-			pr_info("csc not support/implemented yet\n");
+			HDMITX_INFO("csc not support/implemented yet\n");
 		}
 		break;
 	default:
@@ -5592,7 +5591,7 @@ static int hdmitx_cntl_misc(struct hdmitx_hw_common *tx_hw, unsigned int cmd,
 	int chip_id = hdev->tx_hw.chip_data->chip_type;
 
 	if ((cmd & CMD_MISC_OFFSET) != CMD_MISC_OFFSET) {
-		pr_err(HW "misc: w: invalid cmd 0x%x\n", cmd);
+		HDMITX_ERROR(HW "misc: w: invalid cmd 0x%x\n", cmd);
 		return -1;
 	}
 
@@ -5626,7 +5625,7 @@ static int hdmitx_cntl_misc(struct hdmitx_hw_common *tx_hw, unsigned int cmd,
 		return hdmitx_tmds_cedst(hdev);
 	case MISC_ESM_RESET:
 		if (hdev->hdcp_hpd_stick == 1) {
-			pr_info(HW "hdcp: stick mode\n");
+			HDMITX_INFO("hdcp: stick mode\n");
 			break;
 		}
 		hdmitx_hdcp_opr(6);
@@ -5644,7 +5643,7 @@ static int hdmitx_cntl_misc(struct hdmitx_hw_common *tx_hw, unsigned int cmd,
 	case MISC_HDCP_CLKDIS:
 		if (st != !!argv) {
 			st = !!argv;
-			pr_info("set hdcp clkdis: %d\n", !!argv);
+			HDMITX_INFO("set hdcp clkdis: %d\n", !!argv);
 		}
 		if (chip_id >= MESON_CPU_ID_SC2)
 			hdmitx_set_reg_bits(HDMITX_DWC_MC_CLKDIS_SC2,
@@ -5838,7 +5837,7 @@ static int hdmitx_get_state(struct hdmitx_hw_common *tx_hw, unsigned int cmd,
 			    unsigned int argv)
 {
 	if ((cmd & CMD_STAT_OFFSET) != CMD_STAT_OFFSET) {
-		pr_err(HW "state: invalid cmd 0x%x\n", cmd);
+		HDMITX_ERROR(HW "state: invalid cmd 0x%x\n", cmd);
 		return -1;
 	}
 
@@ -6812,7 +6811,7 @@ static void hdmitx_set_hw(struct hdmitx_dev *hdev)
 {
 	const struct hdmi_format_para *para = &hdev->tx_comm.fmt_para;
 
-	pr_info(HW " config hdmitx IP vic = %d cd:%d cs: %d\n",
+	HDMITX_INFO(" config hdmitx IP vic = %d cd:%d cs: %d\n",
 		para->vic, para->cd, para->cs);
 
 	config_hdmi20_tx(para->vic, hdev,

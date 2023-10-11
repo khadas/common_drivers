@@ -93,7 +93,7 @@ void set_hdcp2_topo(u32 topo_type)
 	struct arm_smccc_res res;
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
 
-	pr_info("%s: %d", __func__, topo_type);
+	HDMITX_INFO("%s: %d", __func__, topo_type);
 	if (hdev->tx_hw.chip_data->chip_type != MESON_CPU_ID_S1A)
 		arm_smccc_smc(HDCPTX_IOOPR, HDCP22_SET_TOPO, topo_type, 0, 0, 0, 0, 0, &res);
 }

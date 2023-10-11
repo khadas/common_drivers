@@ -4,6 +4,7 @@
  */
 
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_common.h>
+#include "hdmitx_log.h"
 
 int hdmitx_common_setup_vsif_packet(struct hdmitx_common *tx_comm,
 	enum vsif_type type, int on, void *param)
@@ -36,7 +37,7 @@ int hdmitx_common_setup_vsif_packet(struct hdmitx_common *tx_comm,
 			hdmitx_hw_cntl_config(tx_hw, CONF_AVI_VIC, 0);
 			hdmitx_hw_set_packet(tx_hw, HDMI_PACKET_VEND, db, hb);
 		} else {
-			pr_info("skip vsif for non-4k mode.\n");
+			HDMITX_INFO("skip vsif for non-4k mode.\n");
 			return -EINVAL;
 		}
 		break;

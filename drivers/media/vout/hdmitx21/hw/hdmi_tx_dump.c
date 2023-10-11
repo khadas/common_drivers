@@ -832,7 +832,7 @@ void hdmitx21_debugfs_init(void)
 
 	hdmitx_dbgfs = debugfs_create_dir(DEVICE_NAME, NULL);
 	if (!hdmitx_dbgfs) {
-		pr_err("can't create %s debugfs dir\n", DEVICE_NAME);
+		HDMITX_ERROR("can't create %s debugfs dir\n", DEVICE_NAME);
 		return;
 	}
 
@@ -842,7 +842,7 @@ void hdmitx21_debugfs_init(void)
 			hdmitx_dbgfs, NULL,
 			hdmitx_dbg_files[i].fops);
 		if (!entry)
-			pr_err("debugfs create file %s failed\n",
+			HDMITX_ERROR("debugfs create file %s failed\n",
 				hdmitx_dbg_files[i].name);
 	}
 }

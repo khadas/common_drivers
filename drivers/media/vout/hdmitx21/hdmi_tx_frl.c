@@ -33,7 +33,7 @@ static bool check_ffe_change_request(struct frl_train_t *p, u8 lane)
 
 	p->ffe_level[lane]++;
 
-	/* pr_info("FFE level(%d): %d\n", */
+	/* HDMITX_INFO("FFE level(%d): %d\n", */
 	/*    (uint16_t)lane, (uint16_t)p->ffe_level[lane]); */
 	if (p->auto_ffe_update)
 		ret = flt_tx_cmd_execute(LT_TX_CMD_TXFFE_UPDATE);
@@ -77,10 +77,10 @@ static bool update_frl_rate(struct frl_train_t *p)
 	/* TODO min_frl_rate */
 	if (p->frl_rate > FRL_3G3L && p->frl_rate > p->min_frl_rate) {
 		p->frl_rate--;
-		pr_info("Reduce rate to %d\n", p->frl_rate);
+		HDMITX_INFO("Reduce rate to %d\n", p->frl_rate);
 		p->frl_rate_no_change = false;
 	} else {
-		pr_info("Limit to: %d\n", p->frl_rate);
+		HDMITX_INFO("Limit to: %d\n", p->frl_rate);
 		ret = false;
 		p->frl_rate_no_change = true;
 	}
@@ -99,7 +99,7 @@ static void start_frl_transmission(struct frl_train_t *p, bool gap_only)
 		frl_tx_av_enable(false); /* Disable the video */
 	else
 		frl_tx_av_enable(true); /* Enable the video */
-	pr_info("FRL with %s\n", gap_only ? "Gap" : "Video");
+	HDMITX_INFO("FRL with %s\n", gap_only ? "Gap" : "Video");
 	/* enable the super block */
 	frl_tx_sb_enable(true, p->frl_rate);
 }
@@ -134,7 +134,7 @@ static void clrear_flt_update(struct frl_train_t *p)
 	p->update_flags |= FLT_UPDATE;
 	scdc_tx_update_flags_set(p->update_flags);
 	g_flt_1_e = jiffies;
-	/* pr_info("Clr FLT_update\n"); */
+	/* HDMITX_INFO("Clr FLT_update\n"); */
 }
 
 /* checks if Sink has set the FLT_update bit */
@@ -144,7 +144,7 @@ static bool query_flt_update(struct frl_train_t *p)
 
 	if ((p->update_flags & FLT_UPDATE) != 0)
 		g_flt_1 = jiffies;
-/*	pr_info("FLT_update: 1\n"); */
+/*	HDMITX_INFO("FLT_update: 1\n"); */
 	return (p->update_flags & FLT_UPDATE) != 0;
 }
 
@@ -153,7 +153,7 @@ static void clear_frl_start(struct frl_train_t *p)
 {
 	p->update_flags |= FRL_START;
 	scdc_tx_update_flags_set(p->update_flags);
-/*	pr_info("Clr FRL_start\n"); */
+/*	HDMITX_INFO("Clr FRL_start\n"); */
 }
 
 static void poll_update_flags(struct frl_train_t *p)
@@ -201,16 +201,16 @@ bool frl_tx_frl_mode_init(struct frl_train_t *p,
 
 	if (force_legacy) {
 		p->req_legacy_mode = true;
-		pr_info("set legacy TMDS mode\n");
+		HDMITX_INFO("set legacy TMDS mode\n");
 	} else {
 		p->req_legacy_mode = false;
-		pr_info("set FRL mode\n");
+		HDMITX_INFO("set FRL mode\n");
 	}
 
 	p->max_edid_frl_rate = edid_max_frl;
 	sink_ver = scdc_tx_sink_version_get();
 	if (sink_ver != 1)
-		pr_err("sink version %d\n", sink_ver);
+		HDMITX_ERROR("sink version %d\n", sink_ver);
 	scdc_tx_source_version_set(1);
 
 	/* check DS FRL capability */
@@ -239,7 +239,7 @@ bool frl_tx_frl_mode_init(struct frl_train_t *p,
 		p->max_frl_rate = 0;
 	}
 	if (p->flt_tx_state == FLT_TX_LTS_P3 && p->max_frl_rate == p->frl_rate) {
-		pr_info("Link already setup as %d. No change\n", p->frl_rate);
+		HDMITX_INFO("Link already setup as %d. No change\n", p->frl_rate);
 		return false;
 	}
 	/* TODO */
@@ -277,7 +277,7 @@ static void tx_train_fsm(struct work_struct *work)
 		struct frl_train_t, timer_frl_flt);
 
 	if (p->last_state != p->flt_tx_state) {
-		pr_info("FRL: %s to %s\n", flt_tx_string[p->last_state],
+		HDMITX_INFO("FRL: %s to %s\n", flt_tx_string[p->last_state],
 			flt_tx_string[p->flt_tx_state]);
 		p->last_state = p->flt_tx_state;
 	}
@@ -290,7 +290,7 @@ static void tx_train_fsm(struct work_struct *work)
 	case FLT_TX_LTS_1:
 		if (!p->flt_running)
 			return;
-		pr_info("FRL: %s\n", flt_tx_string[FLT_TX_LTS_1]);
+		HDMITX_INFO("FRL: %s\n", flt_tx_string[FLT_TX_LTS_1]);
 		if (p->frl_rate)
 			frl_tx_tx_phy_set();
 		else
@@ -306,7 +306,7 @@ static void tx_train_fsm(struct work_struct *work)
 		p->req_frl_mode = false;
 
 		if (!p->ds_frl_support) {
-			pr_info("Sink not support FRL\n");
+			HDMITX_INFO("Sink not support FRL\n");
 			p->flt_tx_state = FLT_TX_LTS_L;
 			break;
 		}
@@ -319,7 +319,7 @@ static void tx_train_fsm(struct work_struct *work)
 tx_lts_2:
 		if (!p->flt_running)
 			return;
-		pr_info("FRL: %s\n", flt_tx_string[FLT_TX_LTS_2]);
+		HDMITX_INFO("FRL: %s\n", flt_tx_string[FLT_TX_LTS_2]);
 		/*
 		 * LTS:2 Source Prepares for FRL Link Training
 		 * Source polls FLT_READY
@@ -330,7 +330,7 @@ tx_lts_2:
 		/* Now FLT_READY = 1 and Source sets FRL_Rate and FFE */
 		/* Source sets TxFFE= TxFFE0 for all active lanes */
 		init_ffe_level(p);
-		pr_info("Set FRL Rate: %d\n", p->frl_rate);
+		HDMITX_INFO("Set FRL Rate: %d\n", p->frl_rate);
 
 		scdc_tx_frl_cfg1_set((p->max_ffe_level << 4) | p->frl_rate);
 		if (p->frl_rate == FRL_NONE) {
@@ -348,7 +348,7 @@ tx_lts_2:
 tx_lts_3:
 		if (!p->flt_running)
 			return;
-		pr_info("FRL: %s\n", flt_tx_string[FLT_TX_LTS_3]);
+		HDMITX_INFO("FRL: %s\n", flt_tx_string[FLT_TX_LTS_3]);
 		/* LTS:3 Source conducts Link Training for the specified FRL_Rate */
 		frl_tx_pattern_init(0x8765);
 
@@ -395,12 +395,12 @@ tx_lts_3:
 
 			/* clear the FLT_update within 10 ms */
 			clrear_flt_update(p);
-			pr_info("LTS:3 LTP=0x%04x  cost %ld ms\n", ltp0123,
+			HDMITX_INFO("LTS:3 LTP=0x%04x  cost %ld ms\n", ltp0123,
 				(g_flt_1_e - g_flt_1 + 3) / 4);
 		}
 		/* time out */
 		if (b_time_out && !p->flt_no_timeout) {
-			pr_info("Timeout in LTS:3, --> LTS:L\n");
+			HDMITX_INFO("Timeout in LTS:3, --> LTS:L\n");
 			frl_tx_callback(FRL_EVENT_TIMEOUT);
 			p->flt_timeout = true;
 			p->flt_tx_state = FLT_TX_LTS_L;
@@ -412,7 +412,7 @@ tx_lts_3:
 tx_lts_4:
 		if (!p->flt_running)
 			return;
-		pr_info("FRL: %s\n", flt_tx_string[FLT_TX_LTS_4]);
+		HDMITX_INFO("FRL: %s\n", flt_tx_string[FLT_TX_LTS_4]);
 		/* LTS:4 start Link Training for a new rate */
 		stop_frl_transmission(p);
 
@@ -427,7 +427,7 @@ tx_lts_4:
 			scdc_tx_frl_cfg1_set((p->max_ffe_level << 4) | p->frl_rate);
 
 			clrear_flt_update(p);
-			pr_info("LTS:4 cost %ld ms\n", (g_flt_1_e - g_flt_1 + 3) / 4);
+			HDMITX_INFO("LTS:4 cost %ld ms\n", (g_flt_1_e - g_flt_1 + 3) / 4);
 			p->flt_tx_state = FLT_TX_LTS_3;
 		}
 		break;
@@ -435,7 +435,7 @@ tx_lts_4:
 	case FLT_TX_LTS_L:
 		if (!p->flt_running)
 			return;
-		pr_info("FRL: %s\n", flt_tx_string[FLT_TX_LTS_L]);
+		HDMITX_INFO("FRL: %s\n", flt_tx_string[FLT_TX_LTS_L]);
 		/* LTS:L training failed or FRL not selected, goto legacy TMDS */
 		if (p->flt_timeout || p->frl_rate_no_change || p->req_legacy_mode ||
 			 (!p->ds_frl_support && p->frl_rate != FRL_NONE)) {
@@ -445,7 +445,7 @@ tx_lts_4:
 			p->frl_rate = FRL_NONE;
 			scdc_tx_frl_cfg1_set(FRL_NONE);
 			clrear_flt_update(p);
-			pr_info("LTS:L cost %ld ms\n", (g_flt_1_e - g_flt_1 + 3) / 4);
+			HDMITX_INFO("LTS:L cost %ld ms\n", (g_flt_1_e - g_flt_1 + 3) / 4);
 			frl_tx_callback(FRL_EVENT_LEGACY);
 		}
 
@@ -462,7 +462,7 @@ tx_lts_4:
 tx_lts_p1:
 		if (!p->flt_running)
 			return;
-		pr_info("FRL: %s\n", flt_tx_string[FLT_TX_LTS_P1]);
+		HDMITX_INFO("FRL: %s\n", flt_tx_string[FLT_TX_LTS_P1]);
 		/* LTS:P Training has passed, FRL transmission initiated
 		 * STEP1 starts FRL transmission with only Gap, scrambling, ReedSolomon FEC
 		 * and Super Block structure
@@ -470,14 +470,14 @@ tx_lts_p1:
 		start_frl_transmission(p, true);
 		frl_tx_pattern_stop();
 		clrear_flt_update(p);
-		pr_info("LTS:P cost %ld ms\n", (g_flt_1_e - g_flt_1 + 3) / 4);
+		HDMITX_INFO("LTS:P cost %ld ms\n", (g_flt_1_e - g_flt_1 + 3) / 4);
 		p->flt_tx_state = FLT_TX_LTS_P2;
 		goto tx_lts_p2;
 	case FLT_TX_LTS_P2:
 tx_lts_p2:
 		if (!p->flt_running)
 			return;
-		pr_info("FRL: %s\n", flt_tx_string[FLT_TX_LTS_P2]);
+		HDMITX_INFO("FRL: %s\n", flt_tx_string[FLT_TX_LTS_P2]);
 		/* STEP2 poll Update Flags every 2 ms or less */
 		/* wait FRL_start = 1, then transmit active normal A/V, and packets */
 		if (frl_start_query(p)) {
@@ -493,7 +493,7 @@ tx_lts_p2:
 tx_lts_p3:
 		if (!p->flt_running)
 			return;
-		//pr_info("FRL: %s\n", flt_tx_string[FLT_TX_LTS_P3]); // massive print
+		//HDMITX_INFO("FRL: %s\n", flt_tx_string[FLT_TX_LTS_P3]); // massive print
 		/* if FLT_update = 1, stop FRL transmission, goto LTS:3 */
 		if (query_flt_update(p)) {
 			stop_frl_transmission(p);
@@ -512,7 +512,7 @@ static bool frl_schedule_work(struct frl_train_t *p, u32 delay_ms, u32 period_ms
 {
 	struct frl_work *work = &p->timer_frl_flt;
 
-	//pr_info("schedule %s: delay %d ms  period %d ms\n", work->name, delay_ms, period_ms);
+	//HDMITX_INFO("schedule %s: delay %d ms  period %d ms\n", work->name, delay_ms, period_ms);
 
 	delay_ms = (delay_ms + 3) / 4;
 	period_ms = (period_ms + 3) / 4;
@@ -536,7 +536,7 @@ static bool frl_stop_work(struct frl_train_t *p)
 	struct frl_work *work = &p->timer_frl_flt;
 
 	cancel_delayed_work(&work->dwork);
-	pr_info("stop %s\n", work->name);
+	HDMITX_INFO("stop %s\n", work->name);
 	return 0;
 }
 

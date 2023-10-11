@@ -41,7 +41,7 @@ void hdmitx_dfm_cfg(u8 bw_type, u16 val)
 {
 	switch (bw_type) {
 	case 1:
-		pr_info("%s Full BW tribytes %d\n", __func__, val);
+		HDMITX_INFO("%s Full BW tri_bytes %d\n", __func__, val);
 		hdmitx21_wr_reg(H21TXSB_SPARE_0_IVCTX, 0xf3);
 		hdmitx21_wr_reg(H21TXSB_SPARE_1_IVCTX, 0x7d);
 		hdmitx21_wr_reg(H21TXSB_SPARE_3_IVCTX, 0xff);
@@ -51,7 +51,7 @@ void hdmitx_dfm_cfg(u8 bw_type, u16 val)
 		hdmitx21_wr_reg(H21TXSB_SPARE_6_IVCTX, 0xf3);
 		break;
 	case 2:
-		pr_info("%s non Full BW\n", __func__);
+		HDMITX_INFO("%s non Full BW\n", __func__);
 		hdmitx21_wr_reg(H21TXSB_SPARE_0_IVCTX, 0xf0);
 		hdmitx21_wr_reg(H21TXSB_SPARE_1_IVCTX, 0x00);
 		hdmitx21_wr_reg(H21TXSB_SPARE_3_IVCTX, 0xff);
@@ -62,7 +62,7 @@ void hdmitx_dfm_cfg(u8 bw_type, u16 val)
 		break;
 	case 0:
 	default:
-		pr_info("%s default BW\n", __func__);
+		HDMITX_INFO("%s default BW\n", __func__);
 		hdmitx21_wr_reg(H21TXSB_SPARE_0_IVCTX, 0x00);
 		hdmitx21_wr_reg(H21TXSB_SPARE_1_IVCTX, 0x00);
 		hdmitx21_wr_reg(H21TXSB_SPARE_3_IVCTX, 0x00);

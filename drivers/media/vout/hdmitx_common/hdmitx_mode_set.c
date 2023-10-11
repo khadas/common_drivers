@@ -31,7 +31,7 @@ void hdmi_physical_size_to_vinfo(struct hdmitx_common *tx_comm)
 			info->screen_real_width = width;
 			info->screen_real_height = height;
 		}
-		pr_info("update physical size: %d %d\n",
+		HDMITX_INFO("update physical size: %d %d\n",
 			info->screen_real_width, info->screen_real_height);
 	}
 }
@@ -330,7 +330,7 @@ static enum vmode_e hdmitx_validate_vmode(char *mode, unsigned int frac, void *d
 		return VMODE_HDMI;
 	}
 
-	pr_err("%s validate %s fail\n", __func__, mode);
+	HDMITX_ERROR("%s validate %s fail\n", __func__, mode);
 	return VMODE_MAX;
 }
 
@@ -535,7 +535,7 @@ void hdmitx_plugin_common_work(struct hdmitx_common *tx_comm)
 	 * so need to disable hdcp auth before EDID reading
 	 */
 	if (tx_comm->hdcp_mode != 0) {
-		pr_info("hdcp: %d should not be enabled before signal ready\n",
+		HDMITX_INFO("hdcp: %d should not be enabled before signal ready\n",
 			tx_comm->hdcp_mode);
 		tx_comm->ctrl_ops->reset_hdcp(tx_comm);
 	}
@@ -579,7 +579,7 @@ void hdmitx_common_late_resume(struct hdmitx_common *tx_comm)
 	if (tx_comm->hpd_state)
 		tx_comm->already_used = 1;
 
-	pr_info("hdmitx hpd state: %d\n", tx_comm->hpd_state);
+	HDMITX_INFO("hdmitx hpd state: %d\n", tx_comm->hpd_state);
 
 	if (tx_comm->hpd_state) {
 		/* if there's hpd plugin event during early suspend,

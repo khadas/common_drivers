@@ -34,7 +34,7 @@ int hdmitx_hpd_hw_op_gxbb(enum hpd_op cmd)
 	case HPD_READ_HPD_GPIO:
 		break;
 	default:
-		pr_info("error hpd cmd %d\n", cmd);
+		HDMITX_INFO("error hpd cmd %d\n", cmd);
 		break;
 	}
 	return ret;
@@ -57,7 +57,7 @@ int hdmitx_ddc_hw_op_gxbb(enum ddc_op cmd)
 	case DDC_UNMUX_DDC:
 		break;
 	default:
-		pr_info("error ddc cmd %d\n", cmd);
+		HDMITX_INFO("error ddc cmd %d\n", cmd);
 	}
 	return ret;
 }

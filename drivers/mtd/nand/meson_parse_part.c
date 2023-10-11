@@ -24,7 +24,7 @@ static int adjust_part_offset(struct mtd_info *master, u8 nr_parts,
 {
 	u8 i = 0, bl_mode;
 	u8 internal_part_count = 0;
-	u8 reserved_part_blk_num = meson_rsv_get_block_cnt(NAND_RSV_INDEX);
+	loff_t reserved_part_blk_num = meson_rsv_get_block_cnt(NAND_RSV_INDEX);
 	u64 part_size, start_blk = 0, part_blk = 0;
 	loff_t offset;
 	int phys_erase_shift, error = 0;
@@ -55,7 +55,7 @@ static int adjust_part_offset(struct mtd_info *master, u8 nr_parts,
 				if (i == internal_part_count - 1)
 					parts[i].size = fip_part_size;
 				else
-					parts[i].size = g_ssp.boot_entry[i + 1].size *
+					parts[i].size = (uint64_t)g_ssp.boot_entry[i + 1].size *
 					g_ssp.boot_backups;
 				pr_info("%s: off %llx, size %llx\n",
 					parts[i].name, parts[i].offset,
@@ -221,7 +221,7 @@ static int parse_meson_partitions(struct mtd_info *master,
 	if (!strncmp((char *)parts[i].name, NAND_BOOT_NAME,
 		     strlen((const char *)NAND_BOOT_NAME))) {
 		parts[i].offset = 0;
-		parts[i].size = (master->writesize * BOOT_TOTAL_PAGES);
+		parts[i].size = ((uint64_t)master->writesize * BOOT_TOTAL_PAGES);
 	} else {
 		ret = adjust_part_offset(master, nr_parts, parts);
 		if (ret)

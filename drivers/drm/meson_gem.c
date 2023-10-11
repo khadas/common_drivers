@@ -218,7 +218,10 @@ static int am_meson_gem_alloc_ion_buff(struct am_meson_gem_object *
 #endif
 #ifdef CONFIG_AMLOGIC_ION_DEV
 	if (!meson_gem_obj->is_dma) {
-		buffer = (struct ion_buffer *)dmabuf->priv;
+		if (dmabuf)
+			buffer = (struct ion_buffer *)dmabuf->priv;
+		else
+			return -ENOMEM;
 		meson_gem_obj->ionbuffer = buffer;
 		sg_dma_address(buffer->sg_table->sgl) = sg_phys(buffer->sg_table->sgl);
 		dma_sync_sg_for_device(meson_gem_obj->base.dev->dev,

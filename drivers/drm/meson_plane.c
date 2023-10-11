@@ -1676,7 +1676,7 @@ static void meson_plane_add_rotation_reflect_property(struct drm_device *drm_dev
 static void meson_plane_get_primary_plane(struct meson_drm *priv,
 			enum drm_plane_type *type)
 {
-	int i, j, first_plane = -1;
+	int i, j;
 
 	for (j = 0; j < MESON_MAX_OSDS; j++)
 		type[j] = DRM_PLANE_TYPE_OVERLAY;
@@ -1684,17 +1684,13 @@ static void meson_plane_get_primary_plane(struct meson_drm *priv,
 	for (i = 0; i < MESON_MAX_CRTC; i++) {
 		for (j = 0; j < MESON_MAX_OSDS; j++) {
 			if (i == priv->of_conf.crtcmask_osd[j] &&
-				priv->osd_occupied_index != j) {
-				first_plane = (first_plane != -1) ? first_plane : j;
-
-				if (first_plane != -1 && first_plane < MESON_MAX_OSDS) {
-					type[j] = DRM_PLANE_TYPE_PRIMARY;
-					priv->primary_plane_index[i] = j;
-					break;
-				}
+				priv->osd_occupied_index != j &&
+				j < MESON_MAX_OSDS) {
+				type[j] = DRM_PLANE_TYPE_PRIMARY;
+				priv->primary_plane_index[i] = j;
+				break;
 			}
 		}
-		first_plane = -1;
 	}
 }
 
@@ -1768,6 +1764,9 @@ static struct am_osd_plane *am_osd_plane_create(struct meson_drm *priv,
 		} else if (conf->osd_formats_group == 3) {
 			formats_group = supported_drm_formats_v4;
 			num_formats = ARRAY_SIZE(supported_drm_formats_v4);
+		} else {
+			formats_group = supported_drm_formats;
+			num_formats = ARRAY_SIZE(supported_drm_formats);
 		}
 	} else {
 		formats_group = supported_drm_formats;

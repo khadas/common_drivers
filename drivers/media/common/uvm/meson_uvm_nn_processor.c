@@ -442,6 +442,10 @@ int nn_mod_setinfo(void *arg, char *buf)
 	nn_out_fd = nn_sr_src->nn_out_fd;
 	if (nn_out_fd != -1) {
 		nn_sr_dst->nn_out_file = fget(nn_out_fd);
+		if (!nn_sr_dst->nn_out_file) {
+			pr_err("%s: get fd fail!\n", __func__);
+			return -EBADF;
+		}
 		fput(nn_sr_dst->nn_out_file);
 		nn_sr_dst->nn_out_dma_buf = NULL;
 

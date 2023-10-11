@@ -45,7 +45,13 @@ static struct page *alloc_buffer_page(struct ion_system_heap *heap,
 				      struct ion_buffer *buffer,
 				      unsigned long order)
 {
-	struct ion_page_pool *pool = heap->pools[order_to_index(order)];
+	struct ion_page_pool *pool;
+	int index = order_to_index(order);
+
+	if (index < 0)
+		return NULL;
+
+	pool = heap->pools[index];
 
 	return ion_page_pool_alloc(pool);
 }
@@ -55,6 +61,7 @@ static void free_buffer_page(struct ion_system_heap *heap,
 {
 	struct ion_page_pool *pool;
 	unsigned int order = compound_order(page);
+	int index = order_to_index(order);
 
 	/* go to system */
 	if (buffer->private_flags & ION_PRIV_FLAG_SHRINKER_FREE) {
@@ -62,7 +69,9 @@ static void free_buffer_page(struct ion_system_heap *heap,
 		return;
 	}
 
-	pool = heap->pools[order_to_index(order)];
+	if (index < 0)
+		return;
+	pool = heap->pools[index];
 
 	ion_page_pool_free(pool, page);
 }

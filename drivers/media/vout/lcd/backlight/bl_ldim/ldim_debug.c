@@ -73,6 +73,7 @@ struct ldim_dbg_attr_s {
 	unsigned int chip_type;
 	unsigned int mode;
 	unsigned int data;
+	unsigned int index;
 };
 
 struct ldim_dbg_attr_s dbg_attr = {
@@ -80,6 +81,7 @@ struct ldim_dbg_attr_s dbg_attr = {
 	.chip_type = LCD_CHIP_MAX,
 	.mode = LDIM_DBG_ATTR_MODE_SINGLE,
 	.data = 0,
+	.index = 0,
 };
 
 static void ldim_time_print(unsigned long long *table)
@@ -138,36 +140,45 @@ int ldim_debug_buf_save(char *path, unsigned char *save_buf,
 }
 EXPORT_SYMBOL(ldim_debug_buf_save);
 
-static void ldim_bl_matrix_file_save(struct aml_ldim_driver_s *ldim_drv,
-				     char *path)
+static ssize_t ldim_bl_matrix_get(struct aml_ldim_driver_s *ldim_drv, char *buf, char istest)
 {
 	unsigned int i, n, len;
 	unsigned int *p = NULL;
-	char *buf;
-
-	len = ldim_drv->conf->seg_row * ldim_drv->conf->seg_col * 8 + 30;
-	buf = kcalloc(len, sizeof(char), GFP_KERNEL);
-	if (!buf)
-		return;
+	unsigned int startpos;
+	unsigned int maxlen = PAGE_SIZE - 50;
 
 	n = ldim_drv->conf->seg_row * ldim_drv->conf->seg_col;
 	p = kcalloc(n, sizeof(unsigned int), GFP_KERNEL);
 	if (!p) {
 		kfree(buf);
-		return;
+		return 0;
 	}
-	memcpy(p, ldim_drv->local_bl_matrix, (n * sizeof(unsigned int)));
+	if (istest)
+		memcpy(p, ldim_drv->test_matrix, (n * sizeof(unsigned int)));
+	else
+		memcpy(p, ldim_drv->local_bl_matrix, (n * sizeof(unsigned int)));
 
-	len = sprintf(buf, "for_tool: %d %d",
+	startpos = dbg_attr.index;
+	if (startpos)
+		len = sprintf(buf, "for_tool:");
+	else
+		len = sprintf(buf, "for_tool: %d %d",
 		      ldim_drv->conf->seg_row, ldim_drv->conf->seg_col);
-	for (i = 0; i < n; i++)
+
+	for (i = startpos; i < n; i++) {
 		len += sprintf(buf + len, " %d", p[i]);
-	len += sprintf(buf + len, "\n");
+		if (len > maxlen) {
+			len += sprintf(buf + len, "\n");
+			dbg_attr.index = i + 1;
+			goto ldim_bl_matrix_get_end;
+		}
+	}
+	len += sprintf(buf + len, "for_tool_end\n");
+	dbg_attr.index = 0;
 
-	ldim_debug_buf_save(path, buf, len);
-
-	kfree(buf);
+ldim_bl_matrix_get_end:
 	kfree(p);
+	return len;
 }
 
 static void ldim_dump_bl_matrix(struct aml_ldim_driver_s *ldim_drv)
@@ -228,30 +239,6 @@ static void ldim_dump_bl_matrix(struct aml_ldim_driver_s *ldim_drv)
 	kfree(spi_buf);
 }
 
-static void ldim_test_matrix_file_save(struct aml_ldim_driver_s *ldim_drv,
-				       char *path)
-{
-	unsigned int i, n, len;
-	unsigned int *p = ldim_drv->test_matrix;
-	char *buf;
-
-	n = ldim_drv->conf->seg_col * ldim_drv->conf->seg_row;
-	len = n * 10 + 30;
-	buf = kcalloc(len, sizeof(char), GFP_KERNEL);
-	if (!buf)
-		return;
-
-	len = sprintf(buf, "for_tool: %d %d",
-		      ldim_drv->conf->seg_row, ldim_drv->conf->seg_col);
-	for (i = 0; i < n; i++)
-		len += sprintf(buf + len, " %d", p[i]);
-	len += sprintf(buf + len, "\n");
-
-	ldim_debug_buf_save(path, buf, len);
-
-	kfree(buf);
-}
-
 static void ldim_get_test_matrix_info(struct aml_ldim_driver_s *ldim_drv)
 {
 	unsigned int i, n, len;
@@ -298,8 +285,10 @@ static ssize_t ldim_attr_show(struct class *cla, struct class_attribute *attr,
 		len += sprintf(buf + len, "for_tool:%d\n", dbg_attr.data);
 		break;
 	case LDIM_DBG_ATTR_MODE_BL_MATRIX:
+		len += ldim_bl_matrix_get(ldim_drv, buf, 0);
+		break;
 	case LDIM_DBG_ATTR_MODE_TEST_MATRIX:
-		//none for temp file read lut
+		len += ldim_bl_matrix_get(ldim_drv, buf, 1);
 		break;
 	default:
 		len = sprintf(buf, "%s: error\n", __func__);
@@ -398,9 +387,11 @@ static ssize_t ldim_attr_store(struct class *cla, struct class_attribute *attr,
 		}
 		pr_info("ldim_func_en: %d\n", ldim_drv->func_en);
 	} else if (!strcmp(parm[0], "matrix")) {
-		if (parm[2]) {
-			if (!strcmp(parm[1], "rf")) {
-				ldim_bl_matrix_file_save(ldim_drv, parm[2]);
+		if (parm[1]) {
+			if (!strcmp(parm[1], "r")) {
+				dbg_attr.cmd = LDIM_DBG_ATTR_CMD_RD;
+				dbg_attr.mode = LDIM_DBG_ATTR_MODE_BL_MATRIX;
+				dbg_attr.index = 0;
 				goto ldim_attr_store_end;
 			}
 			goto ldim_attr_store_err;
@@ -440,18 +431,14 @@ static ssize_t ldim_attr_store(struct class *cla, struct class_attribute *attr,
 		LDIMPR("test_mode: %d\n", ldim_drv->test_bl_en);
 		ldim_drv->level_update = 1;
 	} else if (!strcmp(parm[0], "test_matrix")) {
-		if (parm[2]) {
-			if (!strcmp(parm[1], "rf")) {
+		if (parm[1]) {
+			if (!strcmp(parm[1], "r")) {
 				dbg_attr.cmd = LDIM_DBG_ATTR_CMD_RD;
 				dbg_attr.mode = LDIM_DBG_ATTR_MODE_TEST_MATRIX;
-				ldim_test_matrix_file_save(ldim_drv, parm[2]);
+				dbg_attr.index = 0;
 				ldim_drv->level_update = 1;
 				goto ldim_attr_store_end;
-			}
-			goto ldim_attr_store_err;
-		}
-		if (parm[1]) {
-			if (!strcmp(parm[1], "w")) {
+			} else if (!strcmp(parm[1], "w")) {
 				dbg_attr.cmd = LDIM_DBG_ATTR_CMD_WR;
 				dbg_attr.mode = LDIM_DBG_ATTR_MODE_TEST_MATRIX;
 				if (!parm[seg_size + 3])

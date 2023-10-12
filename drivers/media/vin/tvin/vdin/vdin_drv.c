@@ -1743,7 +1743,8 @@ int start_tvin_service(int no, struct vdin_parm_s  *para)
 		devp->matrix_pattern_mode = 0;
 		/* check input content is protected */
 		if ((vdin0_devp->flags & VDIN_FLAG_DEC_OPENED) &&
-		    (vdin0_devp->flags & VDIN_FLAG_DEC_STARTED)) {
+		    (vdin0_devp->flags & VDIN_FLAG_DEC_STARTED) &&
+		    !devp->set_canvas_manual) {
 			if (vdin0_devp->prop.hdcp_sts && !devp->mem_protected) {
 				pr_err("hdmi hdcp en, non-secure buffer\n");
 				devp->matrix_pattern_mode = 4;
@@ -2923,6 +2924,33 @@ static void vdin_set_one_buffer_mode(struct vdin_dev_s *devp, struct vf_entry *n
 	}
 }
 
+static void vdin_handle_secure_content(struct vdin_dev_s *devp)
+{
+	struct vdin_dev_s *loopback_devp = NULL;
+	unsigned int protect_mode;
+
+	if (is_meson_t3x_cpu())
+		loopback_devp = vdin_devp[2];
+	else
+		loopback_devp = vdin_devp[1];
+
+	if (!loopback_devp)
+		return;
+
+	/* check input content is protected */
+	protect_mode = devp->prop.hdcp_sts ? 4 : 0;
+	if (protect_mode != devp->matrix_pattern_mode && !loopback_devp->mem_protected &&
+		loopback_devp->set_canvas_manual &&
+		(loopback_devp->flags & VDIN_FLAG_DEC_STARTED)) {
+		devp->matrix_pattern_mode = protect_mode;
+		vdin_set_matrix(devp);
+	} else if (devp->matrix_pattern_mode && loopback_devp->set_canvas_manual &&
+		!(loopback_devp->flags & VDIN_FLAG_DEC_STARTED)) {
+		devp->matrix_pattern_mode = 0;
+		vdin_set_matrix(devp);
+	}
+}
+
 /*
  *VDIN_FLAG_RDMA_ENABLE=1
  *	provider_vf_put(devp->last_wr_vfe, devp->vfp);
@@ -3028,6 +3056,7 @@ irqreturn_t vdin_isr(int irq, void *dev_id)
 		}
 	}
 
+	vdin_handle_secure_content(devp);
 	vdin_dynamic_switch_vrr(devp);
 
 	/* ignore fake irq caused by sw reset*/
@@ -3666,6 +3695,7 @@ irqreturn_t vdin_v4l2_isr(int irq, void *dev_id)
 		/* check input content is protected */
 		protect_mode = vdin0_devp->prop.hdcp_sts ? 4 : 0;
 		if (protect_mode != devp->matrix_pattern_mode && !devp->mem_protected &&
+			!devp->set_canvas_manual &&
 			(vdin0_devp->flags & VDIN_FLAG_DEC_OPENED) &&
 			(vdin0_devp->flags & VDIN_FLAG_DEC_STARTED)) {
 			devp->matrix_pattern_mode = protect_mode;

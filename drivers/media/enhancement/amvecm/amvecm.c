@@ -2233,8 +2233,12 @@ void amvecm_video_latch(void)
 	unsigned int temp;
 	pc_mode_process();
 	pr_amvecm_bringup_dbg("[on_vs] pc_mode done.\n");
+#endif
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT_C1A
 	cm_latch_process();
 	pr_amvecm_bringup_dbg("[on_vs] cm_latch done.\n");
+#endif
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	/*amvecm_size_patch();*/
 	ve_dnlp_latch_process();
 	pr_amvecm_bringup_dbg("[on_vs] dnlp_latch done.\n");
@@ -2610,7 +2614,7 @@ static int amvecm_release(struct inode *inode, struct file *file)
 	return 0;
 }
 
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT_C1A
 static struct am_regs_s amregs_ext;
 #endif
 struct ve_pq_overscan_s overscan_table[TIMING_MAX];
@@ -2984,7 +2988,7 @@ static long amvecm_ioctl(struct file *file,
 	}
 
 	switch (cmd) {
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT_C1A
 	case AMVECM_IOC_LOAD_REG:
 		if ((vecm_latch_flag & FLAG_REG_MAP0) &&
 		    (vecm_latch_flag & FLAG_REG_MAP1) &&
@@ -3006,6 +3010,8 @@ static long amvecm_ioctl(struct file *file,
 			ret = cm_load_reg(&amregs_ext);
 		}
 		break;
+#endif
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	case AMVECM_IOC_VE_NEW_DNLP:
 		if (copy_from_user(&dnlp_curve_param_load,
 				   (void __user *)arg,

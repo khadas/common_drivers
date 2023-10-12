@@ -80,6 +80,15 @@ int pq_reg_wr_rdma;/* 0:disable;1:enable */
 module_param(pq_reg_wr_rdma, int, 0664);
 MODULE_PARM_DESC(pq_reg_wr_rdma, "\n pq_reg_wr_rdma\n");
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT_C1A
+static struct am_regs_s amregs0;
+static struct am_regs_s amregs1;
+static struct am_regs_s amregs2;
+static struct am_regs_s amregs3;
+static struct am_regs_s amregs4;
+static struct am_regs_s amregs5;
+#endif
+
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static int cm_force_flag;
 
@@ -90,12 +99,7 @@ unsigned int cm_size;
 static bool cm_en_flag;
 /* cm disable flag sync with pq-db--1:disable;0:enable */
 static bool cm_dis_flag;
-static struct am_regs_s amregs0;
-static struct am_regs_s amregs1;
-static struct am_regs_s amregs2;
-static struct am_regs_s amregs3;
-static struct am_regs_s amregs4;
-static struct am_regs_s amregs5;
+
 #if CONFIG_AMLOGIC_MEDIA_VIDEO
 static struct vd_proc_amvecm_info_t *vd_size_info;
 #endif
@@ -767,13 +771,6 @@ void pd_combing_fix_patch(enum pd_comb_fix_lvl_e level)
 	}
 }
 
-void cm_regmap_latch(struct am_regs_s *am_regs, unsigned int reg_map)
-{
-	am_set_regmap(am_regs);
-	vecm_latch_flag &= ~reg_map;
-	pr_amcm_dbg("\n[amcm..] load reg %d table OK!!!\n", reg_map);
-}
-
 void amcm_level_sel(unsigned int cm_level)
 {
 	int temp;
@@ -1024,6 +1021,14 @@ void cm2_frame_switch_patch(void)
 	WRITE_VPP_REG(addr_port, 0x20f);
 	WRITE_VPP_REG(data_port, cm2_patch_flag);
 }
+#endif
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT_C1A
+void cm_regmap_latch(struct am_regs_s *am_regs, unsigned int reg_map)
+{
+	am_set_regmap(am_regs);
+	vecm_latch_flag &= ~reg_map;
+	pr_amcm_dbg("\n[amcm..] load reg %d table OK!!!\n", reg_map);
+}
 
 void cm_latch_process(void)
 {
@@ -1046,10 +1051,13 @@ void cm_latch_process(void)
 			cm_regmap_latch(&amregs4, FLAG_REG_MAP4);
 		if (vecm_latch_flag & FLAG_REG_MAP5)
 			cm_regmap_latch(&amregs5, FLAG_REG_MAP5);
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		if ((cm2_patch_flag & 0xff) > 0)
 			cm2_frame_switch_patch();
+#endif
 	} while (0);
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (cm_en && cm_level_last != cm_level) {
 		cm_level_last = cm_level;
 		amcm_enable(WR_DMA);
@@ -1059,6 +1067,7 @@ void cm_latch_process(void)
 		amcm_disable(WR_DMA);/* CM manage disable */
 		pr_amcm_dbg("\n[amcm..] set cm disable!!!\n");
 	}
+#endif
 }
 
 static int amvecm_regmap_info(struct am_regs_s *p)

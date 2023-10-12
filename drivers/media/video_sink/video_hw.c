@@ -6113,7 +6113,7 @@ void vd_blend_setting(struct video_layer_s *layer, struct blend_setting_s *setti
 	u32 vd_size_mask = VPP_VD_SIZE_MASK;
 	struct hw_vpp_blend_reg_s *vpp_blend_reg =
 		&layer->vpp_blend_reg;
-	u8 vpp_index = VPP0;
+	u8 vpp_index = layer->vpp_index;
 
 	if (!setting)
 		return;

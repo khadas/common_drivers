@@ -1592,11 +1592,6 @@ s32 primary_render_frame(struct video_layer_s *layer,
 	int ret = 0;
 	u8 vpp_index;
 
-	if (!layer) {
-		ret = -1;
-		goto render_exit;
-	}
-
 	vpp_index = layer->vpp_index;
 #ifdef CONFIG_AMLOGIC_MEDIA_FRC
 	if (cur_dev->vsync_2to1_enable && vsync_count_start) {
@@ -1874,8 +1869,8 @@ s32 primary_render_frame(struct video_layer_s *layer,
 render_exit:
 	/* check if need blank */
 	vdx_force_black(0);
-	if (layer)
-		vd_clip_setting(layer->vpp_index, 0, &vd_layer[0].clip_setting);
+	video_secure_set(layer->vpp_index);
+	vd_clip_setting(layer->vpp_index, 0, &vd_layer[0].clip_setting);
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	memset(&ai_face_value, 0, sizeof(ai_face_value));
 	if (vd_layer[0].dispbuf &&
@@ -1963,10 +1958,6 @@ s32 vdx_render_frame(struct video_layer_s *layer, const struct vinfo_s *vinfo)
 	u8 layer_id = 0;
 	int ret = 0;
 
-	if (!layer) {
-		ret = -1;
-		goto render_exit;
-	}
 	layer_id = layer->layer_id;
 	if (layer_id == 0)
 		return primary_render_frame(layer, vinfo);
@@ -2068,10 +2059,10 @@ s32 vdx_render_frame(struct video_layer_s *layer, const struct vinfo_s *vinfo)
 render_exit:
 	/* check if need blank */
 	vdx_force_black(layer_id);
+	video_secure_set(layer->vpp_index);
 
-	if (layer)
-		vd_clip_setting(layer->vpp_index,
-			layer_id, &vd_layer[layer_id].clip_setting);
+	vd_clip_setting(layer->vpp_index,
+		layer_id, &vd_layer[layer_id].clip_setting);
 	/* all frames has been renderred, so reset new frame flag */
 	vd_layer[layer_id].new_frame = false;
 	return ret;
@@ -5008,7 +4999,6 @@ void post_vsync_process(void)
 		if (i == 0)
 			frame_par_di_set = ret;
 	}
-	video_secure_set(VPP0);
 
 #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
 	if (support_multi_core1())

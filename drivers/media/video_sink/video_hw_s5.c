@@ -12280,7 +12280,8 @@ int video_hw_init_s5(void)
 #ifdef CONFIG_AMLOGIC_MEDIA_SECURITY
 	void *video_secure_op[VPP_TOP_MAX] = {VSYNC_WR_MPEG_REG_BITS,
 					       VSYNC_WR_MPEG_REG_BITS_VPP1,
-					       VSYNC_WR_MPEG_REG_BITS_VPP2};
+					       VSYNC_WR_MPEG_REG_BITS_VPP2,
+					       PRE_VSYNC_WR_MPEG_REG_BITS};
 #endif
 
 	WRITE_VCBUS_REG_BITS

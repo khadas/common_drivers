@@ -11520,13 +11520,6 @@ static void vd1_clip_setting_s5(u8 vpp_index, struct vd_proc_s *vd_proc,
 			setting->clip_max);
 		rdma_wr(vd_proc_slice_reg->vd1_s0_clip_misc1,
 			setting->clip_min);
-		if (!(setting->clip_max == 0x3fffffff &&
-			setting->clip_min == 0x0)) {
-			WRITE_VCBUS_REG(vd_proc_slice_reg->vd1_s0_clip_misc0,
-				setting->clip_max);
-			WRITE_VCBUS_REG(vd_proc_slice_reg->vd1_s0_clip_misc1,
-				setting->clip_min);
-		}
 	}
 }
 
@@ -11543,13 +11536,6 @@ static void vd2_clip_setting_s5(u8 vpp_index, struct vd_proc_s *vd_proc,
 		setting->clip_max);
 	rdma_wr(vd2_proc_misc_reg->vd2_clip_misc1,
 		setting->clip_min);
-	if (!(setting->clip_max == 0x3fffffff &&
-		setting->clip_min == 0x0)) {
-		WRITE_VCBUS_REG(vd2_proc_misc_reg->vd2_clip_misc0,
-			setting->clip_max);
-		WRITE_VCBUS_REG(vd2_proc_misc_reg->vd2_clip_misc1,
-			setting->clip_min);
-	}
 }
 
 void vd_clip_setting_s5(u8 vpp_index, u8 layer_id,

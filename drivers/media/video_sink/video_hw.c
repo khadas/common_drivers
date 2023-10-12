@@ -6250,11 +6250,6 @@ void vpp_clip_setting(u8 vpp_index, struct clip_setting_s *setting)
 	cur_dev->rdma_func[vpp_index].rdma_wr
 		(VPP_CLIP_MISC1,
 		setting->clip_min);
-	if (!(setting->clip_max == 0x3fffffff &&
-		setting->clip_min == 0x0)) {
-		WRITE_VCBUS_REG(VPP_CLIP_MISC0, setting->clip_max);
-		WRITE_VCBUS_REG(VPP_CLIP_MISC1, setting->clip_min);
-	}
 	setting->clip_done = true;
 }
 

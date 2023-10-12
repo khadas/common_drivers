@@ -29,6 +29,7 @@ static unsigned int dewarp_print;
 MODULE_PARM_DESC(dewarp_print, "\n dewarp_print\n");
 module_param(dewarp_print, uint, 0664);
 
+static unsigned int dewarp_com_dump_last;
 int get_dewarp_format(int vc_index, struct vframe_s *vf)
 {
 	int format = NV12;
@@ -448,7 +449,7 @@ int config_dewarp_vframe(struct composer_vf_para *vframe_para,
 
 int dewarp_data_composer(struct dewarp_composer_para *param, bool is_tvp)
 {
-	int ret, dump_num = 1;
+	int ret;
 	struct gdc_phy_setting gdc_config;
 	char dump_name[32];
 
@@ -503,7 +504,7 @@ int dewarp_data_composer(struct dewarp_composer_para *param, bool is_tvp)
 	if (ret < 0) {
 		pr_info("vc:[%d] %s: dewrap process failed.\n", param->vc_index, __func__);
 	} else {
-		if (dewarp_com_dump != dump_num) {
+		if (dewarp_com_dump != dewarp_com_dump_last) {
 			sprintf(dump_name, "/data/src_%d.yuv", dewarp_com_dump);
 			dump_dewarp_vframe(dump_name,
 				param->vf_para->src_vf_width,
@@ -517,7 +518,7 @@ int dewarp_data_composer(struct dewarp_composer_para *param, bool is_tvp)
 				param->vf_para->dst_vf_height,
 				gdc_config.out_paddr[0],
 				gdc_config.out_paddr[1]);
-			dump_num = dewarp_com_dump;
+			dewarp_com_dump_last = dewarp_com_dump;
 		}
 	}
 	return ret;

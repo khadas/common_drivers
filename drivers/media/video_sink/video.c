@@ -594,13 +594,11 @@ u32 osd_vpp_misc_mask;
 bool update_osd_vpp_misc;
 bool update_osd_vpp1_bld_ctrl;
 bool update_osd_vpp2_bld_ctrl;
-bool update_osd2_blend_src_ctrl;
 u32 osd_vpp1_bld_ctrl;
 u32 osd_vpp1_bld_ctrl_mask;
 u32 osd_vpp2_bld_ctrl;
 u32 osd_vpp2_bld_ctrl_mask;
 u32 osd_vpp_bld_ctrl_update_mask;
-u32 osd2_postbld_src;
 u32 osd2_blend_path_sel;
 u32 osd_preblend_en;
 /* omx related */
@@ -13364,44 +13362,31 @@ static int amvideo_notify_callback(struct notifier_block *block,
 	switch (cmd) {
 	case AMVIDEO_UPDATE_OSD_MODE:
 		p = (u32 *)para;
-		if (!video_is_meson_txhd2_cpu()) {
-			if (!update_osd_vpp_misc)
-				osd_vpp_misc_mask = p[1];
-			val = osd_vpp_misc
-				& (~osd_vpp_misc_mask);
-			val |= (p[0] & osd_vpp_misc_mask);
-			osd_vpp_misc = val;
+		if (!update_osd_vpp_misc)
+			osd_vpp_misc_mask = p[1];
+		val = osd_vpp_misc
+			& (~osd_vpp_misc_mask);
+		val |= (p[0] & osd_vpp_misc_mask);
+		osd_vpp_misc = val;
 
-			osd_vpp1_bld_ctrl_mask = p[3];
-			val = (p[2] & osd_vpp1_bld_ctrl_mask);
+		osd_vpp1_bld_ctrl_mask = p[3];
+		val = (p[2] & osd_vpp1_bld_ctrl_mask);
 
-			osd_vpp1_bld_ctrl = val;
+		osd_vpp1_bld_ctrl = val;
 
-			osd_vpp2_bld_ctrl_mask = p[5];
-			val = (p[4] & osd_vpp2_bld_ctrl_mask);
-			osd_vpp2_bld_ctrl = val;
+		osd_vpp2_bld_ctrl_mask = p[5];
+		val = (p[4] & osd_vpp2_bld_ctrl_mask);
+		osd_vpp2_bld_ctrl = val;
 
-			osd_vpp_bld_ctrl_update_mask = p[6];
-			val = (p[2] & osd_vpp_bld_ctrl_update_mask);
-			update_osd_vpp1_bld_ctrl = val;
+		osd_vpp_bld_ctrl_update_mask = p[6];
+		val = (p[2] & osd_vpp_bld_ctrl_update_mask);
+		update_osd_vpp1_bld_ctrl = val;
 
-			val = (p[4] & osd_vpp_bld_ctrl_update_mask);
-			update_osd_vpp2_bld_ctrl = val;
+		val = (p[4] & osd_vpp_bld_ctrl_update_mask);
+		update_osd_vpp2_bld_ctrl = val;
 
-			if (!update_osd_vpp_misc)
-				update_osd_vpp_misc = true;
-		} else {
-			u32 osd2_blend_src_ctrl;
-
-			osd2_blend_src_ctrl = READ_VCBUS_REG(OSD2_BLEND_SRC_CTRL);
-			osd2_postbld_src = (osd2_blend_src_ctrl & 0xf00) >> 8;
-			osd2_blend_path_sel = (osd2_blend_src_ctrl & 0x100000) >> 20;
-			if (osd2_postbld_src != p[7] || osd2_blend_path_sel != p[8]) {
-				osd2_postbld_src = p[7];
-				osd2_blend_path_sel = p[8];
-				update_osd2_blend_src_ctrl = true;
-			}
-		}
+		if (!update_osd_vpp_misc)
+			update_osd_vpp_misc = true;
 		break;
 	case AMVIDEO_UPDATE_PREBLEND_MODE:
 		p = (u32 *)para;

@@ -8227,6 +8227,7 @@ void vpp_blend_update(const struct vinfo_s *vinfo, u8 vpp_index)
 		u32 set_value = 0;
 		u32 set_value1 = 0;
 		u32 set_value2 = 0;
+		u8 max_cnt = 3;
 
 		/* for sr core0, put it between prebld & pps as default */
 		if (vd1_frame_par &&
@@ -8276,8 +8277,7 @@ void vpp_blend_update(const struct vinfo_s *vinfo, u8 vpp_index)
 			VPP_PREBLEND_EN |
 			VPP_POSTBLEND_EN |
 			0xf);
-		if (vpp_misc_set != vpp_misc_set_save || force_flush ||
-			update_osd2_blend_src_ctrl) {
+		if (vpp_misc_set != vpp_misc_set_save || force_flush) {
 			u32 port_val[3] = {0, 0, 0};
 			u32 vd1_port, vd2_port, icnt;
 			u32 post_blend_reg[3] = {
@@ -8307,14 +8307,6 @@ void vpp_blend_update(const struct vinfo_s *vinfo, u8 vpp_index)
 
 			/* osd2 path sel */
 			port_val[2] |= (1 << 20);
-			if (update_osd2_blend_src_ctrl) {
-				port_val[2] |= (osd2_blend_path_sel << 20);
-				port_val[2] |= (osd2_postbld_src << 8);
-				update_osd2_blend_src_ctrl = false;
-				if (vd_layer[0].global_debug & DEBUG_FLAG_BASIC_INFO)
-					pr_info("OSD update OSD2_BLEND_SRC_CTRL: 0x%x\n",
-						port_val[2]);
-			}
 			if (vd_layer[0].post_blend_en) {
 				 /* post src */
 				port_val[vd1_port] |= (1 << 8);
@@ -8332,8 +8324,10 @@ void vpp_blend_update(const struct vinfo_s *vinfo, u8 vpp_index)
 				port_val[1] |=
 					((1 << 4) | /* pre bld premult*/
 					(2 << 0)); /* pre bld src 1 */
-
-			for (icnt = 0; icnt < 3; icnt++)
+			/* for txhd2 force video under osd blend ctrl */
+			if (video_is_meson_txhd2_cpu())
+				max_cnt = 2;
+			for (icnt = 0; icnt < max_cnt; icnt++)
 				cur_dev->rdma_func[vpp_index].rdma_wr
 					(post_blend_reg[icnt]
 					+ vpp_off,

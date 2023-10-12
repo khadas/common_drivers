@@ -1686,8 +1686,6 @@ static u32 osd_vpp1_bld_ctrl;
 static u32 osd_vpp1_bld_ctrl_mask = 0x30;
 static u32 osd_vpp2_bld_ctrl;
 static u32 osd_vpp2_bld_ctrl_mask = 0x30;
-static u32 osd2_postbld_src = POSTBLD_OSD2;
-static u32 osd2_blend_path_sel = 0x1;
 
 /* indicates whether vpp1&vpp2 has been notified or not */
 static u32 osd_vpp_bld_ctrl_update_mask = 0x80000000;
@@ -4124,15 +4122,11 @@ static int notify_to_amvideo(void)
 	para[4] = osd_vpp2_bld_ctrl;
 	para[5] = osd_vpp2_bld_ctrl_mask;
 	para[6] = osd_vpp_bld_ctrl_update_mask;
-	/*osd2_blend_src_ctrl*/
-	para[7] = osd2_postbld_src;
-	para[8] = osd2_blend_path_sel;
 
 	pr_debug("osd %s vpp misc:0x%08x, mask:0x%08x\n",
 		 __func__, para[0], para[1]);
 	pr_debug("vpp1_bld_ctrl:0x%08x, mask:0x%08x,vpp2_bld_ctrl:0x%08x, mask:0x%08x, notified_mask:0x%x\n",
 		para[2], para[3], para[4], para[5], para[6]);
-	pr_debug("osd2_postbld_src: 0x%08x, osd2_blend_path_sel:0x%08x\n", para[7], para[8]);
 	if (osd_hw.hw_rdma_en) {
 #ifdef CONFIG_AMLOGIC_MEDIA_VIDEO
 		amvideo_notifier_call_chain(AMVIDEO_UPDATE_OSD_MODE,
@@ -8420,7 +8414,6 @@ static void osd_update_color_mode(u32 index)
 static void osd_update_enable(u32 index)
 {
 	u32 temp_val = 0, output_index;
-	static u32 sel_osd2_save;
 	struct hw_osd_reg_s *osd_reg = &hw_osd_reg_array[index];
 
 	output_index = get_output_device_id(index);
@@ -8582,16 +8575,6 @@ static void osd_update_enable(u32 index)
 					     (1 & 0x1) << 20);
 			}
 		} else if ((index == 1) && (!enable_vd_zorder)) {
-			if (osd_hw.osd_meson_dev.cpu_id ==
-					__MESON_CPU_MAJOR_ID_TXHD2 &&
-					sel_osd2_save != postbld_src_sel) {
-				if (postbld_src_sel == POSTBLD_OSD2)
-					osd2_postbld_src = POSTBLD_OSD2;
-				else
-					osd2_postbld_src = POSTBLD_CLOSE;
-				notify_to_amvideo();
-			}
-			sel_osd2_save = postbld_src_sel;
 			if (osd_dev_hw.s5_display) {
 				osd_hw.osd_rdma_func[output_index].osd_rdma_wr
 				(hw_osd_reg_blend.osd2_blend_src_ctrl,
@@ -8599,18 +8582,18 @@ static void osd_update_enable(u32 index)
 					     (0 & 0x1) << 4);
 			} else {
 				if (is_keystone_enable_for_txhd2()) {
-					set_vpp_osd2_rgb2yuv(0);
 					postbld_src_sel = POSTBLD_CLOSE;
+					set_vpp_osd2_rgb2yuv(0);
 				} else {
 					set_vpp_osd2_rgb2yuv(1);
 				}
 				osd_hw.osd_rdma_func[output_index].osd_rdma_wr
 				(hw_osd_reg_blend.osd2_blend_src_ctrl,
-					     (0 & 0xf) << 0 |
-					     (0 & 0x1) << 4 |
-					     (postbld_src_sel & 0xf) << 8 |
-					     (0 & 0x1) << 16 |
-					     (1 & 0x1) << 20);
+					(0 & 0xf) << 0 |
+					(0 & 0x1) << 4 |
+					(postbld_src_sel & 0xf) << 8 |
+					(0 & 0x1) << 16 |
+					(1 & 0x1) << 20);
 			}
 		}
 	}
@@ -12273,7 +12256,6 @@ static void set_osd_hdr_size_in(u32 osd_index, u32 osd_hsize, u32 osd_vsize)
 
 static void set_vpp0_blend_reg(struct vpp0_blend_reg_s *vpp0_blend_reg)
 {
-	static u32 sel_osd2_save;
 	VSYNCOSD_WR_MPEG_REG(hw_osd_reg_blend.vpp_osd1_bld_h_scope,
 			     vpp0_blend_reg->osd1_h_start << 16 |
 			     vpp0_blend_reg->osd1_h_end);
@@ -12301,16 +12283,6 @@ static void set_vpp0_blend_reg(struct vpp0_blend_reg_s *vpp0_blend_reg)
 				     ((!osd_hw.osd_preblend_en) & 0x1) << 20);
 	/* vpp osd2 blend ctrl */
 	if (!enable_vd_zorder) {
-		if (osd_hw.osd_meson_dev.cpu_id ==
-			__MESON_CPU_MAJOR_ID_TXHD2 &&
-			sel_osd2_save != vpp0_blend_reg->postbld_src4_sel) {
-			if (vpp0_blend_reg->postbld_src4_sel == POSTBLD_OSD2)
-				osd2_postbld_src = POSTBLD_OSD2;
-			else
-				osd2_postbld_src = POSTBLD_CLOSE;
-			notify_to_amvideo();
-		}
-		sel_osd2_save = vpp0_blend_reg->postbld_src4_sel;
 		if (osd_dev_hw.s5_display) {
 			VSYNCOSD_WR_MPEG_REG(hw_osd_reg_blend.osd2_blend_src_ctrl,
 					     (vpp0_blend_reg->postbld_src4_sel & 0xf) << 0 |
@@ -12323,11 +12295,11 @@ static void set_vpp0_blend_reg(struct vpp0_blend_reg_s *vpp0_blend_reg)
 				set_vpp_osd2_rgb2yuv(1);
 			}
 			VSYNCOSD_WR_MPEG_REG(hw_osd_reg_blend.osd2_blend_src_ctrl,
-					     (vpp0_blend_reg->prebld_src4_sel & 0xf) << 0 |
-					     (0 & 0x1) << 4 |
-					     (vpp0_blend_reg->postbld_src4_sel & 0xf) << 8 |
-					     (0 << 16) |
-					     ((!osd_hw.osd_preblend_en) & 0x1) << 20);
+				(vpp0_blend_reg->prebld_src4_sel & 0xf) << 0 |
+				(0 & 0x1) << 4 |
+				(vpp0_blend_reg->postbld_src4_sel & 0xf) << 8 |
+				(0 << 16) |
+				((!osd_hw.osd_preblend_en) & 0x1) << 20);
 		}
 	}
 	if (osd_dev_hw.has_multi_vpp) {
@@ -15257,10 +15229,8 @@ void osd_init_hw(u32 logo_loaded, u32 osd_probe,
 #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
 	register_osd_func(get_osd_status);
 #endif
-	if (osd_hw.osd_meson_dev.cpu_id == __MESON_CPU_MAJOR_ID_TXHD2) {
+	if (osd_hw.osd_meson_dev.cpu_id == __MESON_CPU_MAJOR_ID_TXHD2)
 		enable_vd_zorder = 0;
-		notify_to_amvideo();
-	}
 	osd_log_out = 1;
 }
 

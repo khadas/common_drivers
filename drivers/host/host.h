@@ -38,7 +38,7 @@ struct host_shm_info_t {
 	unsigned int size;
 } __packed;
 
-#define HOSTFW_NAME_LEN                  30
+#define HOSTFW_NAME_LEN                  32
 #define REG_DSP_CFG0			(0x0)
 #define REG_DSP_CFG1			(0x4)
 #define REG_DSP_CFG2			(0x8)
@@ -50,6 +50,7 @@ struct host_shm_info_t {
 #define HOST_LOAD	_IOWR(HOST_IOC_MAGIC, 1, struct host_info_t)
 #define HOST_START	_IOWR(HOST_IOC_MAGIC, 3, struct host_info_t)
 #define HOST_STOP	_IOWR(HOST_IOC_MAGIC, 4, struct host_info_t)
+#define HOST_2LOAD	_IOWR(HOST_IOC_MAGIC, 7, struct host_info_t)
 #define HOST_GET_INFO	_IOWR((HOST_IOC_MAGIC), (18), \
 					struct host_info_t)
 #define HOST_SHM_CLEAN \

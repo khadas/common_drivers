@@ -384,6 +384,24 @@ static long host_miscdev_unlocked_ioctl(struct file *fp, unsigned int cmd,
 			pr_err("%s error: HOST_LOAD is error", __func__);
 			goto err;
 		}
+		usrinfo->fw_name[31] = '\0';
+		strcpy(host->fname0, usrinfo->fw_name);
+		host_firmware_load(host);
+		host->firmware_load = 1;
+	break;
+	case HOST_2LOAD:
+		pr_debug("%s HOST_2LOAD\n", __func__);
+		ret = copy_from_user(usrinfo, argp,
+				     sizeof(struct host_info_t));
+		if (ret) {
+			kfree(usrinfo);
+			pr_err("%s error: HOST_2LOAD is error", __func__);
+			goto err;
+		}
+		usrinfo->fw1_name[31] = '\0';
+		usrinfo->fw2_name[31] = '\0';
+		strcpy(host->fname0, usrinfo->fw1_name);
+		strcpy(host->fname1, usrinfo->fw2_name);
 		host_firmware_load(host);
 		host->firmware_load = 1;
 	break;
@@ -804,6 +822,7 @@ static int host_platform_probe(struct platform_device *pdev)
 	pm_runtime_enable(dev);
 	host_create_debugfs_files(host);
 	host_create_device_files(&pdev->dev);
+	device_init_wakeup(&pdev->dev, 1);
 	dev_set_drvdata(host_data->misc->this_device, host);
 	platform_set_drvdata(pdev, host);
 	return 0;

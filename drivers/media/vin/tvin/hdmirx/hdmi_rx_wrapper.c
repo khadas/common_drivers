@@ -4600,10 +4600,11 @@ void hdmirx_open_port(enum tvin_port_e port)
 		force_clk_rate &= ~(_BIT(4));
 	if (rx_special_func_en()) {
 		rx[rx_info.main_port].state = FSM_HPD_HIGH;
-	} else if ((pre_port != rx_info.main_port ||
-	    (rx_get_cur_hpd_sts(rx_info.main_port) == 0) ||
-	    /* when open specific port, force to enable it */
-	    (disable_port_en && rx_info.main_port == disable_port_num))) {
+	} else if ((rx_info.chip_id != CHIP_ID_T3X) &&
+	(pre_port != rx_info.main_port ||
+	(rx_get_cur_hpd_sts(rx_info.main_port) == 0) ||
+	/* when open specific port, force to enable it */
+	(disable_port_en && rx_info.main_port == disable_port_num))) {
 		rx_esm_reset(1);
 		if (rx[rx_info.main_port].state > FSM_HPD_LOW)
 			rx[rx_info.main_port].state = FSM_HPD_LOW;
@@ -4616,10 +4617,12 @@ void hdmirx_open_port(enum tvin_port_e port)
 		//hdmirx_hw_config();
 	} else {
 		aml_phy_switch_port(rx_info.main_port);
-		if (rx[rx_info.main_port].state >= FSM_SIG_STABLE)
-			rx[rx_info.main_port].state = FSM_SIG_STABLE;
-		else
-			rx[rx_info.main_port].state = FSM_HPD_LOW;
+		if (rx_info.chip_id != CHIP_ID_T3X) {
+			if (rx[rx_info.main_port].state >= FSM_SIG_STABLE)
+				rx[rx_info.main_port].state = FSM_SIG_STABLE;
+			else
+				rx[rx_info.main_port].state = FSM_HPD_LOW;
+		}
 	}
 	rx[rx_info.main_port].var.edid_update_flag = 0;
 	rx_pkt_initial();

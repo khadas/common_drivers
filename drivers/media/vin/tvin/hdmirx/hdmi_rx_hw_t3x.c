@@ -3750,14 +3750,13 @@ void rx_set_term_value_t3x_21(unsigned char port, bool value)
 {
 	u32 data32;
 
+	data32 = hdmirx_rd_amlphy_t3x(T3X_HDMIRX21PHY_MISC0, port);
 	if (value) {
-		hdmirx_wr_amlphy_t3x(T3X_HDMIRX21PHY_MISC0, 0x01bcfff0, port);
-		data32 = hdmirx_rd_amlphy_t3x(T3X_HDMIRX21PHY_MISC0, port);
 		data32 |= (1 << (22 + port));
 	} else {
 		/* rst cdr to clr tmds_valid */
 		//data32 &= ~(MSK(3, 7));
-		data32 = 0;
+		data32 &= ~(1 << (22 + port));
 	}
 	hdmirx_wr_amlphy_t3x(T3X_HDMIRX21PHY_MISC0, data32, port);
 }

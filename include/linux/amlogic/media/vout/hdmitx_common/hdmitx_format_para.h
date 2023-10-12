@@ -22,7 +22,7 @@ struct hdmi_format_para {
 	enum hdmi_quantization_range cr; /* limit, full */
 	u32 frac_mode;
 
-	/*hw related information, set in calcformatpara() func*/
+	/*hw related information, set in calc_format_para() func*/
 	u32 scrambler_en:1;
 	u32 tmds_clk_div40:1;
 	u32 tmds_clk; /* Unit: 1000 */

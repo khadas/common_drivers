@@ -165,7 +165,6 @@ struct hdmitx_dev {
 	unsigned int cedst_en:1; /* configure in DTS */
 	unsigned int bist_lock:1;
 
-	bool systemcontrol_on;
 	unsigned char vid_mute_op;
 	atomic_t kref_video_mute;
 

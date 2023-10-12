@@ -262,7 +262,7 @@ struct hdmitx_hw_common {
 	/*validate if vic is supported by hw ip/phy*/
 	int (*validatemode)(struct hdmitx_hw_common *tx_hw, u32 vic);
 	/*calc formatpara hw info config*/
-	int (*calcformatpara)(struct hdmitx_hw_common *tx_hw, struct hdmi_format_para *para);
+	int (*calc_format_para)(struct hdmitx_hw_common *tx_hw, struct hdmi_format_para *para);
 
 	int (*setaudmode)(struct hdmitx_hw_common *tx_hw, struct aud_para *audio_param);
 

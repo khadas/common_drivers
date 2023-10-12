@@ -43,7 +43,7 @@ int hdmitx_hw_validate_mode(struct hdmitx_hw_common *tx_hw, u32 vic)
 int hdmitx_hw_calc_format_para(struct hdmitx_hw_common *tx_hw,
 	struct hdmi_format_para *para)
 {
-	return tx_hw->calcformatpara(tx_hw, para);
+	return tx_hw->calc_format_para(tx_hw, para);
 }
 
 int hdmitx_hw_set_packet(struct hdmitx_hw_common *tx_hw,

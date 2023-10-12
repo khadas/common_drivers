@@ -2503,29 +2503,6 @@ static ssize_t ready_store(struct device *dev,
 	return 0;
 }
 
-static ssize_t sysctrl_enable_show(struct device *dev,
-	struct device_attribute *attr, char *buf)
-{
-	int pos = 0;
-	struct hdmitx_dev *hdev = dev_get_drvdata(dev);
-
-	pos += snprintf(buf + pos, PAGE_SIZE, "%d\r\n",
-		hdev->systemcontrol_on);
-	return pos;
-}
-
-static ssize_t sysctrl_enable_store(struct device *dev,
-	struct device_attribute *attr, const char *buf, size_t count)
-{
-	struct hdmitx_dev *hdev = dev_get_drvdata(dev);
-
-	if (strncmp(buf, "0", 1) == 0)
-		hdev->systemcontrol_on = false;
-	if (strncmp(buf, "1", 1) == 0)
-		hdev->systemcontrol_on = true;
-	return count;
-}
-
 /*For hdcp daemon, dont del.*/
 static ssize_t hdmitx_drm_flag_show(struct device *dev,
 	struct device_attribute *attr, char *buf)
@@ -3193,7 +3170,6 @@ static DEVICE_ATTR_RO(rxsense_state);
 static DEVICE_ATTR_RO(max_exceed);
 static DEVICE_ATTR_RW(ready);
 static DEVICE_ATTR_RO(hdmi_hsty_config);
-static DEVICE_ATTR_RW(sysctrl_enable);
 static DEVICE_ATTR_RO(hdmitx_drm_flag);
 static DEVICE_ATTR_RW(hdr_mute_frame);
 static DEVICE_ATTR_RW(log_level);
@@ -3295,10 +3271,9 @@ static void hdmitx_cedst_process(struct work_struct *work)
 	queue_delayed_work(tx_comm->cedst_wq, &tx_comm->work_cedst, HZ);
 }
 
-static void hdmitx_process_plugin(struct hdmitx_dev *hdev, bool set_audio, bool chk_edid_chg)
+static void hdmitx_process_plugin(struct hdmitx_dev *hdev, bool set_audio)
 {
 	struct vinfo_s *info = NULL;
-	struct hdmitx_boot_param *boot_param = get_hdmitx_boot_params();
 
 	/* step1: SW: EDID read/parse, notify client modules */
 	hdmitx_plugin_common_work(&hdev->tx_comm);
@@ -3310,32 +3285,7 @@ static void hdmitx_process_plugin(struct hdmitx_dev *hdev, bool set_audio, bool 
 			hdmitx_set_audio(hdev, &hdev->tx_comm.cur_audio_param);
 	}
 
-	/* step2: SW: special process */
-	/* check edid changed between uboot hdmitx output done and
-	 * system ready.
-	 * 1.TV not changed: just clear avmute and continue output
-	 * 2.if TV changed:
-	 * keep avmute (will be cleared by systemcontrol);
-	 * clear pkt, packets need to be cleared, otherwise,
-	 * if plugout from DV/HDR TV, and plugin to non-DV/HDR
-	 * TV, packets may not be cleared. pkt sending will
-	 * be callbacked later after vinfo attached.
-	 */
-	if (chk_edid_chg) {
-		if (hdev->tx_comm.fmt_para.tmds_clk_div40)
-			hdmitx_hw_cntl_ddc(&hdev->tx_hw.base, DDC_SCDC_DIV40_SCRAMB, 1);
-		if (!is_tv_changed(hdev->tx_comm.rxcap.hdmichecksum, boot_param->edid_chksum)) {
-			hdmitx_hw_cntl_misc(&hdev->tx_hw.base, MISC_AVMUTE_OP, CLR_AVMUTE);
-		} else {
-			/* keep avmute & clear pkt */
-			hdmitx_set_drm_pkt(NULL);
-			hdmitx_set_vsif_pkt(0, 0, NULL, true);
-			hdmitx_set_hdr10plus_pkt(0, NULL);
-		}
-		edidinfo_attach_to_vinfo(&hdev->tx_comm);
-	}
-
-	/* step3: SW: notify client modules and update uevent state */
+	/* step2: SW: notify client modules and update uevent state */
 	hdmitx_common_notify_hpd_status(&hdev->tx_comm, false);
 }
 
@@ -3347,11 +3297,10 @@ static void hdmitx_process_plugin(struct hdmitx_dev *hdev, bool set_audio, bool 
  */
 static void hdmitx_bootup_plugin_handler(struct hdmitx_dev *hdev)
 {
-	hdmitx_process_plugin(hdev, hdev->tx_comm.ready, hdev->tx_comm.ready);
+	if (hdev->tx_comm.fmt_para.tmds_clk_div40)
+		hdmitx_hw_cntl_ddc(&hdev->tx_hw.base, DDC_SCDC_DIV40_SCRAMB, 1);
+	hdmitx_process_plugin(hdev, hdev->tx_comm.ready);
 }
-
-/* indicate plugout before systemcontrol boot  */
-static bool plugout_mute_flg;
 
 static void hdmitx_hpd_plugin_irq_handler(struct work_struct *work)
 {
@@ -3380,8 +3329,7 @@ static void hdmitx_hpd_plugin_irq_handler(struct work_struct *work)
 		return;
 	}
 	pr_info(SYS "plugin\n");
-	hdmitx_process_plugin(hdev, false, plugout_mute_flg);
-	plugout_mute_flg = false;
+	hdmitx_process_plugin(hdev, false);
 
 	mutex_unlock(&hdev->tx_comm.hdmimode_mutex);
 
@@ -3398,36 +3346,14 @@ static void hdmitx_process_plugout(struct hdmitx_dev *hdev)
 	hdmitx_current_status(HDMITX_HPD_PLUGOUT);
 
 	/* step1: disable output */
-	hdmitx_common_output_disable(&hdev->tx_comm,
-		false, true, false, true);
+	hdmitx_common_output_disable(&hdev->tx_comm, true, true, true, true);
 	hdmitx_hw_cntl_ddc(&hdev->tx_hw.base, DDC_HDCP_SET_TOPO_INFO, 0);
 
 	/* step2: SW: status update */
 	hdev->tx_comm.hpd_state = 0;
 	hdev->tx_comm.last_hpd_handle_done_stat = HDMI_TX_HPD_PLUGOUT;
 
-	/* TODO: below step3~5 should be removed when sysctrl_enable removed */
-	/* step3: SW/HW: special flow process */
-	/* when plugout before systemcontrol boot, setavmute
-	 * but keep output not changed, and wait for plugin
-	 * NOTE: TV maybe changed(such as DV <-> non-DV)
-	 */
-	if (!hdev->systemcontrol_on && hdev->tx_comm.ready) {
-		plugout_mute_flg = true;
-
-		hdmitx_hw_cntl_misc(&hdev->tx_hw.base, MISC_AVMUTE_OP, SET_AVMUTE);
-		/* notify event to user space and other modules */
-		hdmitx_common_notify_hpd_status(&hdev->tx_comm, false);
-		return;
-	}
-	/* step4: HW: packet clean */
-	hdmitx20_clear_packets(&hdev->tx_hw.base);
-
-	/* step5: HW: disable hdmitx phy, SW: clear status */
-	hdmitx_hw_cntl_misc(&hdev->tx_hw.base, MISC_TMDS_PHY_OP, TMDS_PHY_DISABLE);
-	hdev->tx_comm.ready = 0;
-
-	/* step6: SW: notify event to user space and other modules */
+	/* step3: SW: notify event to user space and other modules */
 	hdmitx_common_notify_hpd_status(&hdev->tx_comm, false);
 }
 
@@ -3660,7 +3586,6 @@ static int amhdmitx_device_init(struct hdmitx_dev *hdmi_dev)
 	hdmi_dev->hdmi_current_signal_sdr = true;
 	hdmi_dev->tx_comm.hdcp_mode = 0;
 	hdmi_dev->tx_comm.ready = 0;
-	hdmi_dev->systemcontrol_on = 0;
 	hdmi_dev->tx_comm.rxsense_policy = 0; /* no RxSense by default */
 	/* enable or disable HDMITX SSPLL, enable by default */
 	hdmi_dev->sspll = 1;
@@ -3860,8 +3785,6 @@ static int amhdmitx_get_dt_info(struct platform_device *pdev, struct hdmitx_dev 
 					   &hdev->tx_comm.hdcp_ctl_lvl);
 		if (ret)
 			hdev->tx_comm.hdcp_ctl_lvl = 0;
-		if (hdev->tx_comm.hdcp_ctl_lvl > 0)
-			hdev->systemcontrol_on = true;
 
 		/* Get reg information */
 		ret = hdmitx_init_reg_map(pdev);
@@ -4039,7 +3962,6 @@ static int amhdmitx_probe(struct platform_device *pdev)
 	ret = device_create_file(dev, &dev_attr_max_exceed);
 	ret = device_create_file(dev, &dev_attr_ready);
 	ret = device_create_file(dev, &dev_attr_hdmi_hsty_config);
-	ret = device_create_file(dev, &dev_attr_sysctrl_enable);
 	ret = device_create_file(dev, &dev_attr_hdmitx_drm_flag);
 	ret = device_create_file(dev, &dev_attr_hdr_mute_frame);
 	ret = device_create_file(dev, &dev_attr_log_level);
@@ -4209,7 +4131,6 @@ static int amhdmitx_remove(struct platform_device *pdev)
 	device_remove_file(dev, &dev_attr_hdcp22_top_reset);
 	device_remove_file(dev, &dev_attr_hdmi_hdr_status);
 	device_remove_file(dev, &dev_attr_hdmi_hsty_config);
-	device_remove_file(dev, &dev_attr_sysctrl_enable);
 	device_remove_file(dev, &dev_attr_hdmitx_drm_flag);
 	device_remove_file(dev, &dev_attr_hdr_mute_frame);
 	device_remove_file(dev, &dev_attr_log_level);

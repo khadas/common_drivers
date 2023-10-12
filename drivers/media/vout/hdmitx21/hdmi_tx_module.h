@@ -174,7 +174,6 @@ struct hdmitx_dev {
 
 	struct miscdevice hdcp_comm_device;
 	u8 def_stream_type;
-	bool systemcontrol_on;
 	u32 arc_rx_en;
 	bool need_filter_hdcp_off;
 	u32 filter_hdcp_off_period;

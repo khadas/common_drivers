@@ -678,7 +678,7 @@ void hdmitx_meson_init(struct hdmitx_dev *hdev)
 	global_tx_hw->base.cntlconfig = hdmitx_cntl_config;
 	global_tx_hw->base.cntlmisc = hdmitx_cntl_misc;
 	global_tx_hw->base.validatemode = hdmitx_validate_mode;
-	global_tx_hw->base.calcformatpara = hdmitx_calc_formatpara;
+	global_tx_hw->base.calc_format_para = hdmitx_calc_formatpara;
 	global_tx_hw->base.setpacket = hdmitx_set_packet;
 	global_tx_hw->base.disablepacket = hdmitx_disable_packet;
 	global_tx_hw->base.cntlddc = hdmitx_cntl_ddc;

@@ -971,7 +971,7 @@ static struct clk_regmap t5m_hifi_pll = {
 static const struct reg_sequence t5m_hifi1_init_regs[] = {
 	{ .reg = ANACTRL_HIFI1PLL_CTRL1, .def = 0x03a00000 },
 	{ .reg = ANACTRL_HIFI1PLL_CTRL2, .def = 0x00040000 },
-	{ .reg = ANACTRL_HIFI1PLL_CTRL3, .def = 0x090da200 },
+	{ .reg = ANACTRL_HIFI1PLL_CTRL3, .def = 0x0b0da200 },
 };
 
 static struct clk_regmap t5m_hifi1_pll_dco = {

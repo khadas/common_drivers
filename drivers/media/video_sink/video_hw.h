@@ -26,5 +26,7 @@ void vpp_secure_cb(u32 arg);
 #endif
 void int_vpu_delay_work(void);
 void vd1_set_go_field(void);
+void get_video_mute_info(void);
+int set_video_mute_info(u32 owner, bool on);
 
 #endif

@@ -86,9 +86,12 @@ bool legacy_vpp = true;
 static bool bypass_cm;
 bool hscaler_8tap_enable[MAX_VD_LAYER];
 struct pre_scaler_info pre_scaler[MAX_VD_LAYER];
+static struct video_mute_s video_mute_array[MAX_VIDEO_MUTE_OWNER];
+static u32 video_mute_states;
 
 static DEFINE_SPINLOCK(video_onoff_lock);
 static DEFINE_SPINLOCK(video2_onoff_lock);
+static DEFINE_MUTEX(video_mute_mutex);
 
 #ifdef CONFIG_AMLOGIC_VPU
 /* VPU delay work */
@@ -5528,9 +5531,9 @@ void proc_vd_vsc_phase_per_vsync(struct video_layer_s *layer,
 /*********************************************************
  * Vpp APIs
  *********************************************************/
-void set_video_mute(bool on)
+void set_video_mute(u32 owner, bool on)
 {
-	video_mute_on = on;
+	set_video_mute_info(owner, on);
 }
 EXPORT_SYMBOL(set_video_mute);
 
@@ -5662,6 +5665,95 @@ static inline void unmute_vpp(void)
 			(VPP_CLIP_MISC1,
 			(0x0 << 20) |
 			(0x0 << 10) | 0x0);
+	}
+}
+
+static int detect_video_mute_on(u32 owner, bool on)
+{
+	int i = 0;
+
+	for (i = 0; i < MAX_VIDEO_MUTE_OWNER; i++) {
+		if (video_mute_array[i].owner == owner &&
+			video_mute_array[i].on) {
+			if (on)
+				pr_info("%d has been muted video\n", owner);
+			return 1;
+		}
+	}
+	if (!on)
+		pr_info("%d has been unmuted video\n", owner);
+	return 0;
+}
+
+static void set_video_mute_on(u32 owner)
+{
+	int i = 0;
+	int set_done = 0;
+
+	mutex_lock(&video_mute_mutex);
+	for (i = 0; i < MAX_VIDEO_MUTE_OWNER; i++) {
+		if (!video_mute_array[i].owner && !set_done) {
+			video_mute_array[i].owner = owner;
+			video_mute_array[i].on = true;
+			video_mute_array[i].set_bit = i;
+			video_mute_states |= (1 << video_mute_array[i].set_bit);
+			set_done = 1;
+			pr_info("VIDEO MUTE by %d\n", owner);
+		}
+	}
+	if (!set_done) {
+		pr_info("video mute time over max time\n");
+		return;
+	}
+	if (video_mute_states)
+		video_mute_on = true;
+	mutex_unlock(&video_mute_mutex);
+}
+
+static void set_video_mute_off(u32 owner)
+{
+	int i = 0;
+
+	mutex_lock(&video_mute_mutex);
+	for (i = 0; i < MAX_VIDEO_MUTE_OWNER; i++) {
+		if (video_mute_array[i].owner == owner) {
+			video_mute_array[i].owner = 0;
+			video_mute_array[i].on = false;
+			video_mute_states &= ~(1 << video_mute_array[i].set_bit);
+			video_mute_array[i].set_bit = 0;
+			pr_info("VIDEO UNMUTE by %d\n", owner);
+		}
+	}
+	if (!video_mute_states)
+		video_mute_on = false;
+	mutex_unlock(&video_mute_mutex);
+}
+
+int set_video_mute_info(u32 owner, bool on)
+{
+	int ret;
+
+	ret = detect_video_mute_on(owner, on);
+	if (on) {
+		if (ret)
+			return -EINVAL;
+		set_video_mute_on(owner);
+	} else {
+		if (!ret)
+			return -EINVAL;
+		set_video_mute_off(owner);
+	}
+	return 0;
+}
+
+void get_video_mute_info(void)
+{
+	int i;
+
+	pr_info("video mute owner list:\n");
+	for (i = 0; i < MAX_VIDEO_MUTE_OWNER; i++) {
+		if (video_mute_array[i].on)
+			pr_info("%d\n", video_mute_array[i].owner);
 	}
 }
 

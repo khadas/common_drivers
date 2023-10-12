@@ -23,6 +23,7 @@
 #include <linux/delay.h>
 #include <linux/of_gpio.h>
 #include <linux/amlogic/media/frame_provider/tvin/tvin.h>
+#include <linux/amlogic/media/video_sink/video.h>
 #include <linux/amlogic/media/sound/hdmi_earc.h>
 #include <linux/sched/clock.h>
 #include <linux/amlogic/clk_measure.h>
@@ -1979,7 +1980,7 @@ irqreturn_t irq0_handler(int irq, void *params)
 		if (video_mute_enabled(port)) {
 			rx_mute_vpp();
 			rx[port].vpp_mute = true;
-			set_video_mute(true);
+			set_video_mute(HDMI_RX_MUTE_SET, true);
 			rx_pr("vpp mute\n");
 		}
 		irq_err_cnt = 0;
@@ -2030,7 +2031,7 @@ reisr:hdmirx_top_intr_stat = hdmirx_rd_top(TOP_INTR_STAT, port);
 			if (video_mute_enabled(port)) {
 				rx[port].vpp_mute = true;
 				rx_mute_vpp();
-				set_video_mute(true);
+				set_video_mute(HDMI_RX_MUTE_SET, true);
 				rx[port].var.mute_cnt = 0;
 				if (log_level & 0x100)
 					rx_pr("vpp mute\n");
@@ -2168,7 +2169,7 @@ irqreturn_t irq1_handler(int irq, void *params)
 		rx_pr("DE ERR\n");
 		if (video_mute_enabled(E_PORT1)) {
 			rx_mute_vpp();
-			set_video_mute(true);
+			set_video_mute(HDMI_RX_MUTE_SET, true);
 			rx_pr("vpp mute\n");
 		}
 		irq_err_cnt = 0;
@@ -2193,7 +2194,7 @@ irqreturn_t irq1_handler(int irq, void *params)
 	if (hdmirx_top_intr_stat & (1 << 20)) {
 		if (video_mute_enabled(E_PORT1)) {
 			rx[E_PORT1].vpp_mute = true;
-			set_video_mute(true);
+			set_video_mute(HDMI_RX_MUTE_SET, true);
 				rx[E_PORT1].var.mute_cnt = 0;
 				if (log_level & 0x100)
 					rx_pr("vpp mute\n");
@@ -2296,7 +2297,7 @@ irqreturn_t irq2_handler(int irq, void *params)
 		rx_pr("DE ERR\n");
 		if (video_mute_enabled(E_PORT2)) {
 			rx_mute_vpp();
-			set_video_mute(true);
+			set_video_mute(HDMI_RX_MUTE_SET, true);
 			rx_pr("vpp mute\n");
 		}
 		irq_err_cnt = 0;
@@ -2322,7 +2323,7 @@ irqreturn_t irq2_handler(int irq, void *params)
 		if (hdmirx_top_intr_stat & (1 << 20)) {
 			if (video_mute_enabled(E_PORT2)) {
 				rx[E_PORT2].vpp_mute = true;
-				set_video_mute(true);
+				set_video_mute(HDMI_RX_MUTE_SET, true);
 				rx[E_PORT2].var.mute_cnt = 0;
 				if (log_level & 0x100)
 					rx_pr("vpp mute\n");
@@ -2336,7 +2337,7 @@ irqreturn_t irq2_handler(int irq, void *params)
 		if (hdmirx_top_intr_stat & (1 << 29)) {
 			if (video_mute_enabled(E_PORT2)) {
 				rx[E_PORT2].vpp_mute = true;
-				set_video_mute(true);
+				set_video_mute(HDMI_RX_MUTE_SET, true);
 				rx[E_PORT2].var.mute_cnt = 0;
 				if (log_level & 0x100)
 					rx_pr("vpp mute\n");
@@ -2441,7 +2442,7 @@ irqreturn_t irq3_handler(int irq, void *params)
 		rx_pr("DE ERR\n");
 		if (video_mute_enabled(E_PORT3)) {
 			rx_mute_vpp();
-			set_video_mute(true);
+			set_video_mute(HDMI_RX_MUTE_SET, true);
 			rx_pr("vpp mute\n");
 		}
 		irq_err_cnt = 0;
@@ -2467,7 +2468,7 @@ irqreturn_t irq3_handler(int irq, void *params)
 		if (hdmirx_top_intr_stat & (1 << 20)) {
 			if (video_mute_enabled(E_PORT3)) {
 				rx[E_PORT3].vpp_mute = true;
-				set_video_mute(true);
+				set_video_mute(HDMI_RX_MUTE_SET, true);
 				rx[E_PORT3].var.mute_cnt = 0;
 				if (log_level & 0x100)
 					rx_pr("vpp mute\n");
@@ -2481,7 +2482,7 @@ irqreturn_t irq3_handler(int irq, void *params)
 		if (hdmirx_top_intr_stat & (1 << 29)) {
 			if (video_mute_enabled(E_PORT3)) {
 				rx[E_PORT3].vpp_mute = true;
-				set_video_mute(true);
+				set_video_mute(HDMI_RX_MUTE_SET, true);
 				rx[E_PORT3].var.mute_cnt = 0;
 				if (log_level & 0x100)
 					rx_pr("vpp mute\n");
@@ -5283,7 +5284,7 @@ void rx_main_state_machine(void)
 		/* video info change */
 		if (!is_tmds_valid(port)) {
 			if (video_mute_enabled(port)) {
-				set_video_mute(true);
+				set_video_mute(HDMI_RX_MUTE_SET, true);
 				rx_mute_vpp();
 				rx[port].vpp_mute = true;
 				rx[port].var.mute_cnt = 0;
@@ -5393,7 +5394,7 @@ void rx_main_state_machine(void)
 						break;
 					rx[port].var.mute_cnt = 0;
 					rx[port].vpp_mute = false;
-					set_video_mute(false);
+					set_video_mute(HDMI_RX_MUTE_SET, false);
 				}
 			}
 		}
@@ -5779,7 +5780,7 @@ void rx_port0_main_state_machine(void)
 		/* video info change */
 		if (!is_tmds_valid(port)) {
 			if (video_mute_enabled(port)) {
-				set_video_mute(true);
+				set_video_mute(HDMI_RX_MUTE_SET, true);
 				rx_mute_vpp();
 				rx[port].vpp_mute = true;
 				rx[port].var.mute_cnt = 0;
@@ -5870,7 +5871,7 @@ void rx_port0_main_state_machine(void)
 						break;
 					rx[port].var.mute_cnt = 0;
 					rx[port].vpp_mute = false;
-					set_video_mute(false);
+					set_video_mute(HDMI_RX_MUTE_SET, false);
 				}
 			}
 		}
@@ -6256,7 +6257,7 @@ void rx_port1_main_state_machine(void)
 		/* video info change */
 		if (!is_tmds_valid(port)) {
 			if (video_mute_enabled(port)) {
-				set_video_mute(true);
+				set_video_mute(HDMI_RX_MUTE_SET, true);
 				rx_mute_vpp();
 				rx[port].vpp_mute = true;
 				rx[port].var.mute_cnt = 0;
@@ -6347,7 +6348,7 @@ void rx_port1_main_state_machine(void)
 						break;
 					rx[port].var.mute_cnt = 0;
 					rx[port].vpp_mute = false;
-					set_video_mute(false);
+					set_video_mute(HDMI_RX_MUTE_SET, false);
 				}
 			}
 		}
@@ -6779,7 +6780,7 @@ void rx_port2_main_state_machine(void)
 		if (!is_tmds_valid(port)) {
 			rx[port].clk.t_clk_pre = rx[port].clk.tclk;
 			if (video_mute_enabled(port)) {
-				set_video_mute(true);
+				set_video_mute(HDMI_RX_MUTE_SET, true);
 				rx_mute_vpp();
 				rx[port].vpp_mute = true;
 				rx[port].var.mute_cnt = 0;
@@ -6870,7 +6871,7 @@ void rx_port2_main_state_machine(void)
 						break;
 					rx[port].var.mute_cnt = 0;
 					rx[port].vpp_mute = false;
-					set_video_mute(false);
+					set_video_mute(HDMI_RX_MUTE_SET, false);
 				}
 			}
 		}
@@ -7302,7 +7303,7 @@ void rx_port3_main_state_machine(void)
 		/* video info change */
 		if (!is_tmds_valid(port)) {
 			if (video_mute_enabled(port)) {
-				set_video_mute(true);
+				set_video_mute(HDMI_RX_MUTE_SET, true);
 				rx_mute_vpp();
 				rx[port].vpp_mute = true;
 				rx[port].var.mute_cnt = 0;
@@ -7393,7 +7394,7 @@ void rx_port3_main_state_machine(void)
 						break;
 					rx[port].var.mute_cnt = 0;
 					rx[port].vpp_mute = false;
-					set_video_mute(false);
+					set_video_mute(HDMI_RX_MUTE_SET, false);
 				}
 			}
 		}
@@ -7990,9 +7991,9 @@ int hdmirx_debug(const char *buf, int size)
 		rx_pr("mute sts: %x\n", get_video_mute());
 	} else if (strncmp(tmpbuf, "muteset", 7) == 0) {
 		if (tmpbuf[7] == '0')
-			set_video_mute(false);
+			set_video_mute(HDMI_RX_MUTE_SET, false);
 		else
-			set_video_mute(true);
+			set_video_mute(HDMI_RX_MUTE_SET, true);
 	} else if (strncmp(tmpbuf, "bist", 4) == 0) {
 		if (tmpbuf[4] == '1')
 			rx_set_color_bar(true, tmpbuf[5] - '0', port);

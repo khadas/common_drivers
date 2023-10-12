@@ -5592,6 +5592,43 @@ static ssize_t video_nonlinear_t_factor_store(struct class *cla,
 	return count;
 }
 
+static ssize_t video_mute_show(struct class *cla,
+				  struct class_attribute *attr, char *buf)
+{
+	ssize_t ret = 0;
+
+	get_video_mute_info();
+	return ret;
+}
+
+static ssize_t video_mute_store(struct class *cla,
+				   struct class_attribute *attr,
+				   const char *buf, size_t count)
+{
+	int r, val, ret;
+
+	r = kstrtoint(buf, 0, &val);
+	if (r < 0)
+		return -EINVAL;
+
+	if (val)
+		ret = set_video_mute_info(USER_MUTE_SET, true);
+	else
+		ret = set_video_mute_info(USER_MUTE_SET, false);
+	if (ret == 0) {
+		if (val == 0)
+			pr_info("VIDEO UNMUTE by %s ret = %d\n", current->comm, ret);
+		else if (val == 1)
+			pr_info("VIDEO MUTE by %s ret = %d\n", current->comm, ret);
+		else
+			pr_info("set 1 mute video,set 0 unmute video\n");
+	}
+	if (ret < 0)
+		return -EINVAL;
+
+	return count;
+}
+
 static ssize_t video_disable_show(struct class *cla,
 				  struct class_attribute *attr, char *buf)
 {
@@ -8669,6 +8706,10 @@ static struct class_attribute amvideo_class_attrs[] = {
 	       0664,
 	       video_disable_show,
 	       video_disable_store),
+	__ATTR(video_mute,
+	       0664,
+	       video_mute_show,
+	       video_mute_store),
 	__ATTR(video_global_output,
 	       0664,
 	       video_global_output_show,

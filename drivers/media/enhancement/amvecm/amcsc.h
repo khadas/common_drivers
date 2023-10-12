@@ -206,7 +206,7 @@ int amvecm_matrix_process(struct vframe_s *vf, struct vframe_s *vf_rpt, int flag
 			  enum vd_path_e vd_path, enum vpp_index_e vpp_index);
 int amvecm_hdr_dbg(u32 sel);
 u32 get_video_enabled(u8 layer_id);
-void set_video_mute(bool on);
+void set_video_mute(u32 owner, bool on);
 int get_video_mute(void);
 
 void get_cur_vd_signal_type(enum vd_path_e vd_path);

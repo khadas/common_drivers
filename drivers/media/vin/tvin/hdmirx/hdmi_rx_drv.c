@@ -41,6 +41,7 @@
 /*#include <linux/amlogic/amports/vframe_provider.h>*/
 /*#include <linux/amlogic/amports/vframe_receiver.h>*/
 #include <linux/amlogic/media/frame_provider/tvin/tvin.h>
+#include <linux/amlogic/media/video_sink/video.h>
 #include <linux/amlogic/media/vout/vdac_dev.h>
 #include <linux/amlogic/media/vrr/vrr.h>
 /*#include <linux/amlogic/amports/vframe.h>*/
@@ -547,7 +548,7 @@ void hdmirx_dec_stop(struct tvin_frontend_s *fe, enum tvin_port_e port)
 	parm = &devp->param;
 	if (vpp_mute_enable) {
 		if (get_video_mute())// && rx[port].vpp_mute)
-			set_video_mute(false);
+			set_video_mute(HDMI_RX_MUTE_SET, false);
 		//rx[port].vpp_mute = false;
 	}
 	/* parm->info.fmt = TVIN_SIG_FMT_NULL; */
@@ -596,7 +597,7 @@ void hdmirx_dec_close(struct tvin_frontend_s *fe)
 	/* clear vpp mute, such as after unplug */
 	if (vpp_mute_enable) {
 		if (get_video_mute())// && rx[port].vpp_mute)
-			set_video_mute(false);
+			set_video_mute(HDMI_RX_MUTE_SET, false);
 		//rx[port].vpp_mute = false;
 	}
 	rx_pr("%s ok\n", __func__);
@@ -624,7 +625,7 @@ int hdmirx_dec_isr(struct tvin_frontend_s *fe, unsigned int hcnt64)
 				rx[port].avmute_skip += 1;
 				rx[port].vpp_mute_cnt = vpp_mute_cnt;
 				gcp_mute_flag = 1;
-				set_video_mute(true);
+				set_video_mute(HDMI_RX_MUTE_SET, true);
 				hdmirx_set_video_mute(1, port);
 				//skip_frame(2, port);
 				/* return TVIN_BUF_SKIP; */

@@ -24,6 +24,7 @@
 #include <linux/io.h>
 #include <linux/amlogic/media/frame_provider/tvin/tvin.h>
 #include <linux/amlogic/media/vout/vdac_dev.h>
+#include <linux/amlogic/media/video_sink/video.h>
 #include <linux/arm-smccc.h>
 #include <linux/slab.h>
 #include <linux/dma-mapping.h>
@@ -2676,7 +2677,7 @@ bool rx_clr_tmds_valid(u8 port)
 		if (vpp_mute_enable) {
 			rx_mute_vpp();
 			rx[port].vpp_mute = true;
-			set_video_mute(true);
+			set_video_mute(HDMI_RX_MUTE_SET, true);
 			rx_pr("vpp mute\n");
 		}
 		hdmirx_output_en(false);

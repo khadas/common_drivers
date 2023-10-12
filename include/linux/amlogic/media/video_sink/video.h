@@ -338,6 +338,11 @@ enum mediasync_parameter_e {
 	GET_VSYNC_PARAMETER
 };
 
+#define HDMI_RX_MUTE_SET       1
+#define USER_MUTE_SET          2
+#define AML_DOLBY_MUTE_SET     3
+#define VIDEO_MUTE_SET         4
+
 struct mediasync_parameter {
 	u32 vsync_period;
 	s64 vsync_timestamp;
@@ -351,6 +356,13 @@ struct mediasync_ptr {
 	int (*reserved2)(void);
 };
 
+struct video_mute_s {
+	u32 owner;
+	bool on;
+	u32 set_bit;
+};
+
+#define MAX_VIDEO_MUTE_OWNER 5
 #define AMVIDEO_UPDATE_OSD_MODE	0x00000001
 #define AMVIDEO_UPDATE_PREBLEND_MODE	0x00000002
 #define AMVIDEO_UPDATE_SIGNAL_MODE      0x00000003
@@ -431,7 +443,7 @@ struct vpp_postblend_scope_s {
 	u32 v_end;
 };
 
-void set_video_mute(bool on);
+void set_video_mute(u32 owner, bool on);
 int get_video_mute(void);
 void set_output_mute(bool on);
 int get_output_mute(void);

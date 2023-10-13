@@ -3667,6 +3667,15 @@ static void video_composer_task(struct composer_dev *dev)
 						 "too time1=%lld, time2=%lld\n",
 						 delay_time1, delay_time2);
 			}
+
+			if (!(vf->type & VIDTYPE_VIU_FIELD) &&
+				(vf->type & VIDTYPE_INTERLACE_BOTTOM) == 0x3) {
+				vf->type &= (~VIDTYPE_INTERLACE_BOTTOM);
+				vf->type |= VIDTYPE_INTERLACE_TOP;
+				vc_print(dev->index, PRINT_OTHER,
+					"vc put bottom to top, vf->omx_index=%d\n", vf->omx_index);
+			}
+
 			vc_print(dev->index, PRINT_FENCE,
 				"task: push to ready list: omx_index=%d\n", vf->omx_index);
 			video_display_push_ready(dev, vf);

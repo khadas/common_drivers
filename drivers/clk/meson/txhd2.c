@@ -35,6 +35,7 @@ static const struct pll_params_table txhd2_sys_pll_params_table[] = {
 	PLL_PARAMS(54, 0, 0), /*DCO=1296M OD=1296M*/
 	PLL_PARAMS(58, 0, 0), /*DCO=1392M OD=1392M*/
 	PLL_PARAMS(59, 0, 0), /*DCO=1416M OD=1416M*/
+	PLL_PARAMS(61, 0, 0), /*DCO=1464M OD=1464M*/
 	PLL_PARAMS(62, 0, 0), /*DCO=1488M OD=1488M*/
 	PLL_PARAMS(63, 0, 0), /*DCO=1512M OD=1512M*/
 	PLL_PARAMS(67, 0, 0), /*DCO=1608M OD=1608M*/
@@ -47,6 +48,7 @@ static const struct pll_params_table txhd2_sys_pll_params_table[] = {
 	PLL_PARAMS(54, 0), /*DCO=1296M OD=1296M*/
 	PLL_PARAMS(58, 0), /*DCO=1392M OD=1392M*/
 	PLL_PARAMS(59, 0), /*DCO=1416M OD=1416M*/
+	PLL_PARAMS(61, 0), /*DCO=1464M OD=1464M*/
 	PLL_PARAMS(62, 0), /*DCO=1488M OD=1488M*/
 	PLL_PARAMS(63, 0), /*DCO=1512M OD=1512M*/
 	PLL_PARAMS(67, 0), /*DCO=1608M OD=1608M*/

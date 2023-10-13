@@ -1718,8 +1718,8 @@ static int vidioc_streamoff(struct file *file, void *priv, enum v4l2_buf_type i)
 	mutex_lock(&dev->mutex_input);
 	v4l2q_init(&dev->input_queue, V4LVIDEO_POOL_SIZE,
 		   (void **)&dev->v4lvideo_input_queue[0]);
-	buf_mgr_reset(dev->dp_buf_mgr);
 	mutex_unlock(&dev->mutex_input);
+	buf_mgr_reset(dev->dp_buf_mgr);
 	return 0;
 }
 

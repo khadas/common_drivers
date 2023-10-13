@@ -23,6 +23,7 @@ enum dec_type_t {
 	DEC_TYPE_V4L_DEC = 0,
 	DEC_TYPE_V4LVIDEO = 1,
 	DEC_TYPE_TVIN = 2,
+	DEC_TYPE_MAX = 0xff,
 };
 
 struct vf_ref_t {

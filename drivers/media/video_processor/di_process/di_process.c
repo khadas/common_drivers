@@ -493,11 +493,11 @@ static void di_process_task(struct di_process_dev *dev)
 				get_file(file_2);
 				buf_mgr_file_unlock(uvm_di_mgr);
 				video_wait_decode_fence(dev, vf_2);
-				ret = queue_input_to_di(dev, vf_2, true, file_1, false);
+				ret = queue_input_to_di(dev, vf_2, true, file_2, false);
 				if (ret != 0)
 					fput(file_1);
 				video_wait_decode_fence(dev, vf_1);
-				ret = queue_input_to_di(dev, vf_1, true, file_2, false);
+				ret = queue_input_to_di(dev, vf_1, true, file_1, false);
 				if (ret != 0)
 					fput(file_2);
 			} else {
@@ -863,6 +863,18 @@ static int di_process_init(struct di_process_dev *dev)
 	dev->fill_count = 0;
 	dev->empty_done_count = 0;
 	dev->fill_done_count = 0;
+	dev->fence_creat_count = 0;
+	dev->fence_release_count = 0;
+
+	dev->kthread = NULL;
+	dev->thread_need_stop = false;
+	dev->last_dec_type = DEC_TYPE_MAX;
+	dev->last_instance_id = 0xFFFFFFFF;
+	dev->last_buf_mgr_reset_id = 0xFFFFFFFF;
+	dev->last_frame_index = 0xFFFFFFFF;
+	dev->first_out = false;
+	dev->q_dummy_frame_done = false;
+	dev->last_frame_bypass = false;
 
 	receive_q_init(dev);
 	di_input_free_q_init(dev);
@@ -1246,6 +1258,10 @@ static int di_process_q_output(struct di_process_dev *dev, u32 fd)
 		dp_print(dev->index, PRINT_ERROR, "qbuf fd invalid!!!\n");
 		return 0;
 	}
+	if (!file_vf->private_data) {
+		dp_print(dev->index, PRINT_ERROR, "qbuf fd invalid!!! private_data NULL\n");
+		return 0;
+	}
 	total_get_count++;
 	dp_print(dev->index, PRINT_OTHER, "qbuf file_vf=%px, file_vf->private_data=%px\n",
 		file_vf, file_vf->private_data);
@@ -1391,8 +1407,6 @@ static int di_process_open(struct inode *inode, struct file *file)
 	dev->port = port;
 	file->private_data = dev;
 	dev->index = port->index;
-	dev->first_out = false;
-	dev->q_dummy_frame_done = false;
 	port->open_count++;
 
 	mutex_unlock(&di_process_mutex);

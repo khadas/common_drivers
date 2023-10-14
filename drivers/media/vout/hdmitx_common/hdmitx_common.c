@@ -173,11 +173,21 @@ int hdmitx_common_init_bootup_format_para(struct hdmitx_common *tx_comm,
 {
 	int ret = 0;
 	struct hdmitx_hw_common *tx_hw = tx_comm->tx_hw;
+	enum hdmi_tf_type dv_type;
 
 	if (hdmitx_hw_get_state(tx_hw, STAT_TX_OUTPUT, 0)) {
 		para->vic = hdmitx_hw_get_state(tx_hw, STAT_VIDEO_VIC, 0);
 		para->cs = hdmitx_hw_get_state(tx_hw, STAT_VIDEO_CS, 0);
 		para->cd = hdmitx_hw_get_state(tx_hw, STAT_VIDEO_CD, 0);
+		/* when STD DV has already output in uboot, the real cs is rgb
+		 * but hdmi CSC actually uses the Y444. So here needs to reassign
+		 * the para->cs as YUV444
+		 */
+		if (para->cs == HDMI_COLORSPACE_RGB) {
+			dv_type = hdmitx_hw_get_state(tx_hw, STAT_TX_DV, 0);
+			if (dv_type == HDMI_DV_VSIF_STD)
+				para->cs = HDMI_COLORSPACE_YUV444;
+		}
 
 		ret = hdmitx_common_build_format_para(tx_comm, para, para->vic,
 			tx_comm->frac_rate_policy, para->cs, para->cd,

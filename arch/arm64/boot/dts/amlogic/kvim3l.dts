@@ -1353,7 +1353,7 @@
 		status = "okay";
 	};
 
-	khadas-mcu {
+	khadas-mcu@18 {
 		compatible = "khadas-mcu";
 		reg = <0x18>;
 		fan,trig_temp_level0 = <50>;
@@ -1362,7 +1362,7 @@
 		hwver = "VIM3.V11"; /* Will be updated in uboot. */
 	};
 
-	khadas-kxtj3 {
+	khadas-kxtj3@e {
 		compatible = "kxtj3";
 		reg = <0x0E>;
 		type = <2>;

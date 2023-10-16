@@ -1775,10 +1775,10 @@ static long hdmitx_cec_ioctl(struct file *f,
 			cec_dev->hal_flag |= tmp;
 			if (new_msg || cec_dev->msg_num > 0)
 				cec_stored_msg_push();
-			CEC_ERR("CEC framework ctrl enabled\n");
+			dprintk(1, "CEC framework ctrl enabled\n");
 		} else {
 			cec_dev->hal_flag &= ~(tmp);
-			CEC_ERR("CEC framework ctrl disabled\n");
+			dprintk(1, "CEC framework ctrl disabled\n");
 		}
 
 		cec_dev->hal_flag |= (1 << HDMI_OPTION_SERVICE_FLAG);
@@ -2612,7 +2612,7 @@ static int aml_cec_probe(struct platform_device *pdev)
 		ee_cec = CEC_B;
 	else
 		ee_cec = CEC_A;
-	CEC_ERR("using cec:%d\n", ee_cec);
+	dprintk(1, "using cec:%d\n", ee_cec);
 	/* pinmux set */
 	if (of_get_property(node, "pinctrl-names", NULL)) {
 		pin = devm_pinctrl_get(&pdev->dev);
@@ -2818,7 +2818,7 @@ static int aml_cec_probe(struct platform_device *pdev)
 		cec_dev->irq_ceca = cec_dev->irq_cecb;
 	}
 
-	dprintk(0, "%d irq src, a:%d, b:%d\n", __of_irq_count(node),
+	dprintk(1, "%d irq src, a:%d, b:%d\n", __of_irq_count(node),
 		   cec_dev->irq_ceca, cec_dev->irq_cecb);
 	if (of_get_property(node, "interrupt-names", NULL)) {
 		if (of_property_count_strings(node, "interrupt-names") > 1) {
@@ -2953,7 +2953,7 @@ static int aml_cec_probe(struct platform_device *pdev)
 	/* still check bus by default, maybe not necessary */
 	cec_dev->sw_chk_bus = true;
 	cec_dev->chk_sig_free_time = false;
-	CEC_ERR("%s success end\n", __func__);
+	dprintk(1, "%s success end\n", __func__);
 	cec_dev->probe_finish = true;
 	return 0;
 

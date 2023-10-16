@@ -494,7 +494,7 @@ void frc_dump_buf_data(struct frc_dev_s *devp, u32 cma_addr, u32 size)
 	mm_segment_t old_fs = get_fs();
 	char *path = "/data/frc.bin";
 
-	pr_info("%s paddr:0x%x, size:0x%x\n", __func__, cma_addr, size);
+	pr_debug("%s paddr:0x%x, size:0x%x\n", __func__, cma_addr, size);
 	if ((size > 1024 * 1024 * 20) || size == 0)
 		return;
 

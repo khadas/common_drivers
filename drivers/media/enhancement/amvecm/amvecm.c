@@ -13045,7 +13045,7 @@ static int aml_vecm_probe(struct platform_device *pdev)
 #endif
 
 	probe_ok = 1;
-	pr_info("%s: ok\n", __func__);
+	pr_debug("%s: ok\n", __func__);
 	return 0;
 
 fail_create_device:

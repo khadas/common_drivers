@@ -4850,14 +4850,14 @@ void dimh_load_regs(struct di_pq_parm_s *di_pq_ptr)
 	if (dimp_get(edi_mp_pq_load_dbg) == 1)
 		return;
 	if (dimp_get(edi_mp_pq_load_dbg) == 2)
-		PR_INF("pq h: 0x%x len %u.\n",
+		dbg_dbg("pq h: 0x%x len %u.\n",
 			di_pq_ptr->pq_parm.table_name,
 			di_pq_ptr->pq_parm.table_len);
 	if (PTR_ERR_OR_ZERO(di_pq_ptr->regs)) {
 		PR_ERR("[DI] table ptr error.\n");
 		return;
 	}
-	PR_INF("pq h: 0x%x %u.\n",
+	dbg_dbg("pq h: 0x%x %u.\n",
 	       di_pq_ptr->pq_parm.table_name,
 	       di_pq_ptr->pq_parm.table_len);
 	/* check len for coverity */

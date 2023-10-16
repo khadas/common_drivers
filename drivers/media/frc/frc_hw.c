@@ -1716,7 +1716,7 @@ void frc_top_init(struct frc_dev_s *frc_devp)
 			if (vlock_sync_frc_vporch(gst_frc_param) < 0)
 				PR_ERR("frc_infrom vlock fail, check vlock st!\n");
 			else
-				pr_frc(0, "frc_infrom vlock success!!!\n");
+				pr_frc(1, "frc_infrom vlock success!!!\n");
 		}
 		frc_porch_delta = frc_v_porch - frc_vporch_cal;
 		pr_frc(log, "frc_v_porch=%d frc_porch_delta=%d\n",
@@ -1740,7 +1740,7 @@ void frc_top_init(struct frc_dev_s *frc_devp)
 		if (vlock_sync_frc_vporch(gst_frc_param) < 0)
 			PR_ERR("frc_infrom vlock fail, check vlock st!\n");
 		else
-			pr_frc(0, "frc_infrom vlock success!!!\n");
+			pr_frc(1, "frc_infrom vlock success!!!\n");
 		if (chip == ID_T3X)
 			vpu_reg_write_bits(ENCL_FRC_CTRL_T3X,
 				memc_frm_dly - reg_mc_out_line, 0, 16);

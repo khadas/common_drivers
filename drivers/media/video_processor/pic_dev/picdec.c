@@ -2264,7 +2264,7 @@ static int picdec_driver_probe(struct platform_device *pdev)
 	int r;
 
 	picdec_device.use_reserved = 0;
-	aml_pr_info(0, "%s called.\n", __func__);
+	aml_pr_info(1, "%s called.\n", __func__);
 	r = of_reserved_mem_device_init(&pdev->dev);
 	if (r < 0)
 		aml_pr_info(0, "%s reserved_mem is not used.\n", __func__);

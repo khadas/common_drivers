@@ -11471,7 +11471,7 @@ static long dim_pq_load_io_l(struct di_dev_s *de_devp, unsigned long arg)
 
 	tab_flag |= TABLE_NAME_SMOOTHPLUS;
 	if (tmp_pq_s.table_name & tab_flag) {
-		PR_INF("pq i:0x%x:%u:%s.\n",
+		dbg_dbg("pq i:0x%x:%u:%s.\n",
 		       tmp_pq_s.table_name, tmp_pq_s.table_len,
 		       (!dim_dbg_is_force_later() && get_reg_flag_all()) ? "directly" : "later");
 	} else {

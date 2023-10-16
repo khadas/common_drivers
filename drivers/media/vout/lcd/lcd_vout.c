@@ -1223,7 +1223,7 @@ static long lcd_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	pctrl = &pdrv->config.control;
 	opt_info = &pdrv->config.optical;
 	mcd_nr = _IOC_NR(cmd);
-	LCDPR("[%d]: %s: cmd_dir = 0x%x, cmd_nr = 0x%x\n",
+	pr_debug("[%d]: %s: cmd_dir = 0x%x, cmd_nr = 0x%x\n",
 	      pdrv->index, __func__, _IOC_DIR(cmd), mcd_nr);
 
 	argp = (void __user *)arg;

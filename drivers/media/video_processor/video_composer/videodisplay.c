@@ -1110,7 +1110,7 @@ int video_display_create_path(struct composer_dev *dev)
 #ifdef CONFIG_AMLOGIC_MEDIA_FRC
 	if (vd_pulldown_level && frc_get_video_latency()) {
 		dev->enable_pulldown = true;
-		vc_print(dev->index, PRINT_ERROR,
+		vc_print(dev->index, PRINT_OTHER,
 			"enable pulldown\n");
 	}
 #endif

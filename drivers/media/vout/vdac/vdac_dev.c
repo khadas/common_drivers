@@ -1004,7 +1004,7 @@ static int aml_vdac_probe(struct platform_device *pdev)
 
 	vdac_create_class(devp);
 
-	pr_info("%s: ok\n", __func__);
+	pr_debug("%s: ok\n", __func__);
 
 	return ret;
 

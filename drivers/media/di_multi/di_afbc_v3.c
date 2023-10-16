@@ -1592,7 +1592,7 @@ static void afbc_prob(unsigned int cid, struct afd_s *p)
 	//afbc_cfg = BITS_EAFBC_CFG_DISABLE;
 	dbg_mem("%s:ver[%d],%s,mode[%d]\n", __func__, pafd_ctr->fb.ver,
 	       afbc_get_version(), pafd_ctr->fb.mode);
-	PR_INF("%s:ok:en_ponly_afbcd[%d]\n", __func__,
+	pr_debug("%s:ok:en_ponly_afbcd[%d]\n", __func__,
 		pafd_ctr->en_ponly_afbcd);
 }
 

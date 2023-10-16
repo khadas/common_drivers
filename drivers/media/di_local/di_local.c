@@ -551,14 +551,14 @@ int __init dil_init(void)
 		PR_ERR("%s: can't register\n", __func__);
 		return -ENODEV;
 	}
-	PR_INF("%s ok.\n", __func__);
+	pr_debug("%s ok.\n", __func__);
 	return 0;
 }
 
 void __exit dil_exit(void)
 {
 	platform_driver_unregister(&dev_driver_tab);
-	PR_INF("%s: ok.\n", __func__);
+	pr_debug("%s: ok.\n", __func__);
 }
 
 //MODULE_DESCRIPTION("AMLOGIC DI_LOCAL driver");

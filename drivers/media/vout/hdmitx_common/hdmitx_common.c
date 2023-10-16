@@ -665,13 +665,13 @@ int hdmitx_common_avmute_locked(struct hdmitx_common *tx_comm,
 
 	if (mute_flag == SET_AVMUTE) {
 		global_avmute_mask |= mute_path_hint;
-		HDMITX_INFO("%s: AVMUTE path=0x%x\n", __func__, mute_path_hint);
+		HDMITX_DEBUG("%s: AVMUTE path=0x%x\n", __func__, mute_path_hint);
 		hdmitx_hw_cntl_misc(tx_comm->tx_hw, MISC_AVMUTE_OP, SET_AVMUTE);
 	} else if (mute_flag == CLR_AVMUTE) {
 		global_avmute_mask &= ~mute_path_hint;
 		/* unmute only if none of the paths are muted */
 		if (global_avmute_mask == 0) {
-			HDMITX_INFO("%s: AV UNMUTE path=0x%x\n", __func__, mute_path_hint);
+			HDMITX_DEBUG("%s: AV UNMUTE path=0x%x\n", __func__, mute_path_hint);
 			hdmitx_hw_cntl_misc(tx_comm->tx_hw, MISC_AVMUTE_OP, CLR_AVMUTE);
 		}
 	} else if (mute_flag == OFF_AVMUTE) {

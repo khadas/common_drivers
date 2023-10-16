@@ -880,7 +880,7 @@ static int __init amlvideo_create_instance(int inst)
 	struct video_device *vfd;
 	int ret;
 
-	AMLVIDEO_INFO("%s called\n", __func__);
+	AMLVIDEO_DBG("%s called\n", __func__);
 	dev = kzalloc(sizeof(*dev), GFP_KERNEL);
 	if (!dev)
 		return -ENOMEM;
@@ -889,7 +889,7 @@ static int __init amlvideo_create_instance(int inst)
 		 sizeof(dev->v4l2_dev.name),
 		"%s-%03d", AVMLVIDEO_MODULE_NAME, inst);
 	if (inst == n_devs - 1)
-		AMLVIDEO_INFO("v4l2_dev.name=:%s\n", dev->v4l2_dev.name);
+		AMLVIDEO_DBG("v4l2_dev.name=:%s\n", dev->v4l2_dev.name);
 	ret = v4l2_device_register(NULL, &dev->v4l2_dev);
 
 	if (ret)
@@ -958,7 +958,7 @@ static int __init amlvideo_create_instance(int inst)
 
 	dev->vfd = vfd;
 	if (inst == n_devs - 1 || inst == 0)
-		v4l2_info(&dev->v4l2_dev,
+		v4l2_dbg(0, debug, &dev->v4l2_dev,
 			  "V4L2 device registered as %s\n",
 			  video_device_node_name(vfd));
 	return 0;
@@ -984,7 +984,7 @@ int __init amlvideo_init(void)
 {
 	int ret = 0, i;
 
-	AMLVIDEO_INFO("%s called", __func__);
+	AMLVIDEO_DBG("%s called", __func__);
 	if (n_devs <= 0)
 		n_devs = 1;
 

@@ -3920,7 +3920,7 @@ static int video_composer_release(struct inode *inode, struct file *file)
 
 static void disable_video_layer(struct composer_dev *dev, int val)
 {
-	pr_info("dev->index =%d, val=%d", dev->index, val);
+	pr_debug("dev->index =%d, val=%d", dev->index, val);
 	if (dev->index == 0)
 		_video_set_disable(val);
 	else
@@ -4406,7 +4406,7 @@ int video_composer_set_enable(struct composer_dev *dev, u32 val)
 	if (val == 0)
 		dev->composer_enabled = false;
 
-	vc_print(dev->index, PRINT_ERROR,
+	vc_print(dev->index, PRINT_OTHER,
 		 "vc: set enable index=%d, val=%d\n",
 		 dev->index, val);
 
@@ -5691,14 +5691,14 @@ static int video_composer_probe(struct platform_device *pdev)
 
 	for (st = &ports[0], i = 0;
 	     i < video_composer_instance_num; i++, st++) {
-		pr_err("%s:ports[i].name=%s, i=%d\n", __func__,
+		pr_debug("%s:ports[i].name=%s, i=%d\n", __func__,
 		       ports[i].name, i);
 		st->pdev = &pdev->dev;
 		st->class_dev = device_create(&video_composer_class, NULL,
 					      MKDEV(VIDEO_COMPOSER_MAJOR, i),
 					      NULL, ports[i].name);
 	}
-	pr_err("%s num=%d\n", __func__, video_composer_instance_num);
+	pr_debug("%s num=%d\n", __func__, video_composer_instance_num);
 	return ret;
 
 error1:

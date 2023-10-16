@@ -687,7 +687,7 @@ static int am_hdmitx_connector_atomic_set_property
 	struct am_hdmi_tx *am_hdmi = connector_to_am_hdmi(connector);
 	struct hdmitx_color_attr *attr = &hdmitx_state->color_attr_para;
 
-	DRM_INFO("%s\n", __func__);
+	DRM_DEBUG("%s\n", __func__);
 	if (property == am_hdmi->update_attr_prop) {
 		hdmitx_state->update = true;
 		return 0;

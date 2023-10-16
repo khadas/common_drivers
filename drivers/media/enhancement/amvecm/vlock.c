@@ -597,7 +597,7 @@ int vlock_sync_frc_vporch(struct stvlock_frc_param frc_param)
 			ret = 0;
 		}
 	} else {
-		pr_info("vlock: vlk_ctl_for_frc = 0 no need vlock avoid flash patch!!!");
+		pr_debug("vlock: vlk_ctl_for_frc = 0 no need vlock avoid flash patch!!!");
 		vlock_tune_sync_frc(frc_param.frc_v_porch, frc_param.s2l_en);
 		ret = 0;
 	}

@@ -447,19 +447,19 @@ void vdin_frame_lock_check(struct vdin_dev_s *devp, int state)
 			aml_vrr_atomic_notifier_call_chain(FRAME_LOCK_EVENT_ON,
 						   &vrr_data);
 			devp->vrr_data.frame_lock_vrr_en = vrr_data.vrr_mode;
-			pr_info("%s: state =1 and Game, enable frame lock mode:%x\n", __func__,
+			pr_debug("%s: state =1 and Game, enable frame lock mode:%x\n", __func__,
 				vrr_data.vrr_mode);
 		} else {
 			aml_vrr_atomic_notifier_call_chain(FRAME_LOCK_EVENT_OFF,
 							   &vrr_data);
 			devp->vrr_data.frame_lock_vrr_en = FALSE;
-			pr_info("%s: state =1 and no Game, disable v\n", __func__);
+			pr_debug("%s: state =1 and no Game, disable v\n", __func__);
 		}
 	} else {
 		aml_vrr_atomic_notifier_call_chain(FRAME_LOCK_EVENT_OFF,
 						   &vrr_data);
 		devp->vrr_data.frame_lock_vrr_en = FALSE;
-		pr_info("%s: state=0 ,disable frame lock\n", __func__);
+		pr_debug("%s: state=0 ,disable frame lock\n", __func__);
 	}
 }
 

@@ -590,7 +590,7 @@ int rdma_register(struct rdma_op_s *rdma_op, void *op_arg, int table_size)
 			pr_info("%s: memory allocate fail\n",
 				__func__);
 		} else {
-			pr_info("%s success, handle %d table_size %d\n",
+			pr_debug("%s success, handle %d table_size %d\n",
 				__func__, i, table_size);
 		}
 		return i;

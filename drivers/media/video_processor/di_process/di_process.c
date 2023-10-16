@@ -1650,7 +1650,7 @@ static int di_process_probe(struct platform_device *pdev)
 	int i = 0;
 	struct di_process_port_s *st;
 
-	pr_info("di process probe\n");
+	pr_debug("di process probe\n");
 	/*need read from dts*/
 
 	ret = class_register(&di_process_class);
@@ -1665,7 +1665,7 @@ static int di_process_probe(struct platform_device *pdev)
 
 	for (st = &ports[0], i = 0;
 	     i < di_process_instance_num; i++, st++) {
-		pr_err("%s:ports[i].name=%s, i=%d\n", __func__,
+		pr_debug("%s:ports[i].name=%s, i=%d\n", __func__,
 		       ports[i].name, i);
 		st->pdev = &pdev->dev;
 		st->class_dev = device_create(&di_process_class, NULL,
@@ -1673,7 +1673,7 @@ static int di_process_probe(struct platform_device *pdev)
 					      NULL, ports[i].name);
 		dp_timeline_create(i);
 	}
-	pr_err("%s num=%d\n", __func__, di_process_instance_num);
+	pr_debug("%s num=%d\n", __func__, di_process_instance_num);
 	return ret;
 
 error1:
@@ -1710,7 +1710,7 @@ static struct platform_driver di_process_driver = {
 
 int __init di_process_module_init(void)
 {
-	pr_info("di process module init\n");
+	pr_debug("di process module init\n");
 	if (platform_driver_register(&di_process_driver)) {
 		pr_err("failed to register di_process module\n");
 		return -ENODEV;

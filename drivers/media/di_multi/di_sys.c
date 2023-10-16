@@ -3881,7 +3881,7 @@ static int dim_probe(struct platform_device *pdev)
 	else
 		pdata->ic_sub_ver = DI_IC_REV_MAJOR;
 
-	PR_INF("name: %s:id[%d]:ver[%d]\n", pdata->mdata->name,
+	pr_debug("name: %s:id[%d]:ver[%d]\n", pdata->mdata->name,
 	       pdata->mdata->ic_id, pdata->ic_sub_ver);
 
 	ret = of_reserved_mem_device_init(&pdev->dev);
@@ -4259,7 +4259,7 @@ int __init dim_module_init(void)
 {
 	int ret = 0;
 
-	PR_INF("dim:%s\n", __func__);
+	pr_debug("dim:%s\n", __func__);
 
 	ret = platform_driver_register(&di_driver);
 	if (ret != 0) {
@@ -4267,14 +4267,14 @@ int __init dim_module_init(void)
 		/*goto fail_pdrv_register;*/
 		return -ENODEV;
 	}
-	PR_INF("%s finish\n", "init");
+	pr_debug("%s finish\n", "init");
 	return 0;
 }
 
 void __exit dim_module_exit(void)
 {
 	platform_driver_unregister(&di_driver);
-	PR_INF("%s: ok.\n", __func__);
+	pr_debug("%s: ok.\n", __func__);
 }
 
 //MODULE_DESCRIPTION("AMLOGIC MULTI-DI driver");

@@ -778,7 +778,7 @@ static int di_read_canvas_reverse(char *str)
 {
 	unsigned char *ptr = str;
 
-	di_pr_info("%s: bootargs is %s.\n", __func__, str);
+	pr_dbg("%s: bootargs is %s.\n", __func__, str);
 	if (strstr(ptr, "1")) {
 		invert_top_bot |= 0x1;
 		overturn = true;
@@ -9117,7 +9117,7 @@ int __init di_module_init(void)
 {
 	int ret = 0;
 
-	di_pr_info("%s ok.\n", __func__);
+	pr_dbg("%s ok.\n", __func__);
 #if 0	/*move to prob*/
 	ret = alloc_chrdev_region(&di_devno, 0, DI_COUNT, DEVICE_NAME);
 	if (ret < 0) {

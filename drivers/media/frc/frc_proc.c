@@ -421,7 +421,7 @@ void frc_change_to_state(enum frc_state_e state)
 	} else if (devp->frc_sts.state != state) {
 		devp->frc_sts.new_state = state;
 		devp->frc_sts.state_transing = true;
-		pr_frc(0, "%s %d->%d(frm=%d)\n", __func__, devp->frc_sts.state,
+		pr_frc(1, "%s %d->%d(frm=%d)\n", __func__, devp->frc_sts.state,
 				state, devp->frc_sts.frame_cnt);
 	}
 }

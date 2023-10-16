@@ -5526,7 +5526,7 @@ DISPLAY_BYPASS:
 	atomic_set(&hw->link_instance_id, DIM_PLINK_INSTANCE_ID_INVALID);
 	atomic_add(DI_BIT9, &itf->c.dbg_display_sts);	/* dbg only */
 	if (dbg_tm)
-		PR_INF("%s:bypass\n", __func__);
+		dbg_dbg("%s:bypass\n", __func__);
 	return EPVPP_DISPLAY_MODE_BYPASS;
 }
 

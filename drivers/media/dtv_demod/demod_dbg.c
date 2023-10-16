@@ -1149,13 +1149,10 @@ static void dump_regs(struct aml_dtvdemod *demod)
 	case SYS_ATSC:
 	case SYS_ATSCMH:
 		pr_info("atsc start\n");
-#ifndef CONFIG_AMLOGIC_REMOVE_OLD
 		if (is_meson_txlx_cpu()) {
 			for (reg_start = 0; reg_start <= 0xfff; reg_start++)
 				pr_info("[0x%x] = 0x%x\n", reg_start, atsc_read_reg(reg_start));
-		} else
-#endif
-		if (cpu_after_eq(MESON_CPU_MAJOR_ID_TL1)) {
+		} else if (cpu_after_eq(MESON_CPU_MAJOR_ID_TL1)) {
 			for (reg_start = 0; reg_start <= 0xff; reg_start++)
 				pr_info("[0x%x] = 0x%x\n", reg_start, atsc_read_reg_v4(reg_start));
 		}

@@ -676,6 +676,7 @@ int dtmb_get_power_strength(int agc_gain);
 int dvbc_get_power_strength(int agc_gain, int tuner_strength);
 int j83b_get_power_strength(int agc_gain, int tuner_strength);
 int atsc_get_power_strength(int agc_gain, int tuner_strength);
+unsigned int atsc_read_reg_v4(unsigned int addr);
 
 /* dvbt */
 int dvbt_dvbt_set_ch(struct aml_dtvdemod *demod,

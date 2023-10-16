@@ -880,7 +880,7 @@ static void delsys_exit(struct aml_dtvdemod *demod, unsigned int ldelsys,
 #endif
 }
 
-#ifndef CONFIG_AMLOGIC_REMOVE_OLD
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 /* when can't get ic_config by dts, use this*/
 const struct meson_ddemod_data  data_gxtvbb = {
 	.dig_clk = {
@@ -909,9 +909,7 @@ const struct meson_ddemod_data  data_txlx = {
 	},
 	.hw_ver = DTVDEMOD_HW_TXLX,
 };
-#endif
 
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 const struct meson_ddemod_data  data_tl1 = {
 	.dig_clk = {
 		.demod_clk_ctl = 0x74,
@@ -1133,7 +1131,7 @@ const struct meson_ddemod_data data_txhd2 = {
 #endif
 
 static const struct of_device_id meson_ddemod_match[] = {
-#ifndef CONFIG_AMLOGIC_REMOVE_OLD
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	{
 		.compatible = "amlogic, ddemod-gxtvbb",
 		.data		= &data_gxtvbb,
@@ -1152,10 +1150,7 @@ static const struct of_device_id meson_ddemod_match[] = {
 	}, {
 		.compatible = "amlogic, ddemod-tl1",
 		.data		= &data_tl1,
-	},
-#endif
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
-	{
+	}, {
 		.compatible = "amlogic, ddemod-tm2",
 		.data		= &data_tm2,
 	}, {
@@ -1975,7 +1970,6 @@ static int delsys_set(struct dvb_frontend *fe, unsigned int delsys)
 		return 0;
 	}
 
-#ifdef CONFIG_AMLOGIC_DVB_COMPAT
 	if (cdelsys == SYS_ANALOG) {
 		if (get_dtvpll_init_flag()) {
 			PR_INFO("delsys not support : %d\n", cdelsys);
@@ -1984,7 +1978,6 @@ static int delsys_set(struct dvb_frontend *fe, unsigned int delsys)
 
 		return 0;
 	}
-#endif
 
 	if (cdelsys != SYS_UNDEFINED) {
 		if (ldelsys != SYS_UNDEFINED)
@@ -3269,14 +3262,12 @@ struct dvb_frontend *aml_dtvdm_attach(const struct demod_config *config)
 	demod->last_delsys = SYS_UNDEFINED;
 
 	switch (ic_version) {
-#ifndef CONFIG_AMLOGIC_REMOVE_OLD
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	case MESON_CPU_MAJOR_ID_GXTVBB:
 	case MESON_CPU_MAJOR_ID_TXL:
 		aml_dtvdm_ops.delsys[0] = SYS_DVBC_ANNEX_A;
 		aml_dtvdm_ops.delsys[1] = SYS_DTMB;
-#ifdef CONFIG_AMLOGIC_DVB_COMPAT
 		aml_dtvdm_ops.delsys[2] = SYS_ANALOG;
-#endif
 		if (ic_version == MESON_CPU_MAJOR_ID_GXTVBB)
 			strcpy(aml_dtvdm_ops.info.name, "amlogic DVB-C/DTMB dtv demod gxtvbb");
 		else
@@ -3289,9 +3280,7 @@ struct dvb_frontend *aml_dtvdm_attach(const struct demod_config *config)
 		aml_dtvdm_ops.delsys[2] = SYS_DVBC_ANNEX_A;
 		aml_dtvdm_ops.delsys[3] = SYS_DVBT;
 		aml_dtvdm_ops.delsys[4] = SYS_ISDBT;
-#ifdef CONFIG_AMLOGIC_DVB_COMPAT
 		aml_dtvdm_ops.delsys[5] = SYS_ANALOG;
-#endif
 		strcpy(aml_dtvdm_ops.info.name, "amlogic DVB-C/T/ISDBT/ATSC dtv demod txlx");
 		break;
 
@@ -3306,33 +3295,24 @@ struct dvb_frontend *aml_dtvdm_attach(const struct demod_config *config)
 		break;
 
 	case MESON_CPU_MAJOR_ID_TL1:
-#endif
 	case MESON_CPU_MAJOR_ID_TM2:
 		aml_dtvdm_ops.delsys[0] = SYS_DVBC_ANNEX_A;
 		aml_dtvdm_ops.delsys[1] = SYS_DVBC_ANNEX_B;
 		aml_dtvdm_ops.delsys[2] = SYS_ATSC;
 		aml_dtvdm_ops.delsys[3] = SYS_DTMB;
-#ifdef CONFIG_AMLOGIC_DVB_COMPAT
 		aml_dtvdm_ops.delsys[4] = SYS_ANALOG;
-#endif
-#ifndef CONFIG_AMLOGIC_REMOVE_OLD
 		if (ic_version == MESON_CPU_MAJOR_ID_TL1) {
 			strcpy(aml_dtvdm_ops.info.name, "amlogic DVB-C/DTMB/ATSC dtv demod tl1");
 		} else {
-#else
-		{
-#endif
 			strcpy(aml_dtvdm_ops.info.name, "amlogic DVB-C/DTMB/ATSC dtv demod tm2");
 		}
 		break;
-
+#endif
 	case MESON_CPU_MAJOR_ID_T5:
 		/* max delsys is 8, index: 0~7 */
 		aml_dtvdm_ops.delsys[0] = SYS_DVBC_ANNEX_A;
 		aml_dtvdm_ops.delsys[1] = SYS_DTMB;
-#ifdef CONFIG_AMLOGIC_DVB_COMPAT
 		aml_dtvdm_ops.delsys[2] = SYS_ANALOG;
-#endif
 		strcpy(aml_dtvdm_ops.info.name, "amlogic DVB-C/DTMB dtv demod t5");
 		break;
 
@@ -3349,9 +3329,7 @@ struct dvb_frontend *aml_dtvdm_attach(const struct demod_config *config)
 			aml_dtvdm_ops.delsys[5] = SYS_DVBT2;
 			aml_dtvdm_ops.delsys[6] = SYS_DVBT;
 			aml_dtvdm_ops.delsys[7] = SYS_DVBC_ANNEX_B;
-#ifdef CONFIG_AMLOGIC_DVB_COMPAT
 			aml_dtvdm_ops.delsys[8] = SYS_ANALOG;
-#endif
 			strcpy(aml_dtvdm_ops.info.name,
 					"amlogic DVB-C/T/T2/S/S2/ATSC/ISDBT dtv demod t5d");
 			break;
@@ -3359,9 +3337,7 @@ struct dvb_frontend *aml_dtvdm_attach(const struct demod_config *config)
 		case DTVDEMOD_HW_S4:
 			aml_dtvdm_ops.delsys[0] = SYS_DVBC_ANNEX_A;
 			aml_dtvdm_ops.delsys[1] = SYS_DVBC_ANNEX_B;
-#ifdef CONFIG_AMLOGIC_DVB_COMPAT
 			aml_dtvdm_ops.delsys[2] = SYS_ANALOG;
-#endif
 			strcpy(aml_dtvdm_ops.info.name, "amlogic DVB-C dtv demod s4");
 			break;
 
@@ -3376,9 +3352,7 @@ struct dvb_frontend *aml_dtvdm_attach(const struct demod_config *config)
 			aml_dtvdm_ops.delsys[6] = SYS_DVBT;
 			aml_dtvdm_ops.delsys[7] = SYS_DVBC_ANNEX_B;
 			aml_dtvdm_ops.delsys[8] = SYS_DTMB;
-#ifdef CONFIG_AMLOGIC_DVB_COMPAT
 			aml_dtvdm_ops.delsys[9] = SYS_ANALOG;
-#endif
 			strcpy(aml_dtvdm_ops.info.name,
 					"Aml DVB-C/T/T2/S/S2/ATSC/ISDBT/DTMB ddemod t3");
 			break;
@@ -3387,9 +3361,7 @@ struct dvb_frontend *aml_dtvdm_attach(const struct demod_config *config)
 			aml_dtvdm_ops.delsys[1] = SYS_DVBC_ANNEX_B;
 			aml_dtvdm_ops.delsys[2] = SYS_DVBS;
 			aml_dtvdm_ops.delsys[3] = SYS_DVBS2;
-#ifdef CONFIG_AMLOGIC_DVB_COMPAT
 			aml_dtvdm_ops.delsys[4] = SYS_ANALOG;
-#endif
 			strcpy(aml_dtvdm_ops.info.name, "amlogic DVB-C/DVB-S dtv demod s4d");
 			break;
 		case DTVDEMOD_HW_S1A:
@@ -3424,9 +3396,7 @@ struct dvb_frontend *aml_dtvdm_attach(const struct demod_config *config)
 			aml_dtvdm_ops.delsys[5] = SYS_DVBT2;
 			aml_dtvdm_ops.delsys[6] = SYS_DVBT;
 			aml_dtvdm_ops.delsys[7] = SYS_DVBC_ANNEX_B;
-#ifdef CONFIG_AMLOGIC_DVB_COMPAT
 			aml_dtvdm_ops.delsys[8] = SYS_ANALOG;
-#endif
 			strcpy(aml_dtvdm_ops.info.name,
 					"Aml DVB-C/T/T2/S/S2/ATSC/ISDBT ddemod t5w");
 			break;
@@ -3442,9 +3412,7 @@ struct dvb_frontend *aml_dtvdm_attach(const struct demod_config *config)
 			aml_dtvdm_ops.delsys[6] = SYS_DVBT;
 			aml_dtvdm_ops.delsys[7] = SYS_DVBC_ANNEX_B;
 			aml_dtvdm_ops.delsys[8] = SYS_DTMB;
-#ifdef CONFIG_AMLOGIC_DVB_COMPAT
 			aml_dtvdm_ops.delsys[9] = SYS_ANALOG;
-#endif
 			strcpy(aml_dtvdm_ops.info.name,
 					"Aml DVB-C/T/T2/S/S2/ATSC/ISDBT/DTMB ddemod t5m");
 			break;
@@ -3460,18 +3428,14 @@ struct dvb_frontend *aml_dtvdm_attach(const struct demod_config *config)
 			aml_dtvdm_ops.delsys[6] = SYS_DVBT;
 			aml_dtvdm_ops.delsys[7] = SYS_DVBC_ANNEX_B;
 			aml_dtvdm_ops.delsys[8] = SYS_DTMB;
-#ifdef CONFIG_AMLOGIC_DVB_COMPAT
 			aml_dtvdm_ops.delsys[9] = SYS_ANALOG;
-#endif
 			strcpy(aml_dtvdm_ops.info.name,
 					"Aml DVB-C/T/T2/S/S2/ATSC/ISDBT/DTMB ddemod t3x");
 			break;
 
 		case DTVDEMOD_HW_TXHD2:
 			aml_dtvdm_ops.delsys[0] = SYS_DTMB;
-#ifdef CONFIG_AMLOGIC_DVB_COMPAT
 			aml_dtvdm_ops.delsys[1] = SYS_ANALOG;
-#endif
 			break;
 #endif //end of CONFIG_AMLOGIC_ZAPPER_CUT
 
@@ -3505,31 +3469,6 @@ struct dvb_frontend *aml_dtvdm_attach(const struct demod_config *config)
 	return &demod->frontend;
 }
 EXPORT_SYMBOL_GPL(aml_dtvdm_attach);
-
-#ifdef AML_DTVDEMOD_EXP_ATTACH
-static struct aml_exp_func aml_exp_ops = {
-	.leave_mode = leave_mode,
-};
-
-struct aml_exp_func *aml_dtvdm_exp_attach(struct aml_exp_func *exp)
-{
-	if (exp) {
-		memcpy(exp, &aml_exp_ops, sizeof(struct aml_exp_func));
-	} else {
-		PR_ERR("%s:fail!\n", __func__);
-		return NULL;
-
-	}
-	return exp;
-}
-EXPORT_SYMBOL_GPL(aml_dtvdm_exp_attach);
-
-void aml_exp_attach(struct aml_exp_func *afe)
-{
-
-}
-EXPORT_SYMBOL_GPL(aml_exp_attach);
-#endif /* AML_DTVDEMOD_EXP_ATTACH */
 
 //#ifndef MODULE
 //fs_initcall(aml_dtvdemod_init);

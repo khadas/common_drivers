@@ -292,9 +292,7 @@ int gxtv_demod_dtmb_read_status_old(struct dvb_frontend *fe,
 	unsigned char s = 0;
 
 	if (is_meson_gxtvbb_cpu()) {
-#ifndef CONFIG_AMLOGIC_REMOVE_OLD
 		dtmb_check_status_gxtv(fe);
-#endif
 	} else if (cpu_after_eq(MESON_CPU_MAJOR_ID_TXL)) {
 		dtmb_bch_check(fe);
 		if (!cpu_after_eq(MESON_CPU_MAJOR_ID_TL1))
@@ -504,10 +502,8 @@ int Gxtv_Demod_Dtmb_Init(struct aml_dtvdemod *demod)
 	demod->demod_status.delsys = SYS_DTMB;
 
 	if (is_meson_gxtvbb_cpu()) {
-#ifndef CONFIG_AMLOGIC_REMOVE_OLD
 		sys.adc_clk = ADC_CLK_25M;
 		sys.demod_clk = DEMOD_CLK_200M;
-#endif
 	} else if (cpu_after_eq(MESON_CPU_MAJOR_ID_TXL)) {
 		if (is_meson_txl_cpu()) {
 			sys.adc_clk = ADC_CLK_25M;

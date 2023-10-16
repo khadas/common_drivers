@@ -139,6 +139,7 @@
 /*  V3.5.012 add DTV_STAT_SIGNAL_STRENGTH and DTV_STAT_CNR */
 /*  V3.5.013 fix r842 dvbt/t2 LTE interferer test fail */
 /*  V3.5.014 Support ignoring common plp in dvbt2 */
+/*  V3.5.015 remove unused macro and code */
 /****************************************************/
 /****************************************************************/
 /*               AMLDTVDEMOD_VER  Description:                  */
@@ -155,9 +156,9 @@
 /*->The last four digits indicate the release time              */
 /****************************************************************/
 #define KERNEL_4_9_EN		1
-#define AMLDTVDEMOD_VER "V3.5.014"
-#define DTVDEMOD_VER	"2023/10/23: Support ignoring common plp in dvbt2"
-#define AMLDTVDEMOD_T2_FW_VER "20231019_141000"
+#define AMLDTVDEMOD_VER "V3.5.015"
+#define DTVDEMOD_VER	"2023/10/24: remove unused macro and code"
+#define AMLDTVDEMOD_T2_FW_VER "V1558.20230628"
 #define DEMOD_DEVICE_NAME  "dtvdemod"
 
 #define THRD_TUNER_STRENGTH_ATSC (-87)
@@ -513,9 +514,7 @@ struct amldtvdemod_device_s {
 	unsigned int blind_debug_min_frc;
 	unsigned int blind_same_frec;
 
-#ifdef CONFIG_AMLOGIC_DVB_COMPAT
 	struct dvbsx_singlecable_parameters singlecable_param;
-#endif
 
 	bool vdac_enable;
 	bool dvbc_inited;

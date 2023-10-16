@@ -2,11 +2,13 @@
 
 ccflags-y += -DDVB_CORE_ORI=1
 
+ifneq ($(CONFIG_AMLOGIC_ZAPPER_CUT), y)
 ccflags-y += -DAML_DEMOD_SUPPORT_DTMB
 ccflags-y += -DAML_DEMOD_SUPPORT_ATSC
-ccflags-y += -DAML_DEMOD_SUPPORT_J83B
 ccflags-y += -DAML_DEMOD_SUPPORT_ISDBT
 ccflags-y += -DAML_DEMOD_SUPPORT_DVBT
+endif
+ccflags-y += -DAML_DEMOD_SUPPORT_J83B
 ccflags-y += -DAML_DEMOD_SUPPORT_DVBS
 ccflags-y += -DAML_DEMOD_SUPPORT_DVBC
 

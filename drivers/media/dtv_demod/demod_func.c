@@ -537,7 +537,7 @@ void demod_set_mode_ts(struct aml_dtvdemod *demod, enum fe_delivery_system delsy
 
 	case SYS_DVBC_ANNEX_A:
 	case SYS_DVBC_ANNEX_C:
-#ifndef CONFIG_AMLOGIC_REMOVE_OLD
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		if (is_meson_gxtvbb_cpu() || is_meson_txl_cpu()) {
 			cfg0.b.ts_sel = 2;
 			cfg0.b.mode = 7;

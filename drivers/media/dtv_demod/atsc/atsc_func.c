@@ -1808,22 +1808,6 @@ void atsc_write_reg_bits_v4(u32 addr, const u32 data, const u32 start, const u32
 		PR_INFO("atsc wrBit 0x%x=0x%x, s:%d,l:%d\n", addr, data, start, len);
 }
 
-unsigned int atsc_read_reg_v4(unsigned int addr)
-{
-	unsigned int tmp;
-
-	if (!get_dtvpll_init_flag())
-		return 0;
-
-	demod_mutex_lock();
-
-	tmp = readl(gbase_atsc() + (addr << 2));
-
-	demod_mutex_unlock();
-
-	return tmp;
-}
-
 unsigned int atsc_read_iqr_reg(void)
 {
 	unsigned int tmp;

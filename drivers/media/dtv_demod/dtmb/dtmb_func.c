@@ -107,7 +107,6 @@ void dtmb_all_reset(struct aml_dtvdemod *demod)
 	unsigned int reg_val;
 
 	if (is_meson_txl_cpu()) {
-#ifndef CONFIG_AMLOGIC_REMOVE_OLD
 		/*fix bug 139044: DTMB lost sync*/
 		/*dtmb_write_reg(DTMB_FRONT_AFIFO_ADC, 0x1f);*/
 		dtmb_write_reg(DTMB_FRONT_AFIFO_ADC, 0x22);
@@ -126,9 +125,7 @@ void dtmb_all_reset(struct aml_dtvdemod *demod)
 		dtmb_write_reg(DTMB_FRONT_46_CONFIG, 0x1a000f0f);
 		dtmb_write_reg(DTMB_FRONT_ST_FREQ, 0xf2400000);
 		dtmb_clk_set(ADC_CLK_25M);
-#endif
 	} else if (is_meson_txhd_cpu()) {
-#ifndef CONFIG_AMLOGIC_REMOVE_OLD
 		/* dtmb_write_reg(DTMB_FRONT_AFIFO_ADC, 0x1f); */
 		dtmb_write_reg(DTMB_FRONT_AFIFO_ADC, 0x1e);
 
@@ -152,7 +149,6 @@ void dtmb_all_reset(struct aml_dtvdemod *demod)
 		dtmb_write_reg(DTMB_FRONT_ST_FREQ, 0xf2400000);
 		dtmb_clk_set(ADC_CLK_24M);
 		dtmb_write_reg(DTMB_CHE_EQ_CONFIG, 0x1b027719);
-#endif
 	} else if (cpu_after_eq(MESON_CPU_MAJOR_ID_TL1)) {
 		if (demod_get_adc_clk(demod) == ADC_CLK_24M) {
 			dtmb_write_reg(DTMB_FRONT_DDC_BYPASS, 0x6aaaaa);

@@ -529,7 +529,6 @@ void dvbc_reg_initial(struct aml_dtvdemod *demod, struct dvb_frontend *fe)
 		case SYS_ATSC:
 		case SYS_ATSCMH:
 		case SYS_DVBC_ANNEX_B:
-#ifndef CONFIG_AMLOGIC_REMOVE_OLD
 			if (is_meson_txlx_cpu()) {
 				/*j83b filter para*/
 				qam_write_reg(demod, 0x40, 0x3f010201);
@@ -552,7 +551,6 @@ void dvbc_reg_initial(struct aml_dtvdemod *demod, struct dvb_frontend *fe)
 				qam_write_reg(demod, 0x54, 0x606050d);
 				qam_write_reg(demod, 0x52, 0x346dc);
 			}
-#endif
 			break;
 		default:
 			break;

@@ -31,75 +31,18 @@ void tuner_set_params(struct dvb_frontend *fe)
 int tuner_get_ch_power(struct dvb_frontend *fe)
 {
 	int strength = 0;
-#ifdef CONFIG_AMLOGIC_DVB_COMPAT
 	s16 strengtha = 0;
-#endif
 
 	if (fe != NULL) {
-#ifdef CONFIG_AMLOGIC_DVB_COMPAT
 		if (fe->ops.tuner_ops.get_strength) {
 			fe->ops.tuner_ops.get_strength(fe, &strengtha);
 			strength = (int)strengtha;
 		} else {
 			PR_INFO("no tuner get_strength\n");
 		}
-#endif
 	}
 
 	return strength;
-}
-
-struct dvb_tuner_info *tuner_get_info(int type, int mode)
-{
-	/*type :  0-NULL, 1-DCT7070, 2-Maxliner, 3-FJ2207, 4-TD1316 */
-	/*mode: 0-DVBC 1-DVBT */
-	static struct dvb_tuner_info tinfo_null = { };
-
-	static struct dvb_tuner_info tinfo_MXL5003S[2] = {
-		[1] = { /*DVBT*/ .name		= "Maxliner",
-				 .frequency_min_hz = 44000000,
-				 .frequency_max_hz = 885000000, }
-	};
-	static struct dvb_tuner_info tinfo_FJ2207[2] = {
-		[0] = { /*DVBC*/ .name		= "FJ2207",
-				 .frequency_min_hz = 54000000,
-				 .frequency_max_hz = 870000000, },
-		[1] = { /*DVBT*/ .name		= "FJ2207",
-				 .frequency_min_hz = 174000000,
-				 .frequency_max_hz = 864000000, },
-	};
-	static struct dvb_tuner_info tinfo_DCT7070[2] = {
-		[0] = { /*DVBC*/ .name		= "DCT7070",
-				 .frequency_min_hz = 51000000,
-				 .frequency_max_hz = 860000000, }
-	};
-	static struct dvb_tuner_info tinfo_TD1316[2] = {
-		[1] = { /*DVBT*/ .name		= "TD1316",
-				 .frequency_min_hz = 51000000,
-				 .frequency_max_hz = 858000000, }
-	};
-	static struct dvb_tuner_info tinfo_SI2176[2] = {
-		[0] = { /*DVBC*/
-			/*#error please add SI2176 code*/
-			.name		= "SI2176",
-			.frequency_min_hz	= 51000000,
-			.frequency_max_hz	= 860000000,
-		}
-	};
-
-	struct dvb_tuner_info *tinfo[] = {
-		&tinfo_null,
-		tinfo_DCT7070,
-		tinfo_MXL5003S,
-		tinfo_FJ2207,
-		tinfo_TD1316,
-		tinfo_SI2176
-	};
-
-	if ((type < 0) || (type > 4) || (mode < 0) || (mode > 1))
-		return tinfo[0];
-
-	return &tinfo[type][mode];
 }
 
 struct agc_power_tab *tuner_get_agc_power_table(int type)
@@ -259,5 +202,21 @@ int atsc_get_power_strength(int agc_gain, int tuner_strength)
 		strength = tuner_strength;
 
 	return strength;
+}
+
+unsigned int atsc_read_reg_v4(unsigned int addr)
+{
+	unsigned int tmp;
+
+	if (!get_dtvpll_init_flag())
+		return 0;
+
+	demod_mutex_lock();
+
+	tmp = readl(gbase_atsc() + (addr << 2));
+
+	demod_mutex_unlock();
+
+	return tmp;
 }
 

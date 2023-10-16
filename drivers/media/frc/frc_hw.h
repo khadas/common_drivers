@@ -127,4 +127,5 @@ void t3x_eco_initial(void);
 void t3x_eco_qp_cfg(u32 qp);
 void t3x_revB_patch_apply(void);
 void t3x_verB_set_cfg(u8 flag);
+void frc_pattern_dbg_ctrl(struct frc_dev_s *devp);
 #endif

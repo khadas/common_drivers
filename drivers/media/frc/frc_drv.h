@@ -102,8 +102,9 @@
 // frc_20230918 t3x revB use pre_vsync from vpu
 // frc_20230921 fix frc security abnormal
 // frc_20230920 remove hme buffer in t3x/t5m
+// frc_20231009 delay frc function on boot
 
-#define FRC_FW_VER			"2023-1009 delay frc function on boot"
+#define FRC_FW_VER			"2023-1016 add frc pattern dbg ctrl"
 #define FRC_KERDRV_VER                  2976
 
 #define FRC_DEVNO	1
@@ -612,6 +613,13 @@ struct frc_hw_stats_s {
 	union frc_ro_dbg2_stat_u reg4fh;
 };
 
+struct frc_pat_dbg_s {
+	u8 pat_en;
+	u8 pat_type;
+	u8 pat_color;
+	u8 pat_reserved;
+};
+
 struct frc_dev_s {
 	dev_t devt;
 	struct cdev cdev;
@@ -708,6 +716,7 @@ struct frc_dev_s {
 	struct frc_hw_stats_s hw_stats;
 	struct frc_dmc_cfg_s  dmc_cfg[3];
 	struct frc_csc_set_s init_csc[2];
+	struct frc_pat_dbg_s pat_dbg;
 };
 
 struct frc_dev_s *get_frc_devp(void);

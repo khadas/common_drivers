@@ -840,13 +840,33 @@ void frc_debug_param_if(struct frc_dev_s *devp, const char *buf, size_t count)
 	} else if (!strcmp(parm[0], "frc_dp")) {
 		if (!parm[1])
 			goto exit;
-		if (kstrtoint(parm[1], 10, &val1) == 0)
+		if (kstrtoint(parm[1], 10, &val1) == 0) {
+			if (val1) {
+				devp->pat_dbg.pat_en = 1;
+				devp->pat_dbg.pat_type |= BIT_1;
+				devp->pat_dbg.pat_color = (u8)val1;
+			} else {
+				devp->pat_dbg.pat_en = 0;
+				devp->pat_dbg.pat_type |= ~BIT_1;
+				devp->pat_dbg.pat_color = (u8)val1;
+			}
 			frc_set_output_pattern(val1);
+		}
 	} else if (!strcmp(parm[0], "frc_ip")) {
 		if (!parm[1])
 			goto exit;
-		if (kstrtoint(parm[1], 10, &val1) == 0)
+		if (kstrtoint(parm[1], 10, &val1) == 0) {
+			if (val1) {
+				devp->pat_dbg.pat_en = 1;
+				devp->pat_dbg.pat_type |= BIT_0;
+				devp->pat_dbg.pat_color = (u8)val1;
+			} else {
+				devp->pat_dbg.pat_en = 0;
+				devp->pat_dbg.pat_type |= ~BIT_0;
+				devp->pat_dbg.pat_color = (u8)val1;
+			}
 			frc_set_input_pattern(val1);
+		}
 	} else if (!strcmp(parm[0], "seamless")) {
 		if (!parm[1])
 			goto exit;

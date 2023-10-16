@@ -101,6 +101,7 @@ void frc_hw_initial(struct frc_dev_s *devp)
 	frc_top_init(devp);
 	t3x_verB_set_cfg(0);
 	frc_input_size_align_check(devp);
+	frc_pattern_dbg_ctrl(devp);
 	//if (devp->ud_dbg.res2_dbg_en == 1)
 		// frc_memc_120hz_patch(devp);
 	//else

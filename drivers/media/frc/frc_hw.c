@@ -3757,3 +3757,14 @@ void t3x_verB_set_cfg(u8 flag)
 		}
 	}
 }
+
+void frc_pattern_dbg_ctrl(struct frc_dev_s *devp)
+{
+	if (!devp || !devp->pat_dbg.pat_en)
+		return;
+
+	if (devp->pat_dbg.pat_type & BIT_0)
+		frc_set_input_pattern(devp->pat_dbg.pat_color);
+	if (devp->pat_dbg.pat_type & BIT_1)
+		frc_set_output_pattern(devp->pat_dbg.pat_color);
+}

@@ -1068,6 +1068,52 @@ function abi_symbol_list_detect () { # detect symbol information that should be 
 }
 export -f abi_symbol_list_detect
 
+# this function is for kernel higher than 13-5.15
+function set_env_for_adjust_config_action () {
+	set -a # export the value changed to environment
+	. ${ROOT_DIR}/${BUILD_CONFIG}
+	set +a
+	export COMMON_OUT_DIR=$(readlink -m ${OUT_DIR:-${ROOT_DIR}/out${OUT_DIR_SUFFIX}/${BRANCH}})
+	export OUT_DIR=$(readlink -m ${COMMON_OUT_DIR}/${KERNEL_DIR})
+	export DIST_DIR=$(readlink -m ${DIST_DIR:-${COMMON_OUT_DIR}/dist})
+
+	# set the version of clang bin
+	prebuilts_paths=(
+		CLANG_PREBUILT_BIN
+		BUILDTOOLS_PREBUILT_BIN
+	)
+	for prebuilt_bin in "${prebuilts_paths[@]}"; do
+		prebuilt_bin=\${${prebuilt_bin}}
+		eval prebuilt_bin="${prebuilt_bin}"
+		if [ -n "${prebuilt_bin}" ]; then
+			# Mitigate dup paths
+			PATH=${PATH//"${ROOT_DIR}\/${prebuilt_bin}:"}
+			PATH=${ROOT_DIR}/${prebuilt_bin}:${PATH}
+		fi
+	done
+	export PATH
+
+	# support the ndk tools
+	if [[ -n "${NDK_TRIPLE}" ]]; then
+		NDK_DIR=${ROOT_DIR}/prebuilts/ndk-r23
+		if [[ ! -d "${NDK_DIR}" ]]; then
+			# Kleaf/Bazel will checkout the ndk to a different directory than build.sh.
+			NDK_DIR=${ROOT_DIR}/external/prebuilt_ndk
+			if [[ ! -d "${NDK_DIR}" ]]; then
+				echo "ERROR: NDK_TRIPLE set, but unable to find prebuilts/ndk." 1>&2
+				echo "Did you forget to checkout prebuilts/ndk?" 1>&2
+				exit 1
+			fi
+		fi
+		USERCFLAGS="--target=${NDK_TRIPLE} "
+		USERCFLAGS+="--sysroot=${NDK_DIR}/toolchains/llvm/prebuilt/linux-x86_64/sysroot "
+		# up two line set the CONFIG_CC_CAN_LINK CONFIG_CC_CAN_LINK_STATIC CONFIG_UAPI_HEADER_TEST to y
+	else
+		USERCFLAGS="--sysroot=/dev/null"
+	fi
+	export USERCFLAGS USERLDFLAGS
+}
+
 # adjust_config_action concerns three types of cmd:
 # parameters:
 #	--menuconfig:      make menuconfig manually based on different gki standard
@@ -1082,9 +1128,7 @@ function adjust_config_action () {
 			source "${ROOT_DIR}/${BUILD_DIR}/build_utils.sh"
 			source "${ROOT_DIR}/${BUILD_DIR}/_setup_env.sh"
 		else
-			source ${ROOT_DIR}/${BUILD_CONFIG}
-			export COMMON_OUT_DIR=$(readlink -m ${OUT_DIR:-${ROOT_DIR}/out${OUT_DIR_SUFFIX}/${BRANCH}})
-			export OUT_DIR=$(readlink -m ${COMMON_OUT_DIR}/${KERNEL_DIR})
+			set_env_for_adjust_config_action
 		fi
 
 		orig_config=$(mktemp)

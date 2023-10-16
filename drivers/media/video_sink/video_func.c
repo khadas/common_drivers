@@ -4718,6 +4718,8 @@ void pre_vsync_process(void)
 	/* filter setting management */
 	if (cur_pre_func->vd_render_frame)
 		cur_pre_func->vd_render_frame(&vd_layer[0], vinfo);
+	/* do blend set */
+	vpp_blend_update(vinfo, PRE_VSYNC);
 pre_exit_2:
 	if (cur_pre_func->vd_late_process)
 		cur_pre_func->vd_late_process(0, 0);
@@ -5078,7 +5080,7 @@ exit:
 	if (cur_dev->pre_vsync_enable)
 		alpha_win_set(&vd_layer[0]);
 	/* do blend set */
-	vpp_blend_update(vinfo);
+	vpp_blend_update(vinfo, VPP0);
 
 	/* late process */
 	for (i = 0; i < cur_dev->max_vd_layers; i++)

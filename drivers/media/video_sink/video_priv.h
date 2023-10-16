@@ -812,7 +812,7 @@ void vd_clip_setting(u8 vpp_index, u8 layer_id,
 void proc_vd_vsc_phase_per_vsync(struct video_layer_s *layer,
 				 struct vpp_frame_par_s *frame_par,
 				 struct vframe_s *vf);
-void vpp_blend_update(const struct vinfo_s *vinfo);
+void vpp_blend_update(const struct vinfo_s *vinfo, u8 vpp_index);
 void vpp_blend_update_t7(const struct vinfo_s *vinfo);
 void vpp_blend_update_c3(const struct vinfo_s *vinfo);
 void vppx_vd_blend_setting(struct video_layer_s *layer, struct blend_setting_s *setting);
@@ -872,7 +872,7 @@ void aisr_scaler_setting_s5(struct video_layer_s *layer,
 void vd_blend_setting_s5(struct video_layer_s *layer, struct blend_setting_s *setting);
 void vd_clip_setting_s5(u8 vpp_index, u8 layer_id,
 	struct clip_setting_s *setting);
-void vpp_post_blend_update_s5(const struct vinfo_s *vinfo);
+void vpp_post_blend_update_s5(const struct vinfo_s *vinfo, u8 vpp_index);
 void vpp1_post_blend_update_s5(const struct vinfo_s *vinfo);
 void adjust_vpp_filter_parm(struct vpp_frame_par_s *frame_par,
 	u32 supsc1_hori_ratio,

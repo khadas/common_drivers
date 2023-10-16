@@ -251,7 +251,7 @@ int vpp_post_param_set(struct vpp_post_input_s *vpp_input,
 int vpp1_post_param_set(struct vpp_post_input_s *vpp_input,
 	struct vpp1_post_s *vpp_post);
 void vpp_post_set(u32 vpp_index, struct vpp_post_s *vpp_post);
-int update_vpp_input_info(const struct vinfo_s *info);
+int update_vpp_input_info(const struct vinfo_s *info, u8 vpp_index);
 int update_vpp1_input_info(const struct vinfo_s *info);
 struct vpp_post_input_s *get_vpp_input_info(void);
 struct vpp_post_input_s *get_vpp1_input_info(void);

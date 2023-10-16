@@ -941,7 +941,8 @@ static int lowlatency_vsync(u8 instance_id)
 			VFRAME_SIGNAL_FMT_SDR,
 			VFRAME_SIGNAL_FMT_MVC,
 			VFRAME_SIGNAL_FMT_CUVA_HDR,
-			VFRAME_SIGNAL_FMT_CUVA_HLG
+			VFRAME_SIGNAL_FMT_CUVA_HLG,
+			VFRAME_SIGNAL_FMT_SDR_2020
 		};
 #if defined(CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_VECM)
 #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
@@ -1668,7 +1669,7 @@ exit:
 	if (cur_dev->max_vd_layers == 3)
 		vd_clip_setting(VPP0, 2, &vd_layer[2].clip_setting);
 
-	vpp_blend_update(vinfo);
+	vpp_blend_update(vinfo, VPP0);
 
 	if (gvideo_recv[0])
 		gvideo_recv[0]->func->late_proc(gvideo_recv[0]);

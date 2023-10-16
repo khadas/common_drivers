@@ -5735,7 +5735,7 @@ struct vd_proc_info_t *get_vd_proc_amdv_info(void)
 
 static void update_vpp_post_amdv_info(u8 vpp_index, struct vpp_post_s *vpp_post)
 {
-	if (vpp_index == VPP0) {
+	if (vpp_index == VPP0 || vpp_index == PRE_VSYNC) {
 		struct vpp0_post_s *vpp0_post;
 		struct vppx_post_info_t *vpp0_post_info;
 		int i;
@@ -11563,7 +11563,7 @@ void vd_clip_setting_s5(u8 vpp_index, u8 layer_id,
 		vd2_clip_setting_s5(vpp_index, vd_proc, setting);
 }
 
-void vpp_post_blend_update_s5(const struct vinfo_s *vinfo)
+void vpp_post_blend_update_s5(const struct vinfo_s *vinfo, u8 vpp_index)
 {
 	struct vpp_post_input_s *vpp_input;
 
@@ -11580,8 +11580,8 @@ void vpp_post_blend_update_s5(const struct vinfo_s *vinfo)
 			vpp_input->bld_out_vsize);
 
 	vpp_post_param_set(vpp_input, &g_vpp_post.vpp0_post);
-	vpp_post_set(VPP0, &g_vpp_post);
-	update_vpp_post_amdv_info(VPP0, &g_vpp_post);
+	vpp_post_set(vpp_index, &g_vpp_post);
+	update_vpp_post_amdv_info(vpp_index, &g_vpp_post);
 }
 
 void vpp1_post_blend_update_s5(const struct vinfo_s *vinfo)

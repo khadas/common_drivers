@@ -6131,7 +6131,7 @@ static void post_blend_dummy_data_update(u32 vpp_index)
 	}
 }
 
-void vpp_blend_update(const struct vinfo_s *vinfo)
+void vpp_blend_update(const struct vinfo_s *vinfo, u8 vpp_index)
 {
 	static u32 vd1_enabled;
 	static u32 vpp_misc_set_save;
@@ -6143,7 +6143,6 @@ void vpp_blend_update(const struct vinfo_s *vinfo)
 	struct vpp_frame_par_s *vd1_frame_par =
 		vd_layer[0].cur_frame_par;
 	bool force_flush = false;
-	u8 vpp_index = VPP0;
 	int i;
 
 	if (cur_dev->display_module != C3_DISPLAY_MODULE) {

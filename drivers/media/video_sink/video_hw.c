@@ -7569,7 +7569,7 @@ void vpp_blend_update_t7(const struct vinfo_s *vinfo)
 		disable_vd1_blend(&vd_layer[0]);
 }
 
-static void vpp_blend_update_s5(const struct vinfo_s *vinfo)
+static void vpp_blend_update_s5(const struct vinfo_s *vinfo, u8 vpp_index)
 {
 	static u32 t7_vd1_enabled;
 	bool force_flush = false;
@@ -7847,10 +7847,10 @@ static void vpp_blend_update_s5(const struct vinfo_s *vinfo)
 		vd_layer[2].post_blend_en = 0;
 	}
 	force_flush |= vpp_zorder_check();
-	force_flush |= update_vpp_input_info(vinfo);
+	force_flush |= update_vpp_input_info(vinfo, vpp_index);
 
 	if (force_flush)
-		vpp_post_blend_update_s5(vinfo);
+		vpp_post_blend_update_s5(vinfo, vpp_index);
 
 	if (vd_layer[2].vpp_index == VPP0 &&
 	    ((vd_layer[2].dispbuf && video3_off_req) ||
@@ -7868,7 +7868,7 @@ static void vpp_blend_update_s5(const struct vinfo_s *vinfo)
 		disable_vd1_blend(&vd_layer[0]);
 }
 
-void vpp_blend_update(const struct vinfo_s *vinfo)
+void vpp_blend_update(const struct vinfo_s *vinfo, u8 vpp_index)
 {
 	static u32 vd1_enabled;
 	static u32 vpp_misc_set_save;
@@ -7880,7 +7880,6 @@ void vpp_blend_update(const struct vinfo_s *vinfo)
 	struct vpp_frame_par_s *vd1_frame_par =
 		vd_layer[0].cur_frame_par;
 	bool force_flush = false;
-	u8 vpp_index = VPP0;
 	int i;
 
 	if (cur_dev->display_module != C3_DISPLAY_MODULE) {
@@ -7905,7 +7904,7 @@ void vpp_blend_update(const struct vinfo_s *vinfo)
 	check_output_mute();
 
 	if (cur_dev->display_module == S5_DISPLAY_MODULE) {
-		vpp_blend_update_s5(vinfo);
+		vpp_blend_update_s5(vinfo, vpp_index);
 		return;
 	}
 	if (cur_dev->display_module == T7_DISPLAY_MODULE) {

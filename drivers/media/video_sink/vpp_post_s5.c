@@ -756,7 +756,7 @@ void vpp_post_set(u32 vpp_index, struct vpp_post_s *vpp_post)
 {
 	if (!vpp_post)
 		return;
-	if (vpp_index == VPP0) {
+	if (vpp_index == VPP0 || vpp_index == PRE_VSYNC) {
 		struct vpp0_post_s *vpp0_post;
 
 		vpp0_post = &vpp_post->vpp0_post;
@@ -1361,7 +1361,7 @@ int get_vpp_slice_num(const struct vinfo_s *info)
 	return slice_num;
 }
 
-static int check_vpp_info_changed(struct vpp_post_input_s *vpp_input)
+static int check_vpp_info_changed(struct vpp_post_input_s *vpp_input, u8 vpp_index)
 {
 	int i = 0, changed = 0;
 
@@ -1372,8 +1372,8 @@ static int check_vpp_info_changed(struct vpp_post_input_s *vpp_input)
 			vpp_input->din_x_start[i] != g_vpp_input_pre.din_x_start[i] ||
 			vpp_input->din_y_start[i] != g_vpp_input_pre.din_y_start[i]) {
 			changed = 1;
-			pr_info("%s hit vpp_input vd[%d]:new:%d, %d, %d, %d, pre: %d, %d, %d, %d\n",
-			__func__,
+			pr_info("%s %d hit vpp_input vd[%d]:new:%d, %d, %d, %d, pre: %d, %d, %d, %d\n",
+			__func__, vpp_index,
 			i,
 			vpp_input->din_x_start[i],
 			vpp_input->din_y_start[i],
@@ -1432,7 +1432,7 @@ struct vpp_post_input_s *get_vpp_input_info(void)
 	return &g_vpp_input;
 }
 
-int update_vpp_input_info(const struct vinfo_s *info)
+int update_vpp_input_info(const struct vinfo_s *info, u8 vpp_index)
 {
 	int update = 0;
 	struct vd_proc_s *vd_proc;
@@ -1559,7 +1559,7 @@ int update_vpp_input_info(const struct vinfo_s *info)
 	vpp_input.vpp_post_in_pad_vsize = g_vpp_in_padding.vpp_post_in_pad_vsize;
 	vpp_input.down_move = g_vpp_in_padding.down_move;
 	vpp_input.right_move = g_vpp_in_padding.right_move;
-	update = check_vpp_info_changed(&vpp_input);
+	update = check_vpp_info_changed(&vpp_input, vpp_index);
 	return update;
 }
 

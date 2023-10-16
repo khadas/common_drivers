@@ -246,10 +246,8 @@ static bool meson_hdmitx_test_color_attr(struct am_meson_crtc_state *crtc_state,
 	char *outputmode = crtc_state->base.adjusted_mode.name;
 	struct hdmitx_color_attr *attr_list = NULL;
 	char attr_str[HDMITX_ATTR_LEN_MAX];
-	u8 max_bpc = conn_state->base.max_bpc;
 
-	if (test_attr->colorformat == HDMI_COLORSPACE_RESERVED6 ||
-		test_attr->bitdepth > max_bpc)
+	if (test_attr->colorformat == HDMI_COLORSPACE_RESERVED6)
 		return false;
 
 	attr_list = meson_hdmitx_get_candidate_attr_list(crtc_state);
@@ -280,7 +278,7 @@ static bool meson_hdmitx_test_color_attr(struct am_meson_crtc_state *crtc_state,
 
 static int meson_hdmitx_decide_color_attr
 	(struct am_meson_crtc_state *crtc_state,
-	u8 max_bpc, struct hdmitx_color_attr *attr)
+	struct hdmitx_color_attr *attr)
 {
 	char *outputmode = crtc_state->base.adjusted_mode.name;
 	struct hdmitx_color_attr *attr_list = NULL;
@@ -296,20 +294,17 @@ static int meson_hdmitx_decide_color_attr
 	do {
 		if (attr_list->colorformat == HDMI_COLORSPACE_RESERVED6)
 			break;
-
-		if (attr_list->bitdepth <= max_bpc) {
-			build_hdmitx_attr_str(attr_str,
-				attr_list->colorformat, attr_list->bitdepth);
-			if (hdmitx_common_chk_mode_attr_sup(outputmode,
-					attr_str)) {
-				attr->colorformat = attr_list->colorformat;
-				attr->bitdepth = attr_list->bitdepth;
-				DRM_INFO("%s get fmt attr [%d]+[%d]\n",
-					__func__,
-					attr->colorformat,
-					attr->bitdepth);
-				break;
-			}
+		build_hdmitx_attr_str(attr_str,
+			attr_list->colorformat, attr_list->bitdepth);
+		if (hdmitx_common_chk_mode_attr_sup(outputmode,
+				attr_str)) {
+			attr->colorformat = attr_list->colorformat;
+			attr->bitdepth = attr_list->bitdepth;
+			DRM_INFO("%s get fmt attr [%d]+[%d]\n",
+				__func__,
+				attr->colorformat,
+				attr->bitdepth);
+			break;
 		}
 	} while (attr_list++);
 	if (attr_list->colorformat == HDMI_COLORSPACE_RESERVED6) {
@@ -318,8 +313,8 @@ static int meson_hdmitx_decide_color_attr
 		attr->bitdepth = 8;
 	}
 
-	DRM_DEBUG_KMS("[%s]:[%s,bpc:%d,eotf:%d]=>attr[%d,%d]\n", __func__,
-		outputmode, max_bpc, crtc_state->crtc_eotf_type,
+	DRM_DEBUG_KMS("[%s]:[%s,eotf:%d]=>attr[%d,%d]\n", __func__,
+		outputmode, crtc_state->crtc_eotf_type,
 		attr->colorformat, attr->bitdepth);
 
 	return 0;
@@ -1573,8 +1568,7 @@ void meson_hdmitx_encoder_atomic_mode_set(struct drm_encoder *encoder,
 		}
 
 		if (update_attr) {
-			meson_hdmitx_decide_color_attr(meson_crtc_state,
-				hdmitx_state->base.max_bpc, attr);
+			meson_hdmitx_decide_color_attr(meson_crtc_state, attr);
 			hdmitx_state->update = true;
 		}
 	}

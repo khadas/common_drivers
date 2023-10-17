@@ -726,6 +726,7 @@ struct clk_msr {
 	u32 tclk;
 	u32 t_clk_pre;
 	u32 fpll_clk;
+	u32 vid_clk;
 };
 
 struct emp_info_s {

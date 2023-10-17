@@ -3947,6 +3947,7 @@ void rx_get_global_variable(const char *buf)
 	pr_var(vpp_mute_cnt, i++);
 	pr_var(gcp_mute_cnt, i++);
 	pr_var(fps_unready_max, i++);
+	pr_var(clk_msr_param, i++);
 }
 
 bool str_cmp(unsigned char *buff, unsigned char *str)
@@ -4531,6 +4532,9 @@ int rx_set_global_variable(const char *buf, int size)
 	if (set_pr_var(tmpbuf, var_to_str(fps_unready_max),
 		&fps_unready_max, value))
 		return pr_var(fps_unready_max, index);
+	if (set_pr_var(tmpbuf, var_to_str(clk_msr_param),
+		&clk_msr_param, value))
+		return pr_var(clk_msr_param, index);
 	return 0;
 }
 

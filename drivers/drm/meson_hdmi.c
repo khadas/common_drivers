@@ -320,19 +320,6 @@ static int meson_hdmitx_decide_color_attr
 	return 0;
 }
 
-static int meson_hdmitx_setup_color_attr(struct hdmitx_color_attr *attr)
-{
-	char hdmitx_attr_str[HDMITX_ATTR_LEN_MAX];
-	struct hdmitx_common *tx_comm = am_hdmi_info.hdmitx_dev->hdmitx_common;
-
-	build_hdmitx_attr_str(hdmitx_attr_str,
-		attr->colorformat, attr->bitdepth);
-	hdmitx_setup_attr(tx_comm, hdmitx_attr_str);
-
-	DRM_DEBUG_KMS("%s:[%s]\n", __func__, hdmitx_attr_str);
-	return 0;
-}
-
 int meson_hdmitx_get_modes(struct drm_connector *connector)
 {
 	bool vrr_cap;
@@ -725,10 +712,7 @@ static int am_hdmitx_connector_atomic_get_property
 	struct am_hdmitx_connector_state *hdmitx_state =
 		to_am_hdmitx_connector_state(state);
 	struct hdmitx_color_attr *attr = &hdmitx_state->color_attr_para;
-	char attr_force[16];
 
-	hdmitx_get_attr(tx_comm, attr_force);
-	convert_attrstr(attr_force, attr);
 	if (property == am_hdmi->update_attr_prop) {
 		*val = 0;
 		return 0;
@@ -1502,6 +1486,7 @@ void meson_hdmitx_encoder_atomic_mode_set(struct drm_encoder *encoder,
 	struct drm_crtc_state *crtc_state,
 	struct drm_connector_state *conn_state)
 {
+	enum hdmi_vic vic;
 	struct am_meson_crtc_state *meson_crtc_state =
 		to_am_meson_crtc_state(crtc_state);
 	struct am_hdmitx_connector_state *hdmitx_state =
@@ -1509,21 +1494,28 @@ void meson_hdmitx_encoder_atomic_mode_set(struct drm_encoder *encoder,
 	struct hdmitx_color_attr *attr = &hdmitx_state->color_attr_para;
 	struct drm_display_mode *adj_mode = &crtc_state->adjusted_mode;
 	struct am_hdmi_tx *hdmitx = encoder_to_am_hdmi(encoder);
-	struct am_meson_crtc *amcrtc = to_am_meson_crtc(encoder->crtc);
+	struct am_meson_crtc *amcrtc = to_am_meson_crtc(crtc_state->crtc);
 	struct hdmitx_common *tx_comm = am_hdmi_info.hdmitx_dev->hdmitx_common;
 	bool update_attr = false;
 	char *modename = adj_mode->name;
+	int ret = 0;
 
 	DRM_DEBUG("%s[%d]: enter\n", __func__, __LINE__);
-
-	if (meson_hdmitx_choose_preset_mode(hdmitx, amcrtc,
-	    meson_crtc_state, modename, hdmitx_state->hcs.para.vic) < 0)
-		return;
 
 	if (crtc_state->vrr_enabled)
 		meson_hdmitx_cal_brr(hdmitx, meson_crtc_state, adj_mode);
 
 	if (am_hdmi_info.android_path)
+		return;
+
+	vic = hdmitx_common_parse_vic_in_edid(tx_comm, modename);
+	if (vic == HDMI_0_UNKNOWN) {
+		DRM_ERROR("invalid vic for %s\n", modename);
+		return;
+	}
+
+	if (meson_hdmitx_choose_preset_mode(hdmitx, amcrtc,
+	    meson_crtc_state, modename, hdmitx_state->hcs.para.vic) < 0)
 		return;
 
 	DRM_INFO("%s enter:attr[%d-%d]\n", __func__,
@@ -1536,7 +1528,16 @@ void meson_hdmitx_encoder_atomic_mode_set(struct drm_encoder *encoder,
 	 */
 	if (attr_force_debugfs) {
 		attr_force_debugfs = false;
-		hdmitx_setup_attr(tx_comm, attr_debugfs);
+		convert_attrstr(attr_debugfs, attr);
+		ret = hdmitx_common_build_format_para(tx_comm,
+					&hdmitx_state->hcs.para, vic,
+					tx_comm->frac_rate_policy,
+					attr->colorformat,
+					bitdepth_to_colordepth(attr->bitdepth),
+					HDMI_QUANTIZATION_RANGE_FULL);
+		if (ret < 0)
+			DRM_ERROR("format para build fail\n");
+
 		DRM_INFO("debugfs attr\n");
 		return;
 	}
@@ -1573,7 +1574,13 @@ void meson_hdmitx_encoder_atomic_mode_set(struct drm_encoder *encoder,
 		}
 	}
 
-	meson_hdmitx_setup_color_attr(attr);
+	ret = hdmitx_common_build_format_para(tx_comm, &hdmitx_state->hcs.para,
+					      vic, tx_comm->frac_rate_policy,
+					      attr->colorformat,
+					      bitdepth_to_colordepth(attr->bitdepth),
+					      HDMI_QUANTIZATION_RANGE_FULL);
+	if (ret < 0)
+		DRM_ERROR("format para build fail\n");
 }
 
 static
@@ -1708,6 +1715,7 @@ static int meson_hdmitx_encoder_atomic_check(struct drm_encoder *encoder,
 	struct drm_display_mode *adj_mode = &crtc_state->adjusted_mode;
 	char *modename = adj_mode->name;
 	struct hdmitx_common *common = am_hdmi_info.hdmitx_dev->hdmitx_common;
+	int ret = 0;
 
 	if (strstr(modename, "dummy"))
 		return 0;
@@ -1731,11 +1739,18 @@ static int meson_hdmitx_encoder_atomic_check(struct drm_encoder *encoder,
 		hdmitx_state->hdr_priority = hdmitx_state->hcs.hdr_priority;
 	}
 
-	hdmitx_common_build_format_para(common, &hdmitx_state->hcs.para,
-					vic, common->frac_rate_policy,
-					attr->colorformat,
-					bitdepth_to_colordepth(attr->bitdepth),
-					HDMI_QUANTIZATION_RANGE_FULL);
+	ret = hdmitx_common_build_format_para(common, &hdmitx_state->hcs.para,
+					      vic, common->frac_rate_policy,
+					      attr->colorformat,
+					      bitdepth_to_colordepth(attr->bitdepth),
+					      HDMI_QUANTIZATION_RANGE_FULL);
+	if (ret < 0) {
+		DRM_ERROR("build format para fail\n");
+		return -EINVAL;
+	}
+
+	if (!am_hdmi_info.android_path)
+		return 0;
 
 	if (hdmitx_common_validate_format_para(common, &hdmitx_state->hcs.para)) {
 		DRM_ERROR("format para check fail.\n");

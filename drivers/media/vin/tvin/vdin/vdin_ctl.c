@@ -1657,7 +1657,7 @@ static void vdin_manual_matrix_csc(enum vdin_matrix_csc_e *matrix_csc)
 	struct vdin_dev_s *devp;
 
 	devp = vdin_get_dev(0);
-	if (!devp->debug.manual_change_csc)
+	if (!devp || !devp->debug.manual_change_csc)
 		return;
 
 	if (devp->debug.manual_change_csc >= VDIN_MATRIX_MAX)

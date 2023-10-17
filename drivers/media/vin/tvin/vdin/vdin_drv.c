@@ -5606,6 +5606,15 @@ static const struct match_data_s vdin_dt_xxx = {
 	.vdin0_line_buff_size = 0xf00,	.vdin1_line_buff_size = 0xf00,
 };
 
+const struct match_data_s vdin_dt_g12a = {
+	.name = "vdin",
+	.hw_ver = VDIN_HW_ORG,
+	.vdin0_en = 1,			.vdin1_en = 1,
+	.de_tunnel_tunnel = 0,		.ipt444_to_422_12bit = 0,
+	.vdin0_line_buff_size = 0x780,	.vdin1_line_buff_size = 0x780,
+	.vdin0_max_w_h = 0,		.vdin1_set_hdr = false,
+};
+
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
 const struct match_data_s vdin_dt_tl1 = {
@@ -5770,6 +5779,10 @@ static const struct of_device_id vdin_dt_match[] = {
 	{
 		.compatible = "amlogic, vdin",
 		.data = &vdin_dt_xxx,
+	},
+	{
+		.compatible = "amlogic, vdin-g12a",
+		.data = &vdin_dt_g12a,
 	},
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
 	{

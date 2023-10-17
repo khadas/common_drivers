@@ -1139,7 +1139,7 @@
 
 	/*if you want to use vdin just modify status to "ok"*/
 	vdin0: vdin0 {
-		compatible = "amlogic, vdin";
+		compatible = "amlogic, vdin-g12a";
 		dev_name = "vdin0";
 		status = "disabled";
 		reserve-iomap = "true";
@@ -1161,11 +1161,11 @@
 		vdin_id = <0>;
 	};
 	vdin1: vdin1 {
-		compatible = "amlogic, vdin";
+		compatible = "amlogic, vdin-g12a";
 		dev_name = "vdin1";
-		status = "disabled";
+		status = "okay";
 		reserve-iomap = "true";
-		flag_cma = <0>;/*1:share with codec_mm;0:cma alone*/
+		flag_cma = <100>;/*1:share with codec_mm;0:cma alone*/
 		interrupts = <0 85 1>;
 		rdma-irq = <4>;
 		/*clocks = <&clock CLK_FPLL_DIV5>,

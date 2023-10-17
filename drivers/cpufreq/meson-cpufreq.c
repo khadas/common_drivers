@@ -1164,7 +1164,7 @@ static void meson_cpufreq_register_em(struct cpufreq_policy *policy)
 {
 	struct device *cpu_dev = get_cpu_device(policy->cpu);
 
-	dev_pm_opp_of_register_em(cpu_dev, policy->cpus);
+	dev_pm_opp_of_register_em(cpu_dev, policy->related_cpus);
 }
 
 static int meson_cpufreq_verify(struct cpufreq_policy_data *pd)

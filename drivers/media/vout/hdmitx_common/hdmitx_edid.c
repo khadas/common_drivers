@@ -3269,6 +3269,8 @@ int hdmitx_edid_print_sink_cap(const struct rx_cap *prxcap,
 	if (prxcap->hdr_info2.hdr_support)
 		pos += snprintf(buffer + pos, buffer_len - pos, "  HDR/%d",
 			prxcap->hdr_info2.hdr_support);
+	if (prxcap->hdr_info.sbtm_info.sbtm_support)
+		pos += snprintf(buffer + pos, buffer_len - pos, "  SBTM");
 	if (prxcap->dc_y444 || prxcap->dc_30bit || prxcap->dc_30bit_420)
 		pos += snprintf(buffer + pos, buffer_len - pos, "  DeepColor");
 	pos += snprintf(buffer + pos, buffer_len - pos, "\n");

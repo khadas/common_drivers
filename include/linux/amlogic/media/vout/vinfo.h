@@ -347,6 +347,7 @@ struct dv_info {
 struct vout_device_s {
 	const struct dv_info *dv_info;
 	void (*fresh_tx_hdr_pkt)(struct master_display_info_s *data);
+	void (*fresh_tx_sbtm_pkt)(struct vtem_sbtm_st *data);
 	void (*fresh_tx_vsif_pkt)(enum eotf_type type,
 				  enum mode_type tunnel_mode,
 				  struct dv_vsif_para *data,
@@ -407,6 +408,7 @@ struct vinfo_s {
 	 */
 	unsigned int viu_mux;
 	struct master_display_info_s master_display_info;
+	struct vtem_sbtm_st sbtm_pkt;
 	struct hdr_info hdr_info;
 	struct rx_av_latency rx_latency;
 	struct vout_device_s *vout_device;

@@ -514,6 +514,7 @@ ssize_t efuse_user_attr_read(char *name, char *buf)
 exit:
 	return ret;
 }
+EXPORT_SYMBOL(efuse_user_attr_read);
 
 static ssize_t userdata_show(struct class *cla,
 			     struct class_attribute *attr, char *buf)

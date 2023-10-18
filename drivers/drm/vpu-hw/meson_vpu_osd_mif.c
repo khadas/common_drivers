@@ -1689,7 +1689,6 @@ static void g12b_osd_hw_init(struct meson_vpu_block *vblk)
 	if (vblk->index == MESON_VIU2_OSD1) {
 		DRM_INFO("%s hw_init for %s, index:%d.\n", __func__,
 				osd->base.name, vblk->index);
-		meson_drm_write_reg_bits(VIU2_OSD1_MATRIX_EN_CTRL, 0, 0, 1);
 		/* power and clock of viu2 */
 		data32 = meson_drm_read_reg(VPU_CLK_GATE);
 		data32 =  data32 | 0x30000;

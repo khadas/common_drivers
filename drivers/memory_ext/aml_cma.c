@@ -1789,52 +1789,58 @@ struct kprobe kp_cma_release = {
 	.pre_handler = cma_release_pre_handler,
 };
 
-/* Returns true if the page is within a block suitable for migration to */
-static bool aml_suitable_migration(struct compact_control *cc,
-							struct page *page)
+static int compaction_alloc_debug;
+module_param(compaction_alloc_debug, int, 0644);
+
+static unsigned long low_cma_pfn = -1UL; //max
+module_param(low_cma_pfn, ulong, 0644);
+
+struct cma;
+static int low_cma_func(struct cma *cma, void *data)
 {
-	int migrate_type = 0;
-	/* If the page is a large free page, then disallow migration */
-	if (PageBuddy(page)) {
-		/*
-		 * We are checking page_order without zone->lock taken. But
-		 * the only small danger is that we skip a potentially suitable
-		 * pageblock, so it's not worth to check order for valid range.
-		 */
-		if (buddy_order_unsafe(page) >= pageblock_order)
-			return false;
+	struct dummy_cma *d_cma = (struct dummy_cma *)cma;
+
+	if (d_cma->base_pfn < low_cma_pfn)
+		low_cma_pfn = d_cma->base_pfn;
+
+	return 0;
+}
+
+static __nocfi void low_cma_init(void)
+{
+	cma_for_each_area(low_cma_func, NULL);
+	pr_info("low_cma_pfn=%lx\n", low_cma_pfn);
+
+	if (low_cma_pfn < 500 * 1024 / 4) {
+		pr_err("low_cma_pfn less than 500M ignore\n");
+		low_cma_pfn = -1UL;
+	}
+}
+
+static int __nocfi __kprobes compaction_alloc_pre_handler(struct kprobe *p, struct pt_regs *regs)
+{
+#ifdef CONFIG_ARM64
+	struct compact_control *cc = (struct compact_control *)regs->regs[1];
+#elif CONFIG_ARM
+	struct compact_control *cc = (struct compact_control *)regs->ARM_r1;
+#endif
+
+	if (list_empty(&cc->freepages)) {
+		if (cc->free_pfn >= low_cma_pfn) {
+			if (compaction_alloc_debug)
+				pr_info("compaction_alloc: set free_pfn %lx->%lx\n",
+						cc->free_pfn, low_cma_pfn - pageblock_nr_pages);
+
+			cc->free_pfn = low_cma_pfn - pageblock_nr_pages;
+		}
 	}
 
-	/* avoid compact to cma area */
-	migrate_type = get_pageblock_migratetype(page);
-	if (is_migrate_isolate(migrate_type))
-		return false;
-	if (is_migrate_cma(migrate_type))
-		return false;
-
-	if (cc->ignore_block_suitable)
-		return true;
-
-	/* If the block is MIGRATE_MOVABLE or MIGRATE_CMA, allow migration */
-	if (is_migrate_movable(migrate_type))
-		return true;
-
-	/* Otherwise skip the block */
-	return false;
+	return 0;
 }
 
-static int __nocfi __kprobes suitable_migration_pre_handler(struct kprobe *p, struct pt_regs *regs)
-{
-	//restore to origin context
-	instruction_pointer_set(regs, (unsigned long)aml_suitable_migration);
-
-	//no need continue do single-step
-	return 1;
-}
-
-struct kprobe kp_suitable_migration = {
-	.symbol_name  = "suitable_migration_target",
-	.pre_handler = suitable_migration_pre_handler,
+struct kprobe kp_compaction_alloc = {
+	.symbol_name  = "compaction_alloc",
+	.pre_handler = compaction_alloc_pre_handler,
 };
 
 static void *get_symbol_addr(const char *symbol_name)
@@ -1910,10 +1916,10 @@ static int __nocfi common_symbol_init(void *data)
 		return 1;
 	}
 
-	ret = register_kprobe(&kp_suitable_migration);
+	ret = register_kprobe(&kp_compaction_alloc);
 	if (ret < 0) {
 		pr_err("register_kprobe:%s failed, returned %d\n",
-		       kp_suitable_migration.symbol_name, ret);
+		       kp_compaction_alloc.symbol_name, ret);
 		return 1;
 	}
 
@@ -1933,6 +1939,8 @@ static int __init aml_cma_module_init(void)
 
 	init_cma_boost_task();
 	kthread_run(common_symbol_init, NULL, "AML_CMA_TASK");
+
+	low_cma_init();
 
 	return 0;
 }

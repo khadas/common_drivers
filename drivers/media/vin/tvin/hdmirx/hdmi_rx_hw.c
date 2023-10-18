@@ -4669,7 +4669,7 @@ void rx_aud_pll_ctl(bool en, u8 port)
 						_BIT(14), 1);
 					hdmirx_wr_bits_clk_ctl(T3X_CLKCTRL_AUD21_PLL_CTRL0,
 						_BIT(29), 1);
-					if (rx[E_PORT2].var.frl_rate || rx[E_PORT3].var.frl_rate) {
+					if (rx[port].var.frl_rate) {
 						tmp = hdmirx_rd_amlphy_t3x(T3X_HDMIRX21PLL_CTRL2,
 							port);
 						hdmirx_wr_amlphy_t3x(T3X_HDMIRX21PLL_CTRL2,

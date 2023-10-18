@@ -1665,13 +1665,13 @@ void t3x_720p_pll_cfg_21(u8 port)
 	usleep_range(20, 30);
 	hdmirx_wr_amlphy_t3x(T3X_HDMIRX21PLL_CTRL0, 0x0530a013, port);
 	usleep_range(20, 30);
-	hdmirx_wr_amlphy_t3x(T3X_HDMIRX21PLL_CTRL1, 0x61401236, port);
+	hdmirx_wr_amlphy_t3x(T3X_HDMIRX21PLL_CTRL1, 0x21401236, port);
 	usleep_range(20, 30);
 	hdmirx_wr_amlphy_t3x(T3X_HDMIRX21PLL_CTRL0, 0x0530a017, port);
 	usleep_range(20, 30);
 	hdmirx_wr_amlphy_t3x(T3X_HDMIRX21PLL_CTRL0, 0x4530a017, port);
 	rx[port].phy.aud_div = 0;
-	rx[port].phy.aud_div_1 = 0x8;
+	rx[port].phy.aud_div_1 = 0x408;
 }
 
 void t3x_1080p_pll_cfg_21(u8 port)

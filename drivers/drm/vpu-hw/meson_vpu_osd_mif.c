@@ -1386,14 +1386,10 @@ static void osd_set_state(struct meson_vpu_block *vblk,
 
 	src_h = mvos->src_h + mvos->src_y;
 	byte_stride = mvos->byte_stride;
-	if (osd->mif_acc_mode == LINEAR_MIF) {
-		if (mvsps->more_60)
-			byte_stride = line_stride_calc(mvos->pixel_format,
-						mvos->fb_w * 2, 0);
-		else
-			byte_stride = line_stride_calc(mvos->pixel_format,
+	if (osd->mif_acc_mode == LINEAR_MIF)
+		byte_stride = line_stride_calc(mvos->pixel_format,
 						mvos->fb_w, 0);
-	}
+
 	phy_addr = mvos->phy_addr;
 	scope_src.h_start = mvos->src_x;
 	scope_src.h_end = mvos->src_x + mvos->src_w - 1;

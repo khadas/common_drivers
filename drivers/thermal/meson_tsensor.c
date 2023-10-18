@@ -1039,6 +1039,10 @@ static const struct dev_pm_ops meson_tsensor_pm_ops = {
 
 static void meson_tsensor_shutdown(struct platform_device *pdev)
 {
+	struct meson_tsensor_data *data = platform_get_drvdata(pdev);
+	struct thermal_zone_device *tzd = data->tzd;
+
+	thermal_zone_of_sensor_unregister(&pdev->dev, tzd);
 	meson_tsensor_suspend(&pdev->dev);
 }
 

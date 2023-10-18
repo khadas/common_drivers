@@ -7,6 +7,7 @@
 
 #include "meson-s4.dtsi"
 #include "mesons4_drm.dtsi"
+#include "partition_debian_linux.dtsi"
 #include <dt-bindings/input/input.h>
 
 / {
@@ -586,31 +587,15 @@
 		spk_mute-gpios = <&gpio GPIOH_8 GPIO_ACTIVE_LOW>;
 
 		aml-audio-card,dai-link@0 {
-			format = "dsp_a";
-			mclk-fs = <512>;
-			//continuous-clock;
-			//bitclock-inversion;
-			//frame-inversion;
-			/* master mode */
-			bitclock-master = <&tdma>;
-			frame-master = <&tdma>;
-			/* slave mode */
-			/*
-			 * bitclock-master = <&tdmacodec>;
-			 * frame-master = <&tdmacodec>;
-			 */
-			suffix-name = "alsaPORT-pcm";
-			tdmacpu: cpu {
-				sound-dai = <&tdma>;
-				dai-tdm-slot-tx-mask =
-							<1>;
-				dai-tdm-slot-rx-mask =
-							<1>;
-				dai-tdm-slot-num = <2>;
-				dai-tdm-slot-width = <16>;
-				system-clock-frequency = <256000>;
+
+			mclk-fs = <128>;
+			/* suffix-name, sync with android audio hal used for */
+			suffix-name = "alsaPORT-spdif";
+			cpu {
+				sound-dai = <&spdifa>;
+				system-clock-frequency = <6144000>;
 			};
-			tdmacodec: codec {
+			codec {
 				sound-dai = <&dummy_codec>;
 			};
 		};
@@ -693,14 +678,31 @@
 		};
 
 		aml-audio-card,dai-link@4 {
-			mclk-fs = <128>;
-			/* suffix-name, sync with android audio hal used for */
-			suffix-name = "alsaPORT-spdif";
-			cpu {
-				sound-dai = <&spdifa>;
-				system-clock-frequency = <6144000>;
+			format = "dsp_a";
+			mclk-fs = <512>;
+			//continuous-clock;
+			//bitclock-inversion;
+			//frame-inversion;
+			/* master mode */
+			bitclock-master = <&tdma>;
+			frame-master = <&tdma>;
+			/* slave mode */
+			/*
+			 * bitclock-master = <&tdmacodec>;
+			 * frame-master = <&tdmacodec>;
+			 */
+			suffix-name = "alsaPORT-pcm";
+			tdmacpu: cpu {
+				sound-dai = <&tdma>;
+				dai-tdm-slot-tx-mask =
+							<1>;
+				dai-tdm-slot-rx-mask =
+							<1>;
+				dai-tdm-slot-num = <2>;
+				dai-tdm-slot-width = <16>;
+				system-clock-frequency = <256000>;
 			};
-			codec {
+			tdmacodec: codec {
 				sound-dai = <&dummy_codec>;
 			};
 		};

@@ -549,36 +549,6 @@
 		spk_mute-gpios = <&gpio GPIOD_2 GPIO_ACTIVE_LOW>;
 
 		aml-audio-card,dai-link@0 {
-			format = "dsp_a";
-			mclk-fs = <512>;
-			//continuous-clock;
-			//bitclock-inversion;
-			//frame-inversion;
-			/* master mode */
-			bitclock-master = <&tdma>;
-			frame-master = <&tdma>;
-			/* slave mode */
-			/*
-			 * bitclock-master = <&tdmacodec>;
-			 * frame-master = <&tdmacodec>;
-			 */
-			suffix-name = "alsaPORT-pcm";
-			tdmacpu: cpu {
-				sound-dai = <&tdma>;
-				dai-tdm-slot-tx-mask =
-							<1>;
-				dai-tdm-slot-rx-mask =
-							<1>;
-				dai-tdm-slot-num = <2>;
-				dai-tdm-slot-width = <16>;
-				system-clock-frequency = <256000>;
-			};
-			tdmacodec: codec {
-				sound-dai = <&dummy_codec>;
-			};
-		};
-
-		aml-audio-card,dai-link@1 {
 			format = "i2s";// "dsp_a";
 			mclk-fs = <256>;
 			//continuous-clock;
@@ -612,6 +582,37 @@
 			tdmbcodec: codec {
 				sound-dai = <&amlogic_codec /*&ad82584f_62*/>;
 			};
+		};
+
+		aml-audio-card,dai-link@1 {
+			format = "dsp_a";
+			mclk-fs = <512>;
+			//continuous-clock;
+			//bitclock-inversion;
+			//frame-inversion;
+			/* master mode */
+			bitclock-master = <&tdma>;
+			frame-master = <&tdma>;
+			/* slave mode */
+			/*
+			 * bitclock-master = <&tdmacodec>;
+			 * frame-master = <&tdmacodec>;
+			 */
+			suffix-name = "alsaPORT-pcm";
+			tdmacpu: cpu {
+				sound-dai = <&tdma>;
+				dai-tdm-slot-tx-mask =
+							<1>;
+				dai-tdm-slot-rx-mask =
+							<1>;
+				dai-tdm-slot-num = <2>;
+				dai-tdm-slot-width = <16>;
+				system-clock-frequency = <256000>;
+			};
+			tdmacodec: codec {
+				sound-dai = <&dummy_codec>;
+			};
+
 		};
 
 		aml-audio-card,dai-link@2 {

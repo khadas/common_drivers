@@ -999,7 +999,7 @@ extern int rx_5v_wake_up_en;
 extern char edid_cur[EDID_SIZE];
 extern int vpp_mute_cnt;
 extern int gcp_mute_cnt;
-extern int gcp_mute_flag;
+extern int gcp_mute_flag[4];
 #ifdef CONFIG_AMLOGIC_MEDIA_VRR
 extern struct notifier_block vrr_notify;
 #endif

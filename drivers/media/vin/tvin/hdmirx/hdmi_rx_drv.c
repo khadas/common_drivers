@@ -177,7 +177,7 @@ int disable_port_en;
 int rx_5v_wake_up_en;
 int vpp_mute_cnt = 3;
 int gcp_mute_cnt = 25;
-int gcp_mute_flag;
+int gcp_mute_flag[4];
 #ifdef CONFIG_AMLOGIC_LEGACY_EARLY_SUSPEND
 static bool early_suspend_flag;
 #endif
@@ -624,7 +624,7 @@ int hdmirx_dec_isr(struct tvin_frontend_s *fe, unsigned int hcnt64)
 			if (avmute_flag == 1) {
 				rx[port].avmute_skip += 1;
 				rx[port].vpp_mute_cnt = vpp_mute_cnt;
-				gcp_mute_flag = 1;
+				gcp_mute_flag[port] = 1;
 				set_video_mute(HDMI_RX_MUTE_SET, true);
 				hdmirx_set_video_mute(1, port);
 				//skip_frame(2, port);

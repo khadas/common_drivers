@@ -421,6 +421,7 @@ void hdmirx_fsm_var_init(void)
 		hbr_force_8ch = 1; //use it to enable hdr2spdif
 		sig_stable_err_max = 5;
 		sig_stable_max = 10;
+		fps_unready_max = 3;
 		dwc_rst_wait_cnt_max = 30;
 		spec_dev_wait_cnt_max = 200;
 		clk_unstable_max = 50;
@@ -5357,13 +5358,13 @@ void rx_main_state_machine(void)
 				rx[port].state = FSM_SIG_WAIT_STABLE;
 				break;
 			}
-		} else if (!rx_fps_is_changed(port) && gcp_mute_flag &&
+		} else if (!rx_fps_is_changed(port) && gcp_mute_flag[port] &&
 		!rx[port].free_sync_sts && !rx[port].vtem_info.vrr_en) {
 			if (++rx[port].var.fps_unready_cnt >= fps_unready_max) {
 				rx[port].gcp_mute_cnt = gcp_mute_cnt;
 				rx[port].pre.frame_rate = rx[port].cur.frame_rate;
 				rx[port].var.fps_unready_cnt = 0;
-				gcp_mute_flag = 0;
+				gcp_mute_flag[port] = 0;
 				break;
 			}
 		} else {
@@ -5851,12 +5852,29 @@ void rx_port0_main_state_machine(void)
 				rx[port].state = FSM_SIG_WAIT_STABLE;
 				break;
 			}
+		} else if (!rx_fps_is_changed(port) && gcp_mute_flag[port] &&
+		!rx[port].free_sync_sts && !rx[port].vtem_info.vrr_en) {
+			if (++rx[port].var.fps_unready_cnt >= fps_unready_max) {
+				rx[port].gcp_mute_cnt = gcp_mute_cnt;
+				rx[port].pre.frame_rate = rx[port].cur.frame_rate;
+				rx[port].var.fps_unready_cnt = 0;
+				gcp_mute_flag[port] = 0;
+				break;
+			}
 		} else {
 			rx[port].var.sig_unready_cnt = 0;
 			one_frame_cnt = (1000 * 100 / rx[port].pre.frame_rate / 12) + 1;
 			if (rx[port].skip > 0) {
 				rx[port].skip--;
 			} else if (vpp_mute_enable) {
+				if (rx[port].gcp_mute_cnt > 0) {
+					rx[port].gcp_mute_cnt--;
+					break;
+				}
+				if (rx[port].vpp_mute_cnt > 0) {
+					rx[port].vpp_mute_cnt--;
+					break;
+				}
 				/* clear vpp mute after signal stable */
 				if (get_video_mute()) {
 					if (rx[port].var.mute_cnt++ < one_frame_cnt + 1)
@@ -6328,12 +6346,29 @@ void rx_port1_main_state_machine(void)
 				rx[port].state = FSM_SIG_WAIT_STABLE;
 				break;
 			}
+		} else if (!rx_fps_is_changed(port) && gcp_mute_flag[port] &&
+		!rx[port].free_sync_sts && !rx[port].vtem_info.vrr_en) {
+			if (++rx[port].var.fps_unready_cnt >= fps_unready_max) {
+				rx[port].gcp_mute_cnt = gcp_mute_cnt;
+				rx[port].pre.frame_rate = rx[port].cur.frame_rate;
+				rx[port].var.fps_unready_cnt = 0;
+				gcp_mute_flag[port] = 0;
+				break;
+			}
 		} else {
 			rx[port].var.sig_unready_cnt = 0;
 			one_frame_cnt = (1000 * 100 / rx[port].pre.frame_rate / 12) + 1;
 			if (rx[port].skip > 0) {
 				rx[port].skip--;
 			} else if (vpp_mute_enable) {
+				if (rx[port].gcp_mute_cnt > 0) {
+					rx[port].gcp_mute_cnt--;
+					break;
+				}
+				if (rx[port].vpp_mute_cnt > 0) {
+					rx[port].vpp_mute_cnt--;
+					break;
+				}
 				/* clear vpp mute after signal stable */
 				if (get_video_mute()) {
 					if (rx[port].var.mute_cnt++ < one_frame_cnt + 1)
@@ -6851,12 +6886,29 @@ void rx_port2_main_state_machine(void)
 				rx[port].state = FSM_SIG_WAIT_STABLE;
 				break;
 			}
+		} else if (!rx_fps_is_changed(port) && gcp_mute_flag[port] &&
+		!rx[port].free_sync_sts && !rx[port].vtem_info.vrr_en) {
+			if (++rx[port].var.fps_unready_cnt >= fps_unready_max) {
+				rx[port].gcp_mute_cnt = gcp_mute_cnt;
+				rx[port].pre.frame_rate = rx[port].cur.frame_rate;
+				rx[port].var.fps_unready_cnt = 0;
+				gcp_mute_flag[port] = 0;
+				break;
+			}
 		} else {
 			rx[port].var.sig_unready_cnt = 0;
 			one_frame_cnt = (1000 * 100 / rx[port].pre.frame_rate / 12) + 1;
 			if (rx[port].skip > 0) {
 				rx[port].skip--;
 			} else if (vpp_mute_enable) {
+				if (rx[port].gcp_mute_cnt > 0) {
+					rx[port].gcp_mute_cnt--;
+					break;
+				}
+				if (rx[port].vpp_mute_cnt > 0) {
+					rx[port].vpp_mute_cnt--;
+					break;
+				}
 				/* clear vpp mute after signal stable */
 				if (get_video_mute()) {
 					if (rx[port].var.mute_cnt++ < one_frame_cnt + 1)
@@ -7374,12 +7426,29 @@ void rx_port3_main_state_machine(void)
 				rx[port].state = FSM_SIG_WAIT_STABLE;
 				break;
 			}
+		} else if (!rx_fps_is_changed(port) && gcp_mute_flag[port] &&
+		!rx[port].free_sync_sts && !rx[port].vtem_info.vrr_en) {
+			if (++rx[port].var.fps_unready_cnt >= fps_unready_max) {
+				rx[port].gcp_mute_cnt = gcp_mute_cnt;
+				rx[port].pre.frame_rate = rx[port].cur.frame_rate;
+				rx[port].var.fps_unready_cnt = 0;
+				gcp_mute_flag[port] = 0;
+				break;
+			}
 		} else {
 			rx[port].var.sig_unready_cnt = 0;
 			one_frame_cnt = (1000 * 100 / rx[port].pre.frame_rate / 12) + 1;
 			if (rx[port].skip > 0) {
 				rx[port].skip--;
 			} else if (vpp_mute_enable) {
+				if (rx[port].gcp_mute_cnt > 0) {
+					rx[port].gcp_mute_cnt--;
+					break;
+				}
+				if (rx[port].vpp_mute_cnt > 0) {
+					rx[port].vpp_mute_cnt--;
+					break;
+				}
 				/* clear vpp mute after signal stable */
 				if (get_video_mute()) {
 					if (rx[port].var.mute_cnt++ < one_frame_cnt + 1)

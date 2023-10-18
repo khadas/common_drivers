@@ -305,42 +305,40 @@ static enum hdmi_color_depth _get_colordepth(void)
 	return depth;
 }
 
-/*
- *static enum hdmi_vic _get_vic_from_vsif(void)
- *{
- *	int ret;
- *	u8 body[32] = {0};
- *	enum hdmi_vic hdmi 4k_vic = HDMI_0_UNKNOWN;
- *	union hdmi_infoframe *infoframe = &infoframes->vend;
- *	struct hdmi_vendor_infoframe *vendor = &infoframe->vendor.hdmi;
- *
- *	ret = hdmitx_infoframe_rawget(HDMI_INFOFRAME_TYPE_VENDOR, body);
- *	if (ret == -1 || ret == 0)
- *		return hdmi4k_vic;
- *	ret = hdmi_infoframe_unpack(infoframe, body, sizeof(body));
- *	if (ret < 0) {
- *		pr_info("hdmitx21: parsing VEND failed %d\n", ret);
- *	} else {
- *		switch (vendor->vic) {
- *		case 1:
- *			hdmi4k_vic = HDMI_95_3840x2160p30_16x9;
- *			break;
- *		case 2:
- *			hdmi4k_vic = HDMI_94_3840x2160p25_16x9;
- *			break;
- *		case 3:
- *			hdmi4k_vic = HDMI_93_3840x2160p24_16x9;
- *			break;
- *		case 4:
- *			hdmi4k_vic = HDMI_98_4096x2160p24_256x135;
- *			break;
- *		default:
- *			break;
- *		}
- *	}
- *	return hdmi4k_vic;
- *}
- */
+static enum hdmi_vic _get_vic_from_vsif(void)
+{
+	int ret;
+	u8 body[32] = {0};
+	enum hdmi_vic hdmi4k_vic = HDMI_0_UNKNOWN;
+	union hdmi_infoframe *infoframe = &global_tx_hw->infoframes->vend;
+	struct hdmi_vendor_infoframe *vendor = &infoframe->vendor.hdmi;
+
+	ret = hdmitx_infoframe_rawget(HDMI_INFOFRAME_TYPE_VENDOR2, body);
+	if (ret == -1 || ret == 0)
+		return hdmi4k_vic;
+	ret = hdmi_infoframe_unpack(infoframe, body, sizeof(body));
+	if (ret < 0) {
+		pr_err("hdmitx21: parsing VEND failed %d\n", ret);
+	} else {
+		switch (vendor->vic) {
+		case 1:
+			hdmi4k_vic = HDMI_95_3840x2160p30_16x9;
+			break;
+		case 2:
+			hdmi4k_vic = HDMI_94_3840x2160p25_16x9;
+			break;
+		case 3:
+			hdmi4k_vic = HDMI_93_3840x2160p24_16x9;
+			break;
+		case 4:
+			hdmi4k_vic = HDMI_98_4096x2160p24_256x135;
+			break;
+		default:
+			break;
+		}
+	}
+	return hdmi4k_vic;
+}
 
 static void hdmi_hwp_init(struct hdmitx_dev *hdev, u8 reset)
 {
@@ -2431,7 +2429,10 @@ static enum hdmi_vic get_vic_from_pkt(void)
 {
 	enum hdmi_vic vic = HDMI_0_UNKNOWN;
 
-	vic = hdmitx21_rd_reg(TPI_AVI_BYTE4_IVCTX) & 0x7f;
+	//todo vesa mode
+	vic = hdmitx21_rd_reg(TPI_AVI_BYTE4_IVCTX) & 0xff;
+	if (vic == HDMI_0_UNKNOWN)
+		vic = _get_vic_from_vsif();
 
 	return vic;
 }

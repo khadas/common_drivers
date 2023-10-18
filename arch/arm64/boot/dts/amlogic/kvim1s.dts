@@ -186,6 +186,14 @@
 			linux,cma-default;
 		};
 	};
+
+	gpiomem {
+		compatible = "amlogic, gpiomem";
+		reg = <0x0 0xfe004000 0x0 0x1000>;
+		dev_name = "gpiomem";
+		status = "okay";
+	};
+
 	sdcard_power: regulator-sdcard {
 		compatible = "regulator-fixed";
 		regulator-name = "SDCARD_POWER";

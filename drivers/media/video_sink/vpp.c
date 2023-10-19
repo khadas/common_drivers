@@ -1559,6 +1559,7 @@ static int vpp_set_filters_internal
 	bool force_dw = false;
 	u32 force_skip_cnt = 0, slice_num = 0;
 	bool vd1s1_vd2_prebld_en = false;
+	u32 w_out, h_out;
 
 	if (!input)
 		return vppfilter_fail;
@@ -2526,6 +2527,32 @@ RESTART:
 		align_vd1_mif_size_for_DV(next_frame_par,
 			(vpp_flags & VPP_FLAG_HAS_DV_EL) ? true : false, reverse);
 #endif
+
+	w_out = next_frame_par->VPP_hsc_endp -
+		next_frame_par->VPP_hsc_startp + 1;
+	h_out = next_frame_par->VPP_vsc_endp -
+		next_frame_par->VPP_vsc_startp + 1;
+	w_in = w_in / (next_frame_par->hscale_skip_count + 1);
+	h_in = h_in / (next_frame_par->vscale_skip_count + 1);
+	if ((w_in << 18) / w_out << 6 != filter->vpp_hsc_start_phase_step) {
+		if (cur_super_debug)
+			pr_info("recalc hf phase_step: 0x%x->0x%x, w_in=%d, w_out=%d\n",
+				filter->vpp_hsc_start_phase_step,
+				(w_in  << 18) / w_out << 6,
+				w_in,
+				w_out);
+		filter->vpp_hsc_start_phase_step = (w_in  << 18) / w_out << 6;
+		filter->vpp_hf_start_phase_step = filter->vpp_hsc_start_phase_step;
+	}
+	if ((h_in << 18) / h_out << 6 != filter->vpp_vsc_start_phase_step) {
+		if (cur_super_debug)
+			pr_info("recalc vsc phase_step: 0x%x->0x%x, h_in=%d, h_out=%d\n",
+				filter->vpp_vsc_start_phase_step,
+				(h_in  << 18) / h_out << 6,
+				h_in,
+				h_out);
+		filter->vpp_vsc_start_phase_step = (h_in  << 18) / h_out << 6;
+	}
 
 	next_frame_par->video_input_h = next_frame_par->VPP_vd_end_lines_ -
 		next_frame_par->VPP_vd_start_lines_ + 1;

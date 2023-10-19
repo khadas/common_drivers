@@ -187,7 +187,7 @@ ssize_t frc_melogo_ctrl_param_store(struct class *class,
 	return count;
 }
 
-ssize_t frc_sence_chg_detect_param_show(struct class *class,
+ssize_t frc_scene_chg_detect_param_show(struct class *class,
 	struct class_attribute *attr,
 	char *buf)
 {
@@ -195,7 +195,7 @@ ssize_t frc_sence_chg_detect_param_show(struct class *class,
 	struct frc_fw_data_s *fw_data = (struct frc_fw_data_s *)devp->fw_data;
 	ssize_t len = 0;
 
-	len = fw_data->frc_alg_dbg_show(fw_data, MEMC_DBG_SENCE_CHG_DETECT, buf);
+	len = fw_data->frc_alg_dbg_show(fw_data, MEMC_DBG_SCENE_CHG_DETECT, buf);
 	return len;
 }
 
@@ -209,7 +209,7 @@ ssize_t frc_sence_chg_detect_param_store(struct class *class,
 	struct frc_fw_data_s *fw_data = (struct frc_fw_data_s *)devp->fw_data;
 
 	buf_orig = kstrdup(buf, GFP_KERNEL);
-	count = fw_data->frc_alg_dbg_stor(fw_data, MEMC_DBG_SENCE_CHG_DETECT, buf_orig, count);
+	count = fw_data->frc_alg_dbg_stor(fw_data, MEMC_DBG_SCENE_CHG_DETECT, buf_orig, count);
 	kfree(buf_orig);
 	return count;
 }

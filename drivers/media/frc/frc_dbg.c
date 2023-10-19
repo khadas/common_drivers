@@ -257,9 +257,9 @@ void frc_status(struct frc_dev_s *devp)
 			devp->vs_duration, (ulong)devp->vs_timestamp);
 	pr_frc(0, "frc_in vs_duration= %dus timestamp= %ld\n",
 	       devp->in_sts.vs_duration, (ulong)devp->in_sts.vs_timestamp);
-	pr_frc(0, "frc_in isr vs_cnt= %d, vs_tsk_cnt:%d, inp_err cnt= %d\n",
+	pr_frc(0, "frc_in isr vs_cnt= %d, vs_tsk_cnt:%d, inp_err cnt:%d vd_mute cnt:%d\n",
 		devp->in_sts.vs_cnt, devp->in_sts.vs_tsk_cnt,
-		devp->frc_sts.inp_undone_cnt);
+		devp->frc_sts.inp_undone_cnt, devp->frc_sts.video_mute_cnt);
 	pr_frc(0, "frc_out vs_duration= %dus timestamp= %ld\n",
 	       devp->out_sts.vs_duration, (ulong)devp->out_sts.vs_timestamp);
 	pr_frc(0, "frc_out isr vs_cnt= %d, vs_tsk_cnt= %d, err_cnt= (me:%d,mc:%d,vp:%d)\n",

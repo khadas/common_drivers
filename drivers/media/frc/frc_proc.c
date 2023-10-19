@@ -226,6 +226,7 @@ void frc_isr_print_zero(struct frc_dev_s *devp)
 	devp->out_sts.vs_cnt = 0;
 	devp->out_sts.vs_tsk_cnt = 0;
 	devp->frc_sts.vs_cnt = 0;
+	devp->frc_sts.video_mute_cnt = 0;
 
 	devp->frc_sts.changed_flag = 0;
 }
@@ -883,6 +884,20 @@ void frc_input_vframe_handle(struct frc_dev_s *devp, struct vframe_s *vf,
 		} else {
 			devp->in_sts.st_flag =
 				devp->in_sts.st_flag & (~FRC_FLAG_LIMIT_FREQ);
+		}
+
+		if (get_video_mute()) {
+			if ((devp->in_sts.st_flag & FRC_FLAG_MUTE_ST) !=
+						FRC_FLAG_MUTE_ST) {
+				devp->in_sts.st_flag =
+				devp->in_sts.st_flag | FRC_FLAG_MUTE_ST;
+				pr_frc(1, "video = video mute");
+			}
+			devp->frc_sts.video_mute_cnt++;
+			no_input = true;
+		} else {
+			devp->in_sts.st_flag =
+				devp->in_sts.st_flag & (~FRC_FLAG_MUTE_ST);
 		}
 
 		if ((vf->flag & VFRAME_FLAG_VIDEO_SECURE) ==

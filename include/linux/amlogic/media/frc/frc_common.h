@@ -115,7 +115,7 @@ enum efrc_memc_dbg_type {
 	MEMC_DBG_LOGO_CTRL        = 0x03,
 	MEMC_DBG_IPLOGO_CTRL      = 0x04,
 	MEMC_DBG_MELOGO_CTRL      = 0x05,
-	MEMC_DBG_SENCE_CHG_DETECT = 0x06,
+	MEMC_DBG_SCENE_CHG_DETECT = 0x06,
 	MEMC_DBG_FB_CTRL          = 0x07,
 	MEMC_DBG_ME_CTRL          = 0x08,
 	MEMC_DBG_SEARCH_RANG      = 0x09,

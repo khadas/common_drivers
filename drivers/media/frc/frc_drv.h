@@ -105,9 +105,10 @@
 // frc_20231009 delay frc function on boot
 // frc_20231016 add frc pattern dbg ctrl
 // frc_20231016 set disable with input is 120Hz
+// frc_20231018 dly frc enable in video window
 
-#define FRC_FW_VER			"2023-1018 dly frc enable in video window"
-#define FRC_KERDRV_VER                  2976
+#define FRC_FW_VER			"2023-1020 set disable stats when video mute enable"
+#define FRC_KERDRV_VER                  3205
 
 #define FRC_DEVNO	1
 #define FRC_NAME	"frc"
@@ -233,6 +234,7 @@ extern int frc_dbg_en;
 #define FRC_FLAG_ZERO_FREQ		0x100
 #define FRC_FLAG_LIMIT_FREQ		0x200 // 144hz 288hz
 #define FRC_FLAG_OTHER			0x400
+#define FRC_FLAG_MUTE_ST		0x800
 
 #define FRC_BUF_MC_Y_IDX	0
 #define FRC_BUF_MC_C_IDX	1
@@ -419,6 +421,7 @@ struct st_frc_sts {
 	u32 mc_undone_cnt;
 	u32 vp_undone_cnt;
 	u32 retrycnt;
+	u32 video_mute_cnt;
 };
 
 struct st_frc_in_sts {

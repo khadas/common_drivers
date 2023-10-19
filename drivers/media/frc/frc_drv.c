@@ -145,7 +145,7 @@ static struct class_attribute frc_class_attrs[] = {
 	__ATTR(logo_ctrl_param, 0644, frc_logo_ctrl_param_show, frc_logo_ctrl_param_store),
 	__ATTR(iplogo_ctrl_param, 0644, frc_iplogo_ctrl_param_show, frc_iplogo_ctrl_param_store),
 	__ATTR(melogo_ctrl_param, 0644, frc_melogo_ctrl_param_show, frc_melogo_ctrl_param_store),
-	__ATTR(sence_chg_detect_param, 0644, frc_sence_chg_detect_param_show,
+	__ATTR(sence_chg_detect_param, 0644, frc_scene_chg_detect_param_show,
 		frc_sence_chg_detect_param_store),
 	__ATTR(fb_ctrl_param, 0644, frc_fb_ctrl_param_show, frc_fb_ctrl_param_store),
 	__ATTR(me_ctrl_param, 0644, frc_me_ctrl_param_show, frc_me_ctrl_param_store),

@@ -7786,8 +7786,9 @@ void rx_debug_help(void)
 
 int hdmirx_debug(const char *buf, int size)
 {
-	char tmpbuf[128];
+	char tmpbuf[256];
 	int i = 0;
+	int j = 0;
 	u32 value = 0;
 
 	char input[5][20];
@@ -7798,6 +7799,7 @@ int hdmirx_debug(const char *buf, int size)
 	struct edid_info_s edid_info;
 	u8 port = 0;
 	u_char *pedid = NULL;
+	struct emp_info_s *emp_p = NULL;
 
 	while ((buf[i]) && (buf[i] != ',') && (buf[i] != ' ')) {
 		tmpbuf[i] = buf[i];
@@ -7966,12 +7968,17 @@ int hdmirx_debug(const char *buf, int size)
 	} else if (strncmp(tmpbuf, "eqcal", 5) == 0) {
 		rx_phy_rt_cal();
 	} else if (strncmp(tmpbuf, "empbuf", 5) == 0) {
-		rx_pr("cnt=%d\n", rx_info.emp_buff_a.emp_pkt_cnt);
-		cnt = rx_info.emp_buff_a.emp_pkt_cnt;
-		rx_pr("0x");
-		for (i = 0; i < (cnt * 32); i++)
-			rx_pr("%02x", emp_buf[0][i]);
-		rx_pr("\nieee=%x\n", rx_info.emp_buff_a.emp_tagid);
+		emp_p = rx[port].emp_vid_idx ? &rx_info.emp_buff_b : &rx_info.emp_buff_a;
+		rx_pr("cnt=%d\n", emp_p->emp_pkt_cnt);
+		cnt = emp_p->emp_pkt_cnt;
+		for (i = 0; i < cnt; i++) {
+			memset(tmpbuf, '\0', sizeof(tmpbuf));
+			for (j = 0; j < 32; j++)
+				sprintf(tmpbuf + strlen(tmpbuf), "0x%02x ",
+					emp_buf[rx[port].emp_vid_idx][j + i * 32]);
+			rx_pr("%s\n", tmpbuf);
+		}
+		rx_pr("ieee=%x\n", emp_p->emp_tagid);
 	} else if (strncmp(tmpbuf, "muteget", 7) == 0) {
 		rx_pr("mute sts: %x\n", get_video_mute());
 	} else if (strncmp(tmpbuf, "muteset", 7) == 0) {

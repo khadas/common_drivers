@@ -529,6 +529,35 @@ static void rx_pktdump_emp(void *pdata)
 	rx_pr("cnt.length=0x%x\n", pktdata->cnt.data_set_length_lo);
 }
 
+static void rx_dump_aud_sample_pkt(u8 port)
+{
+	u32 i, j, tmp = 0;
+	char str[256];
+	struct emp_info_s *emp_p = NULL;
+
+	if (rx[port].emp_vid_idx) {
+		tmp = hdmirx_rd_top_common(TOP_EMP1_DDR_FILTER);
+		hdmirx_wr_top_common(TOP_EMP1_DDR_FILTER, 1 << 1); //only audio sample pkt
+		emp_p = &rx_info.emp_buff_b;
+	} else {
+		tmp = hdmirx_rd_top_common(TOP_EMP_DDR_FILTER);
+		hdmirx_wr_top_common(TOP_EMP_DDR_FILTER, 1 << 1); //only audio sample pkt
+		emp_p = &rx_info.emp_buff_a;
+	}
+	while (audio_debug) {
+		for (i = 0; i < emp_p->emp_pkt_cnt; i++) {
+			memset(str, '\0', sizeof(str));
+			for (j = 0; j < 31; j++)
+				sprintf(str + strlen(str), "0x%02x ",
+					emp_buf[rx[port].emp_vid_idx][j + i * 31]);
+			rx_pr("pkt[%2d]: %s\n", i, str);
+		}
+	}
+
+	/* recover emp filter */
+	hdmirx_wr_top_common(TOP_EMP_DDR_FILTER, tmp);
+}
+
 void rx_pkt_dump(enum pkt_type_e typeid, u8 port)
 {
 	struct packet_info_s *prx = &rx_pkt[port];
@@ -619,6 +648,9 @@ void rx_pkt_dump(enum pkt_type_e typeid, u8 port)
 	case PKT_TYPE_EMP:
 		rx_pktdump_emp(&prx->emp_info);
 		rx_pktdump_raw(&prx->emp_info);
+		break;
+	case PKT_TYPE_AUD_SAMPLE:
+		rx_dump_aud_sample_pkt(port);
 		break;
 	default:
 		rx_pr("warning: not support\n");

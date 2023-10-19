@@ -5289,7 +5289,7 @@ void hdmirx_config_video(u8 port)
 			hdmirx_wr_bits_top(TOP_VID_CNTL, _BIT(7), 0, port);
 	}
 	if (rx_info.chip_id >= CHIP_ID_T3X) {
-		if (port == rx_info.main_port && port >= 2) {
+		if (vpcore1_select) {
 			rx[port].emp_vid_idx = 1;
 			rx[port].emp_info = &rx_info.emp_buff_b;
 		} else {
@@ -6633,7 +6633,8 @@ void rx_emp_field_done_irq(u8 port)
 
 	if (recv_pkt_cnt >= EMP_BUFF_MAX_PKT_CNT) {
 		recv_pkt_cnt = EMP_BUFF_MAX_PKT_CNT - 1;
-		rx_pr("pkt cnt err:%d\n", recv_pkt_cnt);
+		if (log_level & PACKET_LOG)
+			rx_pr("pkt cnt err:%d\n", recv_pkt_cnt);
 	}
 	if (!rx[port].emp_pkt_rev)
 		rx[port].emp_pkt_rev = true;

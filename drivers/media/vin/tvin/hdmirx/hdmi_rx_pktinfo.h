@@ -104,7 +104,7 @@ enum pkt_decode_type {
 enum pkt_type_e {
 	PKT_TYPE_NULL = 0x0,
 	PKT_TYPE_ACR = 0x1,
-	/*PKT_TYPE_AUD_SAMPLE = 0x2,*/
+	PKT_TYPE_AUD_SAMPLE = 0x2,
 	PKT_TYPE_GCP = 0x3,
 	PKT_TYPE_ACP = 0x4,
 	PKT_TYPE_ISRC1 = 0x5,

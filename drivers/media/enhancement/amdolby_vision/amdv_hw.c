@@ -665,24 +665,15 @@ int tv_dv_core1_set(u64 *dma_data,
 		run_mode = tv_run_mode(vsize, hdmi, hdr10, el_41_mode);
 		if (runmode_cnt < amdv_run_mode_delay) {
 			run_mode = (run_mode & 0xfffffffc) | 1;
-			VSYNC_WR_DV_REG(VPP_VD1_CLIP_MISC0,
-				(0x200 << 10) | 0x200);
-			VSYNC_WR_DV_REG(VPP_VD1_CLIP_MISC1,
-				(0x200 << 10) | 0x200);
+			set_video_mute(AML_DOLBY_MUTE_SET, 1);
 			start_render = 0;
 		} else if (runmode_cnt ==
 			amdv_run_mode_delay) {
-			VSYNC_WR_DV_REG(VPP_VD1_CLIP_MISC0,
-				(0x200 << 10) | 0x200);
-			VSYNC_WR_DV_REG(VPP_VD1_CLIP_MISC1,
-				(0x200 << 10) | 0x200);
+			set_video_mute(AML_DOLBY_MUTE_SET, 1);
 			start_render = 0;
 		} else {
 			if (start_render == 0) {
-				VSYNC_WR_DV_REG(VPP_VD1_CLIP_MISC0,
-					(0x3ff << 20) | (0x3ff << 10) | 0x3ff);
-				VSYNC_WR_DV_REG(VPP_VD1_CLIP_MISC1,
-					0);
+				set_video_mute(AML_DOLBY_MUTE_SET, 0);
 			}
 			start_render = 1;
 		}

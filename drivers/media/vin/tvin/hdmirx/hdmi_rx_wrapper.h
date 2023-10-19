@@ -139,7 +139,7 @@ enum tvin_sig_fmt_e hdmirx_hw_get_fmt(u8 port);
 void rx_mute_vpp(void);
 void rx_main_state_machine(void);
 void rx_port2_main_state_machine(void);
-
+void dump_audio_status(u8 port);
 void rx_nosig_monitor(u8 port);
 bool rx_is_nosig(u8 port);
 bool rx_is_sig_ready(u8 port);

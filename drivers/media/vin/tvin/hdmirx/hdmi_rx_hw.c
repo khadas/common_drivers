@@ -107,7 +107,6 @@ int hbr_force_8ch;
  * SECURE_MODE:secure OS path
  */
 int hdcp14_key_mode = NORMAL_MODE;
-int aud_ch_map;
 int ignore_sscp_charerr = 1;
 int ignore_sscp_tmds = 1;
 int find_best_eq;
@@ -1764,6 +1763,7 @@ void rx_get_aud_info(struct aud_info_s *audio_info, u8 port)
 			? false : true;
 		audio_info->cts = hdmirx_rd_dwc(DWC_PDEC_ACR_CTS);
 		audio_info->n = hdmirx_rd_dwc(DWC_PDEC_ACR_N);
+		audio_info->afifo_cfg = rx_get_afifo_cfg();
 	}
 	if (audio_info->cts != 0) {
 		if (rx[port].var.frl_rate == 0) {
@@ -1942,30 +1942,35 @@ bool is_clk_stable(u8 port)
 	return flag;
 }
 
-void rx_afifo_store_all_subpkt(bool all_pkt)
+void rx_afifo_store_valid(bool en, u8 port)
 {
-	static bool flag = true;
-
-	if (rx_info.chip_id > CHIP_ID_T7)
+	if (rx_info.chip_id >= CHIP_ID_T7)
 		return;
 
-	if (all_pkt) {
+	if (!en) {
+		hdmirx_wr_bits_dwc(DWC_AUD_FIFO_CTRL,
+						   AFIF_SUBPACKETS, 0);
+		rx[port].aud_info.afifo_cfg = false;
 		if (log_level & AUDIO_LOG)
-			rx_pr("afifo store all sub_pkts: %d\n", flag);
-		/* when afifo overflow, try afifo store
-		 * configuration alternatively
-		 */
-		if (flag)
-			hdmirx_wr_bits_dwc(DWC_AUD_FIFO_CTRL,
-					   AFIF_SUBPACKETS, 0);
-		else
-			hdmirx_wr_bits_dwc(DWC_AUD_FIFO_CTRL,
-					   AFIF_SUBPACKETS, 1);
-		flag = !flag;
+			rx_pr("afifo store all\n");
 	} else {
 		hdmirx_wr_bits_dwc(DWC_AUD_FIFO_CTRL,
-				   AFIF_SUBPACKETS, 1);
+						   AFIF_SUBPACKETS, 1);
+		rx[port].aud_info.afifo_cfg = true;
+		if (log_level & AUDIO_LOG)
+			rx_pr("afifo store valid\n");
 	}
+}
+
+bool rx_get_afifo_cfg(void)
+{
+	if (rx_info.chip_id >= CHIP_ID_T7)
+		return true;
+
+	if (hdmirx_rd_bits_dwc(DWC_AUD_FIFO_CTRL, AFIF_SUBPACKETS))
+		return true;
+	else
+		return false;
 }
 
 void hdmirx_audio_disabled(u8 port)
@@ -1996,10 +2001,10 @@ u32 hdmirx_audio_fifo_rst(u8 port)
 		udelay(1);
 		hdmirx_wr_bits_cor(RX_PWD_SRST_PWD_IVCRX, _BIT(1), 0, port);
 	}  else {
+		hdmirx_wr_dwc(DWC_DMI_SW_RST, 0x10);
 		hdmirx_wr_bits_dwc(DWC_AUD_FIFO_CTRL, AFIF_INIT, 1);
 		//udelay(20);
 		hdmirx_wr_bits_dwc(DWC_AUD_FIFO_CTRL, AFIF_INIT, 0);
-		hdmirx_wr_dwc(DWC_DMI_SW_RST, 0x10);
 	}
 	if (log_level & AUDIO_LOG)
 		rx_pr("%s\n", __func__);
@@ -3436,20 +3441,15 @@ int hdmirx_audio_init(void)
 	data32 |= 8	<< 0; /* min */
 	hdmirx_wr_dwc(DWC_AUD_FIFO_TH, data32);
 
-	/* recover to default value.*/
-	/*remain code for some time.*/
-	/*if no side effect then remove it */
-	/*
-	 *data32  = 0;
-	 *data32 |= 1	<< 16;
-	 *data32 |= 0	<< 0;
-	 *hdmirx_wr_dwc(DWC_AUD_FIFO_CTRL, data32);
-	 */
+	data32  = 0;
+	data32 |= 1	<< 16;
+	data32 |= 0	<< 0;
+	hdmirx_wr_dwc(DWC_AUD_FIFO_CTRL, data32);
 
 	data32  = 0;
 	data32 |= 0	<< 8;
-	data32 |= 1	<< 7;
-	data32 |= aud_ch_map << 2;
+	data32 |= 0	<< 7;
+	data32 |= 0 << 2;
 	data32 |= 1	<< 0;
 	hdmirx_wr_dwc(DWC_AUD_CHEXTR_CTRL, data32);
 
@@ -3738,17 +3738,32 @@ static void hdmirx_cor_reset(void)
 
 void rx_afifo_monitor(u8 port)
 {
-	if (rx_info.chip_id < CHIP_ID_T7)
+	if (rx[port].state != FSM_SIG_READY)
 		return;
-	if (rx[rx_info.main_port].state != FSM_SIG_READY)
+
+	if (rx_info.chip_id < CHIP_ID_T7) {
+		if (rx[port].aud_info.auds_layout || rx[port].aud_info.aud_hbr_rcv) {
+			if (rx[port].aud_info.afifo_cfg) {
+				dump_audio_status(port);
+				rx_afifo_store_valid(false, port);
+				hdmirx_audio_fifo_rst(port);
+			}
+		} else {
+			if (!rx[port].aud_info.afifo_cfg) {
+				dump_audio_status(port);
+				rx_afifo_store_valid(true, port);
+				hdmirx_audio_fifo_rst(port);
+			}
+		}
 		return;
+	}
+
 	if (rx_afifo_dbg_en) {
 		afifo_overflow_cnt = 0;
 		afifo_underflow_cnt = 0;
 		return;
 	}
-
-	rx[rx_info.main_port].afifo_sts = hdmirx_rd_cor(RX_INTR4_PWD_IVCRX, port) & 3;
+	rx[port].afifo_sts = hdmirx_rd_cor(RX_INTR4_PWD_IVCRX, port) & 3;
 	hdmirx_wr_cor(RX_INTR4_PWD_IVCRX, 3, port);
 	if (rx[rx_info.main_port].afifo_sts & 2) {
 		afifo_overflow_cnt++;
@@ -3841,7 +3856,7 @@ bool rx_special_func_en(void)
 		return ret;
 
 #ifdef CVT_DEF_FIXED_HPD_PORT
-	if (rx.port == E_PORT0 && ((CVT_DEF_FIXED_HPD_PORT & (1 << E_PORT0)) != 0))
+	if (rx_info.main_port  == E_PORT0 && ((CVT_DEF_FIXED_HPD_PORT & (1 << E_PORT0)) != 0))
 		ret = true;
 
 	if (rx_info.boot_flag && rx_info.main_port == E_PORT0) {
@@ -4454,7 +4469,7 @@ bool is_aud_fifo_error(void)
 		(OVERFL_STS | UNDERFL_STS)) &&
 		rx[rx_info.main_port].aud_info.aud_packet_received) {
 		ret = true;
-		if (log_level & AUDIO_LOG)
+		if (log_level & DBG_LOG)
 			rx_pr("afifo err\n");
 	}
 	return ret;
@@ -5324,22 +5339,6 @@ void hdmirx_config_audio(u8 port)
 		/* set MCLK for I2S/SPDIF */
 		hdmirx_wr_cor(AAC_MCLK_SEL_AUD_IVCRX, 0x80, port);
 		hdmirx_hbr2spdif(1, port);
-	} else {
-		/* if audio layout bit = 1, set audio channel map
-		 * according to audio speaker allocation, if layout
-		 * bit = 0, use ch1 & ch2 by default.
-		 */
-		if (rx[port].aud_info.aud_hbr_rcv && hbr_force_8ch) {
-			hdmirx_wr_dwc(DWC_AUD_CHEXTR_CTRL, 0xff);
-			if (log_level & AUDIO_LOG)
-				rx_pr("HBR rcv, force 8ch\n");
-		} else if (rx[port].aud_info.auds_layout) {
-			hdmirx_wr_bits_dwc(DWC_AUD_CHEXTR_CTRL,
-					   AUD_CH_MAP_CFG,
-					   rx[port].aud_info.auds_ch_alloc);
-		} else {
-			hdmirx_wr_bits_dwc(DWC_AUD_CHEXTR_CTRL, AUD_CH_MAP_CFG, 0);
-		}
 	}
 }
 

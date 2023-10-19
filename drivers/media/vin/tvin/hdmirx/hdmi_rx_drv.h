@@ -137,7 +137,8 @@
 /* 2023.8.25 gcp avmute issue */
 /* 2023.08.28 fix t3x sound issue */
 /* 2023 09 27 reduce phy power */
-#define RX_VER2 "ver.2023/9/27"
+/* optimize afifo configuration */
+#define RX_VER2 "ver.2023/10/19"
 
 #define PFIFO_SIZE 160
 #define HDCP14_KEY_SIZE 368
@@ -685,6 +686,7 @@ struct aud_info_s {
 	int aud_packet_received;
 	/* aud mute by gcp_avmute or aud_spflat mute */
 	bool aud_mute_en;
+	bool afifo_cfg;
 	/* channel status */
 	unsigned char channel_status[CHANNEL_STATUS_SIZE];
 	unsigned char channel_status_bak[CHANNEL_STATUS_SIZE];

@@ -660,7 +660,7 @@
 #define DWC_AUD_FIFO_FILLSTS     (0x250UL)
 /** Register address: audio output interface configuration */
 #define DWC_AUD_CHEXTR_CTRL     (0x254UL)
-#define AUD_CH_MAP_CFG MSK(5, 2)
+#define AUD_CH_MAP_CFG MSK(4, 2)
 /** Register address: audio mute control */
 #define DWC_AUD_MUTE_CTRL        (0x258UL)
 /** Manual/automatic audio mute control */
@@ -3184,7 +3184,6 @@ extern int aud_mute_sel;
 extern int pdec_ists_en;
 extern int pd_fifo_start_cnt;
 extern int md_ists_en;
-extern int aud_ch_map;
 extern int hdcp14_key_mode;
 extern int ignore_sscp_charerr;
 extern int ignore_sscp_tmds;
@@ -3313,8 +3312,9 @@ void esm_set_reset(bool reset);
 void esm_set_stable(bool stable);
 void rx_hpd_to_esm_handle(struct work_struct *work);
 unsigned int hdmirx_packet_fifo_rst(void);
-void rx_afifo_store_all_subpkt(bool all_pkt);
-unsigned int hdmirx_audio_fifo_rst(u8 port);
+void rx_afifo_store_valid(bool en, u8 port);
+bool rx_get_afifo_cfg(void);
+u32 hdmirx_audio_fifo_rst(u8 port);
 void hdmirx_audio_disabled(u8 port);
 void hdmirx_phy_init(u8 port);
 void hdmirx_hw_config(u8 port);

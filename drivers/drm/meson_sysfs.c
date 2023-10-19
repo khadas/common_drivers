@@ -20,10 +20,6 @@ static const char osd1_group_name[] = "osd1";
 static const char osd2_group_name[] = "osd2";
 static const char osd3_group_name[] = "osd3";
 int osd_index[MESON_MAX_OSDS] = {0, 1, 2, 3};
-static const char crtc0_group_name[] = "crtc0";
-static const char crtc1_group_name[] = "crtc1";
-static const char crtc2_group_name[] = "crtc2";
-int crtc_index[MESON_MAX_POSTBLEND] = {0, 1, 2};
 u32 pages;
 //EXPORT_SYMBOL_GPL(vpu_group_name);
 
@@ -138,20 +134,24 @@ static ssize_t vpu_blank_store(struct device *dev, struct device_attribute *attr
 static ssize_t debug_show(struct device *dev, struct device_attribute *attr,
 		char *buf)
 {
-	int i;
+	int i, pos = 0;
 
-	DRM_INFO("echo rv reg > debug to read the register\n");
-	DRM_INFO("echo wv reg val > debug to overwrite the register\n");
-	DRM_INFO("echo ow 1 > debug to enable overwrite register\n");
-	DRM_INFO("\noverwrote status: %s\n", overwrite_enable ? "on" : "off");
+	pos += snprintf(buf + pos, PAGE_SIZE - pos,
+		"echo rv reg > debug to read the register\n");
+	pos += snprintf(buf + pos, PAGE_SIZE - pos,
+		"echo wv reg val > debug to overwrite the register\n");
+	pos += snprintf(buf + pos, PAGE_SIZE - pos,
+		"echo ow 1 > debug to enable overwrite register\n");
+	pos += snprintf(buf + pos, PAGE_SIZE - pos,
+		"\noverwrote status: %s\n", overwrite_enable ? "on" : "off");
 
 	if (overwrite_enable) {
 		for (i = 0; i < reg_num; i++)
-			DRM_INFO("reg[0x%04x]=0x%08x\n", overwrite_reg[i],
-				   overwrite_val[i]);
+			pos += snprintf(buf + pos, PAGE_SIZE - pos,
+			"reg[0x%04x]=0x%08x\n", overwrite_reg[i], overwrite_val[i]);
 	}
 
-	return 0;
+	return pos;
 }
 
 static void parse_param(char *buf_orig, char **parm)
@@ -256,17 +256,24 @@ static ssize_t osd_reverse_show(struct file *filp, struct kobject *kobj,
 	struct drm_minor *minor = dev_get_drvdata(dev);
 	struct meson_drm *priv;
 	struct am_osd_plane *amp;
+	int pos = 0;
 
 	if (!minor || !minor->dev)
 		return -EINVAL;
+	if (off > 0)
+		return 0;
 
 	priv = minor->dev->dev_private;
 	amp = priv->osd_planes[*(int *)attr->private];
 
-	DRM_INFO("echo 1/2/3 > osd_reverse :reverse the osd xy/x/y\n");
-	DRM_INFO("echo 0 > osd_reverse to un_reverse the osd plane\n");
-	DRM_INFO("osd_reverse: %d\n", amp->osd_reverse);
-	return 0;
+	pos += snprintf(buf + pos, PAGE_SIZE - pos,
+		"echo 1/2/3 > osd_reverse :reverse the osd xy/x/y\n");
+	pos += snprintf(buf + pos, PAGE_SIZE - pos,
+		"echo 0 > osd_reverse to un_reverse the osd plane\n");
+	pos += snprintf(buf + pos, PAGE_SIZE - pos,
+		"osd_reverse: %d\n", amp->osd_reverse);
+
+	return pos;
 }
 
 static ssize_t osd_reverse_store(struct file *filp, struct kobject *kobj,
@@ -311,17 +318,22 @@ static ssize_t osd_blend_bypass_show(struct file *filp, struct kobject *kobj,
 	struct drm_minor *minor = dev_get_drvdata(dev);
 	struct meson_drm *priv;
 	struct am_osd_plane *amp;
+	int pos = 0;
 
 	if (!minor || !minor->dev)
 		return -EINVAL;
+	if (off > 0)
+		return 0;
 
 	priv = minor->dev->dev_private;
 	amp = priv->osd_planes[*(int *)attr->private];
 
-	DRM_INFO("echo 1/0 > osd_blend_bypass :enable/disable\n");
-	DRM_INFO("osd_blend_bypass: %d\n", amp->osd_blend_bypass);
+	pos += snprintf(buf + pos, PAGE_SIZE - pos,
+		"echo 1/0 > osd_blend_bypass :enable/disable\n");
+	pos += snprintf(buf + pos, PAGE_SIZE - pos,
+		"osd_blend_bypass: %d\n", amp->osd_blend_bypass);
 
-	return 0;
+	return pos;
 }
 
 static ssize_t osd_blend_bypass_store(struct file *filp, struct kobject *kobj,
@@ -358,18 +370,24 @@ static ssize_t osd_read_port_show(struct file *filp, struct kobject *kobj,
 	struct drm_minor *minor = dev_get_drvdata(dev);
 	struct meson_drm *priv;
 	struct am_osd_plane *amp;
+	int pos = 0;
 
 	if (!minor || !minor->dev)
 		return -EINVAL;
+	if (off > 0)
+		return 0;
 
 	priv = minor->dev->dev_private;
 	amp = priv->osd_planes[*(int *)attr->private];
 
-	DRM_INFO("echo 1 > enable read port setting\n");
-	DRM_INFO("echo 0 > disable read port setting\n");
-	DRM_INFO("\nstatus：%d\n", (amp->osd_read_ports == 1) ? 1 : 0);
+	pos += snprintf(buf + pos, PAGE_SIZE - pos,
+		"echo 1 > enable read port setting\n");
+	pos += snprintf(buf + pos, PAGE_SIZE - pos,
+		"echo 0 > disable read port setting\n");
+	pos += snprintf(buf + pos, PAGE_SIZE - pos,
+		"\nstatus：%d\n", (amp->osd_read_ports == 1) ? 1 : 0);
 
-	return 0;
+	return pos;
 }
 
 static ssize_t osd_read_port_store(struct file *filp, struct kobject *kobj,
@@ -464,23 +482,52 @@ static ssize_t osd_fbdump_store(struct file *filp, struct kobject *kobj,
 	return count;
 }
 
-static ssize_t crtc_reg_dump_show(struct file *filp, struct kobject *kobj,
+static ssize_t state_show(struct file *filp, struct kobject *kobj,
 			 struct bin_attribute *attr, char *buf, loff_t off,
 			 size_t count)
 {
 	struct device *dev = kobj_to_dev(kobj);
 	struct drm_minor *minor = dev_get_drvdata(dev);
+	struct drm_print_iterator iter;
+	struct drm_printer p;
+	ssize_t ret;
+
+	iter.data = buf;
+	iter.start = off;
+	iter.remain = count;
+
+	p = drm_coredump_printer(&iter);
+	drm_state_dump(minor->dev, &p);
+	ret = count - iter.remain;
+	return ret;
+}
+
+static ssize_t reg_dump_show(struct file *filp, struct kobject *kobj,
+			 struct bin_attribute *attr, char *buf, loff_t off,
+			 size_t count)
+{
+	struct device *dev = kobj_to_dev(kobj);
+	struct drm_minor *minor = dev_get_drvdata(dev);
+	struct drm_print_iterator iter;
+	struct drm_printer p;
 	struct meson_drm *priv;
 	struct am_meson_crtc *amc;
 	struct meson_vpu_pipeline *mvp1;
 	struct meson_vpu_block *mvb;
 	int i;
+	ssize_t ret;
+
+	iter.data = buf;
+	iter.start = off;
+	iter.remain = count;
+
+	p = drm_coredump_printer(&iter);
 
 	if (!minor || !minor->dev)
 		return -EINVAL;
 
 	priv = minor->dev->dev_private;
-	amc = priv->crtcs[*(int *)attr->private];
+	amc = priv->crtcs[0];
 	mvp1 = amc->pipeline;
 
 	for (i = 0; i < MESON_MAX_BLOCKS; i++) {
@@ -488,19 +535,13 @@ static ssize_t crtc_reg_dump_show(struct file *filp, struct kobject *kobj,
 		if (!mvb)
 			continue;
 
-		DRM_INFO("*************%s*************\n", mvb->name);
-		if (mvb->ops && mvb->ops->sysfs_dump_register)
-			mvb->ops->sysfs_dump_register(mvb);
+		drm_printf(&p, "*************%s*************\n", mvb->name);
+		if (mvb->ops && mvb->ops->dump_register)
+			mvb->ops->dump_register(&p, mvb);
 	}
+	ret = count - iter.remain;
 
-	return 0;
-}
-
-static ssize_t crtc_reg_dump_store(struct file *filp, struct kobject *kobj,
-			 struct bin_attribute *attr, char *buf, loff_t off,
-			 size_t count)
-{
-	return count;
+	return ret;
 }
 
 static struct bin_attribute osd0_attr[] = {
@@ -682,64 +723,16 @@ static const struct attribute_group osd_attr_group[MESON_MAX_OSDS] = {
 	},
 };
 
-static struct bin_attribute crtc0_attr[] = {
-	{
-		.attr.name = "reg_dump",
-		.attr.mode = 0664,
-		.private = &crtc_index[0],
-		.read = crtc_reg_dump_show,
-		.write = crtc_reg_dump_store,
-	},
+static struct bin_attribute state_attr = {
+	.attr.name = "state",
+	.attr.mode = 0664,
+	.read = state_show,
 };
 
-static struct bin_attribute *crtc0_bin_attrs[] = {
-	&crtc0_attr[0],
-	NULL,
-};
-
-static struct bin_attribute crtc1_attr[] = {
-	{
-		.attr.name = "reg_dump",
-		.attr.mode = 0664,
-		.private = &crtc_index[1],
-		.read = crtc_reg_dump_show,
-		.write = crtc_reg_dump_store,
-	},
-};
-
-static struct bin_attribute *crtc1_bin_attrs[] = {
-	&crtc1_attr[0],
-	NULL,
-};
-
-static struct bin_attribute crtc2_attr[] = {
-	{
-		.attr.name = "reg_dump",
-		.attr.mode = 0664,
-		.private = &crtc_index[2],
-		.read = crtc_reg_dump_show,
-		.write = crtc_reg_dump_store,
-	},
-};
-
-static struct bin_attribute *crtc2_bin_attrs[] = {
-	&crtc2_attr[0],
-	NULL,
-};
-
-static const struct attribute_group crtc_attr_group[MESON_MAX_POSTBLEND] = {
-	{
-		.name = crtc0_group_name,
-		.bin_attrs = crtc0_bin_attrs,
-	},
-	{
-		.name = crtc1_group_name,
-		.bin_attrs = crtc1_bin_attrs,
-	},
-	{
-		.name = crtc2_group_name,
-		.bin_attrs = crtc2_bin_attrs,
-	},
+static struct bin_attribute reg_dump_attr = {
+	.attr.name = "reg_dump",
+	.attr.mode = 0664,
+	.read = reg_dump_show,
 };
 
 int meson_drm_sysfs_register(struct drm_device *drm_dev)
@@ -750,11 +743,11 @@ int meson_drm_sysfs_register(struct drm_device *drm_dev)
 
 	rc = sysfs_create_group(&dev->kobj, &vpu_attr_group);
 
+	rc = sysfs_create_bin_file(&dev->kobj, &state_attr);
+	rc = sysfs_create_bin_file(&dev->kobj, &reg_dump_attr);
+
 	for (i = 0; i < priv->pipeline->num_osds; i++)
 		rc = sysfs_create_group(&dev->kobj, &osd_attr_group[i]);
-
-	for (i = 0; i < priv->pipeline->num_postblend; i++)
-		rc = sysfs_create_group(&dev->kobj, &crtc_attr_group[i]);
 
 	return rc;
 }
@@ -766,12 +759,11 @@ void meson_drm_sysfs_unregister(struct drm_device *drm_dev)
 	struct device *dev = drm_dev->primary->kdev;
 
 	sysfs_remove_group(&dev->kobj, &vpu_attr_group);
+	sysfs_remove_bin_file(&dev->kobj, &state_attr);
+	sysfs_remove_bin_file(&dev->kobj, &reg_dump_attr);
 
 	for (i = 0; i < priv->pipeline->num_osds; i++)
 		rc = sysfs_create_group(&dev->kobj, &osd_attr_group[i]);
-
-	for (i = 0; i < priv->pipeline->num_postblend; i++)
-		rc = sysfs_create_group(&dev->kobj, &crtc_attr_group[i]);
 
 }
 

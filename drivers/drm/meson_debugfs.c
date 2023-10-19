@@ -147,15 +147,16 @@ static int meson_regdump_show(struct seq_file *sf, void *data)
 	struct drm_crtc *crtc = sf->private;
 	struct am_meson_crtc *amc = to_am_meson_crtc(crtc);
 	struct meson_vpu_pipeline *mvp1 = amc->pipeline;
+	struct drm_printer p = drm_seq_file_printer(sf);
 
 	for (i = 0; i < MESON_MAX_BLOCKS; i++) {
 		mvb = mvp1->mvbs[i];
 		if (!mvb)
 			continue;
 
-		seq_printf(sf, "*************%s*************\n", mvb->name);
+		drm_printf(&p, "*************%s*************\n", mvb->name);
 		if (mvb->ops && mvb->ops->dump_register)
-			mvb->ops->dump_register(mvb, sf);
+			mvb->ops->dump_register(&p, mvb);
 	}
 	return 0;
 }

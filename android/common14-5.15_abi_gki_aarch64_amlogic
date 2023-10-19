@@ -18,4 +18,11 @@
   usb_hcd_link_urb_to_ep
 
 # amlogic-host.ko
-unregister_die_notifier
+  unregister_die_notifier
+
+# aml_drm.ko
+  drm_state_dump
+  __drm_printfn_seq_file
+  __drm_puts_seq_file
+  __drm_printfn_coredump
+  __drm_puts_coredump

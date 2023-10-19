@@ -587,8 +587,8 @@ static void video_hw_disable(struct meson_vpu_block *vblk,
 	MESON_DRM_BLOCK("%s disable done.\n", video->base.name);
 }
 
-static void video_dump_register(struct meson_vpu_block *vblk,
-				struct seq_file *seq)
+static void video_dump_register(struct drm_printer *p,
+				struct meson_vpu_block *vblk)
 {
 }
 

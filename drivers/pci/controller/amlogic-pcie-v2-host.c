@@ -80,6 +80,7 @@ struct amlogic_pcie {
 	bool do_reset_gpio;
 	u32 gpio_type;
 	u32 phy_type;
+	u32 msi_mask;
 };
 
 static inline void amlogic_pcie_disable_clocks(struct amlogic_pcie *aml_pcie)
@@ -816,6 +817,17 @@ static void amlogic_pcie_ltssm_disable(struct amlogic_pcie *aml_pcie)
 static int amlogic_pcie_suspend_noirq(struct device *dev)
 {
 	struct amlogic_pcie *aml_pcie = dev_get_drvdata(dev);
+	struct pcie_port *pp = &aml_pcie->pci.pp;
+	struct dw_pcie *pci = to_dw_pcie_from_pp(pp);
+	u32 ctrl, num_ctrls;
+
+	if (pp->has_msi_ctrl) {
+		num_ctrls = pp->num_vectors / MAX_MSI_IRQS_PER_CTRL;
+
+		for (ctrl = 0; ctrl < num_ctrls; ctrl++)
+			aml_pcie->msi_mask = dw_pcie_readl_dbi(pci, PCIE_MSI_INTR0_MASK +
+							       (ctrl * MSI_REG_CTRL_BLOCK_SIZE));
+	}
 
 	amlogic_pcie_ltssm_disable(aml_pcie);
 	amlogic_pcie_disable_clocks(aml_pcie);
@@ -829,6 +841,8 @@ static int amlogic_pcie_resume_noirq(struct device *dev)
 	int ret;
 	struct amlogic_pcie *aml_pcie = dev_get_drvdata(dev);
 	struct pcie_port *pp = &aml_pcie->pci.pp;
+	struct dw_pcie *pci = to_dw_pcie_from_pp(pp);
+	u32 ctrl, num_ctrls;
 
 	ret = amlogic_pcie_enable_clocks(aml_pcie);
 	if (ret)
@@ -841,6 +855,14 @@ static int amlogic_pcie_resume_noirq(struct device *dev)
 	}
 
 	dw_pcie_setup_rc(pp);
+
+	if (pp->has_msi_ctrl) {
+		num_ctrls = pp->num_vectors / MAX_MSI_IRQS_PER_CTRL;
+
+		for (ctrl = 0; ctrl < num_ctrls; ctrl++)
+			dw_pcie_writel_dbi(pci, PCIE_MSI_INTR0_MASK +
+					   (ctrl * MSI_REG_CTRL_BLOCK_SIZE), aml_pcie->msi_mask);
+	}
 
 	ret = amlogic_pcie_start_link(&aml_pcie->pci);
 	if (ret < 0)

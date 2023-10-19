@@ -1159,6 +1159,8 @@ static int vpp_process_speed_check
 				if (!is_meson_t7_cpu() &&
 				    !is_meson_t5m_cpu() &&
 				    !is_meson_t3_cpu() &&
+				    !is_meson_t5w_cpu() &&
+				    !is_meson_t3x_cpu() &&
 				    next_frame_par->vscale_skip_count > 0 &&
 				    ((vf->type & VIDTYPE_VIU_444) ||
 				     (vf->type & VIDTYPE_RGB_444)))

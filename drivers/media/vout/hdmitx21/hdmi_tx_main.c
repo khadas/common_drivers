@@ -169,9 +169,6 @@ static struct vout_device_s hdmitx_vdev = {
 	.fresh_tx_cuva_hdr_vsif = hdmitx_set_cuva_hdr_vsif,
 	.fresh_tx_cuva_hdr_vs_emds = hdmitx_set_cuva_hdr_vs_emds,
 	.fresh_tx_emp_pkt = hdmitx_set_emp_pkt,
-	.get_attr = NULL,
-	.setup_attr = NULL,
-	/* .video_mute = hdmitx21_video_mute_op, */
 };
 
 int hdmitx21_set_uevent_state(enum hdmitx_event type, int state)

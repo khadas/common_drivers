@@ -210,10 +210,15 @@ int hdmitx_common_get_timing_para(int vic, struct drm_hdmitx_timing_para *para)
 	if (!timing)
 		return -1;
 
+	memset(para->name, 0, DRM_DISPLAY_MODE_LEN);
 	if (timing->sname) {
-		memcpy(para->name, timing->sname, DRM_DISPLAY_MODE_LEN);
+		memcpy(para->name, timing->sname,
+		       (strlen(timing->sname) < DRM_DISPLAY_MODE_LEN) ?
+		       strlen(timing->sname) : DRM_DISPLAY_MODE_LEN);
 	} else if (timing->name) {
-		memcpy(para->name, timing->name, DRM_DISPLAY_MODE_LEN);
+		memcpy(para->name, timing->name,
+		       (strlen(timing->name) < DRM_DISPLAY_MODE_LEN) ?
+		       strlen(timing->name) : DRM_DISPLAY_MODE_LEN);
 	} else {
 		pr_err(" func %s get vic %d without name\n", __func__, vic);
 		return -1;

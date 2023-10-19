@@ -1468,11 +1468,6 @@ static int hdmitx_set_audmode(struct hdmitx_hw_common *tx_hw,
 	aud_output_i2s_ch = audio_param->aud_output_i2s_ch;
 	pr_info(HW "set audio\n");
 	mutex_lock(&aud_mutex);
-	/* if hdev->aud_output_i2s_ch is true, select I2S as 8ch in, 2ch out */
-	if (aud_output_i2s_ch) {
-		audio_param->aud_src_if = 1;
-		pr_info("hdmitx aud_output_i2s_ch 0x%x\n", aud_output_i2s_ch);
-	}
 
 	hdmitx21_set_reg_bits(AIP_RST_IVCTX, 1, 0, 1);
 	if (audio_param->type == CT_MAT || audio_param->type == CT_DTS_HD_MA) {
@@ -1505,12 +1500,6 @@ static int hdmitx_set_audmode(struct hdmitx_hw_common *tx_hw,
 	pr_info("audio_param->chs = %d\n", audio_param->chs);
 	hdmitx21_set_reg_bits(SPDIF_SSMPL2_IVCTX, 0, 5, 1);
 
-	/* if hdev->aud_output_i2s_ch is true, select I2S as 8ch in, 2ch out */
-	//if (hdev->aud_output_i2s_ch)
-		//hdev->tx_comm.cur_audio_param.aud_src_if = 1;
-	/* aud_mclk_sel: Select to use which clock for ACR measurement.
-	 * 0= Use i2s_mclk; 1=Use spdif_clk.
-	 */
 	hdmitx21_set_reg_bits(HDMITX_TOP_CLK_CNTL, 1 - audio_param->aud_src_if, 13, 1);
 
 	pr_info(HW "hdmitx aud_src_if = %d\n", audio_param->aud_src_if);

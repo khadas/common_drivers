@@ -31,3 +31,7 @@
 
 # amlogic-mmc.ko
   mmc_gpiod_request_cd
+
+# aml_media.ko
+  __get_task_comm
+  is_dma_buf_file

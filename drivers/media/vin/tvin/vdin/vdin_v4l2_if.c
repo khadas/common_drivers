@@ -466,16 +466,17 @@ static int vdin_vidioc_reqbufs(struct file *file, void *priv,
 	if (reqbufs->count == 0) {
 		dprintk(0, "%s type:%d count:%d\n", __func__,
 			reqbufs->type, reqbufs->count);
-		return 0;
+		//return 0;
 	}
-	if (reqbufs->count < devp->vb_queue.min_buffers_needed ||
-		reqbufs->count > VDIN_CANVAS_MAX_CNT) {
+	if (reqbufs->count && (reqbufs->count < devp->vb_queue.min_buffers_needed ||
+		reqbufs->count > VDIN_CANVAS_MAX_CNT)) {
 		dprintk(0, "%s err,count=%d,out of range[%d,%d]\n", __func__,
 			reqbufs->count, devp->vb_queue.min_buffers_needed, VDIN_CANVAS_MAX_CNT);
 		return -EINVAL;
 	}
 
-	dprintk(1, "%s type:%d buff_num:%d\n", __func__, reqbufs->type, reqbufs->count);
+	dprintk(1, "%s memory:%d,type:%d buff_num:%d\n", __func__,
+		reqbufs->memory, reqbufs->type, reqbufs->count);
 
 	/*need config by input source type*/
 	devp->source_bitdepth = VDIN_COLOR_DEEPS_8BIT;
@@ -626,7 +627,7 @@ static int vdin_vidioc_expbuf(struct file *file, void *priv,
 			      struct v4l2_exportbuffer *p)
 {
 	struct vdin_dev_s *devp = video_drvdata(file);
-	struct dma_buf *dmabuf;
+//	struct dma_buf *dmabuf;
 	int ret;
 
 	if (IS_ERR_OR_NULL(devp))
@@ -636,9 +637,9 @@ static int vdin_vidioc_expbuf(struct file *file, void *priv,
 
 	ret = vb2_ioctl_expbuf(file, priv, p);
 
-	dmabuf = dma_buf_get(p->fd);
-	if (IS_ERR_OR_NULL(dmabuf))
-		dprintk(0, "get dma buf err\n");
+//	dmabuf = dma_buf_get(p->fd);
+//	if (IS_ERR_OR_NULL(dmabuf))
+//		dprintk(0, "get dma buf err\n");
 
 	return ret;
 }
@@ -673,9 +674,11 @@ static int vdin_vidioc_streamoff(struct file *file, void *priv,
 
 	ret = vb2_ioctl_streamoff(file, priv, i);
 	if (ret < 0)
-		dprintk(0, "%s failed with %d\n", __func__, ret);
+		dprintk(0, "%s vb2_ioctl_streamoff failed with %d\n", __func__, ret);
 
-	ret = vdin_v4l2_stop_tvin(devp);
+	ret |= vdin_v4l2_stop_tvin(devp);
+	if (ret < 0)
+		dprintk(0, "%s vdin_v4l2_stop_tvin failed with %d\n", __func__, ret);
 
 	return ret;
 }
@@ -1850,7 +1853,7 @@ static int vdin_v4l2_queue_init(struct vdin_dev_s *devp,
 	 */
 	que->gfp_flags = GFP_DMA32;
 
-	ret = vb2_queue_init(que);
+	ret = vb2_queue_init_name(que, VDIN_V4L_DRV_NAME);
 	if (ret < 0)
 		dprintk(0, "vb2_queue_init fail\n");
 

@@ -116,7 +116,7 @@ static ssize_t mbox_message_read(struct file *filp, char __user *userbuf,
 	struct aml_mbox_data *aml_data = aml_priv->aml_data;
 	struct device *dev = aml_dev->p_dev;
 	int ret = 0;
-	int rxsize = count;
+	int rxsize;
 
 	ret = wait_for_completion_killable(&aml_data->complete);
 	if (ret < 0) {
@@ -125,10 +125,11 @@ static ssize_t mbox_message_read(struct file *filp, char __user *userbuf,
 	}
 	barrier();
 	*ppos = 0;
-	if (rxsize > aml_data->rxsize)
-		rxsize = aml_data->rxsize;
+	if (count > MBOX_USER_SIZE)
+		count = MBOX_USER_SIZE;
+	rxsize = count > aml_data->rxsize ? aml_data->rxsize : count;
 	ret = simple_read_from_buffer(userbuf, rxsize, ppos,
-				      aml_data->rxbuf, MBOX_DATA_SIZE);
+				      aml_data->rxbuf, MBOX_USER_SIZE);
 	return ret;
 }
 
@@ -157,7 +158,7 @@ static int mbox_message_open(struct inode *inode, struct file *filp)
 	case MAILBOX_AOCPU:
 	case MAILBOX_DSP:
 	case MAILBOX_SECPU:
-		aml_data->rxbuf = devm_kzalloc(aml_dev->p_dev, MBOX_DATA_SIZE, GFP_KERNEL);
+		aml_data->rxbuf = devm_kzalloc(aml_dev->p_dev, MBOX_USER_SIZE, GFP_KERNEL);
 		if (IS_ERR(aml_data->rxbuf)) {
 			devm_kfree(aml_dev->p_dev, aml_priv);
 			devm_kfree(aml_dev->p_dev, aml_data);

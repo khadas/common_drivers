@@ -1402,8 +1402,6 @@
 				&clkaudio CLKID_AUDIO_SPDIFOUT_A>;
 		clock-names = "mclk", "clk_srcpll",
 			"samesource_srcpll", "samesource_clk";
-		pinctrl-names = "tdm_pins";
-		pinctrl-0 = <&tdmout_b &tdm_b_clk_pins>;
 		/*
 		 * 0: tdmout_a;
 		 * 1: tdmout_b;

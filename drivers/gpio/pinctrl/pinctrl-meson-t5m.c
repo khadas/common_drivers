@@ -595,9 +595,10 @@ static const unsigned int uart_c_cts_h22_pins[]		= { GPIOH_22 };
 static const unsigned int uart_c_rts_h23_pins[]		= { GPIOH_23 };
 static const unsigned int uart_c_tx_h24_pins[]		= { GPIOH_24 };
 static const unsigned int uart_c_rx_h25_pins[]		= { GPIOH_25 };
-static const unsigned int uart_c_rts_h26_pins[]		= { GPIOH_26 };
-static const unsigned int uart_c_tx_h27_pins[]		= { GPIOH_27 };
-static const unsigned int uart_c_rx_h28_pins[]		= { GPIOH_28 };
+static const unsigned int uart_c_cts_h26_pins[]		= { GPIOH_26 };
+static const unsigned int uart_c_rts_h27_pins[]		= { GPIOH_27 };
+static const unsigned int uart_c_tx_h28_pins[]		= { GPIOH_28 };
+static const unsigned int uart_c_rx_h29_pins[]		= { GPIOH_29 };
 
 /* BANK H func5 */
 static const unsigned int clk12_24M_h_pins[]		= { GPIOH_13 };
@@ -1318,9 +1319,10 @@ static struct meson_pmx_group meson_t5m_periphs_groups[] __initdata = {
 	GROUP(uart_c_rts_h23,		4),
 	GROUP(uart_c_tx_h24,		4),
 	GROUP(uart_c_rx_h25,		4),
-	GROUP(uart_c_rts_h26,		4),
-	GROUP(uart_c_tx_h27,		4),
-	GROUP(uart_c_rx_h28,		4),
+	GROUP(uart_c_cts_h26,		4),
+	GROUP(uart_c_rts_h27,		4),
+	GROUP(uart_c_tx_h28,		4),
+	GROUP(uart_c_rx_h29,		4),
 
 	/* BANK H func5 */
 	GROUP(clk12_24M_h,		5),
@@ -1597,7 +1599,7 @@ static const char * const uart_c_groups[] = {
 	"uart_c_tx_m", "uart_c_rx_m", "uart_c_cts_m", "uart_c_rts_m",
 	"uart_c_tx_h2", "uart_c_rx_h3", "uart_c_cts_h4", "uart_c_rts_h5",
 	"uart_c_tx_h24", "uart_c_rx_h25",
-	"uart_c_tx_h27", "uart_c_rx_h28", "uart_c_cts_h22", "uart_c_rts_h23"
+	"uart_c_cts_h26", "uart_c_rts_h27", "uart_c_tx_h28", "uart_c_rx_h29"
 };
 
 static const char * const sdcard_groups[] = {

@@ -149,6 +149,16 @@ static unsigned int i2c_write_reg(struct csk05_ts_data *csk05_ts,
 	unsigned char buffer[2];
 	struct i2c_msg msg[1];
 
+	if (!csk05_ts) {
+		pr_err("%s %d csk05_ts is NULL\n", __func__, __LINE__);
+		return -EINVAL;
+	}
+
+	if (!csk05_ts->client) {
+		pr_err("%s %d client is NULL\n", __func__, __LINE__);
+		return -EINVAL;
+	}
+
 	buffer[0] = reg;
 	buffer[1] = reg_data;
 
@@ -156,11 +166,6 @@ static unsigned int i2c_write_reg(struct csk05_ts_data *csk05_ts,
 	msg[0].flags = I2C_M_TEN;
 	msg[0].buf = buffer;
 	msg[0].len = sizeof(buffer);
-
-	if (!csk05_ts->client) {
-		pr_err("%s %d client is NULL\n", __func__, __LINE__);
-		return -EINVAL;
-	}
 
 #ifdef AML_CSK05_CHECK
 	mutex_lock(&csk05_ts->csk05_i2c_mutex);
@@ -180,26 +185,27 @@ static unsigned int i2c_read_reg(struct csk05_ts_data *csk05_ts,
 	unsigned char reg, unsigned char *buf, unsigned char num)
 {
 	int ret;
+	struct i2c_msg msgs[2] = {0};
 
-	struct i2c_msg msgs[] = {
-		{
-			.addr	= csk05_ts->client->addr,
-			.flags	= 0,
-			.len	= 1,
-			.buf	= &reg,
-		},
-		{
-			.addr	= csk05_ts->client->addr,
-			.flags	= I2C_M_RD,
-			.len	= num,
-			.buf	= buf,
-		},
-	};
+	if (!csk05_ts) {
+		pr_err("%s %d csk05_ts is NULL\n", __func__, __LINE__);
+		return -EINVAL;
+	}
 
 	if (!csk05_ts->client) {
 		pr_err("%s %d client is NULL\n", __func__, __LINE__);
 		return -EINVAL;
 	}
+
+	msgs[0].addr = csk05_ts->client->addr;
+	msgs[0].flags = 0;
+	msgs[0].len = 1;
+	msgs[0].buf = &reg;
+
+	msgs[1].addr = csk05_ts->client->addr;
+	msgs[1].flags = I2C_M_RD;
+	msgs[1].len = num;
+	msgs[1].buf = buf;
 
 #ifdef AML_CSK05_CHECK
 	mutex_lock(&csk05_ts->csk05_i2c_mutex);
@@ -466,6 +472,8 @@ static int csk05_check_thread(void *data)
 
 static int csk05_init_key_defines(struct csk05_ts_data *csk05_ts)
 {
+	int ret;
+
 	if (of_property_read_u32(csk05_ts->node, "key_num", &csk05_ts->user_keys_count)) {
 		pr_err("%s %d read key_num failed\n", __func__, __LINE__);
 		return -EINVAL;
@@ -479,10 +487,18 @@ static int csk05_init_key_defines(struct csk05_ts_data *csk05_ts)
 		for (i = 0; i < csk05_ts->user_keys_count; i++) {
 			const char *string = NULL;
 
-			of_property_read_u32_index(csk05_ts->node, "key_code",
+			ret = of_property_read_u32_index(csk05_ts->node, "key_code",
 				i, &csk05_ts->user_keys[i].keycode);
-			of_property_read_string_index(csk05_ts->node, "key_name",
+			if (ret)
+				pr_debug("%s %d i:%d key_code property not found\n",
+					 __func__, __LINE__, i);
+
+			ret = of_property_read_string_index(csk05_ts->node, "key_name",
 				i, &string);
+			if (ret)
+				pr_debug("%s %d i:%d key_name property not found\n",
+					 __func__, __LINE__, i);
+
 			if (string)
 				strncpy(csk05_ts->user_keys[i].keyname, string,
 					sizeof(csk05_ts->user_keys[i].keyname));

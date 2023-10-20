@@ -644,6 +644,7 @@ static void hdr_work_func(struct work_struct *work)
 			pr_info("%s: disable DRM\n", __func__);
 			hdmi_drm_infoframe_set(NULL);
 			hdev->hdmi_current_hdr_mode = 0;
+			hdev->hdmi_last_hdr_mode = hdev->hdmi_current_hdr_mode;
 			hdmitx_sdr_hdr_uevent(hdev);
 		}
 	} else {
@@ -3104,8 +3105,7 @@ static void hdmitx_hpd_plugin_irq_handler(struct work_struct *work)
 	mutex_unlock(&hdev->tx_comm.hdmimode_mutex);
 
 	/*notify to drm hdmi*/
-	if (!hdev->tx_comm.suspend_flag)
-		hdmitx_fire_drm_hpd_cb_unlocked(&hdev->tx_comm);
+	hdmitx_fire_drm_hpd_cb_unlocked(&hdev->tx_comm);
 }
 
 /* common work for plugout flow, witch should be done in lock */
@@ -3152,9 +3152,8 @@ static void hdmitx_hpd_plugout_irq_handler(struct work_struct *work)
 	hdmitx_process_plugout(hdev);
 	mutex_unlock(&hdev->tx_comm.hdmimode_mutex);
 
-	/* notify to drm hdmi, TO CONFIRM: if need the suspend flag? */
-	if (!hdev->tx_comm.suspend_flag)
-		hdmitx_fire_drm_hpd_cb_unlocked(&hdev->tx_comm);
+	/* notify to drm hdmi */
+	hdmitx_fire_drm_hpd_cb_unlocked(&hdev->tx_comm);
 }
 
 int get21_hpd_state(void)

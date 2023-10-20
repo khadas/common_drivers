@@ -365,7 +365,7 @@ void am_set_regmap(struct am_regs_s *p)
 				if (pq_reg_wr_rdma)
 					VSYNC_WR_MPEG_REG(addr, val);
 				else
-					aml_write_vcbus_s(p->am_reg[i].addr,
+					WRITE_VPP_REG(p->am_reg[i].addr,
 						p->am_reg[i].val);
 
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
@@ -377,7 +377,7 @@ void am_set_regmap(struct am_regs_s *p)
 						VSYNC_WR_MPEG_REG(addr + sr_addr_offset,
 							val);
 					else
-						aml_write_vcbus_s(p->am_reg[i].addr +
+						WRITE_VPP_REG(p->am_reg[i].addr +
 							sr_addr_offset,
 							p->am_reg[i].val);
 				}
@@ -405,7 +405,7 @@ void am_set_regmap(struct am_regs_s *p)
 						(val & mask));
 				} else {
 					temp = aml_read_vcbus_s(addr);
-					aml_write_vcbus_s(addr,
+					WRITE_VPP_REG(addr,
 						(temp & (~mask)) |
 						(val & mask));
 				}
@@ -422,7 +422,7 @@ void am_set_regmap(struct am_regs_s *p)
 							(val & mask));
 					} else {
 						temp = aml_read_vcbus_s(addr_tmp);
-						aml_write_vcbus_s(addr_tmp,
+						WRITE_VPP_REG(addr_tmp,
 							(temp & (~mask)) |
 							(val & mask));
 					}

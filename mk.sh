@@ -110,8 +110,9 @@ adjust_config_action
 build_part_of_kernel
 
 if [[ "${FULL_KERNEL_VERSION}" != "common13-5.15" && "${ARCH}" = "arm64" && ${BAZEL} == 1 ]]; then
-	[[ -z ${PREBUILT_GKI} ]] && args="$@ --lto=${LTO}"
-	[[ -z ${GKI_CONFIG} ]] && args="$@ --notrim  --lto=none --nokmi_symbol_list_strict_mode"
+	args=$@
+	[[ -z ${PREBUILT_GKI} ]] && args="${args} --lto=${LTO}"
+	[[ -z ${GKI_CONFIG} ]] && args="${args} --notrim --nokmi_symbol_list_strict_mode"
 
 	PROJECT_DIR=${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/project
 	[[ -d ${PROJECT_DIR} ]] || mkdir -p ${PROJECT_DIR}

@@ -155,11 +155,9 @@
 			alignment = <0x0 0x400000>;
 		};
 		dsp_fw_reserved:linux,dsp_fw {
-			compatible = "shared-dma-pool";
-			reusable;
+			compatible = "amlogic, dsp";
 			size = <0x0 0x00800000>;
-			alignment = <0x0 0x00400000>;
-			alloc-ranges = <0x0 0x30000000 0x0 0x00800000>;
+			reg = <0x0 0x30000000 0x0 0x00800000>;
 		};
 
 		pcie_dma_ops_mm:linux,pcie_dma_ops {
@@ -193,7 +191,7 @@
 	};
 	cvbsout {
 		compatible = "amlogic, cvbsout-sc2";
-		status = "okay";
+		status = "disabled";
 
 		/* clk path */
 		/* 0:vid_pll vid2_clk */
@@ -1516,6 +1514,10 @@
 	pxp_mode = <0>; /** 0:normal mode 1:pxp mode */
 };
 
+&drm_subsystem {
+	dummyl_from_hdmitx = /bits/ 8  <1>;
+};
+
 &drm_vpu {
 	status = "okay";
 	logo_addr = "0x7f800000";
@@ -1527,7 +1529,7 @@
 };
 
 &drm_amcvbsout {
-	status = "okay";
+	status = "disabled";
 };
 
 &drm_lcd {

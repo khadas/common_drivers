@@ -1449,6 +1449,11 @@
 		reg-data-type = <1>;
 		link-device = <&phycsi>;
 	};
+
+	dw9714@0c {
+		compatible = "dw, dw9714, t7";
+		reg = <0x0c>;
+	};
 };
 
 &i2c3 {

@@ -260,7 +260,7 @@ static const struct i2c_device_id dw9714_id[] = {
 };
 
 static const struct of_device_id dw9714_dt_ids[] = {
-    { .compatible = "dw, dw9714" },
+    { .compatible = "dw, dw9714, t7" },
     { /* sentinel */ }
 };
 

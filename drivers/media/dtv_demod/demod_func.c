@@ -1896,6 +1896,7 @@ void real_para_clear(struct aml_demod_para_real *para)
 	para->symbol = 0;
 	para->snr = 0;
 	para->plp_num = 0;
+	para->plp_common = 0;
 	para->fef_info = 0;
 	para->tps_cell_id = 0;
 	para->ber = 0;

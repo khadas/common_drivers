@@ -232,6 +232,25 @@ int dvbt_read_status(struct dvb_frontend *fe, enum fe_status *status)
 	return 0;
 }
 
+static u64_t get_common_plp(void)
+{
+	int i, id, common_cnt;
+	u64_t plp_common = 0;
+
+	if (cpu_after_eq(MESON_CPU_MAJOR_ID_T3)) {
+		common_cnt = dvbt_t2_rdb(0xe0);
+		for (i = 0; i < common_cnt; i++) {
+			id = dvbt_t2_rdb(0xa0 + i);
+			if (id < 64)
+				plp_common |= 1ULL << id;
+		}
+	}
+
+	PR_DVBT("get common plp : 0x%llx\n", plp_common);
+
+	return plp_common;
+}
+
 #define DVBT2_DEBUG_INFO
 #define TIMEOUT_SIGNAL_T2 800
 #define CONTINUE_TIMES_LOCK 3
@@ -251,6 +270,7 @@ int dvbt2_read_status(struct dvb_frontend *fe, enum fe_status *status)
 	int snr, modu, cr, l1post, ldpc;
 	unsigned int plp_num, fef_info = 0;
 	unsigned int data_plp = 0, common_plp = 0;
+	u64_t plp_common;
 
 	if (!devp->demod_thread) {
 		real_para_clear(&demod->real_para);
@@ -303,6 +323,7 @@ int dvbt2_read_status(struct dvb_frontend *fe, enum fe_status *status)
 		snr = val >> 13;
 		l1post = (val >> 30) & 0x1;
 		plp_num = (val >> 24) & 0x3f;
+		plp_common = 0;
 	} else {
 		snr = (dvbt_t2_rdb(0x2a09) << 8) | dvbt_t2_rdb(0x2a08);
 		cr = (dvbt_t2_rdb(0x8c3) >> 1) & 0x7;
@@ -310,6 +331,7 @@ int dvbt2_read_status(struct dvb_frontend *fe, enum fe_status *status)
 		ldpc = dvbt_t2_rdb(0xa50);
 		l1post = (dvbt_t2_rdb(0x839) >> 3) & 0x1;
 		plp_num = dvbt_t2_rdb(0x805);
+		plp_common = get_common_plp();
 	}
 	snr &= 0x7ff;
 	snr = snr * 30 / 64; //dBx10.
@@ -375,6 +397,7 @@ int dvbt2_read_status(struct dvb_frontend *fe, enum fe_status *status)
 		demod->real_para.modulation = modu;
 		demod->real_para.coderate = cr;
 		demod->real_para.plp_num = plp_num;
+		demod->real_para.plp_common = plp_common;
 		demod->real_para.fef_info = fef_info;
 
 		/* for call r842 dvbt agc slow */

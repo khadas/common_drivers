@@ -3062,21 +3062,25 @@ static int aml_dtvdm_get_property(struct dvb_frontend *fe,
 		/* plp nums & ids */
 		tvp->u.buffer.reserved1[0] = demod->real_para.plp_num;
 		if (tvp->u.buffer.reserved2 && demod->real_para.plp_num > 0) {
-			unsigned char i, *plp_ids;
+			unsigned char i, *plp_ids, common_cnt = 0;
 
 			plp_ids = kmalloc(demod->real_para.plp_num, GFP_KERNEL);
 			if (plp_ids) {
-				for (i = 0; i < demod->real_para.plp_num; i++)
-					plp_ids[i] = i;
+				for (i = 0; i < demod->real_para.plp_num; i++) {
+					if ((demod->real_para.plp_common >> i) & 1)
+						common_cnt++;
+					plp_ids[i] = i + common_cnt;
+				}
+				tvp->u.buffer.reserved1[0] -= common_cnt;
 				if (copy_to_user(tvp->u.buffer.reserved2,
-					plp_ids, demod->real_para.plp_num))
+					plp_ids, tvp->u.buffer.reserved1[0]))
 					PR_ERR("copy plp ids to user err\n");
 
 				kfree(plp_ids);
 			}
 		}
-		PR_INFO("[id %d] get plp num = %d\n",
-			demod->id, demod->real_para.plp_num);
+		PR_INFO("[id %d] get plp num = %d, common = 0x%llx\n",
+			demod->id, tvp->u.buffer.reserved1[0], demod->real_para.plp_common);
 		break;
 
 	case DTV_STAT_CNR:

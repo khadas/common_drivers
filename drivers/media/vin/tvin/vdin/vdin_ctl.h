@@ -370,4 +370,6 @@ void vdin_set_vscale(struct vdin_dev_s *devp);
 void vdin1_hw_hist_on_off(struct vdin_dev_s *devp, bool on_off);
 void vdin_get_hist_gamma(struct vdin_dev_s *devp, unsigned short *hist_gamma);
 void vdin_ioctl_get_hist(struct vdin_dev_s *devp, struct vdin_hist_s *vdin1_hist_temp);
+bool vdin_is_auto_game_mode(struct vdin_dev_s *devp);
+bool vdin_is_auto_pc_mode(struct vdin_dev_s *devp);
 #endif

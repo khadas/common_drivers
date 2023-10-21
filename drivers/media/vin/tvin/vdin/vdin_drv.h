@@ -213,7 +213,8 @@ enum vdin_hw_ver_e {
 /* 20230727: drop the first frame for vdin1 was not write finished */
 /* 20230803: pc and game mode switch optimization */
 /* 20231013: dv 444 low-latency need convert to 422 */
-#define VDIN_VER_V1 "20231013: dv 444 low-latency need convert to 422"
+/* 20231022: add auto pc game and optimize tvin_update_vdin_prop */
+#define VDIN_VER_V1 "20231022: add auto pc game and optimize tvin_update_vdin_prop"
 
 enum vdin_irq_flg_e {
 	VDIN_IRQ_FLG_NO_END = 1,
@@ -341,6 +342,8 @@ struct match_data_s {
 #define VDIN_AFBCE_DOLBY		BIT(17)
 #define VDIN_INTERLACE_DROP_BOTTOM	BIT(18)
 #define VDIN_HV_REVERSE_EN		BIT(19) //for hv_reverse is disabled by default
+#define VDIN_AUTO_GAME_MODE		BIT(20)
+#define VDIN_AUTO_PC_MODE		BIT(21)
 /* vdin_function_sel control bits end */
 
 #define VDIN_2K_SIZE			0x07800438 /* 0x780 = 1920 0x438 = 1080 */
@@ -589,8 +592,8 @@ struct vdin_debug_s {
 	/* vdin1 hdr set bypass */
 	bool vdin1_set_hdr_bypass;
 	bool dbg_force_shrink_en;
-	bool force_pc_mode;
-	bool force_game_mode;
+	bool bypass_pc_mode;//bypass pc mode set
+	bool bypass_game_mode;//bypass game mode set
 	bool bypass_tunnel;
 	bool pause_mif_dec;
 	bool pause_afbce_dec;
@@ -1016,9 +1019,12 @@ struct vdin_dev_s {
 	bool black_bar_enable;
 	bool hist_bar_enable;
 	bool rdma_not_register;
+	bool auto_game_flag;
+	bool auto_pc_flag;
 	bool interlace_drop_bottom;
 	bool h_skip_en;
 	bool v_skip_en;
+	bool dv_is_not_std;
 	unsigned int ignore_frames;
 	/*use frame rate to cal duration*/
 	unsigned int use_frame_rate;

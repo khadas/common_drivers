@@ -116,6 +116,40 @@ enum hdmi_phy_para {
 	HDMI_PHYPARA_270M, /* 480p60hz 444 8bit */
 };
 
+enum vrr_type {
+	T_VRR_NONE,
+	T_VRR_GAME,
+	T_VRR_QMS,
+};
+
+enum emp_type {
+	EMP_TYPE_NONE,
+	EMP_TYPE_VRR_GAME = T_VRR_GAME,
+	EMP_TYPE_VRR_QMS = T_VRR_QMS,
+	EMP_TYPE_SBTM,
+	EMP_TYPE_DSC,
+	EMP_TYPE_DHDR,
+};
+
+/* refer to HDMI2.1A P447 */
+enum TARGET_FRAME_RATE {
+	TFR_QMSVRR_INACTIVE = 0,
+	TFR_23P97,
+	TFR_24,
+	TFR_25,
+	TFR_29P97,
+	TFR_30,
+	TFR_47P95,
+	TFR_48,
+	TFR_50,
+	TFR_59P94,
+	TFR_60,
+	TFR_100,
+	TFR_119P88,
+	TFR_120,
+	TFR_MAX,
+};
+
 struct size_map {
 	unsigned int sample_bits;
 	enum hdmi_audio_sampsize ss;

@@ -1646,8 +1646,11 @@ void meson_hdmitx_encoder_atomic_enable(struct drm_encoder *encoder,
 		return;
 	}
 
-	if (meson_encoder_vrr_change(encoder, state, 1))
+	if (meson_encoder_vrr_change(encoder, state, 1)) {
+		DRM_INFO("%s, set frame rate: %d\n", __func__, mode_vrefresh);
+		am_hdmi_info.hdmitx_dev->set_vframe_rate_hint(mode_vrefresh * 100, NULL);
 		return;
+	}
 
 	if (meson_crtc_state->uboot_mode_init == 1 &&
 		meson_conn_state->update != 1)
@@ -1749,7 +1752,7 @@ static int meson_hdmitx_encoder_atomic_check(struct drm_encoder *encoder,
 		return -EINVAL;
 	}
 
-	if (!am_hdmi_info.android_path)
+	if (!am_hdmi_info.android_path || crtc_state->vrr_enabled)
 		return 0;
 
 	if (hdmitx_common_validate_format_para(common, &hdmitx_state->hcs.para)) {

@@ -41,21 +41,6 @@ struct hdmi_packet_t {
 	u8 no_used; /* padding to 32 bytes */
 };
 
-enum vrr_type {
-	T_VRR_NONE,
-	T_VRR_GAME,
-	T_VRR_QMS,
-};
-
-enum emp_type {
-	EMP_TYPE_NONE,
-	EMP_TYPE_VRR_GAME = T_VRR_GAME,
-	EMP_TYPE_VRR_QMS = T_VRR_QMS,
-	EMP_TYPE_SBTM,
-	EMP_TYPE_DSC,
-	EMP_TYPE_DHDR,
-};
-
 #define HDMI_INFOFRAME_EMP_VRR_GAME ((HDMI_INFOFRAME_TYPE_EMP << 8) | (EMP_TYPE_VRR_GAME))
 #define HDMI_INFOFRAME_EMP_VRR_QMS ((HDMI_INFOFRAME_TYPE_EMP << 8) | (EMP_TYPE_VRR_QMS))
 #define HDMI_INFOFRAME_EMP_VRR_SBTM ((HDMI_INFOFRAME_TYPE_EMP << 8) | (EMP_TYPE_SBTM))
@@ -121,25 +106,6 @@ void hdmi_emp_frame_set_member(struct emp_packet_st *info,
 	enum emp_component_conf conf, u32 val);
 void hdmitx_dhdr_send(u8 *body, int max_size);
 
-/* refer to HDMI2.1A P447 */
-enum TARGET_FRAME_RATE {
-	TFR_QMSVRR_INACTIVE = 0,
-	TFR_23P97,
-	TFR_24,
-	TFR_25,
-	TFR_29P97,
-	TFR_30,
-	TFR_47P95,
-	TFR_48,
-	TFR_50,
-	TFR_59P94,
-	TFR_60,
-	TFR_100,
-	TFR_119P88,
-	TFR_120,
-	TFR_MAX,
-};
-
 struct mvrr_const_val {
 	/* unit: 100  6000, 5994, 5000, 3000, 2997, 2500, 2400, 2397 */
 	u16 duration;
@@ -188,7 +154,7 @@ struct vtem_qmsvrr_st {
 	u8 qms_en:1;
 	u8 base_vfront; /* MD1 */
 	u16 brr_rate; /* MD2/3 */
-	enum TARGET_FRAME_RATE next_tfr:4;
+	enum TARGET_FRAME_RATE next_tfr:5;
 };
 
 struct emp_packet_header {

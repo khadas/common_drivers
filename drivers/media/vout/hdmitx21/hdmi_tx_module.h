@@ -141,7 +141,7 @@ struct hdmitx_dev {
 	/* 0: RGB444  1: Y444  2: Y422  3: Y420 */
 	/* 4: 24bit  5: 30bit  6: 36bit  7: 48bit */
 	/* if equals to 1, means current video & audio output are blank */
-	u32 vrr_type; /* 1: GAME-VRR, 2: QMS-VRR */
+	enum vrr_type vrr_mode; /* 1: GAME-VRR, 2: QMS-VRR,  0: default no-VRR */
 	struct ced_cnt ced_cnt;
 	struct scdc_locked_st chlocked_st;
 	enum hdmi_ll_mode ll_user_set_mode; /* ll setting: 0/AUTOMATIC, 1/Always OFF, 2/ALWAYS ON */

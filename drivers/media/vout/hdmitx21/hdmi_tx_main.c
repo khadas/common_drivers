@@ -2016,6 +2016,59 @@ static ssize_t vrr_cap_show(struct device *dev,
 	return _vrr_cap_show(dev, attr, buf);
 }
 
+static ssize_t vrr_mode_show(struct device *dev,
+			    struct device_attribute *attr,
+			    char *buf)
+{
+	int pos = 0;
+	struct hdmitx_dev *hdev = dev_get_drvdata(dev);
+
+	switch (hdev->vrr_mode) {
+	case T_VRR_GAME:
+		pos += snprintf(buf + pos, PAGE_SIZE, "%s\n", "game-vrr");
+		break;
+	case T_VRR_QMS:
+		pos += snprintf(buf + pos, PAGE_SIZE, "%s\n", "qms-vrr");
+		break;
+	default:
+		pos += snprintf(buf + pos, PAGE_SIZE, "%s\n", "none");
+		break;
+	}
+	return pos;
+}
+
+/*
+ * vrr_mode: 0: default value, no vrr
+ *           1/game-vrr: Game VRR
+ *           2/qms-vrr:  Quick Media Switch VRR
+ */
+static ssize_t vrr_mode_store(struct device *dev,
+				    struct device_attribute *attr,
+				    const char *buf, size_t count)
+{
+	int val = 0;
+	struct hdmitx_dev *hdev = dev_get_drvdata(dev);
+
+	pr_info("set vrr_mode as %s\n", buf);
+	if (isdigit(buf[0])) {
+		val = buf[0] - '0';
+		if (val == 0 || val == 1 || val == 2)
+			hdev->vrr_mode = val;
+		else
+			pr_info("only accept as 0, 1 or 2\n");
+
+		return count;
+	}
+	if (strncmp(buf, "game-vrr", 8) == 0)
+		hdev->vrr_mode = T_VRR_GAME;
+	else if (strncmp(buf, "qms-vrr", 7) == 0)
+		hdev->vrr_mode = T_VRR_QMS;
+	else
+		hdev->vrr_mode = T_VRR_NONE;
+
+	return count;
+}
+
 static ssize_t rxsense_policy_store(struct device *dev,
 				    struct device_attribute *attr,
 				    const char *buf, size_t count)
@@ -2812,6 +2865,7 @@ static DEVICE_ATTR_RW(disp_mode);
 static DEVICE_ATTR_RW(vid_mute);
 static DEVICE_ATTR_WO(config);
 static DEVICE_ATTR_RO(vrr_cap);
+static DEVICE_ATTR_RW(vrr_mode);
 static DEVICE_ATTR_RW(aud_mute);
 static DEVICE_ATTR_RO(lipsync_cap);
 static DEVICE_ATTR_RO(hdmi_hdr_status);
@@ -3471,13 +3525,6 @@ static int amhdmitx_get_dt_info(struct platform_device *pdev, struct hdmitx_dev 
 				hdev->tx_comm.enc_idx = 2;
 		}
 
-		ret = of_property_read_u32(pdev->dev.of_node, "vrr_type", &val);
-		hdev->vrr_type = 0; /* default 0 */
-		if (!ret) {
-			if (val == 1 || val == 2)
-				hdev->vrr_type = val;
-		}
-
 		/* hdcp ctrl 0:sysctrl, 1: drv, 2: linux app */
 		ret = of_property_read_u32(pdev->dev.of_node,
 			   "hdcp_ctl_lvl", &hdev->tx_comm.hdcp_ctl_lvl);
@@ -3746,6 +3793,7 @@ static int amhdmitx_probe(struct platform_device *pdev)
 	ret = device_create_file(dev, &dev_attr_vid_mute);
 	ret = device_create_file(dev, &dev_attr_config);
 	ret = device_create_file(dev, &dev_attr_vrr_cap);
+	ret = device_create_file(dev, &dev_attr_vrr_mode);
 	ret = device_create_file(dev, &dev_attr_lipsync_cap);
 	ret = device_create_file(dev, &dev_attr_hdmi_hdr_status);
 	ret = device_create_file(dev, &dev_attr_aud_mute);
@@ -3923,6 +3971,8 @@ static int amhdmitx_remove(struct platform_device *pdev)
 	device_remove_file(dev, &dev_attr_disp_mode);
 	device_remove_file(dev, &dev_attr_vid_mute);
 	device_remove_file(dev, &dev_attr_config);
+	device_remove_file(dev, &dev_attr_vrr_cap);
+	device_remove_file(dev, &dev_attr_vrr_mode);
 	device_remove_file(dev, &dev_attr_vrr_cap);
 	device_remove_file(dev, &dev_attr_ll_mode);
 	device_remove_file(dev, &dev_attr_ll_user_mode);
@@ -4140,6 +4190,7 @@ static struct meson_hdmitx_dev drm_hdmitx_instance = {
 	.register_hdcp_notify = drm_hdmitx_register_hdcp_notify,
 	.get_vrr_cap = drm_hdmitx_get_vrr_cap,
 	.get_vrr_mode_group = drm_hdmitx_get_vrr_mode_group,
+	.set_vframe_rate_hint = hdmitx_set_fr_hint,
 };
 
 int hdmitx_hook_drm(struct device *device)

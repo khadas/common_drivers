@@ -263,7 +263,7 @@ void hdmi_emp_infoframe_set(enum emp_type type, struct emp_packet_st *info)
 		md[0] = info->body.emp0.md.qms_md.qms_en << 2 |
 			info->body.emp0.md.qms_md.m_const << 1;
 		md[1] = info->body.emp0.md.qms_md.base_vfront;
-		md[2] = info->body.emp0.md.qms_md.next_tfr << 4 |
+		md[2] = info->body.emp0.md.qms_md.next_tfr << 3 |
 			(info->body.emp0.md.qms_md.brr_rate >> 8 & 3);
 		md[3] = info->body.emp0.md.qms_md.brr_rate & 0xff;
 		break;

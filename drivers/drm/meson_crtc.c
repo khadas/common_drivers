@@ -653,8 +653,7 @@ static void am_meson_crtc_atomic_enable(struct drm_crtc *crtc,
 		}
 	} else {
 		mode = meson_crtc_state->preset_vmode;
-		if (mode != VMODE_DUMMY_ENCL)
-			DRM_ERROR("crtc [%d]: only support dummy.\n", amcrtc->crtc_index);
+		DRM_DEBUG("crtc [%d]: preset_vmode %d.\n", amcrtc->crtc_index, mode);
 	}
 
 	DRM_INFO("%s-[%d]: enable mode %s final vmode %d\n",
@@ -676,10 +675,6 @@ static void am_meson_crtc_atomic_enable(struct drm_crtc *crtc,
 		if (crtc->state->vrr_enabled &&
 			adjusted_mode->hdisplay == old_mode->hdisplay &&
 			adjusted_mode->vdisplay == old_mode->vdisplay) {
-			set_vframe_rate_hint(adjusted_vrefresh  * 100);
-			DRM_INFO("%s-[%d], vrr set crtc enable, %d\n",
-					__func__, amcrtc->crtc_index,
-					 adjusted_vrefresh  * 100);
 			drm_crtc_vblank_on(crtc);
 			return;
 		}

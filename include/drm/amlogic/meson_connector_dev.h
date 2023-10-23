@@ -109,6 +109,7 @@ struct meson_hdmitx_dev {
 	/*vrr apis*/
 	bool (*get_vrr_cap)(void);
 	int (*get_vrr_mode_group)(struct drm_vrr_mode_group *groups, int max_group);
+	int (*set_vframe_rate_hint)(int duration, void *data);
 
 	int (*get_hdmi_hdr_status)(void);
 };

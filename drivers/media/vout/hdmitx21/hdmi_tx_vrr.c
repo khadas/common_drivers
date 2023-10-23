@@ -886,7 +886,7 @@ static void vrr_init_game_para(struct tx_vrr_params *para)
 	hdmi_emp_frame_set_member(vrr_pkt, CONF_AFR, 0);
 	hdmi_emp_frame_set_member(vrr_pkt, CONF_NEW, 0);
 	hdmi_emp_frame_set_member(vrr_pkt, CONF_END, 0);
-	hdmi_emp_frame_set_member(vrr_pkt, CONF_ORG_ID, 0);
+	hdmi_emp_frame_set_member(vrr_pkt, CONF_ORG_ID, 1);
 	hdmi_emp_frame_set_member(vrr_pkt, CONF_DATA_SET_TAG, 1);
 	hdmi_emp_frame_set_member(vrr_pkt, CONF_DATA_SET_LENGTH, 4);
 
@@ -946,7 +946,7 @@ static void vrr_init_qms_para(struct tx_vrr_params *para)
 	hdmi_emp_frame_set_member(vrr_pkt, CONF_AFR, 0);
 	hdmi_emp_frame_set_member(vrr_pkt, CONF_NEW, 0);
 	hdmi_emp_frame_set_member(vrr_pkt, CONF_END, 0);
-	hdmi_emp_frame_set_member(vrr_pkt, CONF_ORG_ID, 0);
+	hdmi_emp_frame_set_member(vrr_pkt, CONF_ORG_ID, 1);
 	hdmi_emp_frame_set_member(vrr_pkt, CONF_DATA_SET_TAG, 1);
 	hdmi_emp_frame_set_member(vrr_pkt, CONF_DATA_SET_LENGTH, 4);
 
@@ -1120,10 +1120,10 @@ int hdmitx_set_fr_hint(int rate, void *data)
 		return 0;
 	}
 
-	if (hdev->vrr_type == 1) {
-		para.type = T_VRR_GAME;
-	} else if (hdev->vrr_type == 2) {
-		para.type = T_VRR_QMS;
+	/* TODO, hard code vrr_mode */
+	hdev->vrr_mode = T_VRR_QMS;
+	if (hdev->vrr_mode == T_VRR_GAME || hdev->vrr_mode == T_VRR_QMS) {
+		para.type = hdev->vrr_mode;
 	} else {
 		para.vrr_enabled = 0;
 		return 0;

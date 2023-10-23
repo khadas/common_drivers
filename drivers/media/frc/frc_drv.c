@@ -243,8 +243,7 @@ static long frc_ioctl(struct file *file,
 			ret = -EFAULT;
 			break;
 		}
-		if (data == devp->frc_sts.auto_ctrl)
-			return 0;
+
 		pr_frc(1, "set memc_autoctrl:%d boot_timestamp_en%d boot_check%d\n",
 		data, devp->in_sts.boot_timestamp_en, devp->in_sts.boot_check_finished);
 		if (data) {

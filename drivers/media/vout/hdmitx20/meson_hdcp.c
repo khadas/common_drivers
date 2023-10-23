@@ -95,31 +95,35 @@ static unsigned int get_hdcp_downstream_ver(void)
 	return hdcp_downstream_type;
 }
 
-static unsigned int meson_hdcp_get_key_version(void)
+static unsigned int meson_hdcp_get_tx_key_version(void)
 {
-	unsigned int hdcp_tx_type = meson_hdcp_get_tx_cap();
+	struct hdmitx_dev *hdev = get_hdmitx_device();
 
-	HDMITX_INFO("hdmitx support hdcp14: %d\n",
-		 hdcp_tx_type & 0x1);
-	HDMITX_INFO("hdmitx support hdcp22: %d\n",
-		 (hdcp_tx_type & 0x2) >> 1);
-	return hdcp_tx_type;
+	if (!hdev || hdev->hdmi_init != 1)
+		return 0;
+
+	if (hdev->lstore < 0x10) {
+		hdev->lstore = 0;
+		if (hdmitx_hw_cntl_ddc(&hdev->tx_hw.base, DDC_HDCP_14_LSTORE, 0))
+			hdev->lstore += 1;
+		if (hdmitx_hw_cntl_ddc(&hdev->tx_hw.base, DDC_HDCP_22_LSTORE, 0))
+			hdev->lstore += 2;
+	}
+
+	HDMITX_INFO("hdmitx support hdcp14: %d, hdcp22: %d\n",
+		hdev->lstore & 0x1, (hdev->lstore & 0x2) >> 1);
+	return hdev->lstore & 0x3;
 }
 
 int meson_hdcp_get_valid_type(int request_type_mask)
 {
 	int type;
-	unsigned int hdcp_tx_type = meson_hdcp_get_key_version();
+	unsigned int hdcp_tx_type = meson_hdcp_get_tx_cap();
 
 	HDMITX_INFO("%s usr_type: %d, key_store: %d\n",
 		 __func__, request_type_mask, hdcp_tx_type);
-	if (/* !meson_hdcp.hdcp_downstream_type && */
-		hdcp_tx_type) {
-		meson_hdcp.hdcp_downstream_type =
-			get_hdcp_downstream_ver();
-		if (meson_hdcp.hdcp22_daemon_state != HDCP22_DAEMON_DONE)
-			hdcp_tx_type &= ~(1 << 1);
-	}
+	if (hdcp_tx_type)
+		meson_hdcp.hdcp_downstream_type = get_hdcp_downstream_ver();
 	switch (hdcp_tx_type & 0x3) {
 	case 0x3:
 		if ((meson_hdcp.hdcp_downstream_type & 0x2) &&
@@ -286,7 +290,7 @@ static long hdcp_comm_ioctl(struct file *file,
 	case TEE_HDCP_IOC_START:
 		/* notify by TEE, hdcp key ready, echo 2 > hdcp_mode */
 		rtn_val = 0;
-		meson_hdcp.hdcp_tx_type = meson_hdcp_get_key_version();
+		meson_hdcp.hdcp_tx_type = meson_hdcp_get_tx_key_version();
 		if (meson_hdcp.hdcp_tx_type & 0x2) {
 			/* when bootup, if hdcp22 init after hdcp14 auth,
 			 * hdcp path will switch to hdcp22. need to delay
@@ -581,23 +585,17 @@ void meson_hdcp_exit(void)
 }
 
 /* bit[1]: hdcp22, bit[0]: hdcp14 */
+/* apart from hdcp key, it will also check hdcp2.2 daemon status */
 unsigned int meson_hdcp_get_tx_cap(void)
 {
 	struct hdmitx_dev *hdev = get_hdmitx_device();
+	unsigned int hdcp_tx_type = meson_hdcp_get_tx_key_version();
 
-	if (hdev->lstore < 0x10) {
-		hdev->lstore = 0;
-		if (hdmitx_hw_cntl_ddc(&hdev->tx_hw.base, DDC_HDCP_14_LSTORE, 0))
-			hdev->lstore += 1;
-		if (hdmitx_hw_cntl_ddc(&hdev->tx_hw.base,
-			DDC_HDCP_22_LSTORE, 0)) {
-			/*check hdcp daemon: android or daemon is running */
-			if (hdev->tx_comm.hdcp_ctl_lvl == 0 ||
-				hdcp_tx22_daemon_ready())
-				hdev->lstore += 2;
-		}
-	}
-	return hdev->lstore & 0x3;
+	/* check hdcp daemon: android or daemon is running */
+	if (hdev->tx_comm.hdcp_ctl_lvl > 0 && !hdcp_tx22_daemon_ready())
+		hdcp_tx_type &= 0x1;
+
+	return hdcp_tx_type & 0x3;
 }
 
 /* bit[1]: hdcp22, bit[0]: hdcp14 */

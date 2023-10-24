@@ -27,4 +27,5 @@
   __drm_printfn_coredump
   __drm_puts_coredump
 
+# amlogic-mmc.ko
   mmc_gpiod_request_cd

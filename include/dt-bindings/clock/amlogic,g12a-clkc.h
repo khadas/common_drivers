@@ -269,9 +269,12 @@
 #define CLKID_24M_CLK_GATE			260
 #define CLKID_12M_CLK_DIV			261
 #define CLKID_12M_CLK_GATE			262
+#define CLKID_GEN_MUX				263
+#define CLKID_GEN_DIV				264
+#define CLKID_GEN				265
 
 /* Media clocks */
-#define MEDIA_BASE				(263 + 1)
+#define MEDIA_BASE				(266 + 0)
 #define CLKID_DSI_MEAS_MUX			(MEDIA_BASE + 0)
 #define CLKID_DSI_MEAS_DIV			(MEDIA_BASE + 1)
 #define CLKID_DSI_MEAS				(MEDIA_BASE + 2)

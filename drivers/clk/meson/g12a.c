@@ -4849,6 +4849,71 @@ static struct clk_regmap g12a_12m_gate = {
 	},
 };
 
+static u32 g12a_gen_mux_table[] = { 0, 5, 7, 20, 21, 22, 23, 24, 25, 26, 27, 28};
+
+static const struct clk_parent_data g12a_gen_mux_parent_hws[] = {
+	{ .fw_name = "xtal" },
+	{ .hw = &g12a_gp0_pll.hw },
+	{ .hw = &g12a_hifi_pll.hw },
+	{ .hw = &g12a_fclk_div2.hw },
+	{ .hw = &g12a_fclk_div3.hw },
+	{ .hw = &g12a_fclk_div4.hw },
+	{ .hw = &g12a_fclk_div5.hw },
+	{ .hw = &g12a_fclk_div7.hw },
+	{ .hw = &g12a_mpll0.hw },
+	{ .hw = &g12a_mpll1.hw },
+	{ .hw = &g12a_mpll2.hw },
+	{ .hw = &g12a_mpll3.hw }
+};
+
+static struct clk_regmap g12a_gen_mux = {
+	.data = &(struct clk_regmap_mux_data){
+		.offset = HHI_GEN_CLK_CNTL,
+		.mask = 0x1f,
+		.shift = 12,
+		.table = g12a_gen_mux_table,
+	},
+	.hw.init = &(struct clk_init_data) {
+		.name = "gen_mux",
+		.ops = &clk_regmap_mux_ops,
+		.parent_data = g12a_gen_mux_parent_hws,
+		.num_parents = ARRAY_SIZE(g12a_gen_mux_parent_hws),
+	},
+};
+
+static struct clk_regmap g12a_gen_div = {
+	.data = &(struct clk_regmap_div_data){
+		.offset = HHI_GEN_CLK_CNTL,
+		.shift = 0,
+		.width = 11,
+	},
+	.hw.init = &(struct clk_init_data) {
+		.name = "gen_div",
+		.ops = &clk_regmap_divider_ops,
+		.parent_hws = (const struct clk_hw *[]) {
+			&g12a_gen_mux.hw
+		},
+		.num_parents = 1,
+		.flags = CLK_SET_RATE_PARENT,
+	},
+};
+
+static struct clk_regmap g12a_gen = {
+	.data = &(struct clk_regmap_gate_data){
+		.offset = HHI_GEN_CLK_CNTL,
+		.bit_idx = 11,
+	},
+	.hw.init = &(struct clk_init_data){
+		.name = "gen",
+		.ops = &clk_regmap_gate_ops,
+		.parent_hws = (const struct clk_hw *[]) {
+			&g12a_gen_div.hw
+		},
+		.num_parents = 1,
+		.flags = CLK_SET_RATE_PARENT,
+	},
+};
+
 #endif
 
 static const struct clk_parent_data g12a_vdec_mux_parent_hws[] = {
@@ -5540,6 +5605,9 @@ static struct clk_hw_onecell_data g12a_hw_onecell_data = {
 		[CLKID_24M_CLK_GATE]		= &g12a_24m_gate.hw,
 		[CLKID_12M_CLK_DIV]		= &g12a_12m_div.hw,
 		[CLKID_12M_CLK_GATE]		= &g12a_12m_gate.hw,
+		[CLKID_GEN_MUX]			= &g12a_gen_mux.hw,
+		[CLKID_GEN_DIV]			= &g12a_gen_div.hw,
+		[CLKID_GEN]			= &g12a_gen.hw,
 #endif
 		[NR_CLKS]			= NULL,
 	},
@@ -5870,6 +5938,9 @@ static struct clk_hw_onecell_data g12b_hw_onecell_data = {
 		[CLKID_24M_CLK_GATE]		= &g12a_24m_gate.hw,
 		[CLKID_12M_CLK_DIV]		= &g12a_12m_div.hw,
 		[CLKID_12M_CLK_GATE]		= &g12a_12m_gate.hw,
+		[CLKID_GEN_MUX]			= &g12a_gen_mux.hw,
+		[CLKID_GEN_DIV]			= &g12a_gen_div.hw,
+		[CLKID_GEN]			= &g12a_gen.hw,
 #endif
 		[NR_CLKS]			= NULL,
 	},
@@ -6213,6 +6284,9 @@ static struct clk_hw_onecell_data sm1_hw_onecell_data = {
 		[CLKID_MIPI_CSI_PHY_CLK0_MUX]	= &g12b_mipi_csi_phy_clk0_mux.hw,
 		[CLKID_MIPI_CSI_PHY_CLK0_DIV]	= &g12b_mipi_csi_phy_clk0_div.hw,
 		[CLKID_MIPI_CSI_PHY_CLK0]	= &g12b_mipi_csi_phy_clk0_gate.hw,
+		[CLKID_GEN_MUX]			= &g12a_gen_mux.hw,
+		[CLKID_GEN_DIV]			= &g12a_gen_div.hw,
+		[CLKID_GEN]			= &g12a_gen.hw,
 #endif
 		[NR_CLKS]			= NULL,
 	},
@@ -6535,7 +6609,10 @@ static struct clk_regmap *const g12a_clk_regmaps[] __initconst = {
 	&sm1_csi_host,
 	&sm1_parser1,
 	&sm1_nna,
-	&sm1_csi_dig
+	&sm1_csi_dig,
+	&g12a_gen_mux,
+	&g12a_gen_div,
+	&g12a_gen,
 #endif
 };
 

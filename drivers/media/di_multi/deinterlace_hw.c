@@ -232,12 +232,10 @@ void dimh_set_crc_init_update(int count)
 	if (DIM_IS_IC_BF(T7))
 		return;
 	if (count < 2) {
-		DIM_RDMA_WR_BITS(DNR_DM_CTRL, 1, 11, 1);
 		DIM_RDMA_WR_BITS(DI_SC2_MEM_GEN_REG, 0, 0, 1);
 		DIM_RDMA_WR_BITS(DI_PRE_CTRL, 0, 8, 1);
 		DIM_RDMA_WR_BITS(MCDI_MOTINEN, 0, 1, 1);
 	} else {
-		DIM_RDMA_WR_BITS(DNR_DM_CTRL, 0, 11, 1);
 		DIM_RDMA_WR_BITS(DI_SC2_MEM_GEN_REG, 1, 0, 1);
 		DIM_RDMA_WR_BITS(DI_PRE_CTRL, 1, 8, 1);
 		//DIM_RDMA_WR_BITS(MCDI_MOTINEN, 1, 1, 1);

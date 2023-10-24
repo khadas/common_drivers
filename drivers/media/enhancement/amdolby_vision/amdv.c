@@ -573,6 +573,12 @@ static int set_backlight_delay_vsync = 1;
 module_param(set_backlight_delay_vsync, int, 0664);
 MODULE_PARM_DESC(set_backlight_delay_vsync,    "\n set_backlight_delay_vsync\n");
 
+u32 enable_update_gdbs_delay;/*update delay according fps*/
+module_param(enable_update_gdbs_delay, int, 0664);
+MODULE_PARM_DESC(enable_update_gdbs_delay,    "\n enable_update_gdbs_delay\n");
+
+u32 final_backlight_delay_vsync = 1;
+
 int debug_cp_res;
 s16 brightness_off[8][2] = {
 	{0, 150}, /* DV OTT DM3, DV OTT DM4  */
@@ -7247,6 +7253,25 @@ int amdv_parse_metadata_v1(struct vframe_s *vf,
 			vf->compHeight : vf->height;
 	}
 
+	if (is_aml_tvmode()) {
+		if (vf && enable_update_gdbs_delay) {
+			/*duration:800(120fps) 801(119.88fps) 960(100fps) 1600(60fps) 1920(50fps)*/
+			/*3200(30fps) 3203(29.97) 3840(25fps) 4000(24fps) 4004(23.976fps)*/
+			if (vf->duration == 4000 && vf->source_type == VFRAME_SOURCE_TYPE_OTHERS)
+				final_backlight_delay_vsync = 2;
+			else if (vf->duration == 1920 && w < 3840 &&
+				vf->source_type == VFRAME_SOURCE_TYPE_OTHERS)
+				final_backlight_delay_vsync = 2;
+			else
+				final_backlight_delay_vsync = 1;
+			if (debug_dolby & 0x1)
+				pr_dv_dbg("duration %d, delay %d\n", vf->duration,
+					final_backlight_delay_vsync);
+		} else {
+			final_backlight_delay_vsync = set_backlight_delay_vsync;
+		}
+	}
+
 	if (is_aml_tvmode() && vf &&
 	    vf->source_type == VFRAME_SOURCE_TYPE_HDMI) {
 		req.vf = vf;
@@ -13239,12 +13264,14 @@ void amdv_update_backlight(void)
 	if (is_aml_tvmode()) {
 		if (!force_disable_dv_backlight) {
 			bl_delay_cnt++;
+			if ((debug_dolby & 1) || (debug_dolby & 0x100))
+				pr_dv_dbg("bl_delay_cnt %d\n", bl_delay_cnt);
 			if (tv_backlight_changed &&
-			    set_backlight_delay_vsync == bl_delay_cnt) {
+			    final_backlight_delay_vsync == bl_delay_cnt) {
 				new_bl = use_12b_bl ? tv_backlight << 4 :
 					tv_backlight;
 				if ((debug_dolby & 1) || (debug_dolby & 0x100))
-					pr_dv_dbg("dv set backlight %d\n", new_bl);
+					pr_dv_dbg("dv set backlight %d %d\n", new_bl, tv_backlight);
 				aml_lcd_atomic_notifier_call_chain
 					(LCD_EVENT_BACKLIGHT_GD_DIM,
 					 &new_bl);

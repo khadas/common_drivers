@@ -3230,6 +3230,7 @@ extern u32 frl_sync_cnt;
 extern int force_clk_stable;
 extern int audio_debug;
 extern int clk_msr_param;
+extern int fpll_clk_sel;
 void hdmirx_set_vp_mapping(enum colorspace_e cs, u8 port);
 void rx_get_best_eq_setting(u8 port);
 void wr_reg_hhi(unsigned int offset, unsigned int val);

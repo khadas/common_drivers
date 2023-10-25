@@ -4531,6 +4531,9 @@ int rx_set_global_variable(const char *buf, int size)
 	if (set_pr_var(tmpbuf, var_to_str(clk_msr_param),
 		&clk_msr_param, value))
 		return pr_var(clk_msr_param, index);
+	if (set_pr_var(tmpbuf, var_to_str(fpll_clk_sel),
+		&fpll_clk_sel, value))
+		return pr_var(fpll_clk_sel, index);
 	return 0;
 }
 
@@ -6506,7 +6509,11 @@ void rx_port2_main_state_machine(void)
 			rx[port].state = FLT_RX_LTS_P;
 		break;
 	case FLT_RX_LTS_P:
-		rx_lts_p_syn_detect(rx[port].var.frl_rate, port);
+		// sb sr not sync, set hpd low to retry
+		if (!rx_lts_p_syn_detect(rx[port].var.frl_rate, port)) {
+			rx[port].state = FSM_HPD_LOW;
+			break;
+		}
 		RX_LTS_P_FRL_START(port);
 		rx[port].state = FSM_WAIT_FRL_TRN_DONE;
 		rx[port].var.frl_rate = hdmirx_rd_cor(SCDCS_CONFIG1_SCDC_IVCRX, port) & 0xf;
@@ -6520,7 +6527,7 @@ void rx_port2_main_state_machine(void)
 			if (rx[port].var.fpll_stable_cnt++ < fpll_stable_max)
 				break;
 		}
-		rx[port].state =  FSM_PCS_RESET;
+		rx[port].state =  FSM_SIG_UNSTABLE;
 		rx[port].var.clk_stable_cnt = 0;
 		break;
 	case FSM_WAIT_CLK_STABLE:
@@ -7046,7 +7053,11 @@ void rx_port3_main_state_machine(void)
 			rx[port].state = FLT_RX_LTS_P;
 		break;
 	case FLT_RX_LTS_P:
-		rx_lts_p_syn_detect(rx[port].var.frl_rate, port);
+		// sb sr not sync, set hpd low to retry
+		if (!rx_lts_p_syn_detect(rx[port].var.frl_rate, port)) {
+			rx[port].state = FSM_HPD_LOW;
+			break;
+		}
 		RX_LTS_P_FRL_START(port);
 		rx[port].state = FSM_WAIT_FRL_TRN_DONE;
 		rx[port].var.frl_rate = hdmirx_rd_cor(SCDCS_CONFIG1_SCDC_IVCRX, port) & 0xf;
@@ -7060,7 +7071,7 @@ void rx_port3_main_state_machine(void)
 			if (rx[port].var.fpll_stable_cnt++ < fpll_stable_max)
 				break;
 		}
-		rx[port].state =  FSM_PCS_RESET;
+		rx[port].state = FSM_SIG_UNSTABLE;
 		rx[port].var.clk_stable_cnt = 0;
 		break;
 	case FSM_WAIT_CLK_STABLE:

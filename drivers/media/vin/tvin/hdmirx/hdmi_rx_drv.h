@@ -113,7 +113,8 @@
 /* 2023 09.28 add trim flow for txhd2 */
 /* 2023.10.8 t3x some compatibility problem */
 /* 2023.10.10 fix t3x frl audio problem */
-#define RX_VER1 "ver.2023/10/10"
+/* 2023.10.30 fix t3x clk msr fail */
+#define RX_VER1 "ver.2023/10/30"
 
 /* 50ms timer for hdmirx main loop (HDMI_STATE_CHECK_FREQ is 20) */
 
@@ -728,7 +729,6 @@ struct clk_msr {
 	u32 tclk;
 	u32 t_clk_pre;
 	u32 fpll_clk;
-	u32 vid_clk;
 };
 
 struct emp_info_s {

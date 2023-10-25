@@ -88,6 +88,7 @@ int hdcp22_on;
 int audio_debug = 1;
 int vpcore1_select = 1;
 int clk_msr_param = 200;
+int fpll_clk_sel;
 MODULE_PARM_DESC(hdcp22_on, "\n hdcp22_on\n");
 module_param(hdcp22_on, int, 0664);
 
@@ -5323,7 +5324,7 @@ void hdmirx_config_video(u8 port)
 		/* 1ppc */
 		hdmirx_wr_bits_cor(RX_PWD0_CLK_DIV_0, _BIT(0), 1, port);
 	if (port == rx_info.main_port) {
-		if (rx[port].clk.vid_clk / 8 * rx[port].cur.colordepth >= 700 * MHz)
+		if (rx[port].cur.vactive >= 2100 || rx[port].cur.hactive >= 3800)
 			hdmirx_wr_bits_top_common_1(TOP_VID_CNTL2, _BIT(31), 1);
 		else
 			hdmirx_wr_bits_top_common_1(TOP_VID_CNTL2, _BIT(31), 0);
@@ -5479,7 +5480,7 @@ void rx_clkmsr_handler(struct work_struct *work)
 	case CHIP_ID_T3X:
 		//port-A
 		if (rx_get_hdmi5v_sts()) {
-			aud_pll = meson_clk_measure_with_precision(146, 32);
+			aud_pll = meson_clk_measure_with_precision(147, 32);
 			p_clk = meson_clk_measure_with_precision(0, 32);
 			if (rx[E_PORT0].cur_5v_sts) {
 				rx[E_PORT0].clk.cable_clk =
@@ -5499,33 +5500,51 @@ void rx_clkmsr_handler(struct work_struct *work)
 				//Port-C
 			if (rx[E_PORT2].cur_5v_sts) {
 				rx[E_PORT2].clk.t_clk_pre = rx[E_PORT2].clk.tclk;
-				rx[E_PORT2].clk.cable_clk =
-					meson_clk_measure_with_precision(40, 32);
-				rx[E_PORT2].clk.tmds_clk = meson_clk_measure(45);
 				rx[E_PORT2].clk.aud_pll = aud_pll;
-				rx[E_PORT2].clk.p_clk = p_clk;
-				rx[E_PORT2].clk.tclk =
-					meson_clk_measure_with_precision(49, clk_msr_param);
-				rx[E_PORT2].clk.fpll_clk =
+				if (!rx[E_PORT2].var.frl_rate) {
+					rx[E_PORT2].clk.cable_clk =
+						meson_clk_measure_with_precision(40, 32);
+					rx[E_PORT2].clk.tmds_clk = meson_clk_measure(45);
+					rx[E_PORT2].clk.fpll_clk =
+					fpll_clk_sel ?
+					meson_clk_measure(9) :
 					meson_clk_measure_with_precision(9, clk_msr_param);
-				rx[E_PORT2].clk.vid_clk =
-					meson_clk_measure_with_precision(135, clk_msr_param);
+				} else {
+					rx[E_PORT2].clk.fpll_clk = fpll_clk_sel ?
+						meson_clk_measure(9) :
+						meson_clk_measure_with_precision(9, clk_msr_param);
+					rx[E_PORT2].clk.p_clk = p_clk;
+					rx[E_PORT2].clk.tclk =
+					((hdmirx_rd_cor(H21RXSB_REQM2_M42H_IVCRX, port) &
+					0Xf) << 16) |
+					(hdmirx_rd_cor(H21RXSB_REQM1_M42H_IVCRX,
+					port) << 8) |
+					hdmirx_rd_cor(H21RXSB_REQM0_M42H_IVCRX,
+					port);
+				}
 			}
 				//Port-D
 			if (rx[E_PORT3].cur_5v_sts) {
 				rx[E_PORT3].clk.t_clk_pre = rx[E_PORT3].clk.tclk;
-				rx[E_PORT3].clk.cable_clk =
-					meson_clk_measure_with_precision(41, 32);
-				rx[E_PORT3].clk.tmds_clk =
-					meson_clk_measure_with_precision(46, 32);
 				rx[E_PORT3].clk.aud_pll = aud_pll;
-				rx[E_PORT3].clk.p_clk = p_clk;
-				rx[E_PORT3].clk.tclk =
-					meson_clk_measure_with_precision(50, clk_msr_param);
-				rx[E_PORT3].clk.fpll_clk =
-					meson_clk_measure_with_precision(11, clk_msr_param);
-				rx[E_PORT3].clk.vid_clk =
-					meson_clk_measure_with_precision(135, clk_msr_param);
+				if (!rx[E_PORT3].var.frl_rate) {
+					rx[E_PORT3].clk.cable_clk =
+						meson_clk_measure_with_precision(41, 32);
+					rx[E_PORT3].clk.tmds_clk =
+						meson_clk_measure_with_precision(46, 32);
+				} else {
+					rx[E_PORT3].clk.fpll_clk = fpll_clk_sel ?
+						meson_clk_measure(11) :
+						meson_clk_measure_with_precision(11, clk_msr_param);
+					rx[E_PORT3].clk.p_clk = p_clk;
+					rx[E_PORT3].clk.tclk =
+					((hdmirx_rd_cor(H21RXSB_REQM2_M42H_IVCRX, port) &
+					0Xf) << 16) |
+					(hdmirx_rd_cor(H21RXSB_REQM1_M42H_IVCRX,
+					port) << 8) |
+					hdmirx_rd_cor(H21RXSB_REQM0_M42H_IVCRX,
+					port);
+				}
 			}
 		}
 		break;

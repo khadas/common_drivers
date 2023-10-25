@@ -3456,7 +3456,7 @@ bool aml_get_tmds_valid_t3x_21(u8 port)
 	if (rx[port].var.frl_rate && rx[port].state != FSM_SIG_READY)
 		return true;
 	if (rx[port].var.frl_rate) {
-		if ((abs(rx[port].clk.t_clk_pre - rx[port].clk.tclk) > 10 * MHz))
+		if ((abs(rx[port].clk.t_clk_pre - rx[port].clk.tclk) > 10))
 			return false;
 		else
 			return true;
@@ -4586,7 +4586,7 @@ void RX_LTS_3_LTP_REQ_SEND_0000(u8 port)
 }
 
 //======================= LTS P ========================
-void rx_lts_p_syn_detect(u8 frl_rate, u8 port)
+int rx_lts_p_syn_detect(u8 frl_rate, u8 port)
 {
 	u8  frl_transmission_detected = 0;
 	u8  channel_lock;
@@ -4594,6 +4594,7 @@ void rx_lts_p_syn_detect(u8 frl_rate, u8 port)
 	u8  lane_count;
 	u8  frl_rate_sel;
 	u8  data8;
+	int ret = true;
 	u32 i = 0;
 
 	// P state summary: FRL training has passed
@@ -4666,11 +4667,13 @@ void rx_lts_p_syn_detect(u8 frl_rate, u8 port)
 	//----hal_flt_rx_clear_rscc(port)
 	//wait at least 100ms for SR_SYNC to be enabled
 
-	hdmirx_poll_cor(H21RXSB_STATUS_M42H_IVCRX, 1 << 2, 0xfb,  frl_sync_cnt, port); //sb sync
+	if (!hdmirx_poll_cor(H21RXSB_STATUS_M42H_IVCRX, 1 << 2, 0xfb, frl_sync_cnt, port)) //sb sync
+		ret = false;
 	if (log_level & FRL_LOG)
 		rx_pr("[FRL TRAINING] Polling sb_sync Done ************\n");
 
-	hdmirx_poll_cor(H21RXSB_STATUS_M42H_IVCRX, 1 << 3, 0xf7, frl_sync_cnt, port); //sr sync
+	if (!hdmirx_poll_cor(H21RXSB_STATUS_M42H_IVCRX, 1 << 3, 0xf7, frl_sync_cnt, port)) //sr sync
+		ret = false;
 	if (log_level & FRL_LOG)
 		rx_pr("[FRL TRAINING] Polling sr_sync Done ************\n");
 
@@ -4689,6 +4692,7 @@ void rx_lts_p_syn_detect(u8 frl_rate, u8 port)
 	hdmirx_wr_cor(SR_BIST_CTL0_DDPHY_IVCRX, 0x10, port); //
 	if (log_level & FRL_LOG)
 		rx_pr("[FRL TRAINING] *%s End*\n", __func__);
+	return ret;
 }
 
 void RX_LTS_P_FRL_START(u8 port)

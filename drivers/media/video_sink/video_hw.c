@@ -98,8 +98,7 @@
 struct video_layer_s vd_layer[MAX_VD_LAYER];
 struct disp_info_s glayer_info[MAX_VD_LAYER];
 struct vpu_venc_regs_s venc_regs[VPP_NUM];
-static struct video_mute_s video_mute_array[MAX_VIDEO_MUTE_OWNER];
-static u32 video_mute_states;
+static bool video_mute_array[MAX_VIDEO_MUTE_OWNER];
 
 struct video_dev_s video_dev;
 struct video_dev_s *cur_dev = &video_dev;
@@ -6456,80 +6455,18 @@ void rx_mute_vpp(void)
 }
 EXPORT_SYMBOL(rx_mute_vpp);
 
-static int detect_video_mute_on(u32 owner, bool on)
-{
-	int i = 0;
-
-	for (i = 0; i < MAX_VIDEO_MUTE_OWNER; i++) {
-		if (video_mute_array[i].owner == owner &&
-			video_mute_array[i].on) {
-			if (on)
-				pr_info("%d has been muted video\n", owner);
-			return 1;
-		}
-	}
-	if (!on)
-		pr_info("%d has been unmuted video\n", owner);
-	return 0;
-}
-
-static void set_video_mute_on(u32 owner)
-{
-	int i = 0;
-	int set_done = 0;
-
-	mutex_lock(&video_mute_mutex);
-	for (i = 0; i < MAX_VIDEO_MUTE_OWNER; i++) {
-		if (!video_mute_array[i].owner && !set_done) {
-			video_mute_array[i].owner = owner;
-			video_mute_array[i].on = true;
-			video_mute_array[i].set_bit = i;
-			video_mute_states |= (1 << video_mute_array[i].set_bit);
-			set_done = 1;
-			pr_info("VIDEO MUTE by %d\n", owner);
-		}
-	}
-	if (!set_done) {
-		pr_info("video mute time over max time\n");
-		return;
-	}
-	if (video_mute_states)
-		video_mute_on = true;
-	mutex_unlock(&video_mute_mutex);
-}
-
-static void set_video_mute_off(u32 owner)
-{
-	int i = 0;
-
-	mutex_lock(&video_mute_mutex);
-	for (i = 0; i < MAX_VIDEO_MUTE_OWNER; i++) {
-		if (video_mute_array[i].owner == owner) {
-			video_mute_array[i].owner = 0;
-			video_mute_array[i].on = false;
-			video_mute_states &= ~(1 << video_mute_array[i].set_bit);
-			video_mute_array[i].set_bit = 0;
-			pr_info("VIDEO UNMUTE by %d\n", owner);
-		}
-	}
-	if (!video_mute_states)
-		video_mute_on = false;
-	mutex_unlock(&video_mute_mutex);
-}
-
 int set_video_mute_info(u32 owner, bool on)
 {
-	int ret;
-
-	ret = detect_video_mute_on(owner, on);
 	if (on) {
-		if (ret)
+		if (video_mute_array[owner])
 			return -EINVAL;
-		set_video_mute_on(owner);
+		video_mute_array[owner] = true;
+		pr_info("%d mute video\n", owner);
 	} else {
-		if (!ret)
+		if (!video_mute_array[owner])
 			return -EINVAL;
-		set_video_mute_off(owner);
+		video_mute_array[owner] = false;
+		pr_info("%d unmute video\n", owner);
 	}
 	return 0;
 }
@@ -6540,9 +6477,22 @@ void get_video_mute_info(void)
 
 	pr_info("video mute owner list:\n");
 	for (i = 0; i < MAX_VIDEO_MUTE_OWNER; i++) {
-		if (video_mute_array[i].on)
-			pr_info("%d\n", video_mute_array[i].owner);
+		if (video_mute_array[i])
+			pr_info("%d\n", i);
 	}
+}
+
+static void check_video_mute_state(void)
+{
+	int i;
+
+	for (i = 0; i < MAX_VIDEO_MUTE_OWNER; i++) {
+		if (video_mute_array[i]) {
+			video_mute_on = true;
+			return;
+		}
+	}
+	video_mute_on = false;
 }
 
 static inline void mute_vpp(void)
@@ -6588,6 +6538,7 @@ static inline void unmute_vpp(void)
 
 static void check_video_mute(void)
 {
+	check_video_mute_state();
 	if (video_mute_on) {
 		if (is_amdv_on()) {
 			if (is_tv_panel()) {
@@ -13944,9 +13895,6 @@ module_param(bypass_cm, bool, 0664);
 
 MODULE_PARM_DESC(reference_zorder, "\n reference_zorder\n");
 module_param(reference_zorder, uint, 0664);
-
-MODULE_PARM_DESC(video_mute_on, "\n video_mute_on\n");
-module_param(video_mute_on, bool, 0664);
 
 MODULE_PARM_DESC(cur_vf_flag, "cur_vf_flag");
 module_param_array(cur_vf_flag, uint, &cur_vpp_num, 0444);

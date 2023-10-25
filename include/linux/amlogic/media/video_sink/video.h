@@ -338,10 +338,10 @@ enum mediasync_parameter_e {
 	GET_VSYNC_PARAMETER
 };
 
+#define VIDEO_MUTE_SET         0
 #define HDMI_RX_MUTE_SET       1
 #define USER_MUTE_SET          2
 #define AML_DOLBY_MUTE_SET     3
-#define VIDEO_MUTE_SET         4
 
 struct mediasync_parameter {
 	u32 vsync_period;
@@ -354,12 +354,6 @@ struct mediasync_ptr {
 	int (*reserved0)(void);
 	int (*reserved1)(void);
 	int (*reserved2)(void);
-};
-
-struct video_mute_s {
-	u32 owner;
-	bool on;
-	u32 set_bit;
 };
 
 #define MAX_VIDEO_MUTE_OWNER 5

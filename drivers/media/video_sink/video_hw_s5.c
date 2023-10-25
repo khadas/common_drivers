@@ -12200,15 +12200,12 @@ void vd1_set_go_field_s5(void)
 {
 	if (cur_dev->prevsync_support) {
 		if (video_is_meson_t3x_cpu()) {
-			if (cur_dev->pre_vsync_enable) {
-				/* set vd1 vpp0_pre_go_field if it is vpp0 */
-				WRITE_VCBUS_REG_BITS(S5_VIU_VD1_MISC, 3, 0, 2);
-				WRITE_VCBUS_REG_BITS(S5_VIU_VD2_MISC, 3, 0, 2);
-			} else {
-				/* set vd1 vpp0_post_go_field if it is vpp0 */
-				WRITE_VCBUS_REG_BITS(S5_VIU_VD1_MISC, 0, 0, 2);
-				WRITE_VCBUS_REG_BITS(S5_VIU_VD2_MISC, 0, 0, 2);
-			}
+			/* bit[1:0] vdx_path_sel
+			 * 0: auto mode. frc on, use frc vsync. frc off, use venc0 go field.
+			 * 1: venc1 go_field 2: venc2 go_field 3: frc vsync
+			 */
+			WRITE_VCBUS_REG_BITS(S5_VIU_VD1_MISC, 0, 0, 2);
+			WRITE_VCBUS_REG_BITS(S5_VIU_VD2_MISC, 0, 0, 2);
 		}
 	}
 }

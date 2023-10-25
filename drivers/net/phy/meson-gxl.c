@@ -372,10 +372,17 @@ static int gxl_suspend(struct phy_device *phydev)
 static int gxl_resume(struct phy_device *phydev)
 {
 	int rtn = 0;
+	unsigned int an_advertise = 0;
 
 	if (wol_switch_from_user == 0)
 		rtn = genphy_resume(phydev);
 
+	an_advertise = phy_read(phydev, 4);
+	if ((an_advertise  & 0x1) == 0) {
+		an_advertise |= 0x1;
+		phy_write(phydev, 4, an_advertise);
+		pr_debug("force 0x%x\n", an_advertise);
+	}
 	return rtn;
 }
 #endif

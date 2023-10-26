@@ -320,7 +320,7 @@ static bool prepare_parser(int reset_flag, struct video_inst_s *v_inst_info)
 				(dolby_vision_flags
 				 & FLAG_CHANGE_SEQ_HEAD
 				 ? 1 : 0);
-			p_funcs_tv->multi_mp_reset(v_inst_info->metadata_parser, 1);
+		p_funcs_tv->multi_mp_reset(v_inst_info->metadata_parser, 1);
 		} else {
 			pr_dv_dbg("p_funcs is null\n");
 		}
@@ -381,7 +381,7 @@ void update_src_format_hw5(enum signal_format_enum src_format, struct vframe_s *
 			input_str[top2_v_info.amdv_src_format],
 			vf ? vf->signal_type : 0,
 			src_format);
-			cur_format = top2_v_info.amdv_src_format;
+		cur_format = top2_v_info.amdv_src_format;
 	}
 }
 

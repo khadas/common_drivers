@@ -209,7 +209,7 @@ void __nocfi pstore_io_save(unsigned long reg, unsigned long val, unsigned int f
 	if (unlikely(oops_in_progress) || unlikely(per_cpu(en, cpu))) {
 		if ((flag == PSTORE_FLAG_IO_R || flag == PSTORE_FLAG_IO_W) && IRQ_D)
 			local_irq_restore(*irq_flags);
-			return;
+		return;
 	}
 
 	per_cpu(en, cpu) = 1;

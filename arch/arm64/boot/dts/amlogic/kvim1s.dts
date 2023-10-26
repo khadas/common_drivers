@@ -775,7 +775,7 @@
 				&clkaudio CLKID_AUDIO_MCLK_PAD2
 				&clkc CLKID_HIFI_PLL
 				&clkc CLKID_MPLL1>;
-		clock-names = "mclk", "clk_srcpll", "clk_src_cd";
+		clock-names = "mclk", "mclk_pad", "clk_srcpll", "clk_src_cd";
 		pinctrl-names = "tdm_pins";
 		pinctrl-0 = </*&tdmb_mclk &tdmout_b &tdmin_b*/>;
 		src-clk-freq = <1179648000>;

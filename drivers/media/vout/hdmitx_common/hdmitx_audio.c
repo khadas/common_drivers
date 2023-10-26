@@ -698,7 +698,7 @@ int hdmitx_audio_para_print(struct aud_para *audio_para, char *log_buf)
 }
 
 static struct rate_map_fs map_fs[] = {
-	{48000, FS_REFER_TO_STREAM}, /* default is 48k */
+	{0, FS_REFER_TO_STREAM},
 	{32000, FS_32K},
 	{44100, FS_44K1},
 	{48000, FS_48K},
@@ -743,7 +743,7 @@ static struct size_map aud_size_map_ss[] = {
 	{16,	SS_16BITS},
 	{20,	SS_20BITS},
 	{24,	SS_24BITS},
-	{32,	SS_MAX},
+	{32,	SS_24BITS}, /* for hdmitx, max is 24bits */
 };
 
 static enum hdmi_audio_sampsize aud_size_map(u32 bits)
@@ -798,8 +798,8 @@ void hdmitx_audio_notify_callback(struct hdmitx_common *tx_comm,
 	struct aud_para *tx_aud_param = &tx_comm->cur_audio_param;
 	/* front audio module callback parameters */
 	struct aud_para *aud_param = (struct aud_para *)para;
-	enum hdmi_audio_fs n_rate = aud_samp_rate_map(tx_aud_param->rate);
-	enum hdmi_audio_sampsize n_size = aud_size_map(tx_aud_param->size);
+	enum hdmi_audio_fs n_rate = aud_samp_rate_map(aud_param->rate);
+	enum hdmi_audio_sampsize n_size = aud_size_map(aud_param->size);
 	int audio_param_update_flag = 0;
 
 	if (tx_aud_param->prepare) {
@@ -808,10 +808,6 @@ void hdmitx_audio_notify_callback(struct hdmitx_common *tx_comm,
 		hdmitx_hw_cntl_misc(tx_hw_base, MISC_AUDIO_PREPARE, 0);
 		tx_aud_param->type = CT_PREPARE;
 		HDMITX_INFO("%s[%d] audio prepare\n", __func__, __LINE__);
-		return;
-	}
-	if (aud_param->fifo_rst) {
-		hdmitx_hw_cntl_misc(tx_hw_base, MISC_AUDIO_RESET, 1);
 		return;
 	}
 	HDMITX_INFO("%s[%d] type:%lu rate:%d size:%d chs:%d i2s_ch_mask:%d aud_src_if:%d\n",
@@ -845,6 +841,7 @@ void hdmitx_audio_notify_callback(struct hdmitx_common *tx_comm,
 		tx_aud_param->aud_src_if = aud_param->aud_src_if;
 		audio_param_update_flag = 1;
 	}
+	memcpy(tx_aud_param->status, aud_param->status, sizeof(aud_param->status));
 
 	if (audio_param_update_flag) {
 		/* plug-in & update audio param */
@@ -855,6 +852,8 @@ void hdmitx_audio_notify_callback(struct hdmitx_common *tx_comm,
 			HDMITX_INFO("set audio param\n");
 		}
 	}
+	if (aud_param->fifo_rst)
+		hdmitx_hw_cntl_misc(tx_hw_base, MISC_AUDIO_RESET, 1);
 }
 
 static audio_en_callback cb_set_audio_output_en;

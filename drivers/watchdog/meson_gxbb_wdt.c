@@ -14,6 +14,7 @@
 #include <linux/types.h>
 #include <linux/watchdog.h>
 #ifdef CONFIG_AMLOGIC_MODIFY
+#include <linux/panic_notifier.h>
 #include <linux/of_device.h>
 #include <watchdog_core.h>
 #include <linux/debugfs.h>
@@ -51,6 +52,7 @@ struct meson_gxbb_wdt {
 	struct clk *clk;
 #ifdef CONFIG_AMLOGIC_MODIFY
 	unsigned int feed_watchdog_mode;
+	struct notifier_block notifier;
 #if IS_ENABLED(CONFIG_DEBUG_FS)
 	struct dentry *debugfs_dir;
 #endif
@@ -66,9 +68,18 @@ module_param(wdt_debug, int, 0644);
 static unsigned int watchdog_enabled = 1;
 static int get_watchdog_enabled_env(char *str)
 {
-	return kstrtouint(str, 1, &watchdog_enabled);
+	return kstrtouint(str, 0, &watchdog_enabled);
 }
 __setup("watchdog_enabled=", get_watchdog_enabled_env);
+
+static int stop_after_panic;
+module_param(stop_after_panic, int, 0644);
+MODULE_PARM_DESC(stop_after_panic, "Stop watchdog after panic (0=keep watching, 1=stop)");
+static int get_stop_after_panic_env(char *str)
+{
+	return kstrtoint(str, 0, &stop_after_panic);
+}
+__setup("wdt_stop_after_panic=", get_stop_after_panic_env);
 #endif
 
 static int meson_gxbb_wdt_start(struct watchdog_device *wdt_dev)
@@ -286,6 +297,20 @@ static const struct file_operations debugfs_ops = {
 	.llseek = default_llseek,
 };
 #endif
+
+static int meson_gxbb_wdt_notifier(struct notifier_block *self,
+				   unsigned long v, void *p)
+{
+	struct meson_gxbb_wdt *data = container_of(self, struct meson_gxbb_wdt,
+						   notifier);
+
+	if (stop_after_panic) {
+		meson_gxbb_wdt_stop(&data->wdt_dev);
+		pr_info("watchdog has stopped after panic\n");
+	}
+
+	return NOTIFY_DONE;
+}
 #endif
 
 static int meson_gxbb_wdt_probe(struct platform_device *pdev)
@@ -392,6 +417,16 @@ static int meson_gxbb_wdt_probe(struct platform_device *pdev)
 	debugfs_create_file("enabled", 0644,
 			    data->debugfs_dir, data, &debugfs_ops);
 #endif
+
+	/*
+	 * When debugging, there will be a lot of printing to be output after
+	 * the panic, so it is very time-consuming. In order to prevent
+	 * the watchdog from causing a reset, we stop it after receiving
+	 * the notification.
+	 */
+	data->notifier.notifier_call = meson_gxbb_wdt_notifier;
+	atomic_notifier_chain_register(&panic_notifier_list,
+				       &data->notifier);
 
 	return ret;
 #else

@@ -361,7 +361,7 @@
 	unifykey{
 		compatible = "amlogic,unifykey";
 		status = "okay";
-		unifykey-num = <28>;
+		unifykey-num = <29>;
 		unifykey-index-0 = <&keysn_0>;
 		unifykey-index-1 = <&keysn_1>;
 		unifykey-index-2 = <&keysn_2>;
@@ -390,6 +390,7 @@
 		unifykey-index-25= <&keysn_25>;
 		unifykey-index-26= <&keysn_26>;
 		unifykey-index-27= <&keysn_27>;
+		unifykey-index-28= <&keysn_28>;
 
 		keysn_0: key_0{
 			key-name = "usid";
@@ -531,6 +532,11 @@
 		};
 		keysn_27:key_27{
 			key-name = "backlight1";
+			key-device = "normal";
+			key-permit = "read","write","del";
+		};
+		keysn_28:key_28{
+			key-name = "lcd_optical";
 			key-device = "normal";
 			key-permit = "read","write","del";
 		};

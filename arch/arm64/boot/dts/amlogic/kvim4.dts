@@ -947,14 +947,14 @@
 	adc_keypad {
 		compatible = "amlogic, adc_keypad";
 		status = "okay";
-		key_name = "update", "vol-", "vol+", "enter";
-		key_num = <4>;
+		key_name = "function";
+		key_num = <1>;
 		io-channels = <&saradc 2>;
 		io-channel-names = "key-chan-2";
-		key_chan = <2 2 2 2>;
-		key_code = <141 114 115 28>;
-		key_val = <0 143 266 389>; //val=voltage/1800mV*1023
-		key_tolerance = <40 40 40 40>;
+		key_chan = <2>;
+		key_code = <28>;
+		key_val = <90>; //val=voltage/1800mV*1023
+		key_tolerance = <40>;
 	};
 
 	gpio_keypad{
@@ -965,7 +965,7 @@
 		key_name = "power";
 		key_code = <KEY_POWER>;
 		key_type = <EV_KEY>;
-		key-gpios = <&gpio  GPIOD_3  GPIO_ACTIVE_HIGH>;
+		key-gpios = <&gpio  GPIOD_4  GPIO_ACTIVE_HIGH>;
 		detect_mode = <0>;/*0:polling mode, 1:irq mode*/
 	};
 

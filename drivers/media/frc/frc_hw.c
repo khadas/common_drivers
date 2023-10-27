@@ -2799,9 +2799,14 @@ u16 frc_check_vf_rate(u16 duration, struct frc_dev_s *frc_devp)
 		}
 		i++;
 	}
+	if (!getflag && duration > 333) {
+		framerate = 96000 / duration;
+		getflag = 1;
+	}
 	if (getflag == 1 && framerate != frc_devp->in_sts.frc_vf_rate) {
-		pr_frc(2, "input vf rate changed [%d->%d].\n",
-			frc_devp->in_sts.frc_vf_rate, framerate);
+		pr_frc(2, "input vf rate changed [%d->%d, duration:%d].\n",
+			frc_devp->in_sts.frc_vf_rate, framerate,
+			duration);
 		frc_devp->in_sts.frc_vf_rate = framerate;
 		getflag = 0;
 	}

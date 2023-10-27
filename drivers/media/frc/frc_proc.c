@@ -940,7 +940,8 @@ void frc_input_vframe_handle(struct frc_dev_s *devp, struct vframe_s *vf,
 					devp->in_sts.st_flag | FRC_FLAG_ZERO_FREQ;
 				pr_frc(1, "zero freq\n");
 			}
-			no_input = true;
+			if (vf->duration <= 1500)
+				no_input = true;
 		} else {
 			devp->in_sts.st_flag =
 				devp->in_sts.st_flag & (~FRC_FLAG_ZERO_FREQ);

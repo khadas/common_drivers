@@ -85,6 +85,231 @@
 				0xff 0 0 0>; /*ending*/
 			backlight_index = <0xff>;
 		};
+		vbyone_0{
+			model_name = "public_2region";
+			interface = "vbyone"; /*lcd_interface(lvds, vbyone)*/
+			basic_setting = <
+				3840 2160 /*h_active, v_active*/
+				4400 2250 /*h_period, v_period*/
+				10     /*lcd_bits */
+				16 9>; /*screen_widht, screen_height*/
+			range_setting = <
+				4240 4800 /*h_period_min, max*/
+				2200 2760 /*v_period_min, max*/
+				480000000 624000000>; /*pclk_min, max*/
+			lcd_timing = <
+				33 477 0  /*hs_width, hs_bp, hs_pol*/
+				6  65 0>; /*vs_width, vs_bp, vs_pol*/
+			clk_attr = <
+				2 /*fr_adj_type
+				   *(0=clk, 1=htotal, 2=vtotal, 3=auto_range,
+				   * 4=hdmi_mode)
+				   */
+				0 /*clk_ss_level*/
+				1 /*clk_auto_generate*/
+				0>; /*pixel_clk(unit in Hz)*/
+			vbyone_attr = <
+				8 /*lane_count*/
+				2 /*region_num*/
+				4 /*byte_mode*/
+				4>; /*color_fmt*/
+			vbyone_intr_enable = <
+				1 /*vbyone_intr_enable */
+				3>; /*vbyone_vsync_intr_enable*/
+			phy_attr=<0x7 1>; /* vswing_level, preem_level */
+			hw_filter=<0 0>;  /* filter_time, filter_cnt*/
+
+			/* power step: type, index, value, delay(ms) */
+			power_on_step = <
+				0 0 1 200  /*panel power on*/
+				2 0 0 10  /*signal enable*/
+				0xff 0 0 0>; /*ending*/
+			power_off_step = <
+				2 0 0 10 /*signal disable*/
+				0 0 0 500 /*panel power off*/
+				0xff 0 0 0>; /*ending*/
+			backlight_index = <0xff>;
+		};
+		vbyone_1{
+			model_name = "public_1region";
+			interface = "vbyone"; /*lcd_interface(lvds, vbyone)*/
+			basic_setting = <
+				3840 2160 /*h_active, v_active*/
+				4400 2250 /*h_period, v_period*/
+				10     /*lcd_bits*/
+				16 9>; /*screen_widht, screen_height*/
+			range_setting = <
+				4240 4800 /*h_period_min, max*/
+				2200 2790 /*v_period_min, max*/
+				552000000 632000000>; /*pclk_min,max*/
+			lcd_timing = <
+				33 477 0   /*hs_width, hs_bp, hs_pol*/
+				6  65  0>; /*vs_width, vs_bp, vs_pol*/
+			clk_attr = <
+				2 /*fr_adj_type
+				   *(0=clk, 1=htotal, 2=vtotal, 3=auto_range,
+				   * 4=hdmi_mode)
+				   */
+				0 /*clk_ss_level*/
+				1 /*clk_auto_generate*/
+				0>; /*pixel_clk(unit in Hz)*/
+			vbyone_attr = <
+				8 /*lane_count*/
+				1 /*region_num*/
+				4 /*byte_mode*/
+				4>; /*color_fmt*/
+			vbyone_intr_enable = <
+				1   /*vbyone_intr_enable*/
+				3>; /*vbyone_vsync_intr_enable*/
+			phy_attr=<0x7 1>; /* vswing_level, preem_level */
+			hw_filter=<0 0>;  /* filter_time, filter_cnt*/
+
+			/* power step: type, index, value, delay(ms) */
+			power_on_step = <
+				0 0 1 200  /*panel power on*/
+				2 0 0 10 /*signal enable*/
+				0xff 0 0 0>; /*ending*/
+			power_off_step = <
+				2 0 0 10  /*signal disable*/
+				0 0 0 500 /*panel power off*/
+				0xff 0 0 0>; /*ending*/
+			backlight_index = <0xff>;
+		};
+		vbyone_2{
+			model_name = "vbyone_1region_hdmi";
+			interface = "vbyone"; /*lcd_interface(lvds, vbyone)*/
+			basic_setting = <
+				3840 2160 /*h_active, v_active*/
+				4400 2250 /*h_period, v_period*/
+				10     /*lcd_bits */
+				16 9>; /*screen_widht, screen_height*/
+			range_setting = <
+				4240 4800 /*h_period_min, max*/
+				2200 2760 /*v_period_min, max*/
+				480000000 624000000>; /*pclk_min, max*/
+			lcd_timing = <
+				33 477 0  /*hs_width, hs_bp, hs_pol*/
+				6  65 0>; /*vs_width, vs_bp, vs_pol*/
+			clk_attr = <
+				4 /*fr_adj_type
+				   *(0=clk, 1=htotal, 2=vtotal, 3=auto_range,
+				   * 4=hdmi_mode)
+				   */
+				0 /*clk_ss_level*/
+				1 /*clk_auto_generate*/
+				0>; /*pixel_clk(unit in Hz)*/
+			vbyone_attr = <
+				8 /*lane_count*/
+				1 /*region_num*/
+				4 /*byte_mode*/
+				4>; /*color_fmt*/
+			vbyone_intr_enable = <
+				1 /*vbyone_intr_enable */
+				3>; /*vbyone_vsync_intr_enable*/
+			phy_attr=<0x7 1>; /* vswing_level, preem_level */
+			hw_filter=<0 0>;  /* filter_time, filter_cnt*/
+
+			/* power step: type, index, value, delay(ms) */
+			power_on_step = <
+				0 0 1 20  /*panel power on*/
+				2 0 0 0  /*signal enable*/
+				0xff 0 0 0>; /*ending*/
+			power_off_step = <
+				2 0 0 20 /*signal disable*/
+				0 0 0 100 /*panel power off*/
+				0xff 0 0 0>; /*ending*/
+			backlight_index = <0xff>;
+		};
+		vbyone_3{
+			model_name = "vbyone_2region_hdmi";
+			interface = "vbyone"; /*lcd_interface(lvds, vbyone)*/
+			basic_setting = <
+				3840 2160 /*h_active, v_active*/
+				4400 2250 /*h_period, v_period*/
+				10     /*lcd_bits */
+				16 9>; /*screen_widht, screen_height*/
+			range_setting = <
+				4240 4800 /*h_period_min, max*/
+				2200 2760 /*v_period_min, max*/
+				480000000 624000000>; /*pclk_min, max*/
+			lcd_timing = <
+				33 477 0  /*hs_width, hs_bp, hs_pol*/
+				6  65 0>; /*vs_width, vs_bp, vs_pol*/
+			clk_attr = <
+				4 /*fr_adj_type
+				   *(0=clk, 1=htotal, 2=vtotal, 3=auto_range,
+				   * 4=hdmi_mode)
+				   */
+				0 /*clk_ss_level*/
+				1 /*clk_auto_generate*/
+				0>; /*pixel_clk(unit in Hz)*/
+			vbyone_attr = <
+				8 /*lane_count*/
+				2 /*region_num*/
+				4 /*byte_mode*/
+				4>; /*color_fmt*/
+			vbyone_intr_enable = <
+				1 /*vbyone_intr_enable */
+				3>; /*vbyone_vsync_intr_enable*/
+			phy_attr=<0x7 1>; /* vswing_level, preem_level */
+			hw_filter=<0 0>;  /* filter_time, filter_cnt*/
+
+			/* power step: type, index, value, delay(ms) */
+			power_on_step = <
+				0 0 1 20  /*panel power on*/
+				2 0 0 0  /*signal enable*/
+				0xff 0 0 0>; /*ending*/
+			power_off_step = <
+				2 0 0 20 /*signal disable*/
+				0 0 0 100 /*panel power off*/
+				0xff 0 0 0>; /*ending*/
+			backlight_index = <0xff>;
+		};
+		vbyone_4{/*for localdimming*/
+			model_name = "public_2region_ldim";
+			interface = "vbyone"; /*lcd_interface(lvds, vbyone)*/
+			basic_setting = <
+				3840 2160 /*h_active, v_active*/
+				4400 2250 /*h_period, v_period*/
+				10     /*lcd_bits */
+				16 9>; /*screen_widht, screen_height*/
+			range_setting = <
+				4240 4800 /*h_period_min, max*/
+				2200 2760 /*v_period_min, max*/
+				480000000 624000000>; /*pclk_min, max*/
+			lcd_timing = <
+				33 477 0  /*hs_width, hs_bp, hs_pol*/
+				6  65 0>; /*vs_width, vs_bp, vs_pol*/
+			clk_attr = <
+				2 /*fr_adj_type
+				   *(0=clk, 1=htotal, 2=vtotal, 3=auto_range,
+				   * 4=hdmi_mode)
+				   */
+				0 /*clk_ss_level*/
+				1 /*clk_auto_generate*/
+				0>; /*pixel_clk(unit in Hz)*/
+			vbyone_attr = <
+				8 /*lane_count*/
+				2 /*region_num*/
+				4 /*byte_mode*/
+				4>; /*color_fmt*/
+			vbyone_intr_enable = <
+				1 /*vbyone_intr_enable */
+				3>; /*vbyone_vsync_intr_enable*/
+			phy_attr=<0x7 1>; /* vswing_level, preem_level */
+			hw_filter=<0 0>;  /* filter_time, filter_cnt*/
+
+			/* power step: type, index, value, delay(ms) */
+			power_on_step = <
+				0 2 1 200  /*panel power on*/
+				2 0 0 10  /*signal enable*/
+				0xff 0 0 0>; /*ending*/
+			power_off_step = <
+				2 0 0 10 /*signal disable*/
+				0 2 0 500 /*panel power off*/
+				0xff 0 0 0>; /*ending*/
+			backlight_index = <3>;
+		};
 
 		edp_0{
 			model_name = "edp_1080p";
@@ -1201,7 +1426,7 @@
 
 	lcd1:lcd1 {
 		compatible = "amlogic, lcd-t7";
-		status = "okay";
+		status = "disabled";
 		index = <1>;
 		mode = "tablet";
 		fr_auto_policy = <0>; /* 0=disable, 1=60/50hz, 2=60/50/48hz */
@@ -1234,9 +1459,9 @@
 		/* power index:(gpios_index, or extern_index, 0xff=invalid) */
 		/* power value:(0=output low, 1=output high, 2=input) */
 		/* power delay:(unit in ms) */
-		lcd_cpu-gpios = <&gpio GPIOT_19 GPIO_ACTIVE_HIGH
+		lcd_cpu-gpios = <&gpio GPIOY_14 GPIO_ACTIVE_HIGH
 			&gpio GPIOY_6 GPIO_ACTIVE_HIGH>;
-		lcd_cpu_gpio_names = "GPIOT_19","GPIOY_6";
+		lcd_cpu_gpio_names = "GPIOY_14","GPIOY_6";
 
 		lvds_0{
 			model_name = "768p-vfreq";
@@ -1334,9 +1559,9 @@
 				10     /*lcd_bits*/
 				16 9>; /*screen_widht, screen_height*/
 			range_setting = <
-				4320 4800 /*h_period_min, max*/
-				2200 2760 /*v_period_min, max*/
-				503316480 654311424>; /*pclk_min,max*/
+				4240 4800 /*h_period_min, max*/
+				2200 2790 /*v_period_min, max*/
+				552000000 632000000>; /*pclk_min,max*/
 			lcd_timing = <
 				33 477 0   /*hs_width, hs_bp, hs_pol*/
 				6  65  0>; /*vs_width, vs_bp, vs_pol*/
@@ -1368,7 +1593,97 @@
 				2 0 0 10  /*signal disable*/
 				0 0 0 500  /*panel power off*/
 				0xff 0 0 0>; /*ending*/
-			backlight_index = <0x0>;
+			backlight_index = <0xff>;
+		};
+		vbyone_2{
+			model_name = "vbyone_1region_hdmi";
+			interface = "vbyone"; /*lcd_interface(lvds, vbyone)*/
+			basic_setting = <
+				3840 2160 /*h_active, v_active*/
+				4400 2250 /*h_period, v_period*/
+				10     /*lcd_bits */
+				16 9>; /*screen_widht, screen_height*/
+			range_setting = <
+				4240 4800 /*h_period_min, max*/
+				2200 2760 /*v_period_min, max*/
+				480000000 624000000>; /*pclk_min, max*/
+			lcd_timing = <
+				33 477 0  /*hs_width, hs_bp, hs_pol*/
+				6  65 0>; /*vs_width, vs_bp, vs_pol*/
+			clk_attr = <
+				4 /*fr_adj_type
+				   *(0=clk, 1=htotal, 2=vtotal, 3=auto_range,
+				   * 4=hdmi_mode)
+				   */
+				0 /*clk_ss_level*/
+				1 /*clk_auto_generate*/
+				0>; /*pixel_clk(unit in Hz)*/
+			vbyone_attr = <
+				8 /*lane_count*/
+				1 /*region_num*/
+				4 /*byte_mode*/
+				4>; /*color_fmt*/
+			vbyone_intr_enable = <
+				1 /*vbyone_intr_enable */
+				3>; /*vbyone_vsync_intr_enable*/
+			phy_attr=<0x7 1>; /* vswing_level, preem_level */
+			hw_filter=<0 0>;  /* filter_time, filter_cnt*/
+
+			/* power step: type, index, value, delay(ms) */
+			power_on_step = <
+				0 0 1 20  /*panel power on*/
+				2 0 0 0  /*signal enable*/
+				0xff 0 0 0>; /*ending*/
+			power_off_step = <
+				2 0 0 20 /*signal disable*/
+				0 0 0 100 /*panel power off*/
+				0xff 0 0 0>; /*ending*/
+			backlight_index = <0xff>;
+		};
+		vbyone_3{
+			model_name = "vbyone_2region_hdmi";
+			interface = "vbyone"; /*lcd_interface(lvds, vbyone)*/
+			basic_setting = <
+				3840 2160 /*h_active, v_active*/
+				4400 2250 /*h_period, v_period*/
+				10     /*lcd_bits */
+				16 9>; /*screen_widht, screen_height*/
+			range_setting = <
+				4240 4800 /*h_period_min, max*/
+				2200 2760 /*v_period_min, max*/
+				480000000 624000000>; /*pclk_min, max*/
+			lcd_timing = <
+				33 477 0  /*hs_width, hs_bp, hs_pol*/
+				6  65 0>; /*vs_width, vs_bp, vs_pol*/
+			clk_attr = <
+				4 /*fr_adj_type
+				   *(0=clk, 1=htotal, 2=vtotal, 3=auto_range,
+				   * 4=hdmi_mode)
+				   */
+				0 /*clk_ss_level*/
+				1 /*clk_auto_generate*/
+				0>; /*pixel_clk(unit in Hz)*/
+			vbyone_attr = <
+				8 /*lane_count*/
+				2 /*region_num*/
+				4 /*byte_mode*/
+				4>; /*color_fmt*/
+			vbyone_intr_enable = <
+				1 /*vbyone_intr_enable */
+				3>; /*vbyone_vsync_intr_enable*/
+			phy_attr=<0x7 1>; /* vswing_level, preem_level */
+			hw_filter=<0 0>;  /* filter_time, filter_cnt*/
+
+			/* power step: type, index, value, delay(ms) */
+			power_on_step = <
+				0 0 1 20  /*panel power on*/
+				2 0 0 0  /*signal enable*/
+				0xff 0 0 0>; /*ending*/
+			power_off_step = <
+				2 0 0 20 /*signal disable*/
+				0 0 0 100 /*panel power off*/
+				0xff 0 0 0>; /*ending*/
+			backlight_index = <0xff>;
 		};
 
 		edp_0{
@@ -1417,6 +1732,107 @@
 				0xff 0 0 0>; /*ending*/
 			backlight_index = <0x0>;
 		};
+		mipi_0{
+			model_name = "TL070WSH27";
+			interface = "mipi";
+			basic_setting = <1024 600 /*h_active, v_active*/
+				1250 630 /*h_period, v_period*/
+				8 /*lcd_bits*/
+				154 86>; /*screen_widht, screen_height*/
+			lcd_timing = <80 100 0 /*hs_width, hs_bp, hs_pol*/
+				5 20 0>; /*vs_width, vs_bp, vs_pol*/
+			clk_attr = <0 /*fr_adj_type(0=clk, 1=htotal, 2=vtotal)*/
+				0 /*clk_ss_level */
+				1 /*clk_auto_generate*/
+				47250000>; /*pixel_clk(unit in Hz)*/
+			mipi_attr = <4 /*lane_num*/
+				300 /*bit_rate_max(MHz)*/
+				0 /*factor(*100, default 0 for auto)*/
+				1 /*operation_mode_init(0=video, 1=command)*/
+				0 /*operation_mode_display(0=video, 1=command)*/
+				2 /*
+				   *video_mode_type
+				   *(0=sync_pulse,1=sync_event,2=burst)
+				   */
+				1 /*clk_always_hs(0=disable,1=enable)*/
+				0>; /*phy_switch(0=auto,1=standard,2=slow)*/
+
+			/* dsi_init: data_type, num, data... */
+			dsi_init_on = <0x05 1 0x11
+					0xfd 1 20     /*delay(ms)*/
+					0x05 1 0x29
+					0xfd 1 20     /*delay(ms)*/
+					0xff 0>; /*ending*/
+			dsi_init_off = <0x05 1 0x28
+					0xfd 1 10     /*delay(ms)*/
+					0x05 1 0x10
+					0xfd 1 10     /*delay(ms)*/
+					0xff 0>; /*ending*/
+			extern_init = <0xff>; /*0xff for invalid*/
+
+			/* power step: type, index, value, delay(ms) */
+			power_on_step = <
+				0 0 1 100
+				0 1 0 10
+				0 1 1 20
+				2 0 0 0
+				0xff 0 0 0>; /*ending*/
+			power_off_step = <
+				2 0 0 50
+				0 1 0 10
+				0 0 0 100
+				0xff 0 0 0>; /*ending*/
+			backlight_index = <0x1>;
+		};
+		mipi_1{
+			model_name = "SLT_720P";
+			interface = "mipi";
+			basic_setting = <1280 720 /*h_active, v_active*/
+				1590 750 /*h_period, v_period*/
+				8 /*lcd_bits*/
+				16 9>; /*screen_widht, screen_height*/
+			lcd_timing = <40 60 0 /*hs_width,hs_bp,hs_pol*/
+				5 20 0>; /*vs_width,vs_bp,vs_pol*/
+			clk_attr = <0 /*fr_adj_type(0=clock,1=htotal,2=vtotal)*/
+				0 /*clk_ss_level*/
+				1 /*clk_auto_generate*/
+				74250000>; /*pixel_clk(unit in Hz)*/
+			mipi_attr = <4 /*lane_num*/
+				550 /*bit_rate_max(MHz)*/
+				0 /*factor(*100, default 0 for auto)*/
+				1 /*operation_mode_init(0=video, 1=command)*/
+				0 /*operation_mode_display(0=video, 1=command)*/
+				0 /*
+				   *video_mode_type
+				   *(0=sync_pulse,1=sync_event,2=burst)
+				   */
+				1 /*clk_always_hs(0=disable,1=enable)*/
+				0>; /*phy_switch(0=auto,1=standard,2=slow)*/
+				/* dsi_init: data_type, num, data... */
+			dsi_init_on = <
+				0x05 1 0x11
+				0xff 200
+				0x05 1 0x29
+				0xff 20
+				0xff 0xff>; /* ending flag */
+			dsi_init_off = <
+				0x05 1 0x28
+				0xff 10
+				0x05 1 0x10
+				0xff 10
+				0xff 0xff>; /* ending flag */
+				/* extern_init: 0xff for invalid */
+			extern_init = <0xff>;
+				/* power step: type,index,value,delay(ms) */
+			power_on_step = <
+					3 7 0 100
+					2 0 0 0
+					0xff 0 0 0>;
+			power_off_step = <
+					2 0 0 0
+					0xff 0 0 0>;
+			backlight_index = <0xff>;
+		};
 		ports {
 			port {
 				#address-cells = <1>;
@@ -1431,11 +1847,12 @@
 
 	backlight1{
 		compatible = "amlogic, backlight-t7";
-		status = "okay";
+		status = "disabled";
 		index = <1>;
 		key_valid = <0>;
-		pinctrl-names = "pwm_on";
-		pinctrl-0 = <&pwm_f_pins>;
+		pinctrl-names = "pwm_on",
+				"pwm_off";
+//		pinctrl-0 = <&pwm_f_pins>;
 //		pinctrl-1 = <&bl1_pwm_off_pins>;
 		pinctrl_version = <2>; /* for uboot */
 		interrupts = <0 197 1
@@ -1448,14 +1865,14 @@
 		/* power index:(point gpios_index, 0xff=invalid) */
 		/* power value:(0=output low, 1=output high, 2=input) */
 		/* power delay:(unit in ms) */
-		bl-gpios = <&gpio GPIOT_18 GPIO_ACTIVE_HIGH
+		bl-gpios = <&gpio GPIOY_13 GPIO_ACTIVE_HIGH
 			&gpio GPIOY_8 GPIO_ACTIVE_HIGH>;
-		bl_gpio_names = "GPIOT_18","GPIOY_8";
+		bl_gpio_names = "GPIOY_13","GPIOY_8";
 
 		backlight_0{
 			index = <0>;
 			bl_name = "backlight_pwm";
-			bl_level_default_uboot_kernel = <102 102>;
+			bl_level_default_uboot_kernel = <255 255>;
 			bl_level_attr = <255 10 /*max, min*/
 				128 128>; /*mid, mid_mapping*/
 			bl_ctrl_method = <1>; /*1=pwm,2=pwm_combo*/
@@ -1474,7 +1891,7 @@
 		backlight_1{
 			index = <1>;
 			bl_name = "backlight_pwm";
-			bl_level_default_uboot_kernel = <102 102>;
+			bl_level_default_uboot_kernel = <255 255>;
 			bl_level_attr = <255 10 /*max, min*/
 				128 128>; /*mid, mid_mapping*/
 			bl_ctrl_method = <1>; /*1=pwm,2=pwm_combo*/

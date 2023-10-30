@@ -142,6 +142,7 @@
 /*  V3.5.015 remove unused macro and code */
 /*  V3.5.016 optimize dvbs rssi for rt720 */
 /*  V3.5.017 increase the speed of dvbc blind scanning */
+/*  V3.5.018 optimize dvbs blind scan progress */
 /****************************************************/
 /****************************************************************/
 /*               AMLDTVDEMOD_VER  Description:                  */
@@ -158,8 +159,8 @@
 /*->The last four digits indicate the release time              */
 /****************************************************************/
 #define KERNEL_4_9_EN		1
-#define AMLDTVDEMOD_VER "V3.5.17"
-#define DTVDEMOD_VER	"2023/10/30: increase the speed of dvbc blind scanning"
+#define AMLDTVDEMOD_VER "V3.5.18"
+#define DTVDEMOD_VER	"2023/11/1: optimize dvbs blind scan progress"
 #define AMLDTVDEMOD_T2_FW_VER "V1558.20230628"
 #define DEMOD_DEVICE_NAME  "dtvdemod"
 

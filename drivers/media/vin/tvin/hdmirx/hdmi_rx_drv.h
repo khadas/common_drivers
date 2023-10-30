@@ -140,7 +140,8 @@
 /* 2023.08.28 fix t3x sound issue */
 /* 2023 09 27 reduce phy power */
 /* optimize afifo configuration */
-#define RX_VER2 "ver.2023/10/19"
+/* 2023.11.03 disable DDR access when suspend */
+#define RX_VER2 "ver.2023/11/03"
 
 #define PFIFO_SIZE 160
 #define HDCP14_KEY_SIZE 368

@@ -3475,5 +3475,6 @@ void hdmirx_wr_bits_top_common_1(u32 addr, u32 mask, u32 value);
 void cor_init(u8 port);
 void vdin_set_black_pattern(bool mute);
 void rx_set_term_value(unsigned char port, bool value);
+void rx_emp_hw_enable(bool enable);
 
 #endif

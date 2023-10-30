@@ -5306,14 +5306,12 @@ void hdmirx_config_video(u8 port)
 		else//use auto de-repeat
 			hdmirx_wr_bits_top(TOP_VID_CNTL, _BIT(7), 0, port);
 	}
-	if (rx_info.chip_id >= CHIP_ID_T3X) {
-		if (vpcore1_select) {
-			rx[port].emp_vid_idx = 1;
-			rx[port].emp_info = &rx_info.emp_buff_b;
-		} else {
-			rx[port].emp_vid_idx = 0;
-			rx[port].emp_info = &rx_info.emp_buff_a;
-		}
+	if (rx_info.chip_id >= CHIP_ID_T3X && port == rx_info.main_port) {
+		rx[port].emp_vid_idx = 1;
+		rx[port].emp_info = &rx_info.emp_buff_b;
+	} else {
+		rx[port].emp_vid_idx = 0;
+		rx[port].emp_info = &rx_info.emp_buff_a;
 	}
 	rx_sw_reset_t7(2, port);
 	//frl_debug
@@ -6467,6 +6465,23 @@ void aml_eq_eye_monitor(u8 port)
 		aml_eq_eye_monitor_t3x(port);
 	else if (rx_info.phy_ver == PHY_VER_TXHD2)
 		aml_eq_eye_monitor_txhd2(0);
+}
+
+/* resume-enable:true, suspend-enable:false */
+void rx_emp_hw_enable(bool enable)
+{
+	u32 data;
+
+	data = hdmirx_rd_top_common(TOP_EMP_CNTL_1);
+	if (enable) {
+		if (rx_info.chip_id == CHIP_ID_T3X)
+			hdmirx_wr_top_common(TOP_EMP1_CNTL_1, data | _BIT(0));
+		hdmirx_wr_top_common(TOP_EMP_CNTL_1, data | _BIT(0));
+	} else {
+		if (rx_info.chip_id == CHIP_ID_T3X)
+			hdmirx_wr_top_common(TOP_EMP1_CNTL_1, data & ~(_BIT(0)));
+		hdmirx_wr_top_common(TOP_EMP_CNTL_1, data & ~(_BIT(0)));
+	}
 }
 
 void rx_emp_to_ddr_init(u8 port)

@@ -4139,6 +4139,7 @@ static int hdmirx_suspend(struct platform_device *pdev, pm_message_t state)
 	 */
 	rx_set_suspend_edid_clk(true);
 	rx_dig_clk_en(0);
+	rx_emp_hw_enable(false);
 	rx_pr("hdmirx: suspend success\n");
 	return 0;
 }
@@ -4149,6 +4150,7 @@ static int hdmirx_resume(struct platform_device *pdev)
 
 	hdevp = platform_get_drvdata(pdev);
 	add_timer(&hdevp->timer);
+	rx_emp_hw_enable(true);
 	rx_dig_clk_en(1);
 //#ifdef CONFIG_AMLOGIC_LEGACY_EARLY_SUSPEND
 	/* if early suspend not called, need to pw up phy here */

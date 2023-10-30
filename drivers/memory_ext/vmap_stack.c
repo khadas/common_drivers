@@ -909,7 +909,7 @@ static int vmap_task(void *data)
 			break;
 
 		if (!atomic_read(&vmap_cache_flag)) {
-			msleep(20);
+			msleep_interruptible(20);
 			continue;
 		}
 		spin_lock_irqsave(&v->page_lock, flags);

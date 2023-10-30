@@ -3967,6 +3967,18 @@ static long amvecm_ioctl(struct file *file,
 			pr_amvecm_dbg("ble whe set success\n");
 		}
 		break;
+	case AMVECM_IOC_AI_COLOR_EN:
+		if (copy_from_user(&tmp,
+				   (void __user *)arg,
+				   sizeof(int))) {
+			ret = -EFAULT;
+			pr_amvecm_dbg("ai_color_enable copy from user fail\n");
+		} else {
+			ai_color_enable = tmp;
+			pr_amvecm_dbg("ai_color_enable set success, ai_color_enable=%d\n",
+				ai_color_enable);
+		}
+		break;
 #endif
 	default:
 		ret = -EINVAL;

@@ -665,5 +665,7 @@ struct ve_ble_whe_param_s {
 #define AMVECM_IOC_GAMMA_TABLE_R_SUB _IOW(_VE_CM, 0x88, struct tcon_gamma_table_s)
 #define AMVECM_IOC_GAMMA_TABLE_G_SUB _IOW(_VE_CM, 0x89, struct tcon_gamma_table_s)
 #define AMVECM_IOC_GAMMA_TABLE_B_SUB _IOW(_VE_CM, 0x8a, struct tcon_gamma_table_s)
+#define AMVECM_IOC_AI_COLOR_EN			_IO(_VE_CM, 0x8b)
+
 
 #endif

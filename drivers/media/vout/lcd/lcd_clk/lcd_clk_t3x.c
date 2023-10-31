@@ -1051,6 +1051,7 @@ void lcd_clk_config_chip_init_t3x(struct aml_lcd_drv_s *pdrv, struct lcd_clk_con
 		cconf->pll_offset = (0x5 << 2);
 		cconf->pll_od_fb = cconf->data->pll_od_fb;
 		cconf->clk_path_change = NULL;
+		cconf->pll_id = 1;
 		break;
 	case 0:
 	default:

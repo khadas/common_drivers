@@ -1536,7 +1536,7 @@ int cal_iir_alpha(int *refresh_alpha,
 			for (j = 0; j < blk_hnum; j++) {
 				for (k = 0; k < CURV_NODES; k++) {
 					addr_curv1 = (i * blk_hnum + j);
-					refresh_alpha[addr_curv1] = refresh;
+					refresh_alpha[addr_curv1] = alpha1;
 				}
 			}
 		}

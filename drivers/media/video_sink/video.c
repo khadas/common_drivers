@@ -5279,7 +5279,8 @@ static irqreturn_t vsync_isr_in(int irq, void *dev_id)
 {
 	if (video_suspend && video_suspend_cycle >= 1) {
 		if (log_out)
-			pr_info("video suspend, vsync exit\n");
+			if (debug_flag & DEBUG_FLAG_BASIC_INFO)
+				pr_info("video suspend, vsync exit\n");
 		log_out = 0;
 		return IRQ_HANDLED;
 	}
@@ -5332,7 +5333,8 @@ static irqreturn_t vsync_pre_vsync_isr(int irq, void *dev_id)
 {
 	if (video_suspend && video_suspend_cycle >= 1) {
 		if (log_out)
-			pr_info("video suspend, vsync exit\n");
+			if (debug_flag & DEBUG_FLAG_BASIC_INFO)
+				pr_info("video suspend, vsync exit\n");
 		log_out = 0;
 		return IRQ_HANDLED;
 	}

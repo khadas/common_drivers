@@ -586,6 +586,7 @@
 				fifosize = < 64 >;
 				//pinctrl-names = "default";
 				/*pinctrl-0 = <&ao_uart_pins>;*/
+				support-sysrq = <1>;
 			};
 
 			uart_C: serial@7c000 {

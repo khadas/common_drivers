@@ -321,6 +321,7 @@
 				fifosize = < 64 >;
 				//pinctrl-names = "default";
 				//pinctrl-0 = <&b_uart_pins1>;
+				support-sysrq = <1>;
 			};
 
 			uart_C: serial@7000 {

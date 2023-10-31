@@ -932,6 +932,7 @@
 				fifosize = < 64 >;
 				pinctrl-names = "default";
 				//pinctrl-0 = <&a_uart_pins1>;
+				support-sysrq = <1>;
 			};
 
 			periphs_pinctrl: pinctrl@4000 {

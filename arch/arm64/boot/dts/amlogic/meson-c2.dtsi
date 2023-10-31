@@ -534,6 +534,7 @@
 				xtal_tick_en = <1>;
 				//pinctrl-names = "default";
 				//pinctrl-0 = <&b_uart_enable_pins1>;
+				support-sysrq = <1>;
 			};
 
 			uart_C: serial@7000 {

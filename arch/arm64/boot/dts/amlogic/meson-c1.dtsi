@@ -440,6 +440,7 @@
 					"clk_gate";
 				fifosize = < 64 >;
 				xtal_tick_en = <1>;
+				support-sysrq = <1>;
 			};
 
 			uart_C: serial@7000 {

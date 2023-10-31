@@ -898,7 +898,7 @@
 				fifosize = < 64 >;
 				pinctrl-names = "default";
 				/*pinctrl-0 = <&ao_uart_pins>;*/
-				support-sysrq = <0>;  /* 0 not support*/
+				support-sysrq = <1>;  /* 0 not support*/
 			};
 
 			uart_AO_B: serial@4000 {

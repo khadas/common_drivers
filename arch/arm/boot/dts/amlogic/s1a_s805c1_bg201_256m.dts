@@ -579,6 +579,7 @@
 		/*avout mute gpio*/
 		avout_mute-gpios = <&gpio GPIOH_7 GPIO_ACTIVE_HIGH>;
 		//spk_mute-gpios = <&gpio GPIOH_8 GPIO_ACTIVE_LOW>;
+		av_mute_sleep_time = <700>;
 
 		aml-audio-card,dai-link@0 {
 			format = "i2s";

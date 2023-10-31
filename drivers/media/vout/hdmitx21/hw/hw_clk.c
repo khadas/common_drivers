@@ -955,6 +955,8 @@ static void set_hdmitx_htx_pll(struct hdmitx_dev *hdev,
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (hdev->tx_hw.chip_data->chip_type >= MESON_CPU_ID_S5) {
 		set_hdmitx_s5_htx_pll(hdev);
+		if (!hdev->frl_rate && cd == COLORDEPTH_24B && hdev->sspll)
+			set_hpll_sspll(vic);
 		if (hdev->frl_rate)
 			set_frl_hpll_od(hdev->frl_rate);
 		if (cs != HDMI_COLORSPACE_YUV422) {

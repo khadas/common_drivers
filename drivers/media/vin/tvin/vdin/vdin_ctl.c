@@ -2167,14 +2167,9 @@ static inline void vdin_set_hist_mux(struct vdin_dev_s *devp)
 	 */
 	/* use 11: form matrix1 din */
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
-	if (is_meson_txhd2_cpu())
-		wr_bits(0, VDIN_HIST_CTRL, 3,
-			HIST_HIST_DIN_SEL_BIT, HIST_HIST_DIN_SEL_WID);
-	else
+	wr_bits(devp->addr_offset, VDIN_HIST_CTRL, 3,
+		HIST_HIST_DIN_SEL_BIT, HIST_HIST_DIN_SEL_WID);
 #endif
-		wr_bits(devp->addr_offset, VDIN_HIST_CTRL, 3,
-			HIST_HIST_DIN_SEL_BIT, HIST_HIST_DIN_SEL_WID);
-
 	/*for project get vdin1 hist*/
 	//if (devp->index == 1)
 	// wr_bits(devp->addr_offset, VDIN_WR_CTRL2, 1, 8, 1);
@@ -3418,15 +3413,13 @@ void vdin_set_all_regs(struct vdin_dev_s *devp)
 #endif
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	/* hist sub-module */
-	if (is_meson_txhd2_cpu())
-		vdin_set_histogram(0, 0,
-				devp->h_active - 1, 0, devp->v_active - 1);
-	else
-#endif
+	if (!is_meson_txhd2_cpu()) {
 		vdin_set_histogram(devp->addr_offset, 0,
 				devp->h_active - 1, 0, devp->v_active - 1);
-	/* hist mux select */
-	vdin_set_hist_mux(devp);
+		/* hist mux select */
+		vdin_set_hist_mux(devp);
+	}
+#endif
 	/* write sub-module */
 	vdin_set_wr_ctrl(devp, devp->addr_offset, devp->v_active,
 			 devp->h_active, devp->format_convert,
@@ -3811,20 +3804,24 @@ void vdin_set_default_regmap(struct vdin_dev_s *devp)
 			wr_bits(0, VDIN_TOP_MISC, 1, 24, 1);
 		else
 			wr_bits(0, VDIN_TOP_MISC, 0, 24, 1);
-		wr(0, VDIN_HIST_CTRL, 0x00000003);
 	} else {
 		wr(offset, VDIN_HIST_CTRL, 0x00000003);
+		/* [28:16] hist.win_hs           = 0 */
+		/* [12: 0] hist.win_he           = 0 */
+		wr(offset, VDIN_HIST_H_START_END, 0x00000000);
+		/* [28:16] hist.win_vs           = 0 */
+		/* [12: 0] hist.win_ve           = 0 */
+		wr(offset, VDIN_HIST_V_START_END, 0x00000000);
 	}
 #else
 		wr(offset, VDIN_HIST_CTRL, 0x00000003);
+		/* [28:16] hist.win_hs           = 0 */
+		/* [12: 0] hist.win_he           = 0 */
+		wr(offset, VDIN_HIST_H_START_END, 0x00000000);
+		/* [28:16] hist.win_vs           = 0 */
+		/* [12: 0] hist.win_ve           = 0 */
+		wr(offset, VDIN_HIST_V_START_END, 0x00000000);
 #endif
-	/* [28:16] hist.win_hs           = 0 */
-	/* [12: 0] hist.win_he           = 0 */
-	wr(offset, VDIN_HIST_H_START_END, 0x00000000);
-	/* [28:16] hist.win_vs           = 0 */
-	/* [12: 0] hist.win_ve           = 0 */
-	wr(offset, VDIN_HIST_V_START_END, 0x00000000);
-
 	/* set VDIN_MEAS_CLK_CNTL, select XTAL clock */
 	/* if (is_meson_gxbb_cpu()) */
 	/* ; */
@@ -3963,6 +3960,11 @@ void vdin_hw_disable(struct vdin_dev_s *devp)
 	}
 }
 
+/* vdin1 hist function can be used on the boot
+ * Currently used for txhd2
+ * 1、configure the hist function register ---vdin1_hw_hist_on_off
+ * 2、there is a writeback path in the viuin_select_loopback_path
+ */
 void vdin1_hw_hist_on_off(struct vdin_dev_s *devp, bool on_off)
 {
 	const struct vinfo_s *vinfo;
@@ -4024,7 +4026,7 @@ void vdin1_hw_hist_on_off(struct vdin_dev_s *devp, bool on_off)
 		/* win_ve */
 		wr_bits(offset, VDIN_HIST_V_START_END, devp->prop.scaling4h - 1,
 			HIST_VEND_BIT, HIST_VEND_WID);
-		usleep_range(20000, 30000);
+		usleep_range(40000, 50000);
 	} else {
 		wr_bits(offset, VDIN_COM_GCLK_CTRL, 1, 12, 2); //close vdin1 hist clk 0x131b
 			}

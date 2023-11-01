@@ -427,10 +427,10 @@ enum vdin_vf_put_md {
 #define VDIN_ISR_MONITOR_SCATTER_MEM	BIT(15)
 #define VDIN_ISR_MONITOR_BLACK_BAR	BIT(16)
 #define VDIN_ISR_MONITOR_HIST_INFO	BIT(17)
-#define VDIN_ISR_MONITOR_PCS_RESET	BIT(18)
 #define VDIN_ISR_MONITOR_CYCLE		BIT(19)
 
 #define DBG_RX_UPDATE_VDIN_PROP		BIT(20)
+#define VDIN_ISR_MONITOR_INPUT		BIT(21)
 
 #define VDIN_DBG_CNTL_IOCTL	BIT(10)
 #define VDIN_DBG_CNTL_FLUSH	BIT(11)
@@ -1118,7 +1118,7 @@ struct vdin_dev_s {
 	unsigned int common_divisor;
 	unsigned int vrr_frame_rate_min;
 	unsigned int err_active;
-	unsigned int vdin_pcs_reset_threshold;
+	unsigned int vdin_input_data_threshold;
 	unsigned int report_size_abnormal_cnt;/* drop frames casued by report_hv abnormal*/
 };
 

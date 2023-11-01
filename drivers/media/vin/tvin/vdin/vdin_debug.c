@@ -4375,10 +4375,11 @@ start_chk:
 			devp->vdin_drop_num = temp;
 			pr_info("vdin_drop_num:%d\n", devp->vdin_drop_num);
 		}
-	} else if (!strcmp(parm[0], "vdin_pcs_reset_threshold")) {
+	} else if (!strcmp(parm[0], "vdin_input_data_threshold")) {
 		if (parm[1] && (kstrtouint(parm[1], 0, &temp) == 0)) {
-			devp->vdin_pcs_reset_threshold = temp;
-			pr_info("vdin_pcs_reset_threshold:%d\n", devp->vdin_pcs_reset_threshold);
+			devp->vdin_input_data_threshold = temp;
+			pr_info("vdin_input_data_threshold:%d\n",
+				devp->vdin_input_data_threshold);
 		}
 	} else if (!strcmp(parm[0], "report_size_abnormal_cnt")) {
 		if (parm[1] && (kstrtouint(parm[1], 0, &temp) == 0)) {

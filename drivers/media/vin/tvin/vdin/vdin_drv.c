@@ -2036,13 +2036,13 @@ int stop_tvin_service(int no)
 	devp->matrix_pattern_mode = 0;
 	if (devp->set_canvas_manual && devp->mem_protected)
 		devp->mem_protected = 0;
-	vdin_stop_dec(devp);
 	if (devp->work_mode == VDIN_WORK_MD_NORMAL) {
 		/*close fe*/
 		if (devp->frontend && devp->frontend->dec_ops &&
 			devp->frontend->dec_ops->close)
 			devp->frontend->dec_ops->close(devp->frontend);
 	}
+	vdin_stop_dec(devp);
 	/*free the memory allocated in start tvin service*/
 	if (devp->parm.info.fmt >= TVIN_SIG_FMT_MAX)
 		kfree(devp->fmt_info_p);
@@ -2850,29 +2850,40 @@ static void vdin_set_vfe_info(struct vdin_dev_s *devp, struct vf_entry *vfe)
 		vfe->vf.type_ext &= ~VIDTYPE_EXT_VDIN_SCATTER;
 }
 
+static bool vdin_is_input_valid(struct vdin_dev_s *devp)
+{
+	int h_diff_val, v_diff_val;
+	unsigned int h_report, v_report;
+
+	h_report = vdin_get_active_h(devp);
+	v_report = vdin_get_active_v(devp);
+	h_diff_val = devp->h_active_org - h_report;
+	v_diff_val = devp->v_active_org - v_report;
+
+	if (abs(h_diff_val) > devp->vdin_input_data_threshold ||
+		abs(v_diff_val) > devp->vdin_input_data_threshold) {
+		if (vdin_isr_monitor & VDIN_ISR_MONITOR_INPUT)
+			pr_info("vdin%d,hv_active=[%d %d],report=[%d %d],diff=[%d %d]\n",
+				devp->index, devp->h_active, devp->v_active,
+				h_report, v_report, h_diff_val, v_diff_val);
+		return false;
+	}
+
+	return true;
+}
+
 static bool vdin_isneed_pcs_reset(struct vdin_dev_s *devp)
 {
 	struct tvin_state_machine_ops_s *sm_ops = NULL;
-	unsigned int get_hactive = 0, get_vactive = 0;
-	int diff_h_active = 0, diff_v_active = 0;
 
 	if (!IS_HDMI_SRC(devp->parm.port))
 		return FALSE;
 
-	get_hactive = vdin_get_active_h(devp);
-	get_vactive = vdin_get_active_v(devp);
-	diff_h_active = devp->h_active_org - get_hactive;
-	diff_v_active = devp->v_active_org - get_vactive;
-
 	if (devp->frontend)
 		sm_ops = devp->frontend->sm_ops;
 
-	if (abs(diff_h_active) > devp->vdin_pcs_reset_threshold ||
-	    abs(diff_v_active) > devp->vdin_pcs_reset_threshold) {
+	if (!vdin_is_input_valid(devp)) {
 		devp->err_active++;
-		if (vdin_isr_monitor & VDIN_ISR_MONITOR_PCS_RESET)
-			pr_info("active err, report hv_active:%dx%d, org_hv_active:%dx%d\n",
-				get_hactive, get_vactive, devp->h_active_org, devp->v_active_org);
 		if (devp->err_active >= devp->report_size_abnormal_cnt) {
 			if (sm_ops && sm_ops->hdmi_reset_pcs)
 				sm_ops->hdmi_reset_pcs(devp->frontend);
@@ -3659,10 +3670,11 @@ irqreturn_t vdin_v4l2_isr(int irq, void *dev_id)
 		goto irq_handled;
 	}
 
-	if (vdin_get_active_h(devp) < VDIN_INPUT_DATA_THRESHOLD ||
-	    vdin_get_active_v(devp) < VDIN_INPUT_DATA_THRESHOLD) {
+	if (!vdin_is_input_valid(devp)) {
 		devp->vdin_irq_flag = VDIN_IRQ_FLG_FAKE_IRQ;
 		vdin_drop_frame_info(devp, "no data input");
+		if (vdin_dbg_en & 0x10)
+			devp->frame_drop_num = 6;
 		if (devp->vdin_function_sel & VDIN_NOT_DATA_INPUT_DROP)
 			goto irq_handled;
 	}
@@ -4146,8 +4158,11 @@ void vdin_ioctl_get_hist(struct vdin_dev_s *devp,
 		vdin1_hist_temp->sum =  rd(offset, VDIN_HIST_SPL_VAL);
 	ave =
 		div_u64(vdin1_hist_temp->sum, (vdin1_hist_temp->height * vdin1_hist_temp->width));
+	/* Convert limit to full format */
 	ave = (ave - 16) < 0 ? 0 : (ave - 16);
 	vdin1_hist_temp->ave = ave * 255 / (235 - 16);
+	if (vdin1_hist_temp->ave > 255)
+		vdin1_hist_temp->ave = 255;
 	vdin_get_hist_gamma(devp, vdin1_hist_temp->hist);
 	if (vdin_dbg_en & DBG_VDIN1_HIST) {
 		pr_info("sum:0x%lx, width:%d, height:%d ave:0x%x\n",
@@ -4808,6 +4823,7 @@ static long vdin_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		vdin_ioctl_get_hist(devp, &vdin1_hist_temp);
 
 		if (vdin1_hist_temp.height == 0 || vdin1_hist_temp.width == 0) {
+			pr_info("vdin1_hist height or width == 0\n");
 			ret = -EFAULT;
 		} else if (copy_to_user(argp, &vdin1_hist_temp,
 				      sizeof(struct vdin_hist_s))) {
@@ -6449,7 +6465,7 @@ static int vdin_drv_probe(struct platform_device *pdev)
 		devp->vdin_drop_num = 1;
 	}
 
-	devp->vdin_pcs_reset_threshold = VDIN_INPUT_ABNORMAL_SIZE_THRESHOLD;
+	devp->vdin_input_data_threshold = VDIN_INPUT_DATA_THRESHOLD;
 	devp->report_size_abnormal_cnt = VDIN_RESET_PCS_CNT;
 	devp->err_active = 0;
 

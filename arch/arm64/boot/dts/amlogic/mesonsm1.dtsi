@@ -1750,7 +1750,7 @@
 				<&clkc CLKID_FCLK_DIV2>,
 				<&clkc CLKID_FCLK_DIV2P5>;
 		clock-names = "core","mux0","mux1","clkin0","clkin1","clkin2";
-		tx_delay = <0>;
+		tx_delay = <16>;
 		card_type = <1>;
 		mmc_debug_flag;
 		disable-wp;

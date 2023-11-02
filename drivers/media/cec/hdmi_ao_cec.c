@@ -1773,7 +1773,7 @@ static long hdmitx_cec_ioctl(struct file *f,
 		 */
 		if (arg) {
 			cec_dev->hal_flag |= tmp;
-			if (new_msg || cec_dev->msg_num > 0)
+			if (cec_dev->msg_num > 0)
 				cec_stored_msg_push();
 			dprintk(1, "CEC framework ctrl enabled\n");
 		} else {

@@ -26,6 +26,9 @@ TRACE_EVENT(dmc_violation,
 		__field(int, port)
 		__field(int, sub_port)
 		__field(char, rw)
+		__field(int, bd)
+		__field(int, sb)
+		__field(int, lru)
 		__field(unsigned long, page_trace)
 	),
 
@@ -35,16 +38,22 @@ TRACE_EVENT(dmc_violation,
 		__entry->port = port;
 		__entry->sub_port = sub_port;
 		__entry->rw = rw;
+		__entry->bd = PageBuddy(phys_to_page(__entry->addr));
+		__entry->sb = PageSlab(phys_to_page(__entry->addr));
+		__entry->lru = PageLRU(phys_to_page(__entry->addr));
 		__entry->page_trace = dmc_get_page_trace(phys_to_page(__entry->addr));
 	),
 
-	TP_printk("addr=%09lx val=%016lx s=%08lx port=%s sub=%s rw:%c a:%ps",
+	TP_printk("addr=%09lx val=%016lx s=%08lx port=%s sub=%s rw:%c bd:%d sb:%d lru:%d a:%ps",
 		  __entry->addr,
 		  read_violation_mem(__entry->addr, __entry->rw),
 		  __entry->status,
 		  to_ports(__entry->port),
 		  to_sub_ports_name(__entry->port, __entry->sub_port, __entry->rw),
 		  __entry->rw,
+		  __entry->bd,
+		  __entry->sb,
+		  __entry->lru,
 		  (void *)__entry->page_trace)
 );
 

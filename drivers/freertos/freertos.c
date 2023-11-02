@@ -320,6 +320,9 @@ static void freertos_do_finish(int bootup)
 		 */
 		for_each_present_cpu(cpu) {
 			if (rtosinfo->cpumask & (1 << cpu)) {
+#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_NOFITIER) && IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_C3)
+				call_freertos_notifiers(1, NULL);
+#endif
 				if (!cpu_online(cpu)) {
 					pr_info("cpu %u finish\n", cpu);
 					if (freertos_coreup_prepare(cpu, bootup) < 0)
@@ -333,7 +336,7 @@ static void freertos_do_finish(int bootup)
 				}
 #if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_MEMORY_FREE)
 				free_rtos_memory();
-#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_NOFITIER)
+#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_NOFITIER) && IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_T7)
 				call_freertos_notifiers(1, NULL);
 #endif
 				break;

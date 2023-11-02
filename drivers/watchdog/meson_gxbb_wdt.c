@@ -80,6 +80,14 @@ static int get_stop_after_panic_env(char *str)
 	return kstrtoint(str, 0, &stop_after_panic);
 }
 __setup("wdt_stop_after_panic=", get_stop_after_panic_env);
+
+static int wdt_panic_print_setup(char *str)
+{
+	stop_after_panic = 1;
+
+	return 1;
+}
+__setup("panic_print=", wdt_panic_print_setup);
 #endif
 
 static int meson_gxbb_wdt_start(struct watchdog_device *wdt_dev)
@@ -425,6 +433,7 @@ static int meson_gxbb_wdt_probe(struct platform_device *pdev)
 	 * the notification.
 	 */
 	data->notifier.notifier_call = meson_gxbb_wdt_notifier;
+	data->notifier.priority = 200; /* ftrace_dump_on_oops panic notifier priority is 150 */
 	atomic_notifier_chain_register(&panic_notifier_list,
 				       &data->notifier);
 

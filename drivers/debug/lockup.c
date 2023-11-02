@@ -38,6 +38,8 @@
 #include <trace/hooks/ftrace_dump.h>
 #include <linux/time.h>
 #include <linux/delay.h>
+#include <linux/panic_notifier.h>
+#include <linux/sysrq.h>
 #include <trace/hooks/traps.h>
 #if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_IOTRACE)
 #include <linux/amlogic/aml_iotrace.h>
@@ -899,16 +901,25 @@ void pr_lockup_info(int lock_cpu)
 
 	pr_err("%s: lock_cpu=[%d] --------- END --------\n", __func__, lock_cpu);
 
-	local_irq_restore(flags);
-
 #if (defined CONFIG_ARM64) || (defined CONFIG_AMLOGIC_ARMV8_AARCH32)
+	pr_err("### fiq_dump: fiq_virt_addr:%px fiq_check_en:%d\n", fiq_virt_addr, fiq_check_en);
 	if (fiq_virt_addr && fiq_check_en) {
 		struct arm_smccc_res res;
+		int cpu;
 
-		arm_smccc_smc(FIQ_DEBUG_SMC_CMD, FIQ_SEND_SMC_ARG, lock_cpu, 0, 0, 0, 0, 0, &res);
-		mdelay(1000);
+		for_each_online_cpu(cpu) {
+			if (cpu == smp_processor_id())
+				continue;
+
+			pr_err("### fiq_dump: cpu:%d\n", cpu);
+			arm_smccc_smc(FIQ_DEBUG_SMC_CMD, FIQ_SEND_SMC_ARG, cpu, 0, 0, 0, 0, 0,
+							&res);
+			mdelay(1000);
+		}
 	}
 #endif
+
+	local_irq_restore(flags);
 }
 EXPORT_SYMBOL(pr_lockup_info);
 
@@ -1014,6 +1025,29 @@ static void fiq_debug_addr_init(void)
 }
 #endif
 
+static int aml_panic_print;
+
+static int panic_print_setup(char *str)
+{
+	aml_panic_print = 1;
+
+	return 1;
+}
+__setup("panic_print=", panic_print_setup);
+
+static int debug_panic_notifier_func(struct notifier_block *self,
+					unsigned long v, void *p)
+{
+	if (!strcmp(p, "RCU Stall") && !aml_panic_print)
+		handle_sysrq('t');
+
+	return NOTIFY_DONE;
+}
+
+static struct notifier_block debug_panic_notifier = {
+	.notifier_call = debug_panic_notifier_func,
+};
+
 int debug_lockup_init(void)
 {
 	int cpu;
@@ -1024,6 +1058,8 @@ int debug_lockup_init(void)
 		pr_err("alloc percpu infos failed\n");
 		return 1;
 	}
+
+	atomic_notifier_chain_register(&panic_notifier_list, &debug_panic_notifier);
 
 	for_each_possible_cpu(cpu) {
 		info = per_cpu_ptr(infos, cpu);

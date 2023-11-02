@@ -116,6 +116,7 @@ static int operate_mode;
 bool force_bypass_from_prebld_to_vadj1;/* t3/t5w, 1d93 bit0 -> 1d26 bit8*/
 
 #define MAX_CORE3_METADATA 204 /*0x3324~0x33f0 = 204*/
+static int is_muted;
 
 struct vpp_post_info_t core3_slice_info;
 
@@ -666,14 +667,17 @@ int tv_dv_core1_set(u64 *dma_data,
 		if (runmode_cnt < amdv_run_mode_delay) {
 			run_mode = (run_mode & 0xfffffffc) | 1;
 			set_video_mute(AML_DOLBY_MUTE_SET, 1);
+			is_muted = 1;
 			start_render = 0;
 		} else if (runmode_cnt ==
 			amdv_run_mode_delay) {
 			set_video_mute(AML_DOLBY_MUTE_SET, 1);
+			is_muted = 1;
 			start_render = 0;
 		} else {
 			if (start_render == 0) {
 				set_video_mute(AML_DOLBY_MUTE_SET, 0);
+				is_muted = 0;
 			}
 			start_render = 1;
 		}
@@ -5235,6 +5239,10 @@ void enable_amdv_v1(int enable)
 				if (tv_dovi_setting)
 					tv_dovi_setting->src_format =
 					FORMAT_SDR;
+				if (is_muted) {
+					set_video_mute(AML_DOLBY_MUTE_SET, 0); /* ensure unmute */
+					is_muted = 0;
+				}
 			} else if (is_aml_txlx_stbmode()) {
 				VSYNC_WR_DV_REG_BITS
 					(VIU_MISC_CTRL1,

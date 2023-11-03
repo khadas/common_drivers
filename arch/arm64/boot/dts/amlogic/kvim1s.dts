@@ -713,6 +713,11 @@
 	status = "okay";
 };
 
+&wdt {
+	/* 0:userspace, 1:kernel */
+	amlogic,feed_watchdog_mode = <0>;
+};
+
 &CPU0 {
 	multi_tables_available;
 	operating-points-v2 = <&s905y4_opp_table0>,

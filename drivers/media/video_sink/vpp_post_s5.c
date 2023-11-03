@@ -544,7 +544,8 @@ static void vpp_post_blend_set(u32 vpp_index,
 	rdma_wr_bits(vpp_reg->vpp_postblend_ctrl,
 		vpp_blend->bld_out_en, 8, 1);
 	/* vpp postblend v size after vpp in padding v cut module */
-	rdma_wr(vpp_reg->vpp_post_slice2ppc_v_size, vpp_blend->bld_out_h);
+	if (cur_dev->vpp_in_padding_support)
+		rdma_wr(vpp_reg->vpp_post_slice2ppc_v_size, vpp_blend->bld_out_h);
 	if (debug_flag_s5 & DEBUG_VPP_POST) {
 		pr_info("%s: vpp_postblend_h_v_size=%x\n",
 			__func__, vpp_blend->bld_out_padding_w |
@@ -761,7 +762,8 @@ void vpp_post_set(u32 vpp_index, struct vpp_post_s *vpp_post)
 
 		vpp0_post = &vpp_post->vpp0_post;
 		/* vpp post in padding for oled */
-		vpp_post_in_padcut_set(vpp_index, vpp0_post);
+		if (cur_dev->vpp_in_padding_support)
+			vpp_post_in_padcut_set(vpp_index, vpp0_post);
 		/* cfg slice mode */
 		vpp_post_slice_set(vpp_index, vpp0_post);
 		/* cfg vd1 hwin cut */

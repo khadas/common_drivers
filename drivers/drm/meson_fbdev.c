@@ -177,14 +177,19 @@ static int am_meson_drm_fbdev_setcmap(struct fb_cmap *cmap, struct fb_info *info
 	index   = cmap->start;
 	DRM_DEBUG("%s\n", __func__);
 
-	for (count = 0; count < cmap->len; count++) {
-		if (transp)
-			trans = *transp++;
-		if (info->fbops->fb_setcolreg)
-			r = info->fbops->fb_setcolreg(index++, *red++, *green++, *blue++, trans,
-				     info);
-		if (r != 0)
-			return r;
+	if (info->fix.visual == FB_VISUAL_PSEUDOCOLOR) {
+		for (count = 0; count < cmap->len; count++) {
+			if (transp)
+				trans = *transp++;
+			if (info->fbops->fb_setcolreg)
+				r = info->fbops->fb_setcolreg(index++, *red++, *green++, *blue++,
+					trans, info);
+			if (r != 0)
+				return r;
+		}
+	} else {
+		r = drm_fb_helper_setcmap(cmap, info);
+		return r;
 	}
 
 	return 0;

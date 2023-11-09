@@ -716,6 +716,74 @@ static void postblend_hw_disable(struct meson_vpu_block *vblk,
 }
 
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+
+#define MATRIX_5x3_COEF_SIZE 24
+
+static int RGB709_to_YUV709l_coeff[MATRIX_5x3_COEF_SIZE] = {
+	0, 0, 0, /* pre offset */
+	186, 627, 63,
+	-102, -344, 448,
+	448, -406, -40,
+	0, 0, 0, /* 10'/11'/12' */
+	0, 0, 0, /* 20'/21'/22' */
+	64, 512, 512, /* offset */
+	0, 0, 0 /* mode, right_shift, clip_en */
+};
+
+/* color conversion of viu2 on sm1, g12b */
+static void set_viu2_osd_matrix_rgb2yuv(bool on)
+{
+	int *m = RGB709_to_YUV709l_coeff;
+
+	/* RGB -> 709 limit */
+	/* VPP WRAP OSD3 matrix */
+	meson_drm_write_reg(VIU2_OSD1_MATRIX_PRE_OFFSET0_1,
+			((m[0] & 0xfff) << 16) | (m[1] & 0xfff));
+	meson_drm_write_reg(VIU2_OSD1_MATRIX_PRE_OFFSET2,
+			m[2] & 0xfff);
+	meson_drm_write_reg(VIU2_OSD1_MATRIX_COEF00_01,
+			((m[3] & 0x1fff) << 16) | (m[4] & 0x1fff));
+	meson_drm_write_reg(VIU2_OSD1_MATRIX_COEF02_10,
+			((m[5]  & 0x1fff) << 16) | (m[6] & 0x1fff));
+	meson_drm_write_reg(VIU2_OSD1_MATRIX_COEF11_12,
+			((m[7] & 0x1fff) << 16) | (m[8] & 0x1fff));
+	meson_drm_write_reg(VIU2_OSD1_MATRIX_COEF20_21,
+			((m[9] & 0x1fff) << 16) | (m[10] & 0x1fff));
+	meson_drm_write_reg(VIU2_OSD1_MATRIX_COEF22,
+			m[11] & 0x1fff);
+
+	meson_drm_write_reg(VIU2_OSD1_MATRIX_OFFSET0_1,
+			((m[18] & 0xfff) << 16) | (m[19] & 0xfff));
+	meson_drm_write_reg(VIU2_OSD1_MATRIX_OFFSET2,
+			m[20] & 0xfff);
+
+	meson_drm_write_reg_bits(VIU2_OSD1_MATRIX_EN_CTRL, on, 0, 1);
+}
+
+static void g12b_postblend_set_state(struct meson_vpu_block *vblk,
+				struct meson_vpu_block_state *state,
+				struct meson_vpu_block_state *old_state)
+{
+	int crtc_index;
+	enum vmode_e mode;
+
+	crtc_index = vblk->index;
+	mode = state->sub->vmode;
+	mode &= VMODE_MODE_BIT_MASK;
+
+	postblend_set_state(vblk, state, old_state);
+
+	/* viu2 on g12b or sm1 */
+	if (crtc_index == VPP1) {
+		if (mode == VMODE_HDMI)
+			set_viu2_osd_matrix_rgb2yuv(true);
+		else
+			set_viu2_osd_matrix_rgb2yuv(false);
+	}
+
+	MESON_DRM_BLOCK("g12b postblend set state done!\n");
+}
+
 static void g12b_postblend_hw_disable(struct meson_vpu_block *vblk,
 		struct meson_vpu_block_state *state)
 {
@@ -1118,7 +1186,7 @@ struct meson_vpu_block_ops postblend_ops = {
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 struct meson_vpu_block_ops g12b_postblend_ops = {
 	.check_state = postblend_check_state,
-	.update_state = postblend_set_state,
+	.update_state = g12b_postblend_set_state,
 	.enable = postblend_hw_enable,
 	.disable = g12b_postblend_hw_disable,
 	.dump_register = postblend_dump_register,

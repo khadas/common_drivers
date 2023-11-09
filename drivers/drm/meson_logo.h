@@ -9,10 +9,6 @@
 
 #define VMODE_NAME_LEN_MAX    64
 
-#define VPP0     0
-#define VPP1     1
-#define VPP2     2
-
 struct am_meson_logo {
 	struct page *logo_page;
 	void *vaddr;

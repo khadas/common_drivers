@@ -72,6 +72,12 @@ enum slice_index {
 	OSD3_SLICE1,
 };
 
+enum vpp_index {
+	VPP0,
+	VPP1,
+	VPP2,
+};
+
 enum meson_vpu_blk_type {
 	MESON_BLK_OSD = 0,
 	MESON_BLK_AFBC,
@@ -493,6 +499,7 @@ struct meson_vpu_sub_pipeline {
 	struct meson_vpu_pipeline *pipeline;
 	struct drm_display_mode mode;
 	struct rdma_reg_ops *reg_ops;
+	enum vmode_e vmode;
 };
 
 struct meson_vpu_pipeline_ops {

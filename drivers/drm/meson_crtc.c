@@ -428,6 +428,7 @@ static void meson_crtc_atomic_print_state(struct drm_printer *p,
 	drm_printf(p, "\t\tdv-hdr core state:[%d,%d]\n",
 		cstate->crtc_dv_enable,
 		cstate->crtc_hdr_enable);
+	drm_printf(p, "\t\tvmode=%u, preset_vmode:%u\n", cstate->vmode, cstate->preset_vmode);
 
 	drm_printf(p, "\tmeson vpu pipeline state:\n");
 	drm_printf(p, "\t\tenable_blocks=%llu\n",
@@ -684,6 +685,7 @@ static void am_meson_crtc_atomic_enable(struct drm_crtc *crtc,
 	}
 
 	meson_crtc_state->vmode = mode;
+	pipeline->subs[amcrtc->crtc_index].vmode = mode;
 
 	memcpy(&pipeline->subs[amcrtc->crtc_index].mode, adjusted_mode,
 	       sizeof(struct drm_display_mode));

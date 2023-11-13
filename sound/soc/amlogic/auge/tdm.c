@@ -119,6 +119,7 @@ struct aml_tdm {
 	/* tdmin_lb src sel */
 	int tdmin_lb_src;
 	int start_clk_enable;
+	int symmetric_rate_enable;
 	int clk_tuning_enable;
 	int last_rate;
 
@@ -670,10 +671,16 @@ int aml_tdm_hw_setting_init(struct aml_tdm *p_tdm,
 	dump_pcm_setting(setting);
 
 	/* set pcm dai hw params */
-	p_tdm->setting.standard_sysclk = setting->sysclk;
-	aml_set_tdm_mclk(p_tdm, setting->sysclk, false);
-	aml_tdm_set_clkdiv(p_tdm, setting->sysclk_bclk_ratio);
-	aml_set_bclk_ratio(p_tdm, setting->bclk_lrclk_ratio);
+	if (p_tdm->symmetric_rate_enable && p_tdm->id == TDM_C
+		&& stream == SNDRV_PCM_STREAM_CAPTURE) {
+	    pr_debug("%s(), skip clock setting when TDM-C capture\n", __func__);
+	} else {
+		pr_debug("%s(), clock setting when TDM-%d stream=%d\n",
+				 __func__, p_tdm->id, stream);
+		aml_set_tdm_mclk(p_tdm, setting->sysclk, false);
+		aml_tdm_set_clkdiv(p_tdm, setting->sysclk_bclk_ratio);
+		aml_set_bclk_ratio(p_tdm, setting->bclk_lrclk_ratio);
+	}
 
 	ret = aml_tdm_set_lanes(p_tdm, channels, stream);
 	if (ret)
@@ -2763,6 +2770,16 @@ static int aml_tdm_platform_probe(struct platform_device *pdev)
 	else
 		pr_info("TDM id %d output clk enable:%d\n",
 			p_tdm->id, p_tdm->start_clk_enable);
+
+	ret = of_property_read_u32(node, "symmetric_rate_enable", &p_tdm->symmetric_rate_enable);
+	if (ret < 0)
+		p_tdm->symmetric_rate_enable = 0;
+	else {
+		if (p_tdm->symmetric_rate_enable == 1)
+			aml_tdm_dai[p_tdm->id].symmetric_rate = 0;
+		pr_info("TDM id %d symmetric_rate_enable enable:%d\n",
+			p_tdm->id, p_tdm->symmetric_rate_enable);
+	}
 
 	ret = of_property_read_u32(node, "ctrl_gain", &p_tdm->ctrl_gain_enable);
 	if (ret < 0)

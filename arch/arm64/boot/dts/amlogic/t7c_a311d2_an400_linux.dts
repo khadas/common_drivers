@@ -1026,6 +1026,7 @@
 		dai-tdm-lane-slot-mask-in = <1 1 1 1>;
 		dai-tdm-lane-slot-mask-out = <1 1 1 1>;
 		dai-tdm-clk-sel = <2>;
+		symmetric_rate_enable = <1>;
 
 		clocks = <&clkaudio CLKID_AUDIO_MCLK_C
 				&clkc CLKID_MPLL2>;

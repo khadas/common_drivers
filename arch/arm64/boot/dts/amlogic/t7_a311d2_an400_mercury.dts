@@ -1837,12 +1837,6 @@
 	memory-region = <&adapt_cma_reserved>;
 };
 
-&ir {
-	status = "disabled";
-	pinctrl-0 = <&remote_pins>;
-	pinctrl-names = "default";
-};
-
 &spifc {
 	status = "disabled";
 	spi-nor@0 {
@@ -2128,7 +2122,8 @@
 &ir {
 	status = "okay";
 	pinctrl-0 = <&remote_pins>;
-	pinctrl-names = "default";
+	pinctrl-1 = <&remote_pins_sleep>;
+	pinctrl-names = "default", "sleep";
 };
 
 &amlvecm {

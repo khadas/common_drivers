@@ -835,6 +835,10 @@ static int meson_ir_resume(struct device *dev)
 	for (cnt = 0; cnt < (ENABLE_LEGACY_IR(chip->protocol) ? 2 : 1); cnt++) {
 		regmap_read(chip->ir_contr[cnt].base, REG_STATUS, &val);
 		regmap_read(chip->ir_contr[cnt].base, REG_FRAME, &val);
+
+		if (disable_ir)
+			regmap_update_bits(chip->ir_contr[cnt].base, REG_REG1,
+					BIT(15), 0);
 	}
 	spin_unlock_irqrestore(&chip->slock, flags);
 
@@ -869,6 +873,39 @@ static int meson_ir_suspend(struct device *dev)
 	return 0;
 }
 
+static int meson_ir_freeze(struct device *dev)
+{
+	pinctrl_pm_select_sleep_state(dev);
+
+	return 0;
+}
+
+static int meson_ir_restore(struct device *dev)
+{
+	struct meson_ir_chip *chip = dev_get_drvdata(dev);
+	unsigned int val;
+	unsigned long flags;
+	unsigned char cnt;
+
+	pinctrl_pm_select_default_state(dev);
+
+	/*resume register config*/
+	spin_lock_irqsave(&chip->slock, flags);
+	chip->set_register_config(chip, chip->protocol);
+	/* read REG_STATUS and REG_FRAME to clear status */
+	for (cnt = 0; cnt < (ENABLE_LEGACY_IR(chip->protocol) ? 2 : 1); cnt++) {
+		regmap_read(chip->ir_contr[cnt].base, REG_STATUS, &val);
+		regmap_read(chip->ir_contr[cnt].base, REG_FRAME, &val);
+
+		if (disable_ir)
+			regmap_update_bits(chip->ir_contr[cnt].base, REG_REG1,
+					BIT(15), 0);
+	}
+	spin_unlock_irqrestore(&chip->slock, flags);
+
+	return 0;
+}
+
 static const struct of_device_id meson_ir_dt_match[] = {
 	{
 		.compatible     = "amlogic, meson-ir",
@@ -880,6 +917,8 @@ static const struct of_device_id meson_ir_dt_match[] = {
 static const struct dev_pm_ops meson_ir_pm_ops = {
 	.suspend_late = meson_ir_suspend,
 	.resume_early = meson_ir_resume,
+	.freeze = meson_ir_freeze,
+	.restore = meson_ir_restore,
 };
 #endif
 

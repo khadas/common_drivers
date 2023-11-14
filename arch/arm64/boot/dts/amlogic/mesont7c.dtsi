@@ -4036,6 +4036,13 @@
 		};
 	};
 
+	remote_pins_sleep: remote_pin_sleep {
+		mux {
+			groups = "GPIOD_5";
+			function = "gpio_periphs";
+		};
+	};
+
 	spifc_all_pins: spifc_all_pins {
 		mux {
 			groups =  "nor_hold",

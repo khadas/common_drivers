@@ -613,11 +613,42 @@ static const struct of_device_id aml_jtag_dt_match[] = {
 	{}
 };
 
+#ifdef CONFIG_PM
+static int meson_jtag_restore(struct device *dev)
+{
+	struct aml_jtag_dev *jdev = dev_get_drvdata(dev);
+
+	jdev->select = jtag_select;
+	jdev->cluster = jtag_cluster;
+	aml_jtag_setup(jdev);
+
+	return 0;
+}
+
+static int meson_jtag_freeze(struct device *dev)
+{
+	struct aml_jtag_dev *jdev = dev_get_drvdata(dev);
+
+	jdev->select = AMLOGIC_JTAG_DISABLE;
+	aml_jtag_setup(jdev);
+
+	return 0;
+}
+
+static const struct dev_pm_ops meson_jtag_pm_ops = {
+	.freeze = meson_jtag_freeze,
+	.restore = meson_jtag_restore,
+};
+#endif
+
 static struct platform_driver aml_jtag_driver = {
 	.driver = {
 		.name = AML_JTAG_NAME,
 		.owner = THIS_MODULE,
 		.of_match_table = aml_jtag_dt_match,
+#ifdef CONFIG_PM
+		.pm = &meson_jtag_pm_ops,
+#endif
 	},
 	.probe = aml_jtag_probe,
 	.remove = __exit_p(aml_jtag_remove),

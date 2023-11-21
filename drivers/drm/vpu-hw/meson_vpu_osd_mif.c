@@ -1199,6 +1199,7 @@ static int osd_check_state(struct meson_vpu_block *vblk,
 	mvos->read_ports = plane_info->read_ports;
 	mvos->sec_en = plane_info->sec_en;
 	mvos->palette_arry = plane_info->palette_arry;
+	mvos->fbdev_commit = plane_info->fbdev_commit;
 
 	return 0;
 }
@@ -1360,8 +1361,9 @@ static void osd_set_state(struct meson_vpu_block *vblk,
 		hold_line = osd_hold_line;
 
 	flush_reg = osd_check_config(mvos, old_mvos);
-	MESON_DRM_BLOCK("flush_reg-%d index-%d\n", flush_reg, vblk->index);
-	if (!flush_reg) {
+	MESON_DRM_BLOCK("flush_reg-%d index-%d, fbdev_commit-%d\n",
+		flush_reg, vblk->index, mvos->fbdev_commit);
+	if (!mvos->fbdev_commit && !flush_reg) {
 		/*after v7 chips, always linear addr*/
 		if (osd->mif_acc_mode == LINEAR_MIF)
 			osd_mem_mode(vblk, reg_ops, reg, 1);

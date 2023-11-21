@@ -1234,6 +1234,7 @@ static int meson_plane_atomic_check(struct drm_plane *plane,
 
 	plane_state = to_am_meson_plane_state(state);
 	plane_info->sec_en = plane_state->sec_en;
+	plane_info->fbdev_commit = plane_state->fbdev_commit;
 
 	DRM_DEBUG("OSD PLANE index=%d, zorder=%d, premult= %d, alpha = %d, phy = %llx\n",
 		  plane_info->plane_index, plane_info->zorder,

@@ -24,6 +24,7 @@
 struct am_meson_plane_state {
 	struct drm_plane_state base;
 	u32 sec_en;
+	bool fbdev_commit;
 };
 
 enum meson_max_fb_enum {

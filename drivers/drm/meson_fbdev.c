@@ -465,6 +465,7 @@ static int am_meson_drm_fb_pan_display(struct fb_var_screeninfo *var,
 	struct drm_device *dev = fb_helper->dev;
 	struct drm_atomic_state *state;
 	struct drm_plane_state *plane_state;
+	struct am_meson_plane_state *am_plane_state;
 	struct drm_plane *plane = fbdev->plane;
 	struct drm_mode_set *mode_set;
 	int hdisplay, vdisplay;
@@ -533,10 +534,12 @@ retry:
 		plane_state->crtc_h);
 
 	state->legacy_cursor_update = true;
+	am_plane_state = to_am_meson_plane_state(plane_state);
+	am_plane_state->fbdev_commit = true;
 	ret = drm_atomic_commit(state);
 	if (ret != 0)
 		goto fail;
-
+	am_plane_state->fbdev_commit = false;
 	info->var.xoffset = var->xoffset;
 	info->var.yoffset = var->yoffset;
 

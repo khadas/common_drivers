@@ -1524,7 +1524,7 @@
 		reg = <0x0 0xff638048 0x0 0x2000>;
 	};
 
-	ge2d {
+	ge2d: ge2d {
 		compatible = "amlogic, ge2d-sm1";
 		dev_name = "ge2d";
 		status = "okay";

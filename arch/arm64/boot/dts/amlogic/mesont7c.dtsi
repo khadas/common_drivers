@@ -3186,7 +3186,7 @@
 		status = "okay";
 	};
 
-	ge2d {
+	ge2d: ge2d {
 		compatible = "amlogic, ge2d-t7";
 		status = "okay";
 		interrupts = <GIC_SPI 217 IRQ_TYPE_EDGE_RISING>;

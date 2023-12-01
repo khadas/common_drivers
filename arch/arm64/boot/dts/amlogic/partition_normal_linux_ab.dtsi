@@ -1,0 +1,164 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Amlogic partition set for normal
+ *
+ * Copyright (c) 2017-2017 Amlogic Ltd
+ *
+ * This file is licensed under a dual GPLv2 or BSD license.
+ *
+ */
+
+/ {
+    partitions: partitions{
+		parts = <21>;
+		part-0 = <&logo>;
+		part-1 = <&recovery_a>;
+		part-2 = <&recovery_b>;
+		part-3 = <&misc>;
+		part-4 = <&cri_data>;
+		part-5 = <&param>;
+		part-6 = <&boot_a>;
+		part-7 = <&boot_b>;
+		part-8 = <&rsv>;
+		part-9 = <&tee>;
+		part-10 = <&factory>;
+		part-11 = <&vendor_a>;
+		part-12 = <&vendor_b>;
+		part-13 = <&odm>;
+		part-14 = <&system_a>;
+		part-15 = <&system_b>;
+		part-16 = <&product>;
+		part-17 = <&cache>;
+		part-18 = <&vbmeta_a>;
+		part-19 = <&vbmeta_b>;
+		part-20 = <&data>;
+
+		logo:logo{
+			pname = "logo";
+			size = <0x0 0x800000>;
+			mask = <1>;
+		};
+		recovery_a:recovery_a{
+			pname = "recovery_a";
+			size = <0x0 0x2800000>;
+			mask = <1>;
+		};
+		recovery_b:recovery_b{
+			pname = "recovery_b";
+			size = <0x0 0x2800000>;
+			mask = <1>;
+		};
+		misc:misc{
+			pname = "misc";
+			size = <0x0 0x800000>;
+			mask = <1>;
+		};
+		cri_data:cri_data
+		{
+			pname = "cri_data";
+			size = <0x0 0x800000>;
+			mask = <2>;
+		};
+		rsv:rsv{
+			pname = "rsv";
+			size = <0x0 0x1000000>;
+			mask = <0x11>;
+		};
+		param:param{
+			pname = "param";
+			size = <0x0 0x1000000>;
+			mask = <2>;
+		};
+		boot_a:boot_a
+		{
+			pname = "boot_a";
+			size = <0x0 0x4000000>;
+			mask = <1>;
+		};
+		boot_b:boot_b
+		{
+			pname = "boot_b";
+			size = <0x0 0x4000000>;
+			mask = <1>;
+		};
+		tee:tee{
+			pname = "tee";
+			size = <0x0 0x2000000>;
+			mask = <1>;
+		};
+		factory:factory{
+			pname = "factory";
+			size = <0x0 0x800000>;
+			mask = <0x11>;
+		};
+		vendor_a:vendor_a
+		{
+			pname = "vendor_a";
+			size = <0x0 0x1C000000>;
+			mask = <1>;
+		};
+		vendor_b:vendor_b
+		{
+			pname = "vendor_b";
+			size = <0x0 0x1C000000>;
+			mask = <1>;
+		};
+		odm:odm
+		{
+			pname = "odm";
+			size = <0x0 0x8000000>;
+			mask = <1>;
+		};
+		system_a:system_a
+		{
+			pname = "system_a";
+			size = <0x0 0x60000000>;
+			mask = <1>;
+		};
+		system_b:system_b
+		{
+			pname = "system_b";
+			size = <0x0 0x60000000>;
+			mask = <1>;
+		};
+		product:product{
+			pname = "product";
+			size = <0x0 0x8000000>;
+			mask = <1>;
+		};
+		cache:cache
+		{
+			pname = "cache";
+			size = <0x0 0x46000000>;
+			mask = <2>;
+		};
+		vbmeta_a:vbmeta_a
+		{
+			pname = "vbmeta_a";
+			size = <0x0 0x200000>;
+			mask = <1>;
+		};
+		vbmeta_b:vbmeta_b
+		{
+			pname = "vbmeta_b";
+			size = <0x0 0x200000>;
+			mask = <1>;
+		};
+		data:data
+		{
+			pname = "data";
+			size = <0xffffffff 0xffffffff>;
+			mask = <4>;
+		};
+	};
+
+	provisionkey {
+		compatible = "amlogic, provisionkey";
+		status = "okay";
+		key-permit-default = "write";
+		//new key not need add dts if started with KEY_PROVISION_
+		KEY_PROVISION_XXX { };
+		//test_my_added_keyname { };
+	};//End provisionkey
+
+};/* end of / */

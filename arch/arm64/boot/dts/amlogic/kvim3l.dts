@@ -679,7 +679,7 @@
 			};
 			tdmbcodec: codec {
 				sound-dai = <&dummy_codec
-				&amlogic_codec &ad82584f_62>;
+				&amlogic_codec>;
 			};
 		};
 
@@ -1330,15 +1330,6 @@
 			g_io_number = <10>;
 			b_io_number = <11>;
 		};
-	};
-	/* for ref board */
-	ad82584f_62: ad82584f_62@31 {
-		compatible = "ESMT, ad82584f";
-		#sound-dai-cells = <0>;
-		reg = <0x31>;
-		status = "okay";
-		reset_pin = <&gpio GPIOA_5 0>;
-		no_mclk;
 	};
 };
 

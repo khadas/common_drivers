@@ -533,8 +533,6 @@
 		compatible = "amlogic, auge-sound-card";
 		aml-audio-card,name = "AML-AUGESOUND";
 
-		/*avout mute gpio*/
-		avout_mute-gpios = <&gpio_ao GPIOAO_2 GPIO_ACTIVE_HIGH>;
 		/*for audio effect ,eqdrc */
 		//aml-audio-card,effect = <&audio_effect>;
 
@@ -561,7 +559,7 @@
 				system-clock-frequency = <12288000>;
 			};
 			tdmbcodec: codec {
-				sound-dai = <&amlogic_codec &ad82584f_62>;
+				sound-dai = <&amlogic_codec>;
 			};
 		};
 
@@ -1011,23 +1009,6 @@
 	pinctrl-names="default";
 	pinctrl-0=<&i2c3_master_pins2>;
 	clock-frequency = <100000>; /* default 100k */
-
-	/* for ref board */
-	ad82584f_62: ad82584f_62@31 {
-		compatible = "ESMT, ad82584f";
-		#sound-dai-cells = <0>;
-		reg = <0x31>;
-		status = "okay";
-		reset_pin = <&gpio GPIOA_5 0>;
-	};
-
-	tlv320adc3101_32: tlv320adc3101_32@19 {
-		compatible = "ti,tlv320adc3101";
-		#sound-dai-cells = <0>;
-		reg = <0x19>;
-		differential_pair = <1>;
-		status = "disabled";
-	};
 };
 
 &audiobus {

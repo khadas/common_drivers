@@ -424,7 +424,7 @@
 
 	aml_cams {
 		compatible = "amlogic, cams_prober";
-		status = "okay";
+		status = "disabled";
 		pinctrl-names="default";
 		pinctrl-0=<&clk12_24_z_pins>;
 		clocks = <&clkc CLKID_24M_CLK_GATE>;
@@ -443,13 +443,13 @@
 			interface = "mipi";
 			clk_channel = "a";
 			bt_path_count = <1>;
-			status = "okay";
+			status = "disabled";
 		};
 	};
 
 	amvdec_csi {
 		compatible = "amlogic, amvdec_csi";
-		status = "okay";
+		status = "disabled";
 		csi_id = <0>;
 		reg = <0x0 0xff650000 0x0 0x00000100>,
 		      <0x0 0xffe0c000 0x0 0x00000100>,

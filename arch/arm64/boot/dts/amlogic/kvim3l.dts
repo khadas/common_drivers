@@ -1271,19 +1271,6 @@
 		status = "okay";
 };
 
-&i2c2 {
-	status = "okay";
-	pinctrl-names="default";
-	pinctrl-0=<&i2c2_master_pins3>;
-	clock-frequency = <100000>;
-	ov5640@3c {
-		compatible = "ov5640";
-		reg = <0x3c>;
-		//reg = <0x6c>;
-		status = "okay";
-	};
-};
-
 &i2c3 {
 	status = "disabled";
 	pinctrl-names="default";

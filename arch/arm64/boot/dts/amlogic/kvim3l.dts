@@ -680,9 +680,6 @@
 		compatible = "amlogic, auge-sound-card";
 		aml-audio-card,name = "AML-AUGESOUND";
 
-		/*avout mute gpio*/
-		avout_mute-gpios = <&gpio_ao GPIOAO_2 GPIO_ACTIVE_HIGH>;
-
 		aml-audio-card,dai-link@0 {
 			format = "i2s";// "dsp_a";
 			mclk-fs = <256>;
@@ -778,20 +775,6 @@
 		};
 
 		aml-audio-card,dai-link@3 {
-			mclk-fs = <64>;
-			/* suffix-name, sync with android audio hal
-			 * what's the dai link used for
-			 */
-			suffix-name = "alsaPORT-pdm-builtinmic";
-			cpu {
-				sound-dai = <&pdm>;
-			};
-			codec {
-				sound-dai = <&pdm_codec>;
-			};
-		};
-
-		aml-audio-card,dai-link@4 {
 			mclk-fs = <128>;
 			/* suffix-name, sync with android audio hal used for */
 			suffix-name = "alsaPORT-spdif";
@@ -804,7 +787,7 @@
 			};
 		};
 
-		aml-audio-card,dai-link@5 {
+		aml-audio-card,dai-link@4 {
 			mclk-fs = <128>;
 			continuous-clock;
 			/* suffix-name, sync with android audio hal
@@ -820,7 +803,7 @@
 			};
 		};
 
-		aml-audio-card,dai-link@6 {
+		aml-audio-card,dai-link@5 {
 			mclk-fs = <256>;
 			suffix-name = "alsaPORT-earc";
 			cpu {
@@ -832,7 +815,7 @@
 			};
 		};
 
-		aml-audio-card,dai-link@7 {
+		aml-audio-card,dai-link@6 {
 			mclk-fs = <256>;
 			continuous-clock;
 			suffix-name = "alsaPORT-loopback";
@@ -1496,29 +1479,6 @@
 
 		status = "okay";
 	};
-	pdm: pdm {
-		compatible = "amlogic, sm1-snd-pdm";
-		#sound-dai-cells = <0>;
-
-		clocks = <&clkaudio CLKID_AUDIO_GATE_PDM
-			&clkc CLKID_FCLK_DIV3
-			&clkc CLKID_HIFI_PLL
-			&clkaudio CLKID_AUDIO_PDMIN0
-			&clkaudio CLKID_AUDIO_PDMIN1>;
-		clock-names = "gate",
-			"sysclk_srcpll",
-			"dclk_srcpll",
-			"pdm_dclk",
-			"pdm_sysclk";
-		src-clk-freq = <491520000>;
-		pinctrl-names = "pdm_pins";
-		pinctrl-0 = <&pdmin>;
-
-		/* mode 0~4, defalut:1 */
-		filter_mode = <1>;
-
-		status = "okay";
-	};
 
 	asrca: resample@0 {
 		compatible = "amlogic, sm1-resample";
@@ -1786,17 +1746,6 @@
 		mux {/* GPIOH_5 */
 			groups = "spdif_in_h";
 			function = "spdif_in";
-		};
-	};
-
-	pdmin: pdmin {
-		mux { /* GPIOA_5, GPIOA_6, GPIOA_8, GPIOA_9, GPIOA_7 */
-			groups = "pdm_din0_a",
-				"pdm_din1_a",
-				"pdm_din2_a",
-				/*"pdm_din3_a",*/
-				"pdm_dclk_a";
-			function = "pdm";
 		};
 	};
 

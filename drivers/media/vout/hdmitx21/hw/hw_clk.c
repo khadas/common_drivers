@@ -483,8 +483,13 @@ static void set_hdmitx_enc_div(struct hdmitx_dev *hdev, u32 div)
 	div = check_div(div);
 	if (div == -1)
 		return;
-	hd21_set_reg_bits(CLKCTRL_VID_CLK0_DIV, div, 12, 4);
-	hd21_set_reg_bits(CLKCTRL_VID_CLK0_CTRL2, 1, 3, 1);
+	if (hdev->tx_comm.enc_idx == 2) {
+		hd21_set_reg_bits(CLKCTRL_VIID_CLK2_DIV, div, 12, 4);
+		hd21_set_reg_bits(CLKCTRL_VID_CLK2_CTRL2, 1, 3, 1);
+	} else {
+		hd21_set_reg_bits(CLKCTRL_VID_CLK0_DIV, div, 12, 4);
+		hd21_set_reg_bits(CLKCTRL_VID_CLK0_CTRL2, 1, 3, 1);
+	}
 }
 
 static void set_hdmitx_fe_div(struct hdmitx_dev *hdev, u32 div)
@@ -492,7 +497,10 @@ static void set_hdmitx_fe_div(struct hdmitx_dev *hdev, u32 div)
 	div = check_div(div);
 	if (div == -1)
 		return;
-	hd21_set_reg_bits(CLKCTRL_ENC0_HDMI_CLK_CTRL, div, 20, 4);
+	if (hdev->tx_comm.enc_idx == 2)
+		hd21_set_reg_bits(CLKCTRL_ENC2_HDMI_CLK_CTRL, div, 20, 4);
+	else
+		hd21_set_reg_bits(CLKCTRL_ENC0_HDMI_CLK_CTRL, div, 20, 4);
 	hd21_set_reg_bits(CLKCTRL_VID_CLK0_CTRL2, 1, 9, 1);
 }
 
@@ -501,7 +509,10 @@ static void set_hdmitx_pnx_div(struct hdmitx_dev *hdev, u32 div)
 	div = check_div(div);
 	if (div == -1)
 		return;
-	hd21_set_reg_bits(CLKCTRL_ENC0_HDMI_CLK_CTRL, div, 24, 4);
+	if (hdev->tx_comm.enc_idx == 2)
+		hd21_set_reg_bits(CLKCTRL_ENC2_HDMI_CLK_CTRL, div, 24, 4);
+	else
+		hd21_set_reg_bits(CLKCTRL_ENC0_HDMI_CLK_CTRL, div, 24, 4);
 	hd21_set_reg_bits(CLKCTRL_VID_CLK0_CTRL2, 1, 10, 1);
 }
 
@@ -510,7 +521,10 @@ static void set_hdmitx_pixel_div(struct hdmitx_dev *hdev, u32 div)
 	div = check_div(div);
 	if (div == -1)
 		return;
-	hd21_set_reg_bits(CLKCTRL_ENC0_HDMI_CLK_CTRL, div, 16, 4);
+	if (hdev->tx_comm.enc_idx == 2)
+		hd21_set_reg_bits(CLKCTRL_ENC2_HDMI_CLK_CTRL, div, 16, 4);
+	else
+		hd21_set_reg_bits(CLKCTRL_ENC0_HDMI_CLK_CTRL, div, 16, 4);
 	hd21_set_reg_bits(CLKCTRL_VID_CLK0_CTRL2, 1, 5, 1);
 }
 

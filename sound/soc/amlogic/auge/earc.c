@@ -3087,8 +3087,9 @@ static int earc_platform_probe(struct platform_device *pdev)
 		INIT_WORK(&p_earc->tx_resume_work, tx_resume_work_func);
 		INIT_WORK(&p_earc->send_uevent, send_uevent_work_func);
 		INIT_WORK(&p_earc->tx_hold_bus_work, tx_hold_bus_work_func);
-		INIT_DELAYED_WORK(&p_earc->gain_disable, gain_disable_work_func);
 	}
+
+	INIT_DELAYED_WORK(&p_earc->gain_disable, gain_disable_work_func);
 
 	if ((!IS_ERR(p_earc->rx_top_map)) ||
 	    (!IS_ERR(p_earc->tx_top_map))) {

@@ -1845,10 +1845,10 @@ struct kprobe kp_compaction_alloc = {
 
 static void *get_symbol_addr(const char *symbol_name)
 {
-	struct kprobe kp;
+	struct kprobe kp = {
+		.symbol_name = symbol_name,
+	};
 	int ret;
-
-	kp.symbol_name = symbol_name;
 
 	ret = register_kprobe(&kp);
 	if (ret < 0) {

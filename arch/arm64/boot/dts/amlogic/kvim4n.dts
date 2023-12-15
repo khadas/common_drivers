@@ -259,7 +259,7 @@
 
 		pcie_dma_ops_mm:linux,pcie_dma_ops {
 			compatible = "shared-dma-pool";
-			status = "disabled";
+			status = "okay";
 			reusable;
 			size = <0x0 0x20000000>;
 			alignment = <0x0 0x400000>;
@@ -269,7 +269,7 @@
 
 	smmu: aml_smmu {
 		compatible = "amlogic,smmu";
-		status = "disabled";
+		status = "okay";
 		#iommu-cells = <1>;
 		memory-region = <&pcie_dma_ops_mm>;
 	};
@@ -1466,7 +1466,7 @@
 	reset-gpio = <&gpio GPIOH_3 GPIO_ACTIVE_HIGH>;
 	wake-gpio = <&gpio GPIOT_5 GPIO_ACTIVE_HIGH>;
 	iommu-map = <0x100 &smmu 0x5 0x10>;
-	status = "disabled";
+	status = "okay";
 };
 
 &i2c0 {

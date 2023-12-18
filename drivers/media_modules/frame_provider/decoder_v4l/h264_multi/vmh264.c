@@ -9792,9 +9792,9 @@ static int vmh264_get_ps_info(struct vdec_h264_hw_s *hw,
 	 * upper layer use V4L2_FIELD_INTERLACED
 	 */
 	ctx->force_report_interlace = false;
-	if (is_cpu_t7() && (((ps->field == V4L2_FIELD_INTERLACED) &&
-		is_over_interlace_size(ps->coded_width, ps->coded_height, interlace_size)) ||
-		ps->field != V4L2_FIELD_INTERLACED)) {
+
+	if (is_cpu_t7() && (ps->field == V4L2_FIELD_INTERLACED) &&
+		is_over_interlace_size(ps->coded_width, ps->coded_height, interlace_size)) {
 		ps->field = V4L2_FIELD_NONE;
 		ctx->force_report_interlace = true;
 		dpb_print(DECODE_ID(hw), 0,"%s force_report_interlace %d\n",

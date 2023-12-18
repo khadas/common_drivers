@@ -1779,7 +1779,7 @@
 &amhdmitx {
 	status = "okay";
 	repeater_tx = <0>;
-	enc_idx = <0>;
+	enc_idx = <2>;
 	vrr_type = <2>; /* 1: GAME-VRR, 2: QMS-VRR */
 	hdmi_repeater = <0>;
 	/* hdcp ctrl 0: sysctrl, 1: drv, 2: linux app */

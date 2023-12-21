@@ -1489,8 +1489,15 @@
 	pinctrl-0 = <&i2c2_pins3>;
 	//pinctrl-1 = <&i2c2_sleep_pins2>;
 	clock-frequency = <100000>; /* default 100k */
+
+	dw9714: dw9714@0c {
+		compatible = "dw, dw9714";
+		reg = <0x0c>;
+	};
+
 	amlsens_0: sensor0@36 {
 		compatible = "amlogic, sensor";
+		status = "okay";
 		index = <0>;
 		reg = <0x36>;
 		reg-addr-type = <2>;
@@ -1508,7 +1515,34 @@
 			amlsens_0_ep: endpoint {
 				data-lanes = <0 1 2 3>;
 				link-frequencies = /bits/ 64 <1440000000>;
-				remote-endpoint = <&csiphy0_ep>;
+				remote-endpoint = <&csiphy0_ep_2>;
+			};
+		};
+	};
+
+	amlsens_1: sensor1@1a {
+		compatible = "amlogic, sensor";
+		status = "disabled";
+		index = <0>;
+		reg = <0x1a>;
+		reg-addr-type = <2>;
+		reg-data-type = <1>;
+
+		lens-focus = <&dw9714>;
+		clocks = <&clkc CLKID_MCLK_0>,
+				<&clkc CLKID_MCLK_0_SEL>,
+				<&clkc CLKID_MCLK_0_PRE>,
+				<&clkc CLKID_MCLK_PLL>,
+				<&xtal>;
+		clock-names = "mclk","mclk_sel","mclk_pre","mclk_p","mclk_x";
+		pwdn-gpios = <&gpio GPIOM_5 GPIO_ACTIVE_HIGH>;
+		reset-gpios = <&gpio GPIOM_11 GPIO_ACTIVE_HIGH>;
+		port@0 {
+			amlsens_1_ep: endpoint {
+				reg = <0>;
+				data-lanes = <0 1 2 3>;
+				link-frequencies = /bits/ 64 <1440000000>;
+				remote-endpoint = <&csiphy0_ep_4>;
 			};
 		};
 	};
@@ -1695,12 +1729,24 @@
 };
 
 &csiphy0 {
-	port {
-		csiphy0_ep: endpoint {
-			status = "okay";
-			clock-lanes = <4>;
-			data-lanes = <0 1 2 3>;
-			remote-endpoint = <&amlsens_0_ep>;
+	ports {
+		port@0 {
+			csiphy0_ep_2: endpoint {
+				reg = <0>;
+				status = "okay";
+				clock-lanes = <4>;
+				data-lanes = <0 1 2 3>;
+				remote-endpoint = <&amlsens_0_ep>;
+			};
+		};
+		port@1 {
+			csiphy0_ep_4: endpoint {
+				reg = <1>;
+				status = "disabled";
+				clock-lanes = <4>;
+				data-lanes = <0 1 2 3>;
+				remote-endpoint = <&amlsens_1_ep>;
+			};
 		};
 	};
 };

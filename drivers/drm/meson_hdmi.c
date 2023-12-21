@@ -424,7 +424,8 @@ int meson_hdmitx_get_modes(struct drm_connector *connector)
 						conf->pref_mode, pref_flag);
 				} else {
 					pref_flag = (!(mode->flags & DRM_MODE_FLAG_INTERLACE)) &&
-					((mode->hdisplay == 1920 && mode->vdisplay == 1080) ||
+					((mode->hdisplay == 3840 && mode->vdisplay == 2160) ||
+					(mode->hdisplay == 1920 && mode->vdisplay == 1080) ||
 					(mode->hdisplay == 1280 && mode->vdisplay == 720));
 					DRM_DEBUG("mode_name is %s, pref_flag = %d\n",
 						conf->pref_mode, pref_flag);

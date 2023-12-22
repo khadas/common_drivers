@@ -6,7 +6,7 @@
 /dts-v1/;
 
 #include "mesonsm1.dtsi"
-#include "mesonsm1_ac200-panel.dtsi"
+#include "khadas-vim3-panel.dtsi"
 #include "mesonsm1_drm_dual_disp.dtsi"
 #include "partition_debian_linux.dtsi"
 
@@ -1781,6 +1781,13 @@
 		mux { /* GPIOAO_10 */
 			groups = "spdif_ao_out";
 			function = "spdif_ao_out";
+		};
+	};
+
+	bl_pwm_off_pins:bl_pwm_off_pin {
+		mux {
+			groups = "GPIOAO_6";
+			function = "gpio_aobus";
 		};
 	};
 };  /* end of pinctrl_aobus */

@@ -103,7 +103,6 @@ extern uint32_t g_adlak_emu_dev_cmq_total_size;
 #endif
 struct regulator            *nn_regulator;
 int                         nn_regulator_flag;
-extern int                  adlak_kthread_cpuid;
 
 /************************** Function Prototypes ******************************/
 
@@ -225,6 +224,7 @@ int adlak_platform_device_uninit(void) {
         platform_device_unregister(pdev);
         pdev = NULL;
     }
+    AML_LOG_DEBUG("%s End", __func__);
 #else
 
 #endif
@@ -594,7 +594,7 @@ int adlak_platform_get_resource(void *data) {
 
     padlak->clk_axi = devm_clk_get(padlak->dev, "adla_axi_clk");
     if (IS_ERR(padlak->clk_axi)) {
-        AML_LOG_WARN("Failed to get adla_axi_clk\n");
+        AML_LOG_DEBUG("Failed to get adla_axi_clk\n");
     }
     padlak->clk_core = devm_clk_get(padlak->dev, "adla_core_clk");
     if (IS_ERR(padlak->clk_core)) {
@@ -705,6 +705,7 @@ void adlak_platform_set_clock(void *data, bool enable, int core_freq, int axi_fr
             }
             padlak->is_clk_core_enabled = false;
         }
+        padlak->clk_core_freq_real = 0;
     } else {
         // clk enable
         if (false == padlak->is_clk_axi_enabled) {
@@ -724,6 +725,7 @@ void adlak_platform_set_clock(void *data, bool enable, int core_freq, int axi_fr
                 }
                 padlak->is_clk_core_enabled = true;
             }
+        }
             if (!ADLAK_IS_ERR_OR_NULL(padlak->clk_axi)) {
                 clk_set_rate(padlak->clk_axi, axi_freq);
                 if (ret) {
@@ -740,10 +742,10 @@ void adlak_platform_set_clock(void *data, bool enable, int core_freq, int axi_fr
                 }
                 padlak->clk_core_freq_real = (int)clk_get_rate(padlak->clk_core);
 
-                adlak_os_printf("adlak_core clk requirement of %d Hz,and real val is %d Hz.",
+                AML_LOG_DEBUG("adlak_core clk requirement of %d Hz,and real val is %d Hz.",
                                 core_freq, padlak->clk_core_freq_real);
             }
-        }
+        //}
     }
     adlak_dpm_clk_update(padlak, core_freq, axi_freq);
 }

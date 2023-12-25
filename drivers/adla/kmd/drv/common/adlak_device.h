@@ -94,6 +94,7 @@ struct adlak_device {
     int                     major;
     struct clk *            clk_axi;
     struct clk *            clk_core;
+    struct dentry *         debugfs_parent;
 #endif
     int32_t                   net_count;
     adlak_os_mutex_t          dev_mutex;
@@ -133,6 +134,9 @@ struct adlak_device {
     void *       pdpm;          // dynamic power management
     bool         share_swap_en; /*Share swap memory between diffrent models*/
     unsigned int share_buf_size;
+    uint32_t             save_time_en;
+    uint32_t             dev_hw_version; //Gops, base on
+
     int             nn_regulator_type;
     int             nn_dts_hw_ver;
     uint32_t        nn_voltage;

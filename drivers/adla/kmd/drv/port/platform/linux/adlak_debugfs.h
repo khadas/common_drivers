@@ -56,6 +56,9 @@ int adlak_create_class_file(struct class *);
 
 void adlak_destroy_class_file(struct class *);
 
+int adlak_create_debugfs(void *adlak_device);
+void adlak_destroy_debugfs(void *adlak_device);
+
 #ifdef __cplusplus
 }
 #endif

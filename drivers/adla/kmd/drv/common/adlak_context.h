@@ -57,6 +57,10 @@ struct adlak_context {
     uint32_t             state;
     uint32_t             invoke_cnt;
 
+    uint32_t             invoke_time_elapsed_total;
+    uint32_t             invoke_time_elapsed_tmp;
+    int64_t              macc_count;
+
     uint32_t        smmu_tlb_updated;
     adlak_os_sema_t invoke_state;
 

@@ -1046,6 +1046,8 @@ static int adlak_net_attach(struct adlak_context *     context,
     struct adlak_cmq_buffer *cmq_buf_info = NULL;
 
     AML_LOG_DEBUG("%s", __func__);
+    context->macc_count = psubmit_desc->macc_count;
+
     /*create task*/
     pmodel_attr = adlak_model_create(context, psubmit_desc);
     if (!pmodel_attr) {
@@ -1786,7 +1788,9 @@ int adlak_submit_patch_and_exec(struct adlak_task *ptask) {
     adlak_dbg_inner_update(ptask->context, "submit_start");
 #endif
 
-    adlak_profile_start(padlak, &pmodel_attr->pm_cfg, &pmodel_attr->pm_stat);
+    adlak_profile_start(padlak, ptask->context,&pmodel_attr->pm_cfg, &pmodel_attr->pm_stat,
+    (ptask->invoke_start_idx <= ptask->context->pmodel_attr->hw_layer_first) ? 1 : 0);
+
     ptask->state = ADLAK_SUBMIT_STATE_RUNNING;
 
     if (ADLAK_CMQ_BUFFER_TYPE_PRIVATE == pmodel_attr->cmq_buffer_type) {

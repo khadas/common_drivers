@@ -357,6 +357,7 @@ static void adlak_hal_get_revision(void *data) {
     d.all                    = adlak_read32(region, REG_ADLAK_0X0);
     phw_info->rev.bitc.major = d.bitc.major_rev;
     phw_info->rev.bitc.minor = d.bitc.minor_rev;
+    padlak->dev_hw_version = phw_info->rev.all;
     AML_LOG_INFO("ADLAK HW Revision:%d.%d,REG_ADLAK_0X2C=0x%08X", phw_info->rev.bitc.major,
                  phw_info->rev.bitc.minor, adlak_read32(region, REG_ADLAK_0X2C));
 }

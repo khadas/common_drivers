@@ -226,6 +226,7 @@ static int adlak_platform_probe(struct platform_device *pdev) {
         AML_LOG_WARN("set device dma mask failed,No suitable DMA available!");
     }
     padlak->net_count = 0;
+    padlak->save_time_en = 0;
     ret               = adlak_platform_get_resource(padlak);
     if (ret) {
         goto err_get_res;

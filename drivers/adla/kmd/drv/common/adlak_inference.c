@@ -309,13 +309,13 @@ static void *adlak_dev_inference_cb(void *args) {
                     AML_LOG_INFO("nothing need to do!\n");
                     if (10 <= pwq->dev_inference.wq_idel_cnt) {
                         /*If CONFIG_ADLAK_DPM_EN==0, here can never be reached*/
-                        if (ADLAK_DPM_STRATEGY_MIN != dpm_stategy) {
+                        //if (ADLAK_DPM_STRATEGY_MIN != dpm_stategy) {
                             if (ptask_sch_pre || ptask_sch_cur) {
                                 ASSERT(0);
                             }
                             dpm_stategy = ADLAK_DPM_STRATEGY_MIN;
                             adlak_dpm_stage_adjust(padlak, ADLAK_DPM_STRATEGY_MIN);
-                        }
+                        //}
                     }
                 }
 #ifdef CONFIG_PM
@@ -618,7 +618,7 @@ static void adlak_irq_bottom_half(struct adlak_device *padlak, int *device_state
 
     phw_stat = &ptask->hw_stat;
     adlak_profile_stop(
-        padlak, &ptask->context->pmodel_attr->pm_cfg, &ptask->context->pmodel_attr->pm_stat,
+        padlak, ptask->context, &ptask->context->pmodel_attr->pm_cfg, &ptask->context->pmodel_attr->pm_stat,
         &ptask->profilling,
         (ptask->invoke_end_idx >= ptask->context->pmodel_attr->hw_layer_last) ? 1 : 0);
 

@@ -2,7 +2,7 @@
 /* This file is auto generated*/
 #ifndef __ADLAK_VERSION_H__
 #define __ADLAK_VERSION_H__
-#define ADLAK_VERSION "1.3.0.2"
+#define ADLAK_VERSION "1.3.0.3"
 
 #define ADLAK_VERSION_MAJOR 1
 #define ADLAK_VERSION_MINOR 3

@@ -65,6 +65,10 @@ int adlak_create_context(void *adlak_device, struct adlak_context **p_context) {
     context->net_id      = padlak->net_count;
     context->mem_alloced = 0;
 
+    context->macc_count = 0;
+    context->invoke_time_elapsed_tmp = 0;
+    context->invoke_time_elapsed_total = 0;
+
     context->smmu_tlb_updated = 0;
     AML_LOG_DEBUG("new context created, net_id[%d]", context->net_id);
 

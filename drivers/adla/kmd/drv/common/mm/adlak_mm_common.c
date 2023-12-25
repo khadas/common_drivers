@@ -759,4 +759,4 @@ int adlak_mm_mmap(struct adlak_mem *mm, struct adlak_mem_handle *mm_info, void *
 
 void *adlak_mm_vmap(struct adlak_mem_handle *mm_info) { return adlak_os_mm_vmap(mm_info); }
 
-void adlak_mm_vunmap(struct adlak_mem_handle *mm_info) { adlak_os_mm_vmap(mm_info); }
+void adlak_mm_vunmap(struct adlak_mem_handle *mm_info) { adlak_os_mm_vunmap(mm_info); }

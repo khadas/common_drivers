@@ -127,7 +127,7 @@ struct adlak_network_desc {
     int32_t  cmq_buffer_type;
     uint32_t priority;          // submit priority
     int32_t  net_register_idx;  // return from kmd
-
+    int64_t  macc_count;
     struct adlak_cmd_buf_attr cmd_buf_attr;
 
 } __packed;

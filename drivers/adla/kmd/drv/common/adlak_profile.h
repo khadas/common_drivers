@@ -57,10 +57,10 @@ struct adlak_profile {
 
 /************************** Function Prototypes ******************************/
 
-int adlak_profile_start(struct adlak_device *padlak, struct adlak_pm_cfg *pm_cfg,
-                        struct adlak_pm_state *pm_stat);
+int adlak_profile_start(struct adlak_device *padlak, struct adlak_context *context, struct adlak_pm_cfg *pm_cfg,
+                        struct adlak_pm_state *pm_stat, int32_t layer_start);
 
-int adlak_profile_stop(struct adlak_device *padlak, struct adlak_pm_cfg *pm_cfg,
+int adlak_profile_stop(struct adlak_device *padlak, struct adlak_context *context, struct adlak_pm_cfg *pm_cfg,
                        struct adlak_pm_state *pm_stat, struct adlak_profile *profile_data,
                        int32_t layer_end);
 

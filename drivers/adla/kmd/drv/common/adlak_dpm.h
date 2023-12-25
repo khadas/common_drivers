@@ -30,6 +30,7 @@ extern "C" {
 /************************** Constant Definitions *****************************/
 
 /**************************Global Variable************************************/
+#define CONFIG_ADLAK_FREQ_ADJUST_NO (5)
 
 /**************************Type Definition and Structure**********************/
 enum ADLAK_DPM_STRATEGY {
@@ -37,6 +38,20 @@ enum ADLAK_DPM_STRATEGY {
     ADLAK_DPM_STRATEGY_UP,
     ADLAK_DPM_STRATEGY_DOWN,
     ADLAK_DPM_STRATEGY_MAX,
+};
+
+struct adlak_power_info {
+    struct adlak_device *padlak;
+    int              invoke_task_cnt;
+    int              cnt_elapsed;
+    int              cnt_idel;
+    int              cnt_busy;
+    int              freq_cfg_idx;
+    int              freq_cfg_list[2][CONFIG_ADLAK_FREQ_ADJUST_NO];  // 0:core freq; 1:axi freq
+    int              core_freq_cur;
+    int              axi_freq_cur;
+    int              core_freq_expect;
+    int              axi_freq_expect;
 };
 
 /************************** Function Prototypes ******************************/

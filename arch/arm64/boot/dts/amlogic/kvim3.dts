@@ -916,14 +916,20 @@
 	sensor: sensor {
 		compatible = "soc, sensor";
 		status = "okay";
-		sensor-name = "imx290"; /*imx290;os08a10;imx227*/
-		reset = <&gpio GPIOZ_12 GPIO_ACTIVE_HIGH>;
+		sensor-name = "os08a10"; /*imx290;os08a10;imx227*/
+		pinctrl-names="default";
+		pinctrl-0=<&gen_clk_ee_ao>;
+		clocks = <&clkc CLKID_GEN>;
+		clock-names = "gen_clk";
+		reset = <&gpio_expander 3 GPIO_ACTIVE_HIGH>;
+		pwdn = <&gpio_expander 2 GPIO_ACTIVE_HIGH>;
+		ir_cut_gpio = <&gpio_expander 2 GPIO_ACTIVE_HIGH>;
 	};
 
 	iq: iq {
 		compatible = "soc, iq";
 		status = "okay";
-		sensor-name = "imx290"; /*imx290;os08a10;imx227*/
+		sensor-name = "os08a10"; /*imx290;os08a10;imx227*/
 	};
 	lens: lens {
 		compatible = "soc, lens";
@@ -932,7 +938,7 @@
 }; /* end of / */
 
 &i2c2 {
-	status = "okay";
+	status = "disabled";
 	pinctrl-names="default";
 	pinctrl-0=<&i2c2_master_pins2>;
 	clock-frequency = <100000>; /* default 100k */
@@ -950,23 +956,15 @@
 &isp {
 	status = "okay";
 	temper-line-offset = <0x1680>;
-	temper-buf-size = <6>;
+	temper-buf-size = <12>;
 	temper-frame-num = <1>;
-	temper-frame-size = <0x5EEC00>;
-	temper-line-offset1 = <0x1680>;
-	temper-buf-size1 = <6>;
-	temper-frame-num1 = <1>;
-	temper-frame-size1 = <0x5EEC00>;
-	temper-line-offset2 = <0x1680>;
-	temper-buf-size2 = <6>;
-	temper-frame-num2 = <1>;
-	temper-frame-size2 = <0x5EEC00>;
+	temper-frame-size = <0x0c00000>;
 	memory-region = <&isp_cma_reserved>;
 };
 
 &adapter {
 	status = "okay";
-	mem_alloc = <64>;
+	mem_alloc = <4>;
 	memory-region = <&adapt_cma_reserved>;
 };
 
@@ -1045,6 +1043,16 @@
 		poll_delay_ms = <30>;
 		irq-gpio = <&gpio_ao GPIOAO_9 IRQ_TYPE_EDGE_RISING>;
 		status = "okay";
+	};
+
+	sensor-i2c@6c {
+		compatible = "arm, i2c-sensor";
+		reg = <0x6c>;
+		reg-names = "i2c-sensor";
+		slave-addr = <0x6c>;
+		reg-type = <2>;
+		reg-data-type = <1>;
+		link-device = <&phycsi>;
 	};
 };
 
@@ -1362,6 +1370,14 @@
 		mux {
 			groups = "GPIOAO_6";
 			function = "gpio_aobus";
+		};
+	};
+
+	gen_clk_ee_ao: gen_clk_ee_ao {
+		mux {
+			groups="gen_clk_ee_ao";
+			function="gen_clk_ee_ao";
+			drive-strength = <3>;
 		};
 	};
 };  /* end of pinctrl_aobus */

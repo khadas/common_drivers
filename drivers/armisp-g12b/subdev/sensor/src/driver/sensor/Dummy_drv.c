@@ -82,12 +82,6 @@ static sensor_mode_t supported_modes[ISP_MAX_SENSOR_MODES] = {
     },
 };
 
-typedef struct _sensor_context_t {
-    uint8_t address; // Sensor address for direct write (not used currently)
-    acamera_sbus_t sbus;
-    sensor_param_t param;
-} sensor_context_t;
-
 //*************************************************************************************
 //--------------------DATA-------------------------------------------------------------
 //--------------------RESET------------------------------------------------------------

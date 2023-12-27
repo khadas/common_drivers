@@ -106,6 +106,17 @@ int color_matrix_fsm_set_param( void *fsm, uint32_t param_id, void *input, uint3
         break;
     }
 
+    case FSM_PARAM_SET_SHADING_STRENGTH:
+        if ( !input || input_size != sizeof( int32_t ) ) {
+            LOG( LOG_ERR, "Invalid param, param_id: %d", param_id );
+            rc = -1;
+            break;
+        }
+
+        p_fsm->manual_shading_mesh_strength = *(int32_t *)input;
+
+        break;
+
     default:
         rc = -1;
         break;
@@ -151,11 +162,38 @@ int color_matrix_fsm_get_param( void *fsm, uint32_t param_id, void *input, uint3
 
         break;
 
+    case FSM_PARAM_GET_SHADING_MESH_MAP: {
+        if ( !output || output_size != sizeof( fsm_param_lsc_mesh_map_t ) ) {
+            LOG( LOG_ERR, "Invalid param, param_id: %d", param_id );
+            rc = -1;
+            break;
+        }
+
+        fsm_param_lsc_mesh_map_t *p_lsc_map = (fsm_param_lsc_mesh_map_t *)output;
+        rc = color_matrix_mesh_get_lsc_map( p_fsm, p_lsc_map );
+        if (rc) {
+            LOG( LOG_ERR, "unable to get lsc map rc: %d", rc );
+            return rc;
+        }
+
+        break;
+    }
+
+    case FSM_PARAM_GET_SHADING_STRENGTH:
+        if ( !output || output_size != sizeof( int32_t ) ) {
+            LOG( LOG_ERR, "Invalid param, param_id: %d", param_id );
+            rc = -1;
+            break;
+        }
+
+        *(int32_t *)output = p_fsm->shading_mesh_strength;
+
+        break;
+
     default:
         rc = -1;
         break;
     }
-
 
     return rc;
 }

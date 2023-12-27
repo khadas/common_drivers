@@ -40,6 +40,7 @@ typedef struct _sensor_mode_t {
     image_resolution_t resolution; // Resolution of the mode
     uint8_t exposures;             // How many exposures this mode supports
     uint8_t bits;                  // Bit depth of data from sensor
+    uint8_t cali_mode;             // Cusomer Cali Mode
 } sensor_mode_t;
 
 

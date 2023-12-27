@@ -165,19 +165,16 @@ int ae_set_zone_weight(AE_fsm_ptr_t p_fsm, void *u_wg_ptr)
 
 void ae_initialize( AE_fsm_ptr_t p_fsm )
 {
+    acamera_isp_metering_aexp_hist_thresh_0_1_write( p_fsm->cmn.isp_base, 0 );
+    acamera_isp_metering_aexp_hist_thresh_1_2_write( p_fsm->cmn.isp_base, 0 );
+    acamera_isp_metering_aexp_hist_thresh_3_4_write( p_fsm->cmn.isp_base, 0 );
+    acamera_isp_metering_aexp_hist_thresh_4_5_write( p_fsm->cmn.isp_base, 224 );
 
-#if FW_ZONE_AE
-    acamera_isp_metering_hist_thresh_0_1_write( p_fsm->cmn.isp_base, 0 );
-    acamera_isp_metering_hist_thresh_1_2_write( p_fsm->cmn.isp_base, 0 );
-    acamera_isp_metering_hist_thresh_3_4_write( p_fsm->cmn.isp_base, 0 );
-    acamera_isp_metering_hist_thresh_4_5_write( p_fsm->cmn.isp_base, 224 );
-    p_fsm->zone_weight[0] = 15;
-#else
     int i, j;
     for ( i = 0; i < ACAMERA_ISP_METERING_HIST_AEXP_NODES_USED_VERT_DEFAULT; i++ )
         for ( j = 0; j < ACAMERA_ISP_METERING_HIST_AEXP_NODES_USED_HORIZ_DEFAULT; j++ )
             acamera_isp_metering_hist_aexp_zones_weight_write( p_fsm->cmn.isp_base, ISP_METERING_ZONES_MAX_H * i + j, 15 );
-#endif
+
     ae_roi_update( p_fsm );
 
 
@@ -238,6 +235,13 @@ void ae_read_full_histogram_data( AE_fsm_ptr_t p_fsm )
     p_sbuf_ae->histogram_sum = sum;
     LOG( LOG_DEBUG, "histsum: histogram_sum: %u.", p_sbuf_ae->histogram_sum );
 
+    int j;
+    for ( i = 0; i < ACAMERA_ISP_METERING_HIST_AEXP_NODES_USED_VERT_DEFAULT; i++ ) {
+        for ( j = 0; j < ACAMERA_ISP_METERING_HIST_AEXP_NODES_USED_HORIZ_DEFAULT; j++ ) {
+            p_sbuf_ae->hist4[i * ACAMERA_ISP_METERING_HIST_AEXP_NODES_USED_HORIZ_DEFAULT + j] = ( uint16_t )( acamera_metering_stats_mem_array_data_read( p_fsm->cmn.isp_base, ( i * ACAMERA_ISP_METERING_HIST_AEXP_NODES_USED_HORIZ_DEFAULT + j ) * 2 + 1 ) >> 16 );
+        }
+    }
+
     /* read done, set the buffer back for future using */
     sbuf.buf_status = SBUF_STATUS_DATA_DONE;
 
@@ -251,16 +255,7 @@ void ae_read_full_histogram_data( AE_fsm_ptr_t p_fsm )
     ae_flow.flow_state = MON_ALG_FLOW_STATE_INPUT_READY;
     acamera_fsm_mgr_set_param( p_fsm->cmn.p_fsm_mgr, FSM_PARAM_SET_MON_AE_FLOW, &ae_flow, sizeof( ae_flow ) );
 
-    LOG( LOG_INFO, "AE flow: INPUT_READY: frame_id_tracking: %d, cur frame_id: %u.", ae_flow.frame_id_tracking, ae_flow.frame_id_current );
-
-#if FW_ZONE_AE
-    int j;
-    for ( i = 0; i < ACAMERA_ISP_METERING_HIST_AEXP_NODES_USED_VERT_DEFAULT; i++ ) {
-        for ( j = 0; j < ACAMERA_ISP_METERING_HIST_AEXP_NODES_USED_HORIZ_DEFAULT; j++ ) {
-            p_fsm->hist4[i * ACAMERA_ISP_METERING_HIST_AEXP_NODES_USED_HORIZ_DEFAULT + j] = ( uint16_t )( acamera_metering_mem_array_data_read( p_fsm->cmn.isp_base, ( i * ACAMERA_ISP_METERING_HIST_AEXP_NODES_USED_HORIZ_DEFAULT + j ) * 2 + 1 ) >> 16 );
-        }
-    }
-#endif
+    LOG( LOG_DEBUG, "AE flow: INPUT_READY: frame_id_tracking: %d, cur frame_id: %u.", ae_flow.frame_id_tracking, ae_flow.frame_id_current );
 }
 
 void AE_fsm_process_interrupt( AE_fsm_const_ptr_t p_fsm, uint8_t irq_event )
@@ -286,6 +281,14 @@ void ae_set_new_param( AE_fsm_ptr_t p_fsm, sbuf_ae_t *p_sbuf_ae )
     p_fsm->new_exposure_log2 = p_sbuf_ae->ae_exposure;
     p_fsm->new_exposure_ratio = p_sbuf_ae->ae_exposure_ratio;
     p_fsm->frame_id_tracking = p_sbuf_ae->frame_id;
+    p_fsm->ae_hist_mean = p_sbuf_ae->ae_hist_mean;
+    p_fsm->max_target = p_sbuf_ae->max_target;
+    p_fsm->state = p_sbuf_ae->state;
+
+    if ( p_fsm->daynight != p_sbuf_ae->day_night_light ) {
+        p_fsm->daynight = p_sbuf_ae->day_night_light;
+        acamera_fsm_mgr_set_param( p_fsm->cmn.p_fsm_mgr, FSM_PARAM_SET_SENSOR_SENSOR_IR_CUT, &p_fsm->daynight, sizeof( uint32_t ) );
+    }
 
     if ( p_fsm->frame_id_tracking ) {
         fsm_param_mon_alg_flow_t ae_flow;
@@ -294,20 +297,41 @@ void ae_set_new_param( AE_fsm_ptr_t p_fsm, sbuf_ae_t *p_sbuf_ae )
         ae_flow.flow_state = MON_ALG_FLOW_STATE_OUTPUT_READY;
         acamera_fsm_mgr_set_param( p_fsm->cmn.p_fsm_mgr, FSM_PARAM_SET_MON_AE_FLOW, &ae_flow, sizeof( ae_flow ) );
 
-        LOG( LOG_INFO, "AE flow: OUTPUT_READY: frame_id_tracking: %d, cur frame_id: %u.", ae_flow.frame_id_tracking, ae_flow.frame_id_current );
+        LOG( LOG_DEBUG, "AE flow: OUTPUT_READY: frame_id_tracking: %d, cur frame_id: %u.", ae_flow.frame_id_tracking, ae_flow.frame_id_current );
     }
 
     fsm_raise_event( p_fsm, event_id_ae_result_ready );
 }
 
+static inline uint32_t full_ratio_to_adjaced( const fsm_param_sensor_info_t *sensor_info, uint32_t ratio )
+{
+    switch ( sensor_info->sensor_exp_number ) {
+    case 4:
+        return acamera_math_exp2( acamera_log2_fixed_to_fixed( ratio, 6, 8 ) / 3, 8, 6 ) >> 6;
+        break;
+    case 3:
+        return acamera_sqrt32( ratio >> 6 );
+        break;
+    default:
+    case 2:
+        return ratio >> 6;
+        break;
+    }
+}
+
 int ae_calculate_exposure( AE_fsm_ptr_t p_fsm )
 {
     int rc = 0;
+    fsm_param_sensor_info_t sensor_info;
+    acamera_fsm_mgr_get_param( p_fsm->cmn.p_fsm_mgr, FSM_PARAM_GET_SENSOR_INFO, NULL, 0, &sensor_info, sizeof( sensor_info ) );
 
     fsm_param_exposure_target_t exp_target;
     exp_target.exposure_log2 = p_fsm->new_exposure_log2;
     exp_target.exposure_ratio = p_fsm->new_exposure_ratio;
     exp_target.frame_id_tracking = p_fsm->frame_id_tracking;
+
+    ACAMERA_FSM2CTX_PTR( p_fsm )
+        ->stab.global_exposure_ratio = full_ratio_to_adjaced( &sensor_info, p_fsm->new_exposure_ratio );
 
     /* CMOS will skip exposure set operation in some conditions, so we need to check the apply result, ret 0 menas succeed  */
     if ( !acamera_fsm_mgr_set_param( p_fsm->cmn.p_fsm_mgr, FSM_PARAM_SET_EXPOSURE_TARGET, &exp_target, sizeof( exp_target ) ) ) {
@@ -322,7 +346,7 @@ int ae_calculate_exposure( AE_fsm_ptr_t p_fsm )
 
         LOG( LOG_INFO, "AE applied OK, exposure_log2 : %d, exposure_ratio: %u.", exp_target.exposure_log2, exp_target.exposure_ratio );
     } else {
-        LOG( LOG_INFO, "AE applied failed, exposure_log2 : %d, exposure_ratio: %u.", exp_target.exposure_log2, exp_target.exposure_ratio );
+        LOG( LOG_ERR, "AE applied failed, exposure_log2 : %d, exposure_ratio: %u.", exp_target.exposure_log2, exp_target.exposure_ratio );
     }
 
     return rc;

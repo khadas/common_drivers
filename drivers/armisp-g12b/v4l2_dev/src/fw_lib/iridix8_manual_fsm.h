@@ -54,6 +54,13 @@ struct _iridix_fsm_t {
     uint32_t is_output_ready;
 };
 
+struct iridix_ext_param_t {
+    uint32_t gain;
+    uint32_t svariance;
+    uint32_t bright_pr;
+    uint32_t contrast;
+    uint32_t white_level;
+};
 
 void iridix_fsm_clear( iridix_fsm_ptr_t p_fsm );
 

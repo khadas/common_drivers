@@ -31,6 +31,8 @@ void noise_reduction_fsm_clear( noise_reduction_fsm_t *p_fsm )
     p_fsm->temper_diff_avg = 0;
     p_fsm->temper_diff_coeff = 10;
     p_fsm->snr_thresh_contrast = 0;
+
+    p_fsm->nr_mode = NOISE_REDUCTION_MODE_ON;
 }
 
 void noise_reduction_request_interrupt( noise_reduction_fsm_ptr_t p_fsm, system_fw_interrupt_mask_t mask )
@@ -67,4 +69,152 @@ uint8_t noise_reduction_fsm_process_event( noise_reduction_fsm_t *p_fsm, event_i
     }
 
     return b_event_processed;
+}
+
+int noise_reduction_fsm_set_param( void *fsm, uint32_t param_id, void *input, uint32_t input_size )
+{
+    int rc = 0;
+    noise_reduction_fsm_t *p_fsm = (noise_reduction_fsm_t *)fsm;
+
+    switch ( param_id ) {
+    case FSM_PARAM_SET_NOISE_REDUCTION_MODE: {
+        if ( !input || input_size != sizeof( noise_reduction_mode_t ) ) {
+            LOG( LOG_ERR, "Invalid param, param_id: %d.", param_id );
+            rc = -1;
+            break;
+        }
+
+        p_fsm->nr_mode = *(noise_reduction_mode_t *)input;
+
+        break;
+    }
+    case FSM_PARAM_SET_SNR_MANUAL: {
+        if ( !input || input_size != sizeof( uint32_t ) ) {
+            LOG( LOG_ERR, "Invalid param, param_id: %d.", param_id );
+            rc = -1;
+            break;
+        }
+
+        uint32_t global = *(uint32_t *)input;
+
+        ACAMERA_MGR2CTX_PTR( p_fsm->p_fsm_mgr )->stab.global_manual_sinter = global;
+
+        break;
+    }
+    case FSM_PARAM_SET_SNR_STRENGTH: {
+        if ( !input || input_size != sizeof( uint32_t ) ) {
+            LOG( LOG_ERR, "Invalid param, param_id: %d.", param_id );
+            rc = -1;
+            break;
+        }
+
+        uint8_t strength = *(uint32_t *)input;
+
+        acamera_isp_sinter_strength_1_write( p_fsm->p_fsm_mgr->isp_base, strength );
+
+        break;
+    }
+    case FSM_PARAM_SET_TNR_MANUAL: {
+        if ( !input || input_size != sizeof( uint32_t ) ) {
+            LOG( LOG_ERR, "Invalid param, param_id: %d.", param_id );
+            rc = -1;
+            break;
+        }
+
+        uint32_t global = *(uint32_t *)input;
+
+        ACAMERA_MGR2CTX_PTR( p_fsm->p_fsm_mgr )->stab.global_manual_temper = global;
+
+        break;
+    }
+    case FSM_PARAM_SET_TNR_OFFSET: {
+        if ( !input || input_size != sizeof( uint32_t ) ) {
+            LOG( LOG_ERR, "Invalid param, param_id: %d.", param_id );
+            rc = -1;
+            break;
+        }
+
+        uint8_t offset = *(uint32_t *)input;
+
+        acamera_isp_temper_noise_profile_global_offset_write( p_fsm->p_fsm_mgr->isp_base, offset );
+
+        break;
+    }
+    default:
+        rc = -1;
+        break;
+    }
+
+    return rc;
+}
+
+int noise_reduction_fsm_get_param( void *fsm, uint32_t param_id, void *input, uint32_t input_size, void *output, uint32_t output_size )
+{
+    int rc = 0;
+    noise_reduction_fsm_t *p_fsm = (noise_reduction_fsm_t *)fsm;
+
+    switch ( param_id ) {
+    case FSM_PARAM_GET_NOISE_REDUCTION_MODE: {
+
+        if ( !output || output_size != sizeof( noise_reduction_mode_t ) ) {
+            LOG( LOG_ERR, "Invalid param, param_id: %d.", param_id );
+            rc = -1;
+            break;
+        }
+
+        *(noise_reduction_mode_t *)output = p_fsm->nr_mode;
+
+        break;
+    }
+    case FSM_PARAM_GET_SNR_MANUAL: {
+        if ( !output || output_size != sizeof( uint32_t ) ) {
+            LOG( LOG_ERR, "Invalid param, param_id: %d.", param_id );
+            rc = -1;
+            break;
+        }
+
+        *(uint32_t *)output = ACAMERA_MGR2CTX_PTR( p_fsm->p_fsm_mgr )->stab.global_manual_sinter;
+
+        break;
+    }
+    case FSM_PARAM_GET_SNR_STRENGTH: {
+        if ( !output || output_size != sizeof( uint32_t ) ) {
+            LOG( LOG_ERR, "Invalid param, param_id: %d.", param_id );
+            rc = -1;
+            break;
+        }
+
+        *(uint32_t *)output = acamera_isp_sinter_strength_1_read( p_fsm->p_fsm_mgr->isp_base );
+
+        break;
+    }
+    case FSM_PARAM_GET_TNR_MANUAL: {
+        if ( !output || output_size != sizeof( uint32_t ) ) {
+            LOG( LOG_ERR, "Invalid param, param_id: %d.", param_id );
+            rc = -1;
+            break;
+        }
+
+        *(uint32_t *)output = ACAMERA_MGR2CTX_PTR( p_fsm->p_fsm_mgr )->stab.global_manual_temper;
+
+        break;
+    }
+    case FSM_PARAM_GET_TNR_OFFSET: {
+        if ( !output || output_size != sizeof( uint32_t ) ) {
+            LOG( LOG_ERR, "Invalid param, param_id: %d.", param_id );
+            rc = -1;
+            break;
+        }
+
+        *(uint32_t *)output = acamera_isp_temper_noise_profile_global_offset_read( p_fsm->p_fsm_mgr->isp_base );
+
+        break;
+    }
+
+    default:
+        rc = -1;
+        break;
+    }
+
+    return rc;
 }

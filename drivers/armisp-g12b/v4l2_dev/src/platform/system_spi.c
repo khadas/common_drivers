@@ -135,7 +135,7 @@ int32_t system_spi_init( void )
 //Had to add the function rw48,that is used to read/write when the CHAR_LEN of SPI is more that 32 bits.
 //Since there is limitation in HW,where it cannot shift more than 32 bits,we have to do in two steps.
 //Step1: Is to write the address.Step2 is for data read/write based on the command.
-//Slave select has to be low throughout both the steps and hence autoslave select is disabled.
+//Slave select has to be low through out both the steps and hence autoslave select is disabled.
 uint32_t system_spi_rw48( uint32_t sel_mask, uint32_t control_inp, uint32_t address, uint8_t addr_size, uint32_t data, uint8_t data_size )
 {
     // Original code for the opencores SPI used to write 16 bit address then if SBUS_MASK_SPI_HALF_ADDR is set

@@ -25,6 +25,10 @@
 // V4L2 async subdevice list.
 #define V4L2_SOC_SENSOR_NAME "SocSensor"
 
+enum info_index{
+    SEN_RESOLUTION = 0,
+    SEN_NAME,
+};
 
 // This is used as the main communication structure between
 // V4L2 ISP Device and V4L2 Sensor Subdevice
@@ -279,7 +283,14 @@ enum SocCamera_ioctl {
     SOC_SENSOR_IR_CUT_SET,
     SOC_SENSOR_GET_ID,
 
-	SOC_SENSOR_SET_DCAM_MODE,
+    // return sensor fps by vmax adjust
+    // input: sensor mode
+    // output: val_out - fps
+    SOC_SENSOR_VMAX_FPS_GET,
+
+    // input: sensor fps by vmax adjust
+    // output: none
+    SOC_SENSOR_VMAX_FPS_SET,
 };
 
 

@@ -32,7 +32,7 @@ void sbuf_update_ae_idx( sbuf_fsm_ptr_t p_fsm );
 void sbuf_update_awb_idx( sbuf_fsm_ptr_t p_fsm );
 void sbuf_update_af_idx( sbuf_fsm_ptr_t p_fsm );
 void sbuf_update_gamma_idx( sbuf_fsm_ptr_t p_fsm );
-void sbuf_update_calibration_data( sbuf_fsm_ptr_t p_fsm );
+void sbuf_update_calibration_data( sbuf_fsm_ptr_t p_fsm, uint8_t enable, uint32_t mode );
 
 
 struct _sbuf_fsm_t {

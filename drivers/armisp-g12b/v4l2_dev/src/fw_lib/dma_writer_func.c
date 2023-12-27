@@ -92,7 +92,6 @@ void acamera_frame_buffer_update(dma_writer_fsm_const_ptr_t p_fsm)
 
     set_fr->active = (p_fsm->dma_reader_out == dma_fr);
     set_fr->vflip = p_fsm->vflip;
-    LOG(LOG_INFO, "fr update crop %d x %d", (int)crop_info.width_fr, (int)crop_info.height_fr);
     result |= dma_writer_set_settings(p_fsm->handle, dma_fr, set_fr);
 
     if (result == edma_ok)
@@ -123,7 +122,6 @@ void acamera_frame_buffer_update(dma_writer_fsm_const_ptr_t p_fsm)
 
     set_ds1->active = (p_fsm->dma_reader_out == dma_ds1);
     set_ds1->vflip = p_fsm->vflip;
-    LOG(LOG_INFO, "ds updated crop %d x %d", (int)set_ds1->width, (int)set_ds1->height);
     result |= dma_writer_set_settings(p_fsm->handle, dma_ds1, set_ds1);
 
     if (result == edma_ok)
@@ -164,14 +162,15 @@ void frame_buffer_initialize(dma_writer_fsm_ptr_t p_fsm)
         fsm_param_crop_info_t crop_info;
 #ifdef ISP_HAS_CROP_FSM
         acamera_fsm_mgr_get_param(p_fsm->cmn.p_fsm_mgr, FSM_PARAM_GET_CROP_INFO, NULL, 0, &crop_info, sizeof(crop_info));
-        LOG(LOG_DEBUG, "crop settings %d x %d", (int)crop_info.width_fr, (int)crop_info.height_fr);
+        LOG(LOG_ERR, "ISP_HAS_CROP_FSM: crop settings %d x %d", (int)crop_info.width_fr, (int)crop_info.height_fr);
 #else
         crop_info.width_fr = acamera_isp_top_active_width_read(p_fsm->cmn.isp_base);
         crop_info.height_fr = acamera_isp_top_active_height_read(p_fsm->cmn.isp_base);
+        pr_info("crop_info.width_fr = %d, crop_info.height_fr = %d \n", crop_info.width_fr, crop_info.height_fr);
 #if ISP_HAS_DS1
         crop_info.width_ds = crop_info.width_fr;
         crop_info.height_ds = crop_info.height_fr;
-        LOG(LOG_DEBUG, "crop settings %d x %d and %d x %d", (int)crop_info.width_fr, (int)crop_info.height_fr, (int)crop_info.width_ds, (int)crop_info.height_ds);
+        LOG(LOG_ERR, "ISP_HAS_DS1: crop settings %d x %d and %d x %d", (int)crop_info.width_fr, (int)crop_info.height_fr, (int)crop_info.width_ds, (int)crop_info.height_ds);
 #endif
 
 #endif
@@ -234,7 +233,6 @@ void frame_buffer_initialize(dma_writer_fsm_ptr_t p_fsm)
 
         set_fr->active = (p_fsm->dma_reader_out == dma_fr);
         set_fr->vflip = p_fsm->vflip;
-        LOG(LOG_INFO, "fr init crop %d x %d", (int)crop_info.width_fr, (int)crop_info.height_fr);
         result |= dma_writer_init(p_fsm->handle, dma_fr, set_fr, &api_fr);
 
         if (result == edma_ok)
@@ -304,7 +302,6 @@ void frame_buffer_initialize(dma_writer_fsm_ptr_t p_fsm)
         set_ds1->callback = p_fsm->ds_buf.callback;
         set_ds1->isp_base = p_fsm->cmn.isp_base;
         set_ds1->ctx_id = ACAMERA_FSM2CTX_PTR(p_fsm)->context_id;
-        LOG(LOG_INFO, "ds init crop %d x %d ", (int)set_ds1->width, (int)set_ds1->height);
 
         set_ds1->active = (p_fsm->dma_reader_out == dma_ds1);
         set_ds1->vflip = p_fsm->vflip;

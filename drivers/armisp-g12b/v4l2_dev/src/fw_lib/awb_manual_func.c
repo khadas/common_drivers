@@ -289,6 +289,9 @@ void awb_read_statistics( AWB_fsm_t *p_fsm )
         irg = ( _metering_lut_entry & 0xfff );
         ibg = ( ( _metering_lut_entry >> 16 ) & 0xfff );
 
+        p_fsm->stats_hw[_i].rg = irg;
+        p_fsm->stats_hw[_i].bg = ibg;
+
         irg = ( irg * ( p_fsm->rg_coef ) ) >> 8;
         ibg = ( ibg * ( p_fsm->bg_coef ) ) >> 8;
         irg = ( irg == 0 ) ? 1 : irg;
@@ -298,6 +301,7 @@ void awb_read_statistics( AWB_fsm_t *p_fsm )
         p_sbuf_awb_stats->stats_data[_i].bg = U16_MAX / ibg;
         p_sbuf_awb_stats->stats_data[_i].sum = acamera_awb_statistics_data_read( p_fsm, _i * 2 + 1 );
         p_fsm->sum += p_sbuf_awb_stats->stats_data[_i].sum;
+        p_fsm->stats_hw[_i].sum = p_sbuf_awb_stats->stats_data[_i].sum;
     }
     p_sbuf_awb_stats->curr_AWB_ZONES = p_fsm->curr_AWB_ZONES;
 
@@ -313,7 +317,6 @@ void awb_read_statistics( AWB_fsm_t *p_fsm )
     awb_flow.frame_id_current = acamera_fsm_util_get_cur_frame_id( &p_fsm->cmn );
     awb_flow.flow_state = MON_ALG_FLOW_STATE_INPUT_READY;
     acamera_fsm_mgr_set_param( p_fsm->cmn.p_fsm_mgr, FSM_PARAM_SET_MON_AWB_FLOW, &awb_flow, sizeof( awb_flow ) );
-    LOG( LOG_INFO, "AWB flow: INPUT_READY: frame_id_tracking: %d, cur frame_id: %u.", awb_flow.frame_id_tracking, awb_flow.frame_id_current );
 }
 
 //    For CCM switching
@@ -389,18 +392,19 @@ void awb_normalise( AWB_fsm_t *p_fsm )
 {
     int32_t wb[4];
 
-    wb[0] = acamera_log2_fixed_to_fixed( _GET_USHORT_PTR( ACAMERA_FSM2CTX_PTR( p_fsm ), CALIBRATION_STATIC_WB )[0], 8, LOG2_GAIN_SHIFT );
-    wb[1] = acamera_log2_fixed_to_fixed( _GET_USHORT_PTR( ACAMERA_FSM2CTX_PTR( p_fsm ), CALIBRATION_STATIC_WB )[1], 8, LOG2_GAIN_SHIFT );
-    wb[2] = acamera_log2_fixed_to_fixed( _GET_USHORT_PTR( ACAMERA_FSM2CTX_PTR( p_fsm ), CALIBRATION_STATIC_WB )[2], 8, LOG2_GAIN_SHIFT );
-    wb[3] = acamera_log2_fixed_to_fixed( _GET_USHORT_PTR( ACAMERA_FSM2CTX_PTR( p_fsm ), CALIBRATION_STATIC_WB )[3], 8, LOG2_GAIN_SHIFT );
+    wb[0] = acamera_log2_fixed_to_fixed( ACAMERA_FSM2CTX_PTR( p_fsm )->stab.global_awb_red_gain, 8, LOG2_GAIN_SHIFT );
+    wb[1] = acamera_log2_fixed_to_fixed( ACAMERA_FSM2CTX_PTR( p_fsm )->stab.global_awb_green_even_gain, 8, LOG2_GAIN_SHIFT );
+    wb[2] = acamera_log2_fixed_to_fixed( ACAMERA_FSM2CTX_PTR( p_fsm )->stab.global_awb_green_odd_gain, 8, LOG2_GAIN_SHIFT );
+    wb[3] = acamera_log2_fixed_to_fixed( ACAMERA_FSM2CTX_PTR( p_fsm )->stab.global_awb_blue_gain, 8, LOG2_GAIN_SHIFT );
 
-    {
-        /* For both auto mode and manual mode, we use the same variables to save the red/blue gains */
-        wb[0] += acamera_log2_fixed_to_fixed( ACAMERA_FSM2CTX_PTR( p_fsm )->stab.global_awb_red_gain, 8, LOG2_GAIN_SHIFT );
-        wb[3] += acamera_log2_fixed_to_fixed( ACAMERA_FSM2CTX_PTR( p_fsm )->stab.global_awb_blue_gain, 8, LOG2_GAIN_SHIFT );
-        p_fsm->rg_coef = ACAMERA_FSM2CTX_PTR( p_fsm )->stab.global_awb_red_gain;
-        p_fsm->bg_coef = ACAMERA_FSM2CTX_PTR( p_fsm )->stab.global_awb_blue_gain;
-    }
+    wb[0] -= acamera_log2_fixed_to_fixed( _GET_USHORT_PTR( ACAMERA_FSM2CTX_PTR( p_fsm ), CALIBRATION_STATIC_WB )[0], 8, LOG2_GAIN_SHIFT );
+    wb[3] -= acamera_log2_fixed_to_fixed( _GET_USHORT_PTR( ACAMERA_FSM2CTX_PTR( p_fsm ), CALIBRATION_STATIC_WB )[3], 8, LOG2_GAIN_SHIFT );
+
+    p_fsm->rg_coef = acamera_math_exp2( wb[0], LOG2_GAIN_SHIFT, 8 );
+    p_fsm->bg_coef = acamera_math_exp2( wb[3], LOG2_GAIN_SHIFT, 8 );
+
+    wb[0] += acamera_log2_fixed_to_fixed( _GET_USHORT_PTR( ACAMERA_FSM2CTX_PTR( p_fsm ), CALIBRATION_STATIC_WB )[0], 8, LOG2_GAIN_SHIFT );
+    wb[3] += acamera_log2_fixed_to_fixed( _GET_USHORT_PTR( ACAMERA_FSM2CTX_PTR( p_fsm ), CALIBRATION_STATIC_WB )[3], 8, LOG2_GAIN_SHIFT );
 
     {
         int i;
@@ -438,6 +442,10 @@ void awb_set_new_param( AWB_fsm_ptr_t p_fsm, sbuf_awb_t *p_sbuf_awb )
     ACAMERA_FSM2CTX_PTR( p_fsm )
         ->stab.global_awb_red_gain = p_sbuf_awb->awb_red_gain;
     ACAMERA_FSM2CTX_PTR( p_fsm )
+        ->stab.global_awb_green_even_gain = p_sbuf_awb->awb_green_even_gain;
+    ACAMERA_FSM2CTX_PTR( p_fsm )
+        ->stab.global_awb_green_odd_gain = p_sbuf_awb->awb_green_odd_gain;
+    ACAMERA_FSM2CTX_PTR( p_fsm )
         ->stab.global_awb_blue_gain = p_sbuf_awb->awb_blue_gain;
 
     p_fsm->temperature_detected = p_sbuf_awb->temperature_detected;
@@ -446,6 +454,8 @@ void awb_set_new_param( AWB_fsm_ptr_t p_fsm, sbuf_awb_t *p_sbuf_awb )
     system_memcpy( p_fsm->awb_warming, p_sbuf_awb->awb_warming, sizeof( p_fsm->awb_warming ) );
 
     p_fsm->cur_result_gain_frame_id = p_sbuf_awb->frame_id;
+
+    p_fsm->state = p_sbuf_awb->state;
 
     if ( p_fsm->cur_result_gain_frame_id && ( p_fsm->pre_result_gain_frame_id != p_fsm->cur_result_gain_frame_id ) ) {
         fsm_param_mon_alg_flow_t awb_flow;
@@ -456,7 +466,6 @@ void awb_set_new_param( AWB_fsm_ptr_t p_fsm, sbuf_awb_t *p_sbuf_awb )
         awb_flow.frame_id_current = acamera_fsm_util_get_cur_frame_id( &p_fsm->cmn );
         awb_flow.flow_state = MON_ALG_FLOW_STATE_OUTPUT_READY;
         acamera_fsm_mgr_set_param( p_fsm->cmn.p_fsm_mgr, FSM_PARAM_SET_MON_AWB_FLOW, &awb_flow, sizeof( awb_flow ) );
-        LOG( LOG_INFO, "AWB flow: OUTPUT_READY: frame_id_tracking: %d, cur frame_id: %u.", awb_flow.frame_id_tracking, awb_flow.frame_id_current );
     }
 
     fsm_raise_event( p_fsm, event_id_awb_result_ready );

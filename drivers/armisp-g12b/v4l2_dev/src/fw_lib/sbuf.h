@@ -107,6 +107,7 @@ struct af_info {
 };
 
 struct sensor_info {
+    uint32_t cur_mode;
     uint32_t modes_num;
     sensor_mode_t modes[ISP_MAX_SENSOR_MODES];
 };
@@ -129,12 +130,18 @@ typedef struct sbuf_ae {
     // KF -> UF: Data shared from kernel-FW to user-FW
     uint32_t stats_data[ISP_FULL_HISTOGRAM_SIZE];
     uint32_t histogram_sum;
+    uint16_t hist4[ACAMERA_ISP_METERING_AEXP_NODES_USED_HORIZ_DEFAULT * ACAMERA_ISP_METERING_AEXP_NODES_USED_VERT_DEFAULT];
 
     // UF -> KF: Data shared from user-FW to kernel-FW
     int32_t ae_exposure;
     uint32_t ae_exposure_ratio;
 
     uint32_t frame_id;
+    uint8_t day_night_light;
+	int32_t ae_hist_mean;
+    int32_t max_target;
+
+    ae_state_t state;
 } sbuf_ae_t;
 #endif
 
@@ -146,6 +153,8 @@ typedef struct sbuf_awb {
 
     // UF -> KF: Data shared from user-FW to kernel-FW
     uint32_t awb_red_gain;
+    uint32_t awb_green_even_gain;
+    uint32_t awb_green_odd_gain;
     uint32_t awb_blue_gain;
     int32_t temperature_detected;
     uint8_t p_high;
@@ -154,6 +163,7 @@ typedef struct sbuf_awb {
     uint32_t mix_light_contrast;
 
     uint32_t frame_id;
+    awb_state_t state;
 } sbuf_awb_t;
 #endif
 
@@ -161,6 +171,8 @@ typedef struct sbuf_awb {
 typedef struct sbuf_af {
     // KF -> UF: Data shared from kernel-FW to user-FW
     uint32_t stats_data[AF_ZONES_COUNT_MAX][2];
+    uint8_t zones_horiz;
+    uint8_t zones_vert;
     uint32_t frame_num;
     uint8_t skip_cur_frame;
 
@@ -168,6 +180,7 @@ typedef struct sbuf_af {
     uint8_t frame_to_skip;
     uint16_t af_position;
     int32_t af_last_sharp;
+    af_state_t state;
 } sbuf_af_t;
 #endif
 

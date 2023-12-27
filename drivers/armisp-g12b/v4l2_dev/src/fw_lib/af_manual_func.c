@@ -77,7 +77,7 @@ static void af_update_lens_position(AF_fsm_ptr_t p_fsm)
     }
     else
     {
-        LOG(LOG_INFO, "last position(%u) not changed.", p_fsm->last_position);
+        LOG(LOG_DEBUG, "last position(%u) not changed.", p_fsm->last_position);
     }
 }
 
@@ -86,6 +86,7 @@ void af_set_new_param(AF_fsm_ptr_t p_fsm, sbuf_af_t *p_sbuf_af)
     p_fsm->new_pos = p_sbuf_af->af_position;
     p_fsm->new_last_sharp = p_sbuf_af->af_last_sharp;
     p_fsm->skip_frame = p_sbuf_af->frame_to_skip;
+    p_fsm->state = p_sbuf_af->state;
 
     af_update_lens_position(p_fsm);
 }
@@ -118,6 +119,14 @@ void af_read_stats_data(AF_fsm_ptr_t p_fsm)
     zones_vert = acamera_isp_metering_af_nodes_used_vert_read(p_fsm->cmn.isp_base);
     stats = p_sbuf_af->stats_data;
     p_sbuf_af->frame_num = p_fsm->frame_num;
+
+    if (zones_horiz || !zones_vert)
+    {
+        zones_horiz = ISP_DEFAULT_AF_ZONES_HOR;
+        zones_vert = ISP_DEFAULT_AF_ZONES_VERT;
+    }
+    p_sbuf_af->zones_horiz = zones_horiz;
+    p_sbuf_af->zones_vert = zones_vert;
 
     // we need to skip frames after lens movement to get stable stats for next AF step calculation.
     if (p_fsm->skip_frame)

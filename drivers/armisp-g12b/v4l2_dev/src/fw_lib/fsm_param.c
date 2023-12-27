@@ -128,6 +128,18 @@ int acamera_fsm_mgr_set_param(acamera_fsm_mgr_t *p_fsm_mgr, uint32_t param_id, v
             rc = -1;
         }
     }
+    else if (FSM_PARAM_SET_NOISE_REDUCTION_START < param_id && param_id < FSM_PARAM_SET_NOISE_REDUCTION_END)
+    {
+        if (p_fsm_mgr->fsm_arr[FSM_ID_NOISE_REDUCTION]->ops.set_param)
+        {
+            rc = p_fsm_mgr->fsm_arr[FSM_ID_NOISE_REDUCTION]->ops.set_param(p_fsm_mgr->fsm_arr[FSM_ID_NOISE_REDUCTION]->p_fsm, param_id, input, input_size);
+        }
+        else
+        {
+            LOG(LOG_ERR, "NOISE_REDUCTION FSM doesn't support set_param().");
+            rc = -1;
+        }
+    }
     else if (FSM_PARAM_SET_SHARPENING_START < param_id && param_id < FSM_PARAM_SET_SHARPENING_END)
     {
         if (p_fsm_mgr->fsm_arr[FSM_ID_SHARPENING]->ops.set_param)
@@ -348,6 +360,18 @@ int acamera_fsm_mgr_get_param(acamera_fsm_mgr_t *p_fsm_mgr, uint32_t param_id, v
         else
         {
             LOG(LOG_ERR, "IRIDIX FSM doesn't support get_param().");
+            rc = -1;
+        }
+    }
+    else if (FSM_PARAM_GET_NOISE_REDUCTION_START < param_id && param_id < FSM_PARAM_GET_NOISE_REDUCTION_END)
+    {
+        if (p_fsm_mgr->fsm_arr[FSM_ID_NOISE_REDUCTION]->ops.get_param)
+        {
+            rc = p_fsm_mgr->fsm_arr[FSM_ID_NOISE_REDUCTION]->ops.get_param(p_fsm_mgr->fsm_arr[FSM_ID_NOISE_REDUCTION]->p_fsm, param_id, input, input_size, output, output_size);
+        }
+        else
+        {
+            LOG(LOG_ERR, "NOISE_REDUCTION FSM doesn't support get_param().");
             rc = -1;
         }
     }

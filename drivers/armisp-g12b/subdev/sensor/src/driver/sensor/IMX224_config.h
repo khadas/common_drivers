@@ -37,7 +37,7 @@
 #define SENSOR_BUS i2c
 #define SENSOR_CHIP_ID 0x0224
 #define SENSOR_DAY_LIGHT_INTEGRATION_TIME_LIMIT 300
-#define SENSOR_DEV_ADDRESS 54
+#define SENSOR_DEV_ADDRESS 0x34
 #define SENSOR_DIGITAL_GAIN_APPLY_DELAY 1
 #define SENSOR_EXP_NUMBER 1
 #define SENSOR_IMAGE_HEIGHT 960
@@ -65,5 +65,13 @@
 #define SENSOR_TOTAL_WIDTH_PREVIEW 1280
 #define I2C_CLOCK_DIV 40
 #define I2C_CONTROL_MASK 0
+
+typedef struct _imx224_private_t {
+    uint32_t shs1;
+    uint32_t shs2;
+    uint32_t shs3;
+    uint32_t rhs1;
+    uint32_t rhs2;
+} imx224_private_t;
 
 #endif

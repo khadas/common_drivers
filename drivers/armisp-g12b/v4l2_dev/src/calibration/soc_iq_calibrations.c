@@ -95,8 +95,52 @@ static uint32_t get_calibration_total_size( void *iq_ctx, int32_t ctx_id, void *
     return result;
 }
 
+static uint32_t set_sensor_name( void *iq_ctx, int32_t ctx_id, void *sensor_arg )
+{
+    uint32_t ret = 0;
+    struct soc_iq_ioctl_args args;
 
-uint32_t soc_iq_get_calibrations( int32_t ctx_id, void *sensor_arg, ACameraCalibrations *c )
+    // request all calibrations size
+    args.ioctl.request_info.context = ctx_id;
+    args.ioctl.request_info.sensor_arg = sensor_arg;
+    ret = __IOCTL_CALL( iq_ctx, V4L2_SOC_IQ_IOCTL_SET_SENSOR_NAME, args );
+    if ( ret == 0 ) {
+         LOG(LOG_DEBUG, "set sensor name success");
+    } else {
+        LOG( LOG_CRIT, "Failed to set sensor %s to iq. ret %d", sensor_arg, ret );
+    }
+    return ret;
+}
+
+#if ACAMERA_CALIBRATION_OTP
+static uint32_t get_calibration_otp( void *iq_ctx, int32_t ctx_id, void *sensor_arg )
+{
+    struct soc_iq_ioctl_args args;
+
+    // request all calibrations size
+    args.ioctl.request_info.context = ctx_id;
+    args.ioctl.request_info.sensor_arg = sensor_arg;
+    uint32_t ret = __IOCTL_CALL( iq_ctx, V4L2_SOC_IQ_IOCTL_REQUEST_OTP, args );
+
+    return ret;
+}
+#endif
+
+#if ACAMERA_CALIBRATION_LOAD_EXTERFILE
+static uint32_t get_calibration_external_tuning( void *iq_ctx, int32_t ctx_id, void *sensor_arg )
+{
+    struct soc_iq_ioctl_args args;
+
+    // request all calibrations size
+    args.ioctl.request_info.context = ctx_id;
+    args.ioctl.request_info.sensor_arg = sensor_arg;
+    uint32_t ret = __IOCTL_CALL( iq_ctx, V4L2_SOC_IQ_IOCTL_REQUEST_EXTERNAL_CALI, args );
+
+    return ret;
+}
+#endif
+
+uint32_t soc_iq_get_calibrations( int32_t ctx_id, void *sensor_arg, ACameraCalibrations *c, char* s_name)
 {
     uint32_t result = 0;
     int32_t ret = 0;
@@ -121,6 +165,8 @@ uint32_t soc_iq_get_calibrations( int32_t ctx_id, void *sensor_arg, ACameraCalib
         return result;
     }
 #endif
+    if (s_name)
+        result = set_sensor_name(iq_ctx, ctx_id, s_name );
 
     int32_t total_size = get_calibration_total_size( iq_ctx, ctx_id, sensor_arg );
 
@@ -128,7 +174,12 @@ uint32_t soc_iq_get_calibrations( int32_t ctx_id, void *sensor_arg, ACameraCalib
     LOG( LOG_INFO, "ctx_id:%d sensor_arg:0x%x Total size for all Luts is %d bytes", ctx_id, sensor_arg, total_size );
 
     if ( total_size != 0 ) {
-
+#if ACAMERA_CALIBRATION_LOAD_EXTERFILE
+        get_calibration_external_tuning(iq_ctx, ctx_id, sensor_arg);
+#endif
+#if ACAMERA_CALIBRATION_OTP
+        get_calibration_otp(iq_ctx, ctx_id, sensor_arg);
+#endif
         // allocate memory for all tables
         if ( g_lut_data_size_arr[ctx_id] >= total_size && g_lut_data_ptr_arr[ctx_id] != NULL ) {
             LOG( LOG_INFO, "Previously allocated %d bytes. Required %d. Old memory will be reused", g_lut_data_size_arr[ctx_id], total_size );

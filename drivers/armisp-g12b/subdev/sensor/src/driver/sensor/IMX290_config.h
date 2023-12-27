@@ -38,7 +38,7 @@
 #define SENSOR_BUS_ADDR_SHIFT 0
 #define SENSOR_CHIP_ID 0xB201
 #define SENSOR_DAY_LIGHT_INTEGRATION_TIME_LIMIT 300
-#define SENSOR_DEV_ADDRESS 0
+#define SENSOR_DEV_ADDRESS 0x6c
 #define SENSOR_DIGITAL_GAIN_APPLY_DELAY 0
 #define SENSOR_ENDIAN_MASK 1
 #define SENSOR_EXP_NUMBER 3
@@ -68,4 +68,15 @@
 #define SENSOR_TOTAL_WIDTH_PREVIEW 3264
 #define SPI_CLOCK_DIV 40
 #define SPI_CONTROL_MASK ( RX_NEG_MSK | ( CHAR_LEN_MSK & 24 ) | AUTO_SS_MSK | LSB_MSK )
+
+typedef struct _imx290_private_t {
+    uint32_t shs1;
+    uint32_t shs2;
+    uint32_t shs3;
+    uint32_t shs1_old;
+    uint32_t shs2_old;
+    uint32_t rhs1;
+    uint32_t rhs2;
+} imx290_private_t;
+
 #endif

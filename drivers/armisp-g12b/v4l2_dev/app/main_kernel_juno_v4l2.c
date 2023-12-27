@@ -1,21 +1,21 @@
 /*
- *
- * SPDX-License-Identifier: GPL-2.0
- *
- * Copyright (C) 2011-2018 ARM or its affiliates
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2.
- * This program is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
- * or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License
- * for more details.
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- *
- */
+*
+* SPDX-License-Identifier: GPL-2.0
+*
+* Copyright (C) 2011-2018 ARM or its affiliates
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation; version 2.
+* This program is distributed in the hope that it will be useful, but
+* WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+* or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License
+* for more details.
+* You should have received a copy of the GNU General Public License along
+* with this program; if not, write to the Free Software Foundation, Inc.,
+* 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+*
+*/
 
 /*
  * ACamera PCI Express UIO driver
@@ -46,68 +46,82 @@
 #include <linux/delay.h>
 #include "v4l2_interface/isp-v4l2.h"
 
+extern void system_isp_proc_create( struct device *dev );
+extern void system_isp_proc_remove( struct device *dev );
+
 #define LOG_CONTEXT "[ ACamera ]"
 #define ISP_V4L2_MODULE_NAME "isp-v4l2"
 
-uint32_t global_isp_clk_rate = 400000000;
-unsigned int g_firmware_context_number = 1;
-unsigned int dcam = 2;
-module_param(dcam, uint, 0664);
-MODULE_PARM_DESC(dcam, "\n camera number\n");
-
 #if PLATFORM_G12B
-#define AO_RTI_GEN_PWR_SLEEP0 (0xff800000 + 0x3a * 4)
-#define AO_RTI_GEN_PWR_ISO0 (0xff800000 + 0x3b * 4)
-#define HHI_ISP_MEM_PD_REG0 (0xff63c000 + 0x45 * 4)
-#define HHI_ISP_MEM_PD_REG1 (0xff63c000 + 0x46 * 4)
-#define HHI_CSI_PHY_CNTL0 (0xff630000 + 0xd3 * 4)
-#define HHI_CSI_PHY_CNTL1 (0xff630000 + 0x114 * 4)
-#define HWI_ISP_RESET (0xffd01090)
+#define AO_RTI_GEN_PWR_SLEEP0   (0xff800000 + 0x3a * 4)
+#define AO_RTI_GEN_PWR_ISO0     (0xff800000 + 0x3b * 4)
+#define HHI_ISP_MEM_PD_REG0     (0xff63c000 + 0x45 * 4)
+#define HHI_ISP_MEM_PD_REG1     (0xff63c000 + 0x46 * 4)
+#define HHI_CSI_PHY_CNTL0       (0xff630000 + 0xd3 * 4)
+#define HHI_CSI_PHY_CNTL1       (0xff630000 + 0x114 * 4)
+#define HWI_ISP_RESET           (0xffd01090)
 
 #elif PLATFORM_C308X
-#define PWRCTRL_PWR_OFF0 (0xfe007800 + (0x0002 << 2))
-#define PWRCTRL_ISO_EN0 (0xfe007800 + (0x0001 << 2))
-#define PWRCTRL_FOCRSTN0 (0xfe007800 + (0x0008 << 2))
-#define PWRCTRL_MASK_MEM_ON5 (0xfe007800 + (0x0075 << 2))
-#define PWRCTRL_MASK_MEM_ON6 (0xfe007800 + (0x0076 << 2))
-#define ANACTRL_CSI_PHY_CNTL0 (0xfe007c00 + (0x0090 << 2))
-#define ANACTRL_CSI_PHY_CTRL1 (0xfe007c00 + (0x0091 << 2))
-#define ANACTRL_CSI_PHY_CTRL2 (0xfe007c00 + (0x0092 << 2))
-#define ANACTRL_CSI_PHY_CTRL3 (0xfe007c00 + (0x0093 << 2))
-#define RESETCTRL_RESET1 (0xfe000000 + (0x0001 << 2))
+#define PWRCTRL_PWR_OFF0       (0xfe007800 + (0x0002 << 2))
+#define PWRCTRL_ISO_EN0        (0xfe007800 + (0x0001 << 2))
+#define PWRCTRL_FOCRSTN0       (0xfe007800 + (0x0008 << 2))
+#define PWRCTRL_MASK_MEM_ON5   (0xfe007800 + (0x0075 << 2))
+#define PWRCTRL_MASK_MEM_ON6   (0xfe007800 + (0x0076 << 2))
+#define ANACTRL_CSI_PHY_CNTL0  (0xfe007c00 + (0x0090 << 2))
+#define ANACTRL_CSI_PHY_CTRL1  (0xfe007c00 + (0x0091 << 2))
+#define ANACTRL_CSI_PHY_CTRL2  (0xfe007c00 + (0x0092 << 2))
+#define ANACTRL_CSI_PHY_CTRL3  (0xfe007c00 + (0x0093 << 2))
+#define RESETCTRL_RESET1       (0xfe000000 + (0x0001 << 2))
 
-#define ISP_MIPI_CLK 0xfe000910
+#define ISP_MIPI_CLK            0xfe000910
 
-#define AO_RTI_GEN_PWR_SLEEP0 (0xfe007800 + (0x0002 << 2)) // bit28
-#define AO_RTI_GEN_PWR_ISO0 (0xfe007800 + (0x0001 << 2))   // bit28
-#define HHI_ISP_MEM_PD_REG0 (0xfe007800 + (0x0075 << 2))
-#define HHI_ISP_MEM_PD_REG1 (0xfe007800 + (0x0076 << 2))
-#define HHI_CSI_PHY_CNTL0 (0xfe007c00 + (0x0090 << 2))
-#define HHI_CSI_PHY_CNTL1 (0xfe007c00 + (0x0091 << 2))
+#define AO_RTI_GEN_PWR_SLEEP0   (0xfe007800 + (0x0002 << 2))  //bit28
+#define AO_RTI_GEN_PWR_ISO0     (0xfe007800 + (0x0001 << 2))  //bit28
+#define HHI_ISP_MEM_PD_REG0     (0xfe007800 + (0x0075 << 2))
+#define HHI_ISP_MEM_PD_REG1     (0xfe007800 + (0x0076 << 2))
+#define HHI_CSI_PHY_CNTL0       (0xfe007c00 + (0x0090 << 2))
+#define HHI_CSI_PHY_CNTL1       (0xfe007c00 + (0x0091 << 2))
 
-#define HWI_ISP_RESET (0xfe000000 + (0x0011 << 2))
+#define HWI_ISP_RESET           (0xfe000000 + (0x0011 << 2))
+
+#elif PLATFORM_C305X
+#define P_PWRCTRL_FOCRST0       (0xfe013080)
+#define P_PWRCTRL_PWR_OFF0      (0xfe01300c)
+#define P_PWRCTRL_MEM_PD5       (0xfe013030)
+#define P_PWRCTRL_MEM_PD6       (0xfe013034)
+#define P_PWRCTRL_ISO_EN0       (0xfe013014)
+
+#define ANACTRL_CSI_PHY_CNTL0   (0xfe007c00 + (0x0090 << 2))
+#define ANACTRL_CSI_PHY_CTRL1   (0xfe007c00 + (0x0091 << 2))
+#define ANACTRL_CSI_PHY_CTRL2   (0xfe007c00 + (0x0092 << 2))
+#define ANACTRL_CSI_PHY_CTRL3   (0xfe007c00 + (0x0093 << 2))
+#define RESETCTRL_RESET1        (0xfe000000 + (0x0001 << 2))
+
+#define ISP_MIPI_CLK            0xfe000910
+
+#define HWI_ISP_RESET           (0xfe000000 + (0x0011 << 2))
 #endif
 
-struct device_info
-{
-    struct clk *clk_isp_0;
-    struct clk *clk_mipi_0;
+struct device_info {
+    struct clk* clk_isp_0;
+    struct clk* clk_mipi_0;
     struct device_node *am_sc;
     struct device_node *am_md;
     int clk_level;
 };
 
 extern uint32_t seamless;
-extern temper_addr isp_temper_paddr[FIRMWARE_CONTEXT_NUMBER];
+extern uint8_t *isp_kaddr;
+extern resource_size_t isp_paddr;
 
-extern void system_interrupts_set_irq(int irq_num, int flags);
+extern void system_interrupts_set_irq( int irq_num, int flags );
 extern void system_interrupts_init(void);
 extern void system_interrupts_deinit(void);
-extern uintptr_t acamera_get_isp_sw_setting_base(void);
+extern uintptr_t acamera_get_isp_sw_setting_base( void );
 
-// map and unmap fpga memory
-extern int32_t init_hw_io(resource_size_t addr, resource_size_t size);
-extern int32_t close_hw_io(void);
+//map and unmap fpga memory
+extern int32_t init_hw_io( resource_size_t addr, resource_size_t size );
+extern int32_t close_hw_io( void );
 
 static struct v4l2_device v4l2_dev;
 static struct platform_device *isp_pdev;
@@ -115,20 +129,17 @@ static int initialized = 0;
 static struct device_info dev_info;
 
 #if V4L2_SOC_SUBDEV_ENABLE
-extern uint32_t fw_calibration_update(void);
+extern uint32_t fw_calibration_update( void );
 #include "soc_iq.h"
 
 static int v4l2devs_running = 0;
 
-struct acamera_v4l2_subdev_t
-{
+struct acamera_v4l2_subdev_t {
 
     struct v4l2_subdev *soc_subdevs[V4L2_SOC_SUBDEV_NUMBER];
     struct v4l2_async_subdev soc_async_sd[V4L2_SOC_SUBDEV_NUMBER];
     struct v4l2_async_subdev *soc_async_sd_ptr[V4L2_SOC_SUBDEV_NUMBER];
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0))
     struct device_node *pnode[V4L2_SOC_SUBDEV_NUMBER];
-#endif
     int subdev_counter;
     struct v4l2_async_notifier notifier;
     uint32_t hw_isp_addr;
@@ -136,127 +147,112 @@ struct acamera_v4l2_subdev_t
 
 static struct acamera_v4l2_subdev_t g_subdevs;
 
-void *acamera_camera_v4l2_get_subdev_by_name(const char *name)
+
+void *acamera_camera_v4l2_get_subdev_by_name( const char *name )
 {
     int idx = 0;
     void *result = NULL;
-    LOG(LOG_ERR, "Requested a pointer to the subdev with a name %s", name);
-    for (idx = 0; idx < V4L2_SOC_SUBDEV_NUMBER; idx++)
-    {
-        if (g_subdevs.soc_subdevs[idx] && strcmp(g_subdevs.soc_subdevs[idx]->name, name) == 0)
-        {
+    LOG( LOG_ERR, "Requested a pointer to the subdev with a name %s", name );
+    for ( idx = 0; idx < V4L2_SOC_SUBDEV_NUMBER; idx++ ) {
+        if ( g_subdevs.soc_subdevs[idx] && strcmp( g_subdevs.soc_subdevs[idx]->name, name ) == 0 ) {
             result = g_subdevs.soc_subdevs[idx];
             break;
         }
     }
-    LOG(LOG_ERR, "Return subdev pointer 0x%x", result);
+    LOG( LOG_ERR, "Return subdev pointer 0x%x", result );
     return result;
 }
 
-int acamera_camera_v4l2_get_index_by_name(const char *name)
+int acamera_camera_v4l2_get_index_by_name( const char *name )
 {
     int idx = 0;
-    LOG(LOG_ERR, "Requested a index pointer with a name %s", name);
-    for (idx = 0; idx < V4L2_SOC_SUBDEV_NUMBER; idx++)
-    {
-        if (g_subdevs.soc_subdevs[idx] && strcmp(g_subdevs.soc_subdevs[idx]->name, name) == 0)
-        {
+    LOG( LOG_ERR, "Requested a index pointer with a name %s", name );
+    for ( idx = 0; idx < V4L2_SOC_SUBDEV_NUMBER; idx++ ) {
+        if ( g_subdevs.soc_subdevs[idx] && strcmp( g_subdevs.soc_subdevs[idx]->name, name ) == 0 ) {
             break;
         }
     }
-    LOG(LOG_ERR, "Return index pointer 0x%x", idx);
+    LOG( LOG_ERR, "Return index pointer 0x%x", idx );
     return idx;
 }
 
-static int acamera_camera_async_bound(struct v4l2_async_notifier *notifier,
-                                      struct v4l2_subdev *sd,
-                                      struct v4l2_async_subdev *asd)
+static int acamera_camera_async_bound( struct v4l2_async_notifier *notifier,
+                                       struct v4l2_subdev *sd,
+                                       struct v4l2_async_subdev *asd )
 {
     int rc = 0;
-    LOG(LOG_ERR, "bound called with sd 0x%x, asd 0x%x, sd->dev 0x%x, name %s", sd, asd, sd->dev, sd->name);
+    LOG( LOG_ERR, "bound called with sd 0x%x, asd 0x%x, sd->dev 0x%x, name %s", sd, asd, sd->dev, sd->name );
     int idx = 0;
-    for (idx = 0; idx < V4L2_SOC_SUBDEV_NUMBER; idx++)
-    {
-        if (g_subdevs.soc_subdevs[idx] == 0)
-        {
+    for ( idx = 0; idx < V4L2_SOC_SUBDEV_NUMBER; idx++ ) {
+        if ( g_subdevs.soc_subdevs[idx] == 0 ) {
             break;
         }
     }
 
-    if (idx < V4L2_SOC_SUBDEV_NUMBER)
-    {
+    if ( idx < V4L2_SOC_SUBDEV_NUMBER ) {
         g_subdevs.soc_subdevs[idx] = sd;
         g_subdevs.subdev_counter++;
 
-        if (strcmp(g_subdevs.soc_subdevs[idx]->name, V4L2_SOC_IQ_NAME) == 0 && v4l2devs_running == 1)
-        { // update calibration
+        if ( strcmp( g_subdevs.soc_subdevs[idx]->name, V4L2_SOC_IQ_NAME ) == 0 && v4l2devs_running == 1 ) { //update calibration
             fw_calibration_update();
         }
-    }
-    else
-    {
+
+    } else {
         rc = -1;
-        LOG(LOG_CRIT, "Inserted more subdevices than expected. Driver is configured to support %d subdevs only", V4L2_SOC_SUBDEV_NUMBER);
+        LOG( LOG_CRIT, "Inserted more subdevices than expected. Driver is configured to support %d subdevs only", V4L2_SOC_SUBDEV_NUMBER );
     }
+
 
     return rc;
 }
 
-static void acamera_camera_async_unbind(struct v4l2_async_notifier *notifier,
-                                        struct v4l2_subdev *sd,
-                                        struct v4l2_async_subdev *asd)
+
+static void acamera_camera_async_unbind( struct v4l2_async_notifier *notifier,
+                                         struct v4l2_subdev *sd,
+                                         struct v4l2_async_subdev *asd )
 {
-    LOG(LOG_ERR, "unbind called for subdevice sd 0x%x, asd 0x%x, sd->dev 0x%x, name %s", sd, asd, sd->dev, sd->name);
+    LOG( LOG_ERR, "unbind called for subdevice sd 0x%x, asd 0x%x, sd->dev 0x%x, name %s", sd, asd, sd->dev, sd->name );
 
-    int idx = acamera_camera_v4l2_get_index_by_name(sd->name);
+    int idx = acamera_camera_v4l2_get_index_by_name( sd->name );
 
-    if (strcmp(g_subdevs.soc_subdevs[idx]->name, V4L2_SOC_IQ_NAME) != 0)
-    { // any other subdevs need to stop firmware
-        if (v4l2devs_running == 1)
-        {
-            LOG(LOG_ERR, "stopping V4L2 firmware");
+    if ( strcmp( g_subdevs.soc_subdevs[idx]->name, V4L2_SOC_IQ_NAME ) != 0 ) { //any other subdevs need to stop firmware
+        if ( v4l2devs_running == 1 ) {
+            LOG( LOG_ERR, "stopping V4L2 firmware" );
             isp_v4l2_destroy_instance(isp_pdev);
             initialized = 0;
             v4l2devs_running = 0;
         }
     }
 
-    if (idx < V4L2_SOC_SUBDEV_NUMBER)
-    {
+    if ( idx < V4L2_SOC_SUBDEV_NUMBER ) {
         g_subdevs.soc_subdevs[idx] = 0;
         g_subdevs.subdev_counter--;
     }
 }
 
-static int acamera_camera_async_complete(struct v4l2_async_notifier *notifier)
+
+static int acamera_camera_async_complete( struct v4l2_async_notifier *notifier )
 {
     int rc = 0;
 
-    LOG(LOG_ERR, "complete called");
-    if (v4l2devs_running == 0)
-    {
-        LOG(LOG_ERR, "starting V4L2 firmware");
-        rc = v4l2_device_register_subdev_nodes(&v4l2_dev);
+    LOG( LOG_ERR, "complete called" );
+    if ( v4l2devs_running == 0 ) {
+        LOG( LOG_ERR, "starting V4L2 firmware" );
+        rc = v4l2_device_register_subdev_nodes( &v4l2_dev );
 
-        if (rc == 0)
-        {
-            rc = isp_v4l2_create_instance(&v4l2_dev, isp_pdev, g_subdevs.hw_isp_addr);
+        if ( rc == 0 ) {
+            rc = isp_v4l2_create_instance( &v4l2_dev, isp_pdev, g_subdevs.hw_isp_addr );
 
-            if (rc == 0)
-            {
+            if ( rc == 0 ) {
                 initialized = 1;
-            }
-            else
-            {
-                LOG(LOG_ERR, "Failed to register ISP v4l2 driver.");
+            } else {
+                LOG( LOG_ERR, "Failed to register ISP v4l2 driver." );
                 initialized = 0;
                 rc = -1;
             }
-        }
-        else
-        {
+        } else {
             rc = -1;
-            LOG(LOG_CRIT, "Failed to create subdevice nodes under /dev/v4l-subdevX");
+            LOG( LOG_CRIT, "Failed to create subdevice nodes under /dev/v4l-subdevX" );
         }
         v4l2devs_running = 1;
     }
@@ -265,20 +261,31 @@ static int acamera_camera_async_complete(struct v4l2_async_notifier *notifier)
 
 #endif
 
-void cache_flush(uint32_t buf_start, uint32_t buf_size)
+void cache_flush_for_device(uint32_t buf_start, uint32_t buf_size)
 {
     if ((buf_start == 0) || (buf_size == 0))
         return;
-    if (isp_pdev != NULL)
-        dma_sync_single_for_cpu(&isp_pdev->dev, buf_start, buf_size, DMA_FROM_DEVICE);
-    else
-    {
+    if ( isp_pdev != NULL)
+        dma_sync_single_for_device(&isp_pdev->dev, buf_start, buf_size, DMA_TO_DEVICE);
+    else {
         pr_err("%s: isp_pdev is null, cache_flush failed!\n", __func__);
         return;
     }
 }
 
-int write_to_file(char *fname, char *buf, int size)
+void cache_flush(uint32_t buf_start, uint32_t buf_size)
+{
+    if ((buf_start == 0) || (buf_size == 0))
+        return;
+    if ( isp_pdev != NULL)
+        dma_sync_single_for_cpu(&isp_pdev->dev, buf_start, buf_size, DMA_FROM_DEVICE);
+    else {
+        pr_err("%s: isp_pdev is null, cache_flush failed!\n", __func__);
+        return;
+    }
+}
+
+int  write_to_file (char *fname, char *buf, int size)
 {
     int ret = 0;
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 15, 0))
@@ -287,20 +294,18 @@ int write_to_file(char *fname, char *buf, int size)
     loff_t pos = 0;
     int nwrite = 0;
     int offset = 0;
-    int first_flag = 0;
+    int first_flag=0;
 
     old_fs = get_fs();
     set_fs(KERNEL_DS);
 
-    pr_err("%s: buff addr %p, size 0x%x\n", __func__, buf, size);
+    pr_err("%s: buff addr %p, size 0x%x\n",__func__, buf, size);
 
-    if (first_flag == 0)
-    {
+    if (first_flag == 0) {
         first_flag = 1;
         /* open file to write */
         fp = filp_open(fname, O_RDWR | O_CREAT, 0666);
-        if (!fp)
-        {
+        if (!fp) {
             pr_err("%s: open file error\n", __func__);
             ret = -1;
             goto exit;
@@ -308,18 +313,18 @@ int write_to_file(char *fname, char *buf, int size)
     }
 
     pos = (unsigned long)offset;
-
     /* Write buf to file */
-    nwrite = vfs_write(fp, buf, size, &pos);
-    offset += nwrite;
+    nwrite=vfs_write(fp, buf, size, &pos);
+    offset +=nwrite;
 
-    if (fp)
-    {
+    if (fp) {
         filp_close(fp, NULL);
     }
 
 exit:
     set_fs(old_fs);
+#else
+    ret = -1;
 #endif
     return ret;
 }
@@ -334,8 +339,7 @@ static void parse_param(
 
     ps = buf_orig;
     strcat(delim1, delim2);
-    while (1)
-    {
+    while (1) {
         token = strsep(&ps, delim1);
         if (token == NULL)
             break;
@@ -349,7 +353,8 @@ static const char *isp_reg_usage_str = {
     "Usage:\n"
     "echo r addr(H) > /sys/devices/platform/ff140000.isp/reg;\n"
     "echo w addr(H) value(H) > /sys/devices/platform/ff140000.isp/reg;\n"
-    "echo d addr(H) num(D) > /sys/devices/platform/ff140000.isp/reg; dump reg from addr\n"};
+    "echo d addr(H) num(D) > /sys/devices/platform/ff140000.isp/reg; dump reg from addr\n"
+};
 
 static ssize_t reg_read(
     struct device *dev,
@@ -378,33 +383,26 @@ static ssize_t reg_write(
 
     parse_param(buf_orig, (char **)&parm);
 
-    if (!parm[0])
-    {
+    if (!parm[0]) {
         ret = -EINVAL;
         goto Err;
     }
 
-    if (!strcmp(parm[0], "r"))
-    {
-        if (!parm[1] || (kstrtoul(parm[1], 16, &val) < 0))
-        {
+    if (!strcmp(parm[0], "r")) {
+        if (!parm[1] || (kstrtoul(parm[1], 16, &val) < 0)) {
             ret = -EINVAL;
             goto Err;
         }
         reg_addr = val;
         reg_val = system_hw_read_32(reg_addr);
         pr_info("ISP READ[0x%05x]=0x%08x\n", reg_addr, reg_val);
-    }
-    else if (!strcmp(parm[0], "w"))
-    {
-        if (!parm[1] || (kstrtoul(parm[1], 16, &val) < 0))
-        {
+    } else if (!strcmp(parm[0], "w")) {
+        if (!parm[1] || (kstrtoul(parm[1], 16, &val) < 0)) {
             ret = -EINVAL;
             goto Err;
         }
         reg_addr = val;
-        if (!parm[2] || (kstrtoul(parm[2], 16, &val) < 0))
-        {
+        if (!parm[2] || (kstrtoul(parm[2], 16, &val) < 0)) {
             ret = -EINVAL;
             goto Err;
         }
@@ -413,11 +411,8 @@ static ssize_t reg_write(
             system_sw_write_32((isp_sw_base + reg_addr), reg_val);
         system_hw_write_32(reg_addr, reg_val);
         pr_info("ISP WRITE[0x%05x]=0x%08x\n", reg_addr, reg_val);
-    }
-    else if (!strcmp(parm[0], "d"))
-    {
-        if (!parm[1] || (kstrtoul(parm[1], 16, &val) < 0))
-        {
+    } else if (!strcmp(parm[0], "d")) {
+        if (!parm[1] || (kstrtoul(parm[1], 16, &val) < 0)) {
             ret = -EINVAL;
             goto Err;
         }
@@ -425,14 +420,12 @@ static ssize_t reg_write(
         if (!parm[2] || (kstrtoul(parm[2], 10, &val) < 0))
             val = 1;
 
-        for (i = 0; i < val; i++)
-        {
+        for (i = 0; i < val; i++) {
             reg_val = system_hw_read_32(reg_addr);
             pr_info("ISP DUMP[0x%05x]=0x%08x\n", reg_addr, reg_val);
             reg_addr += 4;
         }
-    }
-    else
+    } else
         pr_info("unsupprt cmd!\n");
 Err:
     kfree(buf_orig);
@@ -442,8 +435,9 @@ static DEVICE_ATTR(reg, S_IRUGO | S_IWUSR, reg_read, reg_write);
 
 static const char *isp_dump_usage_str = {
     "Usage:\n"
-    "echo <port:fr/ds1> <dst_path> > /sys/devices/platform/ff140000.isp/dump_frame; dump first buffer\n"
-    "echo <port:fr/ds1> <dst_path> buff_size(H)  offset(H) > /sys/devices/platform/ff140000.isp/dump_frame; dump specific buffers\n"};
+    "echo <port:fr/ds1> <dst_path> > /sys/devices/platform/ff000000.isp/dump_frame; dump first buffer\n"
+    "echo <port:fr/ds1> <dst_path> buff_size(H)  offset(H) > /sys/devices/platform/ff000000.isp/dump_frame; dump specific buffers\n"
+};
 
 static ssize_t dump_frame_read(
     struct device *dev,
@@ -471,41 +465,32 @@ static ssize_t dump_frame_write(
 
     parse_param(buf_orig, (char **)&parm);
 
-    if (!strcmp(parm[0], "ds1") || !strcmp(parm[0], "fr"))
-    {
-        if (parm[3] != NULL)
-        {
+    if (!strcmp(parm[0], "ds1")
+        || !strcmp(parm[0], "fr")) {
+        if (parm[3] != NULL) {
             if (kstrtol(parm[2], 16, &val) == 0)
                 buff_size = val;
             if (kstrtol(parm[3], 16, &val) == 0)
                 buff_offset = val;
-        }
-        else if (parm[2] != NULL)
-        {
+        } else if (parm[2] != NULL) {
             if (kstrtol(parm[2], 16, &val) == 0)
                 buff_size = val;
             buff_offset = 0;
-        }
-        else
-        {
+        } else {
             buff_offset = 0;
             buff_size = 0x7e9000;
         }
     }
 
-    if (!strcmp(parm[0], "ds1"))
-    {
-        if (parm[1] != NULL)
-        {
+    if (!strcmp(parm[0], "ds1")) {
+        if (parm[1] != NULL) {
             pr_info("use v4l2 test app dump DS1\n");
         }
-    }
-    else if (!strcmp(parm[0], "fr"))
-    {
+    } else if (!strcmp(parm[0], "fr")) {
         if (parm[1] != NULL)
-            write_to_file(parm[1], phys_to_virt(isp_temper_paddr[0].isp_paddr) + buff_offset, buff_size);
-    }
-    else
+            write_to_file(parm[1], phys_to_virt(isp_paddr) + buff_offset, buff_size);
+            pr_info("arm 5.15  linux do not support open file. \n");
+    } else
         pr_info("unsupprt cmd!\n");
 
     kfree(buf_orig);
@@ -526,7 +511,8 @@ static const char *isp_clk_level_usage_str = {
     "5: 333M;\n"
     "6: 400M;\n"
     "7: 500M;\n"
-    "8: 667M;\n"};
+    "8: 667M;\n"
+};
 
 static ssize_t isp_clk_read(
     struct device *dev,
@@ -555,70 +541,62 @@ static ssize_t isp_clk_write(
 
     parse_param(buf_orig, (char **)&parm);
 
-    if (parm[0] != NULL)
-    {
+    if (parm[0] != NULL) {
         if (kstrtol(parm[0], 16, &val) == 0)
             clk_level = val;
-    }
-    else
-    {
+    } else {
         kfree(buf_orig);
         return -EINVAL;
     }
 
-    switch (clk_level)
-    {
+    switch (clk_level) {
 #if PLATFORM_G12B == 1
-    case 0:
-        clk_rate = 666666667;
-        break;
-#elif PLATFORM_C308X == 1
-    case 0:
-        clk_rate = 400000000;
-        break;
+        case 0:
+            clk_rate = 666666667;
+            break;
+#elif PLATFORM_C308X == 1 || PLATFORM_C305X == 1
+        case 0:
+            clk_rate = 400000000;
+            break;
 #endif
-    case 1:
-        clk_rate = 100000000;
-        break;
-    case 2:
-        clk_rate = 200000000;
-        break;
-    case 3:
-        clk_rate = 250000000;
-        break;
-    case 4:
-        clk_rate = 286000000;
-        break;
-    case 5:
-        clk_rate = 333333333;
-        break;
-    case 6:
-        clk_rate = 400000000;
-        break;
+        case 1:
+            clk_rate = 100000000;
+            break;
+        case 2:
+            clk_rate = 200000000;
+            break;
+        case 3:
+            clk_rate = 250000000;
+            break;
+        case 4:
+            clk_rate = 286000000;
+            break;
+        case 5:
+            clk_rate = 333333333;
+            break;
+        case 6:
+            clk_rate = 400000000;
+            break;
 #if PLATFORM_G12B == 1
-    case 7:
-        clk_rate = 500000000;
-        break;
-    case 8:
-        clk_rate = 666666667;
-        break;
+        case 7:
+            clk_rate = 500000000;
+            break;
+        case 8:
+            clk_rate = 666666667;
+            break;
 #endif
-    default:
-        pr_err("Invalid clk level %d !\n", clk_level);
-        break;
+        default:
+            pr_err("Invalid clk level %d !\n", clk_level);
+            break;
     }
-    if (clk_rate == 0)
-    {
-        kfree(buf_orig);
-        return -EINVAL;
+    if (clk_rate == 0) {
+         kfree(buf_orig);
+         return -EINVAL;
     }
-
-    global_isp_clk_rate = clk_rate;
-    pr_err("clk_level: %d, clk %d\n", clk_level, clk_rate);
+    pr_err("clk_level: %d, clk %d\n",clk_level, clk_rate);
     clk_set_rate(dev_info.clk_isp_0, clk_rate);
     rt = clk_prepare_enable(dev_info.clk_isp_0);
-    if (rt != 0)
-    {
+    if (rt != 0) {
         LOG(LOG_CRIT, "Failed to enable isp clk");
         return -EINVAL;
     }
@@ -631,13 +609,8 @@ static DEVICE_ATTR(isp_clk, S_IRUGO | S_IWUSR, isp_clk_read, isp_clk_write);
 uint32_t write_reg(uint32_t val, unsigned long addr)
 {
     void __iomem *io_addr;
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0))
     io_addr = ioremap(addr, 8);
-#else
-    io_addr = ioremap_nocache(addr, 8);
-#endif
-    if (io_addr == NULL)
-    {
+    if (io_addr == NULL) {
         LOG(LOG_ERR, "%s: Failed to ioremap addr\n", __func__);
         return -1;
     }
@@ -651,13 +624,8 @@ uint32_t read_reg(unsigned long addr)
     void __iomem *io_addr;
     uint32_t ret;
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0))
     io_addr = ioremap(addr, 8);
-#else
-    io_addr = ioremap_nocache(addr, 8);
-#endif
-    if (io_addr == NULL)
-    {
+    if (io_addr == NULL) {
         LOG(LOG_ERR, "%s: Failed to ioremap addr\n", __func__);
         return -1;
     }
@@ -671,18 +639,18 @@ uint32_t isp_power_on(void)
 {
     uint32_t orig, tmp;
 
-    orig = read_reg(AO_RTI_GEN_PWR_SLEEP0); // AO_PWR_SLEEP0
-    tmp = orig & 0xfff3ffff;                // set bit[18-19]=0
+    orig = read_reg(AO_RTI_GEN_PWR_SLEEP0);			//AO_PWR_SLEEP0
+    tmp = orig & 0xfff3ffff;						//set bit[18-19]=0
     write_reg(tmp, AO_RTI_GEN_PWR_SLEEP0);
     mdelay(5);
-    orig = read_reg(AO_RTI_GEN_PWR_ISO0); // AO_PWR_ISO0
-    tmp = orig & 0xfff3ffff;              // set bit[18-19]=0
+    orig = read_reg(AO_RTI_GEN_PWR_ISO0);			//AO_PWR_ISO0
+    tmp = orig & 0xfff3ffff;						//set bit[18-19]=0
     write_reg(tmp, AO_RTI_GEN_PWR_ISO0);
 
-    write_reg(0x0, HHI_ISP_MEM_PD_REG0);      // MEM_PD_REG0 set 0
-    write_reg(0x0, HHI_ISP_MEM_PD_REG1);      // MEM_PD_REG1 set 0
-    write_reg(0x5b446585, HHI_CSI_PHY_CNTL0); // HHI_CSI_PHY_CNTL0
-    write_reg(0x803f4321, HHI_CSI_PHY_CNTL1); // HHI_CSI_PHY_CNTL1
+    write_reg(0x0, HHI_ISP_MEM_PD_REG0);			//MEM_PD_REG0 set 0
+    write_reg(0x0, HHI_ISP_MEM_PD_REG1);			//MEM_PD_REG1 set 0
+    write_reg(0x5b446585, HHI_CSI_PHY_CNTL0);		//HHI_CSI_PHY_CNTL0
+    write_reg(0x803f4321, HHI_CSI_PHY_CNTL1);		//HHI_CSI_PHY_CNTL1
     return 0;
 }
 
@@ -695,13 +663,8 @@ static void hw_reset(bool reset)
 {
     void __iomem *reset_addr;
     uint32_t val;
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0))
-    reset_addr = ioremap(HWI_ISP_RESET, 8); // ioremap_nocache(0xffd01014, 8);
-#else
-    reset_addr = ioremap_nocache(HWI_ISP_RESET, 8); // ioremap_nocache(0xffd01014, 8);
-#endif
-    if (reset_addr == NULL)
-    {
+    reset_addr = ioremap(HWI_ISP_RESET, 8);//ioremap(0xffd01014, 8);
+    if (reset_addr == NULL) {
         LOG(LOG_ERR, "%s: Failed to ioremap\n", __func__);
         return;
     }
@@ -710,11 +673,10 @@ static void hw_reset(bool reset)
     if (reset)
         val &= ~(1 << 1);
     else
-        val |= (1 << 1);
+        val |= (1 <<1);
     __raw_writel(val, reset_addr);
 
-    if (!reset && reset_addr)
-    {
+    if (!reset && reset_addr) {
         iounmap(reset_addr);
         reset_addr = NULL;
     }
@@ -726,6 +688,7 @@ static void hw_reset(bool reset)
         LOG(LOG_INFO, "%s:reset isp\n", __func__);
     else
         LOG(LOG_INFO, "%s:release reset isp\n", __func__);
+
 }
 
 #elif PLATFORM_C308X
@@ -733,26 +696,25 @@ uint32_t isp_power_on(void)
 {
     uint32_t orig, tmp;
 
-    orig = read_reg(PWRCTRL_PWR_OFF0); // AO_PWR_SLEEP0
-    tmp = orig & 0xefffffff;           // set bit[28]=0
+    orig = read_reg(PWRCTRL_PWR_OFF0);			//AO_PWR_SLEEP0
+    tmp = orig & 0xefffffff;						//set bit[28]=0
     write_reg(tmp, PWRCTRL_PWR_OFF0);
     mdelay(5);
-    orig = read_reg(PWRCTRL_ISO_EN0); // AO_PWR_ISO0
-    tmp = orig & 0xefffffff;          // set bit[28]=0
+    orig = read_reg(PWRCTRL_ISO_EN0);			//AO_PWR_ISO0
+    tmp = orig & 0xefffffff;						//set bit[28]=0
     write_reg(tmp, PWRCTRL_ISO_EN0);
     mdelay(5);
-    orig = read_reg(PWRCTRL_FOCRSTN0); // AO_PWR_ISO0
-    tmp = orig & 0xefffffff;           // set bit[28]=0
+    orig = read_reg(PWRCTRL_FOCRSTN0);			//AO_PWR_ISO0
+    tmp = orig & 0xefffffff;						//set bit[28]=0
     write_reg(tmp, PWRCTRL_FOCRSTN0);
 
-    write_reg(0x0, PWRCTRL_MASK_MEM_ON5); // MEM_PD_REG0 set 0
-    write_reg(0x0, PWRCTRL_MASK_MEM_ON6); // MEM_PD_REG1 set 0
-    // write_reg(0x0d010d00, ISP_MIPI_CLK);		        //isp & mipi clk
-    // write_reg(0x2f440603, ANACTRL_CSI_PHY_CNTL0);		//HHI_CSI_PHY_CNTL0
-    // write_reg(0x003f2222, ANACTRL_CSI_PHY_CTRL1);		//HHI_CSI_PHY_CNTL1
 
-    write_reg(0xdfff, 0xfe000608); // set GPIOA_13 output
-    write_reg(0xdfff, 0xfe000604); // pull down GPIOA_13
+    write_reg(0x0, PWRCTRL_MASK_MEM_ON5);			//MEM_PD_REG0 set 0
+    write_reg(0x0, PWRCTRL_MASK_MEM_ON6);			//MEM_PD_REG1 set 0
+    //write_reg(0x0d010d00, ISP_MIPI_CLK);		        //isp & mipi clk
+    //write_reg(0x2f440603, ANACTRL_CSI_PHY_CNTL0);		//HHI_CSI_PHY_CNTL0
+    //write_reg(0x003f2222, ANACTRL_CSI_PHY_CTRL1);		//HHI_CSI_PHY_CNTL1
+
     return 0;
 }
 
@@ -765,14 +727,8 @@ static void hw_reset(bool reset)
 {
     void __iomem *reset_addr;
     uint32_t val;
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0))
     reset_addr = ioremap(HWI_ISP_RESET, 8);
-#else
-    reset_addr = ioremap_nocache(HWI_ISP_RESET, 8);
-#endif
-
-    if (reset_addr == NULL)
-    {
+    if (reset_addr == NULL) {
         LOG(LOG_ERR, "%s: Failed to ioremap\n", __func__);
         return;
     }
@@ -784,8 +740,7 @@ static void hw_reset(bool reset)
         val |= (7 << 6);
     __raw_writel(val, reset_addr);
 
-    if (!reset && reset_addr)
-    {
+    if (!reset && reset_addr) {
         iounmap(reset_addr);
         reset_addr = NULL;
     }
@@ -797,8 +752,75 @@ static void hw_reset(bool reset)
         LOG(LOG_INFO, "%s:reset isp\n", __func__);
     else
         LOG(LOG_INFO, "%s:release reset isp\n", __func__);
+
 }
 
+#elif PLATFORM_C305X
+uint32_t isp_power_on(void)
+{
+    uint32_t val = 0;
+// switch on
+    val = read_reg(P_PWRCTRL_PWR_OFF0);
+    val = val & (~(1 << 28));
+    write_reg(val, P_PWRCTRL_PWR_OFF0);
+// mem on
+    write_reg(0, P_PWRCTRL_MEM_PD5);
+    write_reg(0, P_PWRCTRL_MEM_PD6);
+// delay
+    mdelay(1);
+// reset on
+    val = read_reg(P_PWRCTRL_FOCRST0);
+    val = val & (~(1 << 28));
+    write_reg(val, P_PWRCTRL_FOCRST0);
+// iso en
+    val = read_reg(P_PWRCTRL_ISO_EN0);
+    val = val & (~(1 << 28));
+    write_reg(val, P_PWRCTRL_ISO_EN0);
+
+    write_reg(0x0d010d00, ISP_MIPI_CLK);		        //isp & mipi clk
+    write_reg(0x2f440603, ANACTRL_CSI_PHY_CNTL0);		//HHI_CSI_PHY_CNTL0
+    write_reg(0x003f2222, ANACTRL_CSI_PHY_CTRL1);		//HHI_CSI_PHY_CNTL1
+
+    LOG(LOG_INFO, "Success power on");
+    return 0;
+}
+
+void isp_power_down(void)
+{
+    return;
+}
+
+static void hw_reset(bool reset)
+{
+    void __iomem *reset_addr;
+    uint32_t val;
+    reset_addr = ioremap(HWI_ISP_RESET, 8);
+    if (reset_addr == NULL) {
+        LOG(LOG_ERR, "%s: Failed to ioremap\n", __func__);
+        return;
+    }
+
+    val = __raw_readl(reset_addr);
+    if (reset)
+        val &= ~(7 << 6);
+    else
+        val |= (7 << 6);
+    __raw_writel(val, reset_addr);
+
+    if (!reset && reset_addr) {
+        iounmap(reset_addr);
+        reset_addr = NULL;
+    }
+
+    mdelay(5);
+
+    iounmap(reset_addr);
+    if (reset)
+        LOG(LOG_INFO, "%s:reset isp\n", __func__);
+    else
+        LOG(LOG_INFO, "%s:release reset isp\n", __func__);
+
+}
 #endif
 
 int32_t isp_clk_enable(void)
@@ -806,13 +828,16 @@ int32_t isp_clk_enable(void)
     int32_t rc = 0;
     uint32_t isp_clk_rate = 400000000;
 
-    switch (dev_info.clk_level)
-    {
+    switch (dev_info.clk_level) {
 #if PLATFORM_G12B == 1
     case 0:
         isp_clk_rate = 666666667;
         break;
 #elif PLATFORM_C308X == 1
+    case 0:
+        isp_clk_rate = 400000000;
+        break;
+#elif PLATFORM_C305X == 1
     case 0:
         isp_clk_rate = 400000000;
         break;
@@ -849,24 +874,22 @@ int32_t isp_clk_enable(void)
     }
 
 #if PLATFORM_G12B == 1
-    uint32_t isp_mipi_rate = 200000000;
-    LOG(LOG_ERR, "isp clk level: %d, clk rate: %d", dev_info.clk_level, isp_clk_rate);
+	uint32_t isp_mipi_rate = 200000000;
+	LOG(LOG_ERR, "isp clk level: %d, clk rate: %d", dev_info.clk_level, isp_clk_rate);
 
-    clk_set_rate(dev_info.clk_isp_0, isp_clk_rate);
+	clk_set_rate(dev_info.clk_isp_0, isp_clk_rate);
 #endif
     rc = clk_prepare_enable(dev_info.clk_isp_0);
-    if (rc != 0)
-    {
+    if (rc != 0) {
         LOG(LOG_CRIT, "Failed to enable isp clk");
         return rc;
     }
 
 #if PLATFORM_G12B == 1
-    clk_set_rate(dev_info.clk_mipi_0, isp_mipi_rate);
+	clk_set_rate(dev_info.clk_mipi_0, isp_mipi_rate);
 #endif
     rc = clk_prepare_enable(dev_info.clk_mipi_0);
-    if (rc != 0)
-    {
+    if (rc != 0) {
         LOG(LOG_CRIT, "Failed to enable mipi clk");
         return rc;
     }
@@ -879,9 +902,13 @@ int32_t isp_clk_enable(void)
         clk_set_rate(dev_info.clk_mipi_0, isp_mipi_rate);
         LOG(LOG_CRIT, "isp set clk:%ld\n", clk_get_rate(dev_info.clk_isp_0));
     }
+#elif PLATFORM_C305X == 1
+    if (isp_clk_rate < clk_get_rate(dev_info.clk_isp_0))
+    {
+        clk_set_rate(dev_info.clk_isp_0, isp_clk_rate);
+        LOG(LOG_CRIT, "isp set clk:%ld\n", clk_get_rate(dev_info.clk_isp_0));
+    }
 #endif
-
-    global_isp_clk_rate = isp_clk_rate;
 
     return rc;
 }
@@ -892,46 +919,85 @@ void isp_clk_disable(void)
     clk_disable_unprepare(dev_info.clk_isp_0);
 }
 
+#if 0
+static uint32_t isp_module_check(struct platform_device *pdev)
+{
+    void __iomem *efuse_addr;
+    uint32_t val;
+    int ret;
+    struct device_node *np = pdev->dev.of_node;
+    unsigned int length = 0;
+    u32 efuse_val[10] = {0};
+
+    if (of_find_property(np, "isp-efuse", &length) == NULL) {
+        LOG( LOG_CRIT, "warning, no efuse register mapping. Enabled as default\n");
+        return 0;
+    }
+    if ((length / sizeof(u32)) > (sizeof(efuse_val) / sizeof(efuse_val[0]))) {
+        LOG( LOG_CRIT, "exceed the isp array efuse_val size\n");
+        return 1;
+    }
+    ret = of_property_read_u32_array(pdev->dev.of_node, "isp-efuse",
+        efuse_val, length / sizeof(u32));
+    if (ret) {
+        LOG( LOG_CRIT, "warning, no efuse register mapping. Enabled as default\n");
+        return 0;
+    } else {
+        LOG( LOG_ERR, "isp efuse value: %x %x\n", efuse_val[0], efuse_val[1]);
+        efuse_addr = ioremap(efuse_val[0], 8);
+        if (efuse_addr == NULL) {
+            LOG( LOG_CRIT, "Failed to ioremap isp efuse register\n");
+            return 1;
+        } else {
+            val = __raw_readl(efuse_addr);
+            val = (val & efuse_val[1]);
+            if (val == 0) {
+                iounmap(efuse_addr);
+                return 0;
+            } else {
+                iounmap(efuse_addr);
+                return 1;
+            }
+        }
+    }
+
+    return 0;
+}
+#endif
+
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 10, 0))
 static const struct v4l2_async_notifier_operations acamera_camera_async_ops = {
-    .bound = acamera_camera_async_bound,
-    .unbind = acamera_camera_async_unbind,
-    .complete = acamera_camera_async_complete,
+	.bound = acamera_camera_async_bound,
+	.unbind = acamera_camera_async_unbind,
+	.complete = acamera_camera_async_complete,
 };
 #endif
-static int32_t isp_platform_probe(struct platform_device *pdev)
+static int32_t isp_platform_probe( struct platform_device *pdev )
 {
     int32_t rc = 0;
     struct resource *isp_res;
 
     // Initialize irq
-    isp_res = platform_get_resource_byname(pdev,
-                                           IORESOURCE_IRQ, "ISP");
+    isp_res = platform_get_resource_byname( pdev,
+        IORESOURCE_IRQ, "ISP" );
 
-    if (isp_res)
-    {
-        LOG(LOG_ERR, "Juno isp irq = %d, flags = 0x%x !\n", (int)isp_res->start, (int)isp_res->flags);
-        system_interrupts_set_irq(isp_res->start, 4);
-    }
-    else
-    {
-        LOG(LOG_ERR, "Error, no isp_irq found from DT\n");
+    if ( isp_res ) {
+        LOG( LOG_ERR, "Juno isp irq = %d, flags = 0x%x !\n", (int)isp_res->start, (int)isp_res->flags );
+        system_interrupts_set_irq( isp_res->start, 4);
+    } else {
+        LOG( LOG_ERR, "Error, no isp_irq found from DT\n" );
         return -1;
     }
 
-    isp_res = platform_get_resource(pdev,
-                                    IORESOURCE_MEM, 0);
-    if (isp_res)
-    {
-        LOG(LOG_ERR, "Juno isp address = 0x%lx, end = 0x%lx !\n", isp_res->start, isp_res->end);
-        if (init_hw_io(isp_res->start, (isp_res->end - isp_res->start) + 1) != 0)
-        {
-            LOG(LOG_ERR, "Error on mapping gdc memory! \n");
+    isp_res = platform_get_resource( pdev,
+        IORESOURCE_MEM, 0 );
+    if ( isp_res ) {
+        LOG( LOG_ERR, "Juno isp address = 0x%lx, end = 0x%lx !\n", isp_res->start, isp_res->end );
+        if ( init_hw_io( isp_res->start, ( isp_res->end - isp_res->start ) + 1 ) != 0 ) {
+            LOG( LOG_ERR, "Error on mapping gdc memory! \n" );
         }
-    }
-    else
-    {
-        LOG(LOG_ERR, "Error, no IORESOURCE_MEM DT!\n");
+    } else {
+        LOG( LOG_ERR, "Error, no IORESOURCE_MEM DT!\n" );
     }
 
     isp_power_on();
@@ -942,62 +1008,55 @@ static int32_t isp_platform_probe(struct platform_device *pdev)
 
     dev_info.am_sc = of_parse_phandle(pdev->dev.of_node, "link-device", 0);
 
-    if (dev_info.am_sc == NULL)
-    {
-        LOG(LOG_ERR, "Failed to get link device\n");
-    }
-    else
-    {
-        LOG(LOG_ERR, "Success to get link device: %s\n", dev_info.am_sc->name);
+    if (dev_info.am_sc == NULL) {
+        LOG( LOG_ERR,"Failed to get link device\n");
+    } else {
+        LOG( LOG_ERR,"Success to get link device: %s\n", dev_info.am_sc->name);
         am_sc_parse_dt(dev_info.am_sc);
     }
 
 #if PLATFORM_G12B == 1
-    dev_info.clk_isp_0 = devm_clk_get(&pdev->dev, "cts_mipi_isp_clk_composite");
-    dev_info.clk_mipi_0 = devm_clk_get(&pdev->dev, "cts_mipi_csi_phy_clk0_composite");
-#elif PLATFORM_C308X == 1
+    dev_info.clk_isp_0 = devm_clk_get(&pdev->dev, "cts_mipi_isp_clk");
+    dev_info.clk_mipi_0 = devm_clk_get(&pdev->dev, "cts_mipi_csi_phy_clk0");
+#elif PLATFORM_C308X == 1 || PLATFORM_C305X == 1
     dev_info.am_md = of_parse_phandle(pdev->dev.of_node, "att-device", 0);
 
-    if (dev_info.am_md == NULL)
-    {
-        LOG(LOG_ERR, "Failed to get att device\n");
-    }
-    else
-    {
-        LOG(LOG_ERR, "Success to get att device: %s\n", dev_info.am_md->name);
+    if (dev_info.am_md == NULL) {
+        LOG( LOG_ERR,"Failed to get att device\n");
+    } else {
+        LOG( LOG_ERR,"Success to get att device: %s\n", dev_info.am_md->name);
         am_md_parse_dt(dev_info.am_md);
     }
 
     dev_info.clk_isp_0 = devm_clk_get(&pdev->dev, "cts_mipi_isp_clk");
     dev_info.clk_mipi_0 = devm_clk_get(&pdev->dev, "cts_mipi_csi_phy_clk0");
     rc = of_property_read_u32(pdev->dev.of_node, "clk-level",
-                              &(dev_info.clk_level));
+                &(dev_info.clk_level));
 #endif
 
-    if (IS_ERR(dev_info.clk_isp_0))
-    {
+#if PLATFORM_G12B == 1 || PLATFORM_C308X == 1 || PLATFORM_C305X == 1
+    if (IS_ERR(dev_info.clk_isp_0)) {
         LOG(LOG_ERR, "cannot get isp clock\n");
         dev_info.clk_isp_0 = NULL;
         return -1;
     }
 
-    if (IS_ERR(dev_info.clk_mipi_0))
-    {
+    if (IS_ERR(dev_info.clk_mipi_0)) {
         LOG(LOG_ERR, "cannot get phy clock\n");
         dev_info.clk_mipi_0 = NULL;
         return -1;
     }
-    if (rc != 0)
-    {
+    if (rc != 0) {
         pr_err("%s: failed to get isp slave addr\n", __func__);
         dev_info.clk_level = 0;
     }
+#endif
 
     isp_clk_enable();
 
     if (seamless)
     {
-        if (acamera_isp_input_port_mode_status_read(0) != ACAMERA_ISP_INPUT_PORT_MODE_REQUEST_SAFE_START)
+        if (acamera_isp_input_port_mode_status_read( 0 ) != ACAMERA_ISP_INPUT_PORT_MODE_REQUEST_SAFE_START)
         {
             hw_reset(true);
             system_interrupts_init();
@@ -1014,36 +1073,30 @@ static int32_t isp_platform_probe(struct platform_device *pdev)
     }
 
     isp_pdev = pdev;
-    static atomic_t drv_instance = ATOMIC_INIT(0);
-    v4l2_device_set_name(&v4l2_dev, ISP_V4L2_MODULE_NAME, &drv_instance);
-    rc = v4l2_device_register(&pdev->dev, &v4l2_dev);
-    if (rc == 0)
-    {
-        LOG(LOG_ERR, "register v4l2 driver. result %d.", rc);
-    }
-    else
-    {
-        LOG(LOG_ERR, "failed to register v4l2 device. rc = %d", rc);
+    static atomic_t drv_instance = ATOMIC_INIT( 0 );
+    v4l2_device_set_name( &v4l2_dev, ISP_V4L2_MODULE_NAME, &drv_instance );
+    rc = v4l2_device_register( &pdev->dev, &v4l2_dev );
+    if ( rc == 0 ) {
+        LOG( LOG_ERR, "register v4l2 driver. result %d.", rc );
+    } else {
+        LOG( LOG_ERR, "failed to register v4l2 device. rc = %d", rc );
         goto free_res;
     }
-
-    g_firmware_context_number = dcam;
-    LOG(LOG_CRIT, "cam num:%d", g_firmware_context_number);
-
 #if V4L2_SOC_SUBDEV_ENABLE
     int idx;
 
-    LOG(LOG_ERR, "--------------------------------");
-    LOG(LOG_ERR, "Register %d subdevices", V4L2_SOC_SUBDEV_NUMBER);
-    LOG(LOG_ERR, "--------------------------------");
+    LOG( LOG_ERR, "--------------------------------" );
+    LOG( LOG_ERR, "Register %d subdevices", V4L2_SOC_SUBDEV_NUMBER );
+    LOG( LOG_ERR, "--------------------------------" );
 
     g_subdevs.subdev_counter = 0;
+
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 4, 0))
-    v4l2_async_notifier_init(&g_subdevs.notifier);
+        v4l2_async_notifier_init(&g_subdevs.notifier);
 #endif
 
-    for (idx = 0; idx < V4L2_SOC_SUBDEV_NUMBER; idx++)
-    {
+
+    for ( idx = 0; idx < V4L2_SOC_SUBDEV_NUMBER; idx++ ) {
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 15, 0))
         g_subdevs.soc_async_sd[idx].match_type = V4L2_ASYNC_MATCH_CUSTOM;
         g_subdevs.soc_async_sd[idx].match.custom.match = NULL;
@@ -1067,7 +1120,7 @@ static int32_t isp_platform_probe(struct platform_device *pdev)
 #endif
     }
 
-    g_subdevs.hw_isp_addr = (uint32_t)isp_res->start; // ISP_SOC_START_ADDR;
+    g_subdevs.hw_isp_addr = (uint32_t)isp_res->start; //ISP_SOC_START_ADDR;
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 10, 0))
     g_subdevs.notifier.ops = &acamera_camera_async_ops;
 #else
@@ -1075,30 +1128,30 @@ static int32_t isp_platform_probe(struct platform_device *pdev)
     g_subdevs.notifier.complete = acamera_camera_async_complete;
     g_subdevs.notifier.unbind = acamera_camera_async_unbind;
 #endif
+
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 4, 0))
     g_subdevs.notifier.subdevs = (struct v4l2_async_subdev **)&g_subdevs.soc_async_sd_ptr;
     g_subdevs.notifier.num_subdevs = V4L2_SOC_SUBDEV_NUMBER;
 #endif
 
-    rc = v4l2_async_notifier_register(&v4l2_dev, &g_subdevs.notifier);
+    rc = v4l2_async_notifier_register( &v4l2_dev, &g_subdevs.notifier );
 
     device_create_file(&pdev->dev, &dev_attr_reg);
     device_create_file(&pdev->dev, &dev_attr_dump_frame);
     device_create_file(&pdev->dev, &dev_attr_isp_clk);
-    LOG(LOG_ERR, "Init finished. async register notifier result %d. Waiting for subdevices", rc);
+    system_dbg_create(&pdev->dev);
+    system_isp_proc_create(&pdev->dev);
+    LOG( LOG_ERR, "Init finished. async register notifier result %d. Waiting for subdevices", rc );
 #else
     // no subdevice is used
-    rc = isp_v4l2_create_instance(&v4l2_dev, isp_pdev, (uint32_t)isp_res->start);
-    if (rc < 0)
+    rc = isp_v4l2_create_instance( &v4l2_dev, isp_pdev, (uint32_t)isp_res->start );
+    if ( rc < 0 )
         goto free_res;
 
-    if (rc == 0)
-    {
+    if ( rc == 0 ) {
         initialized = 1;
-    }
-    else
-    {
-        LOG(LOG_ERR, "Failed to register ISP v4l2 driver.");
+    } else {
+        LOG( LOG_ERR, "Failed to register ISP v4l2 driver." );
         return -1;
     }
 
@@ -1109,22 +1162,24 @@ free_res:
     return rc;
 }
 
+
 static int isp_platform_remove(struct platform_device *pdev)
 {
     device_remove_file(&pdev->dev, &dev_attr_reg);
     device_remove_file(&pdev->dev, &dev_attr_dump_frame);
     device_remove_file(&pdev->dev, &dev_attr_isp_clk);
-    if (initialized == 1)
-    {
+    system_dbg_remove(&pdev->dev);
+    system_isp_proc_remove(&pdev->dev);
+    if ( initialized == 1 ) {
         isp_v4l2_destroy_instance(isp_pdev);
         initialized = 0;
     }
 
 #if V4L2_SOC_SUBDEV_ENABLE
-    v4l2_async_notifier_unregister(&g_subdevs.notifier);
+    v4l2_async_notifier_unregister( &g_subdevs.notifier );
 #endif
 
-    v4l2_device_unregister(&v4l2_dev);
+    v4l2_device_unregister( &v4l2_dev );
 
     hw_reset(true);
 
@@ -1132,20 +1187,17 @@ static int isp_platform_remove(struct platform_device *pdev)
 
     isp_clk_disable();
 
-    if (dev_info.clk_mipi_0 != NULL)
-    {
+    if (dev_info.clk_mipi_0 != NULL) {
         devm_clk_put(&pdev->dev, dev_info.clk_mipi_0);
         dev_info.clk_mipi_0 = NULL;
     }
 
-    if (dev_info.clk_isp_0 != NULL)
-    {
+    if (dev_info.clk_isp_0!= NULL) {
         devm_clk_put(&pdev->dev, dev_info.clk_isp_0);
         dev_info.clk_isp_0 = NULL;
     }
 
-    if (dev_info.am_sc != NULL)
-    {
+    if (dev_info.am_sc != NULL) {
         am_sc_deinit_parse_dt();
         dev_info.am_sc = NULL;
     }
@@ -1162,11 +1214,11 @@ static const struct of_device_id isp_dt_match[] = {
     {.compatible = "arm, isp"},
     {}};
 
-MODULE_DEVICE_TABLE(of, isp_dt_match);
+MODULE_DEVICE_TABLE( of, isp_dt_match );
 
 static struct platform_driver isp_platform_driver = {
     .probe = isp_platform_probe,
-    .remove = isp_platform_remove,
+    .remove	= isp_platform_remove,
     .driver = {
         .name = "arm_isp",
         .owner = THIS_MODULE,
@@ -1174,25 +1226,25 @@ static struct platform_driver isp_platform_driver = {
     },
 };
 
-static int __init fw_module_init(void)
+static int __init fw_module_init( void )
 {
     int32_t rc = 0;
 
-    LOG(LOG_ERR, "Juno isp fw_module_init\n");
+    LOG( LOG_ERR, "Juno isp fw_module_init\n" );
 
     rc = platform_driver_register(&isp_platform_driver);
 
     return rc;
 }
 
-static void __exit fw_module_exit(void)
+static void __exit fw_module_exit( void )
 {
-    LOG(LOG_ERR, "Juno isp fw_module_exit\n");
+    LOG( LOG_ERR, "Juno isp fw_module_exit\n" );
 
-    platform_driver_unregister(&isp_platform_driver);
+    platform_driver_unregister( &isp_platform_driver );
 }
 
-module_init(fw_module_init);
-module_exit(fw_module_exit);
-MODULE_LICENSE("GPL v2");
-MODULE_AUTHOR("ARM IVG SW");
+module_init( fw_module_init );
+module_exit( fw_module_exit );
+MODULE_LICENSE( "GPL v2" );
+MODULE_AUTHOR( "ARM IVG SW" );

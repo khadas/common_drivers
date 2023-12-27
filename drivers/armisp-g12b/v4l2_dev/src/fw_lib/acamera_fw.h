@@ -56,6 +56,7 @@ struct _isp_info_t {
 #include "fsm_param.h"
 #include "sensor_init.h"
 #include "acamera_isp_config.h"
+#include "system_autowrite.h"
 
 
 #if ISP_DMA_RAW_CAPTURE
@@ -71,6 +72,7 @@ typedef struct _sytem_tab {
     uint8_t global_manual_sinter;
     uint8_t global_manual_temper;
     uint8_t global_manual_awb;
+    uint8_t global_manual_ccm;
     uint8_t global_manual_saturation;
     uint8_t global_manual_auto_level;
     uint8_t global_manual_frame_stitch;
@@ -86,19 +88,23 @@ typedef struct _sytem_tab {
     uint32_t global_short_integration_time;
     uint8_t global_exposure_ratio;
 
-
     uint8_t global_iridix_strength_target;
     uint8_t global_maximum_iridix_strength;
     uint8_t global_minimum_iridix_strength;
     uint8_t global_sinter_threshold_target;
     uint8_t global_temper_threshold_target;
     uint16_t global_awb_red_gain;
+    uint16_t global_awb_green_even_gain;
+    uint16_t global_awb_green_odd_gain;
     uint16_t global_awb_blue_gain;
+    int16_t global_ccm_matrix[9];
     uint8_t global_saturation_target;
 
     uint8_t global_ae_compensation;
     uint8_t global_calibrate_bad_pixels;
     uint32_t global_info_preset_num;
+    uint8_t global_dynamic_gamma_enable;
+	uint8_t global_manual_pf;
 } system_tab;
 
 typedef struct _acamera_isp_sw_regs_map {
@@ -108,8 +114,6 @@ typedef struct _acamera_isp_sw_regs_map {
 
 
 struct _acamera_context_t {
-    uint32_t v4l2_count;
-
     uint32_t irq_flag;
 
     // profiling routines
@@ -123,6 +127,7 @@ struct _acamera_context_t {
     uint8_t initialized;
     uint8_t hflip;
     uint8_t vflip;
+    uint8_t cali_mode;
 
     acamera_fsm_mgr_t fsm_mgr;
     acamera_firmware_t *p_gfw;
@@ -149,6 +154,9 @@ struct _acamera_context_t {
     uint32_t isp_frame_counter;     // frame counter for frame / metadata callbacks
 
     acamera_isp_sw_regs_map sw_reg_map;
+    auto_write_cfg_t fr_auto_cfg;
+    auto_write_cfg_t ds1_auto_cfg;
+    auto_write_cfg_t ds2_auto_cfg;
 };
 
 
@@ -171,13 +179,6 @@ struct _acamera_firmware_t {
     uint32_t initialized;
 
     semaphore_t sem_evt_avail;
-
-    uint32_t isp_user;
-    int32_t dma_ready;
-    uint32_t cam_id_last;
-    uint32_t cam_id_current;
-    uint32_t cam_id_next;
-    uint32_t cam_id_next_next;
 };
 
 void acamera_load_isp_sequence( uintptr_t isp_base, const acam_reg_t **sequence, uint8_t num );
@@ -228,12 +229,14 @@ int32_t acamera_init_context( acamera_context_t *p_ctx, acamera_settings *settin
 void acamera_deinit_context( acamera_context_t *p_ctx );
 void acamera_general_interrupt_handler( acamera_context_ptr_t p_ctx, uint8_t event );
 
-int32_t acamera_init_calibrations( acamera_context_ptr_t p_ctx );
+int32_t acamera_init_calibrations( acamera_context_ptr_t p_ctx, char* s_name );
 void acamera_change_resolution( acamera_context_ptr_t p_ctx, uint32_t exposure_correction );
 void configure_buffers( acamera_context_ptr_t p_ctx, uint32_t start_addr, uint16_t width, uint16_t height );
 void acamera_fw_error_routine( acamera_context_t *p_ctx, uint32_t irq_mask );
 
 int acamera_3aalg_enable(void);
+int32_t acamera_extern_param_calculate(void *param);
+int32_t acamera_extern_param_calculate_ushort(void *param);
 
 #define ACAMERA_MGR2CTX_PTR( p_fsm_mgr ) \
     ( ( p_fsm_mgr )->p_ctx )

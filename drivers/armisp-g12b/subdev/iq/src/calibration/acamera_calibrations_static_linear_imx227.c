@@ -125,34 +125,34 @@ static uint32_t _calibration_evtolux_lux_lut[] = {20000, 18000, 16000, 14000, 12
 
 // CALIBRATION_BLACK_LEVEL_R
 static uint16_t _calibration_black_level_r[][2] = {
-  { 0, 64 },
-  { 32, 65 },
-  { 64, 65 },
-  { 96, 65 }
+  { 0, 62 },
+  { 32, 62 },
+  { 64, 62 },
+  { 96, 62 }
 };
 
 // CALIBRATION_BLACK_LEVEL_GR
 static uint16_t _calibration_black_level_gr[][2] = {
-  { 0, 64 },
-  { 32, 65 },
-  { 64, 65 },
-  { 96, 65 }
+  { 0, 62 },
+  { 32, 62 },
+  { 64, 62 },
+  { 96, 62 }
 };
 
 // CALIBRATION_BLACK_LEVEL_GB
 static uint16_t _calibration_black_level_gb[][2] = {
-  { 0, 64 },
-  { 32, 65 },
-  { 64, 65 },
-  { 96, 65 }
+  { 0, 62 },
+  { 32, 62 },
+  { 64, 62 },
+  { 96, 62 }
 };
 
 // CALIBRATION_BLACK_LEVEL_B
 static uint16_t _calibration_black_level_b[][2] = {
-  { 0, 64 },
-  { 32, 65 },
-  { 64, 65 },
-  { 96, 65 }
+  { 0, 62 },
+  { 32, 62 },
+  { 64, 62 },
+  { 96, 62 }
 };
 
 // CALIBRATION_STATIC_WB

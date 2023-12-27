@@ -1,24 +1,25 @@
 /*
- *
- * SPDX-License-Identifier: GPL-2.0
- *
- * Copyright (C) 2011-2018 ARM or its affiliates
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2.
- * This program is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
- * or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License
- * for more details.
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- *
- */
+*
+* SPDX-License-Identifier: GPL-2.0
+*
+* Copyright (C) 2011-2018 ARM or its affiliates
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation; version 2.
+* This program is distributed in the hope that it will be useful, but
+* WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+* or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License
+* for more details.
+* You should have received a copy of the GNU General Public License along
+* with this program; if not, write to the Free Software Foundation, Inc.,
+* 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+*
+*/
 
 #ifndef __ACAMERA_ISP_CONFIG_H__
 #define __ACAMERA_ISP_CONFIG_H__
+
 
 #include "acamera_isp1_config.h"
 #include "system_sw_io.h"
@@ -48,8 +49,7 @@
 #define ACAMERA_ISP_ID_API_MASK (0xffffffff)
 
 // args: data (32-bit)
-static __inline uint32_t acamera_isp_id_api_read(uintptr_t base)
-{
+static __inline uint32_t acamera_isp_id_api_read(uintptr_t base) {
     return system_hw_read_32(0x0L);
 }
 // ------------------------------------------------------------------------------ //
@@ -62,8 +62,7 @@ static __inline uint32_t acamera_isp_id_api_read(uintptr_t base)
 #define ACAMERA_ISP_ID_PRODUCT_MASK (0xffffffff)
 
 // args: data (32-bit)
-static __inline uint32_t acamera_isp_id_product_read(uintptr_t base)
-{
+static __inline uint32_t acamera_isp_id_product_read(uintptr_t base) {
     return system_hw_read_32(0x4L);
 }
 // ------------------------------------------------------------------------------ //
@@ -76,8 +75,7 @@ static __inline uint32_t acamera_isp_id_product_read(uintptr_t base)
 #define ACAMERA_ISP_ID_VERSION_MASK (0xffffffff)
 
 // args: data (32-bit)
-static __inline uint32_t acamera_isp_id_version_read(uintptr_t base)
-{
+static __inline uint32_t acamera_isp_id_version_read(uintptr_t base) {
     return system_hw_read_32(0x8L);
 }
 // ------------------------------------------------------------------------------ //
@@ -90,8 +88,7 @@ static __inline uint32_t acamera_isp_id_version_read(uintptr_t base)
 #define ACAMERA_ISP_ID_REVISION_MASK (0xffffffff)
 
 // args: data (32-bit)
-static __inline uint32_t acamera_isp_id_revision_read(uintptr_t base)
-{
+static __inline uint32_t acamera_isp_id_revision_read(uintptr_t base) {
     return system_hw_read_32(0xcL);
 }
 // ------------------------------------------------------------------------------ //
@@ -123,7 +120,7 @@ static __inline uint32_t acamera_isp_id_revision_read(uintptr_t base)
 //                8.	Clear the global fsm reset.
 //                9.	Reconfigure the ISP configuration space.
 //                10.	Unmask the necessary interrupt sources.
-// 11.	Configure the input port in safe_start mode.
+//11.	Configure the input port in safe_start mode.
 //
 // ------------------------------------------------------------------------------ //
 
@@ -133,13 +130,11 @@ static __inline uint32_t acamera_isp_id_revision_read(uintptr_t base)
 #define ACAMERA_ISP_ISP_GLOBAL_GLOBAL_FSM_RESET_MASK (0x1)
 
 // args: data (1-bit)
-static __inline void acamera_isp_isp_global_global_fsm_reset_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_isp_global_global_fsm_reset_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x10L);
-    system_hw_write_32(0x10L, (((uint32_t)(data & 0x1)) << 0) | (curr & 0xfffffffe));
+    system_hw_write_32(0x10L, (((uint32_t) (data & 0x1)) << 0) | (curr & 0xfffffffe));
 }
-static __inline uint8_t acamera_isp_isp_global_global_fsm_reset_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_global_fsm_reset_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x10L) & 0x1) >> 0);
 }
 // ------------------------------------------------------------------------------ //
@@ -156,13 +151,11 @@ static __inline uint8_t acamera_isp_isp_global_global_fsm_reset_read(uintptr_t b
 #define ACAMERA_ISP_ISP_GLOBAL_SCALER_FSM_RESET_MASK (0x2)
 
 // args: data (1-bit)
-static __inline void acamera_isp_isp_global_scaler_fsm_reset_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_isp_global_scaler_fsm_reset_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x10L);
-    system_hw_write_32(0x10L, (((uint32_t)(data & 0x1)) << 1) | (curr & 0xfffffffd));
+    system_hw_write_32(0x10L, (((uint32_t) (data & 0x1)) << 1) | (curr & 0xfffffffd));
 }
-static __inline uint8_t acamera_isp_isp_global_scaler_fsm_reset_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_scaler_fsm_reset_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x10L) & 0x2) >> 1);
 }
 // ------------------------------------------------------------------------------ //
@@ -196,13 +189,11 @@ static __inline uint8_t acamera_isp_isp_global_scaler_fsm_reset_read(uintptr_t b
 #define ACAMERA_ISP_ISP_GLOBAL_DMA_GLOBAL_CONFIG_MASK (0x7ffffff0)
 
 // args: data (27-bit)
-static __inline void acamera_isp_isp_global_dma_global_config_write(uintptr_t base, uint32_t data)
-{
+static __inline void acamera_isp_isp_global_dma_global_config_write(uintptr_t base, uint32_t data) {
     uint32_t curr = system_hw_read_32(0x10L);
-    system_hw_write_32(0x10L, (((uint32_t)(data & 0x7ffffff)) << 4) | (curr & 0x8000000f));
+    system_hw_write_32(0x10L, (((uint32_t) (data & 0x7ffffff)) << 4) | (curr & 0x8000000f));
 }
-static __inline uint32_t acamera_isp_isp_global_dma_global_config_read(uintptr_t base)
-{
+static __inline uint32_t acamera_isp_isp_global_dma_global_config_read(uintptr_t base) {
     return (uint32_t)((system_hw_read_32(0x10L) & 0x7ffffff0) >> 4);
 }
 // ------------------------------------------------------------------------------ //
@@ -219,13 +210,11 @@ static __inline uint32_t acamera_isp_isp_global_dma_global_config_read(uintptr_t
 #define ACAMERA_ISP_ISP_GLOBAL_FLUSH_HBLANK_MASK (0xffff)
 
 // args: data (16-bit)
-static __inline void acamera_isp_isp_global_flush_hblank_write(uintptr_t base, uint16_t data)
-{
+static __inline void acamera_isp_isp_global_flush_hblank_write(uintptr_t base, uint16_t data) {
     uint32_t curr = system_hw_read_32(0x14L);
-    system_hw_write_32(0x14L, (((uint32_t)(data & 0xffff)) << 0) | (curr & 0xffff0000));
+    system_hw_write_32(0x14L, (((uint32_t) (data & 0xffff)) << 0) | (curr & 0xffff0000));
 }
-static __inline uint16_t acamera_isp_isp_global_flush_hblank_read(uintptr_t base)
-{
+static __inline uint16_t acamera_isp_isp_global_flush_hblank_read(uintptr_t base) {
     return (uint16_t)((system_hw_read_32(0x14L) & 0xffff) >> 0);
 }
 // ------------------------------------------------------------------------------ //
@@ -248,13 +237,11 @@ static __inline uint16_t acamera_isp_isp_global_flush_hblank_read(uintptr_t base
 #define ACAMERA_ISP_ISP_GLOBAL_ISP_MONITOR_SELECT_OUTPUT_FORCES_TO_0 (4)
 
 // args: data (3-bit)
-static __inline void acamera_isp_isp_global_isp_monitor_select_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_isp_global_isp_monitor_select_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x14L);
-    system_hw_write_32(0x14L, (((uint32_t)(data & 0x7)) << 16) | (curr & 0xfff8ffff));
+    system_hw_write_32(0x14L, (((uint32_t) (data & 0x7)) << 16) | (curr & 0xfff8ffff));
 }
-static __inline uint8_t acamera_isp_isp_global_isp_monitor_select_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_isp_monitor_select_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x14L) & 0x70000) >> 16);
 }
 // ------------------------------------------------------------------------------ //
@@ -271,13 +258,11 @@ static __inline uint8_t acamera_isp_isp_global_isp_monitor_select_read(uintptr_t
 #define ACAMERA_ISP_ISP_GLOBAL_INTERLINE_BLANKS_MIN_MASK (0xffff)
 
 // args: data (16-bit)
-static __inline void acamera_isp_isp_global_interline_blanks_min_write(uintptr_t base, uint16_t data)
-{
+static __inline void acamera_isp_isp_global_interline_blanks_min_write(uintptr_t base, uint16_t data) {
     uint32_t curr = system_hw_read_32(0x18L);
-    system_hw_write_32(0x18L, (((uint32_t)(data & 0xffff)) << 0) | (curr & 0xffff0000));
+    system_hw_write_32(0x18L, (((uint32_t) (data & 0xffff)) << 0) | (curr & 0xffff0000));
 }
-static __inline uint16_t acamera_isp_isp_global_interline_blanks_min_read(uintptr_t base)
-{
+static __inline uint16_t acamera_isp_isp_global_interline_blanks_min_read(uintptr_t base) {
     return (uint16_t)((system_hw_read_32(0x18L) & 0xffff) >> 0);
 }
 // ------------------------------------------------------------------------------ //
@@ -294,13 +279,11 @@ static __inline uint16_t acamera_isp_isp_global_interline_blanks_min_read(uintpt
 #define ACAMERA_ISP_ISP_GLOBAL_INTERFRAME_BLANKS_MIN_MASK (0xffff0000)
 
 // args: data (16-bit)
-static __inline void acamera_isp_isp_global_interframe_blanks_min_write(uintptr_t base, uint16_t data)
-{
+static __inline void acamera_isp_isp_global_interframe_blanks_min_write(uintptr_t base, uint16_t data) {
     uint32_t curr = system_hw_read_32(0x18L);
-    system_hw_write_32(0x18L, (((uint32_t)(data & 0xffff)) << 16) | (curr & 0xffff));
+    system_hw_write_32(0x18L, (((uint32_t) (data & 0xffff)) << 16) | (curr & 0xffff));
 }
-static __inline uint16_t acamera_isp_isp_global_interframe_blanks_min_read(uintptr_t base)
-{
+static __inline uint16_t acamera_isp_isp_global_interframe_blanks_min_read(uintptr_t base) {
     return (uint16_t)((system_hw_read_32(0x18L) & 0xffff0000) >> 16);
 }
 // ------------------------------------------------------------------------------ //
@@ -319,12 +302,10 @@ static __inline uint16_t acamera_isp_isp_global_interframe_blanks_min_read(uintp
 #define ACAMERA_ISP_ISP_GLOBAL_WATCHDOG_TIMER_MAX_COUNT_MASK (0xffffffff)
 
 // args: data (32-bit)
-static __inline void acamera_isp_isp_global_watchdog_timer_max_count_write(uintptr_t base, uint32_t data)
-{
+static __inline void acamera_isp_isp_global_watchdog_timer_max_count_write(uintptr_t base, uint32_t data) {
     system_hw_write_32(0x1cL, data);
 }
-static __inline uint32_t acamera_isp_isp_global_watchdog_timer_max_count_read(uintptr_t base)
-{
+static __inline uint32_t acamera_isp_isp_global_watchdog_timer_max_count_read(uintptr_t base) {
     return system_hw_read_32(0x1cL);
 }
 // ------------------------------------------------------------------------------ //
@@ -344,13 +325,11 @@ static __inline uint32_t acamera_isp_isp_global_watchdog_timer_max_count_read(ui
 #define ACAMERA_ISP_ISP_GLOBAL_MCU_OVERRIDE_CONFIG_SELECT_MASK (0x1)
 
 // args: data (1-bit)
-static __inline void acamera_isp_isp_global_mcu_override_config_select_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_isp_global_mcu_override_config_select_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x20L);
-    system_hw_write_32(0x20L, (((uint32_t)(data & 0x1)) << 0) | (curr & 0xfffffffe));
+    system_hw_write_32(0x20L, (((uint32_t) (data & 0x1)) << 0) | (curr & 0xfffffffe));
 }
-static __inline uint8_t acamera_isp_isp_global_mcu_override_config_select_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_mcu_override_config_select_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x20L) & 0x1) >> 0);
 }
 // ------------------------------------------------------------------------------ //
@@ -374,22 +353,13 @@ static __inline uint8_t acamera_isp_isp_global_mcu_override_config_select_read(u
 #define ACAMERA_ISP_ISP_GLOBAL_MCU_PING_PONG_CONFIG_SELECT_USE_PING_ADDRESS_SPACE (1)
 
 // args: data (1-bit)
-static __inline void acamera_isp_isp_global_mcu_ping_pong_config_select_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_isp_global_mcu_ping_pong_config_select_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x20L);
-    system_hw_write_32(0x20L, (((uint32_t)(data & 0x1)) << 1) | (curr & 0xfffffffd));
+    system_hw_write_32(0x20L, (((uint32_t) (data & 0x1)) << 1) | (curr & 0xfffffffd));
 }
-static __inline uint8_t acamera_isp_isp_global_mcu_ping_pong_config_select_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_mcu_ping_pong_config_select_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x20L) & 0x2) >> 1);
 }
-
-static __inline void acamera_isp_isp_global_mcu_multi_ctx_mode(uintptr_t base, uint8_t data)
-{
-    uint32_t curr = system_hw_read_32(0x20L);
-    system_hw_write_32(0x20L, (((uint32_t)(data & 0x1)) << 8) | (curr & 0xfffffeff));
-}
-
 // ------------------------------------------------------------------------------ //
 // Register: multi context mode
 // ------------------------------------------------------------------------------ //
@@ -406,13 +376,11 @@ static __inline void acamera_isp_isp_global_mcu_multi_ctx_mode(uintptr_t base, u
 #define ACAMERA_ISP_ISP_GLOBAL_MULTI_CONTEXT_MODE_MULTICONTEXT_MODE (1)
 
 // args: data (1-bit)
-static __inline void acamera_isp_isp_global_multi_context_mode_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_isp_global_multi_context_mode_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x20L);
-    system_hw_write_32(0x20L, (((uint32_t)(data & 0x1)) << 8) | (curr & 0xfffffeff));
+    system_hw_write_32(0x20L, (((uint32_t) (data & 0x1)) << 8) | (curr & 0xfffffeff));
 }
-static __inline uint8_t acamera_isp_isp_global_multi_context_mode_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_multi_context_mode_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x20L) & 0x100) >> 8);
 }
 // ------------------------------------------------------------------------------ //
@@ -433,8 +401,7 @@ static __inline uint8_t acamera_isp_isp_global_multi_context_mode_read(uintptr_t
 #define ACAMERA_ISP_ISP_GLOBAL_PING_LOCKED_MASK (0x1)
 
 // args: data (1-bit)
-static __inline uint8_t acamera_isp_isp_global_ping_locked_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_ping_locked_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x24L) & 0x1) >> 0);
 }
 // ------------------------------------------------------------------------------ //
@@ -455,8 +422,7 @@ static __inline uint8_t acamera_isp_isp_global_ping_locked_read(uintptr_t base)
 #define ACAMERA_ISP_ISP_GLOBAL_PONG_LOCKED_MASK (0x2)
 
 // args: data (1-bit)
-static __inline uint8_t acamera_isp_isp_global_pong_locked_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_pong_locked_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x24L) & 0x2) >> 1);
 }
 // ------------------------------------------------------------------------------ //
@@ -485,8 +451,7 @@ static __inline uint8_t acamera_isp_isp_global_pong_locked_read(uintptr_t base)
 #define ACAMERA_ISP_ISP_GLOBAL_PING_PONG_CONFIG_SELECT_MASK (0x4)
 
 // args: data (1-bit)
-static __inline uint8_t acamera_isp_isp_global_ping_pong_config_select_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_ping_pong_config_select_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x24L) & 0x4) >> 2);
 }
 // ------------------------------------------------------------------------------ //
@@ -511,13 +476,11 @@ static __inline uint8_t acamera_isp_isp_global_ping_pong_config_select_read(uint
 #define ACAMERA_ISP_ISP_GLOBAL_METERING_BASE_ADDR_AWB_MASK (0xffff)
 
 // args: data (16-bit)
-static __inline void acamera_isp_isp_global_metering_base_addr_awb_write(uintptr_t base, uint16_t data)
-{
+static __inline void acamera_isp_isp_global_metering_base_addr_awb_write(uintptr_t base, uint16_t data) {
     uint32_t curr = system_hw_read_32(0x28L);
-    system_hw_write_32(0x28L, (((uint32_t)(data & 0xffff)) << 0) | (curr & 0xffff0000));
+    system_hw_write_32(0x28L, (((uint32_t) (data & 0xffff)) << 0) | (curr & 0xffff0000));
 }
-static __inline uint16_t acamera_isp_isp_global_metering_base_addr_awb_read(uintptr_t base)
-{
+static __inline uint16_t acamera_isp_isp_global_metering_base_addr_awb_read(uintptr_t base) {
     return (uint16_t)((system_hw_read_32(0x28L) & 0xffff) >> 0);
 }
 // ------------------------------------------------------------------------------ //
@@ -534,13 +497,11 @@ static __inline uint16_t acamera_isp_isp_global_metering_base_addr_awb_read(uint
 #define ACAMERA_ISP_ISP_GLOBAL_METERING_BASE_ADDR_AF_MASK (0xffff0000)
 
 // args: data (16-bit)
-static __inline void acamera_isp_isp_global_metering_base_addr_af_write(uintptr_t base, uint16_t data)
-{
+static __inline void acamera_isp_isp_global_metering_base_addr_af_write(uintptr_t base, uint16_t data) {
     uint32_t curr = system_hw_read_32(0x28L);
-    system_hw_write_32(0x28L, (((uint32_t)(data & 0xffff)) << 16) | (curr & 0xffff));
+    system_hw_write_32(0x28L, (((uint32_t) (data & 0xffff)) << 16) | (curr & 0xffff));
 }
-static __inline uint16_t acamera_isp_isp_global_metering_base_addr_af_read(uintptr_t base)
-{
+static __inline uint16_t acamera_isp_isp_global_metering_base_addr_af_read(uintptr_t base) {
     return (uint16_t)((system_hw_read_32(0x28L) & 0xffff0000) >> 16);
 }
 // ------------------------------------------------------------------------------ //
@@ -557,13 +518,11 @@ static __inline uint16_t acamera_isp_isp_global_metering_base_addr_af_read(uintp
 #define ACAMERA_ISP_ISP_GLOBAL_METERING_BASE_ADDR_MAX_ADDR_MASK (0xffff)
 
 // args: data (16-bit)
-static __inline void acamera_isp_isp_global_metering_base_addr_max_addr_write(uintptr_t base, uint16_t data)
-{
+static __inline void acamera_isp_isp_global_metering_base_addr_max_addr_write(uintptr_t base, uint16_t data) {
     uint32_t curr = system_hw_read_32(0x2cL);
-    system_hw_write_32(0x2cL, (((uint32_t)(data & 0xffff)) << 0) | (curr & 0xffff0000));
+    system_hw_write_32(0x2cL, (((uint32_t) (data & 0xffff)) << 0) | (curr & 0xffff0000));
 }
-static __inline uint16_t acamera_isp_isp_global_metering_base_addr_max_addr_read(uintptr_t base)
-{
+static __inline uint16_t acamera_isp_isp_global_metering_base_addr_max_addr_read(uintptr_t base) {
     return (uint16_t)((system_hw_read_32(0x2cL) & 0xffff) >> 0);
 }
 // ------------------------------------------------------------------------------ //
@@ -591,12 +550,10 @@ static __inline uint16_t acamera_isp_isp_global_metering_base_addr_max_addr_read
 #define ACAMERA_ISP_ISP_GLOBAL_INTERRUPT_MASK_VECTOR_MASK (0xffffffff)
 
 // args: data (32-bit)
-static __inline void acamera_isp_isp_global_interrupt_mask_vector_write(uintptr_t base, uint32_t data)
-{
+static __inline void acamera_isp_isp_global_interrupt_mask_vector_write(uintptr_t base, uint32_t data) {
     system_hw_write_32(0x30L, data);
 }
-static __inline uint32_t acamera_isp_isp_global_interrupt_mask_vector_read(uintptr_t base)
-{
+static __inline uint32_t acamera_isp_isp_global_interrupt_mask_vector_read(uintptr_t base) {
     return system_hw_read_32(0x30L);
 }
 // ------------------------------------------------------------------------------ //
@@ -615,12 +572,10 @@ static __inline uint32_t acamera_isp_isp_global_interrupt_mask_vector_read(uintp
 #define ACAMERA_ISP_ISP_GLOBAL_INTERRUPT_CLEAR_VECTOR_MASK (0xffffffff)
 
 // args: data (32-bit)
-static __inline void acamera_isp_isp_global_interrupt_clear_vector_write(uintptr_t base, uint32_t data)
-{
+static __inline void acamera_isp_isp_global_interrupt_clear_vector_write(uintptr_t base, uint32_t data) {
     system_hw_write_32(0x34L, data);
 }
-static __inline uint32_t acamera_isp_isp_global_interrupt_clear_vector_read(uintptr_t base)
-{
+static __inline uint32_t acamera_isp_isp_global_interrupt_clear_vector_read(uintptr_t base) {
     return system_hw_read_32(0x34L);
 }
 // ------------------------------------------------------------------------------ //
@@ -639,12 +594,10 @@ static __inline uint32_t acamera_isp_isp_global_interrupt_clear_vector_read(uint
 #define ACAMERA_ISP_ISP_GLOBAL_INTERRUPT_SHADOW_DISABLE_VECTOR_MASK (0xffffffff)
 
 // args: data (32-bit)
-static __inline void acamera_isp_isp_global_interrupt_shadow_disable_vector_write(uintptr_t base, uint32_t data)
-{
+static __inline void acamera_isp_isp_global_interrupt_shadow_disable_vector_write(uintptr_t base, uint32_t data) {
     system_hw_write_32(0x38L, data);
 }
-static __inline uint32_t acamera_isp_isp_global_interrupt_shadow_disable_vector_read(uintptr_t base)
-{
+static __inline uint32_t acamera_isp_isp_global_interrupt_shadow_disable_vector_read(uintptr_t base) {
     return system_hw_read_32(0x38L);
 }
 // ------------------------------------------------------------------------------ //
@@ -663,13 +616,11 @@ static __inline uint32_t acamera_isp_isp_global_interrupt_shadow_disable_vector_
 #define ACAMERA_ISP_ISP_GLOBAL_INTERRUPT_PULSE_MODE_MASK (0x1)
 
 // args: data (1-bit)
-static __inline void acamera_isp_isp_global_interrupt_pulse_mode_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_isp_global_interrupt_pulse_mode_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x3cL);
-    system_hw_write_32(0x3cL, (((uint32_t)(data & 0x1)) << 0) | (curr & 0xfffffffe));
+    system_hw_write_32(0x3cL, (((uint32_t) (data & 0x1)) << 0) | (curr & 0xfffffffe));
 }
-static __inline uint8_t acamera_isp_isp_global_interrupt_pulse_mode_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_interrupt_pulse_mode_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x3cL) & 0x1) >> 0);
 }
 // ------------------------------------------------------------------------------ //
@@ -688,13 +639,11 @@ static __inline uint8_t acamera_isp_isp_global_interrupt_pulse_mode_read(uintptr
 #define ACAMERA_ISP_ISP_GLOBAL_INTERRUPT_CLEAR_MASK (0x1)
 
 // args: data (1-bit)
-static __inline void acamera_isp_isp_global_interrupt_clear_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_isp_global_interrupt_clear_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x40L);
-    system_hw_write_32(0x40L, (((uint32_t)(data & 0x1)) << 0) | (curr & 0xfffffffe));
+    system_hw_write_32(0x40L, (((uint32_t) (data & 0x1)) << 0) | (curr & 0xfffffffe));
 }
-static __inline uint8_t acamera_isp_isp_global_interrupt_clear_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_interrupt_clear_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x40L) & 0x1) >> 0);
 }
 // ------------------------------------------------------------------------------ //
@@ -736,8 +685,7 @@ static __inline uint8_t acamera_isp_isp_global_interrupt_clear_read(uintptr_t ba
 #define ACAMERA_ISP_ISP_GLOBAL_INTERRUPT_STATUS_VECTOR_MASK (0xffffffff)
 
 // args: data (32-bit)
-static __inline uint32_t acamera_isp_isp_global_interrupt_status_vector_read(uintptr_t base)
-{
+static __inline uint32_t acamera_isp_isp_global_interrupt_status_vector_read(uintptr_t base) {
     return system_hw_read_32(0x44L);
 }
 // ------------------------------------------------------------------------------ //
@@ -775,13 +723,11 @@ static __inline uint32_t acamera_isp_isp_global_interrupt_status_vector_read(uin
 #define ACAMERA_ISP_ISP_GLOBAL_LP_CLK_DIS_FR_Y_DMA_WRITER_MASK (0x1)
 
 // args: data (1-bit)
-static __inline void acamera_isp_isp_global_lp_clk_dis_fr_y_dma_writer_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_isp_global_lp_clk_dis_fr_y_dma_writer_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x48L);
-    system_hw_write_32(0x48L, (((uint32_t)(data & 0x1)) << 0) | (curr & 0xfffffffe));
+    system_hw_write_32(0x48L, (((uint32_t) (data & 0x1)) << 0) | (curr & 0xfffffffe));
 }
-static __inline uint8_t acamera_isp_isp_global_lp_clk_dis_fr_y_dma_writer_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_lp_clk_dis_fr_y_dma_writer_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x48L) & 0x1) >> 0);
 }
 // ------------------------------------------------------------------------------ //
@@ -802,13 +748,11 @@ static __inline uint8_t acamera_isp_isp_global_lp_clk_dis_fr_y_dma_writer_read(u
 #define ACAMERA_ISP_ISP_GLOBAL_LP_CLK_DIS_FR_UV_DMA_WRITER_MASK (0x2)
 
 // args: data (1-bit)
-static __inline void acamera_isp_isp_global_lp_clk_dis_fr_uv_dma_writer_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_isp_global_lp_clk_dis_fr_uv_dma_writer_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x48L);
-    system_hw_write_32(0x48L, (((uint32_t)(data & 0x1)) << 1) | (curr & 0xfffffffd));
+    system_hw_write_32(0x48L, (((uint32_t) (data & 0x1)) << 1) | (curr & 0xfffffffd));
 }
-static __inline uint8_t acamera_isp_isp_global_lp_clk_dis_fr_uv_dma_writer_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_lp_clk_dis_fr_uv_dma_writer_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x48L) & 0x2) >> 1);
 }
 // ------------------------------------------------------------------------------ //
@@ -829,13 +773,11 @@ static __inline uint8_t acamera_isp_isp_global_lp_clk_dis_fr_uv_dma_writer_read(
 #define ACAMERA_ISP_ISP_GLOBAL_LP_CLK_DIS_DS1_Y_DMA_WRITER_MASK (0x4)
 
 // args: data (1-bit)
-static __inline void acamera_isp_isp_global_lp_clk_dis_ds1_y_dma_writer_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_isp_global_lp_clk_dis_ds1_y_dma_writer_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x48L);
-    system_hw_write_32(0x48L, (((uint32_t)(data & 0x1)) << 2) | (curr & 0xfffffffb));
+    system_hw_write_32(0x48L, (((uint32_t) (data & 0x1)) << 2) | (curr & 0xfffffffb));
 }
-static __inline uint8_t acamera_isp_isp_global_lp_clk_dis_ds1_y_dma_writer_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_lp_clk_dis_ds1_y_dma_writer_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x48L) & 0x4) >> 2);
 }
 // ------------------------------------------------------------------------------ //
@@ -856,13 +798,11 @@ static __inline uint8_t acamera_isp_isp_global_lp_clk_dis_ds1_y_dma_writer_read(
 #define ACAMERA_ISP_ISP_GLOBAL_LP_CLK_DIS_DS1_UV_DMA_WRITER_MASK (0x8)
 
 // args: data (1-bit)
-static __inline void acamera_isp_isp_global_lp_clk_dis_ds1_uv_dma_writer_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_isp_global_lp_clk_dis_ds1_uv_dma_writer_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x48L);
-    system_hw_write_32(0x48L, (((uint32_t)(data & 0x1)) << 3) | (curr & 0xfffffff7));
+    system_hw_write_32(0x48L, (((uint32_t) (data & 0x1)) << 3) | (curr & 0xfffffff7));
 }
-static __inline uint8_t acamera_isp_isp_global_lp_clk_dis_ds1_uv_dma_writer_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_lp_clk_dis_ds1_uv_dma_writer_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x48L) & 0x8) >> 3);
 }
 // ------------------------------------------------------------------------------ //
@@ -881,13 +821,11 @@ static __inline uint8_t acamera_isp_isp_global_lp_clk_dis_ds1_uv_dma_writer_read
 #define ACAMERA_ISP_ISP_GLOBAL_LP_CLK_DIS_TEMPER_DMA_MASK (0x10)
 
 // args: data (1-bit)
-static __inline void acamera_isp_isp_global_lp_clk_dis_temper_dma_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_isp_global_lp_clk_dis_temper_dma_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x48L);
-    system_hw_write_32(0x48L, (((uint32_t)(data & 0x1)) << 4) | (curr & 0xffffffef));
+    system_hw_write_32(0x48L, (((uint32_t) (data & 0x1)) << 4) | (curr & 0xffffffef));
 }
-static __inline uint8_t acamera_isp_isp_global_lp_clk_dis_temper_dma_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_lp_clk_dis_temper_dma_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x48L) & 0x10) >> 4);
 }
 // ------------------------------------------------------------------------------ //
@@ -904,13 +842,11 @@ static __inline uint8_t acamera_isp_isp_global_lp_clk_dis_temper_dma_read(uintpt
 #define ACAMERA_ISP_ISP_GLOBAL_LP_CG_DIS_FRAME_STITCH_MASK (0x1)
 
 // args: data (1-bit)
-static __inline void acamera_isp_isp_global_lp_cg_dis_frame_stitch_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_isp_global_lp_cg_dis_frame_stitch_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x4cL);
-    system_hw_write_32(0x4cL, (((uint32_t)(data & 0x1)) << 0) | (curr & 0xfffffffe));
+    system_hw_write_32(0x4cL, (((uint32_t) (data & 0x1)) << 0) | (curr & 0xfffffffe));
 }
-static __inline uint8_t acamera_isp_isp_global_lp_cg_dis_frame_stitch_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_lp_cg_dis_frame_stitch_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x4cL) & 0x1) >> 0);
 }
 // ------------------------------------------------------------------------------ //
@@ -927,13 +863,11 @@ static __inline uint8_t acamera_isp_isp_global_lp_cg_dis_frame_stitch_read(uintp
 #define ACAMERA_ISP_ISP_GLOBAL_LP_CG_DIS_RAW_FRONTEND_MASK (0x2)
 
 // args: data (1-bit)
-static __inline void acamera_isp_isp_global_lp_cg_dis_raw_frontend_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_isp_global_lp_cg_dis_raw_frontend_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x4cL);
-    system_hw_write_32(0x4cL, (((uint32_t)(data & 0x1)) << 1) | (curr & 0xfffffffd));
+    system_hw_write_32(0x4cL, (((uint32_t) (data & 0x1)) << 1) | (curr & 0xfffffffd));
 }
-static __inline uint8_t acamera_isp_isp_global_lp_cg_dis_raw_frontend_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_lp_cg_dis_raw_frontend_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x4cL) & 0x2) >> 1);
 }
 // ------------------------------------------------------------------------------ //
@@ -950,13 +884,11 @@ static __inline uint8_t acamera_isp_isp_global_lp_cg_dis_raw_frontend_read(uintp
 #define ACAMERA_ISP_ISP_GLOBAL_LP_CG_DIS_DEFECT_PIXEL_MASK (0x4)
 
 // args: data (1-bit)
-static __inline void acamera_isp_isp_global_lp_cg_dis_defect_pixel_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_isp_global_lp_cg_dis_defect_pixel_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x4cL);
-    system_hw_write_32(0x4cL, (((uint32_t)(data & 0x1)) << 2) | (curr & 0xfffffffb));
+    system_hw_write_32(0x4cL, (((uint32_t) (data & 0x1)) << 2) | (curr & 0xfffffffb));
 }
-static __inline uint8_t acamera_isp_isp_global_lp_cg_dis_defect_pixel_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_lp_cg_dis_defect_pixel_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x4cL) & 0x4) >> 2);
 }
 // ------------------------------------------------------------------------------ //
@@ -973,13 +905,11 @@ static __inline uint8_t acamera_isp_isp_global_lp_cg_dis_defect_pixel_read(uintp
 #define ACAMERA_ISP_ISP_GLOBAL_LP_CG_DIS_SINTER_MASK (0x8)
 
 // args: data (1-bit)
-static __inline void acamera_isp_isp_global_lp_cg_dis_sinter_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_isp_global_lp_cg_dis_sinter_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x4cL);
-    system_hw_write_32(0x4cL, (((uint32_t)(data & 0x1)) << 3) | (curr & 0xfffffff7));
+    system_hw_write_32(0x4cL, (((uint32_t) (data & 0x1)) << 3) | (curr & 0xfffffff7));
 }
-static __inline uint8_t acamera_isp_isp_global_lp_cg_dis_sinter_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_lp_cg_dis_sinter_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x4cL) & 0x8) >> 3);
 }
 // ------------------------------------------------------------------------------ //
@@ -996,13 +926,11 @@ static __inline uint8_t acamera_isp_isp_global_lp_cg_dis_sinter_read(uintptr_t b
 #define ACAMERA_ISP_ISP_GLOBAL_LP_CG_DIS_TEMPER_MASK (0x10)
 
 // args: data (1-bit)
-static __inline void acamera_isp_isp_global_lp_cg_dis_temper_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_isp_global_lp_cg_dis_temper_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x4cL);
-    system_hw_write_32(0x4cL, (((uint32_t)(data & 0x1)) << 4) | (curr & 0xffffffef));
+    system_hw_write_32(0x4cL, (((uint32_t) (data & 0x1)) << 4) | (curr & 0xffffffef));
 }
-static __inline uint8_t acamera_isp_isp_global_lp_cg_dis_temper_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_lp_cg_dis_temper_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x4cL) & 0x10) >> 4);
 }
 // ------------------------------------------------------------------------------ //
@@ -1019,13 +947,11 @@ static __inline uint8_t acamera_isp_isp_global_lp_cg_dis_temper_read(uintptr_t b
 #define ACAMERA_ISP_ISP_GLOBAL_LP_CG_DIS_CA_CORRECTION_MASK (0x20)
 
 // args: data (1-bit)
-static __inline void acamera_isp_isp_global_lp_cg_dis_ca_correction_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_isp_global_lp_cg_dis_ca_correction_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x4cL);
-    system_hw_write_32(0x4cL, (((uint32_t)(data & 0x1)) << 5) | (curr & 0xffffffdf));
+    system_hw_write_32(0x4cL, (((uint32_t) (data & 0x1)) << 5) | (curr & 0xffffffdf));
 }
-static __inline uint8_t acamera_isp_isp_global_lp_cg_dis_ca_correction_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_lp_cg_dis_ca_correction_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x4cL) & 0x20) >> 5);
 }
 // ------------------------------------------------------------------------------ //
@@ -1042,13 +968,11 @@ static __inline uint8_t acamera_isp_isp_global_lp_cg_dis_ca_correction_read(uint
 #define ACAMERA_ISP_ISP_GLOBAL_LP_CG_DIS_RADIAL_SHADING_MASK (0x40)
 
 // args: data (1-bit)
-static __inline void acamera_isp_isp_global_lp_cg_dis_radial_shading_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_isp_global_lp_cg_dis_radial_shading_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x4cL);
-    system_hw_write_32(0x4cL, (((uint32_t)(data & 0x1)) << 6) | (curr & 0xffffffbf));
+    system_hw_write_32(0x4cL, (((uint32_t) (data & 0x1)) << 6) | (curr & 0xffffffbf));
 }
-static __inline uint8_t acamera_isp_isp_global_lp_cg_dis_radial_shading_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_lp_cg_dis_radial_shading_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x4cL) & 0x40) >> 6);
 }
 // ------------------------------------------------------------------------------ //
@@ -1065,13 +989,11 @@ static __inline uint8_t acamera_isp_isp_global_lp_cg_dis_radial_shading_read(uin
 #define ACAMERA_ISP_ISP_GLOBAL_LP_CG_DIS_MESH_SHADING_MASK (0x80)
 
 // args: data (1-bit)
-static __inline void acamera_isp_isp_global_lp_cg_dis_mesh_shading_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_isp_global_lp_cg_dis_mesh_shading_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x4cL);
-    system_hw_write_32(0x4cL, (((uint32_t)(data & 0x1)) << 7) | (curr & 0xffffff7f));
+    system_hw_write_32(0x4cL, (((uint32_t) (data & 0x1)) << 7) | (curr & 0xffffff7f));
 }
-static __inline uint8_t acamera_isp_isp_global_lp_cg_dis_mesh_shading_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_lp_cg_dis_mesh_shading_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x4cL) & 0x80) >> 7);
 }
 // ------------------------------------------------------------------------------ //
@@ -1088,13 +1010,11 @@ static __inline uint8_t acamera_isp_isp_global_lp_cg_dis_mesh_shading_read(uintp
 #define ACAMERA_ISP_ISP_GLOBAL_LP_CG_DIS_IRIDIX_MASK (0x100)
 
 // args: data (1-bit)
-static __inline void acamera_isp_isp_global_lp_cg_dis_iridix_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_isp_global_lp_cg_dis_iridix_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x4cL);
-    system_hw_write_32(0x4cL, (((uint32_t)(data & 0x1)) << 8) | (curr & 0xfffffeff));
+    system_hw_write_32(0x4cL, (((uint32_t) (data & 0x1)) << 8) | (curr & 0xfffffeff));
 }
-static __inline uint8_t acamera_isp_isp_global_lp_cg_dis_iridix_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_lp_cg_dis_iridix_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x4cL) & 0x100) >> 8);
 }
 // ------------------------------------------------------------------------------ //
@@ -1111,13 +1031,11 @@ static __inline uint8_t acamera_isp_isp_global_lp_cg_dis_iridix_read(uintptr_t b
 #define ACAMERA_ISP_ISP_GLOBAL_LP_CG_DIS_DEMOSAIC_RGGB_MASK (0x200)
 
 // args: data (1-bit)
-static __inline void acamera_isp_isp_global_lp_cg_dis_demosaic_rggb_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_isp_global_lp_cg_dis_demosaic_rggb_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x4cL);
-    system_hw_write_32(0x4cL, (((uint32_t)(data & 0x1)) << 9) | (curr & 0xfffffdff));
+    system_hw_write_32(0x4cL, (((uint32_t) (data & 0x1)) << 9) | (curr & 0xfffffdff));
 }
-static __inline uint8_t acamera_isp_isp_global_lp_cg_dis_demosaic_rggb_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_lp_cg_dis_demosaic_rggb_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x4cL) & 0x200) >> 9);
 }
 // ------------------------------------------------------------------------------ //
@@ -1134,13 +1052,11 @@ static __inline uint8_t acamera_isp_isp_global_lp_cg_dis_demosaic_rggb_read(uint
 #define ACAMERA_ISP_ISP_GLOBAL_LP_CG_DIS_DEMOSAIC_RGBIR_MASK (0x400)
 
 // args: data (1-bit)
-static __inline void acamera_isp_isp_global_lp_cg_dis_demosaic_rgbir_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_isp_global_lp_cg_dis_demosaic_rgbir_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x4cL);
-    system_hw_write_32(0x4cL, (((uint32_t)(data & 0x1)) << 10) | (curr & 0xfffffbff));
+    system_hw_write_32(0x4cL, (((uint32_t) (data & 0x1)) << 10) | (curr & 0xfffffbff));
 }
-static __inline uint8_t acamera_isp_isp_global_lp_cg_dis_demosaic_rgbir_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_lp_cg_dis_demosaic_rgbir_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x4cL) & 0x400) >> 10);
 }
 // ------------------------------------------------------------------------------ //
@@ -1157,13 +1073,11 @@ static __inline uint8_t acamera_isp_isp_global_lp_cg_dis_demosaic_rgbir_read(uin
 #define ACAMERA_ISP_ISP_GLOBAL_LP_CG_DIS_PF_CORRECTION_MASK (0x800)
 
 // args: data (1-bit)
-static __inline void acamera_isp_isp_global_lp_cg_dis_pf_correction_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_isp_global_lp_cg_dis_pf_correction_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x4cL);
-    system_hw_write_32(0x4cL, (((uint32_t)(data & 0x1)) << 11) | (curr & 0xfffff7ff));
+    system_hw_write_32(0x4cL, (((uint32_t) (data & 0x1)) << 11) | (curr & 0xfffff7ff));
 }
-static __inline uint8_t acamera_isp_isp_global_lp_cg_dis_pf_correction_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_lp_cg_dis_pf_correction_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x4cL) & 0x800) >> 11);
 }
 // ------------------------------------------------------------------------------ //
@@ -1180,13 +1094,11 @@ static __inline uint8_t acamera_isp_isp_global_lp_cg_dis_pf_correction_read(uint
 #define ACAMERA_ISP_ISP_GLOBAL_LP_CG_DIS_CNR_MASK (0x1000)
 
 // args: data (1-bit)
-static __inline void acamera_isp_isp_global_lp_cg_dis_cnr_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_isp_global_lp_cg_dis_cnr_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x4cL);
-    system_hw_write_32(0x4cL, (((uint32_t)(data & 0x1)) << 12) | (curr & 0xffffefff));
+    system_hw_write_32(0x4cL, (((uint32_t) (data & 0x1)) << 12) | (curr & 0xffffefff));
 }
-static __inline uint8_t acamera_isp_isp_global_lp_cg_dis_cnr_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_lp_cg_dis_cnr_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x4cL) & 0x1000) >> 12);
 }
 // ------------------------------------------------------------------------------ //
@@ -1203,13 +1115,11 @@ static __inline uint8_t acamera_isp_isp_global_lp_cg_dis_cnr_read(uintptr_t base
 #define ACAMERA_ISP_ISP_GLOBAL_LP_CG_DIS_3D_LUT_MASK (0x2000)
 
 // args: data (1-bit)
-static __inline void acamera_isp_isp_global_lp_cg_dis_3d_lut_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_isp_global_lp_cg_dis_3d_lut_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x4cL);
-    system_hw_write_32(0x4cL, (((uint32_t)(data & 0x1)) << 13) | (curr & 0xffffdfff));
+    system_hw_write_32(0x4cL, (((uint32_t) (data & 0x1)) << 13) | (curr & 0xffffdfff));
 }
-static __inline uint8_t acamera_isp_isp_global_lp_cg_dis_3d_lut_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_lp_cg_dis_3d_lut_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x4cL) & 0x2000) >> 13);
 }
 // ------------------------------------------------------------------------------ //
@@ -1226,13 +1136,11 @@ static __inline uint8_t acamera_isp_isp_global_lp_cg_dis_3d_lut_read(uintptr_t b
 #define ACAMERA_ISP_ISP_GLOBAL_LP_CG_DIS_RGB_SCALER_MASK (0x4000)
 
 // args: data (1-bit)
-static __inline void acamera_isp_isp_global_lp_cg_dis_rgb_scaler_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_isp_global_lp_cg_dis_rgb_scaler_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x4cL);
-    system_hw_write_32(0x4cL, (((uint32_t)(data & 0x1)) << 14) | (curr & 0xffffbfff));
+    system_hw_write_32(0x4cL, (((uint32_t) (data & 0x1)) << 14) | (curr & 0xffffbfff));
 }
-static __inline uint8_t acamera_isp_isp_global_lp_cg_dis_rgb_scaler_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_lp_cg_dis_rgb_scaler_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x4cL) & 0x4000) >> 14);
 }
 // ------------------------------------------------------------------------------ //
@@ -1249,13 +1157,11 @@ static __inline uint8_t acamera_isp_isp_global_lp_cg_dis_rgb_scaler_read(uintptr
 #define ACAMERA_ISP_ISP_GLOBAL_LP_CG_DIS_RGB_GAMMA_FR_MASK (0x8000)
 
 // args: data (1-bit)
-static __inline void acamera_isp_isp_global_lp_cg_dis_rgb_gamma_fr_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_isp_global_lp_cg_dis_rgb_gamma_fr_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x4cL);
-    system_hw_write_32(0x4cL, (((uint32_t)(data & 0x1)) << 15) | (curr & 0xffff7fff));
+    system_hw_write_32(0x4cL, (((uint32_t) (data & 0x1)) << 15) | (curr & 0xffff7fff));
 }
-static __inline uint8_t acamera_isp_isp_global_lp_cg_dis_rgb_gamma_fr_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_lp_cg_dis_rgb_gamma_fr_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x4cL) & 0x8000) >> 15);
 }
 // ------------------------------------------------------------------------------ //
@@ -1272,13 +1178,11 @@ static __inline uint8_t acamera_isp_isp_global_lp_cg_dis_rgb_gamma_fr_read(uintp
 #define ACAMERA_ISP_ISP_GLOBAL_LP_CG_DIS_RGB_GAMMA_DS_MASK (0x10000)
 
 // args: data (1-bit)
-static __inline void acamera_isp_isp_global_lp_cg_dis_rgb_gamma_ds_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_isp_global_lp_cg_dis_rgb_gamma_ds_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x4cL);
-    system_hw_write_32(0x4cL, (((uint32_t)(data & 0x1)) << 16) | (curr & 0xfffeffff));
+    system_hw_write_32(0x4cL, (((uint32_t) (data & 0x1)) << 16) | (curr & 0xfffeffff));
 }
-static __inline uint8_t acamera_isp_isp_global_lp_cg_dis_rgb_gamma_ds_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_lp_cg_dis_rgb_gamma_ds_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x4cL) & 0x10000) >> 16);
 }
 // ------------------------------------------------------------------------------ //
@@ -1295,13 +1199,11 @@ static __inline uint8_t acamera_isp_isp_global_lp_cg_dis_rgb_gamma_ds_read(uintp
 #define ACAMERA_ISP_ISP_GLOBAL_LP_CG_DIS_FR_SHARPEN_MASK (0x20000)
 
 // args: data (1-bit)
-static __inline void acamera_isp_isp_global_lp_cg_dis_fr_sharpen_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_isp_global_lp_cg_dis_fr_sharpen_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x4cL);
-    system_hw_write_32(0x4cL, (((uint32_t)(data & 0x1)) << 17) | (curr & 0xfffdffff));
+    system_hw_write_32(0x4cL, (((uint32_t) (data & 0x1)) << 17) | (curr & 0xfffdffff));
 }
-static __inline uint8_t acamera_isp_isp_global_lp_cg_dis_fr_sharpen_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_lp_cg_dis_fr_sharpen_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x4cL) & 0x20000) >> 17);
 }
 // ------------------------------------------------------------------------------ //
@@ -1318,13 +1220,11 @@ static __inline uint8_t acamera_isp_isp_global_lp_cg_dis_fr_sharpen_read(uintptr
 #define ACAMERA_ISP_ISP_GLOBAL_LP_CG_DIS_SHARPEN_DS_MASK (0x40000)
 
 // args: data (1-bit)
-static __inline void acamera_isp_isp_global_lp_cg_dis_sharpen_ds_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_isp_global_lp_cg_dis_sharpen_ds_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x4cL);
-    system_hw_write_32(0x4cL, (((uint32_t)(data & 0x1)) << 18) | (curr & 0xfffbffff));
+    system_hw_write_32(0x4cL, (((uint32_t) (data & 0x1)) << 18) | (curr & 0xfffbffff));
 }
-static __inline uint8_t acamera_isp_isp_global_lp_cg_dis_sharpen_ds_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_lp_cg_dis_sharpen_ds_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x4cL) & 0x40000) >> 18);
 }
 // ------------------------------------------------------------------------------ //
@@ -1350,8 +1250,7 @@ static __inline uint8_t acamera_isp_isp_global_lp_cg_dis_sharpen_ds_read(uintptr
 #define ACAMERA_ISP_ISP_GLOBAL_MONITOR_BROKEN_FRAME_STATUS_MASK (0xf)
 
 // args: data (4-bit)
-static __inline uint8_t acamera_isp_isp_global_monitor_broken_frame_status_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_monitor_broken_frame_status_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x50L) & 0xf) >> 0);
 }
 // ------------------------------------------------------------------------------ //
@@ -1374,8 +1273,7 @@ static __inline uint8_t acamera_isp_isp_global_monitor_broken_frame_status_read(
 #define ACAMERA_ISP_ISP_GLOBAL_MONITOR_FR_PIPELINE_BUSY_MASK (0x10000)
 
 // args: data (1-bit)
-static __inline uint8_t acamera_isp_isp_global_monitor_fr_pipeline_busy_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_monitor_fr_pipeline_busy_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x50L) & 0x10000) >> 16);
 }
 // ------------------------------------------------------------------------------ //
@@ -1388,8 +1286,7 @@ static __inline uint8_t acamera_isp_isp_global_monitor_fr_pipeline_busy_read(uin
 #define ACAMERA_ISP_ISP_GLOBAL_MONITOR_FR_Y_DMA_WFIFO_FAIL_FULL_MASK (0x1)
 
 // args: data (1-bit)
-static __inline uint8_t acamera_isp_isp_global_monitor_fr_y_dma_wfifo_fail_full_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_monitor_fr_y_dma_wfifo_fail_full_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x54L) & 0x1) >> 0);
 }
 // ------------------------------------------------------------------------------ //
@@ -1402,8 +1299,7 @@ static __inline uint8_t acamera_isp_isp_global_monitor_fr_y_dma_wfifo_fail_full_
 #define ACAMERA_ISP_ISP_GLOBAL_MONITOR_FR_Y_DMA_WFIFO_FAIL_EMPTY_MASK (0x2)
 
 // args: data (1-bit)
-static __inline uint8_t acamera_isp_isp_global_monitor_fr_y_dma_wfifo_fail_empty_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_monitor_fr_y_dma_wfifo_fail_empty_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x54L) & 0x2) >> 1);
 }
 // ------------------------------------------------------------------------------ //
@@ -1416,8 +1312,7 @@ static __inline uint8_t acamera_isp_isp_global_monitor_fr_y_dma_wfifo_fail_empty
 #define ACAMERA_ISP_ISP_GLOBAL_MONITOR_FR_UV_DMA_WFIFO_FAIL_FULL_MASK (0x4)
 
 // args: data (1-bit)
-static __inline uint8_t acamera_isp_isp_global_monitor_fr_uv_dma_wfifo_fail_full_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_monitor_fr_uv_dma_wfifo_fail_full_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x54L) & 0x4) >> 2);
 }
 // ------------------------------------------------------------------------------ //
@@ -1430,8 +1325,7 @@ static __inline uint8_t acamera_isp_isp_global_monitor_fr_uv_dma_wfifo_fail_full
 #define ACAMERA_ISP_ISP_GLOBAL_MONITOR_FR_UV_DMA_WFIFO_FAIL_EMPTY_MASK (0x8)
 
 // args: data (1-bit)
-static __inline uint8_t acamera_isp_isp_global_monitor_fr_uv_dma_wfifo_fail_empty_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_monitor_fr_uv_dma_wfifo_fail_empty_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x54L) & 0x8) >> 3);
 }
 // ------------------------------------------------------------------------------ //
@@ -1444,8 +1338,7 @@ static __inline uint8_t acamera_isp_isp_global_monitor_fr_uv_dma_wfifo_fail_empt
 #define ACAMERA_ISP_ISP_GLOBAL_MONITOR_DS1_Y_DMA_WFIFO_FAIL_FULL_MASK (0x10)
 
 // args: data (1-bit)
-static __inline uint8_t acamera_isp_isp_global_monitor_ds1_y_dma_wfifo_fail_full_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_monitor_ds1_y_dma_wfifo_fail_full_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x54L) & 0x10) >> 4);
 }
 // ------------------------------------------------------------------------------ //
@@ -1458,8 +1351,7 @@ static __inline uint8_t acamera_isp_isp_global_monitor_ds1_y_dma_wfifo_fail_full
 #define ACAMERA_ISP_ISP_GLOBAL_MONITOR_DS1_Y_DMA_WFIFO_FAIL_EMPTY_MASK (0x20)
 
 // args: data (1-bit)
-static __inline uint8_t acamera_isp_isp_global_monitor_ds1_y_dma_wfifo_fail_empty_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_monitor_ds1_y_dma_wfifo_fail_empty_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x54L) & 0x20) >> 5);
 }
 // ------------------------------------------------------------------------------ //
@@ -1472,8 +1364,7 @@ static __inline uint8_t acamera_isp_isp_global_monitor_ds1_y_dma_wfifo_fail_empt
 #define ACAMERA_ISP_ISP_GLOBAL_MONITOR_DS1_UV_DMA_WFIFO_FAIL_FULL_MASK (0x40)
 
 // args: data (1-bit)
-static __inline uint8_t acamera_isp_isp_global_monitor_ds1_uv_dma_wfifo_fail_full_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_monitor_ds1_uv_dma_wfifo_fail_full_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x54L) & 0x40) >> 6);
 }
 // ------------------------------------------------------------------------------ //
@@ -1486,8 +1377,7 @@ static __inline uint8_t acamera_isp_isp_global_monitor_ds1_uv_dma_wfifo_fail_ful
 #define ACAMERA_ISP_ISP_GLOBAL_MONITOR_DS1_UV_DMA_WFIFO_FAIL_EMPTY_MASK (0x80)
 
 // args: data (1-bit)
-static __inline uint8_t acamera_isp_isp_global_monitor_ds1_uv_dma_wfifo_fail_empty_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_monitor_ds1_uv_dma_wfifo_fail_empty_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x54L) & 0x80) >> 7);
 }
 // ------------------------------------------------------------------------------ //
@@ -1500,8 +1390,7 @@ static __inline uint8_t acamera_isp_isp_global_monitor_ds1_uv_dma_wfifo_fail_emp
 #define ACAMERA_ISP_ISP_GLOBAL_MONITOR_TEMPER_DMA_WFIFO_FAIL_EMPTY_MASK (0x100)
 
 // args: data (1-bit)
-static __inline uint8_t acamera_isp_isp_global_monitor_temper_dma_wfifo_fail_empty_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_monitor_temper_dma_wfifo_fail_empty_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x54L) & 0x100) >> 8);
 }
 // ------------------------------------------------------------------------------ //
@@ -1514,8 +1403,7 @@ static __inline uint8_t acamera_isp_isp_global_monitor_temper_dma_wfifo_fail_emp
 #define ACAMERA_ISP_ISP_GLOBAL_MONITOR_TEMPER_DMA_WFIFO_FAIL_FULL_MASK (0x200)
 
 // args: data (1-bit)
-static __inline uint8_t acamera_isp_isp_global_monitor_temper_dma_wfifo_fail_full_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_monitor_temper_dma_wfifo_fail_full_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x54L) & 0x200) >> 9);
 }
 // ------------------------------------------------------------------------------ //
@@ -1528,8 +1416,7 @@ static __inline uint8_t acamera_isp_isp_global_monitor_temper_dma_wfifo_fail_ful
 #define ACAMERA_ISP_ISP_GLOBAL_MONITOR_TEMPER_DMA_RFIFO_FAIL_EMPTY_MASK (0x400)
 
 // args: data (1-bit)
-static __inline uint8_t acamera_isp_isp_global_monitor_temper_dma_rfifo_fail_empty_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_monitor_temper_dma_rfifo_fail_empty_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x54L) & 0x400) >> 10);
 }
 // ------------------------------------------------------------------------------ //
@@ -1542,8 +1429,7 @@ static __inline uint8_t acamera_isp_isp_global_monitor_temper_dma_rfifo_fail_emp
 #define ACAMERA_ISP_ISP_GLOBAL_MONITOR_TEMPER_DMA_RFIFO_FAIL_FULL_MASK (0x800)
 
 // args: data (1-bit)
-static __inline uint8_t acamera_isp_isp_global_monitor_temper_dma_rfifo_fail_full_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_monitor_temper_dma_rfifo_fail_full_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x54L) & 0x800) >> 11);
 }
 // ------------------------------------------------------------------------------ //
@@ -1575,8 +1461,7 @@ static __inline uint8_t acamera_isp_isp_global_monitor_temper_dma_rfifo_fail_ful
 #define ACAMERA_ISP_ISP_GLOBAL_MONITOR_DMA_ALARMS_MASK (0x3fff0000)
 
 // args: data (14-bit)
-static __inline uint16_t acamera_isp_isp_global_monitor_dma_alarms_read(uintptr_t base)
-{
+static __inline uint16_t acamera_isp_isp_global_monitor_dma_alarms_read(uintptr_t base) {
     return (uint16_t)((system_hw_read_32(0x54L) & 0x3fff0000) >> 16);
 }
 // ------------------------------------------------------------------------------ //
@@ -1597,13 +1482,11 @@ static __inline uint16_t acamera_isp_isp_global_monitor_dma_alarms_read(uintptr_
 #define ACAMERA_ISP_ISP_GLOBAL_MONITOR_BROKEN_FRAME_ERROR_CLEAR_MASK (0x1)
 
 // args: data (1-bit)
-static __inline void acamera_isp_isp_global_monitor_broken_frame_error_clear_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_isp_global_monitor_broken_frame_error_clear_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x58L);
-    system_hw_write_32(0x58L, (((uint32_t)(data & 0x1)) << 0) | (curr & 0xfffffffe));
+    system_hw_write_32(0x58L, (((uint32_t) (data & 0x1)) << 0) | (curr & 0xfffffffe));
 }
-static __inline uint8_t acamera_isp_isp_global_monitor_broken_frame_error_clear_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_monitor_broken_frame_error_clear_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x58L) & 0x1) >> 0);
 }
 // ------------------------------------------------------------------------------ //
@@ -1624,13 +1507,11 @@ static __inline uint8_t acamera_isp_isp_global_monitor_broken_frame_error_clear_
 #define ACAMERA_ISP_ISP_GLOBAL_MONITOR_CONTEXT_ERROR_CLR_MASK (0x2)
 
 // args: data (1-bit)
-static __inline void acamera_isp_isp_global_monitor_context_error_clr_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_isp_global_monitor_context_error_clr_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x58L);
-    system_hw_write_32(0x58L, (((uint32_t)(data & 0x1)) << 1) | (curr & 0xfffffffd));
+    system_hw_write_32(0x58L, (((uint32_t) (data & 0x1)) << 1) | (curr & 0xfffffffd));
 }
-static __inline uint8_t acamera_isp_isp_global_monitor_context_error_clr_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_monitor_context_error_clr_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x58L) & 0x2) >> 1);
 }
 // ------------------------------------------------------------------------------ //
@@ -1654,13 +1535,11 @@ static __inline uint8_t acamera_isp_isp_global_monitor_context_error_clr_read(ui
 #define ACAMERA_ISP_ISP_GLOBAL_MONITOR_OUTPUT_DMA_CLR_ALARM_MASK (0x4)
 
 // args: data (1-bit)
-static __inline void acamera_isp_isp_global_monitor_output_dma_clr_alarm_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_isp_global_monitor_output_dma_clr_alarm_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x58L);
-    system_hw_write_32(0x58L, (((uint32_t)(data & 0x1)) << 2) | (curr & 0xfffffffb));
+    system_hw_write_32(0x58L, (((uint32_t) (data & 0x1)) << 2) | (curr & 0xfffffffb));
 }
-static __inline uint8_t acamera_isp_isp_global_monitor_output_dma_clr_alarm_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_monitor_output_dma_clr_alarm_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x58L) & 0x4) >> 2);
 }
 // ------------------------------------------------------------------------------ //
@@ -1683,13 +1562,11 @@ static __inline uint8_t acamera_isp_isp_global_monitor_output_dma_clr_alarm_read
 #define ACAMERA_ISP_ISP_GLOBAL_MONITOR_TEMPER_DMA_CLR_ALARM_MASK (0x8)
 
 // args: data (1-bit)
-static __inline void acamera_isp_isp_global_monitor_temper_dma_clr_alarm_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_isp_global_monitor_temper_dma_clr_alarm_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x58L);
-    system_hw_write_32(0x58L, (((uint32_t)(data & 0x1)) << 3) | (curr & 0xfffffff7));
+    system_hw_write_32(0x58L, (((uint32_t) (data & 0x1)) << 3) | (curr & 0xfffffff7));
 }
-static __inline uint8_t acamera_isp_isp_global_monitor_temper_dma_clr_alarm_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_monitor_temper_dma_clr_alarm_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x58L) & 0x8) >> 3);
 }
 // ------------------------------------------------------------------------------ //
@@ -1708,8 +1585,7 @@ static __inline uint8_t acamera_isp_isp_global_monitor_temper_dma_clr_alarm_read
 #define ACAMERA_ISP_ISP_GLOBAL_MONITOR_MAX_ADDRESS_DELAY_LINE_FR_MASK (0xffff)
 
 // args: data (16-bit)
-static __inline uint16_t acamera_isp_isp_global_monitor_max_address_delay_line_fr_read(uintptr_t base)
-{
+static __inline uint16_t acamera_isp_isp_global_monitor_max_address_delay_line_fr_read(uintptr_t base) {
     return (uint16_t)((system_hw_read_32(0x60L) & 0xffff) >> 0);
 }
 // ------------------------------------------------------------------------------ //
@@ -1728,8 +1604,7 @@ static __inline uint16_t acamera_isp_isp_global_monitor_max_address_delay_line_f
 #define ACAMERA_ISP_ISP_GLOBAL_MONITOR_MAX_ADDRESS_DELAY_LINE_DS_MASK (0xffff0000)
 
 // args: data (16-bit)
-static __inline uint16_t acamera_isp_isp_global_monitor_max_address_delay_line_ds_read(uintptr_t base)
-{
+static __inline uint16_t acamera_isp_isp_global_monitor_max_address_delay_line_ds_read(uintptr_t base) {
     return (uint16_t)((system_hw_read_32(0x60L) & 0xffff0000) >> 16);
 }
 // ------------------------------------------------------------------------------ //
@@ -1754,13 +1629,11 @@ static __inline uint16_t acamera_isp_isp_global_monitor_max_address_delay_line_d
 #define ACAMERA_ISP_ISP_GLOBAL_CHICKEN_BIT_FRAME_END_SELECT_MASK (0x1)
 
 // args: data (1-bit)
-static __inline void acamera_isp_isp_global_chicken_bit_frame_end_select_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_isp_global_chicken_bit_frame_end_select_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x64L);
-    system_hw_write_32(0x64L, (((uint32_t)(data & 0x1)) << 0) | (curr & 0xfffffffe));
+    system_hw_write_32(0x64L, (((uint32_t) (data & 0x1)) << 0) | (curr & 0xfffffffe));
 }
-static __inline uint8_t acamera_isp_isp_global_chicken_bit_frame_end_select_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_chicken_bit_frame_end_select_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x64L) & 0x1) >> 0);
 }
 // ------------------------------------------------------------------------------ //
@@ -1780,13 +1653,11 @@ static __inline uint8_t acamera_isp_isp_global_chicken_bit_frame_end_select_read
 #define ACAMERA_ISP_ISP_GLOBAL_CHICKEN_BIT_RD_START_SEL_MASK (0x2)
 
 // args: data (1-bit)
-static __inline void acamera_isp_isp_global_chicken_bit_rd_start_sel_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_isp_global_chicken_bit_rd_start_sel_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x64L);
-    system_hw_write_32(0x64L, (((uint32_t)(data & 0x1)) << 1) | (curr & 0xfffffffd));
+    system_hw_write_32(0x64L, (((uint32_t) (data & 0x1)) << 1) | (curr & 0xfffffffd));
 }
-static __inline uint8_t acamera_isp_isp_global_chicken_bit_rd_start_sel_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_chicken_bit_rd_start_sel_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x64L) & 0x2) >> 1);
 }
 // ------------------------------------------------------------------------------ //
@@ -1806,13 +1677,11 @@ static __inline uint8_t acamera_isp_isp_global_chicken_bit_rd_start_sel_read(uin
 #define ACAMERA_ISP_ISP_GLOBAL_CHICKEN_BIT_INPUT_ALIGNMENT_MASK (0x4)
 
 // args: data (1-bit)
-static __inline void acamera_isp_isp_global_chicken_bit_input_alignment_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_isp_global_chicken_bit_input_alignment_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x64L);
-    system_hw_write_32(0x64L, (((uint32_t)(data & 0x1)) << 2) | (curr & 0xfffffffb));
+    system_hw_write_32(0x64L, (((uint32_t) (data & 0x1)) << 2) | (curr & 0xfffffffb));
 }
-static __inline uint8_t acamera_isp_isp_global_chicken_bit_input_alignment_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_chicken_bit_input_alignment_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x64L) & 0x4) >> 2);
 }
 // ------------------------------------------------------------------------------ //
@@ -1832,13 +1701,11 @@ static __inline uint8_t acamera_isp_isp_global_chicken_bit_input_alignment_read(
 #define ACAMERA_ISP_ISP_GLOBAL_CHICKEN_BIT_WATCHDOG_TIMER_DIS_MASK (0x8)
 
 // args: data (1-bit)
-static __inline void acamera_isp_isp_global_chicken_bit_watchdog_timer_dis_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_isp_global_chicken_bit_watchdog_timer_dis_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x64L);
-    system_hw_write_32(0x64L, (((uint32_t)(data & 0x1)) << 3) | (curr & 0xfffffff7));
+    system_hw_write_32(0x64L, (((uint32_t) (data & 0x1)) << 3) | (curr & 0xfffffff7));
 }
-static __inline uint8_t acamera_isp_isp_global_chicken_bit_watchdog_timer_dis_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_chicken_bit_watchdog_timer_dis_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x64L) & 0x8) >> 3);
 }
 // ------------------------------------------------------------------------------ //
@@ -1860,13 +1727,11 @@ static __inline uint8_t acamera_isp_isp_global_chicken_bit_watchdog_timer_dis_re
 #define ACAMERA_ISP_ISP_GLOBAL_CHICKEN_BIT_SOFT_RST_APPLY_IMMEDIATELY_MASK (0x10)
 
 // args: data (1-bit)
-static __inline void acamera_isp_isp_global_chicken_bit_soft_rst_apply_immediately_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_isp_global_chicken_bit_soft_rst_apply_immediately_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x64L);
-    system_hw_write_32(0x64L, (((uint32_t)(data & 0x1)) << 4) | (curr & 0xffffffef));
+    system_hw_write_32(0x64L, (((uint32_t) (data & 0x1)) << 4) | (curr & 0xffffffef));
 }
-static __inline uint8_t acamera_isp_isp_global_chicken_bit_soft_rst_apply_immediately_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_chicken_bit_soft_rst_apply_immediately_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x64L) & 0x10) >> 4);
 }
 // ------------------------------------------------------------------------------ //
@@ -1890,13 +1755,11 @@ static __inline uint8_t acamera_isp_isp_global_chicken_bit_soft_rst_apply_immedi
 #define ACAMERA_ISP_ISP_GLOBAL_CHICKEN_BIT_DMA_WRITER_TIMEOUT_DISABLE_MASK (0x20)
 
 // args: data (1-bit)
-static __inline void acamera_isp_isp_global_chicken_bit_dma_writer_timeout_disable_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_isp_global_chicken_bit_dma_writer_timeout_disable_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x64L);
-    system_hw_write_32(0x64L, (((uint32_t)(data & 0x1)) << 5) | (curr & 0xffffffdf));
+    system_hw_write_32(0x64L, (((uint32_t) (data & 0x1)) << 5) | (curr & 0xffffffdf));
 }
-static __inline uint8_t acamera_isp_isp_global_chicken_bit_dma_writer_timeout_disable_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_chicken_bit_dma_writer_timeout_disable_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x64L) & 0x20) >> 5);
 }
 // ------------------------------------------------------------------------------ //
@@ -1928,8 +1791,7 @@ static __inline uint8_t acamera_isp_isp_global_chicken_bit_dma_writer_timeout_di
 #define ACAMERA_ISP_ISP_GLOBAL_PARAMETER_STATUS_DMSC_RGBIR_MASK (0x1)
 
 // args: data (1-bit)
-static __inline uint8_t acamera_isp_isp_global_parameter_status_dmsc_rgbir_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_parameter_status_dmsc_rgbir_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x68L) & 0x1) >> 0);
 }
 // ------------------------------------------------------------------------------ //
@@ -1956,8 +1818,7 @@ static __inline uint8_t acamera_isp_isp_global_parameter_status_dmsc_rgbir_read(
 #define ACAMERA_ISP_ISP_GLOBAL_PARAMETER_STATUS_CAC_MASK (0x2)
 
 // args: data (1-bit)
-static __inline uint8_t acamera_isp_isp_global_parameter_status_cac_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_parameter_status_cac_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x68L) & 0x2) >> 1);
 }
 // ------------------------------------------------------------------------------ //
@@ -1991,8 +1852,7 @@ static __inline uint8_t acamera_isp_isp_global_parameter_status_cac_read(uintptr
 #define ACAMERA_ISP_ISP_GLOBAL_PARAMETER_STATUS_DS1_PIPE_MASK (0x4)
 
 // args: data (1-bit)
-static __inline uint8_t acamera_isp_isp_global_parameter_status_ds1_pipe_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_parameter_status_ds1_pipe_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x68L) & 0x4) >> 2);
 }
 // ------------------------------------------------------------------------------ //
@@ -2017,8 +1877,7 @@ static __inline uint8_t acamera_isp_isp_global_parameter_status_ds1_pipe_read(ui
 #define ACAMERA_ISP_ISP_GLOBAL_PARAMETER_STATUS_LUT_3D_MASK (0x8)
 
 // args: data (1-bit)
-static __inline uint8_t acamera_isp_isp_global_parameter_status_lut_3d_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_parameter_status_lut_3d_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x68L) & 0x8) >> 3);
 }
 // ------------------------------------------------------------------------------ //
@@ -2038,8 +1897,7 @@ static __inline uint8_t acamera_isp_isp_global_parameter_status_lut_3d_read(uint
 #define ACAMERA_ISP_ISP_GLOBAL_PARAMETER_STATUS_SINTER_VERSION_MASK (0x10)
 
 // args: data (1-bit)
-static __inline uint8_t acamera_isp_isp_global_parameter_status_sinter_version_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_parameter_status_sinter_version_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x68L) & 0x10) >> 4);
 }
 // ------------------------------------------------------------------------------ //
@@ -2063,13 +1921,11 @@ static __inline uint8_t acamera_isp_isp_global_parameter_status_sinter_version_r
 #define ACAMERA_ISP_ISP_GLOBAL_DBG_MODE_EN_MASK (0x1)
 
 // args: data (1-bit)
-static __inline void acamera_isp_isp_global_dbg_mode_en_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_isp_global_dbg_mode_en_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x6cL);
-    system_hw_write_32(0x6cL, (((uint32_t)(data & 0x1)) << 0) | (curr & 0xfffffffe));
+    system_hw_write_32(0x6cL, (((uint32_t) (data & 0x1)) << 0) | (curr & 0xfffffffe));
 }
-static __inline uint8_t acamera_isp_isp_global_dbg_mode_en_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_dbg_mode_en_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x6cL) & 0x1) >> 0);
 }
 // ------------------------------------------------------------------------------ //
@@ -2088,13 +1944,11 @@ static __inline uint8_t acamera_isp_isp_global_dbg_mode_en_read(uintptr_t base)
 #define ACAMERA_ISP_ISP_GLOBAL_DBG_CLEAR_FRAME_CNT_MASK (0x100)
 
 // args: data (1-bit)
-static __inline void acamera_isp_isp_global_dbg_clear_frame_cnt_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_isp_global_dbg_clear_frame_cnt_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x6cL);
-    system_hw_write_32(0x6cL, (((uint32_t)(data & 0x1)) << 8) | (curr & 0xfffffeff));
+    system_hw_write_32(0x6cL, (((uint32_t) (data & 0x1)) << 8) | (curr & 0xfffffeff));
 }
-static __inline uint8_t acamera_isp_isp_global_dbg_clear_frame_cnt_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_isp_global_dbg_clear_frame_cnt_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x6cL) & 0x100) >> 8);
 }
 // ------------------------------------------------------------------------------ //
@@ -2113,8 +1967,7 @@ static __inline uint8_t acamera_isp_isp_global_dbg_clear_frame_cnt_read(uintptr_
 #define ACAMERA_ISP_ISP_GLOBAL_DBG_FRAME_CNT_CTX0_MASK (0xffffffff)
 
 // args: data (32-bit)
-static __inline uint32_t acamera_isp_isp_global_dbg_frame_cnt_ctx0_read(uintptr_t base)
-{
+static __inline uint32_t acamera_isp_isp_global_dbg_frame_cnt_ctx0_read(uintptr_t base) {
     return system_hw_read_32(0x70L);
 }
 // ------------------------------------------------------------------------------ //
@@ -2133,8 +1986,7 @@ static __inline uint32_t acamera_isp_isp_global_dbg_frame_cnt_ctx0_read(uintptr_
 #define ACAMERA_ISP_ISP_GLOBAL_DBG_FRAME_CNT_CTX1_MASK (0xffffffff)
 
 // args: data (32-bit)
-static __inline uint32_t acamera_isp_isp_global_dbg_frame_cnt_ctx1_read(uintptr_t base)
-{
+static __inline uint32_t acamera_isp_isp_global_dbg_frame_cnt_ctx1_read(uintptr_t base) {
     return system_hw_read_32(0x74L);
 }
 // ------------------------------------------------------------------------------ //
@@ -2153,8 +2005,7 @@ static __inline uint32_t acamera_isp_isp_global_dbg_frame_cnt_ctx1_read(uintptr_
 #define ACAMERA_ISP_ISP_GLOBAL_DBG_FRAME_CNT_CTX2_MASK (0xffffffff)
 
 // args: data (32-bit)
-static __inline uint32_t acamera_isp_isp_global_dbg_frame_cnt_ctx2_read(uintptr_t base)
-{
+static __inline uint32_t acamera_isp_isp_global_dbg_frame_cnt_ctx2_read(uintptr_t base) {
     return system_hw_read_32(0x78L);
 }
 // ------------------------------------------------------------------------------ //
@@ -2173,8 +2024,7 @@ static __inline uint32_t acamera_isp_isp_global_dbg_frame_cnt_ctx2_read(uintptr_
 #define ACAMERA_ISP_ISP_GLOBAL_DBG_FRAME_CNT_CTX3_MASK (0xffffffff)
 
 // args: data (32-bit)
-static __inline uint32_t acamera_isp_isp_global_dbg_frame_cnt_ctx3_read(uintptr_t base)
-{
+static __inline uint32_t acamera_isp_isp_global_dbg_frame_cnt_ctx3_read(uintptr_t base) {
     return system_hw_read_32(0x7cL);
 }
 // ------------------------------------------------------------------------------ //
@@ -2203,13 +2053,11 @@ static __inline uint32_t acamera_isp_isp_global_dbg_frame_cnt_ctx3_read(uintptr_
 #define ACAMERA_ISP_INPUT_PORT_PRESET_MASK (0xf)
 
 // args: data (4-bit)
-static __inline void acamera_isp_input_port_preset_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_input_port_preset_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x80L);
-    system_hw_write_32(0x80L, (((uint32_t)(data & 0xf)) << 0) | (curr & 0xfffffff0));
+    system_hw_write_32(0x80L, (((uint32_t) (data & 0xf)) << 0) | (curr & 0xfffffff0));
 }
-static __inline uint8_t acamera_isp_input_port_preset_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_input_port_preset_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x80L) & 0xf) >> 0);
 }
 // ------------------------------------------------------------------------------ //
@@ -2224,13 +2072,11 @@ static __inline uint8_t acamera_isp_input_port_preset_read(uintptr_t base)
 #define ACAMERA_ISP_INPUT_PORT_VS_USE_FIELD_USE_FIELD_I_PORT_FOR_VERTICAL_SYNC (1)
 
 // args: data (1-bit)
-static __inline void acamera_isp_input_port_vs_use_field_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_input_port_vs_use_field_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x80L);
-    system_hw_write_32(0x80L, (((uint32_t)(data & 0x1)) << 8) | (curr & 0xfffffeff));
+    system_hw_write_32(0x80L, (((uint32_t) (data & 0x1)) << 8) | (curr & 0xfffffeff));
 }
-static __inline uint8_t acamera_isp_input_port_vs_use_field_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_input_port_vs_use_field_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x80L) & 0x100) >> 8);
 }
 // ------------------------------------------------------------------------------ //
@@ -2245,13 +2091,11 @@ static __inline uint8_t acamera_isp_input_port_vs_use_field_read(uintptr_t base)
 #define ACAMERA_ISP_INPUT_PORT_VS_TOGGLE_VSYNC_IS_TOGGLETYPE_FIELD_SIGNAL (1)
 
 // args: data (1-bit)
-static __inline void acamera_isp_input_port_vs_toggle_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_input_port_vs_toggle_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x80L);
-    system_hw_write_32(0x80L, (((uint32_t)(data & 0x1)) << 9) | (curr & 0xfffffdff));
+    system_hw_write_32(0x80L, (((uint32_t) (data & 0x1)) << 9) | (curr & 0xfffffdff));
 }
-static __inline uint8_t acamera_isp_input_port_vs_toggle_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_input_port_vs_toggle_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x80L) & 0x200) >> 9);
 }
 // ------------------------------------------------------------------------------ //
@@ -2266,13 +2110,11 @@ static __inline uint8_t acamera_isp_input_port_vs_toggle_read(uintptr_t base)
 #define ACAMERA_ISP_INPUT_PORT_VS_POLARITY_HORIZONTAL_COUNTER_RESET_ON_FALLING_EDGE (1)
 
 // args: data (1-bit)
-static __inline void acamera_isp_input_port_vs_polarity_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_input_port_vs_polarity_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x80L);
-    system_hw_write_32(0x80L, (((uint32_t)(data & 0x1)) << 10) | (curr & 0xfffffbff));
+    system_hw_write_32(0x80L, (((uint32_t) (data & 0x1)) << 10) | (curr & 0xfffffbff));
 }
-static __inline uint8_t acamera_isp_input_port_vs_polarity_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_input_port_vs_polarity_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x80L) & 0x400) >> 10);
 }
 // ------------------------------------------------------------------------------ //
@@ -2287,13 +2129,11 @@ static __inline uint8_t acamera_isp_input_port_vs_polarity_read(uintptr_t base)
 #define ACAMERA_ISP_INPUT_PORT_VS_POLARITY_ACL_INVERT_POLARITY_FOR_ACL_GATE (1)
 
 // args: data (1-bit)
-static __inline void acamera_isp_input_port_vs_polarity_acl_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_input_port_vs_polarity_acl_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x80L);
-    system_hw_write_32(0x80L, (((uint32_t)(data & 0x1)) << 11) | (curr & 0xfffff7ff));
+    system_hw_write_32(0x80L, (((uint32_t) (data & 0x1)) << 11) | (curr & 0xfffff7ff));
 }
-static __inline uint8_t acamera_isp_input_port_vs_polarity_acl_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_input_port_vs_polarity_acl_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x80L) & 0x800) >> 11);
 }
 // ------------------------------------------------------------------------------ //
@@ -2308,13 +2148,11 @@ static __inline uint8_t acamera_isp_input_port_vs_polarity_acl_read(uintptr_t ba
 #define ACAMERA_ISP_INPUT_PORT_HS_USE_ACL_USE_ACL_I_PORT_FOR_ACTIVELINE (1)
 
 // args: data (1-bit)
-static __inline void acamera_isp_input_port_hs_use_acl_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_input_port_hs_use_acl_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x80L);
-    system_hw_write_32(0x80L, (((uint32_t)(data & 0x1)) << 12) | (curr & 0xffffefff));
+    system_hw_write_32(0x80L, (((uint32_t) (data & 0x1)) << 12) | (curr & 0xffffefff));
 }
-static __inline uint8_t acamera_isp_input_port_hs_use_acl_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_input_port_hs_use_acl_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x80L) & 0x1000) >> 12);
 }
 // ------------------------------------------------------------------------------ //
@@ -2329,13 +2167,11 @@ static __inline uint8_t acamera_isp_input_port_hs_use_acl_read(uintptr_t base)
 #define ACAMERA_ISP_INPUT_PORT_VC_C_SELECT_VERTICAL_COUNTER_COUNTS_ON_HORIZONTAL_COUNTER_OVERFLOW_OR_RESET (1)
 
 // args: data (1-bit)
-static __inline void acamera_isp_input_port_vc_c_select_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_input_port_vc_c_select_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x80L);
-    system_hw_write_32(0x80L, (((uint32_t)(data & 0x1)) << 14) | (curr & 0xffffbfff));
+    system_hw_write_32(0x80L, (((uint32_t) (data & 0x1)) << 14) | (curr & 0xffffbfff));
 }
-static __inline uint8_t acamera_isp_input_port_vc_c_select_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_input_port_vc_c_select_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x80L) & 0x4000) >> 14);
 }
 // ------------------------------------------------------------------------------ //
@@ -2350,13 +2186,11 @@ static __inline uint8_t acamera_isp_input_port_vc_c_select_read(uintptr_t base)
 #define ACAMERA_ISP_INPUT_PORT_VC_R_SELECT_VERTICAL_COUNTER_IS_RESET_AFTER_TIMEOUT_ON_HS (1)
 
 // args: data (1-bit)
-static __inline void acamera_isp_input_port_vc_r_select_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_input_port_vc_r_select_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x80L);
-    system_hw_write_32(0x80L, (((uint32_t)(data & 0x1)) << 15) | (curr & 0xffff7fff));
+    system_hw_write_32(0x80L, (((uint32_t) (data & 0x1)) << 15) | (curr & 0xffff7fff));
 }
-static __inline uint8_t acamera_isp_input_port_vc_r_select_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_input_port_vc_r_select_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x80L) & 0x8000) >> 15);
 }
 // ------------------------------------------------------------------------------ //
@@ -2371,13 +2205,11 @@ static __inline uint8_t acamera_isp_input_port_vc_r_select_read(uintptr_t base)
 #define ACAMERA_ISP_INPUT_PORT_HS_XOR_VS_HVALID__HSYNC_XOR_VSYNC (1)
 
 // args: data (1-bit)
-static __inline void acamera_isp_input_port_hs_xor_vs_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_input_port_hs_xor_vs_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x80L);
-    system_hw_write_32(0x80L, (((uint32_t)(data & 0x1)) << 16) | (curr & 0xfffeffff));
+    system_hw_write_32(0x80L, (((uint32_t) (data & 0x1)) << 16) | (curr & 0xfffeffff));
 }
-static __inline uint8_t acamera_isp_input_port_hs_xor_vs_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_input_port_hs_xor_vs_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x80L) & 0x10000) >> 16);
 }
 // ------------------------------------------------------------------------------ //
@@ -2392,13 +2224,11 @@ static __inline uint8_t acamera_isp_input_port_hs_xor_vs_read(uintptr_t base)
 #define ACAMERA_ISP_INPUT_PORT_HS_POLARITY_INVERT_POLARITY_OF_HS_FOR_ACL_GATE (1)
 
 // args: data (1-bit)
-static __inline void acamera_isp_input_port_hs_polarity_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_input_port_hs_polarity_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x80L);
-    system_hw_write_32(0x80L, (((uint32_t)(data & 0x1)) << 17) | (curr & 0xfffdffff));
+    system_hw_write_32(0x80L, (((uint32_t) (data & 0x1)) << 17) | (curr & 0xfffdffff));
 }
-static __inline uint8_t acamera_isp_input_port_hs_polarity_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_input_port_hs_polarity_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x80L) & 0x20000) >> 17);
 }
 // ------------------------------------------------------------------------------ //
@@ -2413,13 +2243,11 @@ static __inline uint8_t acamera_isp_input_port_hs_polarity_read(uintptr_t base)
 #define ACAMERA_ISP_INPUT_PORT_HS_POLARITY_ACL_INVERT_POLARITY_OF_HS_FOR_HS_GATE (1)
 
 // args: data (1-bit)
-static __inline void acamera_isp_input_port_hs_polarity_acl_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_input_port_hs_polarity_acl_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x80L);
-    system_hw_write_32(0x80L, (((uint32_t)(data & 0x1)) << 18) | (curr & 0xfffbffff));
+    system_hw_write_32(0x80L, (((uint32_t) (data & 0x1)) << 18) | (curr & 0xfffbffff));
 }
-static __inline uint8_t acamera_isp_input_port_hs_polarity_acl_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_input_port_hs_polarity_acl_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x80L) & 0x40000) >> 18);
 }
 // ------------------------------------------------------------------------------ //
@@ -2434,13 +2262,11 @@ static __inline uint8_t acamera_isp_input_port_hs_polarity_acl_read(uintptr_t ba
 #define ACAMERA_ISP_INPUT_PORT_HS_POLARITY_HS_HORIZONTAL_COUNTER_IS_RESET_ON_VSYNC_EG_WHEN_HSYNC_IS_NOT_AVAILABLE (1)
 
 // args: data (1-bit)
-static __inline void acamera_isp_input_port_hs_polarity_hs_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_input_port_hs_polarity_hs_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x80L);
-    system_hw_write_32(0x80L, (((uint32_t)(data & 0x1)) << 19) | (curr & 0xfff7ffff));
+    system_hw_write_32(0x80L, (((uint32_t) (data & 0x1)) << 19) | (curr & 0xfff7ffff));
 }
-static __inline uint8_t acamera_isp_input_port_hs_polarity_hs_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_input_port_hs_polarity_hs_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x80L) & 0x80000) >> 19);
 }
 // ------------------------------------------------------------------------------ //
@@ -2455,13 +2281,11 @@ static __inline uint8_t acamera_isp_input_port_hs_polarity_hs_read(uintptr_t bas
 #define ACAMERA_ISP_INPUT_PORT_HS_POLARITY_VC_VERTICAL_COUNTER_INCREMENTS_ON_FALLING_EDGE_OF_HS (1)
 
 // args: data (1-bit)
-static __inline void acamera_isp_input_port_hs_polarity_vc_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_input_port_hs_polarity_vc_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x80L);
-    system_hw_write_32(0x80L, (((uint32_t)(data & 0x1)) << 20) | (curr & 0xffefffff));
+    system_hw_write_32(0x80L, (((uint32_t) (data & 0x1)) << 20) | (curr & 0xffefffff));
 }
-static __inline uint8_t acamera_isp_input_port_hs_polarity_vc_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_input_port_hs_polarity_vc_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x80L) & 0x100000) >> 20);
 }
 // ------------------------------------------------------------------------------ //
@@ -2476,13 +2300,11 @@ static __inline uint8_t acamera_isp_input_port_hs_polarity_vc_read(uintptr_t bas
 #define ACAMERA_ISP_INPUT_PORT_HC_R_SELECT_VERTICAL_COUNTER_IS_RESET_ON_RISING_EDGE_OF_VS (1)
 
 // args: data (1-bit)
-static __inline void acamera_isp_input_port_hc_r_select_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_input_port_hc_r_select_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x80L);
-    system_hw_write_32(0x80L, (((uint32_t)(data & 0x1)) << 23) | (curr & 0xff7fffff));
+    system_hw_write_32(0x80L, (((uint32_t) (data & 0x1)) << 23) | (curr & 0xff7fffff));
 }
-static __inline uint8_t acamera_isp_input_port_hc_r_select_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_input_port_hc_r_select_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x80L) & 0x800000) >> 23);
 }
 // ------------------------------------------------------------------------------ //
@@ -2497,13 +2319,11 @@ static __inline uint8_t acamera_isp_input_port_hc_r_select_read(uintptr_t base)
 #define ACAMERA_ISP_INPUT_PORT_ACL_POLARITY_INVERT_ACL_I_FOR_ACL_GATE (1)
 
 // args: data (1-bit)
-static __inline void acamera_isp_input_port_acl_polarity_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_input_port_acl_polarity_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x80L);
-    system_hw_write_32(0x80L, (((uint32_t)(data & 0x1)) << 24) | (curr & 0xfeffffff));
+    system_hw_write_32(0x80L, (((uint32_t) (data & 0x1)) << 24) | (curr & 0xfeffffff));
 }
-static __inline uint8_t acamera_isp_input_port_acl_polarity_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_input_port_acl_polarity_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x80L) & 0x1000000) >> 24);
 }
 // ------------------------------------------------------------------------------ //
@@ -2518,13 +2338,11 @@ static __inline uint8_t acamera_isp_input_port_acl_polarity_read(uintptr_t base)
 #define ACAMERA_ISP_INPUT_PORT_FIELD_POLARITY_INVERT_FIELD_I_FOR_FIELD_GATE (1)
 
 // args: data (1-bit)
-static __inline void acamera_isp_input_port_field_polarity_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_input_port_field_polarity_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x84L);
-    system_hw_write_32(0x84L, (((uint32_t)(data & 0x1)) << 0) | (curr & 0xfffffffe));
+    system_hw_write_32(0x84L, (((uint32_t) (data & 0x1)) << 0) | (curr & 0xfffffffe));
 }
-static __inline uint8_t acamera_isp_input_port_field_polarity_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_input_port_field_polarity_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x84L) & 0x1) >> 0);
 }
 // ------------------------------------------------------------------------------ //
@@ -2539,13 +2357,11 @@ static __inline uint8_t acamera_isp_input_port_field_polarity_read(uintptr_t bas
 #define ACAMERA_ISP_INPUT_PORT_FIELD_TOGGLE_FIELD_IS_TOGGLETYPE (1)
 
 // args: data (1-bit)
-static __inline void acamera_isp_input_port_field_toggle_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_input_port_field_toggle_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x84L);
-    system_hw_write_32(0x84L, (((uint32_t)(data & 0x1)) << 1) | (curr & 0xfffffffd));
+    system_hw_write_32(0x84L, (((uint32_t) (data & 0x1)) << 1) | (curr & 0xfffffffd));
 }
-static __inline uint8_t acamera_isp_input_port_field_toggle_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_input_port_field_toggle_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x84L) & 0x2) >> 1);
 }
 // ------------------------------------------------------------------------------ //
@@ -2560,13 +2376,11 @@ static __inline uint8_t acamera_isp_input_port_field_toggle_read(uintptr_t base)
 #define ACAMERA_ISP_INPUT_PORT_ACLG_WINDOW0_INCLUDE_WINDOW0_SIGNAL_IN_ACL_GATE (1)
 
 // args: data (1-bit)
-static __inline void acamera_isp_input_port_aclg_window0_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_input_port_aclg_window0_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x84L);
-    system_hw_write_32(0x84L, (((uint32_t)(data & 0x1)) << 8) | (curr & 0xfffffeff));
+    system_hw_write_32(0x84L, (((uint32_t) (data & 0x1)) << 8) | (curr & 0xfffffeff));
 }
-static __inline uint8_t acamera_isp_input_port_aclg_window0_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_input_port_aclg_window0_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x84L) & 0x100) >> 8);
 }
 // ------------------------------------------------------------------------------ //
@@ -2581,13 +2395,11 @@ static __inline uint8_t acamera_isp_input_port_aclg_window0_read(uintptr_t base)
 #define ACAMERA_ISP_INPUT_PORT_ACLG_HSYNC_INCLUDE_HSYNC_SIGNAL_IN_ACL_GATE (1)
 
 // args: data (1-bit)
-static __inline void acamera_isp_input_port_aclg_hsync_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_input_port_aclg_hsync_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x84L);
-    system_hw_write_32(0x84L, (((uint32_t)(data & 0x1)) << 9) | (curr & 0xfffffdff));
+    system_hw_write_32(0x84L, (((uint32_t) (data & 0x1)) << 9) | (curr & 0xfffffdff));
 }
-static __inline uint8_t acamera_isp_input_port_aclg_hsync_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_input_port_aclg_hsync_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x84L) & 0x200) >> 9);
 }
 // ------------------------------------------------------------------------------ //
@@ -2602,13 +2414,11 @@ static __inline uint8_t acamera_isp_input_port_aclg_hsync_read(uintptr_t base)
 #define ACAMERA_ISP_INPUT_PORT_ACLG_WINDOW2_INCLUDE_WINDOW2_SIGNAL_IN_ACL_GATE (1)
 
 // args: data (1-bit)
-static __inline void acamera_isp_input_port_aclg_window2_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_input_port_aclg_window2_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x84L);
-    system_hw_write_32(0x84L, (((uint32_t)(data & 0x1)) << 10) | (curr & 0xfffffbff));
+    system_hw_write_32(0x84L, (((uint32_t) (data & 0x1)) << 10) | (curr & 0xfffffbff));
 }
-static __inline uint8_t acamera_isp_input_port_aclg_window2_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_input_port_aclg_window2_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x84L) & 0x400) >> 10);
 }
 // ------------------------------------------------------------------------------ //
@@ -2623,13 +2433,11 @@ static __inline uint8_t acamera_isp_input_port_aclg_window2_read(uintptr_t base)
 #define ACAMERA_ISP_INPUT_PORT_ACLG_ACL_INCLUDE_ACL_I_SIGNAL_IN_ACL_GATE (1)
 
 // args: data (1-bit)
-static __inline void acamera_isp_input_port_aclg_acl_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_input_port_aclg_acl_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x84L);
-    system_hw_write_32(0x84L, (((uint32_t)(data & 0x1)) << 11) | (curr & 0xfffff7ff));
+    system_hw_write_32(0x84L, (((uint32_t) (data & 0x1)) << 11) | (curr & 0xfffff7ff));
 }
-static __inline uint8_t acamera_isp_input_port_aclg_acl_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_input_port_aclg_acl_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x84L) & 0x800) >> 11);
 }
 // ------------------------------------------------------------------------------ //
@@ -2644,13 +2452,11 @@ static __inline uint8_t acamera_isp_input_port_aclg_acl_read(uintptr_t base)
 #define ACAMERA_ISP_INPUT_PORT_ACLG_VSYNC_INCLUDE_VSYNC_SIGNAL_IN_ACL_GATE (1)
 
 // args: data (1-bit)
-static __inline void acamera_isp_input_port_aclg_vsync_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_input_port_aclg_vsync_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x84L);
-    system_hw_write_32(0x84L, (((uint32_t)(data & 0x1)) << 12) | (curr & 0xffffefff));
+    system_hw_write_32(0x84L, (((uint32_t) (data & 0x1)) << 12) | (curr & 0xffffefff));
 }
-static __inline uint8_t acamera_isp_input_port_aclg_vsync_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_input_port_aclg_vsync_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x84L) & 0x1000) >> 12);
 }
 // ------------------------------------------------------------------------------ //
@@ -2665,13 +2471,11 @@ static __inline uint8_t acamera_isp_input_port_aclg_vsync_read(uintptr_t base)
 #define ACAMERA_ISP_INPUT_PORT_HSG_WINDOW1_INCLUDE_WINDOW1_SIGNAL_IN_HS_GATE (1)
 
 // args: data (1-bit)
-static __inline void acamera_isp_input_port_hsg_window1_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_input_port_hsg_window1_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x84L);
-    system_hw_write_32(0x84L, (((uint32_t)(data & 0x1)) << 16) | (curr & 0xfffeffff));
+    system_hw_write_32(0x84L, (((uint32_t) (data & 0x1)) << 16) | (curr & 0xfffeffff));
 }
-static __inline uint8_t acamera_isp_input_port_hsg_window1_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_input_port_hsg_window1_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x84L) & 0x10000) >> 16);
 }
 // ------------------------------------------------------------------------------ //
@@ -2686,13 +2490,11 @@ static __inline uint8_t acamera_isp_input_port_hsg_window1_read(uintptr_t base)
 #define ACAMERA_ISP_INPUT_PORT_HSG_HSYNC_INCLUDE_HSYNC_SIGNAL_IN_HS_GATE (1)
 
 // args: data (1-bit)
-static __inline void acamera_isp_input_port_hsg_hsync_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_input_port_hsg_hsync_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x84L);
-    system_hw_write_32(0x84L, (((uint32_t)(data & 0x1)) << 17) | (curr & 0xfffdffff));
+    system_hw_write_32(0x84L, (((uint32_t) (data & 0x1)) << 17) | (curr & 0xfffdffff));
 }
-static __inline uint8_t acamera_isp_input_port_hsg_hsync_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_input_port_hsg_hsync_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x84L) & 0x20000) >> 17);
 }
 // ------------------------------------------------------------------------------ //
@@ -2707,13 +2509,11 @@ static __inline uint8_t acamera_isp_input_port_hsg_hsync_read(uintptr_t base)
 #define ACAMERA_ISP_INPUT_PORT_HSG_VSYNC_INCLUDE_VSYNC_SIGNAL_IN_HS_GATE (1)
 
 // args: data (1-bit)
-static __inline void acamera_isp_input_port_hsg_vsync_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_input_port_hsg_vsync_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x84L);
-    system_hw_write_32(0x84L, (((uint32_t)(data & 0x1)) << 18) | (curr & 0xfffbffff));
+    system_hw_write_32(0x84L, (((uint32_t) (data & 0x1)) << 18) | (curr & 0xfffbffff));
 }
-static __inline uint8_t acamera_isp_input_port_hsg_vsync_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_input_port_hsg_vsync_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x84L) & 0x40000) >> 18);
 }
 // ------------------------------------------------------------------------------ //
@@ -2728,13 +2528,11 @@ static __inline uint8_t acamera_isp_input_port_hsg_vsync_read(uintptr_t base)
 #define ACAMERA_ISP_INPUT_PORT_HSG_WINDOW2_INCLUDE_WINDOW2_SIGNAL_IN_HS_GATE_MASK_OUT_SPURIOUS_HS_DURING_BLANK (1)
 
 // args: data (1-bit)
-static __inline void acamera_isp_input_port_hsg_window2_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_input_port_hsg_window2_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x84L);
-    system_hw_write_32(0x84L, (((uint32_t)(data & 0x1)) << 19) | (curr & 0xfff7ffff));
+    system_hw_write_32(0x84L, (((uint32_t) (data & 0x1)) << 19) | (curr & 0xfff7ffff));
 }
-static __inline uint8_t acamera_isp_input_port_hsg_window2_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_input_port_hsg_window2_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x84L) & 0x80000) >> 19);
 }
 // ------------------------------------------------------------------------------ //
@@ -2749,13 +2547,11 @@ static __inline uint8_t acamera_isp_input_port_hsg_window2_read(uintptr_t base)
 #define ACAMERA_ISP_INPUT_PORT_FIELDG_VSYNC_INCLUDE_VSYNC_SIGNAL_IN_FIELD_GATE (1)
 
 // args: data (1-bit)
-static __inline void acamera_isp_input_port_fieldg_vsync_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_input_port_fieldg_vsync_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x84L);
-    system_hw_write_32(0x84L, (((uint32_t)(data & 0x1)) << 24) | (curr & 0xfeffffff));
+    system_hw_write_32(0x84L, (((uint32_t) (data & 0x1)) << 24) | (curr & 0xfeffffff));
 }
-static __inline uint8_t acamera_isp_input_port_fieldg_vsync_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_input_port_fieldg_vsync_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x84L) & 0x1000000) >> 24);
 }
 // ------------------------------------------------------------------------------ //
@@ -2770,13 +2566,11 @@ static __inline uint8_t acamera_isp_input_port_fieldg_vsync_read(uintptr_t base)
 #define ACAMERA_ISP_INPUT_PORT_FIELDG_WINDOW2_INCLUDE_WINDOW2_SIGNAL_IN_FIELD_GATE (1)
 
 // args: data (1-bit)
-static __inline void acamera_isp_input_port_fieldg_window2_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_input_port_fieldg_window2_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x84L);
-    system_hw_write_32(0x84L, (((uint32_t)(data & 0x1)) << 25) | (curr & 0xfdffffff));
+    system_hw_write_32(0x84L, (((uint32_t) (data & 0x1)) << 25) | (curr & 0xfdffffff));
 }
-static __inline uint8_t acamera_isp_input_port_fieldg_window2_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_input_port_fieldg_window2_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x84L) & 0x2000000) >> 25);
 }
 // ------------------------------------------------------------------------------ //
@@ -2791,13 +2585,11 @@ static __inline uint8_t acamera_isp_input_port_fieldg_window2_read(uintptr_t bas
 #define ACAMERA_ISP_INPUT_PORT_FIELDG_FIELD_INCLUDE_FIELD_I_SIGNAL_IN_FIELD_GATE (1)
 
 // args: data (1-bit)
-static __inline void acamera_isp_input_port_fieldg_field_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_input_port_fieldg_field_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x84L);
-    system_hw_write_32(0x84L, (((uint32_t)(data & 0x1)) << 26) | (curr & 0xfbffffff));
+    system_hw_write_32(0x84L, (((uint32_t) (data & 0x1)) << 26) | (curr & 0xfbffffff));
 }
-static __inline uint8_t acamera_isp_input_port_fieldg_field_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_input_port_fieldg_field_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x84L) & 0x4000000) >> 26);
 }
 // ------------------------------------------------------------------------------ //
@@ -2812,13 +2604,11 @@ static __inline uint8_t acamera_isp_input_port_fieldg_field_read(uintptr_t base)
 #define ACAMERA_ISP_INPUT_PORT_FIELD_MODE_TOGGLE_FIELD (1)
 
 // args: data (1-bit)
-static __inline void acamera_isp_input_port_field_mode_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_input_port_field_mode_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x84L);
-    system_hw_write_32(0x84L, (((uint32_t)(data & 0x1)) << 27) | (curr & 0xf7ffffff));
+    system_hw_write_32(0x84L, (((uint32_t) (data & 0x1)) << 27) | (curr & 0xf7ffffff));
 }
-static __inline uint8_t acamera_isp_input_port_field_mode_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_input_port_field_mode_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x84L) & 0x8000000) >> 27);
 }
 // ------------------------------------------------------------------------------ //
@@ -2835,13 +2625,11 @@ static __inline uint8_t acamera_isp_input_port_field_mode_read(uintptr_t base)
 #define ACAMERA_ISP_INPUT_PORT_HC_LIMIT_MASK (0xffff)
 
 // args: data (16-bit)
-static __inline void acamera_isp_input_port_hc_limit_write(uintptr_t base, uint16_t data)
-{
+static __inline void acamera_isp_input_port_hc_limit_write(uintptr_t base, uint16_t data) {
     uint32_t curr = system_hw_read_32(0x88L);
-    system_hw_write_32(0x88L, (((uint32_t)(data & 0xffff)) << 0) | (curr & 0xffff0000));
+    system_hw_write_32(0x88L, (((uint32_t) (data & 0xffff)) << 0) | (curr & 0xffff0000));
 }
-static __inline uint16_t acamera_isp_input_port_hc_limit_read(uintptr_t base)
-{
+static __inline uint16_t acamera_isp_input_port_hc_limit_read(uintptr_t base) {
     return (uint16_t)((system_hw_read_32(0x88L) & 0xffff) >> 0);
 }
 // ------------------------------------------------------------------------------ //
@@ -2858,13 +2646,11 @@ static __inline uint16_t acamera_isp_input_port_hc_limit_read(uintptr_t base)
 #define ACAMERA_ISP_INPUT_PORT_HC_START0_MASK (0xffff0000)
 
 // args: data (16-bit)
-static __inline void acamera_isp_input_port_hc_start0_write(uintptr_t base, uint16_t data)
-{
+static __inline void acamera_isp_input_port_hc_start0_write(uintptr_t base, uint16_t data) {
     uint32_t curr = system_hw_read_32(0x88L);
-    system_hw_write_32(0x88L, (((uint32_t)(data & 0xffff)) << 16) | (curr & 0xffff));
+    system_hw_write_32(0x88L, (((uint32_t) (data & 0xffff)) << 16) | (curr & 0xffff));
 }
-static __inline uint16_t acamera_isp_input_port_hc_start0_read(uintptr_t base)
-{
+static __inline uint16_t acamera_isp_input_port_hc_start0_read(uintptr_t base) {
     return (uint16_t)((system_hw_read_32(0x88L) & 0xffff0000) >> 16);
 }
 // ------------------------------------------------------------------------------ //
@@ -2881,13 +2667,11 @@ static __inline uint16_t acamera_isp_input_port_hc_start0_read(uintptr_t base)
 #define ACAMERA_ISP_INPUT_PORT_HC_SIZE0_MASK (0xffff)
 
 // args: data (16-bit)
-static __inline void acamera_isp_input_port_hc_size0_write(uintptr_t base, uint16_t data)
-{
+static __inline void acamera_isp_input_port_hc_size0_write(uintptr_t base, uint16_t data) {
     uint32_t curr = system_hw_read_32(0x8cL);
-    system_hw_write_32(0x8cL, (((uint32_t)(data & 0xffff)) << 0) | (curr & 0xffff0000));
+    system_hw_write_32(0x8cL, (((uint32_t) (data & 0xffff)) << 0) | (curr & 0xffff0000));
 }
-static __inline uint16_t acamera_isp_input_port_hc_size0_read(uintptr_t base)
-{
+static __inline uint16_t acamera_isp_input_port_hc_size0_read(uintptr_t base) {
     return (uint16_t)((system_hw_read_32(0x8cL) & 0xffff) >> 0);
 }
 // ------------------------------------------------------------------------------ //
@@ -2904,13 +2688,11 @@ static __inline uint16_t acamera_isp_input_port_hc_size0_read(uintptr_t base)
 #define ACAMERA_ISP_INPUT_PORT_HC_START1_MASK (0xffff0000)
 
 // args: data (16-bit)
-static __inline void acamera_isp_input_port_hc_start1_write(uintptr_t base, uint16_t data)
-{
+static __inline void acamera_isp_input_port_hc_start1_write(uintptr_t base, uint16_t data) {
     uint32_t curr = system_hw_read_32(0x8cL);
-    system_hw_write_32(0x8cL, (((uint32_t)(data & 0xffff)) << 16) | (curr & 0xffff));
+    system_hw_write_32(0x8cL, (((uint32_t) (data & 0xffff)) << 16) | (curr & 0xffff));
 }
-static __inline uint16_t acamera_isp_input_port_hc_start1_read(uintptr_t base)
-{
+static __inline uint16_t acamera_isp_input_port_hc_start1_read(uintptr_t base) {
     return (uint16_t)((system_hw_read_32(0x8cL) & 0xffff0000) >> 16);
 }
 // ------------------------------------------------------------------------------ //
@@ -2927,13 +2709,11 @@ static __inline uint16_t acamera_isp_input_port_hc_start1_read(uintptr_t base)
 #define ACAMERA_ISP_INPUT_PORT_HC_SIZE1_MASK (0xffff)
 
 // args: data (16-bit)
-static __inline void acamera_isp_input_port_hc_size1_write(uintptr_t base, uint16_t data)
-{
+static __inline void acamera_isp_input_port_hc_size1_write(uintptr_t base, uint16_t data) {
     uint32_t curr = system_hw_read_32(0x90L);
-    system_hw_write_32(0x90L, (((uint32_t)(data & 0xffff)) << 0) | (curr & 0xffff0000));
+    system_hw_write_32(0x90L, (((uint32_t) (data & 0xffff)) << 0) | (curr & 0xffff0000));
 }
-static __inline uint16_t acamera_isp_input_port_hc_size1_read(uintptr_t base)
-{
+static __inline uint16_t acamera_isp_input_port_hc_size1_read(uintptr_t base) {
     return (uint16_t)((system_hw_read_32(0x90L) & 0xffff) >> 0);
 }
 // ------------------------------------------------------------------------------ //
@@ -2950,13 +2730,11 @@ static __inline uint16_t acamera_isp_input_port_hc_size1_read(uintptr_t base)
 #define ACAMERA_ISP_INPUT_PORT_VC_LIMIT_MASK (0xffff0000)
 
 // args: data (16-bit)
-static __inline void acamera_isp_input_port_vc_limit_write(uintptr_t base, uint16_t data)
-{
+static __inline void acamera_isp_input_port_vc_limit_write(uintptr_t base, uint16_t data) {
     uint32_t curr = system_hw_read_32(0x90L);
-    system_hw_write_32(0x90L, (((uint32_t)(data & 0xffff)) << 16) | (curr & 0xffff));
+    system_hw_write_32(0x90L, (((uint32_t) (data & 0xffff)) << 16) | (curr & 0xffff));
 }
-static __inline uint16_t acamera_isp_input_port_vc_limit_read(uintptr_t base)
-{
+static __inline uint16_t acamera_isp_input_port_vc_limit_read(uintptr_t base) {
     return (uint16_t)((system_hw_read_32(0x90L) & 0xffff0000) >> 16);
 }
 // ------------------------------------------------------------------------------ //
@@ -2973,13 +2751,11 @@ static __inline uint16_t acamera_isp_input_port_vc_limit_read(uintptr_t base)
 #define ACAMERA_ISP_INPUT_PORT_VC_START_MASK (0xffff)
 
 // args: data (16-bit)
-static __inline void acamera_isp_input_port_vc_start_write(uintptr_t base, uint16_t data)
-{
+static __inline void acamera_isp_input_port_vc_start_write(uintptr_t base, uint16_t data) {
     uint32_t curr = system_hw_read_32(0x94L);
-    system_hw_write_32(0x94L, (((uint32_t)(data & 0xffff)) << 0) | (curr & 0xffff0000));
+    system_hw_write_32(0x94L, (((uint32_t) (data & 0xffff)) << 0) | (curr & 0xffff0000));
 }
-static __inline uint16_t acamera_isp_input_port_vc_start_read(uintptr_t base)
-{
+static __inline uint16_t acamera_isp_input_port_vc_start_read(uintptr_t base) {
     return (uint16_t)((system_hw_read_32(0x94L) & 0xffff) >> 0);
 }
 // ------------------------------------------------------------------------------ //
@@ -2996,13 +2772,11 @@ static __inline uint16_t acamera_isp_input_port_vc_start_read(uintptr_t base)
 #define ACAMERA_ISP_INPUT_PORT_VC_SIZE_MASK (0xffff0000)
 
 // args: data (16-bit)
-static __inline void acamera_isp_input_port_vc_size_write(uintptr_t base, uint16_t data)
-{
+static __inline void acamera_isp_input_port_vc_size_write(uintptr_t base, uint16_t data) {
     uint32_t curr = system_hw_read_32(0x94L);
-    system_hw_write_32(0x94L, (((uint32_t)(data & 0xffff)) << 16) | (curr & 0xffff));
+    system_hw_write_32(0x94L, (((uint32_t) (data & 0xffff)) << 16) | (curr & 0xffff));
 }
-static __inline uint16_t acamera_isp_input_port_vc_size_read(uintptr_t base)
-{
+static __inline uint16_t acamera_isp_input_port_vc_size_read(uintptr_t base) {
     return (uint16_t)((system_hw_read_32(0x94L) & 0xffff0000) >> 16);
 }
 // ------------------------------------------------------------------------------ //
@@ -3019,8 +2793,7 @@ static __inline uint16_t acamera_isp_input_port_vc_size_read(uintptr_t base)
 #define ACAMERA_ISP_INPUT_PORT_FRAME_WIDTH_MASK (0xffff)
 
 // args: data (16-bit)
-static __inline uint16_t acamera_isp_input_port_frame_width_read(uintptr_t base)
-{
+static __inline uint16_t acamera_isp_input_port_frame_width_read(uintptr_t base) {
     return (uint16_t)((system_hw_read_32(0x98L) & 0xffff) >> 0);
 }
 // ------------------------------------------------------------------------------ //
@@ -3037,8 +2810,7 @@ static __inline uint16_t acamera_isp_input_port_frame_width_read(uintptr_t base)
 #define ACAMERA_ISP_INPUT_PORT_FRAME_HEIGHT_MASK (0xffff0000)
 
 // args: data (16-bit)
-static __inline uint16_t acamera_isp_input_port_frame_height_read(uintptr_t base)
-{
+static __inline uint16_t acamera_isp_input_port_frame_height_read(uintptr_t base) {
     return (uint16_t)((system_hw_read_32(0x98L) & 0xffff0000) >> 16);
 }
 // ------------------------------------------------------------------------------ //
@@ -3057,13 +2829,11 @@ static __inline uint16_t acamera_isp_input_port_frame_height_read(uintptr_t base
 #define ACAMERA_ISP_INPUT_PORT_FREEZE_CONFIG_HOLD_PREVIOUS_INPUT_PORT_CONFIG_STATE (1)
 
 // args: data (1-bit)
-static __inline void acamera_isp_input_port_freeze_config_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_input_port_freeze_config_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x9cL);
-    system_hw_write_32(0x9cL, (((uint32_t)(data & 0x1)) << 7) | (curr & 0xffffff7f));
+    system_hw_write_32(0x9cL, (((uint32_t) (data & 0x1)) << 7) | (curr & 0xffffff7f));
 }
-static __inline uint8_t acamera_isp_input_port_freeze_config_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_input_port_freeze_config_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x9cL) & 0x80) >> 7);
 }
 // ------------------------------------------------------------------------------ //
@@ -3084,13 +2854,11 @@ static __inline uint8_t acamera_isp_input_port_freeze_config_read(uintptr_t base
 #define ACAMERA_ISP_INPUT_PORT_MODE_REQUEST_SAFE_START (1)
 
 // args: data (3-bit)
-static __inline void acamera_isp_input_port_mode_request_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_input_port_mode_request_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0x9cL);
-    system_hw_write_32(0x9cL, (((uint32_t)(data & 0x7)) << 0) | (curr & 0xfffffff8));
+    system_hw_write_32(0x9cL, (((uint32_t) (data & 0x7)) << 0) | (curr & 0xfffffff8));
 }
-static __inline uint8_t acamera_isp_input_port_mode_request_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_input_port_mode_request_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x9cL) & 0x7) >> 0);
 }
 // ------------------------------------------------------------------------------ //
@@ -3110,8 +2878,7 @@ static __inline uint8_t acamera_isp_input_port_mode_request_read(uintptr_t base)
 #define ACAMERA_ISP_INPUT_PORT_MODE_STATUS_MASK (0x7)
 
 // args: data (3-bit)
-static __inline uint8_t acamera_isp_input_port_mode_status_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_input_port_mode_status_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0xa0L) & 0x7) >> 0);
 }
 // ------------------------------------------------------------------------------ //
@@ -3132,13 +2899,11 @@ static __inline uint8_t acamera_isp_input_port_mode_status_read(uintptr_t base)
 #define ACAMERA_ISP_INPUT_PORT_FRAME_STATS_STATS_RESET_MASK (0x1)
 
 // args: data (1-bit)
-static __inline void acamera_isp_input_port_frame_stats_stats_reset_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_input_port_frame_stats_stats_reset_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0xa4L);
-    system_hw_write_32(0xa4L, (((uint32_t)(data & 0x1)) << 0) | (curr & 0xfffffffe));
+    system_hw_write_32(0xa4L, (((uint32_t) (data & 0x1)) << 0) | (curr & 0xfffffffe));
 }
-static __inline uint8_t acamera_isp_input_port_frame_stats_stats_reset_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_input_port_frame_stats_stats_reset_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0xa4L) & 0x1) >> 0);
 }
 // ------------------------------------------------------------------------------ //
@@ -3155,13 +2920,11 @@ static __inline uint8_t acamera_isp_input_port_frame_stats_stats_reset_read(uint
 #define ACAMERA_ISP_INPUT_PORT_FRAME_STATS_STATS_HOLD_MASK (0x1)
 
 // args: data (1-bit)
-static __inline void acamera_isp_input_port_frame_stats_stats_hold_write(uintptr_t base, uint8_t data)
-{
+static __inline void acamera_isp_input_port_frame_stats_stats_hold_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_hw_read_32(0xa8L);
-    system_hw_write_32(0xa8L, (((uint32_t)(data & 0x1)) << 0) | (curr & 0xfffffffe));
+    system_hw_write_32(0xa8L, (((uint32_t) (data & 0x1)) << 0) | (curr & 0xfffffffe));
 }
-static __inline uint8_t acamera_isp_input_port_frame_stats_stats_hold_read(uintptr_t base)
-{
+static __inline uint8_t acamera_isp_input_port_frame_stats_stats_hold_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0xa8L) & 0x1) >> 0);
 }
 // ------------------------------------------------------------------------------ //
@@ -3178,8 +2941,7 @@ static __inline uint8_t acamera_isp_input_port_frame_stats_stats_hold_read(uintp
 #define ACAMERA_ISP_INPUT_PORT_FRAME_STATS_ACTIVE_WIDTH_MIN_MASK (0xffffffff)
 
 // args: data (32-bit)
-static __inline uint32_t acamera_isp_input_port_frame_stats_active_width_min_read(uintptr_t base)
-{
+static __inline uint32_t acamera_isp_input_port_frame_stats_active_width_min_read(uintptr_t base) {
     return system_hw_read_32(0xb4L);
 }
 // ------------------------------------------------------------------------------ //
@@ -3196,8 +2958,7 @@ static __inline uint32_t acamera_isp_input_port_frame_stats_active_width_min_rea
 #define ACAMERA_ISP_INPUT_PORT_FRAME_STATS_ACTIVE_WIDTH_MAX_MASK (0xffffffff)
 
 // args: data (32-bit)
-static __inline uint32_t acamera_isp_input_port_frame_stats_active_width_max_read(uintptr_t base)
-{
+static __inline uint32_t acamera_isp_input_port_frame_stats_active_width_max_read(uintptr_t base) {
     return system_hw_read_32(0xb8L);
 }
 // ------------------------------------------------------------------------------ //
@@ -3214,8 +2975,7 @@ static __inline uint32_t acamera_isp_input_port_frame_stats_active_width_max_rea
 #define ACAMERA_ISP_INPUT_PORT_FRAME_STATS_ACTIVE_WIDTH_SUM_MASK (0xffffffff)
 
 // args: data (32-bit)
-static __inline uint32_t acamera_isp_input_port_frame_stats_active_width_sum_read(uintptr_t base)
-{
+static __inline uint32_t acamera_isp_input_port_frame_stats_active_width_sum_read(uintptr_t base) {
     return system_hw_read_32(0xbcL);
 }
 // ------------------------------------------------------------------------------ //
@@ -3232,8 +2992,7 @@ static __inline uint32_t acamera_isp_input_port_frame_stats_active_width_sum_rea
 #define ACAMERA_ISP_INPUT_PORT_FRAME_STATS_ACTIVE_WIDTH_NUM_MASK (0xffffffff)
 
 // args: data (32-bit)
-static __inline uint32_t acamera_isp_input_port_frame_stats_active_width_num_read(uintptr_t base)
-{
+static __inline uint32_t acamera_isp_input_port_frame_stats_active_width_num_read(uintptr_t base) {
     return system_hw_read_32(0xc0L);
 }
 // ------------------------------------------------------------------------------ //
@@ -3250,8 +3009,7 @@ static __inline uint32_t acamera_isp_input_port_frame_stats_active_width_num_rea
 #define ACAMERA_ISP_INPUT_PORT_FRAME_STATS_ACTIVE_HEIGHT_MIN_MASK (0xffffffff)
 
 // args: data (32-bit)
-static __inline uint32_t acamera_isp_input_port_frame_stats_active_height_min_read(uintptr_t base)
-{
+static __inline uint32_t acamera_isp_input_port_frame_stats_active_height_min_read(uintptr_t base) {
     return system_hw_read_32(0xc4L);
 }
 // ------------------------------------------------------------------------------ //
@@ -3268,8 +3026,7 @@ static __inline uint32_t acamera_isp_input_port_frame_stats_active_height_min_re
 #define ACAMERA_ISP_INPUT_PORT_FRAME_STATS_ACTIVE_HEIGHT_MAX_MASK (0xffffffff)
 
 // args: data (32-bit)
-static __inline uint32_t acamera_isp_input_port_frame_stats_active_height_max_read(uintptr_t base)
-{
+static __inline uint32_t acamera_isp_input_port_frame_stats_active_height_max_read(uintptr_t base) {
     return system_hw_read_32(0xc8L);
 }
 // ------------------------------------------------------------------------------ //
@@ -3286,8 +3043,7 @@ static __inline uint32_t acamera_isp_input_port_frame_stats_active_height_max_re
 #define ACAMERA_ISP_INPUT_PORT_FRAME_STATS_ACTIVE_HEIGHT_SUM_MASK (0xffffffff)
 
 // args: data (32-bit)
-static __inline uint32_t acamera_isp_input_port_frame_stats_active_height_sum_read(uintptr_t base)
-{
+static __inline uint32_t acamera_isp_input_port_frame_stats_active_height_sum_read(uintptr_t base) {
     return system_hw_read_32(0xccL);
 }
 // ------------------------------------------------------------------------------ //
@@ -3304,8 +3060,7 @@ static __inline uint32_t acamera_isp_input_port_frame_stats_active_height_sum_re
 #define ACAMERA_ISP_INPUT_PORT_FRAME_STATS_ACTIVE_HEIGHT_NUM_MASK (0xffffffff)
 
 // args: data (32-bit)
-static __inline uint32_t acamera_isp_input_port_frame_stats_active_height_num_read(uintptr_t base)
-{
+static __inline uint32_t acamera_isp_input_port_frame_stats_active_height_num_read(uintptr_t base) {
     return system_hw_read_32(0xd0L);
 }
 // ------------------------------------------------------------------------------ //
@@ -3322,8 +3077,7 @@ static __inline uint32_t acamera_isp_input_port_frame_stats_active_height_num_re
 #define ACAMERA_ISP_INPUT_PORT_FRAME_STATS_HBLANK_MIN_MASK (0xffffffff)
 
 // args: data (32-bit)
-static __inline uint32_t acamera_isp_input_port_frame_stats_hblank_min_read(uintptr_t base)
-{
+static __inline uint32_t acamera_isp_input_port_frame_stats_hblank_min_read(uintptr_t base) {
     return system_hw_read_32(0xd4L);
 }
 // ------------------------------------------------------------------------------ //
@@ -3340,8 +3094,7 @@ static __inline uint32_t acamera_isp_input_port_frame_stats_hblank_min_read(uint
 #define ACAMERA_ISP_INPUT_PORT_FRAME_STATS_HBLANK_MAX_MASK (0xffffffff)
 
 // args: data (32-bit)
-static __inline uint32_t acamera_isp_input_port_frame_stats_hblank_max_read(uintptr_t base)
-{
+static __inline uint32_t acamera_isp_input_port_frame_stats_hblank_max_read(uintptr_t base) {
     return system_hw_read_32(0xd8L);
 }
 // ------------------------------------------------------------------------------ //
@@ -3358,8 +3111,7 @@ static __inline uint32_t acamera_isp_input_port_frame_stats_hblank_max_read(uint
 #define ACAMERA_ISP_INPUT_PORT_FRAME_STATS_HBLANK_SUM_MASK (0xffffffff)
 
 // args: data (32-bit)
-static __inline uint32_t acamera_isp_input_port_frame_stats_hblank_sum_read(uintptr_t base)
-{
+static __inline uint32_t acamera_isp_input_port_frame_stats_hblank_sum_read(uintptr_t base) {
     return system_hw_read_32(0xdcL);
 }
 // ------------------------------------------------------------------------------ //
@@ -3376,8 +3128,7 @@ static __inline uint32_t acamera_isp_input_port_frame_stats_hblank_sum_read(uint
 #define ACAMERA_ISP_INPUT_PORT_FRAME_STATS_HBLANK_NUM_MASK (0xffffffff)
 
 // args: data (32-bit)
-static __inline uint32_t acamera_isp_input_port_frame_stats_hblank_num_read(uintptr_t base)
-{
+static __inline uint32_t acamera_isp_input_port_frame_stats_hblank_num_read(uintptr_t base) {
     return system_hw_read_32(0xe0L);
 }
 // ------------------------------------------------------------------------------ //
@@ -3394,8 +3145,7 @@ static __inline uint32_t acamera_isp_input_port_frame_stats_hblank_num_read(uint
 #define ACAMERA_ISP_INPUT_PORT_FRAME_STATS_VBLANK_MIN_MASK (0xffffffff)
 
 // args: data (32-bit)
-static __inline uint32_t acamera_isp_input_port_frame_stats_vblank_min_read(uintptr_t base)
-{
+static __inline uint32_t acamera_isp_input_port_frame_stats_vblank_min_read(uintptr_t base) {
     return system_hw_read_32(0xe4L);
 }
 // ------------------------------------------------------------------------------ //
@@ -3412,8 +3162,7 @@ static __inline uint32_t acamera_isp_input_port_frame_stats_vblank_min_read(uint
 #define ACAMERA_ISP_INPUT_PORT_FRAME_STATS_VBLANK_MAX_MASK (0xffffffff)
 
 // args: data (32-bit)
-static __inline uint32_t acamera_isp_input_port_frame_stats_vblank_max_read(uintptr_t base)
-{
+static __inline uint32_t acamera_isp_input_port_frame_stats_vblank_max_read(uintptr_t base) {
     return system_hw_read_32(0xe8L);
 }
 // ------------------------------------------------------------------------------ //
@@ -3430,8 +3179,7 @@ static __inline uint32_t acamera_isp_input_port_frame_stats_vblank_max_read(uint
 #define ACAMERA_ISP_INPUT_PORT_FRAME_STATS_VBLANK_SUM_MASK (0xffffffff)
 
 // args: data (32-bit)
-static __inline uint32_t acamera_isp_input_port_frame_stats_vblank_sum_read(uintptr_t base)
-{
+static __inline uint32_t acamera_isp_input_port_frame_stats_vblank_sum_read(uintptr_t base) {
     return system_hw_read_32(0xecL);
 }
 // ------------------------------------------------------------------------------ //
@@ -3448,8 +3196,7 @@ static __inline uint32_t acamera_isp_input_port_frame_stats_vblank_sum_read(uint
 #define ACAMERA_ISP_INPUT_PORT_FRAME_STATS_VBLANK_NUM_MASK (0xffffffff)
 
 // args: data (32-bit)
-static __inline uint32_t acamera_isp_input_port_frame_stats_vblank_num_read(uintptr_t base)
-{
+static __inline uint32_t acamera_isp_input_port_frame_stats_vblank_num_read(uintptr_t base) {
     return system_hw_read_32(0xf0L);
 }
 // ------------------------------------------------------------------------------ //

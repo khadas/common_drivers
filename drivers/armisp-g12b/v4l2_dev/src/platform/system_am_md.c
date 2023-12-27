@@ -16,7 +16,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  */
-
 #include <linux/version.h>
 #include <linux/irqreturn.h>
 #include <linux/of_address.h>
@@ -27,11 +26,13 @@
 #include <linux/interrupt.h>
 #include <linux/kernel.h>
 #include <linux/device.h>
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0))
+
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0))
 #include <linux/dma-map-ops.h>
 #else
 #include <linux/dma-contiguous.h>
 #endif
+
 #include <linux/of_reserved_mem.h>
 #include <linux/platform_device.h>
 #include <linux/device.h>
@@ -62,11 +63,7 @@ T_MD_PRM am_md_reg;
 static uint32_t write_reg(unsigned long addr, uint32_t val)
 {
     void __iomem *io_addr;
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0))
     io_addr = ioremap(addr, 8);
-#else
-    io_addr = ioremap_nocache(addr, 8);
-#endif
     if (io_addr == NULL)
     {
         LOG(LOG_ERR, "%s: Failed to ioremap addr\n", __func__);
@@ -591,11 +588,7 @@ int am_md_parse_dt(struct device_node *node)
     if (strcmp(rs.name, "isp_md") == 0)
     {
         t_md->reg = rs;
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0))
         t_md->base_addr = ioremap(t_md->reg.start, resource_size(&t_md->reg));
-#else
-        t_md->base_addr = ioremap_nocache(t_md->reg.start, resource_size(&t_md->reg));
-#endif
     }
 
     irq = irq_of_parse_and_map(node, 0);

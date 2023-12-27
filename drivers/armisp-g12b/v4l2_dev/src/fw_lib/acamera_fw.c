@@ -17,11 +17,12 @@
  *
  */
 
-#include <linux/version.h>
 #include "acamera_fw.h"
 #if ACAMERA_ISP_PROFILING
 #include "acamera_profiler.h"
 #endif
+#include <linux/fs.h>
+#include <asm/uaccess.h>
 
 #include "acamera_isp_config.h"
 #include "acamera_command_api.h"
@@ -34,6 +35,7 @@
 #include "isp_config_seq.h"
 #include "system_am_sc.h"
 #include "system_autowrite.h"
+#include <linux/version.h>
 
 #define NELEM(x) ((int)(sizeof(x) / sizeof((x)[0])))
 
@@ -104,7 +106,6 @@ void acamera_fw_init(acamera_context_t *p_ctx)
     p_ctx->fsm_mgr.p_ctx = p_ctx;
     p_ctx->fsm_mgr.ctx_id = p_ctx->context_id;
     p_ctx->fsm_mgr.isp_base = p_ctx->settings.isp_base;
-    LOG(LOG_CRIT, "++, p_ctx->fsm_mgr->ctx_id: %d", (p_ctx->fsm_mgr).ctx_id);
     acamera_fsm_mgr_init(&p_ctx->fsm_mgr);
 
     p_ctx->irq_flag = 0;
@@ -145,15 +146,12 @@ void acamera_fw_error_routine(acamera_context_t *p_ctx, uint32_t irq_mask)
     acamera_isp_isp_global_global_fsm_reset_write(p_ctx->settings.isp_base, 1);
     acamera_isp_isp_global_global_fsm_reset_write(p_ctx->settings.isp_base, 0);
 
-    acamera_isp_isp_global_monitor_output_dma_clr_alarm_write(0, 1);
-    acamera_isp_isp_global_monitor_output_dma_clr_alarm_write(0, 0);
-
     // return the interrupts
     acamera_isp_isp_global_interrupt_mask_vector_write(0, ISP_IRQ_MASK_VECTOR);
 
     acamera_isp_input_port_mode_request_write(p_ctx->settings.isp_base, ACAMERA_ISP_INPUT_PORT_MODE_REQUEST_SAFE_START);
 
-    LOG(LOG_INFO, "starting isp from error");
+    LOG(LOG_ERR, "starting isp from error");
 }
 
 void acamera_fw_process(acamera_context_t *p_ctx)
@@ -165,7 +163,7 @@ void acamera_fw_process(acamera_context_t *p_ctx)
         p_ctx->binit_profiler = 1;
     }
 #endif
-    if ((p_ctx->system_state == FW_RUN)) // need to capture on firmware freeze
+    if (p_ctx->system_state == FW_RUN) // need to capture on firmware freeze
     {
         // firmware not frozen
         // 0 means handle all the events and then return.
@@ -217,7 +215,295 @@ void acamera_fsm_mgr_raise_event(acamera_fsm_mgr_t *p_fsm_mgr, event_id_t event_
     }
 }
 
-int32_t acamera_update_calibration_set(acamera_context_ptr_t p_ctx)
+int32_t acamera_extern_param_calculate(void *param)
+{
+    int32_t rtn = 0;
+    uint32_t alpha = 0;
+    uint32_t i, j;
+    uint32_t r_cnt = 0;
+    uint32_t c_cnt = 0;
+    uint32_t l_gain = 0;
+    uint32_t w_cnt = 0;
+    uint32_t *c_param = NULL;
+    uint32_t *c_result = NULL;
+    uint32_t x0, y0, x1, y1;
+    fsm_ext_param_ctrl_t *p_ctrl = param;
+
+    if (p_ctrl == NULL || p_ctrl->ctx == NULL || p_ctrl->result == NULL)
+    {
+        LOG(LOG_CRIT, "Error input param");
+        rtn = -1;
+        goto over_return;
+    }
+
+    c_param = _GET_UINT_PTR(p_ctrl->ctx, p_ctrl->id);
+    l_gain = (p_ctrl->total_gain) >> (LOG2_GAIN_SHIFT - 8);
+    r_cnt = _GET_ROWS(p_ctrl->ctx, p_ctrl->id);
+    c_cnt = _GET_COLS(p_ctrl->ctx, p_ctrl->id);
+    w_cnt = _GET_WIDTH(p_ctrl->ctx, p_ctrl->id);
+    c_result = p_ctrl->result;
+
+    if (!c_param || (r_cnt == 0))
+        return -1;
+
+    if (l_gain <= c_param[0])
+    {
+        system_memcpy(c_result, c_param, c_cnt * w_cnt);
+        goto over_return;
+    }
+
+    if (l_gain >= c_param[(r_cnt - 1) * c_cnt])
+    {
+        system_memcpy(c_result, &c_param[(r_cnt - 1) * c_cnt], c_cnt * w_cnt);
+        goto over_return;
+    }
+
+    for (i = 1; i < r_cnt; i++)
+    {
+        if (l_gain < c_param[i * c_cnt])
+        {
+            break;
+        }
+    }
+
+    for (j = 1; j < c_cnt; j++)
+    {
+        x0 = c_param[(i - 1) * c_cnt];
+        x1 = c_param[i * c_cnt];
+        y0 = c_param[(i - 1) * c_cnt + j];
+        y1 = c_param[i * c_cnt + j];
+        if (x1 != x0)
+        {
+            alpha = (l_gain - x0) * 256 / (x1 - x0);
+            c_result[j] = (y1 * alpha + y0 * (256 - alpha)) >> 8;
+        }
+        else
+        {
+            c_result[j] = y1;
+            LOG(LOG_CRIT, "AVOIDED DIVISION BY ZERO");
+        }
+    }
+
+    c_result[0] = l_gain;
+
+over_return:
+    return rtn;
+}
+
+int32_t acamera_extern_param_calculate_ushort(void *param)
+{
+    int32_t rtn = 0;
+    uint32_t alpha = 0;
+    uint32_t i, j;
+    uint32_t r_cnt = 0;
+    uint32_t c_cnt = 0;
+    uint32_t l_gain = 0;
+    uint32_t w_cnt = 0;
+    uint16_t *c_param = NULL;
+    uint16_t *c_result = NULL;
+    uint32_t x0, y0, x1, y1;
+    fsm_ext_param_ctrl_t *p_ctrl = param;
+
+    if (p_ctrl == NULL || p_ctrl->ctx == NULL || p_ctrl->result == NULL)
+    {
+        LOG(LOG_CRIT, "Error input param");
+        rtn = -1;
+        goto over_return;
+    }
+
+    c_param = _GET_USHORT_PTR(p_ctrl->ctx, p_ctrl->id);
+    l_gain = (p_ctrl->total_gain) >> (LOG2_GAIN_SHIFT - 8);
+    r_cnt = _GET_ROWS(p_ctrl->ctx, p_ctrl->id);
+    c_cnt = _GET_COLS(p_ctrl->ctx, p_ctrl->id);
+    w_cnt = _GET_WIDTH(p_ctrl->ctx, p_ctrl->id);
+    c_result = p_ctrl->result;
+
+    if (!c_param || (r_cnt == 0))
+        return -1;
+
+    if (l_gain <= c_param[0])
+    {
+        system_memcpy(c_result, c_param, c_cnt * w_cnt);
+        goto over_return;
+    }
+
+    if (l_gain >= c_param[(r_cnt - 1) * c_cnt])
+    {
+        system_memcpy(c_result, &c_param[(r_cnt - 1) * c_cnt], c_cnt * w_cnt);
+        goto over_return;
+    }
+
+    for (i = 1; i < r_cnt; i++)
+    {
+        if (l_gain < c_param[i * c_cnt])
+        {
+            break;
+        }
+    }
+
+    for (j = 1; j < c_cnt; j++)
+    {
+        x0 = c_param[(i - 1) * c_cnt];
+        x1 = c_param[i * c_cnt];
+        y0 = c_param[(i - 1) * c_cnt + j];
+        y1 = c_param[i * c_cnt + j];
+        if (x1 != x0)
+        {
+            alpha = (l_gain - x0) * 256 / (x1 - x0);
+            c_result[j] = (y1 * alpha + y0 * (256 - alpha)) >> 8;
+        }
+        else
+        {
+            c_result[j] = y1;
+            LOG(LOG_CRIT, "AVOIDED DIVISION BY ZERO");
+        }
+    }
+
+    c_result[0] = l_gain;
+
+over_return:
+    return rtn;
+}
+
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 15, 0))
+static void acamera_open_external_bin(void *ctx, struct file **fp, uint32_t *size)
+{
+    uint32_t mode = 0;
+    char f_name[40] = {'\0'};
+    acamera_context_ptr_t p_ctx;
+    struct kstat stat;
+
+    if (ctx == NULL || fp == NULL)
+    {
+        LOG(LOG_ERR, "Error input param");
+        return;
+    }
+
+    p_ctx = ctx;
+
+    acamera_fsm_mgr_get_param(&p_ctx->fsm_mgr, FSM_PARAM_GET_WDR_MODE, NULL, 0, &mode, sizeof(mode));
+
+    switch (mode)
+    {
+    case WDR_MODE_LINEAR:
+        snprintf(f_name, sizeof(f_name), "/data/isp_tuning/tuning_linear.bin");
+        break;
+    case WDR_MODE_NATIVE:
+        snprintf(f_name, sizeof(f_name), "/data/isp_tuning/tuning_native.bin");
+        break;
+    case WDR_MODE_FS_LIN:
+        snprintf(f_name, sizeof(f_name), "/data/isp_tuning/tuning_fs_lin.bin");
+        break;
+    default:
+        LOG(LOG_ERR, "Error input mode %u", mode);
+        return;
+    }
+
+    if (vfs_stat(f_name, &stat))
+    {
+        return;
+    }
+
+    *size = stat.size;
+
+    *fp = filp_open(f_name, O_RDONLY, 0);
+}
+#endif
+
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 15, 0))
+static int32_t acamera_read_external_bin(struct file *fp, uint8_t *buf, uint32_t size)
+{
+    loff_t pos = 0;
+    int32_t nread = -1;
+
+    if (fp == NULL || buf == NULL || !size)
+    {
+        LOG(LOG_ERR, "Error input param");
+        return nread;
+    }
+
+    nread = vfs_read(fp, buf, size, &pos);
+
+    return nread;
+}
+#endif
+
+static void acamera_update_external_calibrations(acamera_context_ptr_t p_ctx)
+{
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 15, 0))
+    int32_t nread = 0;
+    uint32_t idx = 0;
+    uint32_t l_size = 0;
+    uint32_t t_size = 0;
+    uint8_t *l_ptr = NULL;
+    uint8_t *b_buf = NULL;
+    uint8_t *p_mem = NULL;
+    uint32_t f_size = 0;
+    struct file *fp = NULL;
+    mm_segment_t fs;
+
+    fs = get_fs();
+    set_fs(KERNEL_DS);
+
+    acamera_open_external_bin(p_ctx, &fp, &f_size);
+    if (fp == NULL || !f_size)
+    {
+        LOG(LOG_ERR, "Bin file not exsit");
+        goto error_exit;
+    }
+
+    for (idx = 0; idx < CALIBRATION_TOTAL_SIZE; idx++)
+    {
+        l_size = _GET_SIZE(p_ctx, idx);
+        t_size += l_size;
+    }
+
+    if (t_size != f_size)
+    {
+        LOG(LOG_ERR, "Bin size not match: f_size %u, t_size %u", f_size, t_size);
+        goto error_size;
+    }
+
+    b_buf = kzalloc(t_size, GFP_KERNEL);
+    if (b_buf == NULL)
+    {
+        LOG(LOG_ERR, "Failed to alloc mem");
+        goto error_size;
+    }
+
+    nread = acamera_read_external_bin(fp, b_buf, f_size);
+    if (nread != f_size)
+    {
+        LOG(LOG_ERR, "Failed to read bin");
+        goto error_read;
+    }
+
+    p_mem = b_buf;
+
+    for (idx = 0; idx < CALIBRATION_TOTAL_SIZE; idx++)
+    {
+        l_ptr = (uint8_t *)_GET_LUT_PTR(p_ctx, idx);
+        l_size = _GET_SIZE(p_ctx, idx);
+        if (l_size)
+            memcpy(l_ptr, p_mem, l_size);
+        p_mem += l_size;
+    }
+
+    LOG(LOG_CRIT, "Success update tuning bin");
+
+error_read:
+    if (b_buf)
+        kfree(b_buf);
+error_size:
+    if (fp)
+        filp_close(fp, NULL);
+error_exit:
+    set_fs(fs);
+#endif
+    return;
+}
+
+int32_t acamera_update_calibration_set(acamera_context_ptr_t p_ctx, char *s_name)
 {
     int32_t result = 0;
     void *sensor_arg = 0;
@@ -231,12 +517,15 @@ int32_t acamera_update_calibration_set(acamera_context_ptr_t p_ctx)
             if (cur_mode < param->modes_num)
             {
                 sensor_arg = &(param->modes_table[cur_mode]);
+                ((sensor_mode_t *)sensor_arg)->cali_mode = p_ctx->cali_mode;
             }
         }
-        if (p_ctx->settings.get_calibrations(p_ctx->context_id, sensor_arg, &p_ctx->acameraCalibrations) != 0)
+        if (p_ctx->settings.get_calibrations(p_ctx->context_id, sensor_arg, &p_ctx->acameraCalibrations, s_name) != 0)
         {
             LOG(LOG_CRIT, "Failed to get calibration set for. Fatal error");
         }
+
+        acamera_update_external_calibrations(p_ctx);
 
 #if defined(ISP_HAS_GENERAL_FSM)
         acamera_fsm_mgr_set_param(&p_ctx->fsm_mgr, FSM_PARAM_SET_RELOAD_CALIBRATION, NULL, 0);
@@ -268,7 +557,64 @@ int32_t acamera_update_calibration_set(acamera_context_ptr_t p_ctx)
     return result;
 }
 
-int32_t acamera_init_calibrations(acamera_context_ptr_t p_ctx)
+int32_t acamera_update_calibration_customer(acamera_context_ptr_t p_ctx, uint32_t mode)
+{
+    int32_t result = 0;
+    sensor_mode_t sensor_arg;
+    if (p_ctx->settings.get_calibrations != NULL)
+    {
+        {
+            const sensor_param_t *param = NULL;
+            acamera_fsm_mgr_get_param(&p_ctx->fsm_mgr, FSM_PARAM_GET_SENSOR_PARAM, NULL, 0, &param, sizeof(param));
+
+            uint32_t cur_mode = param->mode;
+            if (cur_mode < param->modes_num)
+            {
+                sensor_arg.wdr_mode = param->modes_table[cur_mode].wdr_mode;
+                sensor_arg.fps = param->modes_table[cur_mode].fps;
+                sensor_arg.exposures = param->modes_table[cur_mode].exposures;
+                sensor_arg.resolution.width = param->modes_table[cur_mode].resolution.width;
+                sensor_arg.resolution.height = param->modes_table[cur_mode].resolution.height;
+                sensor_arg.cali_mode = mode;
+                p_ctx->cali_mode = mode;
+            }
+        }
+        if (p_ctx->settings.get_calibrations(p_ctx->context_id, &sensor_arg, &p_ctx->acameraCalibrations, NULL) != 0)
+        {
+            LOG(LOG_CRIT, "Failed to get calibration set for. Fatal error");
+        }
+
+#if defined(ISP_HAS_GENERAL_FSM)
+        acamera_fsm_mgr_set_param(&p_ctx->fsm_mgr, FSM_PARAM_SET_RELOAD_CALIBRATION, NULL, 0);
+#endif
+
+// Update some FSMs variables which depends on calibration data.
+#if defined(ISP_HAS_AE_BALANCED_FSM) || defined(ISP_HAS_AE_MANUAL_FSM)
+        acamera_fsm_mgr_set_param(&p_ctx->fsm_mgr, FSM_PARAM_SET_AE_INIT, NULL, 0);
+#endif
+
+#if defined(ISP_HAS_IRIDIX_FSM) || defined(ISP_HAS_IRIDIX_HIST_FSM) || defined(ISP_HAS_IRIDIX_MANUAL_FSM)
+        acamera_fsm_mgr_set_param(&p_ctx->fsm_mgr, FSM_PARAM_SET_IRIDIX_INIT, NULL, 0);
+#endif
+
+#if defined(ISP_HAS_COLOR_MATRIX_FSM)
+        acamera_fsm_mgr_set_param(&p_ctx->fsm_mgr, FSM_PARAM_SET_CCM_CHANGE, NULL, 0);
+#endif
+
+#if defined(ISP_HAS_SBUF_FSM)
+        acamera_fsm_mgr_set_param(&p_ctx->fsm_mgr, FSM_PARAM_SET_SBUF_CALIBRATION_UPDATE, &mode, sizeof(uint32_t));
+#endif
+    }
+    else
+    {
+        LOG(LOG_CRIT, "Calibration callback is null. Failed to get calibrations");
+        result = -1;
+    }
+
+    return result;
+}
+
+int32_t acamera_init_calibrations(acamera_context_ptr_t p_ctx, char *s_name)
 {
     int32_t result = 0;
     void *sensor_arg = 0;
@@ -281,7 +627,7 @@ int32_t acamera_init_calibrations(acamera_context_ptr_t p_ctx)
     // depends on calibration data.
     if (p_ctx->initialized == 1)
     {
-        acamera_update_calibration_set(p_ctx);
+        acamera_update_calibration_set(p_ctx, s_name);
     }
     else
     {
@@ -296,10 +642,12 @@ int32_t acamera_init_calibrations(acamera_context_ptr_t p_ctx)
                 sensor_arg = &(param->modes_table[cur_mode]);
             }
 
-            if (p_ctx->settings.get_calibrations(p_ctx->context_id, sensor_arg, &p_ctx->acameraCalibrations) != 0)
+            if (p_ctx->settings.get_calibrations(p_ctx->context_id, sensor_arg, &p_ctx->acameraCalibrations, s_name) != 0)
             {
                 LOG(LOG_CRIT, "Failed to get calibration set for. Fatal error");
             }
+
+            acamera_update_external_calibrations(p_ctx);
         }
         else
         {
@@ -358,7 +706,6 @@ static void internal_callback_raw(void *ctx, aframe_t *aframe, const metadata_t 
 #endif
 
 #if defined(ISP_HAS_DMA_WRITER_FSM)
-
 static void internal_callback_fr(void *ctx, tframe_t *tframe, const metadata_t *metadata)
 {
     acamera_context_ptr_t p_ctx = (acamera_context_ptr_t)ctx;
@@ -491,6 +838,7 @@ static void init_stab(acamera_context_ptr_t p_ctx)
     p_ctx->stab.global_manual_sinter = 0;
     p_ctx->stab.global_manual_temper = 0;
     p_ctx->stab.global_manual_awb = 0;
+    p_ctx->stab.global_manual_ccm = 0;
     p_ctx->stab.global_manual_saturation = 0;
     p_ctx->stab.global_manual_auto_level = 0;
     p_ctx->stab.global_manual_frame_stitch = 0;
@@ -513,10 +861,22 @@ static void init_stab(acamera_context_ptr_t p_ctx)
     p_ctx->stab.global_sinter_threshold_target = 0;
     p_ctx->stab.global_temper_threshold_target = 0;
     p_ctx->stab.global_awb_red_gain = 256;
+    p_ctx->stab.global_awb_green_even_gain = 256;
+    p_ctx->stab.global_awb_green_odd_gain = 256;
     p_ctx->stab.global_awb_blue_gain = 256;
+    p_ctx->stab.global_ccm_matrix[0] = 0x0100;
+    p_ctx->stab.global_ccm_matrix[1] = 0x0000;
+    p_ctx->stab.global_ccm_matrix[2] = 0x0000;
+    p_ctx->stab.global_ccm_matrix[3] = 0x0000;
+    p_ctx->stab.global_ccm_matrix[4] = 0x0100;
+    p_ctx->stab.global_ccm_matrix[5] = 0x0000;
+    p_ctx->stab.global_ccm_matrix[6] = 0x0000;
+    p_ctx->stab.global_ccm_matrix[7] = 0x0000;
+    p_ctx->stab.global_ccm_matrix[8] = 0x0100;
     p_ctx->stab.global_saturation_target = 0;
     p_ctx->stab.global_ae_compensation = SYSTEM_AE_COMPENSATION_DEFAULT;
     p_ctx->stab.global_calibrate_bad_pixels = 0;
+    p_ctx->stab.global_dynamic_gamma_enable = 1;
 }
 
 extern void *get_system_ctx_ptr(void);
@@ -578,91 +938,73 @@ void acamera_3aalg_preset(acamera_fsm_mgr_t *p_fsm_mgr)
     isp_awb_preset_t awb_param;
     isp_gamma_preset_t gamma_param;
     isp_iridix_preset_t iridix_param;
-    fsm_param_sensor_info_t sensor_info;
 
-    acamera_fsm_mgr_get_param(p_fsm_mgr, FSM_PARAM_GET_SENSOR_INFO, NULL, 0, &sensor_info, sizeof(sensor_info));
-    if (sensor_info.sensor_exp_number == 2)
+    if (_GET_LEN(p_fsm_mgr->p_ctx, CALIBRATION_3AALG_AE_CONTROL) &&
+        _GET_LEN(p_fsm_mgr->p_ctx, CALIBRATION_3AALG_AWB_CONTROL) &&
+        _GET_LEN(p_fsm_mgr->p_ctx, CALIBRATION_3AALG_GAMMA_CONTROL) &&
+        _GET_LEN(p_fsm_mgr->p_ctx, CALIBRATION_3AALG_IRIDIX_CONTROL))
     {
-        ae_param.skip_cnt = 5;
-        ae_param.exposure_log2 = 1726569;
-        ae_param.integrator = 51797079;
-        ae_param.error_log2 = 0;
-        ae_param.exposure_ratio = 512;
+        ae_param.skip_cnt = _GET_UINT_PTR(p_fsm_mgr->p_ctx, CALIBRATION_3AALG_AE_CONTROL)[0];
+        ae_param.exposure_log2 = _GET_UINT_PTR(p_fsm_mgr->p_ctx, CALIBRATION_3AALG_AE_CONTROL)[1];
+        ae_param.integrator = _GET_UINT_PTR(p_fsm_mgr->p_ctx, CALIBRATION_3AALG_AE_CONTROL)[2];
+        ae_param.error_log2 = _GET_UINT_PTR(p_fsm_mgr->p_ctx, CALIBRATION_3AALG_AE_CONTROL)[3];
+        ae_param.exposure_ratio = _GET_UINT_PTR(p_fsm_mgr->p_ctx, CALIBRATION_3AALG_AE_CONTROL)[4];
 
-        awb_param.skip_cnt = 15;
-        awb_param.wb_log2[0] = 252071;
-        awb_param.wb_log2[1] = 87;
-        awb_param.wb_log2[2] = 87;
-        awb_param.wb_log2[3] = 180394;
-        awb_param.wb[0] = 527;
-        awb_param.wb[1] = 271;
-        awb_param.wb[2] = 271;
-        awb_param.wb[3] = 436;
-        awb_param.global_awb_red_gain = 302;
-        awb_param.global_awb_blue_gain = 234;
-        awb_param.p_high = 78;
-        awb_param.temperature_detected = 6410;
-        awb_param.light_source_candidate = 3;
+        awb_param.skip_cnt = _GET_UINT_PTR(p_fsm_mgr->p_ctx, CALIBRATION_3AALG_AWB_CONTROL)[0];
+        awb_param.wb_log2[0] = _GET_UINT_PTR(p_fsm_mgr->p_ctx, CALIBRATION_3AALG_AWB_CONTROL)[1];
+        awb_param.wb_log2[1] = _GET_UINT_PTR(p_fsm_mgr->p_ctx, CALIBRATION_3AALG_AWB_CONTROL)[2];
+        awb_param.wb_log2[2] = _GET_UINT_PTR(p_fsm_mgr->p_ctx, CALIBRATION_3AALG_AWB_CONTROL)[3];
+        awb_param.wb_log2[3] = _GET_UINT_PTR(p_fsm_mgr->p_ctx, CALIBRATION_3AALG_AWB_CONTROL)[4];
+        awb_param.wb[0] = _GET_UINT_PTR(p_fsm_mgr->p_ctx, CALIBRATION_3AALG_AWB_CONTROL)[5];
+        awb_param.wb[1] = _GET_UINT_PTR(p_fsm_mgr->p_ctx, CALIBRATION_3AALG_AWB_CONTROL)[6];
+        awb_param.wb[2] = _GET_UINT_PTR(p_fsm_mgr->p_ctx, CALIBRATION_3AALG_AWB_CONTROL)[7];
+        awb_param.wb[3] = _GET_UINT_PTR(p_fsm_mgr->p_ctx, CALIBRATION_3AALG_AWB_CONTROL)[8];
+        awb_param.global_awb_red_gain = _GET_UINT_PTR(p_fsm_mgr->p_ctx, CALIBRATION_3AALG_AWB_CONTROL)[9];
+        awb_param.global_awb_blue_gain = _GET_UINT_PTR(p_fsm_mgr->p_ctx, CALIBRATION_3AALG_AWB_CONTROL)[10];
+        awb_param.p_high = _GET_UINT_PTR(p_fsm_mgr->p_ctx, CALIBRATION_3AALG_AWB_CONTROL)[11];
+        awb_param.temperature_detected = _GET_UINT_PTR(p_fsm_mgr->p_ctx, CALIBRATION_3AALG_AWB_CONTROL)[12];
+        awb_param.light_source_candidate = _GET_UINT_PTR(p_fsm_mgr->p_ctx, CALIBRATION_3AALG_AWB_CONTROL)[13];
 
-        gamma_param.skip_cnt = 30;
-        gamma_param.gamma_gain = 266;
-        gamma_param.gamma_offset = 39;
+        gamma_param.skip_cnt = _GET_UINT_PTR(p_fsm_mgr->p_ctx, CALIBRATION_3AALG_GAMMA_CONTROL)[0];
+        gamma_param.gamma_gain = _GET_UINT_PTR(p_fsm_mgr->p_ctx, CALIBRATION_3AALG_GAMMA_CONTROL)[1];
+        gamma_param.gamma_offset = _GET_UINT_PTR(p_fsm_mgr->p_ctx, CALIBRATION_3AALG_GAMMA_CONTROL)[2];
 
-        iridix_param.skip_cnt = 90;
-        iridix_param.strength_target = 30681;
-        iridix_param.iridix_contrast = 3986;
-        iridix_param.dark_enh = 1500;
-        iridix_param.iridix_global_DG = 256;
-        iridix_param.diff = 256;
-        iridix_param.iridix_strength = 30681;
-        LOG(LOG_CRIT, "Enter FS_Lin_2Exp Preset");
+        iridix_param.skip_cnt = _GET_UINT_PTR(p_fsm_mgr->p_ctx, CALIBRATION_3AALG_IRIDIX_CONTROL)[0];
+        iridix_param.strength_target = _GET_UINT_PTR(p_fsm_mgr->p_ctx, CALIBRATION_3AALG_IRIDIX_CONTROL)[1];
+        iridix_param.iridix_contrast = _GET_UINT_PTR(p_fsm_mgr->p_ctx, CALIBRATION_3AALG_IRIDIX_CONTROL)[2];
+        iridix_param.dark_enh = _GET_UINT_PTR(p_fsm_mgr->p_ctx, CALIBRATION_3AALG_IRIDIX_CONTROL)[3];
+        iridix_param.iridix_global_DG = _GET_UINT_PTR(p_fsm_mgr->p_ctx, CALIBRATION_3AALG_IRIDIX_CONTROL)[4];
+        iridix_param.diff = _GET_UINT_PTR(p_fsm_mgr->p_ctx, CALIBRATION_3AALG_IRIDIX_CONTROL)[5];
+        iridix_param.iridix_strength = _GET_UINT_PTR(p_fsm_mgr->p_ctx, CALIBRATION_3AALG_IRIDIX_CONTROL)[6];
+
+        fsm_param_sensor_info_t sensor_info;
+        acamera_fsm_mgr_get_param(p_fsm_mgr, FSM_PARAM_GET_SENSOR_INFO, NULL, 0, &sensor_info, sizeof(sensor_info));
+        if (sensor_info.sensor_exp_number == WDR_MODE_FS_LIN)
+            LOG(LOG_CRIT, "Enter FS_Lin_2Exp Preset");
+        else
+            LOG(LOG_CRIT, "Enter Linear Binary Preset");
     }
     else
     {
-        ae_param.skip_cnt = 5;
-        ae_param.exposure_log2 = 2011011;
-        ae_param.integrator = 33165172;
-        ae_param.error_log2 = 0;
-        ae_param.exposure_ratio = 64;
-
-        awb_param.skip_cnt = 15;
-        awb_param.wb_log2[0] = 252071;
-        awb_param.wb_log2[1] = 87;
-        awb_param.wb_log2[2] = 87;
-        awb_param.wb_log2[3] = 180394;
-        awb_param.wb[0] = 527;
-        awb_param.wb[1] = 271;
-        awb_param.wb[2] = 271;
-        awb_param.wb[3] = 436;
-        awb_param.global_awb_red_gain = 270;
-        awb_param.global_awb_blue_gain = 236;
-        awb_param.p_high = 29;
-        awb_param.temperature_detected = 5400;
-        awb_param.light_source_candidate = 3;
-
-        gamma_param.skip_cnt = 30;
-        gamma_param.gamma_gain = 340;
-        gamma_param.gamma_offset = 15;
-
-        iridix_param.skip_cnt = 90;
-        iridix_param.strength_target = 13708;
-        iridix_param.iridix_contrast = 2464;
-        iridix_param.dark_enh = 400;
-        iridix_param.iridix_global_DG = 256;
-        iridix_param.diff = 256;
-        iridix_param.iridix_strength = 13708;
-        LOG(LOG_CRIT, "Enter Linear Binary Preset");
+        ae_param.skip_cnt = 0;
+        awb_param.skip_cnt = 0;
+        gamma_param.skip_cnt = 0;
+        iridix_param.skip_cnt = 0;
     }
-
 #ifdef ACAMERA_PRESET_FREERTOS
     acamera_alg_preset_t total_param;
-    char *reserve_virt_addr = phys_to_virt(ACAMERA_ALG_PRE_BASE);
-    if (autowrite_fr_start_address_read())
-        reserve_virt_addr = phys_to_virt(autowrite_fr_start_address_read() + autowrite_fr_writer_memsize_read());
-    else if (autowrite_ds1_start_address_read())
-        reserve_virt_addr = phys_to_virt(autowrite_ds1_start_address_read() + autowrite_ds1_writer_memsize_read());
 
-    system_memcpy((void *)&total_param, (void *)reserve_virt_addr, sizeof(total_param));
+    if (p_fsm_mgr->isp_seamless)
+    {
+        char *reserve_virt_addr = phys_to_virt(ACAMERA_ALG_PRE_BASE);
+
+        if (autowrite_fr_start_address_read())
+            reserve_virt_addr = phys_to_virt(autowrite_fr_start_address_read() + autowrite_fr_writer_memsize_read());
+        else if (autowrite_ds1_start_address_read())
+            reserve_virt_addr = phys_to_virt(autowrite_ds1_start_address_read() + autowrite_ds1_writer_memsize_read());
+
+        system_memcpy((void *)&total_param, (void *)reserve_virt_addr, sizeof(total_param));
+    }
 
     if (total_param.ae_pre_info.skip_cnt == 0xFFFF && total_param.awb_pre_info.skip_cnt == 0xFFFF)
     {
@@ -705,9 +1047,6 @@ int32_t acamera_init_context(acamera_context_t *p_ctx, acamera_settings *setting
     p_ctx->p_gfw = g_fw;
     if (p_ctx->sw_reg_map.isp_sw_config_map != NULL)
     {
-
-        LOG(LOG_INFO, "Allocated memory for config space of size %d bytes", ACAMERA_ISP1_SIZE);
-        LOG(LOG_INFO, "Allocated memory for metering of size %d bytes", ACAMERA_METERING_STATS_MEM_SIZE);
         // copy settings
         system_memcpy((void *)&p_ctx->settings, (void *)settings, sizeof(acamera_settings));
 
@@ -735,15 +1074,10 @@ int32_t acamera_init_context(acamera_context_t *p_ctx, acamera_settings *setting
         acamera_load_isp_sequence(0, p_ctx->isp_sequence, SENSOR_ISP_SEQUENCE_DEFAULT_SETTINGS_FPGA);
 #endif
 
-#if ISP_DMA_RAW_CAPTURE
-        dma_raw_capture_init(g_fw);
-#endif
-
         // reset frame counters
         p_ctx->isp_frame_counter_raw = 0;
         p_ctx->isp_frame_counter = 0;
-
-        LOG(LOG_CRIT, "++, p_ctx->fsm_mgr->ctx_id: %d", ((p_ctx->fsm_mgr).ctx_id));
+        p_ctx->cali_mode = 0;
 
         acamera_fw_init(p_ctx);
 
@@ -769,9 +1103,7 @@ int32_t acamera_init_context(acamera_context_t *p_ctx, acamera_settings *setting
         LOG(LOG_CRIT, "Failed to allocate memory for ISP config context");
     }
 
-    acamera_isp_iridix_context_no_write(p_ctx->fsm_mgr.isp_base, p_ctx->context_id);
     acamera_3aalg_preset(&p_ctx->fsm_mgr);
-    //acamera_isp_top_bypass_temper_write(p_ctx->settings.isp_base, 1);
 
     return result;
 }

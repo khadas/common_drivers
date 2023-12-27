@@ -37,6 +37,8 @@ void color_matrix_initialize( color_matrix_fsm_ptr_t p_fsm );
 void color_matrix_update( color_matrix_fsm_ptr_t p_fsm );
 void color_matrix_write( color_matrix_fsm_ptr_t p_fsm );
 void color_matrix_shading_mesh_reload( color_matrix_fsm_ptr_t p_fsm );
+int color_matrix_mesh_get_lsc_map( color_matrix_fsm_ptr_t p_fsm,
+                                   fsm_param_lsc_mesh_map_t *p_lsc_map );
 
 
 struct _color_matrix_fsm_t {
@@ -67,6 +69,9 @@ struct _color_matrix_fsm_t {
     uint8_t manual_CCM;
     int16_t manual_color_matrix[9];
     int32_t temperature_threshold[8];
+
+    int32_t shading_mesh_strength;
+    int32_t manual_shading_mesh_strength;
 };
 
 

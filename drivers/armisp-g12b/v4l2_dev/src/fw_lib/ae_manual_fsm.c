@@ -50,6 +50,7 @@ void AE_fsm_clear( AE_fsm_t *p_fsm )
     p_fsm->y2 = ( ( AE_CENTER_ZONES >> 24 ) & 0xFF );
 #endif
     p_fsm->frame_id_tracking = 0;
+    p_fsm->daynight = 0;
 }
 
 void AE_request_interrupt( AE_fsm_ptr_t p_fsm, system_fw_interrupt_mask_t mask )
@@ -168,8 +169,10 @@ int AE_fsm_get_param( void *fsm, uint32_t param_id, void *input, uint32_t input_
 
         p_ae_info->exposure_log2 = p_fsm->exposure_log2;
         p_ae_info->ae_hist_mean = p_fsm->ae_hist_mean;
+        p_ae_info->max_target = p_fsm->max_target;
         p_ae_info->exposure_ratio = p_fsm->exposure_ratio;
         p_ae_info->error_log2 = p_fsm->error_log2;
+        p_ae_info->daynight = p_fsm->daynight;
         break;
     }
 
@@ -184,6 +187,7 @@ int AE_fsm_get_param( void *fsm, uint32_t param_id, void *input, uint32_t input_
 
         p_hist_info->fullhist_sum = p_fsm->fullhist_sum;
         p_hist_info->fullhist = p_fsm->fullhist;
+        p_hist_info->fullhist_size = array_size_s( p_fsm->fullhist );
         p_hist_info->frame_id = p_fsm->frame_id_tracking;
 
         break;
@@ -199,6 +203,18 @@ int AE_fsm_get_param( void *fsm, uint32_t param_id, void *input, uint32_t input_
         fsm_param_roi_t *p_current = (fsm_param_roi_t *)output;
         p_current->roi_api = p_fsm->ae_roi_api;
         p_current->roi = p_fsm->roi;
+
+        break;
+    }
+
+    case FSM_PARAM_GET_AE_STATE: {
+        if ( !output || output_size != sizeof( ae_state_t ) ) {
+            LOG( LOG_ERR, "Invalid param, param_id: %d.", param_id );
+            rc = -1;
+            break;
+        }
+
+        *(ae_state_t *)output = p_fsm->state;
 
         break;
     }

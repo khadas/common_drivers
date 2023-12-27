@@ -443,7 +443,7 @@ static uint8_t sbuf_calibration_is_ready_to_update( struct sbuf_context *p_ctx )
     return rc;
 }
 
-static int sbuf_calibration_init( struct sbuf_context *p_ctx )
+static int sbuf_calibration_init( struct sbuf_context *p_ctx, uint8_t enable, uint32_t mode )
 {
     int rc = 0;
     uint32_t cnt = 0;
@@ -455,9 +455,11 @@ static int sbuf_calibration_init( struct sbuf_context *p_ctx )
 
     acamera_fsm_mgr_get_param( p_ctx->p_fsm->cmn.p_fsm_mgr, FSM_PARAM_GET_WDR_MODE, NULL, 0, &wdr_mode, sizeof( wdr_mode ) );
 
-    if ( wdr_mode == p_ctx->sbuf_mgr.cur_wdr_mode ) {
-        LOG( LOG_INFO, "same wdr_mode, already inited, return." );
-        return 0;
+    if ( enable == 0 ) {
+        if ( wdr_mode == p_ctx->sbuf_mgr.cur_wdr_mode ) {
+            LOG( LOG_INFO, "same wdr_mode, already inited, return." );
+            return 0;
+        }
     }
 
     p_ctx->p_fsm->is_paused = 1;
@@ -498,12 +500,10 @@ static int sbuf_calibration_init( struct sbuf_context *p_ctx )
 }
 
 
-void sbuf_update_calibration_data( sbuf_fsm_ptr_t p_fsm )
+void sbuf_update_calibration_data( sbuf_fsm_ptr_t p_fsm, uint8_t enable, uint32_t mode )
 {
     uint32_t fw_id = p_fsm->cmn.ctx_id;
     struct sbuf_context *p_ctx = NULL;
-
-    LOG( LOG_INFO, "+++ sbuf_update_calibration_data" );
 
     p_ctx = &( sbuf_contexts[fw_id] );
     if ( p_ctx->fw_id != fw_id ) {
@@ -511,9 +511,7 @@ void sbuf_update_calibration_data( sbuf_fsm_ptr_t p_fsm )
         return;
     }
 
-    sbuf_calibration_init( p_ctx );
-
-    LOG( LOG_INFO, "--- sbuf_update_calibration_data" );
+    sbuf_calibration_init( p_ctx, enable, mode );
 }
 
 
@@ -528,7 +526,7 @@ static int sbuf_ctx_init( struct sbuf_context *p_ctx )
         return rc;
     }
 
-    rc = sbuf_calibration_init( p_ctx );
+    rc = sbuf_calibration_init( p_ctx, 0, 0 );
     if ( rc ) {
         LOG( LOG_ERR, "init failed, error: calibration init failed, ret: %d.", rc );
     }
@@ -557,7 +555,7 @@ static void sbuf_mgr_reset( struct sbuf_mgr *p_sbuf_mgr )
         }
 
         if ( i == SBUF_STATS_ARRAY_SIZE - 1 ) {
-            LOG( LOG_INFO, "ae sbuf arr info: read_idx: %u, write_idx: %u, status_count: %u-%u-%u-%u.",
+            LOG( LOG_DEBUG, "ae sbuf arr info: read_idx: %u, write_idx: %u, status_count: %u-%u-%u-%u.",
                  p_sbuf_mgr->ae_arr_info.read_idx,
                  p_sbuf_mgr->ae_arr_info.write_idx,
                  p_sbuf_mgr->ae_arr_info.item_status_count[SBUF_STATUS_DATA_EMPTY],
@@ -576,7 +574,7 @@ static void sbuf_mgr_reset( struct sbuf_mgr *p_sbuf_mgr )
         }
 
         if ( i == SBUF_STATS_ARRAY_SIZE - 1 ) {
-            LOG( LOG_INFO, "awb sbuf arr info: read_idx: %u, write_idx: %u, status_count: %u-%u-%u-%u.",
+            LOG( LOG_DEBUG, "awb sbuf arr info: read_idx: %u, write_idx: %u, status_count: %u-%u-%u-%u.",
                  p_sbuf_mgr->awb_arr_info.read_idx,
                  p_sbuf_mgr->awb_arr_info.write_idx,
                  p_sbuf_mgr->awb_arr_info.item_status_count[SBUF_STATUS_DATA_EMPTY],
@@ -595,7 +593,7 @@ static void sbuf_mgr_reset( struct sbuf_mgr *p_sbuf_mgr )
         }
 
         if ( i == SBUF_STATS_ARRAY_SIZE - 1 ) {
-            LOG( LOG_INFO, "af sbuf arr info: read_idx: %u, write_idx: %u, status_count: %u-%u-%u-%u.",
+            LOG( LOG_DEBUG, "af sbuf arr info: read_idx: %u, write_idx: %u, status_count: %u-%u-%u-%u.",
                  p_sbuf_mgr->af_arr_info.read_idx,
                  p_sbuf_mgr->af_arr_info.write_idx,
                  p_sbuf_mgr->af_arr_info.item_status_count[SBUF_STATUS_DATA_EMPTY],
@@ -614,7 +612,7 @@ static void sbuf_mgr_reset( struct sbuf_mgr *p_sbuf_mgr )
         }
 
         if ( i == SBUF_STATS_ARRAY_SIZE - 1 ) {
-            LOG( LOG_INFO, "gamma sbuf arr info: read_idx: %u, write_idx: %u, status_count: %u-%u-%u-%u.",
+            LOG( LOG_DEBUG, "gamma sbuf arr info: read_idx: %u, write_idx: %u, status_count: %u-%u-%u-%u.",
                  p_sbuf_mgr->gamma_arr_info.read_idx,
                  p_sbuf_mgr->gamma_arr_info.write_idx,
                  p_sbuf_mgr->gamma_arr_info.item_status_count[SBUF_STATUS_DATA_EMPTY],
@@ -661,7 +659,6 @@ static int sbuf_mgr_free( struct sbuf_mgr *p_sbuf_mgr )
     p_sbuf_mgr->sbuf_inited = 0;
     spin_unlock_irqrestore( &p_sbuf_mgr->sbuf_lock, irq_flags );
 
-    LOG( LOG_INFO, "prepare to free buffer %p.", p_sbuf_mgr->buf_allocated );
     if ( p_sbuf_mgr->buf_allocated ) {
         int i;
         /* clear the reserved flag before free so that no bug showed when freeed */
@@ -670,7 +667,6 @@ static int sbuf_mgr_free( struct sbuf_mgr *p_sbuf_mgr )
         }
 
         kfree( p_sbuf_mgr->buf_allocated );
-        LOG( LOG_INFO, "sbuf alloc buffer %p is freed.", p_sbuf_mgr->buf_allocated );
         p_sbuf_mgr->buf_allocated = NULL;
         p_sbuf_mgr->buf_used = NULL;
     } else {
@@ -1049,7 +1045,7 @@ static void sbuf_mgr_apply_new_param( struct sbuf_context *p_ctx, struct sbuf_id
 
         acamera_fsm_mgr_set_param( p_ctx->p_fsm->cmn.p_fsm_mgr, FSM_PARAM_SET_AE_NEW_PARAM, p_sbuf_ae, sizeof( *p_sbuf_ae ) );
 
-        LOG( LOG_INFO, "ctx: %d, AE exposure: %d, exp_ratio: %u.", p_ctx->fw_id, (int)p_sbuf_ae->ae_exposure, (unsigned int)p_sbuf_ae->ae_exposure_ratio );
+        LOG( LOG_DEBUG, "ctx: %d, AE exposure: %d, exp_ratio: %u ae_hist_mean %d", p_ctx->fw_id, (int)p_sbuf_ae->ae_exposure, (unsigned int)p_sbuf_ae->ae_exposure_ratio,p_sbuf_ae->ae_hist_mean);
 
         /* set this sbuf back to sbuf_mgr */
         item.buf_idx = p_idx_set->ae_idx;
@@ -1516,8 +1512,6 @@ static int sbuf_fops_open( struct inode *inode, struct file *f )
     struct sbuf_context *p_ctx = NULL;
     int minor = iminor( inode );
 
-    LOG( LOG_INFO, "client is opening..., minor: %d.", minor );
-
     for ( i = 0; i < acamera_get_context_number(); i++ ) {
         if ( sbuf_contexts[i].dev_minor_id == minor ) {
             p_ctx = &sbuf_contexts[i];
@@ -1535,8 +1529,6 @@ static int sbuf_fops_open( struct inode *inode, struct file *f )
         return -ERESTARTSYS;
     }
 
-    LOG( LOG_INFO, "fw_id: %d, name: '%s' is found for opening.", p_ctx->fw_id, p_ctx->dev_name );
-
     rc = mutex_lock_interruptible( &p_ctx->fops_lock );
     if ( rc ) {
         LOG( LOG_ERR, "access lock failed, rc: %d.", rc );
@@ -1549,11 +1541,7 @@ static int sbuf_fops_open( struct inode *inode, struct file *f )
     } else {
         p_ctx->dev_opened = 1;
         rc = 0;
-        LOG( LOG_INFO, "open succeed." );
-
-        LOG( LOG_INFO, "Bf set, private_data: %p.", f->private_data );
         f->private_data = p_ctx;
-        LOG( LOG_INFO, "Af set, private_data: %p.", f->private_data );
     }
 
     mutex_unlock( &p_ctx->fops_lock );
@@ -1565,8 +1553,6 @@ static int sbuf_fops_release( struct inode *inode, struct file *f )
 {
     int rc = 0;
     struct sbuf_context *p_ctx = (struct sbuf_context *)f->private_data;
-
-    LOG( LOG_INFO, "p_ctx: %p, name: %s, fw_id: %d, minor_id: %d.", p_ctx, p_ctx->dev_name, p_ctx->fw_id, p_ctx->dev_minor_id );
 
     rc = mutex_lock_interruptible( &p_ctx->fops_lock );
     if ( rc ) {
@@ -1607,7 +1593,7 @@ static ssize_t sbuf_fops_write( struct file *file, const char __user *buf, size_
         LOG( LOG_ERR, "copy_from_user failed, not copied: %d, expected: %u.", rc, len_to_copy );
     }
 
-    LOG( LOG_INFO, "ctx: %d, write idx_set: %u(%u)-%u(%u)-%u(%u)-%u(%u)-%u(%u).",
+    LOG( LOG_DEBUG, "ctx: %d, write idx_set: %u(%u)-%u(%u)-%u(%u)-%u(%u)-%u(%u).",
          p_ctx->fw_id,
          idx_set.ae_idx_valid, idx_set.ae_idx,
          idx_set.awb_idx_valid, idx_set.awb_idx,
@@ -1627,8 +1613,6 @@ static ssize_t sbuf_fops_read( struct file *file, char __user *buf, size_t count
     struct sbuf_context *p_ctx = (struct sbuf_context *)file->private_data;
     struct sbuf_idx_set idx_set;
     uint32_t len_to_copy = sizeof( struct sbuf_idx_set );
-
-    LOG( LOG_DEBUG, "p_ctx: %p, name: %s, fw_id: %d, minor_id: %d.", p_ctx, p_ctx->dev_name, p_ctx->fw_id, p_ctx->dev_minor_id );
 
     if ( count != len_to_copy ) {
         LOG( LOG_ERR, "read size mismatch, size: %u, expected: %d.", (uint32_t)count, len_to_copy );
@@ -1685,10 +1669,6 @@ static int sbuf_fops_mmap( struct file *file, struct vm_area_struct *vma )
     int32_t max_exposure_log2 = 0;
     struct sbuf_context *p_ctx = (struct sbuf_context *)file->private_data;
     struct sbuf_mgr *p_sbuf_mgr = &p_ctx->sbuf_mgr;
-
-    LOG( LOG_INFO, "p_ctx: %p, name: %s, fw_id: %d, minor_id: %d.", p_ctx, p_ctx->dev_name, p_ctx->fw_id, p_ctx->dev_minor_id );
-
-    LOG( LOG_INFO, "User app want to get %ld bytes.", user_buf_len );
 
     /*
      * the user_buf_len will be page aligned even struct fw_sbuf is not
@@ -1747,16 +1727,15 @@ static int sbuf_fops_mmap( struct file *file, struct vm_area_struct *vma )
         for ( idx = 0; idx < valid_modes_num; idx++ ) {
             p_sbuf_mgr->sbuf_base->kf_info.sensor_info.modes[idx] = param->modes_table[idx];
 
-            LOG( LOG_INFO, "Sensor_mode[%d]: wdr_mode: %d, exp: %d.", idx,
+            LOG( LOG_DEBUG, "Sensor_mode[%d]: wdr_mode: %d, exp: %d.", idx,
                  p_sbuf_mgr->sbuf_base->kf_info.sensor_info.modes[idx].wdr_mode,
                  p_sbuf_mgr->sbuf_base->kf_info.sensor_info.modes[idx].exposures );
         }
 
+        p_sbuf_mgr->sbuf_base->kf_info.sensor_info.cur_mode = param->mode;
         p_sbuf_mgr->sbuf_base->kf_info.sensor_info.modes_num = valid_modes_num;
-        LOG( LOG_INFO, "Sensor valid_modes_num: %d.", valid_modes_num );
     }
 
-    LOG( LOG_INFO, "mmap of %ld bytes OK.", user_buf_len );
     return 0;
 }
 
@@ -1777,8 +1756,6 @@ void sbuf_fsm_initialize( sbuf_fsm_t *p_fsm )
     struct miscdevice *p_dev;
     struct sbuf_context *p_ctx;
 
-    LOG( LOG_INFO, "init sbuf FSM for fw_id: %d.", fw_id );
-
     if ( fw_id >= acamera_get_context_number() ) {
         LOG( LOG_CRIT, "Fatal error: Invalid FW context ID: %d, max is: %d", fw_id, acamera_get_context_number() - 1 );
         return;
@@ -1797,9 +1774,6 @@ void sbuf_fsm_initialize( sbuf_fsm_t *p_fsm )
         LOG( LOG_ERR, "init failed, error: register sbuf device failed, ret: %d.", rc );
         return;
     }
-
-    LOG( LOG_INFO, "sbuf dev '%s' register ok, dev: %p, minor: %d.", p_dev->name, p_dev->this_device, p_dev->minor );
-
 
     p_ctx->fw_id = fw_id;
     p_ctx->dev_minor_id = p_dev->minor;
@@ -1829,8 +1803,6 @@ void sbuf_fsm_initialize( sbuf_fsm_t *p_fsm )
     mutex_init( &p_ctx->idx_set_lock );
     init_waitqueue_head( &p_ctx->idx_set_wait_queue );
 
-    LOG( LOG_INFO, "sbuf FSM init OK, fw_id: %d, name: '%s', minor_id: %d, p_fsm: %p.", p_ctx->fw_id, p_dev->name, p_ctx->dev_minor_id, p_ctx->p_fsm );
-
     return;
 }
 
@@ -1848,11 +1820,6 @@ void sbuf_deinit( sbuf_fsm_ptr_t p_fsm )
         LOG( LOG_CRIT, "Error: ctx_id not match, fsm fw_id: %d, ctx_id: %d.", fw_id, p_ctx->fw_id );
         return;
     }
-
-    LOG( LOG_INFO, "deinit sbuf_context: fw_id: %d, dev: %s, minor_id: %d.",
-         p_ctx->fw_id,
-         p_ctx->dev_name,
-         p_ctx->dev_minor_id );
 
     sbuf_mgr_free( &p_ctx->sbuf_mgr );
 
@@ -1872,6 +1839,4 @@ void sbuf_deinit( sbuf_fsm_ptr_t p_fsm )
         LOG( LOG_INFO, "deregister sbuf dev '%s' ok.", p_dev->name );
     }
 #endif
-
-    LOG( LOG_INFO, "sbuf deinit for ctx_id '%d' is done", fw_id );
 }

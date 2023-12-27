@@ -40,7 +40,7 @@ static __inline void acamera_event_queue_init( acamera_event_queue_ptr_t p_queue
 void acamera_event_queue_push( acamera_event_queue_ptr_t p_queue, int event );
 int acamera_event_queue_pop( acamera_event_queue_ptr_t p_queue );
 int32_t acamera_event_queue_not_empty( acamera_event_queue_ptr_t p_queue );
-int32_t acamera_event_queue_check(  acamera_event_queue_ptr_t p_queue);
+
 
 static __inline void acamera_event_queue_deinit( acamera_event_queue_ptr_t p_queue )
 {

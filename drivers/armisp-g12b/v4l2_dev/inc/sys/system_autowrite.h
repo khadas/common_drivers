@@ -58,6 +58,7 @@
 
 typedef struct _auto_write_cfg_t {
 	uint32_t p_type;
+	uint32_t planes;
 	uint32_t ping_st0;
 	uint32_t ping_ed0;
 	uint32_t pong_st0;
@@ -78,6 +79,11 @@ typedef struct _auto_write_cfg_t {
 	uint32_t drop_write;
 	uint32_t drop_skip;
 	uint32_t drop_enable;
+	uint32_t plane0_size;
+	uint32_t plane1_size;
+	uint32_t cap_cnt;
+	uint32_t th_enable;
+	uint32_t th_cnt;
 }auto_write_cfg_t;
 
 void auto_cap_init(void);

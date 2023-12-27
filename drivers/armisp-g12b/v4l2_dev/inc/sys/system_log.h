@@ -20,6 +20,7 @@
 #ifndef SYSTEM_LOG_H_INCLUDED
 #define SYSTEM_LOG_H_INCLUDED
 
+#include <linux/device.h>
 #include <linux/sched.h>
 #include <linux/kernel.h>
 #include "acamera_types.h"
@@ -44,7 +45,7 @@
 #define SYSTEM_LOG_MODULE_MAX LOG_MODULE_MAX
 
 //initial values for logger log level and log module masks on real time logging, otherwise fixed
-#define SYSTEM_LOG_LEVEL LOG_CRIT
+#define SYSTEM_LOG_LEVEL LOG_ERR
 #define SYSTEM_LOG_MASK FW_LOG_MASK
 
 
@@ -74,5 +75,8 @@ value of 1 means timestamp is logged otherwise disabled on the compile level*/
 extern const char *const log_level_name[SYSTEM_LOG_LEVEL_MAX];
 extern const char *const log_module_name[SYSTEM_LOG_MODULE_MAX];
 
+void system_dbg_create( struct device *dev );
+void system_dbg_remove( struct device *dev );
+void system_irq_status( uint32_t irq_mask );
 
 #endif // LOG_H_INCLUDED

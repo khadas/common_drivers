@@ -27,80 +27,56 @@
 
 #define is_short_exposure_frame( base ) ( ACAMERA_FSM2CTX_PTR( p_fsm )->frame & 1 )
 
-
-#define EXPOSURE_PARAMETER_INTEGRATION_TIME_INDEX 0
-#define EXPOSURE_PARAMETER_GAIN_INDEX 1
-
-#define INTEGRATION_TIME( ms )                        \
-    {                                                 \
-        EXPOSURE_PARAMETER_INTEGRATION_TIME_INDEX, ms \
-    }
-#define INTEGRATION_TIME_MAX                         \
-    {                                                \
-        EXPOSURE_PARAMETER_INTEGRATION_TIME_INDEX, 0 \
-    }
-
-#define GAIN( gain )                        \
-    {                                       \
-        EXPOSURE_PARAMETER_GAIN_INDEX, gain \
-    }
-#define GAIN_MAX                         \
-    {                                    \
-        EXPOSURE_PARAMETER_GAIN_INDEX, 0 \
-    }
-#define API_OTE_THRESHOLD ( 5 )
-#define API_OTE_ITERATION_COUNT ( 15 )
-
-
 #ifdef LOG_MODULE
 #undef LOG_MODULE
 #define LOG_MODULE LOG_MODULE_CMOS
 #endif
 
-typedef struct _exposure_partition_t {
-    uint8_t i; /* 0 - integration time, 1 - gain */
-    uint8_t v; /* value: for integration time - milliseconds, for gains - multiplier, zero value means maximum */
-} exposure_partition_t;
+#define EXPOSURE_PARTITION_INTEGRATION_TIME_INDEX 0
+#define EXPOSURE_PARTITION_GAIN_INDEX 1
 
-const exposure_partition_t exposure_partitions_balanced[] = {
-    INTEGRATION_TIME( 10 ),
-    GAIN( 2 ),
-    INTEGRATION_TIME( 30 ),
-    GAIN( 4 ),
-    INTEGRATION_TIME( 60 ),
-    GAIN( 6 ),
-    INTEGRATION_TIME( 100 ),
-    GAIN( 8 ),
-    INTEGRATION_TIME_MAX,
-    GAIN_MAX};
+uint16_t *cmos_get_partition_lut( cmos_fsm_ptr_t p_fsm, cmos_partition_lut_index_t lut_idx )
+{
+    uint32_t i = 0;
+    uint16_t *p_luts = _GET_USHORT_PTR( ACAMERA_FSM2CTX_PTR( p_fsm ), CALIBRATION_CMOS_EXPOSURE_PARTITION_LUTS );
+    uint32_t lut_len = _GET_COLS( ACAMERA_FSM2CTX_PTR( p_fsm ), CALIBRATION_CMOS_EXPOSURE_PARTITION_LUTS );
+    uint32_t lut_count = _GET_ROWS( ACAMERA_FSM2CTX_PTR( p_fsm ), CALIBRATION_CMOS_EXPOSURE_PARTITION_LUTS );
 
-#define EXPOSURE_PARTITIONS_COUNT array_size_s( exposure_partitions_balanced )
+    if ( lut_idx >= PARTITION_LUT_INDEX_MAX ) {
+        LOG( LOG_CRIT, "Error: invalid partition lut index: %d, max: %d.", lut_idx, PARTITION_LUT_INDEX_MAX - 1 );
+        return NULL;
+    }
 
+    // each lut has SYSTEM_EXPOSURE_PARTITION_VALUE_COUNT items
+    if ( lut_len != SYSTEM_EXPOSURE_PARTITION_VALUE_COUNT ) {
+        LOG( LOG_CRIT, "Error: corrupted calibration luts, lut_len: %d, expected: %d.", lut_len, SYSTEM_EXPOSURE_PARTITION_VALUE_COUNT );
+        return NULL;
+    }
 
-const exposure_partition_t exposure_partition_int_priority[EXPOSURE_PARTITIONS_COUNT] = {
-    INTEGRATION_TIME_MAX,
-    GAIN( 0 ),
-    INTEGRATION_TIME_MAX,
-    GAIN( 0 ),
-    INTEGRATION_TIME_MAX,
-    GAIN( 0 ),
-    INTEGRATION_TIME_MAX,
-    GAIN( 0 ),
-    INTEGRATION_TIME_MAX,
-    GAIN_MAX};
+    if ( lut_idx >= lut_count ) {
+        LOG( LOG_CRIT, "Error: corrupted calibration luts, max_index: %d, expected: %d.", lut_count - 1, lut_idx );
+        return NULL;
+    }
 
+    p_luts += lut_len * lut_idx;
 
-static uint32_t exp_lut[EXPOSURE_PARTITIONS_COUNT];
+    for ( i = 0; i < lut_len; i += 2 ) {
+        LOG( LOG_DEBUG, "%d - %d", p_luts[i], p_luts[i + 1] );
+    }
+
+    return p_luts;
+}
 
 void cmos_update_exposure_partitioning_lut( cmos_fsm_ptr_t p_fsm )
 {
     int i;
     int32_t param[2] = {0, 0}; // in log2
 
-    const exposure_partition_t *exposure_partitions = exposure_partitions_balanced;
+
+    uint16_t *exposure_partitions = cmos_get_partition_lut( p_fsm, PARTITION_LUT_BALANED_INDEX );
 #ifdef AE_SPLIT_PRESET_ID
     if ( p_fsm->strategy == AE_SPLIT_INTEGRATION_PRIORITY ) {
-        exposure_partitions = exposure_partition_int_priority;
+        exposure_partitions = cmos_get_partition_lut( p_fsm, PARTITION_LUT_INTEGRATION_PRIORITY_INDEX );
     }
 #endif
 
@@ -108,15 +84,15 @@ void cmos_update_exposure_partitioning_lut( cmos_fsm_ptr_t p_fsm )
     acamera_fsm_mgr_get_param( p_fsm->cmn.p_fsm_mgr, FSM_PARAM_GET_SENSOR_INFO, NULL, 0, &sensor_info, sizeof( sensor_info ) );
 
     int32_t max_gain = sensor_info.again_log2_max + sensor_info.dgain_log2_max + p_fsm->maximum_isp_digital_gain;
-    for ( i = 0; i < EXPOSURE_PARTITIONS_COUNT; ++i ) {
-        int i_param = exposure_partitions[i].i;
-        if ( ( i_param < 0 ) || ( i_param >= 2 ) ) {
-            continue;
-        }
+    for ( i = 0; i < SYSTEM_EXPOSURE_PARTITION_VALUE_COUNT; ++i ) {
+        // exposure_partitions has {integration_time, gain } pairs,
+        // so if i is even number, such as 0, 2, means int_time, odd num means gain.
+        int i_param = i & 1;
         int32_t addon = 0;
-        uint8_t v = exposure_partitions[i].v;
+        uint16_t v = exposure_partitions[i];
+
         switch ( i_param ) {
-        case EXPOSURE_PARAMETER_INTEGRATION_TIME_INDEX:
+        case EXPOSURE_PARTITION_INTEGRATION_TIME_INDEX:
             if ( !v ) {
                 addon = acamera_log2_fixed_to_fixed( sensor_info.integration_time_limit, 0, LOG2_GAIN_SHIFT );
             } else {
@@ -127,7 +103,7 @@ void cmos_update_exposure_partitioning_lut( cmos_fsm_ptr_t p_fsm )
                 addon = acamera_log2_fixed_to_fixed( lines, 0, LOG2_GAIN_SHIFT );
             }
             break;
-        case EXPOSURE_PARAMETER_GAIN_INDEX:
+        case EXPOSURE_PARTITION_GAIN_INDEX:
             if ( !v ) {
                 addon = max_gain;
             } else {
@@ -139,7 +115,7 @@ void cmos_update_exposure_partitioning_lut( cmos_fsm_ptr_t p_fsm )
         if ( addon < 0 ) {
             addon = 0;
         }
-        exp_lut[i] = addon;
+        p_fsm->exp_lut[i] = addon;
         param[i_param] += addon;
     }
 }
@@ -486,8 +462,7 @@ static void cmos_monitor_frame_start( cmos_fsm_ptr_t p_fsm )
 
     /* CMOS FrameStart should be called for every frame */
     if ( ( p_fsm->prev_fs_frame_id != 0 ) &&
-         ( p_fsm->prev_fs_frame_id + 1 != cur_frame_id ) &&
-         ( p_fsm->prev_fs_frame_id + 2 != cur_frame_id ) ) {
+         ( p_fsm->prev_fs_frame_id + 1 != cur_frame_id ) ) {
 
         fsm_param_mon_err_head_t mon_err;
         mon_err.err_type = MON_TYPE_ERR_CMOS_FS_DELAY;
@@ -648,8 +623,6 @@ void cmos_fsm_process_interrupt( cmos_fsm_const_ptr_t p_fsm, uint8_t irq_event )
                     ae_flow.frame_id_current = acamera_fsm_util_get_cur_frame_id( &( (cmos_fsm_ptr_t)p_fsm )->cmn );
                     ae_flow.flow_state = MON_ALG_FLOW_STATE_APPLIED;
                     acamera_fsm_mgr_set_param( p_fsm->cmn.p_fsm_mgr, FSM_PARAM_SET_MON_AE_FLOW, &ae_flow, sizeof( ae_flow ) );
-
-                    LOG( LOG_INFO, "AE flow: APPLIED: frame_id_tracking: %d, cur frame_id: %u.", ae_flow.frame_id_tracking, ae_flow.frame_id_current );
                 }
             }
 
@@ -772,10 +745,7 @@ void cmos_fsm_process_interrupt( cmos_fsm_const_ptr_t p_fsm, uint8_t irq_event )
         for ( i = 0; i < 4; ++i ) {
             uint32_t mult = ( 256 * ( ( (uint32_t)1 << ACAMERA_ISP_SENSOR_OFFSET_PRE_SHADING_OFFSET_00_DATASIZE ) - 1 ) ) / ( ( ( (uint32_t)1 << ACAMERA_ISP_SENSOR_OFFSET_PRE_SHADING_OFFSET_00_DATASIZE ) - 1 ) - bl[i] );
             ( (cmos_fsm_ptr_t)p_fsm )->wb[i] = ( ( ( uint32_t )( (cmos_fsm_ptr_t)p_fsm )->wb[i] ) * mult ) / 256;
-            //pr_info("%s: wb[%d]: %x\n", __func__, i, ( (cmos_fsm_ptr_t)p_fsm )->wb[i]);
         }
-        /*( (cmos_fsm_ptr_t)p_fsm )->wb[0] = 0x01bc;
-        ( (cmos_fsm_ptr_t)p_fsm )->wb[1] = 0x0111;*/
 
         acamera_isp_white_balance_gain_00_write( p_fsm->cmn.isp_base, ( (cmos_fsm_ptr_t)p_fsm )->wb[0] );
         acamera_isp_white_balance_gain_01_write( p_fsm->cmn.isp_base, ( (cmos_fsm_ptr_t)p_fsm )->wb[1] );
@@ -803,7 +773,6 @@ void cmos_fsm_process_interrupt( cmos_fsm_const_ptr_t p_fsm, uint8_t irq_event )
             mon_err.err_param = cur_frame_id - p_fsm->exp_write_set.frame_id_tracking - sensor_info.integration_time_apply_delay;
             acamera_fsm_mgr_set_param( p_fsm->cmn.p_fsm_mgr, FSM_PARAM_SET_MON_ERROR_REPORT, &mon_err, sizeof( mon_err ) );
             ( (cmos_fsm_ptr_t)p_fsm )->prev_dgain_frame_id = p_fsm->exp_write_set.frame_id_tracking;
-            LOG( LOG_INFO, "cmos_dgain_upd_wrong: cur: %u, tracking: %u, delay: %u.", cur_frame_id, p_fsm->exp_write_set.frame_id_tracking, sensor_info.integration_time_apply_delay );
         }
 
         // frame_id should not be 0, at the beginning, it's initialized to 0 and we should skip it.
@@ -816,8 +785,6 @@ void cmos_fsm_process_interrupt( cmos_fsm_const_ptr_t p_fsm, uint8_t irq_event )
             awb_flow.frame_id_current = cur_frame_id;
             awb_flow.flow_state = MON_ALG_FLOW_STATE_APPLIED;
             acamera_fsm_mgr_set_param( p_fsm->cmn.p_fsm_mgr, FSM_PARAM_SET_MON_AWB_FLOW, &awb_flow, sizeof( awb_flow ) );
-
-            LOG( LOG_INFO, "AWB flow: APPLIED: frame_id_tracking: %d, cur frame_id: %u.", awb_flow.frame_id_tracking, awb_flow.frame_id_current );
         }
 
 #endif //ISP_HAS_AWB_MESH_NBP_FSM
@@ -858,20 +825,11 @@ void cmos_inttime_update( cmos_fsm_ptr_t p_fsm )
                 exp_target = 0;
             }
 
-            const exposure_partition_t *exposure_partitions = exposure_partitions_balanced;
-#ifdef AE_SPLIT_PRESET_ID
-            if ( p_fsm->strategy == AE_SPLIT_INTEGRATION_PRIORITY ) {
-                exposure_partitions = exposure_partition_int_priority;
-            }
-#endif
+            for ( i = 0; i < SYSTEM_EXPOSURE_PARTITION_VALUE_COUNT; ++i ) {
+                int i_param = i & 1;
+                int32_t addon = p_fsm->exp_lut[i];
 
-            for ( i = 0; i < EXPOSURE_PARTITIONS_COUNT; ++i ) {
-                int i_param = exposure_partitions[i].i;
-                int32_t addon = exp_lut[i];
-                if ( ( i_param < 0 ) || ( i_param >= 2 ) ) {
-                    continue;
-                }
-                if ( i_param == EXPOSURE_PARAMETER_INTEGRATION_TIME_INDEX ) {
+                if ( i_param == EXPOSURE_PARTITION_INTEGRATION_TIME_INDEX ) {
                     if ( exposure + addon > exp_target ) {
                         addon = exp_target - exposure;
                     }
@@ -970,7 +928,6 @@ void cmos_digital_gain_update( cmos_fsm_ptr_t p_fsm )
         gain = cmos_alloc_isp_digital_gain( p_fsm, p_fsm->target_gain_log2 - p_fsm->again_val_log2 - p_fsm->dgain_val_log2 );
     }
     p_fsm->isp_dgain_log2 = gain;
-    //pr_info("%s: isp_dgain: %x\n", __func__, p_fsm->isp_dgain_log2);
 }
 
 uint32_t get_quantised_integration_time( cmos_fsm_ptr_t p_fsm, uint32_t int_time )
@@ -1247,6 +1204,7 @@ void cmos_calc_target_gain( cmos_fsm_ptr_t p_fsm )
 #else
         target_gain_log2 = p_fsm->exposure_log2 - acamera_log2_fixed_to_fixed( p_fsm->integration_time_short, 0, LOG2_GAIN_SHIFT );
 #endif
+        p_fsm->manual_gain = acamera_math_exp2( target_gain_log2, LOG2_GAIN_SHIFT, 8 );
     }
 
     if ( target_gain_log2 < 0 ) {

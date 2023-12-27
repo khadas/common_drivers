@@ -37,6 +37,7 @@ fsm_common_t *sensor_get_fsm_common( uint8_t ctx_id )
         LOG( LOG_CRIT, "Invalid ctx_id: %d, greater than max: %d.", ctx_id, FIRMWARE_CONTEXT_NUMBER - 1 );
         return NULL;
     }
+
     p_fsm_ctx = &sensor_fsm_ctxs[ctx_id];
 
     p_fsm_ctx->cmn.ctx_id = ctx_id;

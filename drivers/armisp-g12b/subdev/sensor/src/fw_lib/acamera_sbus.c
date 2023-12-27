@@ -507,7 +507,6 @@ void acamera_sbus_init( acamera_sbus_t *p_bus, sbus_type_t interface_type )
 
 void acamera_sbus_deinit( acamera_sbus_t *p_bus, sbus_type_t interface_type )
 {
-    LOG( LOG_CRIT, "sensor acamera_sbus_deinit ++" );
     if ( p_bus != NULL ) {
         switch ( interface_type ) {
         case sbus_i2c:
@@ -520,7 +519,6 @@ void acamera_sbus_deinit( acamera_sbus_t *p_bus, sbus_type_t interface_type )
     } else {
         LOG( LOG_CRIT, "Failed to initialize sbus. input pointer is null" );
     }
-    LOG( LOG_CRIT, "sensor acamera_sbus_deinit --" );
 }
 
 void acamera_sbus_reset( sbus_type_t interface_type )

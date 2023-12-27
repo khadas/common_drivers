@@ -17,7 +17,6 @@
 *
 */
 
-#include <linux/version.h>
 #include <linux/platform_device.h>
 #include <linux/device.h>
 #include <linux/module.h>
@@ -26,6 +25,7 @@
 #include "acamera_logger.h"
 #include "acamera_lens_api.h"
 #include "soc_lens.h"
+#include <linux/version.h>
 
 #define ARGS_TO_PTR( arg ) ( (struct soc_lens_ioctl_args *)arg )
 
@@ -191,7 +191,7 @@ static int32_t soc_lens_probe( struct platform_device *pdev )
     soc_lens.dev = &pdev->dev;
     rc = v4l2_async_register_subdev( &soc_lens );
 
-    LOG( LOG_INFO, "register v4l2 lens device. result %d, sd 0x%x sd->dev 0x%x", rc, &soc_lens, soc_lens.dev );
+    LOG( LOG_ERR, "register v4l2 lens device. result %d, sd 0x%x sd->dev 0x%x", rc, &soc_lens, soc_lens.dev );
 
 
     return rc;
@@ -205,6 +205,7 @@ static int soc_lens_remove( struct platform_device *pdev )
 }
 
 static struct platform_device *soc_lens_dev;
+
 static const struct of_device_id lens_dt_match[] = {
     {.compatible = "soc, lens"},
     {}};
@@ -219,17 +220,14 @@ static struct platform_driver soc_lens_driver = {
     },
 };
 
-
 int __init acamera_soc_lens_init( void )
 {
 
     LOG( LOG_INFO, "Lens subdevice init" );
-
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 15, 0))
     soc_lens_dev = platform_device_register_simple(
         "soc_lens_v4l2", -1, NULL, 0 );
 #endif
-
     return platform_driver_register( &soc_lens_driver );
 }
 

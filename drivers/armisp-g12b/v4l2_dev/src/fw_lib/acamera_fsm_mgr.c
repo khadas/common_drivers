@@ -48,7 +48,7 @@ void acamera_fsm_mgr_init(acamera_fsm_mgr_t *p_fsm_mgr)
 {
     uint8_t idx;
     fsm_init_param_t init_param;
-    LOG(LOG_CRIT, "++, p_fsm_mgr->ctx_id: %d", p_fsm_mgr->ctx_id);
+
     FUN_PTR_GET_FSM_COMMON fun_ptr_arr[] = {
         sensor_get_fsm_common,
         cmos_get_fsm_common,

@@ -37,7 +37,14 @@
 #define PLATFORM_C308X    0
 #define PLATFORM_C305X    1
 #endif
-#define FIRMWARE_CONTEXT_NUMBER 2
+
+#ifdef CONFIG_SLT
+#define CONFIG_SLT_TEST 1
+#else
+#define CONFIG_SLT_TEST 0
+#endif
+
+#define FIRMWARE_CONTEXT_NUMBER 1
 #define FSM_NAMES {"GENERIC",}
 #define FW_LOG_FROM_ISR 0
 #define FW_LOG_HAS_SRC 1

@@ -17,9 +17,23 @@
 *
 */
 
+#include <linux/version.h>
 #include "acamera_logger.h"
 #include <linux/gfp.h>
 #include <linux/slab.h>
+#include <linux/io.h>
+#include <linux/module.h>
+#include <linux/mm.h>
+#include <linux/sched.h>
+#include <linux/slab.h>
+#include <linux/vmalloc.h>
+#include <linux/dma-mapping.h>
+
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0))
+#include <linux/dma-map-ops.h>
+#else
+#include <linux/dma-contiguous.h>
+#endif
 
 int32_t init_sw_io( void )
 {

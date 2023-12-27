@@ -17,11 +17,8 @@
 *
 */
 
-#include <linux/version.h>
 #include <linux/kernel.h> /* //printk() */
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 15, 0))
-#include <asm/uaccess.h>
-#endif
+//#include <asm/uaccess.h>
 #include <linux/gfp.h>
 #include <linux/cdev.h>
 #include <linux/slab.h>

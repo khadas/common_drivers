@@ -16,11 +16,10 @@
 * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 *
 */
-#ifdef SENSOR_DEBUG_DRIVER_CONFIG
+
 #include <asm/io.h>
 #include "system_log.h"
 #include "system_i2c.h"
-#include "system_am_mipi.h"
 #include "acamera_logger.h"
 #include <linux/jiffies.h>
 
@@ -46,20 +45,19 @@ typedef struct _iic_master_t {
     void *virt_addr;
 } iic_master_t;
 
-
 static struct arm_i2c_sensor_ctrl *g_sensor_ctrl = NULL;
 
-static const struct i2c_device_id arm_sensor_i2c_id[] = {
-	{ARM_I2C_SENSOR_NAME, 0},
+static const struct i2c_device_id otp_i2c_id[] = {
+	{ARM_I2C_OTP_NAME, 0},
 	{ }
 };
 
-static const struct of_device_id arm_sensor_i2c_dt_match[] = {
-	{.compatible = ARM_I2C_SENSOR_NAME},
+static const struct of_device_id otp_i2c_dt_match[] = {
+	{.compatible = ARM_I2C_OTP_NAME},
 	{}
 };
 
-static int arm_sensor_i2c_probe(struct i2c_client *client,
+static int otp_i2c_probe(struct i2c_client *client,
 									const struct i2c_device_id *dev_id)
 {
 	int rtn = 0;
@@ -72,7 +70,7 @@ static int arm_sensor_i2c_probe(struct i2c_client *client,
 		return -EINVAL;
 	}
 
-	rtn = of_device_is_compatible(client->dev.of_node, ARM_I2C_SENSOR_NAME);
+	rtn = of_device_is_compatible(client->dev.of_node, ARM_I2C_OTP_NAME);
 
 	if (rtn == 0) {
 		pr_err("%s:failed to match compatible\n", __func__);
@@ -93,7 +91,7 @@ static int arm_sensor_i2c_probe(struct i2c_client *client,
 
 	rtn = of_property_read_u32(sensor_ctrl->of_node, "slave-addr",
 								&sensor_ctrl->slave_addr);
-	pr_info("%s:arm isp slave addr 0x%x, rtn %d\n", __func__, sensor_ctrl->slave_addr, rtn);
+	//pr_info("%s:arm isp slave addr 0x%x, rtn %d\n", __func__, sensor_ctrl->slave_addr, rtn);
 
 	if (rtn != 0) {
 		pr_err("%s: failed to get isp slave addr\n", __func__);
@@ -102,20 +100,11 @@ static int arm_sensor_i2c_probe(struct i2c_client *client,
 
 	rtn = of_property_read_u32(sensor_ctrl->of_node, "reg-type",
 								&sensor_ctrl->reg_addr_type);
-	pr_info("%s:arm reg_addr_type %d, rtn %d\n", __func__, sensor_ctrl->reg_addr_type, rtn);
+	//pr_info("%s:arm reg_addr_type %d, rtn %d\n", __func__, sensor_ctrl->reg_addr_type, rtn);
 
 	rtn = of_property_read_u32(sensor_ctrl->of_node, "reg-data-type",
 									&sensor_ctrl->reg_data_type);
-	pr_info("%s:arm reg_data_type %d, rtn %d\n", __func__, sensor_ctrl->reg_data_type, rtn);
-
-	sensor_ctrl->link_node =
-		of_parse_phandle(sensor_ctrl->of_node, "link-device", 0);
-	if (sensor_ctrl->link_node == NULL)
-		pr_err("%s:failed to get link device\n", __func__);
-	else
-		pr_info("%s: success get link device:%s\n", __func__, sensor_ctrl->link_node->name);
-
-	am_mipi_parse_dt(sensor_ctrl->link_node);
+	//pr_info("%s:arm reg_data_type %d, rtn %d\n", __func__, sensor_ctrl->reg_data_type, rtn);
 
 	g_sensor_ctrl = sensor_ctrl;
 
@@ -131,7 +120,7 @@ error:
 }
 
 
-static int arm_sensor_i2c_remove(struct i2c_client *client)
+static int otp_i2c_remove(struct i2c_client *client)
 {
 	struct arm_i2c_sensor_ctrl *s_ctrl = NULL;
 
@@ -141,8 +130,6 @@ static int arm_sensor_i2c_remove(struct i2c_client *client)
 		pr_err("%s: Error client data is NULL\n", __func__);
 		return -EINVAL;
 	}
-
-	am_mipi_deinit_parse_dt();
 
 	kfree(s_ctrl);
 	s_ctrl = NULL;
@@ -154,14 +141,14 @@ static int arm_sensor_i2c_remove(struct i2c_client *client)
 }
 
 
-static struct i2c_driver arm_sensor_i2c_driver = {
-	.id_table = arm_sensor_i2c_id,
-	.probe  = arm_sensor_i2c_probe,
-	.remove = arm_sensor_i2c_remove,
+static struct i2c_driver otp__i2c_driver = {
+	.id_table = otp_i2c_id,
+	.probe  = otp_i2c_probe,
+	.remove = otp_i2c_remove,
 	.driver = {
-		.name = "arm, i2c-sensor",
+		.name = "arm, i2c-otp",
 		.owner = THIS_MODULE,
-		.of_match_table = arm_sensor_i2c_dt_match,
+		.of_match_table = otp_i2c_dt_match,
 	},
 };
 
@@ -174,7 +161,7 @@ void system_i2c_init( uint32_t bus )
 	    return;
 	}
 
-	rtn = i2c_add_driver(&arm_sensor_i2c_driver);
+	rtn = i2c_add_driver(&otp__i2c_driver);
 
 	if (rtn != 0)
 		pr_err("%s:failed to add i2c driver\n", __func__);
@@ -184,7 +171,7 @@ void system_i2c_init( uint32_t bus )
 
 void system_i2c_deinit( uint32_t bus )
 {
-	i2c_del_driver(&arm_sensor_i2c_driver);
+	i2c_del_driver(&otp__i2c_driver);
 }
 
 uint8_t system_i2c_write( uint32_t bus, uint32_t phy_addr, uint8_t *data, uint32_t size )
@@ -204,7 +191,10 @@ uint8_t system_i2c_write( uint32_t bus, uint32_t phy_addr, uint8_t *data, uint32
 	addr_type = g_sensor_ctrl->reg_addr_type;
 	data_type = g_sensor_ctrl->reg_data_type;
 
-	saddr = g_sensor_ctrl->slave_addr >> 1;
+	if (phy_addr == 0)
+		saddr = g_sensor_ctrl->slave_addr >> 1;
+	else
+		saddr = phy_addr >> 1;
 	struct i2c_msg msgs[] = {
 		{
 			.addr  = saddr,
@@ -248,7 +238,10 @@ uint8_t system_i2c_read( uint32_t bus, uint32_t phy_addr, uint8_t *data, uint32_
 	addr_type = g_sensor_ctrl->reg_addr_type;
 	data_type = g_sensor_ctrl->reg_data_type;
 
-	saddr = g_sensor_ctrl->slave_addr >> 1;
+	if (phy_addr == 0)
+		saddr = g_sensor_ctrl->slave_addr >> 1;
+	else
+		saddr = phy_addr >> 1;
 	struct i2c_msg msgs[] = {
 		{
 			.addr  = saddr,
@@ -289,4 +282,3 @@ uint32_t IORD( uint32_t BASE, uint32_t REGNUM )
 void IOWR( uint32_t BASE, uint32_t REGNUM, uint32_t DATA )
 {
 }
-#endif

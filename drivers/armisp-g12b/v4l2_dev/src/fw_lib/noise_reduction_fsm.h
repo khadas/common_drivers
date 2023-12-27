@@ -58,12 +58,50 @@ struct _noise_reduction_fsm_t {
     uint32_t temper_ev_previous_frame;
     uint32_t temper_diff_avg;
     uint32_t temper_diff_coeff;
+
+    noise_reduction_mode_t nr_mode;
 };
 
+struct cnr_ext_param_t {
+    uint32_t gain;
+    uint32_t delta_factor;
+    uint32_t umean1_thd;
+    uint32_t umean1_off;
+    uint32_t umean1_slope;
+    uint32_t umean2_thd;
+    uint32_t umean2_off;
+    uint32_t umean2_slope;
+    uint32_t vmean1_thd;
+    uint32_t vmean1_off;
+    uint32_t vmean1_slope;
+    uint32_t vmean2_thd;
+    uint32_t vmean2_off;
+    uint32_t vmean2_slope;
+    uint32_t uv_delta1_thd;
+    uint32_t uv_delta1_off;
+    uint32_t uv_delta1_slope;
+    uint32_t uv_delta2_thd;
+    uint32_t uv_delta2_off;
+    uint32_t uv_delta2_slope;
+};
+
+struct dp_devthreshold_ext_param_t {
+    uint16_t gain;
+    uint16_t devthreshold;
+};
+
+struct fc_correct_ext_param_t {
+    uint16_t gain;
+    uint16_t fc_slope;
+    uint16_t alias_slope;
+    uint16_t alias_threshold;
+};
 
 void noise_reduction_fsm_clear( noise_reduction_fsm_ptr_t p_fsm );
 
 void noise_reduction_fsm_init( void *fsm, fsm_init_param_t *init_param );
+int noise_reduction_fsm_set_param( void *fsm, uint32_t param_id, void *input, uint32_t input_size );
+int noise_reduction_fsm_get_param( void *fsm, uint32_t param_id, void *input, uint32_t input_size, void *output, uint32_t output_size );
 
 uint8_t noise_reduction_fsm_process_event( noise_reduction_fsm_ptr_t p_fsm, event_id_t event_id );
 

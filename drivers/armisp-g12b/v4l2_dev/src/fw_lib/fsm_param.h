@@ -68,13 +68,16 @@ typedef struct _fsm_param_sensor_info_ {
 typedef struct _fsm_param_ae_info_ {
     int32_t exposure_log2;
     int32_t ae_hist_mean;
+	int32_t max_target;
     uint32_t exposure_ratio;
     int32_t error_log2;
+    int32_t daynight;
 } fsm_param_ae_info_t;
 
 typedef struct _fsm_param_ae_hist_info_ {
     uint32_t fullhist_sum;
     const uint32_t *fullhist;
+    uint32_t fullhist_size;
     uint32_t frame_id;
 } fsm_param_ae_hist_info_t;
 
@@ -103,6 +106,13 @@ typedef struct _fsm_param_ccm_info_ {
     uint8_t light_source_change_frames;
     uint8_t light_source_change_frames_left;
 } fsm_param_ccm_info_t;
+
+typedef uint8_t lsc_mesh_map_t[4 * 64 * 64];
+typedef struct _fsm_param_lsc_mesh_map_ {
+    lsc_mesh_map_t *map;
+    uint32_t width;
+    uint32_t height;
+} fsm_param_lsc_mesh_map_t;
 
 typedef struct _fsm_param_sensor_int_time_ {
     uint16_t int_time;
@@ -165,6 +175,12 @@ typedef struct _fsm_param_wb_info_ {
     uint32_t flag;
     uint32_t result_gain_frame_id;
 } fsm_param_awb_info_t;
+
+typedef struct _fsm_param_awb_hist_info_ {
+    uint32_t fullhist_sum;
+    const uint32_t *fullhist;
+    uint32_t fullhist_size;
+} fsm_param_awb_hist_info_t;
 
 typedef struct _fsm_param_af_info_ {
     uint16_t last_position;
@@ -351,6 +367,49 @@ typedef struct _fsm_param_fw_status_info_ {
     awb_status_info_t awb_info;
     af_status_info_t af_info;
 } status_info_param_t;
+
+typedef enum noise_reduction_mode {
+    NOISE_REDUCTION_MODE_OFF,
+    NOISE_REDUCTION_MODE_ON,
+} noise_reduction_mode_t;
+
+typedef struct _defog_calibration_control {
+    uint32_t defog_en;
+    uint32_t fog_det_mode;
+    uint32_t acc_fog_val_thd;
+    uint32_t hst_fog_idx_thd;
+    uint32_t hst_fog_pec_thd1;
+    uint32_t hst_fog_pec_thd2;
+    uint32_t ratio_delta;
+    uint32_t max_rng;
+    uint32_t min_rng;
+    uint32_t black_percentage;
+    uint32_t white_percentage;
+    uint32_t avg_coeff;
+    uint32_t reserved_0;
+    uint32_t reserved_1;
+    uint32_t reserved_2;
+    uint32_t reserved_3;
+} defog_calibration_control_t;
+
+typedef struct _daynight_calibration_param_t {
+    uint32_t light_control; //1:0n, 0: off
+    uint32_t hist_stat_mode; //0: average based AE, 1: weight
+    uint32_t predict_day_thr;  //default is 50
+    uint32_t predict_night_thr; //default is 50
+    uint32_t dn_det_tran_ratio; //default 16/128
+    uint32_t dn_det_day_thr; //default 60
+    uint32_t dn_det_night_thr;  //default 240
+    uint32_t dn_det_light_ct_low;
+    uint32_t dn_det_light_ct_high;
+} daynight_calibration_param_t;
+
+typedef struct _fsm_ext_param_ctrl {
+    void *ctx;
+    uint32_t id;
+    int32_t total_gain;
+    void *result;
+} fsm_ext_param_ctrl_t;
 
 int acamera_fsm_mgr_get_param( acamera_fsm_mgr_t *p_fsm_mgr, uint32_t param_id, void *input, uint32_t input_size, void *output, uint32_t output_size );
 int acamera_fsm_mgr_set_param( acamera_fsm_mgr_t *p_fsm_mgr, uint32_t param_id, void *input, uint32_t input_size );

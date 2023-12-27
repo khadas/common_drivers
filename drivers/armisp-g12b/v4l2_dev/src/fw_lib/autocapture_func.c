@@ -17,7 +17,6 @@
  *
  */
 
-#include <linux/version.h>
 #include <linux/device.h>
 #include <linux/slab.h>
 #include <linux/mm.h>
@@ -70,7 +69,7 @@
 #define SUPPORT_CHANNEL 3
 #define V4L2_BUFFER_SIZE 6
 
-#if PLATFORM_C308X
+#if PLATFORM_C308X || PLATFORM_C305X == 1
 #define AUTOWRITE_MODULE
 #endif
 struct autocapture_context
@@ -94,11 +93,8 @@ struct autocapture_context
 	isp_v4l2_stream_t *pstream[SUPPORT_CHANNEL];
 	struct task_struct *kthread_stream;
 
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 15, 0))
-	struct timeval t_frm;
-#else
+	// struct timeval  t_frm;
 	struct timespec64 t_frm;
-#endif
 	struct autocap_image autocap_frame[SUPPORT_CHANNEL];
 
 	auto_write_cfg_t *auto_cap_cfg;
@@ -110,11 +106,8 @@ static struct autocapture_context autocapture_context[FIRMWARE_CONTEXT_NUMBER];
 
 struct module_cfg_info pipe_cfg[SUPPORT_CHANNEL];
 struct tasklet_struct tasklet_memcpy;
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 15, 0))
-struct timeval normal_fftt;
-#else
+// struct timeval normal_fftt;
 struct timespec64 normal_fftt;
-#endif
 
 void fw_auto_cap_init(struct autocapture_context *p_ctx, void *cfg_info);
 void fw_auto_cap_deinit(struct autocapture_context *p_ctx);
@@ -155,7 +148,6 @@ static int autocapture_fops_mmap(struct file *f, struct vm_area_struct *vma)
 		return rc;
 	}
 
-	LOG(LOG_INFO, "mmap of %ld bytes OK.", user_buf_len);
 	return 0;
 }
 
@@ -203,11 +195,7 @@ static int autocapture_fops_open(struct inode *inode, struct file *f)
 	{
 		p_ctx->dev_opened = 1;
 		rc = 0;
-		LOG(LOG_INFO, "open succeed.");
-
-		LOG(LOG_INFO, "Bf set, private_data: %p.", f->private_data);
 		f->private_data = p_ctx;
-		LOG(LOG_INFO, "Af set, private_data: %p.", f->private_data);
 	}
 
 	mutex_unlock(&p_ctx->fops_lock);
@@ -219,8 +207,6 @@ static int autocapture_fops_release(struct inode *inode, struct file *f)
 {
 	int rc = 0;
 	struct autocapture_context *p_ctx = (struct autocapture_context *)f->private_data;
-
-	LOG(LOG_INFO, "p_ctx: %p, name: %s, fw_id: %d, minor_id: %d.", p_ctx, p_ctx->dev_name, p_ctx->fw_id, p_ctx->dev_minor_id);
 
 	rc = mutex_lock_interruptible(&p_ctx->fops_lock);
 	if (rc)
@@ -253,7 +239,7 @@ static ssize_t autocapture_fops_read(struct file *file, char __user *buf, size_t
 	if (p_ctx->hw_reset)
 	{
 #ifdef AUTOWRITE_MODULE
-		uint32_t time_lose = (normal_fftt.tv_sec * 1000000 + normal_fftt.tv_usec) / 1000 - p_ctx->autocap_frame[dma_fr].endtime;
+		uint32_t time_lose = (normal_fftt.tv_sec * 1000000000 + normal_fftt.tv_nsec) / 1000000 - p_ctx->autocap_frame[dma_fr].endtime;
 		time_lose = time_lose / 33;
 		p_ctx->timestampe[1] = time_lose;
 		LOG(LOG_CRIT, "RTOS ttff:%dus, Switch Lose frame:%d frames", p_ctx->timestampe[0], p_ctx->timestampe[1]);
@@ -264,11 +250,10 @@ static ssize_t autocapture_fops_read(struct file *file, char __user *buf, size_t
 
 	if (p_ctx->get_fr_ds == GET_FR)
 	{
-		p_ctx->autocap_frame[dma_fr].format = acamera_isp_fr_dma_writer_format_read(p_ctx->p_fsm->cmn.isp_base);
-		p_ctx->autocap_frame[dma_fr].imagesize = acamera_isp_fr_dma_writer_active_width_read(p_ctx->p_fsm->cmn.isp_base) << 16;
-		p_ctx->autocap_frame[dma_fr].imagesize |= acamera_isp_fr_dma_writer_active_height_read(p_ctx->p_fsm->cmn.isp_base);
+		p_ctx->autocap_frame[dma_fr].format = system_hw_read_32(0x1c0ec) & 0xFF;
+		p_ctx->autocap_frame[dma_fr].imagesize = acamera_isp_input_port_frame_width_read(0) << 16;
+		p_ctx->autocap_frame[dma_fr].imagesize |= acamera_isp_input_port_frame_height_read(0);
 
-		p_ctx->autocap_frame[dma_fr].count = acamera_isp_fr_dma_writer_frame_wcount_read(p_ctx->p_fsm->cmn.isp_base);
 #ifdef AUTOWRITE_MODULE
 		p_ctx->autocap_frame[dma_fr].imagebufferstride = autowrite_fr_image_buffer_stride_read();
 		p_ctx->autocap_frame[dma_fr].count = autowrite_fr_writer_frame_wcount_read();
@@ -277,11 +262,10 @@ static ssize_t autocapture_fops_read(struct file *file, char __user *buf, size_t
 	}
 	else if (p_ctx->get_fr_ds == GET_DS1)
 	{
-		p_ctx->autocap_frame[dma_ds1].format = acamera_isp_ds1_dma_writer_format_read(p_ctx->p_fsm->cmn.isp_base);
-		p_ctx->autocap_frame[dma_ds1].imagesize = acamera_isp_ds1_dma_writer_active_width_read(p_ctx->p_fsm->cmn.isp_base) << 16;
-		p_ctx->autocap_frame[dma_ds1].imagesize |= acamera_isp_ds1_dma_writer_active_height_read(p_ctx->p_fsm->cmn.isp_base);
+		p_ctx->autocap_frame[dma_ds1].format = system_hw_read_32(0x1c260) & 0xFF;
+		p_ctx->autocap_frame[dma_ds1].imagesize = (system_hw_read_32(0x1c264) & 0xFFFF) << 16;
+		p_ctx->autocap_frame[dma_ds1].imagesize |= ((system_hw_read_32(0x1c264) >> 16) & 0xFFFF);
 
-		p_ctx->autocap_frame[dma_ds1].count = acamera_isp_ds1_dma_writer_frame_wcount_read(p_ctx->p_fsm->cmn.isp_base);
 #ifdef AUTOWRITE_MODULE
 		p_ctx->autocap_frame[dma_ds1].imagebufferstride = autowrite_ds1_image_buffer_stride_read();
 		p_ctx->autocap_frame[dma_ds1].count = autowrite_ds1_writer_frame_wcount_read();
@@ -291,7 +275,7 @@ static ssize_t autocapture_fops_read(struct file *file, char __user *buf, size_t
 	else if (p_ctx->get_fr_ds == GET_DS2)
 	{
 		p_ctx->autocap_frame[dma_ds2].format = am_sc_get_output_format();
-		p_ctx->autocap_frame[dma_ds2].imagesize = am_sc_get_width();
+		p_ctx->autocap_frame[dma_ds2].imagesize = am_sc_get_width() << 16;
 		p_ctx->autocap_frame[dma_ds2].imagesize |= am_sc_get_height();
 
 #ifdef AUTOWRITE_MODULE
@@ -322,7 +306,6 @@ static ssize_t autocapture_fops_write(struct file *file, const char __user *buf,
 	}
 
 	rc = count;
-	LOG(LOG_INFO, "autocapture_fops_write:%x, %x", p_ctx->get_fr_ds, rc);
 
 	if (p_ctx->get_fr_ds == 0xAA)
 	{
@@ -350,13 +333,10 @@ uint32_t autocap_get_frame_info(struct autocapture_context *p_ctx, uint32_t type
 	uint32_t realcount = 0;
 	uint32_t fps = 30;
 #endif
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 15, 0))
-	do_gettimeofday(&p_ctx->t_frm);
-	p_ctx->autocap_frame[type].endtime = (p_ctx->t_frm.tv_sec * 1000000 + p_ctx->t_frm.tv_usec) / 1000;
-#else
+	// do_gettimeofday(p_ctx->t_frm);
 	ktime_get_real_ts64(&p_ctx->t_frm);
+
 	p_ctx->autocap_frame[type].endtime = (p_ctx->t_frm.tv_sec * 1000000000 + p_ctx->t_frm.tv_nsec) / 1000000;
-#endif
 
 	if (p_ctx->hw_reset)
 		return 0;
@@ -366,9 +346,9 @@ uint32_t autocap_get_frame_info(struct autocapture_context *p_ctx, uint32_t type
 	{
 	case dma_fr:
 		realcount = autowrite_fr_writer_memsize_read() / autowrite_fr_image_buffer_stride_read();
-		p_ctx->autocap_frame[dma_fr].format = acamera_isp_fr_dma_writer_format_read(p_ctx->p_fsm->cmn.isp_base);
-		p_ctx->autocap_frame[dma_fr].imagesize = acamera_isp_fr_dma_writer_active_width_read(p_ctx->p_fsm->cmn.isp_base) << 16;
-		p_ctx->autocap_frame[dma_fr].imagesize |= acamera_isp_fr_dma_writer_active_height_read(p_ctx->p_fsm->cmn.isp_base);
+		p_ctx->autocap_frame[dma_fr].format = system_hw_read_32(0x1c0ec) & 0xFF;
+		p_ctx->autocap_frame[dma_fr].imagesize = acamera_isp_input_port_frame_width_read(0) << 16;
+		p_ctx->autocap_frame[dma_fr].imagesize |= acamera_isp_input_port_frame_height_read(0);
 		p_ctx->autocap_frame[dma_fr].imagebufferstride = autowrite_fr_image_buffer_stride_read();
 		p_ctx->autocap_frame[dma_fr].memory_size = autowrite_fr_writer_memsize_read();
 		p_ctx->autocap_frame[dma_fr].count = autowrite_fr_writer_frame_wcount_read();
@@ -381,9 +361,9 @@ uint32_t autocap_get_frame_info(struct autocapture_context *p_ctx, uint32_t type
 		break;
 	case dma_ds1:
 		realcount = autowrite_ds1_writer_memsize_read() / autowrite_ds1_image_buffer_stride_read();
-		p_ctx->autocap_frame[dma_ds1].format = acamera_isp_ds1_dma_writer_format_read(p_ctx->p_fsm->cmn.isp_base);
-		p_ctx->autocap_frame[dma_ds1].imagesize = acamera_isp_ds1_dma_writer_active_width_read(p_ctx->p_fsm->cmn.isp_base) << 16;
-		p_ctx->autocap_frame[dma_ds1].imagesize |= acamera_isp_ds1_dma_writer_active_height_read(p_ctx->p_fsm->cmn.isp_base);
+		p_ctx->autocap_frame[dma_ds1].format = system_hw_read_32(0x1c260) & 0xFF;
+		p_ctx->autocap_frame[dma_ds1].imagesize = (system_hw_read_32(0x1c264) & 0xFFFF) << 16;
+		p_ctx->autocap_frame[dma_ds1].imagesize |= ((system_hw_read_32(0x1c264) >> 16) & 0xFFFF);
 		p_ctx->autocap_frame[dma_ds1].imagebufferstride = autowrite_ds1_image_buffer_stride_read();
 		p_ctx->autocap_frame[dma_ds1].memory_size = autowrite_ds1_writer_memsize_read();
 		p_ctx->autocap_frame[dma_ds1].count = autowrite_ds1_writer_frame_wcount_read();
@@ -397,7 +377,7 @@ uint32_t autocap_get_frame_info(struct autocapture_context *p_ctx, uint32_t type
 	case dma_ds2:
 		realcount = autowrite_ds2_writer_memsize_read() / autowrite_ds2_image_buffer_stride_read();
 		p_ctx->autocap_frame[dma_ds2].format = am_sc_get_output_format();
-		p_ctx->autocap_frame[dma_ds2].imagesize = am_sc_get_width();
+		p_ctx->autocap_frame[dma_ds2].imagesize = am_sc_get_width() << 16;
 		p_ctx->autocap_frame[dma_ds2].imagesize |= am_sc_get_height();
 		p_ctx->autocap_frame[dma_ds2].imagebufferstride = autowrite_ds2_image_buffer_stride_read();
 		p_ctx->autocap_frame[dma_ds2].memory_size = autowrite_ds2_writer_memsize_read();
@@ -485,8 +465,6 @@ uint32_t autocap_get_frame_addr(struct autocapture_context *p_ctx, struct frame_
 
 	t_frm.framesize = p_ctx->autocap_frame[type].imagebufferstride;
 	t_frm.phy_addr = p_ctx->autocap_frame[type].n_address;
-
-	LOG(LOG_INFO, "t_frm.phy_addr:%x,%x,%x", index, t_frm.phy_addr, t_frm.framesize);
 
 	ret = copy_to_user((void *)frm, &t_frm, sizeof(struct frame_info));
 	if (ret)
@@ -652,8 +630,6 @@ void autocapture_initialize(autocapture_fsm_t *p_fsm)
 		return;
 	}
 
-	LOG(LOG_INFO, "autocap dev '%s' register ok, dev: %p, minor: %d.", p_dev->name, p_dev->this_device, p_dev->minor);
-
 	p_ctx->fw_id = fw_id;
 	p_ctx->dev_minor_id = p_dev->minor;
 	p_ctx->p_fsm = p_fsm;
@@ -791,14 +767,15 @@ void autocapture_hwreset(autocapture_fsm_ptr_t p_fsm)
 		return;
 
 	system_hw_write_32(0x9c, 0);
-	system_hw_write_32(0x1C260, 0);
-	system_hw_write_32(0x1C2B8, 0);
-	system_hw_write_32(0x34220, 0);
-	system_hw_write_32(0x34278, 0);
 
 	autocap_get_frame_info(p_ctx, dma_fr);
 	autocap_get_frame_info(p_ctx, dma_ds1);
 	autocap_get_frame_info(p_ctx, dma_ds2);
+
+	system_hw_write_32(0x1C260, 0);
+	system_hw_write_32(0x1C2B8, 0);
+	system_hw_write_32(0x34220, 0);
+	system_hw_write_32(0x34278, 0);
 
 	p_ctx->hw_reset = 1;
 

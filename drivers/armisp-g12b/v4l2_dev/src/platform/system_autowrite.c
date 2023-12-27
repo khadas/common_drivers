@@ -17,11 +17,8 @@
 *
 */
 
-#include <linux/version.h>
 #include <linux/kernel.h>
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 15, 0))
-#include <asm/uaccess.h>
-#endif
+//#include <asm/uaccess.h>
 #include <linux/gfp.h>
 #include <linux/cdev.h>
 #include <linux/slab.h>
@@ -772,6 +769,11 @@ void auto_write_fr_start(void *cfg)
 	iowrite32(val, p_hw_fr_base + MIPI_BL_CTRL0);// reset based addr
 
 	val = ioread32(p_hw_fr_base + MIPI_BL_CTRL0);
+	val = val | ((a_cfg->th_enable & 0x1) << 2);
+	val = val | ((a_cfg->th_cnt & 0xffff) << 16);
+	iowrite32(val, p_hw_fr_base + MIPI_BL_CTRL0);// reset based addr
+
+	val = ioread32(p_hw_fr_base + MIPI_BL_CTRL0);
 
 	val = ioread32(p_hw_fr_base + MIPI_BL_CTRL0);
 	val = val | ((a_cfg->drop_enable & 0x1) << 5);
@@ -801,6 +803,11 @@ void auto_write_ds1_start(void *cfg)
 
 	val = ioread32(p_hw_ds1_base + MIPI_BL_CTRL0);
 	val = val & (~0x2);
+	iowrite32(val, p_hw_ds1_base + MIPI_BL_CTRL0);// reset based addr
+
+	val = ioread32(p_hw_ds1_base + MIPI_BL_CTRL0);
+	val = val | ((a_cfg->th_enable & 0x1) << 2);
+	val = val | ((a_cfg->th_cnt & 0xffff) << 16);
 	iowrite32(val, p_hw_ds1_base + MIPI_BL_CTRL0);// reset based addr
 
 	val = ioread32(p_hw_ds1_base + MIPI_BL_CTRL0);
@@ -836,6 +843,11 @@ void auto_write_ds2_start(void *cfg)
 	iowrite32(val, p_hw_ds2_base + MIPI_BL_CTRL0);// reset based addr
 
 	val = ioread32(p_hw_ds2_base + MIPI_BL_CTRL0);
+
+	val = ioread32(p_hw_ds2_base + MIPI_BL_CTRL0);
+	val = val | ((a_cfg->th_enable & 0x1) << 2);
+	val = val | ((a_cfg->th_cnt & 0xffff) << 16);
+	iowrite32(val, p_hw_ds2_base + MIPI_BL_CTRL0);// reset based addr
 
 	val = ioread32(p_hw_ds2_base + MIPI_BL_CTRL0);
 	val = val | ((a_cfg->drop_enable & 0x1) << 5);

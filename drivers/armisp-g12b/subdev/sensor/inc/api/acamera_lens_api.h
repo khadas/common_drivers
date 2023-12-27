@@ -46,6 +46,11 @@ typedef struct _lens_param_t {
     uint16_t curr_zoom; //current zoom positon if zoom if available
     uint16_t next_pos;  //lens position
 
+    uint32_t minfocus_distance;     // lens minimum focus distance (diopters x 10000)
+    uint32_t hyperfocal_distance;   // lens hyperfocal focus distance (diopters x 10000)
+    uint32_t focal_length;          // focal length of the lens (mm x 10000)
+    uint32_t aperture;              // lens aperture (f-number x 10000)
+
 } lens_param_t;
 
 

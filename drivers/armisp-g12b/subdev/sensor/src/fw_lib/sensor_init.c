@@ -245,6 +245,7 @@ void acamera_load_array_sequence( acamera_sbus_ptr_t p_sbus, uintptr_t isp_offse
         case 0x0000: //sequence end flag
             if ( seq->len == 0 && seq->value == 0 ) {
                 end_seq = 1;
+                //break;
             }
             break;
         default:

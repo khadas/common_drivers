@@ -631,7 +631,13 @@ static acam_reg_t imx307_test_pattern[] = {
 static acam_reg_t settings_context_imx307[] = {
     //stop sequence - address is 0x0000
     { 0x1aeb4, 0x1edcL, 0x1fff,2 },
-    { 0x1aeb8, 0x1fd6L, 0x1fff,2 },
+    { 0x1aeb8, 0x1edcL, 0x1fff,2 },
+    { 0x1aec0, 0x808d2L, 0xffffff,4 },
+    { 0x1aed0, 0xc8L, 0xff0fff,4 },
+    { 0x1aee0, 0xc8L, 0xff0fff,4 },
+    { 0x1c084, 0xc8L, 0xff03ff,4 }, //fr sharpen: Luma Offset Low; Luma Thresh Low
+    { 0x1c090, 0x08c008cL, 0x3fff3fff,4 }, //fr sharpen: Clip Str Max; Clip Str Min
+    { 0x1ac4c, 0xa9cd0501L, 0xffff0f01,4 }, //iridix: filter_mux; svariance; bright_pr; contrast
     { 0x0000, 0x0000, 0x0000, 0x0000 }
 };
 

@@ -1,26 +1,27 @@
 /*
- *
- * SPDX-License-Identifier: GPL-2.0
- *
- * Copyright (C) 2011-2018 ARM or its affiliates
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2.
- * This program is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
- * or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License
- * for more details.
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- *
- */
+*
+* SPDX-License-Identifier: GPL-2.0
+*
+* Copyright (C) 2011-2018 ARM or its affiliates
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation; version 2.
+* This program is distributed in the hope that it will be useful, but
+* WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+* or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License
+* for more details.
+* You should have received a copy of the GNU General Public License along
+* with this program; if not, write to the Free Software Foundation, Inc.,
+* 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+*
+*/
 
 #ifndef __SYSTEM_STDLIB_H__
 #define __SYSTEM_STDLIB_H__
 
 #include "acamera_types.h"
+
 
 /**
  *   Copy block of memory
@@ -37,7 +38,8 @@
  *           -1 - on error
  */
 
-int32_t system_memcpy(void *dst, const void *src, uint32_t size);
+int32_t system_memcpy( void *dst, const void *src, uint32_t size );
+
 
 /**
  *   Fill block of memory
@@ -53,7 +55,8 @@ int32_t system_memcpy(void *dst, const void *src, uint32_t size);
  *           -1 - on error
  */
 
-int32_t system_memset(void *ptr, uint8_t value, uint32_t size);
+int32_t system_memset( void *ptr, uint8_t value, uint32_t size );
+
 
 /**
  *   Allocates memory of size bytes
@@ -66,7 +69,8 @@ int32_t system_memset(void *ptr, uint8_t value, uint32_t size);
  *   @return  NULL - failed
  *            non zero - valid pointer to memory
  */
-void *system_malloc(uint32_t size);
+void *system_malloc( uint32_t size );
+
 
 /**
  *   Free memory previously allocated by system_malloc
@@ -79,6 +83,6 @@ void *system_malloc(uint32_t size);
  *   @return
  *
  */
-void system_free(void *ptr);
+void system_free( void *ptr );
 
 #endif // __SYSTEM_STDLIB_H__

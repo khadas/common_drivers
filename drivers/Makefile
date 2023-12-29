@@ -62,7 +62,6 @@ obj-$(CONFIG_AMLOGIC_SOC_TIMESTAMP)	+= timestamp/
 obj-$(CONFIG_AMLOGIC_SECKEY)		+= seckey/
 obj-y                       += media_modules/
 obj-y                       += amlisp/
-obj-y                       += adla/
 obj-y                       += armisp/
 obj-y                       += armisp-g12b/
 obj-$(CONFIG_AMLOGIC_NPU) += npu/

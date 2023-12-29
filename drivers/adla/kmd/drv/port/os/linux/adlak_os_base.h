@@ -45,7 +45,6 @@
 #include <linux/slab.h>
 #include <linux/version.h>
 #include <linux/vmalloc.h>
-#include <linux/sched/task.h>
 #include <uapi/linux/sched/types.h>
 #ifdef CONFIG_COMPAT
 #include <linux/compat.h>
@@ -55,9 +54,6 @@
 #include <linux/of_address.h>
 #include <linux/of_device.h>
 #include <linux/of_reserved_mem.h>
-#endif
-#if 1//CONFIG_ADLAK_ENABLE_DEBUGFS
-#include <linux/debugfs.h>
 #endif
 #ifdef __cplusplus
 extern "C" {

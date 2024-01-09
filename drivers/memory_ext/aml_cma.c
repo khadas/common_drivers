@@ -251,7 +251,7 @@ void (*aml__dump_owner)(const struct page *page);
 #else
 static void aml__dump_owner(const struct page *page)
 {
-	__dump_page_owner(page);
+	//__dump_page_owner(page);
 }
 #endif
 #else

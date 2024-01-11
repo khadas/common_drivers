@@ -37,10 +37,18 @@
 		mmc2 = &sd_emmc_a;
 	};
 
+	// 2GB DDR
+	memory@00000000 {
+		device_type = "memory";
+		linux,usable-memory = <0x0 0x000000 0x0 0x80000000>;
+	};
+
+	// 4GB DDR
 //	memory@00000000 {
 //		device_type = "memory";
-//		linux,usable-memory = <0x0 0x000000 0x0 0x80000000>;
+//		linux,usable-memory = <0x00000000 0x00000000 0x00000000 0xF0000000>;
 //	};
+
 	reserved-memory {
 		#address-cells = <2>;
 		#size-cells = <2>;

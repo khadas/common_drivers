@@ -569,14 +569,6 @@ void hdmirx_dec_stop(struct tvin_frontend_s *fe, enum tvin_port_e port,
 
 	devp = container_of(fe, struct hdmirx_dev_s, frontend);
 	parm = &devp->param[port_type];
-	#ifdef CONFIG_AMLOGIC_HDMITX
-	if (vpp_mute_enable) {
-		if (get_video_mute_val(HDMI_RX_MUTE_SET) &&
-			port_type != TVIN_PORT_SUB)// && rx[port].vpp_mute)
-			set_video_mute(HDMI_RX_MUTE_SET, false);
-		//rx[port].vpp_mute = false;
-	}
-	#endif
 	/* parm->info.fmt = TVIN_SIG_FMT_NULL; */
 	/* parm->info.status = TVIN_SIG_STATUS_NULL; */
 	rx_pr("%s port_type:%d, ok\n", __func__, port_type);

@@ -5385,8 +5385,8 @@ void hdmirx_config_video(u8 port)
 	set_dv_ll_mode(false, port);
 	hdmirx_output_en(true);
 	rx_irq_en(true, port);
-	if (rx[port].var.frl_rate)
-		cor_debug_t3x(port);
+	//if (rx[port].var.frl_rate)
+		//cor_debug_t3x(port);
 	hdmirx_top_irq_en(1, 2, port);
 
 	if (rx_info.chip_id < CHIP_ID_T7)
@@ -5457,12 +5457,20 @@ void hdmirx_config_video(u8 port)
 	}
 	rx_sw_reset_t7(2, port);
 	//frl_debug
-	if (rx_info.chip_id >= CHIP_ID_T3X && rx[port].var.frl_rate)
+	if (rx_info.chip_id >= CHIP_ID_T3X && rx[port].var.frl_rate) {
 		/* 2ppc */
 		hdmirx_wr_bits_cor(RX_PWD0_CLK_DIV_0, _BIT(0), 0, port);
-	else
+	} else {
 		/* 1ppc */
 		hdmirx_wr_bits_cor(RX_PWD0_CLK_DIV_0, _BIT(0), 1, port);
+	}
+
+	//dig clk low, use analog clk for 4k120 yuv420 12.
+	if (rx_is_switch_to_analog_clk(port))
+		rx_switch_to_analog_clk(port);
+
+	if (rx[port].dsc_flag)
+		rx_switch_to_self_hsync(port, true);
 	if (port == rx_info.main_port) {
 		if (rx[port].cur.vactive >= 2100 || rx[port].cur.hactive >= 3800)
 			hdmirx_wr_bits_top_common_1(TOP_VID_CNTL2, _BIT(31), 1);
@@ -6907,7 +6915,6 @@ void rx_emp_field_done_irq(u8 port)
 		kunmap_atomic(src_addr);
 		i++;
 	}
-
 	if (emp_pkt_cnt * 32 > 1024) {
 		if (log_level & 0x400)
 			rx_pr("emp buffer overflow!!\n");

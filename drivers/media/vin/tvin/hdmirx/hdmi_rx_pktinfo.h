@@ -956,7 +956,8 @@ enum emp_pkt_type_e {
 	EMP_VTEM_CLASS1,
 	EMP_SBTM,
 	EMP_AMDV,
-	EMP_CUVA
+	EMP_CUVA,
+	EMP_CVTEM
 };
 
 struct packet_info_s {
@@ -1081,6 +1082,9 @@ void rx_get_aif_info(u8 port);
 void rx_check_pkt_flag(u8 port);
 void dump_pktinfo_status(u8 port);
 enum spec_dev_e rx_get_dev_type(u8 port);
+void dump_cvtem_packet(u8 port);
+void parse_dsc_pps_data(u8 *buff, u8 port);
+void dump_dsc_pps_info(u8 port);
 struct emp_info_s *rx_get_emp_info(u8 port);
 bool rx_is_xbox_dev(u8 port);
 #endif

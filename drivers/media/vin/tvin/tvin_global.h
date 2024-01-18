@@ -26,6 +26,7 @@
 #include <linux/amlogic/media/registers/register_map.h>
 #include <linux/amlogic/media/registers/cpu_version.h>
 #include <linux/amlogic/media/vfm/vframe.h>
+#include <linux/amlogic/media/vout/dsc.h>
 
 #if IS_ENABLED(CONFIG_AMLOGIC_TVIN_USE_DEBUG_FILE)
 #include <linux/kernel.h>
@@ -597,6 +598,8 @@ struct tvin_sig_property_s {
 	struct tvin_sbtm_data_s sbtm_data;
 	struct tvin_cuva_emds_data_s cuva_emds_data;
 	struct tvin_spd_data_s spd_data;
+	bool dsc_flag;
+	struct dsc_pps_data_s pps_data;
 	unsigned int cnt;
 	unsigned int hw_vic;
 	unsigned int avi_colorimetry;//hdmi avi colorimetry

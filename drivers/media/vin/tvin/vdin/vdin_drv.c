@@ -72,6 +72,7 @@
 #include "../tvin_format_table.h"
 #include "../tvin_frontend.h"
 #include "../tvin_global.h"
+
 #include "vdin_regs.h"
 #include "vdin_drv.h"
 #include "vdin_ctl.h"
@@ -1463,6 +1464,9 @@ int vdin_start_dec(struct vdin_dev_s *devp)
 	vdin_hw_enable(devp);
 	vdin_set_dv_tunnel(devp);
 	vdin_write_mif_or_afbce_init(devp);
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+	vdin_set_dsc_config_t3x(devp, true);
+#endif
 	/* screenshot stress test vdin1 hw crash addr need adjust config */
 	vfe = provider_vf_peek(devp->vfp);
 	if (vfe)
@@ -1701,9 +1705,10 @@ void vdin_stop_dec(struct vdin_dev_s *devp)
 		__func__, devp->index, devp->dbg_stop_dec_delay);
 	if (devp->dbg_stop_dec_delay)
 		usleep_range(devp->dbg_stop_dec_delay, devp->dbg_stop_dec_delay + 1000);
-
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+	vdin_set_dsc_config_t3x(devp, false);
+#endif
 	vdin_hw_close(devp);
-
 	vdin_set_default_regmap(devp);
 	/*only for vdin0*/
 	if (devp->dts_config.urgent_en && devp->hw_core == VDIN_HW_CORE_NORMAL)

@@ -12,5 +12,6 @@ void init_pps_data_8k_30hz(struct aml_dsc_dec_drv_s *dsc_dec_drv);
 void init_pps_data_8k_60hz_8bpc(struct aml_dsc_dec_drv_s *dsc_dec_drv);
 void init_pps_data_8k_60hz_10bpc(struct aml_dsc_dec_drv_s *dsc_dec_drv);
 void dsc_dec_clk_calculate(unsigned int integer, unsigned int frac);
+void dsc_dec_config_init(struct aml_dsc_dec_drv_s *dsc_dec_drv);
 
 #endif

@@ -24,6 +24,7 @@
 #include <linux/amlogic/media/amdolbyvision/dolby_vision.h>
 #include "../tvin_global.h"
 #include "../tvin_format_table.h"
+#include "../dsc_dec/dsc_dec_drv.h"
 #include "vdin_ctl.h"
 #include "vdin_regs.h"
 #include "vdin_drv.h"
@@ -683,7 +684,10 @@ void vdin_set_top_t3x(struct vdin_dev_s *devp, enum tvin_port_e port,
 		wr_bits(0, VPU_VDIN_HDMI0_CTRL1, 1, 4, 2); /* reg_hskip_mode */
 	if (devp->v_skip_en)
 		wr_bits(0, VPU_VDIN_HDMI0_CTRL1, 1, 7, 1); /* reg_vskip_en */
-	wr_bits(0, VPU_VDIN_HDMI0_CTRL1, devp->pre_prop.up_sample_en, 30, 1);
+	if (devp->v_active >= 4320)
+		wr_bits(0, VPU_VDIN_HDMI0_CTRL1, 0, 30, 1);
+	else
+		wr_bits(0, VPU_VDIN_HDMI0_CTRL1, devp->pre_prop.up_sample_en, 30, 1);
 
 	vdin_set_scl_mode_t3x(devp, devp->dv_hw5.hw5_ctl & BIT0);
 }
@@ -718,7 +722,8 @@ void vdin_set_decimation_t3x(struct vdin_dev_s *devp)
 	if (devp->h_active > VDIN_LITE_CORE_MAX_W &&
 		devp->prop.color_format != TVIN_YUV422) {
 		devp->h_active = devp->h_active / 2;
-		devp->h_skip_en = true;
+		if (devp->prop.color_format != TVIN_YUV420)
+			devp->h_skip_en = true;
 	}
 	if (devp->v_active > VDIN_LITE_CORE_MAX_H &&
 	   (devp->prop.color_format == TVIN_RGB444 ||
@@ -3841,4 +3846,20 @@ void vdin_set_scl_mode_t3x(struct vdin_dev_s *devp, bool on_off)
 		wr_bits(devp->addr_offset, VDIN0_PP_CTRL, 0x1, 9, 1);
 	else
 		wr_bits(devp->addr_offset, VDIN0_PP_CTRL, 0x0, 9, 1);
+}
+
+void vdin_set_dsc_config_t3x(struct vdin_dev_s *devp, bool on_off)
+{
+	struct aml_dsc_dec_drv_s dsc_dec_drv;
+
+	if (!is_meson_t3x_cpu())
+		return;
+	dsc_dec_drv.pps_data = devp->prop.pps_data;
+	if (devp->prop.dsc_flag && on_off) {
+		pr_info("dsc_en\n");
+		dsc_dec_en(true, &dsc_dec_drv.pps_data);
+	} else {
+		pr_info("dsc_off\n");
+		dsc_dec_en(false, &dsc_dec_drv.pps_data);
+	}
 }

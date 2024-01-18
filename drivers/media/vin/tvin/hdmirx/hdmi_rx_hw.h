@@ -3436,6 +3436,7 @@ void hdmirx_wr_cor(u32 addr, u8 data, u8 port);
 bool hdmirx_poll_cor(u32 addr, u8 exp_data, u8 mask, u32 max_try, u8 port);
 u8 hdmirx_rd_bits_cor(u32 addr, u32 mask, u8 port);
 void hdmirx_wr_bits_cor(u32 addr, u32 mask, u8 value, u8 port);
+void hdmirx_wr_top_common_1(u32 addr, u32 data);
 
 void rx_hdcp_22_sent_reauth(u8 port);
 void rx_hdcp_14_sent_reauth(u8 port);

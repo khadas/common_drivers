@@ -2034,6 +2034,7 @@ void rx_set_irq_t7(bool en, u8 port)
 		//hdmirx_wr_cor(CP2PAX_INTR1_MASK_HDCP2X_IVCRX, 4, port);
 		// HDCP 2X_RX_ECC
 		hdmirx_wr_cor(HDCP2X_RX_ECC_INTR_MASK, 1, port);
+		hdmirx_wr_cor(RX_DEPACK2_INTR0_MASK_DP0B_IVCRX, 0x01, port);
 	} else {
 		/* clear enable */
 		hdmirx_wr_cor(RX_DEPACK_INTR2_MASK_DP2_IVCRX, 0, port);
@@ -2100,7 +2101,7 @@ void rx_set_irq_t7(bool en, u8 port)
 		hdmirx_wr_cor(RX_DEPACK_INTR6_DP2_IVCRX, 0xff, port);
 		hdmirx_wr_cor(RX_DEPACK_INTR6_MASK_DP2_IVCRX, 0, port);
 		//interrupt mask [5] acr
-
+		hdmirx_wr_cor(RX_DEPACK2_INTR0_MASK_DP0B_IVCRX, 0x0, port);
 		//HDCP irq
 		// encrypted sts changed
 		//hdmirx_wr_cor(RX_HDCP1X_INTR0_MASK_HDCP1X_IVCRX, 0, port);

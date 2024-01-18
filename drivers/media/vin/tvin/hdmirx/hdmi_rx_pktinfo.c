@@ -2339,11 +2339,161 @@ int rx_check_emp_type(struct emp_pkt_st *pkt)
 		vfr == 1 &&
 		afr == 0) {
 		emp_type = EMP_SBTM;//sbtm
+	} else if (pkt->cnt.organization_id == 1 &&
+		pkt->cnt.data_set_tag_lo == 2 &&
+		ds_type == 0 &&
+		sync == 1 &&
+		vfr == 1 &&
+		afr == 0 &&
+		pkt->cnt.data_set_length_lo == 136) {
+		emp_type = EMP_CVTEM;//cvtem
 	}
 	if (log_level == 0x121)
 		rx_pr("\nemp_type = 0x%x\n", emp_type);
 
 	return emp_type;
+}
+
+void dump_cvtem_packet(u8 port)
+{
+	int i, j;
+	unsigned char buff[1024] = {0};
+	int k = 0;
+
+	for (i = 0; i < 6; i++) {
+		for (j = 0; j < 32; j++)
+			k += sprintf(buff + k, "0x%x ", rx[port].cvtem_info.dsc_info[i * 32 + j]);
+		pr_info("%s", buff);
+		k = 0;
+	}
+}
+
+void parse_dsc_pps_data(u8 *buff, u8 port)
+{
+	int i;
+
+	rx[port].dsc_pps_data.dsc_version_major = (buff[0] >> 4) & 0xf;
+	rx[port].dsc_pps_data.dsc_version_minor = buff[0] & 0xf;
+	rx[port].dsc_pps_data.pps_identifier = buff[1];
+	rx[port].dsc_pps_data.bits_per_component = (buff[3] >> 4) & 0xf;
+	rx[port].dsc_pps_data.line_buf_depth = buff[3] & 0xf;
+	rx[port].dsc_pps_data.block_pred_enable = (buff[4] & 0x20) >> 5;
+	rx[port].dsc_pps_data.convert_rgb = (buff[4] & 0x10) >> 4;
+	rx[port].dsc_pps_data.simple_422 = buff[4] & 0x8;
+	rx[port].dsc_pps_data.vbr_enable = buff[4] & 0x4;
+	rx[port].dsc_pps_data.bits_per_pixel = ((buff[4] & 0x3) << 8) | buff[5];
+	rx[port].dsc_pps_data.pic_height = (buff[6] << 8) | buff[7];
+	rx[port].dsc_pps_data.pic_width = (buff[8] << 8) | buff[9];
+	rx[port].dsc_pps_data.slice_height = (buff[10] << 8) | buff[11];
+	rx[port].dsc_pps_data.slice_width = (buff[12] << 8) | buff[13];
+	rx[port].dsc_pps_data.chunk_size = (buff[14] << 8) | buff[15];
+	rx[port].dsc_pps_data.initial_xmit_delay = ((buff[16] & 0x3) << 8) | buff[17];
+	rx[port].dsc_pps_data.initial_dec_delay = (buff[18] << 8) | buff[19];
+	rx[port].dsc_pps_data.initial_scale_value = buff[21] & 0x3f;
+	rx[port].dsc_pps_data.scale_increment_interval = (buff[22] << 8) | buff[23];
+	rx[port].dsc_pps_data.scale_decrement_interval = ((buff[24] & 0xf) << 8) | buff[25];
+	rx[port].dsc_pps_data.first_line_bpg_offset = buff[27] & 0x1f;
+	rx[port].dsc_pps_data.nfl_bpg_offset = (buff[28] << 8) | buff[29];
+	rx[port].dsc_pps_data.slice_bpg_offset = (buff[30] << 8) | buff[31];
+	rx[port].dsc_pps_data.initial_offset = (buff[32] << 8) | buff[33];
+	rx[port].dsc_pps_data.final_offset = (buff[34] << 8) | buff[35];
+	rx[port].dsc_pps_data.flatness_min_qp = buff[36] & 0x1f;
+	rx[port].dsc_pps_data.flatness_max_qp = buff[37] & 0x1f;
+	rx[port].dsc_pps_data.rc_parameter_set.rc_model_size = (buff[38] << 8) | buff[39];
+	rx[port].dsc_pps_data.rc_parameter_set.rc_edge_factor = buff[40] & 0xf;
+	rx[port].dsc_pps_data.rc_parameter_set.rc_quant_incr_limit0 = buff[41] & 0x1f;
+	rx[port].dsc_pps_data.rc_parameter_set.rc_quant_incr_limit1 = buff[42] & 0x1f;
+	rx[port].dsc_pps_data.rc_parameter_set.rc_tgt_offset_hi = (buff[43] >> 4) & 0xf;
+	rx[port].dsc_pps_data.rc_parameter_set.rc_tgt_offset_lo = buff[43] & 0xf;
+	memcpy(rx[port].dsc_pps_data.rc_parameter_set.rc_buf_thresh, buff + 44, 14);
+	for (i = 0; i < 15; i++) {
+		rx[port].dsc_pps_data.rc_parameter_set.rc_range_parameters[i].range_min_qp =
+			(buff[58 + 2 * i] & 0xf8) >> 3;
+		rx[port].dsc_pps_data.rc_parameter_set.rc_range_parameters[i].range_max_qp =
+			(buff[59 + 2 * i] >> 6) | (((buff[58 + 2 * i] & 0x7)) << 2);
+		rx[port].dsc_pps_data.rc_parameter_set.rc_range_parameters[i].range_bpg_offset =
+			buff[59 + 2 * i] & 0x3f;
+	}
+	rx[port].dsc_pps_data.native_420 = (buff[88] & 0x2) >> 1;
+	rx[port].dsc_pps_data.native_422 = buff[88] & 0x1;
+	rx[port].dsc_pps_data.second_line_bpg_offset = buff[89] & 0x1f;
+	rx[port].dsc_pps_data.nsl_bpg_offset = (buff[90] << 8) | buff[91];
+	rx[port].dsc_pps_data.second_line_offset_adj = (buff[92] << 8) | buff[93];
+}
+
+void dump_dsc_pps_info(u8 port)
+{
+	int i;
+	char buf[512] = {0};
+	int k = 0;
+
+	rx_pr("------Picture Parameter Set Start------\n");
+	pr_info("dsc_version_major:%d\n", rx[port].dsc_pps_data.dsc_version_major);
+	pr_info("dsc_version_minor:%d\n", rx[port].dsc_pps_data.dsc_version_minor);
+	rx_pr("pps_identifier:%d\n", rx[port].dsc_pps_data.pps_identifier);
+	rx_pr("bits_per_component:%d\n", rx[port].dsc_pps_data.bits_per_component);
+	rx_pr("line_buf_depth:%d\n", rx[port].dsc_pps_data.line_buf_depth);
+	rx_pr("block_pred_enable:%d\n", rx[port].dsc_pps_data.block_pred_enable);
+	rx_pr("convert_rgb:%d\n",  rx[port].dsc_pps_data.convert_rgb);
+	rx_pr("simple_422:%d\n", rx[port].dsc_pps_data.simple_422);
+	rx_pr("vbr_enable:%d\n", rx[port].dsc_pps_data.vbr_enable);
+	rx_pr("bits_per_pixel:%d\n", rx[port].dsc_pps_data.bits_per_pixel);
+	rx_pr("pic_height:%d\n", rx[port].dsc_pps_data.pic_height);
+	rx_pr("pic_width:%d\n", rx[port].dsc_pps_data.pic_width);
+	rx_pr("slice_height:%d\n", rx[port].dsc_pps_data.slice_height);
+	rx_pr("slice_width:%d\n", rx[port].dsc_pps_data.slice_width);
+	rx_pr("chunk_size:%d\n", rx[port].dsc_pps_data.chunk_size);
+	rx_pr("initial_xmit_delay:%d\n", rx[port].dsc_pps_data.initial_xmit_delay);
+	rx_pr("initial_dec_delay:%d\n", rx[port].dsc_pps_data.initial_dec_delay);
+	rx_pr("initial_scale_value:%d\n", rx[port].dsc_pps_data.initial_scale_value);
+	rx_pr("scale_increment_interval:%d\n", rx[port].dsc_pps_data.scale_increment_interval);
+	rx_pr("scale_decrement_interval:%d\n", rx[port].dsc_pps_data.scale_decrement_interval);
+	rx_pr("first_line_bpg_offset:%d\n", rx[port].dsc_pps_data.first_line_bpg_offset);
+	rx_pr("nfl_bpg_offset:%d\n", rx[port].dsc_pps_data.nfl_bpg_offset);
+	rx_pr("slice_bpg_offset:%d\n", rx[port].dsc_pps_data.slice_bpg_offset);
+	rx_pr("initial_offset:%d\n", rx[port].dsc_pps_data.initial_offset);
+	rx_pr("final_offset:%d\n", rx[port].dsc_pps_data.final_offset);
+	rx_pr("flatness_min_qp:%d\n", rx[port].dsc_pps_data.flatness_min_qp);
+	rx_pr("flatness_max_qp:%d\n", rx[port].dsc_pps_data.flatness_max_qp);
+	rx_pr("rc_model_size:%d\n", rx[port].dsc_pps_data.rc_parameter_set.rc_model_size);
+	rx_pr("rc_edge_factor:%d\n", rx[port].dsc_pps_data.rc_parameter_set.rc_edge_factor);
+	rx_pr("rc_quant_incr_limit0:%d\n",
+		rx[port].dsc_pps_data.rc_parameter_set.rc_quant_incr_limit0);
+	rx_pr("rc_quant_incr_limit1:%d\n",
+		rx[port].dsc_pps_data.rc_parameter_set.rc_quant_incr_limit1);
+	rx_pr("rc_tgt_offset_hi:%d\n", rx[port].dsc_pps_data.rc_parameter_set.rc_tgt_offset_hi);
+	rx_pr("rc_tgt_offset_lo:%d\n", rx[port].dsc_pps_data.rc_parameter_set.rc_tgt_offset_lo);
+	rx_pr("*******rc_buf_thresh*******\n");
+	for (i = 0; i < 14; i++)
+		k += sprintf(buf + k, "%d ",
+		rx[port].dsc_pps_data.rc_parameter_set.rc_buf_thresh[i]);
+	pr_info("%s", buf);
+	k = 0;
+	rx_pr("*******rc_range_parameters*******\n");
+	rx_pr("*******range_min_qp*******\n");
+	for (i = 0; i < 15; i++)
+		k += sprintf(buf + k, "%d ",
+		rx[port].dsc_pps_data.rc_parameter_set.rc_range_parameters[i].range_min_qp);
+	pr_info("%s", buf);
+	k = 0;
+	rx_pr("*******range_max_qp*******\n");
+	for (i = 0; i < 15; i++)
+		k += sprintf(buf + k, "%d ",
+		rx[port].dsc_pps_data.rc_parameter_set.rc_range_parameters[i].range_max_qp);
+	pr_info("%s", buf);
+	k = 0;
+	rx_pr("*******range_bpg_offset*******\n");
+	for (i = 0; i < 15; i++)
+		k += sprintf(buf + k, "%d ",
+		rx[port].dsc_pps_data.rc_parameter_set.rc_range_parameters[i].range_bpg_offset);
+	pr_info("%s", buf);
+	k = 0;
+	rx_pr("native_420:%d\n", rx[port].dsc_pps_data.native_420);
+	rx_pr("native_422:%d\n", rx[port].dsc_pps_data.native_422);
+	rx_pr("second_line_bpg_offset:%d\n", rx[port].dsc_pps_data.second_line_bpg_offset);
+	rx_pr("nsl_bpg_offset:%d\n", rx[port].dsc_pps_data.nsl_bpg_offset);
+	rx_pr("second_line_offset_adj:%d\n", rx[port].dsc_pps_data.second_line_offset_adj);
+	rx_pr("------Picture Parameter Set End------\n");
 }
 
 void rx_get_em_info(u8 port)
@@ -2438,6 +2588,26 @@ void rx_get_em_info(u8 port)
 			rx[port].emp_cuva_info.emds_addr = (u8 *)pkt;
 			rx[port].emp_cuva_info.cuva_emds_size =
 				rx[port].emp_dsf_info[i].pkt_cnt * 32;
+			break;
+		case EMP_CVTEM:
+			// to do
+			rx[port].cvtem_info.dsc_flag = true;
+			rx[port].cvtem_info.dsc_pkt_cnt = rx[port].emp_dsf_info[i].pkt_cnt;
+			if (rx[port].cvtem_info.dsc_pkt_cnt > 6) {
+				if (log_level & LOG_EN)
+					rx_pr("%s cvtem_pkt_cnt(%d) too large set to 6\n", __func__,
+						rx[port].cvtem_info.dsc_pkt_cnt);
+				rx[port].cvtem_info.dsc_pkt_cnt = 6;
+			}
+			memcpy(rx[port].cvtem_info.dsc_info, (u8 *)pkt + 11, 21);
+			memcpy(rx[port].cvtem_info.dsc_info + 21, (u8 *)pkt + 36, 28);
+			memcpy(rx[port].cvtem_info.dsc_info + 49, (u8 *)pkt + 68, 28);
+			memcpy(rx[port].cvtem_info.dsc_info + 77, (u8 *)pkt + 100, 28);
+			memcpy(rx[port].cvtem_info.dsc_info + 105, (u8 *)pkt + 132, 23);
+			memcpy(rx[port].cvtem_info.dsc_info + 128, (u8 *)pkt + 159, 8);
+			if (log_level & 0x400)
+				dump_cvtem_packet(port);
+			parse_dsc_pps_data(rx[port].cvtem_info.dsc_info, port);
 			break;
 		default:
 			memset(&rx[port].vtem_info, 0, sizeof(struct vtem_info_s));

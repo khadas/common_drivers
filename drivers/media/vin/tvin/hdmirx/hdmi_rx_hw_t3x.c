@@ -60,6 +60,8 @@ int vga_tuning_min = 0x21;
 int vga_tuning_max = 0x26;
 int cal_phy_time;
 enum frl_train_sts_e frl_train_sts = E_FRL_TRAIN_START;
+enum frl_train_sts_e frl_train_sts1 = E_FRL_TRAIN_START;
+
 /* i2c monitor */
 #define I2C_BUFF_SIZE 0x1000
 /* for T3X 2.0 */
@@ -4691,7 +4693,7 @@ void RX_LTS_P_FRL_START(u8 port)
 	data8 = hdmirx_rd_cor(SCDCS_UPD_FLAGS_SCDC_IVCRX, port);
 	hdmirx_wr_cor(SCDCS_UPD_FLAGS_SCDC_IVCRX, (data8 | 0x10), port);//frl_start
 	force_clk_stable = 1;
-	rx_set_frl_train_sts(E_FRL_TRAIN_FINISH);
+	rx_set_frl_train_sts(E_FRL_TRAIN_FINISH, port);
 }
 
 enum frl_rate_e hdmirx_get_frl_rate(u8 port)
@@ -4738,6 +4740,7 @@ void hal_flt_update_set(u8 port)
 void hdmi_tx_rx_frl_training_main(u8 port)
 {
 	rx[port].var.frl_rate = hdmirx_rd_cor(SCDCS_CONFIG1_SCDC_IVCRX, port) & 0xf;
+	//hdmirx_wr_bits_cor(SCDCS_SRC_TEST_CONFIG_SCDC_IVCRX, _BIT(5), 1, port);
 	aml_phy_init_t3x(port);
 	hdmirx_wr_cor(SCDCS_UPD_FLAGS_SCDC_IVCRX, 0x0, port);//sink clear(=0) FRL_START
 	hdmirx_wr_cor(SCDCS_STATUS_FLAGS1_SCDC_IVCRX, 0x65, port); //
@@ -4748,15 +4751,11 @@ void hdmi_tx_rx_frl_training_main(u8 port)
 			rx_pr("polling time out a\n");
 	}
 	aml_phy_init_t3x(port);
-	if (fsm_debug & 0x10)
-		mdelay(20);
-	if (fsm_debug & 0x20) {
-		hdmirx_wr_top(TOP_SW_RESET, 0x80, port);
-		hdmirx_wr_top(TOP_SW_RESET, 0, port);
-		hdmirx_wr_bits_cor(DPLL_CTRL2_DPLL_IVCRX, _BIT(1), 0, port);
-		usleep_range(10, 20);
-		hdmirx_wr_bits_cor(DPLL_CTRL2_DPLL_IVCRX, _BIT(1), 1, port);
-	}
+	mdelay(20);
+	hdmirx_wr_top(TOP_SW_RESET, 0x80, port);
+	hdmirx_wr_top(TOP_SW_RESET, 0, port);
+	hdmirx_wr_bits_cor(DPLL_CTRL2_DPLL_IVCRX, _BIT(1), 0, port);
+	hdmirx_wr_bits_cor(DPLL_CTRL2_DPLL_IVCRX, _BIT(1), 1, port);
 	rx_lts_3_err_detect(port);
 	RX_LTS_3_LTP_REQ_SEND_0000(port);
 	hal_flt_update_set(port);
@@ -4764,24 +4763,30 @@ void hdmi_tx_rx_frl_training_main(u8 port)
 		if (log_level & FRL_LOG)
 			rx_pr("polling time out b\n");
 	}
-	rx_set_frl_train_sts(E_FRL_TRAIN_FINISH);
+	rx_set_frl_train_sts(E_FRL_TRAIN_FINISH, port);
 }
 
-enum frl_train_sts_e rx_get_frl_train_sts(void)
+enum frl_train_sts_e rx_get_frl_train_sts(u8 port)
 {
-	return frl_train_sts;
+	if (port == E_PORT2)
+		return frl_train_sts;
+	else
+		return frl_train_sts1;
 }
 
-void rx_set_frl_train_sts(enum frl_train_sts_e sts)
+void rx_set_frl_train_sts(enum frl_train_sts_e sts, u8 port)
 {
-	frl_train_sts = sts;
+	if (port == E_PORT2)
+		frl_train_sts = sts;
+	else
+		frl_train_sts1 = sts;
 }
 
-bool is_frl_train_finished(void)
+bool is_frl_train_finished(u8 port)
 {
 	bool ret = false;
 
-	if (rx_get_frl_train_sts() == E_FRL_TRAIN_FINISH)
+	if (rx_get_frl_train_sts(port) == E_FRL_TRAIN_FINISH)
 		ret = true;
 	return ret;
 }
@@ -4988,12 +4993,12 @@ void rx_i2c_dump(void)
 	kfree(i2c_buff);
 }
 
-void rx_frl_train_handler(struct work_struct *work)
+void rx_frl_train_handler(struct kthread_work *work)
 {
 	hdmi_tx_rx_frl_training_main(E_PORT2);
 }
 
-void rx_frl_train_handler_1(struct work_struct *work)
+void rx_frl_train_handler_1(struct kthread_work *work)
 {
 	hdmi_tx_rx_frl_training_main(E_PORT3);
 }
@@ -5001,11 +5006,11 @@ void rx_frl_train_handler_1(struct work_struct *work)
 void rx_frl_train(u8 port)
 {
 	if (port == E_PORT2) {
-		schedule_work(&frl_train_dwork);
-		rx_set_frl_train_sts(E_FRL_TRAIN_START);
+		kthread_queue_work(&frl_worker, &frl_work);
+		rx_set_frl_train_sts(E_FRL_TRAIN_START, port);
 	} else {
-		schedule_work(&frl_train_1_dwork);
-		rx_set_frl_train_sts(E_FRL_TRAIN_START);
+		kthread_queue_work(&frl1_worker, &frl1_work);
+		rx_set_frl_train_sts(E_FRL_TRAIN_START, port);
 	}
 }
 
@@ -5226,6 +5231,8 @@ void hdmirx_frl_config(u8 port)
 	data8  = 0;
 	data8 |= (0x1   << 0);  //[7:0] reg_lane_en_sel_scdcs_sb
 	hdmirx_wr_cor(H21RXSB_CTRL6_M42H_IVCRX, data8, port); //0x1568
+
+	hdmirx_wr_bits_top(TOP_CLK_CNTL, _BIT(0), 0, port);
 }
 
 void rx_pwrcntl_mem_pd_cfg(void)
@@ -6079,3 +6086,47 @@ bool rx_is_power_off_t3x(u8 port)
 	else
 		return hdmirx_rd_amlphy_t3x(T3X_HDMIRX21PHY_MISC0, port) == 0;
 }
+
+void rx_switch_to_self_hsync(u8 port, bool en)
+{
+	//hdmirx_wr_bits_cor(VP_FDET_CLEAR_VID_IVCRX, _BIT(0), 1, port);
+	hdmirx_wr_bits_cor(RX_PWD_CTRL_PWD_IVCRX, _BIT(3), en, port);
+	hdmirx_wr_bits_cor(HSYNC_GEN_EVEN_CTRL1_PWD_IVCRX, _BIT(5), en, port);
+	hdmirx_wr_bits_cor(HSYNC_GEN_EVEN_CTRL1_PWD_IVCRX, _BIT(7), en, port);
+	hdmirx_wr_bits_cor(HSYNC_GEN_EVEN_CTRL2_PWD_IVCRX, _BIT(2), en, port);
+	hdmirx_wr_bits_cor(HSYNC_GEN_ODD_CTRL1_PWD_IVCRX, _BIT(5), en, port);
+	hdmirx_wr_bits_cor(HSYNC_GEN_ODD_CTRL1_PWD_IVCRX, _BIT(7), en, port);
+	hdmirx_wr_bits_cor(HSYNC_GEN_ODD_CTRL2_PWD_IVCRX, _BIT(2), en, port);
+	//hdmirx_wr_bits_cor(VP_FDET_CLEAR_VID_IVCRX, _BIT(0), 0, port);
+}
+
+bool rx_is_switch_to_analog_clk(u8 port)
+{
+	//to do, now only 4k120 100 yuv 420 has this problem.
+	if (rx[port].cur.vactive == 2160 &&
+		rx[port].cur.hactive == 1920 &&
+		rx[port].pre.colorspace == E_COLOR_YUV420 &&
+		rx[port].pre.colordepth == 12 &&
+		(rx[port].pre.frame_rate / 100 >= 98 &&
+		rx[port].pre.frame_rate / 100 <= 122))
+		return true;
+	else
+		return false;
+}
+
+void rx_switch_to_analog_clk(u8 port)
+{
+	hdmirx_wr_bits_top(TOP_CLK_CNTL, _BIT(0), 1, port);
+	if (port == E_PORT2)
+		hdmirx_wr_bits_clk_ctl(T3X_CLKCTRL_HDMI_PLL0_CTRL0,
+		MSK(3, 13), 0x2);
+	else
+		hdmirx_wr_bits_clk_ctl(T3X_CLKCTRL_HDMI_PLL1_CTRL0,
+		MSK(3, 13), 0x2);
+}
+
+void rx_clr_f_det(bool en, u8 port)
+{
+	hdmirx_wr_bits_cor(VP_FDET_CLEAR_VID_IVCRX, _BIT(0), en, port);
+}
+

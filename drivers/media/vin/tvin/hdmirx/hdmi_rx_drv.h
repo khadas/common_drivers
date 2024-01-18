@@ -337,6 +337,7 @@ struct rx_var_param {
 	int sig_stable_err_max;
 	int err_cnt_sum_max;
 	int fpll_ready_cnt;
+	int frl_lock_det_cnt;
 	//bool clk_debug_en;
 	int hpd_wait_cnt;
 	int special_wait_max;
@@ -402,11 +403,14 @@ struct rx_var_param {
 	/* after DE stable, start DE count */
 	bool de_stable;
 	u32 de_cnt;
+	u32 check_dsc_de_cnt;
 	u8 avi_chk_frames;
 	u32 avi_rcv_cnt;
 	bool force_pattern;
 	int frl_rate;
 	int fpll_stable_cnt;
+	int flt_update;
+	int lock;
 };
 
 struct rx_aml_phy {
@@ -653,6 +657,12 @@ struct vtem_info_s {
 	u16 base_framerate;
 };
 
+struct cvtem_info_s {
+	bool dsc_flag;
+	u8 dsc_info[192];
+	u8 dsc_pkt_cnt;
+};
+
 struct sbtm_info_s {
 	u8 flag;
 	u8 sbtm_ver;
@@ -678,6 +688,60 @@ struct dv_info_s {
 struct emp_dsf_st {
 	int pkt_cnt;
 	u8 *pkt_addr;
+};
+
+struct rx_dsc_rc_range_parameters {
+	u8 range_min_qp;
+	u8 range_max_qp;
+	signed char range_bpg_offset; /* only 6 bit signal variable */
+};
+
+struct rx_dsc_rc_parameter_set {
+	unsigned int rc_model_size;
+	u8 rc_edge_factor;
+	u8 rc_quant_incr_limit0;
+	u8 rc_quant_incr_limit1;
+	u8 rc_tgt_offset_hi;
+	u8 rc_tgt_offset_lo;
+	u8 rc_buf_thresh[14]; /* config value need note >> 6 */
+	struct rx_dsc_rc_range_parameters rc_range_parameters[15];
+};
+
+struct rx_dsc_pps_data_s {
+	u8 dsc_version_major;
+	u8 dsc_version_minor;
+	u8 pps_identifier;
+	u8 bits_per_component;
+	u8 line_buf_depth;
+	u8 block_pred_enable;
+	u8 convert_rgb;
+	u8 simple_422;
+	u8 vbr_enable;
+	unsigned int bits_per_pixel;
+	unsigned int pic_height;
+	unsigned int pic_width;
+	unsigned int slice_height;
+	unsigned int slice_width;
+	unsigned int chunk_size;
+	unsigned int initial_xmit_delay;
+	unsigned int initial_dec_delay;
+	u8 initial_scale_value;
+	unsigned int scale_increment_interval;
+	unsigned int scale_decrement_interval;
+	u8 first_line_bpg_offset;
+	unsigned int nfl_bpg_offset;
+	unsigned int slice_bpg_offset;
+	unsigned int initial_offset;
+	unsigned int final_offset;
+	u8 flatness_min_qp;
+	u8 flatness_max_qp;
+	struct rx_dsc_rc_parameter_set rc_parameter_set;
+	u8 native_420;
+	u8 native_422;
+	u8 second_line_bpg_offset;
+	unsigned int nsl_bpg_offset;
+	unsigned int second_line_offset_adj;
+	unsigned int hc_active_bytes;
 };
 
 //================emp end
@@ -892,8 +956,10 @@ struct rx_s {
 	struct vtem_info_s vtem_info;
 	struct sbtm_info_s sbtm_info;
 	struct cuva_emds_s emp_cuva_info;
+	struct rx_dsc_pps_data_s dsc_pps_data;
 	bool vsif_fmm_flag;
 	struct dv_info_s emp_dv_info;
+	struct cvtem_info_s cvtem_info;
 	u8 emp_vid_idx;
 	struct emp_info_s *emp_info;
 	u8 emp_dsf_cnt;
@@ -923,6 +989,7 @@ struct rx_s {
 	u8 last_hdcp22_state;
 	struct rx_aml_phy aml_phy;
 	struct rx_aml_phy aml_phy_21;
+	bool dsc_flag;
 	//struct spkts_rcvd_sts pkts_sts;
 	struct rx_edid_auto_mode edid_type;
 	bool resume_flag;
@@ -1002,12 +1069,16 @@ extern struct workqueue_struct *clkmsr_wq;
 extern struct work_struct     earc_hpd_dwork;
 extern struct workqueue_struct *earc_hpd_wq;
 extern struct workqueue_struct	*repeater_wq;
-extern struct work_struct     frl_train_dwork;
-extern struct workqueue_struct *frl_train_wq;
-extern struct work_struct     frl_train_1_dwork;
-extern struct workqueue_struct *frl_train_1_wq;
 extern struct edid_update_work_s edid_update_dwork;
 extern struct workqueue_struct *edid_update_wq;
+
+extern struct kthread_worker frl_worker;
+extern struct task_struct *frl_worker_task;
+extern struct kthread_work frl_work;
+
+extern struct kthread_worker frl1_worker;
+extern struct task_struct *frl1_worker_task;
+extern struct kthread_work frl1_work;
 
 extern wait_queue_head_t tx_wait_queue;
 

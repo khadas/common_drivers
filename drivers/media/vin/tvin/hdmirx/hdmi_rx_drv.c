@@ -37,6 +37,9 @@
 #include <linux/highmem.h>
 #include <linux/notifier.h>
 #include <linux/sched/clock.h>
+#include <linux/sched.h>
+#include <uapi/linux/sched/types.h>
+
 /* Amlogic headers */
 /*#include <linux/amlogic/amports/vframe_provider.h>*/
 /*#include <linux/amlogic/amports/vframe_receiver.h>*/
@@ -110,13 +113,18 @@ struct work_struct     clkmsr_dwork;
 struct workqueue_struct *clkmsr_wq;
 struct work_struct     earc_hpd_dwork;
 struct workqueue_struct *earc_hpd_wq;
-struct work_struct     frl_train_dwork;
-struct workqueue_struct *frl_train_wq;
-struct work_struct     frl_train_1_dwork;
-struct workqueue_struct *frl_train_1_wq;
+
 // edid updata
 struct edid_update_work_s edid_update_dwork;
 struct workqueue_struct *edid_update_wq;
+
+struct kthread_worker frl_worker;
+struct task_struct *frl_worker_task;
+struct kthread_work frl_work;
+
+struct kthread_worker frl1_worker;
+struct task_struct *frl1_worker_task;
+struct kthread_work frl1_work;
 
 /* TX does work_hpd_plugin work until RX resumes */
 wait_queue_head_t tx_wait_queue;
@@ -166,6 +174,7 @@ int hdmi_cec_en = 0xff;
 static bool tv_auto_power_on;
 int vdin_drop_frame_cnt = 1;
 int vdin_reset_pcs_en;
+
 /* suspend_pddq_sel:
  * 0: keep phy on when suspend(don't need phy init when
  *   resume), it doesn't work now because phy VDD_IO_3.3V
@@ -1380,6 +1389,74 @@ void hdmirx_get_spd_info(struct tvin_sig_property_s *prop, u8 port)//todo)
 
 }
 
+void hdmirx_get_pps_info(struct tvin_sig_property_s *prop, u8 port)//todo)
+{
+	int i;
+
+	port = rx_info.main_port;
+	prop->dsc_flag = rx[rx_info.main_port].dsc_flag;
+	prop->pps_data.dsc_version_major = rx[port].dsc_pps_data.dsc_version_major;
+	prop->pps_data.dsc_version_minor = rx[port].dsc_pps_data.dsc_version_minor;
+	prop->pps_data.pps_identifier = rx[port].dsc_pps_data.pps_identifier;
+	prop->pps_data.bits_per_component = rx[port].dsc_pps_data.bits_per_component;
+	prop->pps_data.line_buf_depth = rx[port].dsc_pps_data.line_buf_depth;
+	prop->pps_data.block_pred_enable = rx[port].dsc_pps_data.block_pred_enable;
+	prop->pps_data.convert_rgb = rx[port].dsc_pps_data.convert_rgb;
+	prop->pps_data.simple_422 = rx[port].dsc_pps_data.simple_422;
+	prop->pps_data.vbr_enable = rx[port].dsc_pps_data.vbr_enable;
+	prop->pps_data.bits_per_pixel = rx[port].dsc_pps_data.bits_per_pixel;
+	prop->pps_data.pic_height = rx[port].dsc_pps_data.pic_height;
+	prop->pps_data.pic_width = rx[port].dsc_pps_data.pic_width;
+	prop->pps_data.slice_height = rx[port].dsc_pps_data.slice_height;
+	prop->pps_data.slice_width = rx[port].dsc_pps_data.slice_width;
+	prop->pps_data.chunk_size = rx[port].dsc_pps_data.chunk_size;
+	prop->pps_data.initial_xmit_delay = rx[port].dsc_pps_data.initial_xmit_delay;
+	prop->pps_data.initial_dec_delay = rx[port].dsc_pps_data.initial_dec_delay;
+	prop->pps_data.initial_scale_value = rx[port].dsc_pps_data.initial_scale_value;
+	prop->pps_data.scale_increment_interval = rx[port].dsc_pps_data.scale_increment_interval;
+	prop->pps_data.scale_decrement_interval = rx[port].dsc_pps_data.scale_decrement_interval;
+	prop->pps_data.first_line_bpg_offset = rx[port].dsc_pps_data.first_line_bpg_offset;
+	prop->pps_data.nfl_bpg_offset = rx[port].dsc_pps_data.nfl_bpg_offset;
+	prop->pps_data.slice_bpg_offset = rx[port].dsc_pps_data.slice_bpg_offset;
+	prop->pps_data.initial_offset = rx[port].dsc_pps_data.initial_offset;
+	prop->pps_data.final_offset = rx[port].dsc_pps_data.final_offset;
+	prop->pps_data.flatness_min_qp = rx[port].dsc_pps_data.flatness_min_qp;
+	prop->pps_data.flatness_max_qp = rx[port].dsc_pps_data.flatness_max_qp;
+	prop->pps_data.rc_parameter_set.rc_model_size =
+		rx[port].dsc_pps_data.rc_parameter_set.rc_model_size;
+	prop->pps_data.rc_parameter_set.rc_edge_factor =
+		rx[port].dsc_pps_data.rc_parameter_set.rc_edge_factor;
+	prop->pps_data.rc_parameter_set.rc_quant_incr_limit0 =
+		rx[port].dsc_pps_data.rc_parameter_set.rc_quant_incr_limit0;
+	prop->pps_data.rc_parameter_set.rc_quant_incr_limit1 =
+		rx[port].dsc_pps_data.rc_parameter_set.rc_quant_incr_limit1;
+	prop->pps_data.rc_parameter_set.rc_tgt_offset_hi =
+		rx[port].dsc_pps_data.rc_parameter_set.rc_tgt_offset_hi;
+	prop->pps_data.rc_parameter_set.rc_tgt_offset_lo =
+		rx[port].dsc_pps_data.rc_parameter_set.rc_tgt_offset_lo;
+	for (i = 0; i < 14; i++)
+		prop->pps_data.rc_parameter_set.rc_buf_thresh[i] =
+		rx[port].dsc_pps_data.rc_parameter_set.rc_buf_thresh[i];
+	//memcpy(rx[port].dsc_pps_data.rc_parameter_set.rc_buf_thresh, buff + 44, 14);
+	for (i = 0; i < 15; i++) {
+		prop->pps_data.rc_parameter_set.rc_range_parameters[i].range_min_qp =
+		rx[port].dsc_pps_data.rc_parameter_set.rc_range_parameters[i].range_min_qp;
+		prop->pps_data.rc_parameter_set.rc_range_parameters[i].range_max_qp =
+			rx[port].dsc_pps_data.rc_parameter_set.rc_range_parameters[i].range_max_qp;
+		prop->pps_data.rc_parameter_set.rc_range_parameters[i].range_bpg_offset =
+		rx[port].dsc_pps_data.rc_parameter_set.rc_range_parameters[i].range_bpg_offset;
+	}
+	prop->pps_data.native_420 = rx[port].dsc_pps_data.native_420;
+	prop->pps_data.native_422 = rx[port].dsc_pps_data.native_422;
+	prop->pps_data.second_line_bpg_offset = rx[port].dsc_pps_data.second_line_bpg_offset;
+	prop->pps_data.nsl_bpg_offset = rx[port].dsc_pps_data.nsl_bpg_offset;
+	prop->pps_data.second_line_offset_adj = rx[port].dsc_pps_data.second_line_offset_adj;
+	prop->pps_data.htotal = rx[port].cur.htotal;
+	prop->pps_data.fps = (rx[port].cur.frame_rate + 99) / 100;
+	prop->pps_data.color_depth = rx[port].cur.colordepth;
+	prop->pps_data.color_fmt = rx[port].cur.colorspace;
+}
+
 /*
  * hdmirx_get_repetition_info - get repetition info
  */
@@ -1574,7 +1651,8 @@ void hdmirx_get_avi_ext_colorimetry(struct tvin_sig_property_s *prop, u8 port)
 /* frl is 2ppc or 4ppc; tmds is 1ppc (420+2ppc;420+4ppc up_sample_en need enable to 1) */
 void hdmirx_get_up_sample_en(struct tvin_sig_property_s *prop, u8 port)
 {
-	if (rx[port].var.frl_rate && rx[port].cur.colorspace == E_COLOR_YUV420)
+	if (rx[port].var.frl_rate && rx[port].cur.colorspace == E_COLOR_YUV420 &&
+		!rx[port].dsc_flag)
 		prop->up_sample_en = 1;
 	else
 		prop->up_sample_en = 0;
@@ -1605,9 +1683,11 @@ void hdmirx_get_sig_prop(struct tvin_frontend_s *fe,
 	hdmirx_get_hdr_info(prop, cur_port);
 	hdmirx_get_vsi_info(prop, cur_port);
 	hdmirx_get_spd_info(prop, cur_port);
+	hdmirx_get_pps_info(prop, cur_port);
 	hdmirx_get_latency_info(prop, cur_port);
 	hdmirx_get_emp_dv_info(prop, cur_port);
 	hdmirx_get_vtem_info(prop, cur_port);
+	//hdmirx_get_cvtem_info(prop, cur_port);
 	hdmirx_get_sbtm_info(prop, cur_port);
 	hdmirx_get_cuva_emds_info(prop, cur_port);
 	hdmirx_get_fmm_info(prop, cur_port);
@@ -1615,6 +1695,7 @@ void hdmirx_get_sig_prop(struct tvin_frontend_s *fe,
 	hdmirx_get_hdcp_sts(prop, cur_port);
 	hdmirx_get_hw_vic(prop, cur_port);
 	hdmirx_get_avi_ext_colorimetry(prop, cur_port);
+	hdmirx_get_up_sample_en(prop, cur_port);
 	prop->skip_vf_num = vdin_drop_frame_cnt;
 	if (log_level & SIG_PROP_LOG) {
 		rx_pr("cur_port:%#x,dvi:%#x,color[%d,%#x,%#x,%#x],fps:%d,spd[%#x,%#x]\n",
@@ -3456,7 +3537,9 @@ static int hdmirx_probe(struct platform_device *pdev)
 	const struct of_device_id *of_id;
 	int disable_port;
 	struct input_dev *input_dev;
+	struct sched_param param;
 
+	param.sched_priority = MAX_RT_PRIO - 1;
 	log_init(DEF_LOG_BUF_SIZE);
 	hdmirx_dev = &pdev->dev;
 	/*get compatible matched device, to get chip related data*/
@@ -3874,11 +3957,17 @@ static int hdmirx_probe(struct platform_device *pdev)
 	INIT_WORK(&earc_hpd_dwork, rx_earc_hpd_handler);
 
 	/* create for frl training */
-	frl_train_wq = create_workqueue(hdevp->frontend.name);
-	INIT_WORK(&frl_train_dwork, rx_frl_train_handler);
+	kthread_init_worker(&frl_worker);
+	frl_worker_task = kthread_run(kthread_worker_fn,
+					   &frl_worker, "frl kthread worker");
+	kthread_init_work(&frl_work, rx_frl_train_handler);
+	sched_setscheduler(frl_worker_task, SCHED_FIFO, &param);
 
-	frl_train_1_wq = create_workqueue(hdevp->frontend.name);
-	INIT_WORK(&frl_train_1_dwork, rx_frl_train_handler_1);
+	kthread_init_worker(&frl1_worker);
+	frl1_worker_task = kthread_run(kthread_worker_fn,
+					   &frl1_worker, "frl1 kthread worker");
+	kthread_init_work(&frl1_work, rx_frl_train_handler_1);
+	sched_setscheduler(frl1_worker_task, SCHED_FIFO, &param);
 
 	init_waitqueue_head(&tx_wait_queue);
 

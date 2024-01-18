@@ -12,7 +12,7 @@
 #include <linux/dma-map-ops.h>
 #include "vdin_drv.h"
 
-#define CLKCTRL_DSC_CLK_CTRL	0xfe000100
+//#define CLKCTRL_DSC_CLK_CTRL	0xfe000100
 #define DSC_CLK_CTRL_OFFSET	0x0100
 
 /* smc cmd for setting vpu secure reg0 via bl31 */
@@ -240,4 +240,6 @@ bool vdin_is_wrmif_done_t3x(struct vdin_dev_s *devp);
 void vdin_clr_write_done_t3x(struct vdin_dev_s *devp);
 unsigned int vdin_get_div_t3x(struct vdin_dev_s *devp);
 void vdin_set_scl_mode_t3x(struct vdin_dev_s *devp, bool on_off);
+void vdin_set_dsc_config_t3x(struct vdin_dev_s *devp, bool on_off);
+
 #endif

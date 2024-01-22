@@ -97,6 +97,7 @@
 			reusable;
 			size = <0x0 0x0>;
 			alignment = <0x0 0x400000>;
+			alloc-ranges = <0x0 0x0 0x0 0xf0000000>;
 			no-kernel-map;
 		};
 		ion_fb_reserved:linux,ion-fb {
@@ -104,6 +105,7 @@
 			reusable;
 			size = <0x0 0x0>;
 			alignment = <0x0 0x400000>;
+			alloc-ranges = <0x0 0x0 0x0 0xf0000000>;
 		};
 		dmaheap_cma_reserved:heap-gfx {
 			compatible = "shared-dma-pool";
@@ -123,6 +125,7 @@
 			status = "okay";
 			size = <0x0 0x1800000>;
 			alignment = <0x0 0x400000>;
+			alloc-ranges = <0x0 0x0 0x0 0xf0000000>;
 		};
 
 		//di_reserved:linux,di {
@@ -148,11 +151,13 @@
 			 */
 			//size = <0x0 0x02800000>;
 			alignment = <0x0 0x400000>;
+			alloc-ranges = <0x0 0x0 0x0 0xf0000000>;
 		};
 		/*  POST PROCESS MANAGER */
 		ppmgr_reserved:linux,ppmgr {
 			compatible = "shared-dma-pool";
 			size = <0x0 0x0>;
+			alloc-ranges = <0x0 0x0 0x0 0xf0000000>;
 		};
 		codec_mm_cma:linux,codec_mm_cma {
 			compatible = "shared-dma-pool";
@@ -161,6 +166,7 @@
 			size = <0x0 0x13400000>;
 			alignment = <0x0 0x400000>;
 			linux,contiguous-region;
+			alloc-ranges = <0x0 0x0 0x0 0xf0000000>;
 			clear-map;
 		};
 		/* codec shared reserved */
@@ -168,6 +174,7 @@
 			compatible = "amlogic, codec-mm-reserved";
 			size = <0x0 0x0>;
 			alignment = <0x0 0x100000>;
+			alloc-ranges = <0x0 0x0 0x0 0xf0000000>;
 			//no-map;
 		};
 
@@ -180,6 +187,7 @@
 			 */
 			size = <0x0 0x01400000>;
 			alignment = <0x0 0x400000>;
+			alloc-ranges = <0x0 0x0 0x0 0xf0000000>;
 		};
 		galcore_reserved:linux,galcore {
 			compatible = "shared-dma-pool";
@@ -187,6 +195,7 @@
 			size = <0x0 0x0>;
 			alignment = <0x0 0x400000>;
 			linux,contiguous-region;
+			alloc-ranges = <0x0 0x0 0x0 0xf0000000>;
 		};
 
 		isp_cma_reserved:linux,isp_cma {
@@ -195,6 +204,7 @@
 			status = "okay";
 			size = <0x0 0x8000000>;
 			alignment = <0x0 0x400000>;
+			alloc-ranges = <0x0 0x0 0x0 0xf0000000>;
 		};
 
 		adapt_cma_reserved:linux,adapt_cma {
@@ -202,6 +212,7 @@
 			reusable;
 			status = "okay";
 			size = <0x0 0x4000000>;
+			alloc-ranges = <0x0 0x0 0x0 0xf0000000>;
 		};
 	};
 	galcore {

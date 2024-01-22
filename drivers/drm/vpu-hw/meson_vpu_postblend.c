@@ -713,24 +713,22 @@ static void postblend_hw_disable(struct meson_vpu_block *vblk,
 	u32 vppx_bld;
 	int crtc_index = vblk->index;
 	struct meson_vpu_postblend *postblend = to_postblend_block(vblk);
-	struct rdma_reg_ops *reg_ops = state->sub->reg_ops;
 	struct postblend1_reg_s *reg1 = postblend->reg1;
 
 	if (vblk->index == 0) {
 		vpp_osd1_postblend_mux_set(vblk, state->sub->reg_ops, postblend->reg, VPP_NULL);
 	} else if (vblk->index == 1 || vblk->index == 2) {
-		vppx_bld = reg_ops->rdma_read_reg(reg1->vpp_bld_ctrl);
+		vppx_bld = meson_drm_read_reg(reg1->vpp_bld_ctrl);
 		vppx_bld = vppx_bld & 0xffffff0f;
-		if (crtc_index == 1) {
-			reg_ops->rdma_write_reg(reg1->vpp_bld_ctrl, vppx_bld);
+		if (crtc_index == 1)
 			osd_vpp1_bld_ctrl = vppx_bld | osd_vpp_bld_ctrl_update_mask;
-		} else if (crtc_index == 2) {
+		else if (crtc_index == 2)
 			osd_vpp2_bld_ctrl = vppx_bld | osd_vpp_bld_ctrl_update_mask;
-		} else {
+		else
 			MESON_DRM_BLOCK("invalid crtc index\n");
-		}
 
 		drm_postblend_notify_amvideo();
+		drm_wait_one_vblank(state->sub->pipeline->priv->drm, crtc_index);
 	}
 
 	MESON_DRM_BLOCK("%s disable called.\n", postblend->base.name);
@@ -822,14 +820,15 @@ static void s5_postblend_hw_disable(struct meson_vpu_block *vblk,
 	u32 vpp1_bld;
 	int crtc_index = vblk->index;
 	struct meson_vpu_postblend *postblend = to_postblend_block(vblk);
-	struct rdma_reg_ops *reg_ops = state->sub->reg_ops;
 
-	vpp_osd1_postblend_5mux_set(vblk, state->sub->reg_ops, postblend->reg, VPP_NULL);
-	if (crtc_index == 1) {
-		vpp1_bld = reg_ops->rdma_read_reg(VPP1_BLD_CTRL_T3X);
+	if (crtc_index == 0) {
+		vpp_osd1_postblend_5mux_set(vblk, state->sub->reg_ops, postblend->reg, VPP_NULL);
+	} else if (crtc_index == 1) {
+		vpp1_bld = meson_drm_read_reg(VPP1_BLD_CTRL_T3X);
 		vpp1_bld = vpp1_bld & 0xffffff0f;
 		osd_vpp1_bld_ctrl = vpp1_bld | osd_vpp_bld_ctrl_update_mask;
 		drm_postblend_notify_amvideo();
+		drm_wait_one_vblank(vblk->pipeline->priv->drm, crtc_index);
 	}
 	MESON_DRM_BLOCK("%s disable called.\n", postblend->base.name);
 }

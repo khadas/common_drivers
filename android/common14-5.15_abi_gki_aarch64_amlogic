@@ -53,3 +53,4 @@
 # aml_drm.ko
   drm_connector_list_iter_begin
   drm_connector_list_iter_end
+  drm_wait_one_vblank

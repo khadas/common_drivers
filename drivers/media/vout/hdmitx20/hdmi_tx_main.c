@@ -4075,6 +4075,27 @@ static int amhdmitx_resume(struct platform_device *pdev)
 		hdmitx_hw_cntl_misc(&hdev->tx_hw.base, MISC_I2C_RESET, 0);
 	return 0;
 }
+
+static int amhdmitx_pm_suspend(struct device *dev)
+{
+	struct platform_device *pdev = to_platform_device(dev);
+
+	HDMITX_DEBUG("%s suspend\n", __func__);
+	return amhdmitx_suspend(pdev, PMSG_SUSPEND);
+}
+
+static int amhdmitx_pm_resume(struct device *dev)
+{
+	struct platform_device *pdev = to_platform_device(dev);
+
+	HDMITX_DEBUG("%s resume\n", __func__);
+	return amhdmitx_resume(pdev);
+}
+
+const struct dev_pm_ops hdmitx20_pm = {
+	.suspend	= amhdmitx_pm_suspend,
+	.resume		= amhdmitx_pm_resume,
+};
 #endif
 
 static void amhdmitx_shutdown(struct platform_device *pdev)
@@ -4096,6 +4117,9 @@ static struct platform_driver amhdmitx_driver = {
 		.name   = DEVICE_NAME,
 		.owner	= THIS_MODULE,
 		.of_match_table = of_match_ptr(meson_amhdmitx_of_match),
+#ifdef CONFIG_PM
+		.pm = &hdmitx20_pm,
+#endif
 	}
 };
 

@@ -240,7 +240,8 @@
 				3>; /*vbyone_vsync_intr_enable*/
 			phy_attr=<0x7 1>; /* vswing_level, preem_level */
 			hw_filter=<0 0>;  /* filter_time, filter_cnt*/
-
+			//vlock_attr: <vlock_en vlock_mode pll_m limit line_limit>
+			vlock_attr = <0 4 0 3>;
 			/* power step: type, index, value, delay(ms) */
 			power_on_step = <
 				0 0 1 20  /*panel power on*/
@@ -282,7 +283,8 @@
 				3>; /*vbyone_vsync_intr_enable*/
 			phy_attr=<0x7 1>; /* vswing_level, preem_level */
 			hw_filter=<0 0>;  /* filter_time, filter_cnt*/
-
+			//vlock_attr: <vlock_en vlock_mode pll_m limit line_limit>
+			vlock_attr = <0 4 0 3>;
 			/* power step: type, index, value, delay(ms) */
 			power_on_step = <
 				0 0 1 20  /*panel power on*/
@@ -1381,7 +1383,8 @@
 				3>; /*vbyone_vsync_intr_enable*/
 			phy_attr=<0x7 1>; /* vswing_level, preem_level */
 			hw_filter=<0 0>;  /* filter_time, filter_cnt*/
-
+			//vlock_attr: <vlock_en vlock_mode pll_m limit line_limit>
+			vlock_attr = <0 4 0 3>;
 			/* power step: type, index, value, delay(ms) */
 			power_on_step = <
 				0 0 1 20  /*panel power on*/
@@ -1423,7 +1426,8 @@
 				3>; /*vbyone_vsync_intr_enable*/
 			phy_attr=<0x7 1>; /* vswing_level, preem_level */
 			hw_filter=<0 0>;  /* filter_time, filter_cnt*/
-
+			//vlock_attr: <vlock_en vlock_mode pll_m limit line_limit>
+			vlock_attr = <0 4 0 3>;
 			/* power step: type, index, value, delay(ms) */
 			power_on_step = <
 				0 0 1 20  /*panel power on*/
@@ -1748,7 +1752,8 @@
 				0 /*port_swap*/
 				0>; /*lane_reverse*/
 			phy_attr=<0x3 0>; /*vswing_level, preem_level*/
-
+			//vlock_attr: <vlock_en vlock_mode pll_m limit line_limit>
+			vlock_attr = <0 4 0 3>;
 			/* power step: type, index, value, delay(ms) */
 			power_on_step = <
 				0 0 1 50  /*panel power on*/

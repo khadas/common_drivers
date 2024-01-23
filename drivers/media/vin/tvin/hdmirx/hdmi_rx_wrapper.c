@@ -4742,8 +4742,8 @@ u8 get_frame_interval_cnt(u8 cnt, u8 port)
 {
 	u8 ret = 2;
 
-	if (rx[port].cur.frame_rate < FRAME_RATE_MAX &&
-		rx[port].cur.frame_rate > FRAME_RATE_MIN)
+	if (rx[port].cur.frame_rate < FRAME_RATE_MAX * 1000 &&
+		rx[port].cur.frame_rate > FRAME_RATE_MIN * 1000)
 		ret = (1000 * 100 / rx[port].cur.frame_rate / 10) * cnt + 1;
 
 	return ret;

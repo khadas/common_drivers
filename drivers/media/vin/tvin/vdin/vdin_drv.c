@@ -309,6 +309,8 @@ void tvin_update_vdin_prop(void)
 		vdin_set_vframe_prop_info(update_wr_vf, vdin0_devp);
 		vdin_set_freesync_data(vdin0_devp, update_wr_vf);
 	}
+	if (sm_ops->hdmi_clr_pkts)
+		sm_ops->hdmi_clr_pkts(vdin0_devp->frontend, vdin0_devp->port_type);
 	spin_unlock_irqrestore(&vdin0_devp->isr_lock, flags);
 
 	if (vdin_isr_monitor & DBG_RX_UPDATE_VDIN_PROP && update_wr_vf)
@@ -3088,7 +3090,7 @@ irqreturn_t vdin_isr(int irq, void *dev_id)
 
 	if (sm_ops && sm_ops->get_sig_property) {
 		if (vdin_get_prop_in_vs_en) {
-			sm_ops->get_sig_property(devp->frontend, &devp->prop, devp->port_type);
+			//sm_ops->get_sig_property(devp->frontend, &devp->prop, devp->port_type);
 			vdin_get_base_fr(devp);
 			if (vdin_isr_monitor & VDIN_ISR_MONITOR_VRR_DATA)
 				pr_info("vdin vrr_en:%d spd:%d %d\n",
@@ -3127,8 +3129,6 @@ irqreturn_t vdin_isr(int irq, void *dev_id)
 			return IRQ_HANDLED;
 		}
 	}
-	if (sm_ops && sm_ops->hdmi_clr_pkts)
-		sm_ops->hdmi_clr_pkts(devp->frontend, devp->port_type);
 
 	vdin_handle_secure_content(devp);
 	vdin_dynamic_switch_vrr(devp);

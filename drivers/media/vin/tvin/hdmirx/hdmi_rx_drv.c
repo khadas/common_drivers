@@ -2383,6 +2383,15 @@ static ssize_t hdcp14_onoff_show(struct device *dev,
 	return pos;
 }
 
+static ssize_t hdcp14_onoff_store(struct device *dev,
+				struct device_attribute *attr,
+				const char *buf,
+				size_t count)
+{
+	hdcp14_on = 1;
+	return count;
+}
+
 static ssize_t hdcp22_onoff_show(struct device *dev,
 			  struct device_attribute *attr,
 			  char *buf)
@@ -2391,6 +2400,25 @@ static ssize_t hdcp22_onoff_show(struct device *dev,
 
 	pos += sprintf(buf, "%d", hdcp22_on);
 	return pos;
+}
+
+static ssize_t hdcp22_onoff_store(struct device *dev,
+				struct device_attribute *attr,
+				const char *buf,
+				size_t count)
+{
+	int i;
+
+	hdcp22_on = 1;
+	if (rx_info.chip_id >= CHIP_ID_T7) {
+		if (rx_info.chip_id == CHIP_ID_T3X) {
+			for (i = 0; i < rx_info.port_num; i++)
+				hdmirx_wr_cor(RX_HDCP2x_CTRL_PWD_IVCRX, 0x1, i);
+		} else {
+			hdmirx_wr_cor(RX_HDCP2x_CTRL_PWD_IVCRX, 0x1, 0);
+		}
+	}
+	return count;
 }
 
 static ssize_t hw_info_show(struct device *dev,
@@ -2917,8 +2945,8 @@ static DEVICE_ATTR_RO(scan_mode);
 static DEVICE_ATTR_RW(edid_with_port);
 static DEVICE_ATTR_RW(vrr_func_ctrl);
 static DEVICE_ATTR_RW(allm_func_ctrl);
-static DEVICE_ATTR_RO(hdcp14_onoff);
-static DEVICE_ATTR_RO(hdcp22_onoff);
+static DEVICE_ATTR_RW(hdcp14_onoff);
+static DEVICE_ATTR_RW(hdcp22_onoff);
 static DEVICE_ATTR_RO(mode);
 static DEVICE_ATTR_RO(colorspace);
 static DEVICE_ATTR_RO(colordepth);
@@ -3446,7 +3474,7 @@ static int hdmirx_probe(struct platform_device *pdev)
 		rx_info.phy_ver = hdevp->data->phy_ver;
 		rx_info.port_num = hdevp->data->port_num;
 		rx_info.main_port = 0;
-		rx_info.sub_port = 0;
+		rx_info.sub_port = 0xff;
 		rx_pr("chip id:%d\n", rx_info.chip_id);
 		rx_pr("phy ver:%d\n", rx_info.hdmirx_dev->data->phy_ver);
 	} else {

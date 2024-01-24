@@ -5189,13 +5189,13 @@ void hdmirx_set_vp_mapping(enum colorspace_e cs, u8 port)
 		}
 		hdmirx_wr_cor(VP_INPUT_MAPPING_VID_IVCRX, data32 & 0xff, port);
 		hdmirx_wr_cor(VP_INPUT_MAPPING_VID_IVCRX + 1, (data32 >> 8) & 0xff, port);
-		if (rx_info.main_port_open) {
+		if (port == rx_info.main_port) {
 			data32 = hdmirx_rd_top_common_1(TOP_VID_CNTL);
 			data32 &= (~(0x7 << 24));
 			data32 |= 2 << 24;
 			hdmirx_wr_top_common_1(TOP_VID_CNTL, data32);//to do
 		}
-		if (rx_info.sub_port_open) {
+		if (port == rx_info.sub_port) {
 			data32 = hdmirx_rd_top_common(TOP_VID_CNTL);
 			data32 &= (~(0x7 << 24));
 			data32 |= 2 << 24;
@@ -5745,27 +5745,39 @@ void rx_debug_loadkey(u8 port)
 void print_reg(uint start_addr, uint end_addr)
 {
 	int i;
+	int k = 0;
+	unsigned char buff[512] = {0};
 	u8 port = rx_info.main_port;
 
 	if (end_addr < start_addr)
 		return;
 
 	for (i = start_addr; i <= end_addr; i += sizeof(uint)) {
-		if ((i - start_addr) % (sizeof(uint) * 4) == 0)
-			pr_cont("[0x%-4x] ", i);
 		if (rx_info.chip_id >= CHIP_ID_T7) {
-			pr_cont("0x%x,   ", hdmirx_rd_cor(i, port));
-			pr_cont("0x%x,   ", hdmirx_rd_cor(i + 1, port));
-			pr_cont("0x%x,   ", hdmirx_rd_cor(i + 2, port));
-			pr_cont("0x%x,   ", hdmirx_rd_cor(i + 3, port));
+			if ((i - start_addr) % (sizeof(uint) * 4) == 0)
+				k += sprintf(buff + k, "[0x%-4x] ", i);
+			k += sprintf(buff + k, "0x%02x,   ", hdmirx_rd_cor(i, port));
+			k += sprintf(buff + k, "0x%02x,   ", hdmirx_rd_cor(i + 1, port));
+			k += sprintf(buff + k, "0x%02x,   ", hdmirx_rd_cor(i + 2, port));
+			k += sprintf(buff + k, "0x%02x,   ", hdmirx_rd_cor(i + 3, port));
 		} else {
+			if ((i - start_addr) % (sizeof(uint) * 4) == 0)
+				k += sprintf(buff + k, "[0x%-4x] ", i);
 			if (!is_wr_only_reg(i))
-				pr_cont("0x%x,   ", hdmirx_rd_dwc(i));
+				k += sprintf(buff + k, "0x%x,   ", hdmirx_rd_dwc(i));
 			else
-				pr_cont("xxxx,   ");
+				k += sprintf(buff + k, "xxxx,   ");
 		}
-		if ((i - start_addr) % (sizeof(uint) * 4) == sizeof(uint) * 3)
-			rx_pr(" ");
+		if ((i - start_addr) % (sizeof(uint) * 4) == sizeof(uint) * 3) {
+			if (rx_info.chip_id >= CHIP_ID_T7) {
+				pr_info("%s", buff);
+				k = 0;
+			} else {
+				pr_info("%s", buff);
+				k = 0;
+				rx_pr(" ");
+			}
+		}
 	}
 
 	if ((end_addr - start_addr + sizeof(uint)) % (sizeof(uint) * 4) != 0)
@@ -5775,11 +5787,12 @@ void print_reg(uint start_addr, uint end_addr)
 void dump_reg(u8 port)
 {
 	int i = 0;
+	int k = 0;
+	unsigned char buff[512] = {0};
 
 	rx_pr("\n*** dump port: %d ***\n", port);
 	rx_pr("\n***Top registers***\n");
-	rx_pr("[addr ]  addr + 0x0,");
-	rx_pr("addr + 0x1,  addr + 0x2,	addr + 0x3\n");
+	pr_info("[addr ]  addr + 0x0, addr + 0x1, addr + 0x2, addr + 0x3\n");
 	for (i = 0; i <= 0x84;) {
 		pr_cont("[0x%-3x]", i);
 		pr_cont("0x%-8x,0x%-8x,0x%-8x,0x%-8x\n",
@@ -5789,16 +5802,46 @@ void dump_reg(u8 port)
 				hdmirx_rd_top(i + 3, port));
 		i = i + 4;
 	}
-	if (rx_info.chip_id >= CHIP_ID_TL1) {
-		for (i = 0x25; i <= 0x84;) {
-			pr_cont("[0x%-3x]", i);
-			pr_cont("0x%-8x,0x%-8x,0x%-8x,0x%-8x\n",
-				  hdmirx_rd_top(i, port),
-				  hdmirx_rd_top(i + 1, port),
-				  hdmirx_rd_top(i + 2, port),
-				  hdmirx_rd_top(i + 3, port));
-			i = i + 4;
+
+	if (rx_info.chip_id == CHIP_ID_T3X) {
+		rx_pr("\n***Top common registers***\n");
+		pr_info("[addr ]  addr + 0x0, addr + 0x1, addr + 0x2, addr + 0x3\n");
+		for (i = 0; i <= 0xff; ) {
+			k += sprintf(buff + k, "[0x%-3x]", i);
+			k += sprintf(buff + k, "  0x%-8x,0x%-8x,0x%-8x,0x%-8x\n",
+					hdmirx_rd_top_common(i),
+					hdmirx_rd_top_common(i + 1),
+					hdmirx_rd_top_common(i + 2),
+					hdmirx_rd_top_common(i + 3));
+			pr_info("%s ", buff);
+			k = 0;
+			i += 4;
 		}
+		k = 0;
+		rx_pr("\n***Top common vid registers***\n");
+		for (i = 0xc; i <= 0xf; i++) {
+			k += sprintf(buff + k, "vid0 0x%x value: 0x%x\n",
+				i, hdmirx_rd_top_common(i));
+			k += sprintf(buff + k, "vid1 0x%x value: 0x%x\n",
+				i, hdmirx_rd_top_common_1(i));
+		}
+		pr_info("%s", buff);
+		k = 0;
+		for (i = 0x10; i <= 0x13; i++) {
+			k += sprintf(buff + k, "vid0 0x%x value: 0x%x\n",
+				i, hdmirx_rd_top_common(i));
+			k += sprintf(buff + k, "vid1 0x%x value: 0x%x\n",
+				i, hdmirx_rd_top_common_1(i));
+		}
+		pr_info("%s", buff);
+		k = 0;
+		for (i = 0x46; i <= 0x4b; i++) {
+			k += sprintf(buff + k, "vid0 0x%x value: 0x%x\n",
+				i, hdmirx_rd_top_common(i));
+			k += sprintf(buff + k, "vid1 0x%x value: 0x%x\n",
+				i, hdmirx_rd_top_common_1(i));
+		}
+		pr_info("%s", buff);
 	}
 	if (rx_info.chip_id < CHIP_ID_TL1) {
 		rx_pr("\n***PHY registers***\n");

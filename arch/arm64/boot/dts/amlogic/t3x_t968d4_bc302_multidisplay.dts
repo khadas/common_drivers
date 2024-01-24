@@ -1190,7 +1190,7 @@
 		samesource_sel = <3>;
 		/* In for ACODEC_ADC */
 		/* tdmin-src-name = "acodec_adc"; */
-		tdmin-src-name = "hdmirx";
+		tdmin-src-name = "hdmirx_b";
 		/*enable default mclk(12.288M), before extern codec start*/
 		start_clk_enable = <1>;
 
@@ -1226,7 +1226,7 @@
 		clock-names = "mclk", "clk_srcpll", "clk_src_cd";
 		src-clk-freq = <491520000>;
 		/* enable control gain */
-		tdmin-src-name = "hdmirx";
+		tdmin-src-name = "hdmirx_b";
 		ctrl_gain = <1>;
 		status = "okay";
 	};

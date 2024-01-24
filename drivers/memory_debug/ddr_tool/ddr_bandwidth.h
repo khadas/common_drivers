@@ -153,6 +153,7 @@ struct ddr_data_extern {
 	struct ddr_grant dg;
 	struct ddr_bandwidth_sample cur_sample;
 	struct ddr_bandwidth_sample max_sample;
+	struct ddr_bandwidth_sample prev_sample;
 	struct ddr_avg_bandwidth avg;
 };
 
@@ -187,6 +188,7 @@ struct ddr_bandwidth {
 	spinlock_t lock;		/* lock for usage statistics */
 	struct ddr_bandwidth_sample cur_sample;
 	struct ddr_bandwidth_sample max_sample;
+	struct ddr_bandwidth_sample prev_sample;
 	struct ddr_avg_bandwidth avg;
 	struct ddr_data_extern data_extern[MAX_DMC_NUM];
 	struct bandwidth_addr_range range[MAX_CHANNEL];

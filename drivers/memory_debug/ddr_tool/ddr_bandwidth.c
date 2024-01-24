@@ -22,6 +22,31 @@
 #include "ddr_bandwidth.h"
 #include "dmc.h"
 
+#define KERNEL_ATRACE_TAG KERNEL_ATRACE_TAG_DDR_BW
+#include <trace/events/meson_atrace.h>
+
+static const char chann_names0[][50] = {
+	"ddr_bw ch 0 (MB/S)",
+	"ddr_bw ch 1 (MB/S)",
+	"ddr_bw ch 2 (MB/S)",
+	"ddr_bw ch 3 (MB/S)",
+	"ddr_bw ch 4 (MB/S)",
+	"ddr_bw ch 5 (MB/S)",
+	"ddr_bw ch 6 (MB/S)",
+	"ddr_bw ch 7 (MB/S)",
+};
+
+static char chann_names1[][50] = {
+	"ddr_bw0 ch 0 (MB/S)",
+	"ddr_bw0 ch 1 (MB/S)",
+	"ddr_bw0 ch 2 (MB/S)",
+	"ddr_bw0 ch 3 (MB/S)",
+	"ddr_bw0 ch 4 (MB/S)",
+	"ddr_bw0 ch 5 (MB/S)",
+	"ddr_bw0 ch 6 (MB/S)",
+	"ddr_bw0 ch 7 (MB/S)",
+};
+
 #define PXP_DEBUG	1
 #if PXP_DEBUG
 static unsigned long pxp_debug_freq;
@@ -99,6 +124,8 @@ static void cal_ddr_usage_single(struct ddr_bandwidth *db)
 	cnt  = db->clock_count;
 
 	for (i = 0; i < db->dmc_number; i++) {
+		char label[] = "ddr_bw  total (MB/S)";
+
 		/* mbw = ((freq * 2) * 2 * (data_bus_width/8)) */
 		freq = db->data_extern[i].freq;
 		mbw = (u64)freq * db->data_extern[i].data_bus_width / 2;
@@ -146,6 +173,18 @@ static void cal_ddr_usage_single(struct ddr_bandwidth *db)
 							db->data_extern[i].cur_sample.bandwidth[j];
 		}
 		db->data_extern[i].avg.sample_count++;
+
+		label[6] = '0' + i;
+
+		ATRACE_COUNTER(label, db->data_extern[i].prev_sample.total_bandwidth / 1000);
+
+		for (j = 0; j < db->channels; j++) {
+			chann_names1[j][6] = '0' + i;
+			ATRACE_COUNTER(chann_names1[j],
+					db->data_extern[i].prev_sample.bandwidth[j] / 1000);
+		}
+
+		db->data_extern[i].prev_sample = db->data_extern[i].cur_sample;
 	}
 }
 
@@ -272,6 +311,15 @@ static void cal_ddr_usage(struct ddr_bandwidth *db, struct ddr_grant *dg)
 			db->avg.max_bandwidth[i] = db->cur_sample.bandwidth[i];
 	}
 	db->avg.sample_count++;
+
+	ATRACE_COUNTER("ddr_bw total (MB/S)",
+			db->prev_sample.total_bandwidth / 1000);
+
+	for (i = 0; i < db->channels; i++)
+		ATRACE_COUNTER(chann_names0[i],
+				db->prev_sample.bandwidth[i] / 1000);
+
+	db->prev_sample = db->cur_sample;
 
 	/* calculate single dmc bandwidth*/
 	if (dmc_is_asymmetry(aml_db))

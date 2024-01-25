@@ -1129,8 +1129,12 @@ static int meson_nfc_boot_read_oob(struct nand_chip *nand, int page)
 
 static bool meson_nfc_is_buffer_dma_safe(const void *buffer)
 {
+	if ((uintptr_t)buffer % DMA_ADDR_ALIGN)
+		return false;
+
 	if (virt_addr_valid(buffer) && (!object_is_on_stack(buffer)))
 		return true;
+
 	return false;
 }
 
@@ -1143,7 +1147,7 @@ meson_nand_op_get_dma_safe_input_buf(const struct nand_op_instr *instr)
 	if (meson_nfc_is_buffer_dma_safe(instr->ctx.data.buf.in))
 		return instr->ctx.data.buf.in;
 
-	return kzalloc(instr->ctx.data.len, GFP_KERNEL);
+	return kzalloc(ALIGN(instr->ctx.data.len, DMA_ADDR_ALIGN), GFP_KERNEL);
 }
 
 static void

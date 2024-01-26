@@ -3,7 +3,6 @@
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
 
-#include "meson-s7.dtsi"
 #include <dt-bindings/clock/amlogic,txhd2-audio-clk.h>
 / {
 	soc {
@@ -48,8 +47,8 @@
 		aml_snd_iomap {
 			compatible = "amlogic, snd-iomap";
 			status = "okay";
-			#address-cells=<2>;
-			#size-cells=<2>;
+			#address-cells=<1>;
+			#size-cells=<1>;
 			ranges;
 			audiobus_base {
 				reg = <0xfe330000 0x3000>;
@@ -59,8 +58,8 @@
 			compatible = "amlogic, audio-controller", "simple-bus";
 			reg = <0xfe330000 0x3000>;
 			reg-names = "audio_bus";
-			#address-cells = <2>;
-			#size-cells = <2>;
+			#address-cells = <1>;
+			#size-cells = <1>;
 			ranges = <0x0 0xfe330000 0x3000>;
 			chip_id = <0x46>;
 		//	power-domains = <&pwrdm PDID_T7_AUDIO>;

@@ -110,6 +110,25 @@ static struct vpu_sec_reg_s reg_v4[] = {
 	{S5_VIU_VD4_MISC,    1, 4, 1}, /* 12. 02.1 vd1 slice 3 */
 };
 
+static struct vpu_sec_reg_s reg_v5[] = {
+	{VIU_DATA_SEC,       1, 0, 1}, /* 00. OSD1 */
+	{VIU_DATA_SEC,       1, 1, 1}, /* 01. OSD2 */
+	{VIU_DATA_SEC,       1, 2, 1}, /* 02. VD1 */
+	{VIU_DATA_SEC,       1, 3, 1}, /* 03. VD2 */
+	{VIU_DATA_SEC,       1, 4, 1}, /* 04. OSD3 */
+	{VIU_DATA_SEC,       1, 5, 1}, /* 05. VD AFBC, not used */
+	{VIU_DATA_SEC,       1, 6, 1}, /* 06. DV */
+	{VIU_DATA_SEC,       1, 7, 1}, /* 07. OSD AFBC */
+	{VIU_DATA_SEC,       1, 8, 1}, /* 08. VPP_TOP */
+	{0,                  1, 0, 1}, /* 09. OSD4, not used */
+	{0,                  1, 0, 1}, /* 10. VD3, not used */
+	{0,                  1, 0, 1}, /* 11. VPP_TOP1, not used */
+	{0,                  1, 0, 1}, /* 12. VPP_TOP2, not used */
+	{VPU_LUT_DMA_SEC_IN, 1, 0, 1}, /* 13. VD1 FG */
+	{VPU_LUT_DMA_SEC_IN, 1, 1, 1}, /* 14. VD2 FG */
+	{VPU_LUT_DMA_SEC_IN, 1, 2, 1}  /* 15. DI FG */
+};
+
 static struct sec_dev_data_s vpu_security_sc2 = {
 	.version = VPU_SEC_V1,
 };
@@ -130,6 +149,10 @@ static struct sec_dev_data_s vpu_security_t3 = {
 
 static struct sec_dev_data_s vpu_security_s5 = {
 	.version = VPU_SEC_V4,
+};
+
+static struct sec_dev_data_s vpu_security_s7 = {
+	.version = VPU_SEC_V5,
 };
 #endif
 
@@ -156,6 +179,10 @@ static const struct of_device_id vpu_security_dt_match[] = {
 	{
 		.compatible = "amlogic, meson-s5, vpu_security",
 		.data = &vpu_security_s5,
+	},
+	{
+		.compatible = "amlogic, meson-s7, vpu_security",
+		.data = &vpu_security_s7,
 	},
 #endif
 	{}
@@ -243,6 +270,9 @@ static void secure_reg_update(struct vpu_secure_ins *ins,
 		} else if (version == VPU_SEC_V4) {
 			reg_size = ARRAY_SIZE(reg_v4);
 			reg_item = &reg_v4[0];
+		} else if (version == VPU_SEC_V5) {
+			reg_size = ARRAY_SIZE(reg_v5);
+			reg_item = &reg_v5[0];
 		}
 
 		/* work through the array and write bit(s) */
@@ -314,7 +344,9 @@ u32 set_vpu_module_security(struct vpu_secure_ins *ins,
 			}
 			break;
 		case VIDEO_MODULE:
-			if ((secure_src & DV_INPUT_SECURE) ||
+			if ((secure_src & VD2_FGRAIN_SECURE) ||
+			    (secure_src & VD1_FGRAIN_SECURE) ||
+			    (secure_src & DV_INPUT_SECURE) ||
 			    (secure_src & AFBCD_INPUT_SECURE) ||
 			    (secure_src & VD3_INPUT_SECURE) ||
 			    (secure_src & VD2_INPUT_SECURE) ||
@@ -354,7 +386,7 @@ u32 set_vpu_module_security(struct vpu_secure_ins *ins,
 			break;
 		}
 
-		if (version < VPU_SEC_V4) {
+		if (version < VPU_SEC_V4 || version == VPU_SEC_V5) {
 			vpp_top_en = osd_secure_en[vpp_index] ||
 				     video_secure_en[vpp_index];
 			if (vpp_index == 0) {
@@ -539,6 +571,9 @@ static ssize_t debug_value_show(struct class *cla,
 	len += sprintf(buf + len, "bit10. VD3\n");
 	len += sprintf(buf + len, "bit11. VPP_TOP1\n");
 	len += sprintf(buf + len, "bit12. VPP_TOP2\n");
+	len += sprintf(buf + len, "bit13. VD1_FGRAIN\n");
+	len += sprintf(buf + len, "bit14. VD2_FGRAIN\n");
+	len += sprintf(buf + len, "bit15. DI_FGRAIN\n");
 
 	return len;
 }

@@ -32,6 +32,7 @@ enum vpu_security_version_e {
 	VPU_SEC_V2,
 	VPU_SEC_V3,
 	VPU_SEC_V4,
+	VPU_SEC_V5,
 	VPU_SEC_MAX
 };
 

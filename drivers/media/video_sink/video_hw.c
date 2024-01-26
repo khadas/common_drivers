@@ -13044,6 +13044,7 @@ void video_secure_set(u8 vpp_index)
 	int i;
 	u32 secure_src = 0;
 	u32 secure_enable = 0;
+	u32 fg_secure_enable = 0;
 	struct video_layer_s *layer = NULL;
 
 	for (i = 0; i < MAX_VD_LAYERS; i++) {
@@ -13057,6 +13058,11 @@ void video_secure_set(u8 vpp_index)
 			secure_enable = 1;
 		else
 			secure_enable = 0;
+
+		if (layer->dispbuf && layer->dispbuf->fgs_valid)
+			fg_secure_enable = 1;
+		else
+			fg_secure_enable = 0;
 		if (layer->dispbuf)
 			cur_vf_flag[layer->layer_id] = layer->dispbuf->flag;
 		if (layer->dispbuf &&
@@ -13067,6 +13073,13 @@ void video_secure_set(u8 vpp_index)
 				secure_src |= VD2_INPUT_SECURE;
 			else if (layer->layer_id == 2)
 				secure_src |= VD3_INPUT_SECURE;
+		}
+		if (layer->dispbuf &&
+		    fg_secure_enable) {
+			if (layer->layer_id == 0)
+				secure_src |= VD1_FGRAIN_SECURE;
+			else if (layer->layer_id == 1)
+				secure_src |= VD2_FGRAIN_SECURE;
 		}
 	}
 	secure_config(VIDEO_MODULE, secure_src, vpp_index);

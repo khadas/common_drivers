@@ -336,12 +336,14 @@ typedef enum {
 
 /* type of stream */
 typedef enum {
-#if ISP_HAS_SC3
-    V4L2_STREAM_TYPE_CROP = 0,
-#endif
 #if ISP_HAS_SC0
-    V4L2_STREAM_TYPE_SC0,
+    V4L2_STREAM_TYPE_SC0 = 0,
 #endif
+
+#if ISP_HAS_SC3
+    V4L2_STREAM_TYPE_CROP,
+#endif
+
 #if ISP_HAS_SC1
     V4L2_STREAM_TYPE_SC1,
 #endif

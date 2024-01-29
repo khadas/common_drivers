@@ -797,6 +797,28 @@
 		<&single_cpu_opp_table3>;
 };
 
+&meson_cooldev {
+	cooling_devices {
+		ddr_cool {
+			ddr_data = <9616 9616 9616 9616 9616 9616 9616
+			9616 9616 9616 9616 9616 9616 >;
+			gpu_data = <0x28202820 0x28202820 0x28202820 0x28202820
+			0x28202820 0x28202820 0x28202820 0x28202820 0x28202820
+			0x28202820 0x28202820 0x28202820 0x28202820>;
+		};
+	};
+};
+
+&thermal_zones {
+	soc_thermal {
+		trips {
+			trip-point@2 {
+				temperature = <65000>;
+			};
+		};
+	};
+};
+
 &acodec {
 	diff_output = <1>;
 	/*0: 0dB; 1: 6dB; 2: 12dB; 3: 18dB;*/

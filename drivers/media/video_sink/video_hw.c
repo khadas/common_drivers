@@ -6512,6 +6512,7 @@ void rx_mute_vpp(u8 port_type)
 		WRITE_VCBUS_REG(VPP_VD1_CLIP_MISC1, black_val);
 	}
 	video_mute_array[HDMI_RX_MUTE_SET] = true;
+	video_mute_status = VIDEO_MUTE_ON_VPP;
 }
 EXPORT_SYMBOL(rx_mute_vpp);
 

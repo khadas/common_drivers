@@ -127,19 +127,6 @@ static sensor_mode_t supported_modes[] = {
         .num = 1,
     },
 */
-    {
-        .wdr_mode = WDR_MODE_LINEAR,
-        .fps = 30 * 256,
-        .resolution.width = 1920,
-        .resolution.height = 1080,
-        .bits = 10,
-        .exposures = 1,
-        .lanes = 4,
-        .bps = 800,
-        .bayer = BAYER_BGGR,
-        .dol_type = DOL_NON,
-        .num = 2,
-    },
 /*
    {
         .wdr_mode = WDR_MODE_LINEAR,
@@ -224,6 +211,19 @@ static sensor_mode_t supported_modes[] = {
         .bayer = BAYER_BGGR,
         .dol_type = DOL_VC,
         .num = 10,
+    },
+   {
+        .wdr_mode = WDR_MODE_LINEAR,
+        .fps = 30 * 256,
+        .resolution.width = 1920,
+        .resolution.height = 1080,
+        .bits = 10,
+        .exposures = 1,
+        .lanes = 4,
+        .bps = 800,
+        .bayer = BAYER_BGGR,
+        .dol_type = DOL_NON,
+        .num = 2,
     },
     {
         .wdr_mode = WDR_MODE_FS_LIN,

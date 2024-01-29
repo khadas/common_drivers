@@ -757,7 +757,7 @@ int fw_intf_stream_set_resolution( uint32_t ctx_id, const isp_v4l2_sensor_info *
     wdr_mode_cur = 0;
     exposure_cur = 0;
     fps_cur = 0;
-    if ( dma_type == dma_sc3 ) {
+    if ( dma_type == dma_sc3 || dma_type == dma_sc0) {
         acamera_command( ctx_id, TSENSOR, SENSOR_STREAMING, ON, COMMAND_GET, &state );
         acamera_command( ctx_id, TSENSOR, SENSOR_WIDTH, 0, COMMAND_GET, &width_cur );
         acamera_command( ctx_id, TSENSOR, SENSOR_HEIGHT, 0, COMMAND_GET, &height_cur );

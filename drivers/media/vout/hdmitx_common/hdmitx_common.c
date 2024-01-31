@@ -757,15 +757,18 @@ int hdmitx_common_get_edid(struct hdmitx_common *tx_comm)
 
 	spin_unlock_irqrestore(&tx_comm->edid_spinlock, flags);
 
-	hdmitx_event_mgr_notify(tx_comm->event_mgr,
-		HDMITX_PHY_ADDR_VALID, &tx_comm->rxcap.physical_addr);
-
-	/*notify edid info to rx*/
-	if (tx_comm->hdmi_repeater == 1)
+	/* notify phy addr to rx/cec:
+	 * rx/cec currently do not use the phy addr of below
+	 * two interfaces, just keep for safety
+	 */
+	if (tx_comm->hdmi_repeater == 1) {
+		hdmitx_event_mgr_notify(tx_comm->event_mgr,
+			HDMITX_PHY_ADDR_VALID, &tx_comm->rxcap.physical_addr);
 		rx_edid_physical_addr(tx_comm->rxcap.vsdb_phy_addr.a,
 			tx_comm->rxcap.vsdb_phy_addr.b,
 			tx_comm->rxcap.vsdb_phy_addr.c,
 			tx_comm->rxcap.vsdb_phy_addr.d);
+	}
 	hdmitx_edid_print(tx_comm->EDID_buf);
 
 	return 0;

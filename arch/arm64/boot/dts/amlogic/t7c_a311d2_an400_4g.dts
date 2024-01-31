@@ -1937,7 +1937,7 @@
 	repeater_tx = <0>;
 	enc_idx = <0>;
 	vrr_type = <2>; /* 1: GAME-VRR, 2: QMS-VRR */
-	hdmi_repeater = <1>;
+	hdmi_repeater = <0>;
 };
 
 /*if you want to use vdin just modify status to "ok"*/

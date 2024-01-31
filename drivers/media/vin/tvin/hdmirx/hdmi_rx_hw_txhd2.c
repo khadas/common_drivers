@@ -2086,7 +2086,9 @@ void rx_set_irq_txhd2(bool en, u8 port)
 		//hdmirx_wr_cor(RX_DEPACK_INTR4_MASK_DP2_IVCRX, 0x00, port);//interrupt mask
 		//hdmirx_wr_cor(RX_DEPACK2_INTR0_MASK_DP0B_IVCRX, 0x0c, port);//interrupt mask
 		//hdmirx_wr_cor(RX_DEPACK_INTR3_MASK_DP2_IVCRX, 0x20, port);//interrupt mask [5] acr
-
+		data8 = 0;
+		data8 |= 0 << 2; /* gcp did not arrived 4 frames */
+		hdmirx_wr_cor(RX_DEPACK_INTR6_MASK_DP2_IVCRX, data8, port);
 		//HDCP irq
 		// encrypted sts changed
 		//hdmirx_wr_cor(RX_HDCP1X_INTR0_MASK_HDCP1X_IVCRX, 1, port);
@@ -2156,6 +2158,8 @@ void rx_set_irq_txhd2(bool en, u8 port)
 		//hdmirx_wr_cor(RX_DEPACK_INTR4_MASK_DP2_IVCRX, 0x00, port);//interrupt mask
 		//hdmirx_wr_cor(RX_DEPACK2_INTR0_MASK_DP0B_IVCRX, 0x0c, port);//interrupt mask
 		//hdmirx_wr_cor(RX_DEPACK_INTR3_MASK_DP2_IVCRX, 0x20, port);
+		hdmirx_wr_cor(RX_DEPACK_INTR6_DP2_IVCRX, 0xff, port);
+		hdmirx_wr_cor(RX_DEPACK_INTR6_MASK_DP2_IVCRX, 0, port);
 		//interrupt mask [5] acr
 
 		//HDCP irq

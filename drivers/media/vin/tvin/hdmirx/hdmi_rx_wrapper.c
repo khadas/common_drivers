@@ -1127,6 +1127,10 @@ static int rx_cor3_irq_handler(void)
 		}
 	}
 
+	if (intr_6) {
+		if (rx_get_bits(rx_depack2_intr2, _BIT(2)))
+			rx_clr_gcp_avmute(port);
+	}
 	//if (vsif_type)
 		//rx_pkt_handler(PKT_BUFF_SET_VSI);
 
@@ -1136,8 +1140,7 @@ static int rx_cor3_irq_handler(void)
 	//if (emp_handle_flag)
 		//rx_pkt_handler(PKT_BUFF_SET_EMP);
 
-	//if (rx[rx_info.main_port].irq_flag)
-		//tasklet_schedule(&rx_tasklet);
+	//tasklet_schedule(&rx_tasklet);
 
 	//if (irq_need_clr)
 		//error = 1;
@@ -1393,6 +1396,10 @@ static int rx_cor2_irq_handler(void)
 		}
 	}
 
+	if (intr_6) {
+		if (rx_get_bits(rx_depack2_intr2, _BIT(2)))
+			rx_clr_gcp_avmute(port);
+	}
 	//if (vsif_type)
 		//rx_pkt_handler(PKT_BUFF_SET_VSI);
 
@@ -1659,6 +1666,10 @@ static int rx_cor1_irq_handler(void)
 		}
 	}
 
+	if (intr_6) {
+		if (rx_get_bits(rx_depack2_intr2, _BIT(2)))
+			rx_clr_gcp_avmute(port);
+	}
 	//if (vsif_type)
 		//rx_pkt_handler(PKT_BUFF_SET_VSI);
 
@@ -1924,6 +1935,11 @@ static int rx_cor_irq_handler(void)
 					rx[port].state = FSM_SIG_WAIT_STABLE;
 			}
 		}
+	}
+
+	if (intr_6) {
+		if (rx_get_bits(rx_depack2_intr2, _BIT(2)))
+			rx_clr_gcp_avmute(port);
 	}
 	//if (vsif_type)
 		//rx_pkt_handler(PKT_BUFF_SET_VSI);

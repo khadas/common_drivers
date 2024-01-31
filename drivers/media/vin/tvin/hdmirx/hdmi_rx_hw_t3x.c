@@ -4019,6 +4019,9 @@ void rx_set_irq_t3x(bool en, u8 port)
 		//hdmirx_wr_cor(RX_DEPACK_INTR4_MASK_DP2_IVCRX, 0x00, port);//interrupt mask
 		//hdmirx_wr_cor(RX_DEPACK2_INTR0_MASK_DP0B_IVCRX, 0x0c, port);//interrupt mask
 		//hdmirx_wr_cor(RX_DEPACK_INTR3_MASK_DP2_IVCRX, 0x20, port);//interrupt mask
+		data8 = 0;
+		data8 |= 0 << 2; /* gcp did not arrived 4 frames */
+		hdmirx_wr_cor(RX_DEPACK_INTR6_MASK_DP2_IVCRX, data8, port);
 
 		//HDCP irq
 		// encrypted sts changed
@@ -4089,6 +4092,9 @@ void rx_set_irq_t3x(bool en, u8 port)
 		//hdmirx_wr_cor(RX_DEPACK_INTR4_MASK_DP2_IVCRX, 0x00, port);//interrupt mask
 		//hdmirx_wr_cor(RX_DEPACK2_INTR0_MASK_DP0B_IVCRX, 0x0c, port);//interrupt mask
 		//hdmirx_wr_cor(RX_DEPACK_INTR3_MASK_DP2_IVCRX, 0x20, port);
+		//gcp
+		hdmirx_wr_cor(RX_DEPACK_INTR6_DP2_IVCRX, 0xff, port);
+		hdmirx_wr_cor(RX_DEPACK_INTR6_MASK_DP2_IVCRX, 0, port);
 		//interrupt mask [5] acr
 
 		//HDCP irq
@@ -4701,8 +4707,8 @@ int rx_lts_p_syn_detect(u8 frl_rate, u8 port)
 	hdmirx_wr_cor(H21RXSB_CTRL3_M42H_IVCRX, 0x09, port); //
 	//
 	//----hal_flt_rx_dpll_reset_toggle(port)
-	hdmirx_wr_cor(DPLL_CTRL2_DPLL_IVCRX, 0x2, port);
-	hdmirx_wr_cor(DPLL_CTRL2_DPLL_IVCRX, 0x2, port);
+	hdmirx_wr_bits_cor(DPLL_CTRL2_DPLL_IVCRX, _BIT(1), 1, port);
+	hdmirx_wr_bits_cor(DPLL_CTRL2_DPLL_IVCRX, _BIT(1), 1, port);
 	//
 	//----hal_flt_rx_hdmi2p1_lt_mode_set(port,false)
 	//(NONE)
@@ -4786,9 +4792,9 @@ void hdmi_tx_rx_frl_training_main(u8 port)
 	if (fsm_debug & 0x20) {
 		hdmirx_wr_top(TOP_SW_RESET, 0x80, port);
 		hdmirx_wr_top(TOP_SW_RESET, 0, port);
-		hdmirx_wr_cor(DPLL_CTRL2_DPLL_IVCRX, 0x0, port);
+		hdmirx_wr_bits_cor(DPLL_CTRL2_DPLL_IVCRX, _BIT(1), 0, port);
 		usleep_range(10, 20);
-		hdmirx_wr_cor(DPLL_CTRL2_DPLL_IVCRX, 0x2, port);
+		hdmirx_wr_bits_cor(DPLL_CTRL2_DPLL_IVCRX, _BIT(1), 1, port);
 	}
 	rx_lts_3_err_detect(port);
 	RX_LTS_3_LTP_REQ_SEND_0000(port);

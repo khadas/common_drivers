@@ -2249,6 +2249,14 @@ void rx_set_suspend_edid_clk(bool en)
 	}
 }
 
+void rx_clr_gcp_avmute(u8 port)
+{
+	if (rx_info.chip_id < CHIP_ID_T7)
+		return;
+
+	hdmirx_wr_bits_cor(DEC_AV_MUTE_DP2_IVCRX, _BIT(5), 1, port);
+}
+
 bool rx_is_need_edid_reset(u8 port)
 {
 	bool ret = false;
@@ -4406,6 +4414,7 @@ void hdmirx_hw_probe(void)
 		for (i = 0; i < 4; i++) {
 			cor_init(i); //todo
 			top_init(i);
+			packet_init(i);
 		}
 	} else if (rx_info.chip_id >= CHIP_ID_T7) {
 		top_init(0);

@@ -203,7 +203,4 @@ void hdmitx_hdcp_do_work(struct hdmitx_dev *hdev);
 void hdmitx_meson_init(struct hdmitx_dev *hdmitx_device);
 unsigned int get_hdcp22_base(void);
 void hdmitx20_video_mute_op(unsigned int flag);
-bool hdmitx_find_vendor_6g(struct hdmitx_dev *hdev);
-bool hdmitx_find_vendor_ratio(struct hdmitx_dev *hdev);
-bool hdmitx_find_vendor_null_pkt(struct hdmitx_dev *hdev);
 #endif

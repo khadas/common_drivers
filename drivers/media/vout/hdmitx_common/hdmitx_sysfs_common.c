@@ -11,6 +11,7 @@
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_common.h>
 #include "hdmitx_sysfs_common.h"
 #include "hdmitx_log.h"
+#include "hdmitx_compliance.h"
 
 /*!!Only one instance supported.*/
 static struct hdmitx_common *global_tx_common;
@@ -712,6 +713,10 @@ static ssize_t phy_store(struct device *dev,
 	global_tx_hw->tmds_phy_op = TMDS_PHY_NONE;
 	unsigned int mute_us;
 	int cnt = 0;
+	/* special WHALEY WTV55K1J TV, need to wait for > 3 frames
+	 * after phy disable and before set new mode
+	 */
+	int delay_frame = 5;
 
 	HDMITX_INFO("%s %s\n", __func__, buf);
 	mute_us = hdmitx_get_frame_duration();
@@ -726,6 +731,10 @@ static ssize_t phy_store(struct device *dev,
 			cnt++;
 			if (cnt > 3)
 				break;
+		}
+		if (hdmitx_find_vendor_phy_delay(global_tx_common->EDID_buf)) {
+			usleep_range(delay_frame * mute_us, delay_frame * mute_us + 10);
+			HDMITX_DEBUG("delay %d frame after phy disable\n", delay_frame);
 		}
 	} else if (strncmp(buf, "1", 1) == 0) {
 		global_tx_hw->tmds_phy_op = TMDS_PHY_ENABLE;

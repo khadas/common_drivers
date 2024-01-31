@@ -7,6 +7,7 @@
 #include <linux/pinctrl/devinfo.h>
 #include "common.h"
 #include "mach_reg.h"
+#include "../../hdmitx_common/hdmitx_compliance.h"
 
 /*
  * NAME		PAD		PINMUX		GPIO
@@ -103,7 +104,7 @@ static bool set_hpll_hclk_v1(unsigned int m, unsigned int frac_val)
 		}
 	} else {
 		if (hdev->tx_hw.chip_data->chip_type == MESON_CPU_ID_SM1 &&
-		    hdmitx_find_vendor_6g(hdev) &&
+		    hdmitx_find_vendor_6g(hdev->tx_comm.EDID_buf) &&
 		    (para->vic == HDMI_96_3840x2160p50_16x9 ||
 		    para->vic == HDMI_97_3840x2160p60_16x9 ||
 		    para->vic == HDMI_106_3840x2160p50_64x27 ||

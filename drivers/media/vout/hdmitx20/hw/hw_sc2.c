@@ -4,6 +4,7 @@
  */
 
 #include <linux/printk.h>
+#include "../../hdmitx_common/hdmitx_compliance.h"
 #include "common.h"
 #include "mach_reg.h"
 #include "reg_sc2.h"
@@ -60,7 +61,7 @@ static bool set_hpll_hclk_v1(unsigned int m, unsigned int frac_val)
 			hd_write_reg(P_ANACTRL_HDMIPLL_CTRL4, 0x44331290);
 		}
 	} else {
-		if (hdmitx_find_vendor_6g(hdev) &&
+		if (hdmitx_find_vendor_6g(hdev->tx_comm.EDID_buf) &&
 		    (para->vic == HDMI_96_3840x2160p50_16x9 ||
 		    para->vic == HDMI_97_3840x2160p60_16x9 ||
 		    para->vic == HDMI_106_3840x2160p50_64x27 ||

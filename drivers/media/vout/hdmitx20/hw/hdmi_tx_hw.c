@@ -47,6 +47,7 @@
 #include "hdmi_tx_debug_reg.h"
 #include "../hdmi_tx_module.h"
 #include <linux/amlogic/clk_measure.h>
+#include "../../hdmitx_common/hdmitx_compliance.h"
 
 #define HDMITX_VIC_MASK			0xff
 
@@ -540,7 +541,7 @@ static void hdmi_hwi_init(struct hdmitx_dev *hdev)
 
 	hdmitx_set_reg_bits(HDMITX_DWC_FC_INVIDCONF, 1, 7, 1);
 	hdmitx_wr_reg(HDMITX_DWC_A_HDCPCFG1, 0x67);
-	if (hdmitx_find_vendor_null_pkt(hdev)) {
+	if (hdmitx_find_vendor_null_pkt(hdev->tx_comm.EDID_buf)) {
 		hdmitx_wr_reg(HDMITX_TOP_DISABLE_NULL, 0x6);
 		HDMITX_INFO("special TV, need enable NULL packet\n");
 	} else {

@@ -67,6 +67,7 @@
 #include <hdmitx_sysfs_common.h>
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_common.h>
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_platform_linux.h>
+#include "../hdmitx_common/hdmitx_compliance.h"
 
 #define DEVICE_NAME "amhdmitx"
 #define HDMI_TX_COUNT 32
@@ -224,7 +225,7 @@ static void hdmitx_early_suspend(struct early_suspend *h)
 
 	mutex_lock(&hdev->tx_comm.hdmimode_mutex);
 
-	need_rst_ratio = hdmitx_find_vendor_ratio(hdev);
+	need_rst_ratio = hdmitx_find_vendor_ratio(hdev->tx_comm.EDID_buf);
 
 	/* step1: keep hdcp auth state before suspend */
 	hdmitx_hw_cntl_misc(tx_comm->tx_hw, MISC_SUSFLAG, 1);

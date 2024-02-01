@@ -9,6 +9,10 @@
 #include <linux/amlogic/media/vpu_secure/vpu_secure.h>
 #endif
 
+#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
+#include <linux/amlogic/media/amdolbyvision/dolby_vision.h>
+#endif
+
 #include "meson_vpu_pipeline.h"
 #include "meson_vpu_reg.h"
 #include "meson_vpu_util.h"
@@ -818,16 +822,34 @@ static void t7_osd_afbc_set_state(struct meson_vpu_block *vblk,
 						reverse_x, 0, 1);
 			reg_ops->rdma_write_reg_bits(afbc_reg->vpu_mafbc_prefetch_cfg_s,
 						reverse_y, 1, 1);
-			if (osd_index == 0)
+			if (osd_index == 0) {
+#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
+				reg_ops->rdma_write_reg_bits(afbc_stat_reg->mali_afbcd_top_ctrl,
+						is_amdv_graphic_on() ? 0 : 1, 14, 1);
+				MESON_DRM_BLOCK("osd0 amdv_graphic switch status: %d\n",
+					is_amdv_graphic_on());
+#endif
 				reg_ops->rdma_write_reg_bits(afbc_stat_reg->mali_afbcd_top_ctrl,
 							 1, 16, 1);
-			else if (osd_index == 1)
+			} else if (osd_index == 1) {
+#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
+				reg_ops->rdma_write_reg_bits(afbc_stat_reg->mali_afbcd_top_ctrl,
+						is_amdv_graphic_on() ? 0 : 1, 19, 1);
+				MESON_DRM_BLOCK("osd1 amdv_graphic switch status: %d\n",
+					is_amdv_graphic_on());
+#endif
 				reg_ops->rdma_write_reg_bits(afbc_stat_reg->mali_afbcd_top_ctrl,
 							 1, 21, 1);
-			else if (osd_index == 2)
+			} else if (osd_index == 2) {
+#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
+				reg_ops->rdma_write_reg_bits(afbc_stat_reg->mali_afbcd_top_ctrl,
+						is_amdv_graphic_on_osd3() ? 0 : 1, 19, 1);
+				MESON_DRM_BLOCK("osd2 amdv_graphic switch status: %d\n",
+					is_amdv_graphic_on_osd3());
+#endif
 				reg_ops->rdma_write_reg_bits(afbc_stat_reg->mali_afbcd_top_ctrl,
 							 1, 21, 1);
-			else if (osd_index == 3)
+			} else if (osd_index == 3)
 				reg_ops->rdma_write_reg_bits(afbc_stat_reg->mali_afbcd_top_ctrl,
 							 1, 21, 1);
 			else

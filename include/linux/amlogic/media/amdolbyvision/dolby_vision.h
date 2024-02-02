@@ -164,6 +164,7 @@ bool is_amdv_enable(void);
 bool is_amdv_on(void);
 bool is_amdv_video_on(void);
 bool is_amdv_graphic_on(void);
+bool is_amdv_graphic_on_osd3(void);
 bool for_amdv_certification(void);
 void set_amdv_mode(int mode);
 int get_amdv_mode(void);

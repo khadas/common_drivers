@@ -2035,6 +2035,7 @@
 	/* number of video layer display on vpp1 */
 	vpp1_layer_count = <1>;
 	vpp2_layer_count = <1>;
+	vpp1_hold_line = <0>;
 };
 
 &amhdmitx {

@@ -166,8 +166,8 @@ export -f only_build_dtb_for_smarthome
 function make_menuconfig_cmd_for_smarthome () {
 	if [[ -n ${MENUCONFIG} ]]; then
 		set -x
-		make ARCH=${ARCH} -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${DEFCONFIG}
-		make ARCH=${ARCH} -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} menuconfig
+		make ARCH=${ARCH} -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} ${DEFCONFIG}
+		make ARCH=${ARCH} -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} menuconfig
 		set +x
 		exit
 	fi

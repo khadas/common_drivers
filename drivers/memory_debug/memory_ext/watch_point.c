@@ -81,6 +81,11 @@ struct aml_watch_points *awp;
 		READ_WB_REG_CASE(OFF, 15, REG, VAL);	\
 	} while (0)
 
+#ifdef CONFIG_CC_IS_CLANG
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wimplicit-fallthrough"
+#endif
+
 static u64 read_wb_reg(int reg, int n)
 {
 	u64 val = 0;
@@ -96,6 +101,10 @@ static u64 read_wb_reg(int reg, int n)
 
 	return val;
 }
+
+#ifdef CONFIG_CC_IS_CLANG
+#pragma clang diagnostic pop
+#endif
 
 /* Determine number of WRP registers available. */
 static int aml_get_num_wrps(void)

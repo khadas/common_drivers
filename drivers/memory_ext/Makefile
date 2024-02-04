@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 
 ccflags-y += -I$(srctree)/mm -I$(srctree)/drivers/iommu/arm/arm-smmu-v3
+KBUILD_CFLAGS += -Wframe-larger-than=2068
 
 obj-$(CONFIG_AMLOGIC_PAGE_TRACE)        += page_trace.o
 obj-$(CONFIG_AMLOGIC_SLAB_TRACE)        += slab_trace.o

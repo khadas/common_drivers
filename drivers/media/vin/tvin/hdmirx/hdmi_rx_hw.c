@@ -6644,10 +6644,17 @@ void rx_emp_to_ddr_init(u8 port)
 		if (rx_info.emp_buff_a.p_addr_a) {
 			/* emp int enable */
 			/* config ddr buffer */
-			hdmirx_wr_top_common(TOP_EMP_DDR_START_A,
-				rx_info.emp_buff_a.p_addr_a >> 2);
-			hdmirx_wr_top_common(TOP_EMP_DDR_START_B,
-				rx_info.emp_buff_a.p_addr_b >> 2);
+			if (rx_info.chip_id <= CHIP_ID_T5D) {
+				hdmirx_wr_top_common(TOP_EMP_DDR_START_A,
+					rx_info.emp_buff_a.p_addr_a);
+				hdmirx_wr_top_common(TOP_EMP_DDR_START_B,
+					rx_info.emp_buff_a.p_addr_b);
+			} else {
+				hdmirx_wr_top_common(TOP_EMP_DDR_START_A,
+					rx_info.emp_buff_a.p_addr_a >> 2);
+				hdmirx_wr_top_common(TOP_EMP_DDR_START_B,
+					rx_info.emp_buff_a.p_addr_b >> 2);
+			}
 		}
 		/* enable store EMP pkt type */
 		data32 = 0;
@@ -6787,7 +6794,9 @@ void rx_emp_field_done_irq(u8 port)
 
 	if (rx[port].emp_vid_idx == 0) {
 		/*emp data start physical address*/
-		p_addr = (u64)hdmirx_rd_top_common(TOP_EMP_DDR_PTR_S_BUF) << 2;
+		p_addr = rx_info.chip_id <= CHIP_ID_T5D ?
+			(u64)hdmirx_rd_top_common(TOP_EMP_DDR_PTR_S_BUF) :
+			(u64)hdmirx_rd_top_common(TOP_EMP_DDR_PTR_S_BUF) << 2;
 		/*buffer number*/
 		recv_pkt_cnt = hdmirx_rd_top_common(TOP_EMP_RCV_CNT_BUF);
 		emp_buf_p = &rx_info.emp_buff_a;

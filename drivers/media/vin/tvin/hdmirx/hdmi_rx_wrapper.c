@@ -346,7 +346,7 @@ void hdmirx_fsm_var_init(void)
 		err_cnt_sum_max = 10;
 		/* increase time of hpd low, to avoid some source like */
 		/* MTK box/KaiboerH9 i2c communicate error */
-		hpd_wait_max = 80;
+		hpd_wait_max = 74;
 		sig_unstable_max = 20;
 		sig_unready_max = 0;
 		diff_pixel_th = 2;
@@ -368,7 +368,7 @@ void hdmirx_fsm_var_init(void)
 		stable_check_lvl = 0x7cf;
 		pll_lock_max = 5;
 		err_cnt_sum_max = 10;
-		hpd_wait_max = 80;
+		hpd_wait_max = 74;
 		sig_unstable_max = 20;
 		sig_unready_max = 0;
 		diff_pixel_th = 2;
@@ -391,7 +391,7 @@ void hdmirx_fsm_var_init(void)
 		stable_check_lvl = 0x17cf;
 		pll_lock_max = 2;
 		err_cnt_sum_max = 10;
-		hpd_wait_max = 80;
+		hpd_wait_max = 74;
 		sig_unstable_max = 20;
 		sig_unready_max = 0;
 		diff_pixel_th = 2;
@@ -415,7 +415,7 @@ void hdmirx_fsm_var_init(void)
 		stable_check_lvl = 0x7c3;
 		pll_lock_max = 2;
 		err_cnt_sum_max = 10;
-		hpd_wait_max = 80;
+		hpd_wait_max = 74;
 		sig_unstable_max = 20;
 		sig_unready_max = 0;
 		/* decreased to 2 */
@@ -445,7 +445,7 @@ void hdmirx_fsm_var_init(void)
 		stable_check_lvl = 0x7c3;
 		pll_lock_max = 2;
 		err_cnt_sum_max = 10;
-		hpd_wait_max = 80;
+		hpd_wait_max = 74;
 		sig_unstable_max = 20;
 		sig_unready_max = 0;
 		/* decreased to 2 */
@@ -476,7 +476,7 @@ void hdmirx_fsm_var_init(void)
 		stable_check_lvl = 0x7c3;
 		pll_lock_max = 2;
 		err_cnt_sum_max = 10;
-		hpd_wait_max = 110;
+		hpd_wait_max = 74;
 		sig_unstable_max = 20;
 		sig_unready_max = 0;
 		/* decreased to 2 */
@@ -5201,7 +5201,7 @@ void rx_main_state_machine(void)
 		rx[port].var.clk_unstable_cnt = 0;
 		rx[port].var.esd_phy_rst_cnt = 0;
 		rx[port].var.downstream_hpd_flag = 0;
-		//rx[port].var.edid_update_flag = 0;
+		rx[port].var.edid_update_flag = 0;
 		pre_port = port;
 		rx_set_cur_hpd(1, 0, port);
 		rx[port].clk.cable_clk = 0;

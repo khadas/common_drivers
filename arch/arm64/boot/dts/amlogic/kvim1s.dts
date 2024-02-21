@@ -100,14 +100,14 @@
 			compatible = "shared-dma-pool";
 			reusable;
 			/* 1080p STB androidT size 56M */
-			size = <0x0 0x3800000>;
+			size = <0x0 0x0>;
 			alignment = <0x0 0x400000>;
 		};
 		dmaheap_cma_reserved:heap-gfx {
 			compatible = "shared-dma-pool";
 			reusable;
 			/* 1080p STB androidT size 88M */
-			size = <0x0 0x5800000>;
+			size = <0x0 0x12C00000>;
 			alignment = <0x0 0x400000>;
 		};
 		ge2d_cma_reserved:linux,ge2d_cma {

@@ -2159,8 +2159,6 @@ static int hdmitx_edid_cta_block_parse(struct rx_cap *prxcap, u8 *block_buf)
 					rx_set_hdr_lumi(&block_buf[offset],
 							(block_buf[offset] &
 							 0x1f) + 1);
-					hdmitx_tracer_write_event(global_tx_base->tx_tracer,
-						HDMITX_EDID_HDR_SUPPORT);
 					break;
 				case EXTENSION_DRM_DYNAMIC_TAG:
 					edid_parsedrmdb(prxcap, &block_buf[offset]);
@@ -2848,10 +2846,6 @@ int hdmitx_edid_parse(struct rx_cap *prxcap, u8 *edid_buf)
 			break;
 		}
 	}
-	if (prxcap->head_err)
-		hdmitx_tracer_write_event(global_tx_base->tx_tracer, HDMITX_EDID_HEAD_ERROR);
-	if (prxcap->chksum_err)
-		hdmitx_tracer_write_event(global_tx_base->tx_tracer, HDMITX_EDID_CHECKSUM_ERROR);
 
 	pr_debug(EDID "EDID Parser:\n");
 
@@ -2873,8 +2867,6 @@ int hdmitx_edid_parse(struct rx_cap *prxcap, u8 *edid_buf)
 	check_dv_truly_support(prxcap, dv);
 	dv = &prxcap->dv_info2;
 	check_dv_truly_support(prxcap, dv);
-	if (dv->ieeeoui == DV_IEEE_OUI || dv->block_flag == CORRECT)
-		hdmitx_tracer_write_event(global_tx_base->tx_tracer, HDMITX_EDID_DV_SUPPORT);
 
 	edid_check_pcm_declare(prxcap);
 	/* move parts that may contain cea timing parse behind
@@ -2998,12 +2990,10 @@ int hdmitx_edid_parse(struct rx_cap *prxcap, u8 *edid_buf)
 	/* if edid are all zeroes, or no VIC, set default vic */
 	if (edid_zero_data(edid_buf) || prxcap->VIC_count == 0)
 		hdmitx_edid_set_default_vic(prxcap);
-	if (prxcap->ieeeoui == HDMI_IEEE_OUI) {
-		hdmitx_tracer_write_event(global_tx_base->tx_tracer, HDMITX_EDID_HDMI_DEVICE);
-	} else {
+
+	if (prxcap->ieeeoui != HDMI_IEEE_OUI)
 		prxcap->physical_addr = 0xffff;
-		hdmitx_tracer_write_event(global_tx_base->tx_tracer, HDMITX_EDID_DVI_DEVICE);
-	}
+
 	return 0;
 }
 

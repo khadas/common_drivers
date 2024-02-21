@@ -704,6 +704,35 @@ EXPORT_SYMBOL(hdmitx_common_avmute_locked);
 
 /********************************Debug function***********************************/
 
+int hdmitx_common_edid_tracer_post_proc(struct hdmitx_common *tx_comm, struct rx_cap *prxcap)
+{
+	struct dv_info *dv;
+	struct hdr_info *hdr;
+
+	if (!prxcap)
+		return -1;
+
+	if (prxcap->head_err)
+		hdmitx_tracer_write_event(tx_comm->tx_tracer, HDMITX_EDID_HEAD_ERROR);
+	if (prxcap->chksum_err)
+		hdmitx_tracer_write_event(tx_comm->tx_tracer, HDMITX_EDID_CHECKSUM_ERROR);
+
+	dv = &prxcap->dv_info2;
+	if (dv->ieeeoui == DV_IEEE_OUI && dv->block_flag == CORRECT)
+		hdmitx_tracer_write_event(tx_comm->tx_tracer, HDMITX_EDID_DV_SUPPORT);
+
+	hdr = &prxcap->hdr_info2;
+	if (hdr->hdr_support > 0)
+		hdmitx_tracer_write_event(tx_comm->tx_tracer, HDMITX_EDID_HDR_SUPPORT);
+
+	if (prxcap->ieeeoui == HDMI_IEEE_OUI)
+		hdmitx_tracer_write_event(tx_comm->tx_tracer, HDMITX_EDID_HDMI_DEVICE);
+	else
+		hdmitx_tracer_write_event(tx_comm->tx_tracer, HDMITX_EDID_DVI_DEVICE);
+
+	return 0;
+}
+
 int hdmitx_common_get_edid(struct hdmitx_common *tx_comm)
 {
 	struct hdmitx_hw_common *tx_hw_base = tx_comm->tx_hw;
@@ -751,6 +780,7 @@ int hdmitx_common_get_edid(struct hdmitx_common *tx_comm)
 	spin_lock_irqsave(&tx_comm->edid_spinlock, flags);
 	hdmitx_edid_rxcap_clear(&tx_comm->rxcap);
 	hdmitx_edid_parse(&tx_comm->rxcap, tx_comm->EDID_buf);
+	hdmitx_common_edid_tracer_post_proc(tx_comm, &tx_comm->rxcap);
 
 	/* update the hdr/hdr10+/dv capabilities in the end of parse */
 	hdmitx_set_hdr_priority(tx_comm, tx_comm->hdr_priority);

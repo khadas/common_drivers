@@ -315,7 +315,10 @@ static ssize_t edid_store(struct device *dev,
 		ret = hdmitx_load_edid_file(1, argv[1]); /* edid data as string for debug */
 		if (ret == 1) {
 			global_tx_common->forced_edid = 1;
+			hdmitx_edid_rxcap_clear(&global_tx_common->rxcap);
 			hdmitx_edid_parse(&global_tx_common->rxcap, global_tx_common->EDID_buf);
+			hdmitx_common_edid_tracer_post_proc(global_tx_common,
+					&global_tx_common->rxcap);
 			hdmitx_edid_print(global_tx_common->EDID_buf);
 			// TODO pr_info
 			pr_info("%s[%d] using the fixed edid\n", __func__, __LINE__);

@@ -222,6 +222,8 @@ int hdmitx_common_set_allm_mode(struct hdmitx_common *tx_comm, int mode);
 int hdmitx_common_avmute_locked(struct hdmitx_common *tx_comm,
 		int mute_flag, int mute_path_hint);
 
+/*edid tracer post-processing*/
+int hdmitx_common_edid_tracer_post_proc(struct hdmitx_common *tx_comm, struct rx_cap *prxcap);
 /*read edid raw data and parse edid to rxcap*/
 int hdmitx_common_get_edid(struct hdmitx_common *tx_comm);
 

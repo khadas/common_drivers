@@ -137,7 +137,7 @@ void s5_set_hdr_matrix(enum hdr_module_sel module_sel,
 		0, 0, 0,
 		0
 	};
-	int vpp_sel = 0;/*0xfe;*/
+	int vpp_sel = vpp_index;/*0xfe;*/
 
 	if (module_sel == VD1_HDR) {
 		MATRIXI_COEF00_01 = S5_VD1_HDR2_MATRIXI_COEF00_01;
@@ -1189,7 +1189,7 @@ void s5_set_eotf_lut(enum hdr_module_sel module_sel,
 	unsigned int eotf_lut_data_port = 0;
 	unsigned int hdr_ctrl = 0;
 	unsigned int i = 0;
-	int vpp_sel = 0;/*0xfe;*/
+	int vpp_sel = vpp_index;/*0xfe;*/
 
 	if (module_sel == VD1_HDR) {
 		eotf_lut_addr_port = S5_VD1_EOTF_LUT_ADDR_PORT;
@@ -1274,7 +1274,7 @@ void s5_set_ootf_lut(enum hdr_module_sel module_sel,
 	unsigned int ootf_lut_data_port = 0;
 	unsigned int hdr_ctrl = 0;
 	unsigned int i = 0;
-	int vpp_sel = 0;/*0xfe;*/
+	int vpp_sel = vpp_index;/*0xfe;*/
 
 	if (module_sel == VD1_HDR) {
 		ootf_lut_addr_port = S5_VD1_OGAIN_LUT_ADDR_PORT;
@@ -1362,7 +1362,7 @@ void s5_set_oetf_lut(enum hdr_module_sel module_sel,
 	unsigned int oetf_lut_data_port = 0;
 	unsigned int hdr_ctrl = 0;
 	unsigned int i = 0;
-	int vpp_sel = 0;/*0xfe;*/
+	int vpp_sel = vpp_index;/*0xfe;*/
 
 	if (module_sel == VD1_HDR) {
 		oetf_lut_addr_port = S5_VD1_OETF_LUT_ADDR_PORT;
@@ -1461,7 +1461,7 @@ void s5_set_c_gain(enum hdr_module_sel module_sel,
 	unsigned int hdr_ctrl = 0;
 	unsigned int cgain_coef1 = 0;
 	unsigned int i = 0;
-	int vpp_sel = 0;/*0xfe;*/
+	int vpp_sel = vpp_index;/*0xfe;*/
 
 	if (module_sel == VD1_HDR) {
 		cgain_lut_addr_port = S5_VD1_CGAIN_LUT_ADDR_PORT;
@@ -1837,7 +1837,7 @@ void s5_hdr_hist_config(enum hdr_module_sel module_sel,
 	unsigned int hist_ctrl;
 	unsigned int hist_hs_he;
 	unsigned int hist_vs_ve;
-	int vpp_sel = 0;/*0xfe;*/
+	int vpp_sel = vpp_index;/*0xfe;*/
 	unsigned int tmp;
 
 	if (module_sel == VD1_HDR) {
@@ -1944,7 +1944,7 @@ void s5_clip_func_after_ootf(int mtx_gamut_mode,
 	int clip_en = 0;
 	int clip_max = 0;
 	unsigned int adps_ctrl;
-	int vpp_sel = 0;/*0xfe;*/
+	int vpp_sel = vpp_index;/*0xfe;*/
 
 	/* if Dynamic TMO+ enable : clip_en = 1 clip_max = 524288
 	 * (hdr_process_select is HDR_SDR or HDR10P_SDR);

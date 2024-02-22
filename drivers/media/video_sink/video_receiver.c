@@ -88,9 +88,9 @@ static inline struct vframe_s *common_vf_get(struct video_recv_s *ins)
 
 	if (vf) {
 		if (debug_flag & DEBUG_FLAG_PRINT_FRAME_DETAIL)
-			pr_info("%s:vf=%p, omx_index=%d, vf->type=0x%x, vf->flag=0x%x,canvas adr:0x%lx, canvas0:%x, pnum:%d, afbc:0x%lx-0x%lx\n",
-				__func__,
-				vf, vf->omx_index, vf->type, vf->flag,
+			pr_info("%s:recv_name=%s, vf=%p(%px), omx_index=%d, vf->type=0x%x, vf->flag=0x%x,canvas adr:0x%lx, canvas0:%x, pnum:%d, afbc:0x%lx-0x%lx\n",
+				__func__, ins->recv_name,
+				vf, vf, vf->omx_index, vf->type, vf->flag,
 				vf->canvas0_config[0].phy_addr, vf->canvas0Addr, vf->plane_num,
 				vf->compHeadAddr, vf->compBodyAddr);
 		vpp_trace_vframe("common_vf_get",
@@ -144,9 +144,9 @@ static inline void common_vf_put(struct video_recv_s *ins,
 			ins->vpp_id, vsync_cnt[ins->vpp_id]);
 		vf_put(vf, ins->recv_name);
 		if (debug_flag & DEBUG_FLAG_PRINT_FRAME_DETAIL)
-			pr_info("%s:vf=%p, omx_index=%d, vf->type=0x%x, vf->flag=0x%x,canvas adr:0x%lx, canvas0:%x, pnum:%d, afbc:0x%lx-0x%lx\n",
-				__func__,
-				vf, vf->omx_index, vf->type, vf->flag,
+			pr_info("%s:recv_name=%s, vf=%p(%px), omx_index=%d, vf->type=0x%x, vf->flag=0x%x,canvas adr:0x%lx, canvas0:%x, pnum:%d, afbc:0x%lx-0x%lx\n",
+				__func__, ins->recv_name,
+				vf, vf, vf->omx_index, vf->type, vf->flag,
 				vf->canvas0_config[0].phy_addr, vf->canvas0Addr, vf->plane_num,
 				vf->compHeadAddr, vf->compBodyAddr);
 #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION

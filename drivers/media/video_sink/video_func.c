@@ -3346,6 +3346,7 @@ static struct vframe_s *video_toggle_frame
 	u8 path_index = 0;
 	struct vframe_s *path_new_frame = NULL;
 
+	over_field = false;
 #ifdef CONFIG_AMLOGIC_MEDIA_FRC
 	if (cur_dev->vsync_2to1_enable &&
 		layer_id == 0 &&

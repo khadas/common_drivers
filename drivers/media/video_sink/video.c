@@ -3725,7 +3725,6 @@ struct vframe_s *amvideo_toggle_frame(s32 *vd_path_id)
 
 	toggle_cnt = 0;
 
-	over_field = false;
 	if (!cur_dispbuf[0] || cur_dispbuf[0] == &vf_local[0]) {
 		vf = amvideo_vf_peek();
 		if (vf) {

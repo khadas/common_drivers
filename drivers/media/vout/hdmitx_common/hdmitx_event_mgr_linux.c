@@ -17,6 +17,8 @@
 struct hdmitx_event_mgr {
 	/*for uevent*/
 	struct kobject *kobj;
+	/* can't send uevent after enter suspend */
+	bool deep_suspend_flag;
 	/*for extcon event*/
 	struct extcon_dev *hdmitx_extcon_hdmi;
 	struct device *attached_extcon_dev;
@@ -114,6 +116,12 @@ struct hdmitx_event_mgr *hdmitx_event_mgr_create(struct platform_device *extcon_
 	return instance;
 }
 
+void hdmitx_event_mgr_suspend(struct hdmitx_event_mgr *event_mgr, bool suspend_flag)
+{
+	if (event_mgr)
+		event_mgr->deep_suspend_flag = suspend_flag;
+}
+
 int hdmitx_event_mgr_destroy(struct hdmitx_event_mgr *event_mgr)
 {
 	if (!event_mgr)
@@ -160,7 +168,7 @@ int hdmitx_event_mgr_set_uevent_state(struct hdmitx_event_mgr *event_mgr,
 }
 
 int hdmitx_event_mgr_send_uevent(struct hdmitx_event_mgr *uevent_mgr,
-	enum hdmitx_event type, int val, bool force)
+	enum hdmitx_event type, int state, bool force)
 {
 	char env[MAX_UEVENT_LEN];
 	struct hdmitx_uevent *event = hdmi_events;
@@ -176,21 +184,28 @@ int hdmitx_event_mgr_send_uevent(struct hdmitx_event_mgr *uevent_mgr,
 	if (event->type == HDMITX_NONE_EVENT)
 		return -EINVAL;
 
-	if (event->state == val && !force)
+	if (event->state == state && !force)
 		return 0;
 
-	event->state = val;
+	event->state = state;
 	memset(env, 0, sizeof(env));
 	envp[0] = env;
 	envp[1] = NULL;
-	snprintf(env, MAX_UEVENT_LEN, "%s%d", event->env, val);
+	snprintf(env, MAX_UEVENT_LEN, "%s%d", event->env, state);
 
-	ret = kobject_uevent_env(uevent_mgr->kobj, KOBJ_CHANGE, envp);
+	if (uevent_mgr->deep_suspend_flag) {
+		if (type == HDMITX_HPD_EVENT && uevent_mgr->hdmitx_extcon_hdmi) {
+			extcon_set_state(uevent_mgr->hdmitx_extcon_hdmi, EXTCON_DISP_HDMI, state);
+			extcon_event = true;
+		}
+	} else {
+		ret = kobject_uevent_env(uevent_mgr->kobj, KOBJ_CHANGE, envp);
 
-	if (type == HDMITX_HPD_EVENT) {
-		extcon_set_state_sync(uevent_mgr->hdmitx_extcon_hdmi,
-			EXTCON_DISP_HDMI, val);
-		extcon_event = true;
+		if (type == HDMITX_HPD_EVENT && uevent_mgr->hdmitx_extcon_hdmi) {
+			extcon_set_state_sync(uevent_mgr->hdmitx_extcon_hdmi,
+				EXTCON_DISP_HDMI, state);
+			extcon_event = true;
+		}
 	}
 
 	HDMITX_DEBUG_EVENT("%s %s %d %d\n", __func__, env, ret, extcon_event);

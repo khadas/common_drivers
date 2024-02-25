@@ -4444,6 +4444,7 @@ static int amhdmitx_probe(struct platform_device *pdev)
 
 	/*platform related functions*/
 	tx_event_mgr = hdmitx_event_mgr_create(pdev, hdev->hdtx_dev);
+	hdmitx_event_mgr_suspend(tx_event_mgr, false);
 	hdmitx_common_attch_platform_data(tx_comm,
 		HDMITX_PLATFORM_UEVENT, tx_event_mgr);
 	tx_tracer = hdmitx_tracer_create(tx_event_mgr);
@@ -4678,8 +4679,10 @@ static int amhdmitx_suspend(struct platform_device *pdev,
 			    pm_message_t state)
 {
 	struct hdmitx_dev *hdev = dev_get_drvdata(&pdev->dev);
+	struct hdmitx_common *tx_comm = &hdev->tx_comm;
 
 	hdmitx_clk_ctrl(hdev, 0);
+	hdmitx_event_mgr_suspend(tx_comm->event_mgr, true);
 	/* if HPD is high before suspend, and there were hpd
 	 * plugout -> in event happened in deep suspend stage,
 	 * now resume and stay in early resume stage, still
@@ -4708,6 +4711,7 @@ static int amhdmitx_resume(struct platform_device *pdev)
 	if (hdev->tx_hw.chip_data->chip_type == MESON_CPU_ID_S7)
 		hdmitx_hw_cntl_config(&hdev->tx_hw.base, CONF_HW_INIT, 0);
 	mutex_lock(&tx_comm->hdmimode_mutex);
+	hdmitx_event_mgr_suspend(tx_comm->event_mgr, false);
 	/* need to update EDID in case TV changed during suspend */
 	tx_comm->hpd_state = !!(hdmitx_hw_cntl_misc(tx_hw_base, MISC_HPD_GPI_ST, 0));
 	if (tx_comm->hpd_state)

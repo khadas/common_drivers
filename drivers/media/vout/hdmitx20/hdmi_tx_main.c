@@ -3833,6 +3833,7 @@ static int amhdmitx_probe(struct platform_device *pdev)
 
 	/*platform related functions*/
 	tx_uevent_mgr = hdmitx_event_mgr_create(pdev, hdev->hdtx_dev);
+	hdmitx_event_mgr_suspend(tx_uevent_mgr, false);
 	hdmitx_common_attch_platform_data(tx_comm,
 		HDMITX_PLATFORM_UEVENT, tx_uevent_mgr);
 	tx_tracer = hdmitx_tracer_create(tx_uevent_mgr);
@@ -4035,7 +4036,9 @@ static int amhdmitx_suspend(struct platform_device *pdev,
 			    pm_message_t state)
 {
 	struct hdmitx_dev *hdev = dev_get_drvdata(&pdev->dev);
+	struct hdmitx_common *tx_comm = &hdev->tx_comm;
 
+	hdmitx_event_mgr_suspend(tx_comm->event_mgr, true);
 	_amhdmitx_suspend(hdev);
 	return 0;
 }
@@ -4047,6 +4050,7 @@ static int amhdmitx_resume(struct platform_device *pdev)
 	struct hdmitx_hw_common *tx_hw_base = tx_comm->tx_hw;
 
 	mutex_lock(&tx_comm->hdmimode_mutex);
+	hdmitx_event_mgr_suspend(tx_comm->event_mgr, false);
 	/* need to update EDID in case TV changed during suspend */
 	tx_comm->hpd_state = !!(hdmitx_hw_cntl_misc(tx_hw_base, MISC_HPD_GPI_ST, 0));
 	if (tx_comm->hpd_state)

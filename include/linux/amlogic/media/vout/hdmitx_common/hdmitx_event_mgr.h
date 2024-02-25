@@ -38,6 +38,7 @@ int hdmitx_event_mgr_send_uevent(struct hdmitx_event_mgr *event_mgr,
 	enum hdmitx_event type, int val, bool force);
 int hdmitx_event_mgr_set_uevent_state(struct hdmitx_event_mgr *event_mgr,
 	enum hdmitx_event type, int state);
+void hdmitx_event_mgr_suspend(struct hdmitx_event_mgr *event_mgr, bool suspend_flag);
 
 int hdmitx_event_mgr_notifier_register(struct hdmitx_event_mgr *event_mgr,
 	struct hdmitx_notifier_client *nb);

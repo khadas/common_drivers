@@ -127,7 +127,8 @@
 /* 2023.11.13 fix t3x irq issue */
 /* 2024.01.08 support to get AVI info */
 /* 2024.02.05 Fix t5d accessing illegal addresses */
-#define RX_VER1 "ver.2024/02/06"
+/* 2024.03.04 fix kernel panic on T7C without hdmirx */
+#define RX_VER1 "ver.2024/03/04"
 
 /* 50ms timer for hdmirx main loop (HDMI_STATE_CHECK_FREQ is 20) */
 

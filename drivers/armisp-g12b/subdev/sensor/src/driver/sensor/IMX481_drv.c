@@ -313,7 +313,7 @@ static void sensor_set_mode( void *ctx, uint8_t mode )
     param->bayer = param->modes_table[mode].bayer;
     p_ctx->wdr_mode = param->modes_table[mode].wdr_mode;
 
-    sensor_set_iface(&param->modes_table[mode], p_ctx->win_offset);
+    sensor_set_iface(&param->modes_table[mode], p_ctx->win_offset, p_ctx);
 
     LOG( LOG_CRIT, "Mode %d, Setting num: %d, RES:%dx%d\n", mode, setting_num,
                 (int)param->active.width, (int)param->active.height );
@@ -372,7 +372,7 @@ void sensor_deinit_imx481( void *ctx )
 
     reset_sensor_bus_counter();
 
-    sensor_iface_disable();
+    sensor_iface_disable(t_ctx);
 
     acamera_sbus_deinit(&t_ctx->sbus, sbus_i2c);
 
@@ -394,7 +394,7 @@ static sensor_context_t *sensor_global_parameter(void* sbp)
 #endif
 
 #if PLATFORM_G12B
-    ret = clk_am_enable(sensor_bp, "g12a_24m");
+    ret = clk_am_enable(sensor_bp, "24m");
     if (ret < 0 )
         pr_err("set mclk fail\n");
 #elif PLATFORM_C305X
@@ -414,7 +414,7 @@ static sensor_context_t *sensor_global_parameter(void* sbp)
     sensor_ctx.sbus.mask = SBUS_MASK_ADDR_16BITS |
                         SBUS_MASK_SAMPLE_8BITS |SBUS_MASK_ADDR_SWAP_BYTES;
     sensor_ctx.sbus.control = I2C_CONTROL_MASK;
-    sensor_ctx.sbus.bus = 1;//get_next_sensor_bus_address();
+    sensor_ctx.sbus.bus = 0;//get_next_sensor_bus_address();
     sensor_ctx.sbus.device = SENSOR_DEV_ADDRESS;
     acamera_sbus_init(&sensor_ctx.sbus, sbus_i2c);
 
@@ -439,6 +439,8 @@ static sensor_context_t *sensor_global_parameter(void* sbp)
     sensor_ctx.param.isp_context_seq.sequence = p_isp_data;
     sensor_ctx.param.isp_context_seq.seq_num= SENSOR_IMX481_CONTEXT_SEQ;
     sensor_ctx.param.isp_context_seq.seq_table_max = array_size_s( isp_seq_table );
+    sensor_ctx.cam_isp_path = CAM0_ACT;
+    sensor_ctx.dcam_mode = 0;
 
     memset(&sensor_ctx.win_offset, 0, sizeof(sensor_ctx.win_offset));
 
@@ -481,7 +483,7 @@ int sensor_detect_imx481( void* sbp)
     sensor_ctx.sbp = sbp;
 
 #if PLATFORM_G12B
-    ret = clk_am_enable(sensor_bp, "g12a_24m");
+    ret = clk_am_enable(sensor_bp, "24m");
     if (ret < 0 )
         pr_err("set mclk fail\n");
 #elif PLATFORM_C305X

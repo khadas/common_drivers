@@ -284,6 +284,7 @@ typedef struct _sensor_control_t {
      *
      */
     uint32_t ( *vmax_fps )( void *ctx, uint32_t framerate );
+    void ( *dcam_mode )( void *ctx, int32_t mode );
 } sensor_control_t;
 
 

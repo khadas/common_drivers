@@ -52,6 +52,12 @@ extern void system_isp_proc_remove( struct device *dev );
 #define LOG_CONTEXT "[ ACamera ]"
 #define ISP_V4L2_MODULE_NAME "isp-v4l2"
 
+uint32_t global_isp_clk_rate = 400000000;
+unsigned int g_firmware_context_number = 1;
+unsigned int dcam = 2;
+module_param(dcam, uint, 0664);
+MODULE_PARM_DESC(dcam, "\n camera number\n");
+
 #if PLATFORM_G12B
 #define AO_RTI_GEN_PWR_SLEEP0   (0xff800000 + 0x3a * 4)
 #define AO_RTI_GEN_PWR_ISO0     (0xff800000 + 0x3b * 4)
@@ -111,8 +117,7 @@ struct device_info {
 };
 
 extern uint32_t seamless;
-extern uint8_t *isp_kaddr;
-extern resource_size_t isp_paddr;
+extern temper_addr isp_temper_paddr[FIRMWARE_CONTEXT_NUMBER];
 
 extern void system_interrupts_set_irq( int irq_num, int flags );
 extern void system_interrupts_init(void);
@@ -120,7 +125,8 @@ extern void system_interrupts_deinit(void);
 extern uintptr_t acamera_get_isp_sw_setting_base( void );
 
 //map and unmap fpga memory
-extern int32_t init_hw_io( resource_size_t addr, resource_size_t size );
+extern int32_t init_hw_isp_io( resource_size_t addr, resource_size_t size );
+extern void init_hw_adap_io(void);
 extern int32_t close_hw_io( void );
 
 static struct v4l2_device v4l2_dev;
@@ -139,7 +145,9 @@ struct acamera_v4l2_subdev_t {
     struct v4l2_subdev *soc_subdevs[V4L2_SOC_SUBDEV_NUMBER];
     struct v4l2_async_subdev soc_async_sd[V4L2_SOC_SUBDEV_NUMBER];
     struct v4l2_async_subdev *soc_async_sd_ptr[V4L2_SOC_SUBDEV_NUMBER];
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0))
     struct device_node *pnode[V4L2_SOC_SUBDEV_NUMBER];
+#endif
     int subdev_counter;
     struct v4l2_async_notifier notifier;
     uint32_t hw_isp_addr;
@@ -487,11 +495,13 @@ static ssize_t dump_frame_write(
             pr_info("use v4l2 test app dump DS1\n");
         }
     } else if (!strcmp(parm[0], "fr")) {
-        if (parm[1] != NULL)
-            write_to_file(parm[1], phys_to_virt(isp_paddr) + buff_offset, buff_size);
-            pr_info("arm 5.15  linux do not support open file. \n");
-    } else
+        if (parm[1] != NULL) {
+            write_to_file(parm[1], phys_to_virt(isp_temper_paddr[0].isp_paddr) + buff_offset, buff_size);
+        }
+        pr_info("arm 5.15  linux do not support open file. \n");
+    } else {
         pr_info("unsupprt cmd!\n");
+    }
 
     kfree(buf_orig);
     return ret;
@@ -593,6 +603,8 @@ static ssize_t isp_clk_write(
          kfree(buf_orig);
          return -EINVAL;
     }
+
+    global_isp_clk_rate = clk_rate;
     pr_err("clk_level: %d, clk %d\n",clk_level, clk_rate);
     clk_set_rate(dev_info.clk_isp_0, clk_rate);
     rt = clk_prepare_enable(dev_info.clk_isp_0);
@@ -639,18 +651,18 @@ uint32_t isp_power_on(void)
 {
     uint32_t orig, tmp;
 
-    orig = read_reg(AO_RTI_GEN_PWR_SLEEP0);			//AO_PWR_SLEEP0
-    tmp = orig & 0xfff3ffff;						//set bit[18-19]=0
+    orig = read_reg(AO_RTI_GEN_PWR_SLEEP0);         //AO_PWR_SLEEP0
+    tmp = orig & 0xfff3ffff;                        //set bit[18-19]=0
     write_reg(tmp, AO_RTI_GEN_PWR_SLEEP0);
     mdelay(5);
-    orig = read_reg(AO_RTI_GEN_PWR_ISO0);			//AO_PWR_ISO0
-    tmp = orig & 0xfff3ffff;						//set bit[18-19]=0
+    orig = read_reg(AO_RTI_GEN_PWR_ISO0);           //AO_PWR_ISO0
+    tmp = orig & 0xfff3ffff;                        //set bit[18-19]=0
     write_reg(tmp, AO_RTI_GEN_PWR_ISO0);
 
-    write_reg(0x0, HHI_ISP_MEM_PD_REG0);			//MEM_PD_REG0 set 0
-    write_reg(0x0, HHI_ISP_MEM_PD_REG1);			//MEM_PD_REG1 set 0
-    write_reg(0x5b446585, HHI_CSI_PHY_CNTL0);		//HHI_CSI_PHY_CNTL0
-    write_reg(0x803f4321, HHI_CSI_PHY_CNTL1);		//HHI_CSI_PHY_CNTL1
+    write_reg(0x0, HHI_ISP_MEM_PD_REG0);            //MEM_PD_REG0 set 0
+    write_reg(0x0, HHI_ISP_MEM_PD_REG1);            //MEM_PD_REG1 set 0
+    write_reg(0x5b446585, HHI_CSI_PHY_CNTL0);       //HHI_CSI_PHY_CNTL0
+    write_reg(0x803f4321, HHI_CSI_PHY_CNTL1);       //HHI_CSI_PHY_CNTL1
     return 0;
 }
 
@@ -696,24 +708,24 @@ uint32_t isp_power_on(void)
 {
     uint32_t orig, tmp;
 
-    orig = read_reg(PWRCTRL_PWR_OFF0);			//AO_PWR_SLEEP0
-    tmp = orig & 0xefffffff;						//set bit[28]=0
+    orig = read_reg(PWRCTRL_PWR_OFF0);          //AO_PWR_SLEEP0
+    tmp = orig & 0xefffffff;                        //set bit[28]=0
     write_reg(tmp, PWRCTRL_PWR_OFF0);
     mdelay(5);
-    orig = read_reg(PWRCTRL_ISO_EN0);			//AO_PWR_ISO0
-    tmp = orig & 0xefffffff;						//set bit[28]=0
+    orig = read_reg(PWRCTRL_ISO_EN0);           //AO_PWR_ISO0
+    tmp = orig & 0xefffffff;                        //set bit[28]=0
     write_reg(tmp, PWRCTRL_ISO_EN0);
     mdelay(5);
-    orig = read_reg(PWRCTRL_FOCRSTN0);			//AO_PWR_ISO0
-    tmp = orig & 0xefffffff;						//set bit[28]=0
+    orig = read_reg(PWRCTRL_FOCRSTN0);          //AO_PWR_ISO0
+    tmp = orig & 0xefffffff;                        //set bit[28]=0
     write_reg(tmp, PWRCTRL_FOCRSTN0);
 
 
-    write_reg(0x0, PWRCTRL_MASK_MEM_ON5);			//MEM_PD_REG0 set 0
-    write_reg(0x0, PWRCTRL_MASK_MEM_ON6);			//MEM_PD_REG1 set 0
-    //write_reg(0x0d010d00, ISP_MIPI_CLK);		        //isp & mipi clk
-    //write_reg(0x2f440603, ANACTRL_CSI_PHY_CNTL0);		//HHI_CSI_PHY_CNTL0
-    //write_reg(0x003f2222, ANACTRL_CSI_PHY_CTRL1);		//HHI_CSI_PHY_CNTL1
+    write_reg(0x0, PWRCTRL_MASK_MEM_ON5);           //MEM_PD_REG0 set 0
+    write_reg(0x0, PWRCTRL_MASK_MEM_ON6);           //MEM_PD_REG1 set 0
+    //write_reg(0x0d010d00, ISP_MIPI_CLK);              //isp & mipi clk
+    //write_reg(0x2f440603, ANACTRL_CSI_PHY_CNTL0);     //HHI_CSI_PHY_CNTL0
+    //write_reg(0x003f2222, ANACTRL_CSI_PHY_CTRL1);     //HHI_CSI_PHY_CNTL1
 
     return 0;
 }
@@ -777,9 +789,9 @@ uint32_t isp_power_on(void)
     val = val & (~(1 << 28));
     write_reg(val, P_PWRCTRL_ISO_EN0);
 
-    write_reg(0x0d010d00, ISP_MIPI_CLK);		        //isp & mipi clk
-    write_reg(0x2f440603, ANACTRL_CSI_PHY_CNTL0);		//HHI_CSI_PHY_CNTL0
-    write_reg(0x003f2222, ANACTRL_CSI_PHY_CTRL1);		//HHI_CSI_PHY_CNTL1
+    write_reg(0x0d010d00, ISP_MIPI_CLK);                //isp & mipi clk
+    write_reg(0x2f440603, ANACTRL_CSI_PHY_CNTL0);       //HHI_CSI_PHY_CNTL0
+    write_reg(0x003f2222, ANACTRL_CSI_PHY_CTRL1);       //HHI_CSI_PHY_CNTL1
 
     LOG(LOG_INFO, "Success power on");
     return 0;
@@ -874,10 +886,10 @@ int32_t isp_clk_enable(void)
     }
 
 #if PLATFORM_G12B == 1
-	uint32_t isp_mipi_rate = 200000000;
-	LOG(LOG_ERR, "isp clk level: %d, clk rate: %d", dev_info.clk_level, isp_clk_rate);
+    uint32_t isp_mipi_rate = 200000000;
+    LOG(LOG_ERR, "isp clk level: %d, clk rate: %d", dev_info.clk_level, isp_clk_rate);
 
-	clk_set_rate(dev_info.clk_isp_0, isp_clk_rate);
+    clk_set_rate(dev_info.clk_isp_0, isp_clk_rate);
 #endif
     rc = clk_prepare_enable(dev_info.clk_isp_0);
     if (rc != 0) {
@@ -886,7 +898,7 @@ int32_t isp_clk_enable(void)
     }
 
 #if PLATFORM_G12B == 1
-	clk_set_rate(dev_info.clk_mipi_0, isp_mipi_rate);
+    clk_set_rate(dev_info.clk_mipi_0, isp_mipi_rate);
 #endif
     rc = clk_prepare_enable(dev_info.clk_mipi_0);
     if (rc != 0) {
@@ -909,6 +921,8 @@ int32_t isp_clk_enable(void)
         LOG(LOG_CRIT, "isp set clk:%ld\n", clk_get_rate(dev_info.clk_isp_0));
     }
 #endif
+
+    global_isp_clk_rate = isp_clk_rate;
 
     return rc;
 }
@@ -967,9 +981,9 @@ static uint32_t isp_module_check(struct platform_device *pdev)
 
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 10, 0))
 static const struct v4l2_async_notifier_operations acamera_camera_async_ops = {
-	.bound = acamera_camera_async_bound,
-	.unbind = acamera_camera_async_unbind,
-	.complete = acamera_camera_async_complete,
+    .bound = acamera_camera_async_bound,
+    .unbind = acamera_camera_async_unbind,
+    .complete = acamera_camera_async_complete,
 };
 #endif
 static int32_t isp_platform_probe( struct platform_device *pdev )
@@ -993,7 +1007,7 @@ static int32_t isp_platform_probe( struct platform_device *pdev )
         IORESOURCE_MEM, 0 );
     if ( isp_res ) {
         LOG( LOG_ERR, "Juno isp address = 0x%lx, end = 0x%lx !\n", isp_res->start, isp_res->end );
-        if ( init_hw_io( isp_res->start, ( isp_res->end - isp_res->start ) + 1 ) != 0 ) {
+        if ( init_hw_isp_io( isp_res->start, ( isp_res->end - isp_res->start ) + 1 ) != 0 ) {
             LOG( LOG_ERR, "Error on mapping gdc memory! \n" );
         }
     } else {
@@ -1001,6 +1015,7 @@ static int32_t isp_platform_probe( struct platform_device *pdev )
     }
 
     isp_power_on();
+    init_hw_adap_io();
 
     of_reserved_mem_device_init(&(pdev->dev));
 
@@ -1082,6 +1097,10 @@ static int32_t isp_platform_probe( struct platform_device *pdev )
         LOG( LOG_ERR, "failed to register v4l2 device. rc = %d", rc );
         goto free_res;
     }
+
+    g_firmware_context_number = dcam;
+    LOG(LOG_CRIT, "cam num:%d", g_firmware_context_number);
+
 #if V4L2_SOC_SUBDEV_ENABLE
     int idx;
 
@@ -1218,7 +1237,7 @@ MODULE_DEVICE_TABLE( of, isp_dt_match );
 
 static struct platform_driver isp_platform_driver = {
     .probe = isp_platform_probe,
-    .remove	= isp_platform_remove,
+    .remove = isp_platform_remove,
     .driver = {
         .name = "arm_isp",
         .owner = THIS_MODULE,

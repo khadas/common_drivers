@@ -32,7 +32,7 @@ EXTRA_CFLAGS := -I$(M_PATH)/app -I$(M_PATH)/inc -I$(M_PATH)/app/control \
                 -I$(M_PATH)/src/fw_lib -I$(M_PATH)/src/calibration \
                 -I$(M_PATH)/src/driver/sensor -I$(M_PATH)/src/driver/lens
 
-EXTRA_CFLAGS += -Wno-declaration-after-statement -Idrivers/staging/android/
+EXTRA_CFLAGS += -Wno-declaration-after-statement -Idrivers/staging/android/ -Wno-unused-parameter
 
 ccflags-y += -DCONFIG_G12B
 
@@ -46,5 +46,4 @@ modules_install:
 	cp $(OUT_DIR)/$(M)/*.ko ${OUT_DIR}/../vendor_lib/modules/
 
 clean:
-	#@$(MAKE) -C $(KERNEL_SRC) M=$(M) clean
-	rm -rf $(FW_SRC_OBJ) $(M_PATH)/*.ko
+	@$(MAKE) -C $(KERNEL_SRC) M=$(M) clean

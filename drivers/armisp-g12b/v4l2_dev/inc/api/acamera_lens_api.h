@@ -34,7 +34,8 @@ enum {
     LENS_VCM_DRIVER_BU64748,  //lens type for BU64748
     LENS_VCM_DRIVER_AN41908A, //lens type for AN41908A
     LENS_VCM_DRIVER_MODEL,    //lens type for C++ Model
-    LENS_VCM_DRIVER_NULL      //null lens driver
+    LENS_VCM_DRIVER_NULL,      //null lens driver
+    LENS_VCM_DRIVER_DW9714    //lens type for dw9714
 };
 
 

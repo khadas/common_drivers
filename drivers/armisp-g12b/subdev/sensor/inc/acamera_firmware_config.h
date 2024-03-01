@@ -44,7 +44,7 @@
 #define CONFIG_SLT_TEST 0
 #endif
 
-#define FIRMWARE_CONTEXT_NUMBER 1
+#define FIRMWARE_CONTEXT_NUMBER 2
 #define FSM_NAMES {"GENERIC",}
 #define FW_LOG_FROM_ISR 0
 #define FW_LOG_HAS_SRC 1

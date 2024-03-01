@@ -286,11 +286,18 @@ enum SocCamera_ioctl {
     // return sensor fps by vmax adjust
     // input: sensor mode
     // output: val_out - fps
+    SOC_SENSOR_SET_DCAM_MODE,
     SOC_SENSOR_VMAX_FPS_GET,
 
     // input: sensor fps by vmax adjust
     // output: none
     SOC_SENSOR_VMAX_FPS_SET,
+    // input: none
+    // output: none
+    SOC_SENSOR_POWER_ON,
+    // input: none
+    // output: none
+    SOC_SENSOR_POWER_OFF,
 };
 
 

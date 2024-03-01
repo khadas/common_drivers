@@ -74,19 +74,20 @@ int gamma_manual_fsm_set_param( void *fsm, uint32_t param_id, void *input, uint3
         gamma_manual_set_new_param( p_fsm, (sbuf_gamma_t *)input );
 
         break;
-	case FSM_PARAM_SET_GAMMA_PRESET:
-		if ( !input || input_size != sizeof( isp_gamma_preset_t ) ) {
-			LOG( LOG_ERR, "Invalid param, param_id: %d.", param_id );
-			rc = -1;
-			break;
-		}
 
-		isp_gamma_preset_t *p_new = (isp_gamma_preset_t *)input;
-		//p_fsm->skip_cnt = p_new->skip_cnt;
-		p_fsm->gamma_gain = p_new->gamma_gain;
-		p_fsm->gamma_offset = p_new->gamma_offset;
-		gamma_manual_update(p_fsm);
-		break;
+    case FSM_PARAM_SET_GAMMA_PRESET:
+        if ( !input || input_size != sizeof( isp_gamma_preset_t ) ) {
+            LOG( LOG_ERR, "Invalid param, param_id: %d.", param_id );
+            rc = -1;
+            break;
+        }
+
+        isp_gamma_preset_t *p_new = (isp_gamma_preset_t *)input;
+        //p_fsm->skip_cnt = p_new->skip_cnt;
+        p_fsm->gamma_gain = p_new->gamma_gain;
+        p_fsm->gamma_offset = p_new->gamma_offset;
+        gamma_manual_update(p_fsm);
+        break;
 
     default:
         rc = -1;

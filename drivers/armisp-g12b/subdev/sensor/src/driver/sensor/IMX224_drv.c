@@ -389,7 +389,7 @@ static void sensor_set_mode( void *ctx, uint8_t mode )
     param->bayer = param->modes_table[mode].bayer;
     p_ctx->wdr_mode = param->modes_table[mode].wdr_mode;
 
-    sensor_set_iface(&param->modes_table[mode], p_ctx->win_offset);
+    //sensor_set_iface(&param->modes_table[mode], p_ctx->win_offset);
 
     LOG( LOG_INFO, "Output resolution from sensor: %dx%d wdr_mode: %d", param->active.width, param->active.height, p_ctx->wdr_mode ); // LOG_NOTICE Causes errors in some projects
 }
@@ -426,7 +426,7 @@ static void stop_streaming( void *ctx )
     acamera_sbus_write_u8( p_sbus, 0x3000, 0x01 );
 
     reset_sensor_bus_counter();
-    sensor_iface_disable();
+    sensor_iface_disable(p_ctx);
 }
 
 static void start_streaming( void *ctx )
@@ -434,14 +434,14 @@ static void start_streaming( void *ctx )
     sensor_context_t *p_ctx = ctx;
     acamera_sbus_ptr_t p_sbus = &p_ctx->sbus;
     sensor_param_t *param = &p_ctx->param;
-    sensor_set_iface(&param->modes_table[param->mode], p_ctx->win_offset);
+    sensor_set_iface(&param->modes_table[param->mode], p_ctx->win_offset, p_ctx);
     p_ctx->streaming_flg = 1;
     acamera_sbus_write_u8( p_sbus, 0x3000, 0x00 );
 }
 
 static void sensor_test_pattern( void *ctx, uint8_t mode )
 {
-	return;
+    return;
 }
 
 void sensor_deinit_imx224( void *ctx )
@@ -475,7 +475,7 @@ static sensor_context_t *sensor_global_parameter(void* sbp)
 
     sensor_ctx.sbus.mask = SBUS_MASK_SAMPLE_8BITS | SBUS_MASK_ADDR_16BITS | SBUS_MASK_ADDR_SWAP_BYTES;
     sensor_ctx.sbus.control = 0;
-    sensor_ctx.sbus.bus = 1;
+    sensor_ctx.sbus.bus = 0;
     sensor_ctx.sbus.device = SENSOR_DEV_ADDRESS;
     acamera_sbus_init( &sensor_ctx.sbus, sbus_i2c );
 
@@ -501,6 +501,8 @@ static sensor_context_t *sensor_global_parameter(void* sbp)
     sensor_ctx.param.sensor_ctx = &sensor_ctx;
     sensor_ctx.param.isp_context_seq.sequence = p_isp_data;
     sensor_ctx.param.isp_context_seq.seq_num= SENSOR_IMX224_CONTEXT_SEQ;
+    sensor_ctx.cam_isp_path = CAM0_ACT;
+    sensor_ctx.dcam_mode = 0;
 
     memset(&sensor_ctx.win_offset, 0, sizeof(sensor_ctx.win_offset));
     sensor_ctx.win_offset.long_offset = 8;

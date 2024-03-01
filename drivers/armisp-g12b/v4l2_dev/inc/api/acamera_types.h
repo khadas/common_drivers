@@ -28,6 +28,11 @@
 #include <stdint.h>
 #endif
 
+typedef struct _temper_addr {
+    resource_size_t isp_paddr;
+    void * isp_kaddr;
+} temper_addr;
+
 typedef enum af_state {
     AF_STATE_INACTIVE,
     AF_STATE_SCAN,

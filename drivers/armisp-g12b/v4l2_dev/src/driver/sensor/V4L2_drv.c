@@ -32,7 +32,7 @@ extern void *acamera_camera_v4l2_get_subdev_by_name( const char *name );
 
 #define V4L2_SENSOR_MAXIMUM_PRESETS_NUM 16
 
-static sensor_mode_t supported_modes[V4L2_SENSOR_MAXIMUM_PRESETS_NUM];
+static sensor_mode_t supported_modes[FIRMWARE_CONTEXT_NUMBER][V4L2_SENSOR_MAXIMUM_PRESETS_NUM];
 
 
 typedef struct _sensor_context_t {
@@ -161,7 +161,7 @@ static void sensor_update_parameters( void *ctx )
             }
 
 
-            p_ctx->param.modes_table = supported_modes;
+            p_ctx->param.modes_table = supported_modes[ctx_num];
             int32_t idx = 0;
             for ( idx = 0; idx < p_ctx->param.modes_num; idx++ ) {
                 settings.args.general.val_in = idx;
@@ -303,6 +303,28 @@ static int32_t sensor_ir_cut_set( void *ctx, int32_t ir_cut_state )
         LOG( LOG_CRIT, "Sensor context pointer is NULL" );
     }
     return 0;
+}
+
+static void sensor_dcam_mode( void *ctx, int32_t mode )
+{
+    sensor_context_t *p_ctx = ctx;
+    if ( p_ctx != NULL ) {
+        struct soc_sensor_ioctl_args settings;
+        struct v4l2_subdev *sd = p_ctx->soc_sensor;
+        uint32_t ctx_num = get_ctx_num( ctx );
+        if ( sd != NULL && ctx_num < FIRMWARE_CONTEXT_NUMBER ) {
+            settings.ctx_num = ctx_num;
+            settings.args.general.val_in = mode;
+            int rc = v4l2_subdev_call( sd, core, ioctl, SOC_SENSOR_SET_DCAM_MODE, &settings );
+            if ( rc != 0 ) {
+                LOG( LOG_ERR, "Failed to set cam mode. rc = %d", rc );
+            }
+        } else {
+            LOG( LOG_CRIT, "SOC sensor subdev pointer is NULL" );
+        }
+    } else {
+        LOG( LOG_CRIT, "Sensor context pointer is NULL" );
+    }
 }
 
 static uint32_t sensor_vmax_fps( void *ctx, uint32_t framerate )
@@ -597,8 +619,9 @@ void sensor_init_v4l2( void **ctx, sensor_control_t *ctrl )
         ctrl->stop_streaming = stop_streaming;
         ctrl->ir_cut_set = sensor_ir_cut_set;
         ctrl->vmax_fps = sensor_vmax_fps;
+        ctrl->dcam_mode = sensor_dcam_mode;
 
-        p_ctx->param.modes_table = supported_modes;
+        p_ctx->param.modes_table = supported_modes[ctx_counter];
         p_ctx->param.modes_num = 0;
 
         *ctx = p_ctx;

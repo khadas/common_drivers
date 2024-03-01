@@ -490,7 +490,7 @@ static void sensor_set_mode( void *ctx, uint8_t mode )
     p_ctx->vmax_adjust = p_ctx->vmax;
     p_ctx->vmax_fps = p_ctx->s_fps;
 
-    sensor_set_iface(&param->modes_table[mode], p_ctx->win_offset);
+    //sensor_set_iface(&param->modes_table[mode], p_ctx->win_offset);
 
     LOG( LOG_CRIT, "Mode %d, Setting num: %d, RES:%dx%d\n", mode, setting_num,
                 (int)param->active.width, (int)param->active.height );
@@ -529,7 +529,7 @@ static void stop_streaming( void *ctx )
     acamera_sbus_write_u8( p_sbus, 0x3000, 0x01 );
 
     reset_sensor_bus_counter();
-    sensor_iface_disable();
+    sensor_iface_disable(p_ctx);
 }
 
 static void start_streaming( void *ctx )
@@ -537,7 +537,7 @@ static void start_streaming( void *ctx )
     sensor_context_t *p_ctx = ctx;
     acamera_sbus_ptr_t p_sbus = &p_ctx->sbus;
     sensor_param_t *param = &p_ctx->param;
-    sensor_set_iface(&param->modes_table[param->mode], p_ctx->win_offset);
+    sensor_set_iface(&param->modes_table[param->mode], p_ctx->win_offset, p_ctx);
     p_ctx->streaming_flg = 1;
     acamera_sbus_write_u8( p_sbus, 0x3000, 0x00 );
 }
@@ -587,7 +587,7 @@ static sensor_context_t *sensor_global_parameter(void* sbp)
     sensor_ctx.sdrv = &imx334_ctx;
 
 #if PLATFORM_G12B
-    ret = clk_am_enable(sensor_bp, "g12a_24m");
+    ret = clk_am_enable(sensor_bp, "24m");
     if (ret < 0 )
         pr_err("set mclk fail\n");
 
@@ -607,7 +607,7 @@ static sensor_context_t *sensor_global_parameter(void* sbp)
 
     sensor_ctx.sbus.mask = SBUS_MASK_SAMPLE_8BITS | SBUS_MASK_ADDR_16BITS | SBUS_MASK_ADDR_SWAP_BYTES;
     sensor_ctx.sbus.control = 0;
-    sensor_ctx.sbus.bus = 1;
+    sensor_ctx.sbus.bus = 0;
     sensor_ctx.sbus.device = SENSOR_DEV_ADDRESS;
     acamera_sbus_init( &sensor_ctx.sbus, sbus_i2c );
 
@@ -638,6 +638,8 @@ static sensor_context_t *sensor_global_parameter(void* sbp)
     sensor_ctx.param.isp_context_seq.sequence = p_isp_data;
     sensor_ctx.param.isp_context_seq.seq_num= SENSOR_IMX334_ISP_CONTEXT_SEQ;
     sensor_ctx.param.isp_context_seq.seq_table_max = array_size_s( isp_seq_table );
+    sensor_ctx.cam_isp_path = CAM0_ACT;
+    sensor_ctx.dcam_mode = 0;
 
     sensor_ctx.win_offset.offset_x = 0;
     sensor_ctx.win_offset.offset_y = 0;
@@ -688,7 +690,7 @@ int sensor_detect_imx334( void* sbp)
     sensor_ctx.sbp = sbp;
     sensor_bringup_t* sensor_bp = (sensor_bringup_t*) sbp;
 #if PLATFORM_G12B
-    ret = clk_am_enable(sensor_bp, "g12a_24m");
+    ret = clk_am_enable(sensor_bp, "24m");
     if (ret < 0 )
         pr_err("set mclk fail\n");
 #elif PLATFORM_C308X

@@ -79,6 +79,38 @@ int32_t acamera_get_api_context(void)
     return result;
 }
 
+int32_t acamera_get_last_api_context(void)
+{
+    int32_t result = system_hw_read_adap(0x100) & (1 << 26);
+
+    result >>= 26;
+    return result & 0x03;
+}
+
+int32_t acamera_get_current_api_context(void)
+{
+    int32_t result = system_hw_read_adap(0x100) & (1 << 24);
+
+    result >>= 24;
+    return result & 0x03;
+}
+
+int32_t acamera_get_next_api_context(void)
+{
+    int32_t result = system_hw_read_adap(0x100) & (1 << 22);
+
+    result >>= 22;
+    return result & 0x03;
+}
+
+int32_t acamera_get_next_next_api_context(void)
+{
+    int32_t result = system_hw_read_adap(0x100) & (1 << 20);
+
+    result >>= 20;
+    return result & 0x03;
+}
+
 int32_t acamera_get_context_number(void)
 {
     int32_t result = g_firmware.context_number;
@@ -349,6 +381,7 @@ int32_t acamera_init(acamera_settings *settings, uint32_t ctx_num)
         {
 
             g_firmware.api_context = 0;
+            g_firmware.dma_ready = 0;
 
             system_semaphore_init(&g_firmware.sem_evt_avail);
 
@@ -515,7 +548,7 @@ static void acamera_deinit(void)
 
 int32_t acamera_terminate()
 {
-    acamera_logger_empty(); // empty the logger buffer and print remaining logs
+    //acamera_logger_empty(); // empty the logger buffer and print remaining logs
     acamera_deinit();
     system_semaphore_destroy(g_firmware.sem_evt_avail);
 
@@ -532,7 +565,7 @@ int32_t acamera_interrupt_handler()
 
 static void start_processing_frame(void)
 {
-    acamera_context_ptr_t p_ctx = (acamera_context_ptr_t)&g_firmware.fw_ctx[acamera_get_api_context()];
+    acamera_context_ptr_t p_ctx = (acamera_context_ptr_t)&g_firmware.fw_ctx[g_firmware.cam_id_next_next];
 
     // new_frame event to start reading metering memory and run 3A
     acamera_fw_raise_event(p_ctx, event_id_new_frame);
@@ -540,7 +573,7 @@ static void start_processing_frame(void)
 
 static void start_dropping_frame(void)
 {
-    acamera_context_ptr_t p_ctx = (acamera_context_ptr_t)&g_firmware.fw_ctx[acamera_get_api_context()];
+    acamera_context_ptr_t p_ctx = (acamera_context_ptr_t)&g_firmware.fw_ctx[g_firmware.cam_id_next_next];
 
     acamera_fw_raise_event(p_ctx, event_id_drop_frame);
 }
@@ -583,18 +616,28 @@ static void dma_drop_context_func(void *arg)
 }
 
 // single context handler
+//static int isp_irq_count = 0;
 int32_t acamera_interrupt_handler()
 {
     int32_t result = 0;
     int32_t irq_bit = ISP_INTERRUPT_EVENT_NONES_COUNT - 1;
     int not_empty = 0;
 
-    acamera_context_ptr_t p_ctx = (acamera_context_ptr_t)&g_firmware.fw_ctx[acamera_get_api_context()];
+    // irq get camera : %d,%d,%d,%d", g_firmware.cam_id_last, acamera_get_current_api_context(),  g_firmware.cam_id_next, g_firmware.cam_id_next_next
+    g_firmware.cam_id_last = acamera_get_last_api_context();
+    g_firmware.cam_id_next = acamera_get_next_api_context();
+    g_firmware.cam_id_next_next = acamera_get_next_next_api_context();
+    //if (isp_irq_count % 10 == 0) {
+        //pr_err("%s last %d, next %d, next_next %d \n", __func__, g_firmware.cam_id_last, g_firmware.cam_id_next, g_firmware.cam_id_next_next);
+    //}
+    //isp_irq_count++;
+
+    acamera_context_ptr_t p_ctx = (acamera_context_ptr_t)&g_firmware.fw_ctx[g_firmware.cam_id_last];
 
     // read the irq vector from isp
     uint32_t irq_mask = acamera_isp_isp_global_interrupt_status_vector_read(0);
 
-//    LOG(LOG_ERR, "IRQ MASK is %d", irq_mask);
+    LOG(LOG_INFO, "IRQ MASK is %d", irq_mask);
 
     // clear irq vector
     acamera_isp_isp_global_interrupt_clear_write(0, 0);
@@ -606,18 +649,30 @@ int32_t acamera_interrupt_handler()
 #if defined(ISP_INTERRUPT_EVENT_BROKEN_FRAME) && defined(ISP_INTERRUPT_EVENT_MULTICTX_ERROR) && defined(ISP_INTERRUPT_EVENT_DMA_ERROR) && defined(ISP_INTERRUPT_EVENT_WATCHDOG_EXP) && defined(ISP_INTERRUPT_EVENT_FRAME_COLLISION)
         // check for errors in the interrupt
         if ((irq_mask & 1 << ISP_INTERRUPT_EVENT_BROKEN_FRAME) ||
-            (irq_mask & 1 << ISP_INTERRUPT_EVENT_MULTICTX_ERROR) ||
-            (irq_mask & 1 << ISP_INTERRUPT_EVENT_DMA_ERROR) ||
             (irq_mask & 1 << ISP_INTERRUPT_EVENT_WATCHDOG_EXP) ||
             (irq_mask & 1 << ISP_INTERRUPT_EVENT_FRAME_COLLISION))
         {
 
             LOG(LOG_ERR, "Found error resetting ISP. MASK is 0x%x", irq_mask);
+            g_firmware.dma_ready = 0;
 
-            system_irq_status(irq_mask);
+            //system_irq_status(irq_mask);
 
             acamera_fw_error_routine(p_ctx, irq_mask);
             return -1; // skip other interrupts in case of error
+        }
+        else if (irq_mask & 1 << ISP_INTERRUPT_EVENT_MULTICTX_ERROR)
+        {
+            LOG(LOG_INFO, "Found multictx error. MASK is 0x%x", irq_mask);
+            g_firmware.dma_ready = 0;
+        } else if (irq_mask & 1 << ISP_INTERRUPT_EVENT_DMA_ERROR) {
+            LOG( LOG_CRIT, "Found dma error. MASK is 0x%x", irq_mask );
+            g_firmware.dma_ready = 0;
+        }
+        else if (irq_mask & 1 << 10)
+        {
+            LOG(LOG_INFO, "fr dma finish");
+            g_firmware.dma_ready = 0;
         }
 #endif
 
@@ -630,9 +685,12 @@ int32_t acamera_interrupt_handler()
                 // process interrupts
                 if (irq_bit == ISP_INTERRUPT_EVENT_ISP_START_FRAME_START)
                 {
+                    LOG(LOG_INFO, "FS interrupt");
+
+                    g_firmware.dma_ready = -1;
                     if (g_firmware.dma_flag_isp_metering_completed == 0 || g_firmware.dma_flag_isp_config_completed == 0)
                     {
-                        LOG(LOG_CRIT, "DMA is not finished, cfg: %d, meter: %d, skip this frame.", g_firmware.dma_flag_isp_config_completed, g_firmware.dma_flag_isp_metering_completed);
+                        LOG(LOG_INFO, "DMA is not finished, cfg: %d, meter: %d, skip this frame.", g_firmware.dma_flag_isp_config_completed, g_firmware.dma_flag_isp_metering_completed);
                         return -2;
                     }
                     not_empty = acamera_event_queue_not_empty(&p_ctx->fsm_mgr.event_queue);
@@ -659,14 +717,17 @@ int32_t acamera_interrupt_handler()
                             //            |_________|
                             if (!not_empty)
                             {
+                                LOG(LOG_INFO, "DMA metering from pong to DDR of size %d", ACAMERA_METERING_STATS_MEM_SIZE);
                                 // dma all stat memory only to the software context
-                                system_dma_copy_sg(g_firmware.dma_chan_isp_metering, ISP_CONFIG_PING, SYS_DMA_FROM_DEVICE, dma_complete_metering_func, acamera_get_api_context());
-                                system_dma_copy_sg(g_firmware.dma_chan_isp_config, ISP_CONFIG_PING, SYS_DMA_TO_DEVICE, dma_complete_context_func, acamera_get_api_context());
+                                system_dma_copy_sg(g_firmware.dma_chan_isp_metering, ISP_CONFIG_PING, SYS_DMA_FROM_DEVICE, dma_complete_metering_func, g_firmware.cam_id_last);
+
+                                LOG(LOG_INFO, "DMA config from pong to DDR of size %d", ACAMERA_ISP1_SIZE);
+                                system_dma_copy_sg(g_firmware.dma_chan_isp_config, ISP_CONFIG_PING, SYS_DMA_TO_DEVICE, dma_complete_context_func, g_firmware.cam_id_next);
                             }
                             else
                             {
                                 g_firmware.dma_flag_isp_metering_completed = 1;
-                                system_dma_copy_sg(g_firmware.dma_chan_isp_config, ISP_CONFIG_PING, SYS_DMA_TO_DEVICE, dma_drop_context_func, acamera_get_api_context());
+                                system_dma_copy_sg(g_firmware.dma_chan_isp_config, ISP_CONFIG_PING, SYS_DMA_TO_DEVICE, dma_drop_context_func, g_firmware.cam_id_next);
                             }
                         }
                         else
@@ -685,14 +746,17 @@ int32_t acamera_interrupt_handler()
 
                             if (!not_empty)
                             {
+                                LOG(LOG_INFO, "DMA metering from ping to DDR of size %d", ACAMERA_METERING_STATS_MEM_SIZE);
                                 // dma all stat memory only to the software context
-                                system_dma_copy_sg(g_firmware.dma_chan_isp_metering, ISP_CONFIG_PONG, SYS_DMA_FROM_DEVICE, dma_complete_metering_func, acamera_get_api_context());
-                                system_dma_copy_sg(g_firmware.dma_chan_isp_config, ISP_CONFIG_PONG, SYS_DMA_TO_DEVICE, dma_complete_context_func, acamera_get_api_context());
+                                system_dma_copy_sg(g_firmware.dma_chan_isp_metering, ISP_CONFIG_PONG, SYS_DMA_FROM_DEVICE, dma_complete_metering_func, g_firmware.cam_id_last);
+
+                                LOG(LOG_INFO, "DMA config from DDR to ping of size %d", ACAMERA_ISP1_SIZE);
+                                system_dma_copy_sg(g_firmware.dma_chan_isp_config, ISP_CONFIG_PONG, SYS_DMA_TO_DEVICE, dma_complete_context_func, g_firmware.cam_id_next);
                             }
                             else
                             {
                                 g_firmware.dma_flag_isp_metering_completed = 1;
-                                system_dma_copy_sg(g_firmware.dma_chan_isp_config, ISP_CONFIG_PONG, SYS_DMA_TO_DEVICE, dma_drop_context_func, acamera_get_api_context());
+                                system_dma_copy_sg(g_firmware.dma_chan_isp_config, ISP_CONFIG_PONG, SYS_DMA_TO_DEVICE, dma_drop_context_func, g_firmware.cam_id_next);
                             }
                         }
                     }
@@ -738,3 +802,22 @@ int32_t acamera_process(void)
 
     return result;
 }
+
+int32_t acamera_api_get_queue_status(void)
+{
+    acamera_context_ptr_t p_ctx = (acamera_context_ptr_t)&g_firmware.fw_ctx[g_firmware.cam_id_next_next];
+    int32_t ret = acamera_event_queue_check(&p_ctx->fsm_mgr.event_queue);
+    int32_t fr_busy = 0;
+
+    if (acamera_isp_isp_global_monitor_fr_pipeline_busy_read(0))
+        fr_busy = -1;
+
+    if (g_firmware.dma_flag_isp_metering_completed == 0 || g_firmware.dma_flag_isp_config_completed == 0)
+        fr_busy = -1;
+
+    if (ret < 0 || g_firmware.dma_ready < 0 || fr_busy < 0)
+        LOG(LOG_INFO, "isp no ready :%d - %d, %d, %d\n", g_firmware.cam_id_next_next, ret, g_firmware.dma_ready, fr_busy);
+
+    return ret + g_firmware.dma_ready + fr_busy;
+}
+

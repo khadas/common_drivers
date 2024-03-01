@@ -175,6 +175,7 @@ typedef struct sbuf_af {
     uint8_t zones_vert;
     uint32_t frame_num;
     uint8_t skip_cur_frame;
+    uint8_t is_moving;
 
     // UF -> KF: Data shared from user-FW to kernel-FW
     uint8_t frame_to_skip;

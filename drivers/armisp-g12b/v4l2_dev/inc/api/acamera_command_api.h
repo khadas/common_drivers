@@ -404,8 +404,7 @@
 #define STATUS_INFO_ISP_DGAIN_DB_ID                       0x000000B0
 #define ISP_MODULES_MANUAL_PF                             0x000000B1
 #define STATUS_INFO_ISO_ID                                0x000000B2
-
-
+#define SENSOR_DCAM                                       0x000000B3
 
 // ------------------------------------------------------------------------------ //
 //		VALUE LIST
@@ -513,6 +512,11 @@
 #define COMMAND_GET                                       0x00000001
 #define API_VERSION                                       0x00000064
 
+// -------------------------------------------------------------------------------//
+//      V4l2 SubDev Notify
+// -------------------------------------------------------------------------------//
+#define NOTIFY_GET_QUEUE_STATUS                           0x00000001
+#define NOTIFY_GET_ISP_CLKRATE                            0x00000002
 
 // ------------------------------------------------------------------------------ //
 //		SET/GET FUNCTION
@@ -530,5 +534,6 @@ uint8_t acamera_api_dma_buffer( uint32_t ctx_id, uint8_t type, void* data, uint3
 void acamera_api_dma_buff_queue_reset(uint32_t ctx_id, uint8_t type);
 uint8_t acamera_api_set_fps(uint32_t ctx_id, uint8_t type, uint32_t c_fps, uint32_t t_fps);
 void acamera_api_dma_buff_get_next(uint32_t ctx_id, uint8_t type);
+int32_t acamera_api_get_queue_status( void );
 
 #endif//_ACAMERA_COMMAND_API_H_

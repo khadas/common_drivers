@@ -277,6 +277,7 @@ enum SocCamera_ioctl {
     // output: val_out - ir cut mode
     SOC_SENSOR_IR_CUT_SET,
     SOC_SENSOR_GET_ID,
+    SOC_SENSOR_SET_DCAM_MODE,
 
     // return sensor fps by vmax adjust
     // input: sensor mode
@@ -286,6 +287,8 @@ enum SocCamera_ioctl {
     // input: sensor fps by vmax adjust
     // output: none
     SOC_SENSOR_VMAX_FPS_SET,
+    SOC_SENSOR_POWER_ON,
+    SOC_SENSOR_POWER_OFF,
 };
 
 

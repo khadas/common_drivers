@@ -49,9 +49,9 @@ extern void *acamera_get_api_ctx_ptr( void );
 extern void *acamera_get_ctx_ptr( uint32_t ctx_id );
 
 static int isp_started = 0;
-static int custom_wdr_mode = 0;
-static int custom_exp = 0;
-static int custom_fps = 0;
+static int custom_wdr_mode[FIRMWARE_CONTEXT_NUMBER] = {0};
+static int custom_exp[FIRMWARE_CONTEXT_NUMBER] = {0};
+static int custom_fps[FIRMWARE_CONTEXT_NUMBER] = {0};
 get_cmd_para_t get_cmd_para;
 isp_ctl_swhw_registers_cmd_t swhw_registers_cmd;
 uint64_t isp_modules_by_pass_get_cmd = 0;
@@ -171,9 +171,10 @@ int fw_intf_isp_init(  uint32_t hw_isp_addr )
     if ( rc == 0 )
         isp_started = 1;
 
-    custom_wdr_mode = 0;
-    custom_exp = 0;
-    custom_fps = 0;
+    memset(custom_wdr_mode, 0, sizeof(int) * FIRMWARE_CONTEXT_NUMBER);
+    memset(custom_exp, 0, sizeof(int) * FIRMWARE_CONTEXT_NUMBER);
+    memset(custom_fps, 0, sizeof(int) * FIRMWARE_CONTEXT_NUMBER);
+
 
     return rc;
 }
@@ -377,6 +378,12 @@ int fw_intf_isp_set_sensor_preset( uint32_t ctx_id, uint32_t preset )
     return value;
 }
 
+int fw_intf_isp_get_queue_status( void )
+{
+    return acamera_api_get_queue_status();
+}
+
+
 /*
  * fw-interface per-stream control interface
  */
@@ -508,7 +515,7 @@ int fw_intf_sensor_resume( uint32_t ctx_id )
     return rc;
 }
 
-uint32_t fw_intf_find_proper_present_idx(const isp_v4l2_sensor_info *sensor_info, int w, int h, uint32_t* fps)
+uint32_t fw_intf_find_proper_present_idx(uint32_t ctx_id, const isp_v4l2_sensor_info *sensor_info, int w, int h, uint32_t* fps)
 {
   /* search resolution from preset table
      *   for now, use the highest fps.
@@ -521,12 +528,12 @@ uint32_t fw_intf_find_proper_present_idx(const isp_v4l2_sensor_info *sensor_info
         if ( sensor_info->preset[i].width == w && sensor_info->preset[i].height == h ) {
             idx = sensor_info->preset[i].idx[0];
             *fps = sensor_info->preset[i].fps[0];
-            if (custom_wdr_mode == 0) {
+            if (custom_wdr_mode[ctx_id] == 0) {
                *( (char *)&sensor_info->preset[i].fps_cur ) = 0;
                for ( j = 0; j < sensor_info->preset[i].fps_num; j++ ) {
-                   if ( sensor_info->preset[i].wdr_mode[j] == custom_wdr_mode ) {
-                       if (0 != custom_fps) {
-                           if ( sensor_info->preset[i].fps[j] == custom_fps * 256) {
+                   if ( sensor_info->preset[i].wdr_mode[j] == custom_wdr_mode[ctx_id] ) {
+                       if (0 != custom_fps[ctx_id]) {
+                           if ( sensor_info->preset[i].fps[j] == custom_fps[ctx_id] * 256) {
                                *fps = sensor_info->preset[i].fps[j];
                                idx = sensor_info->preset[i].idx[j];
                                *( (char *)&sensor_info->preset[i].fps_cur ) = j;
@@ -542,12 +549,12 @@ uint32_t fw_intf_find_proper_present_idx(const isp_v4l2_sensor_info *sensor_info
                    }
                }
                break;
-            } else if ((custom_wdr_mode == 1) || (custom_wdr_mode == 2)) {
+            } else if ((custom_wdr_mode[ctx_id] == 1) || (custom_wdr_mode[ctx_id] == 2)) {
                for (j = 0; j < sensor_info->preset[i].fps_num; j++) {
-                  if ((sensor_info->preset[i].exposures[j] == custom_exp) &&
-                     (sensor_info->preset[i].wdr_mode[j] == custom_wdr_mode)) {
-                     if (0 != custom_fps) {
-                         if ( sensor_info->preset[i].fps[j] == custom_fps * 256) {
+                  if ((sensor_info->preset[i].exposures[j] == custom_exp[ctx_id]) &&
+                     (sensor_info->preset[i].wdr_mode[j] == custom_wdr_mode[ctx_id])) {
+                     if (0 != custom_fps[ctx_id]) {
+                         if ( sensor_info->preset[i].fps[j] == custom_fps[ctx_id] * 256) {
                              *fps = sensor_info->preset[i].fps[j];
                              idx = sensor_info->preset[i].idx[j];
                              *( (char *)&sensor_info->preset[i].fps_cur ) = j;
@@ -574,9 +581,9 @@ uint32_t fw_intf_find_proper_present_idx(const isp_v4l2_sensor_info *sensor_info
         return -1;
     }
 
-    custom_wdr_mode = sensor_info->preset[i].wdr_mode[sensor_info->preset[i].fps_cur];
-    custom_exp = sensor_info->preset[i].exposures[sensor_info->preset[i].fps_cur];
-    custom_fps = sensor_info->preset[i].fps[sensor_info->preset[i].fps_cur] / 256;
+    custom_wdr_mode[ctx_id] = sensor_info->preset[i].wdr_mode[sensor_info->preset[i].fps_cur];
+    custom_exp[ctx_id] = sensor_info->preset[i].exposures[sensor_info->preset[i].fps_cur];
+    custom_fps[ctx_id] = sensor_info->preset[i].fps[sensor_info->preset[i].fps_cur] / 256;
 
     return idx;
 }
@@ -619,11 +626,11 @@ int fw_intf_stream_set_resolution( uint32_t ctx_id, const isp_v4l2_sensor_info *
         acamera_command( ctx_id, TSENSOR, SENSOR_WDR_MODE, 0, COMMAND_GET, &wdr_mode_cur );
         acamera_command( ctx_id, TSENSOR, SENSOR_FPS, 0, COMMAND_GET, &fps_cur );
         LOG( LOG_DEBUG, "target (width = %d, height = %d, fps = %d) current (w=%d h=%d exposure_cur = %d wdr_mode_cur = %d, fps = %d)",
-        w, h, custom_fps, width_cur, height_cur, exposure_cur, wdr_mode_cur, fps_cur / 256);
+        w, h, custom_fps[ctx_id], width_cur, height_cur, exposure_cur, wdr_mode_cur, fps_cur / 256);
 
-        if ( width_cur != w || height_cur != h || exposure_cur != custom_exp || wdr_mode_cur != custom_wdr_mode || fps_cur / 256 != custom_fps) {
+        if ( width_cur != w || height_cur != h || exposure_cur != custom_exp[ctx_id] || wdr_mode_cur != custom_wdr_mode[ctx_id] || fps_cur / 256 != custom_fps[ctx_id]) {
 
-            idx = fw_intf_find_proper_present_idx(sensor_info, w, h, &fps);
+            idx = fw_intf_find_proper_present_idx(ctx_id, sensor_info, w, h, &fps);
 
             /* set sensor resolution preset */
             LOG( LOG_CRIT, "Setting new resolution : width = %d, height = %d (preset idx = %d, fps = %d)", w, h, idx, fps / 256 );
@@ -845,6 +852,18 @@ static int fw_intf_set_fr_fps(uint32_t ctx_id, uint32_t fps)
 
     acamera_api_set_fps(ctx_id, dma_fr, cur_fps, fps);
 
+    return 0;
+}
+
+static int fw_intf_set_sensor_dcam_mode(uint32_t ctx_id, uint32_t val)
+{
+    uint32_t mode = val;
+    uint32_t ret_val;
+    acamera_command(ctx_id, TSENSOR, SENSOR_DCAM, mode, COMMAND_SET, &ret_val);
+    if (mode <= 0) {
+        LOG(LOG_ERR, "Error input param\n");
+        return -1;
+    }
     return 0;
 }
 
@@ -2270,20 +2289,29 @@ int fw_intf_set_output_ds1_on_off( uint32_t ctx_id, uint32_t ctrl_val )
 
 int fw_intf_set_custom_sensor_wdr_mode(uint32_t ctx_id, uint32_t ctrl_val)
 {
-    custom_wdr_mode = ctrl_val;
+    custom_wdr_mode[ctx_id] = ctrl_val;
     return 0;
 }
 
 int fw_intf_set_custom_sensor_exposure(uint32_t ctx_id, uint32_t ctrl_val)
 {
-    custom_exp = ctrl_val;
+    custom_exp[ctx_id] = ctrl_val;
     return 0;
 }
 
 int fw_intf_set_custom_sensor_fps(uint32_t ctx_id, uint32_t ctrl_val)
 {
-    custom_fps = ctrl_val;
+    custom_fps[ctx_id] = ctrl_val;
     return 0;
+}
+
+int fw_intf_set_custom_dcam_mode(uint32_t ctx_id, uint32_t ctrl_val)
+{
+    int rtn = -1;
+
+    rtn = fw_intf_set_sensor_dcam_mode(ctx_id, ctrl_val);
+
+    return rtn;
 }
 
 int fw_intf_set_custom_snr_manual(uint32_t ctx_id, uint32_t ctrl_val)
@@ -3590,7 +3618,7 @@ int fw_intf_get_af_roi( uint32_t ctx_id, int *ret_val )
     if ( rc ) {
         LOG( LOG_ERR, "Failed to get AF_ROI_ID, rc: %d.", rc );
     } else {
-        // map [0, 254] to [0,127] due to limitaton of V4L2_CTRL_TYPE_INTEGER.
+        // map [0, 254] to [0,127] due to limitation of V4L2_CTRL_TYPE_INTEGER.
         *ret_val = roi >> 1;
     }
 #endif

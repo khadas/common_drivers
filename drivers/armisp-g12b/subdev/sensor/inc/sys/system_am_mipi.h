@@ -124,10 +124,12 @@ typedef struct am_mipi_info {
 int am_mipi_parse_dt(struct device_node *node);
 void am_mipi_deinit_parse_dt(void);
 int am_mipi_init(void *info);
+int am_mipi1_init(void *info);
 void am_mipi_set_lanes(int lanes);
 void am_mipi_deinit(void);
-uint32_t mipi_csi_reg_rd_ext(int addr);
-uint32_t mipi_phy_reg_rd_ext(int addr);
+void am_mipi1_deinit(void);
+//uint32_t mipi_csi_reg_rd_ext(int addr);
+//uint32_t mipi_phy_reg_rd_ext(int addr);
 
 
 #endif

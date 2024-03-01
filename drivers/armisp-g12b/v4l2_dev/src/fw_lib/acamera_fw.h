@@ -115,6 +115,7 @@ typedef struct _acamera_isp_sw_regs_map {
 
 struct _acamera_context_t {
     uint32_t irq_flag;
+    uint32_t v4l2_count;
 
     // profiling routines
     uint32_t binit_profiler;
@@ -179,6 +180,12 @@ struct _acamera_firmware_t {
     uint32_t initialized;
 
     semaphore_t sem_evt_avail;
+    uint32_t isp_user;
+    int32_t dma_ready;
+    uint32_t cam_id_last;
+    uint32_t cam_id_current;
+    uint32_t cam_id_next;
+    uint32_t cam_id_next_next;
 };
 
 void acamera_load_isp_sequence( uintptr_t isp_base, const acam_reg_t **sequence, uint8_t num );

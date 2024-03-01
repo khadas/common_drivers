@@ -171,7 +171,7 @@ void sensor_configure_buffers(sensor_fsm_ptr_t p_fsm)
     acamera_isp_temper_enable_write(ACAMERA_FSM2CTX_PTR(p_fsm)->settings.isp_base, 0);
     aframe_t *temper_frames = ACAMERA_FSM2CTX_PTR(p_fsm)->settings.temper_frames;
     uint32_t temper_frames_num = ACAMERA_FSM2CTX_PTR(p_fsm)->settings.temper_frames_number;
-    uint32_t temper_frame_size = acamera_isp_top_active_width_read(ACAMERA_FSM2CTX_PTR(p_fsm)->settings.isp_base) * acamera_isp_top_active_height_read(ACAMERA_FSM2CTX_PTR(p_fsm)->settings.isp_base) * 4;
+    uint32_t temper_frame_size = acamera_isp_top_active_width_read(ACAMERA_FSM2CTX_PTR(p_fsm)->settings.isp_base) * acamera_isp_top_active_height_read(ACAMERA_FSM2CTX_PTR(p_fsm)->settings.isp_base) * 2;
     if (temper_frames != NULL && temper_frames_num != 0 && ((temper_frames_num > 1) ? (temper_frames[0].size + temper_frames[1].size >= temper_frame_size * 2) : (temper_frames[0].size >= temper_frame_size)))
     {
         if (temper_frames_num == 1)

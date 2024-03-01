@@ -352,15 +352,15 @@ static void stop_streaming( void *ctx )
     p_ctx->streaming_flg = 0;
 
     reset_sensor_bus_counter();
-    sensor_iface_disable();
+    sensor_iface_disable(p_ctx);
 }
 
 static void start_streaming( void *ctx )
 {
     sensor_context_t *p_ctx = ctx;
     sensor_param_t *param = &p_ctx->param;
-    adapt_set_virtcam();
-    sensor_set_iface(&param->modes_table[param->mode], win_offset);
+    //adapt_set_virtcam();
+    sensor_set_iface(&param->modes_table[param->mode], win_offset, p_ctx);
     p_ctx->streaming_flg = 1;
 }
 
@@ -384,7 +384,7 @@ static sensor_context_t *sensor_global_parameter(void* sbp)
     sensor_ctx.sbus.mask = SBUS_MASK_ADDR_16BITS |
            SBUS_MASK_SAMPLE_8BITS |SBUS_MASK_ADDR_SWAP_BYTES;
     sensor_ctx.sbus.control = 0;
-    sensor_ctx.sbus.bus = 1;
+    sensor_ctx.sbus.bus = 0;
     sensor_ctx.sbus.device = 0x6c;
     acamera_sbus_init(&sensor_ctx.sbus, sbus_i2c);
 
@@ -413,6 +413,8 @@ static sensor_context_t *sensor_global_parameter(void* sbp)
     sensor_ctx.param.isp_context_seq.sequence = p_isp_data;
     sensor_ctx.param.isp_context_seq.seq_num = SENSOR_VIRTCAM_ISP_CONTEXT_SEQ;
     sensor_ctx.param.isp_context_seq.seq_table_max = array_size_s( isp_seq_table );
+    sensor_ctx.cam_isp_path = CAM0_ACT;
+    sensor_ctx.dcam_mode = 0;
 
     memset(&win_offset, 0, sizeof(win_offset));
 

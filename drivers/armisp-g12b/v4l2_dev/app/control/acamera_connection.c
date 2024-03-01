@@ -188,7 +188,7 @@ void acamera_connection_init( void )
         ACAMERA_CONNECTION_TRACE( "Connection is character device" );
         con.data_read = (data_read_f)acamera_chardev_read;
         con.data_write = (data_write_f)acamera_chardev_write;
-		con.buffer = vmalloc(CONNECTION_BUFFER_SIZE);
+        con.buffer = vmalloc(CONNECTION_BUFFER_SIZE);
     } else {
         LOG( LOG_ERR, "Unable to register character device" );
     }

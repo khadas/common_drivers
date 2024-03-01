@@ -71,5 +71,8 @@ isp_v4l2_dev_t *isp_v4l2_get_dev( uint32_t ctx_number );
 
 /* Frame ready event */
 int isp_v4l2_notify_event( int ctx_num, int stream_id, uint32_t event_type );
+void isp_v4l2_subdev_notify(struct v4l2_subdev*sd, uint notification, void *arg);
+
+extern uint32_t global_isp_clk_rate;
 
 #endif

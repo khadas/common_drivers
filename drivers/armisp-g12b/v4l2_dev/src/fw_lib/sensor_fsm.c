@@ -385,6 +385,17 @@ int sensor_fsm_set_param( void *fsm, uint32_t param_id, void *input, uint32_t in
 
         break;
     }
+    case FSM_PARAM_SET_SENSOR_DCAM_MODE: {
+        if ( !input || input_size != sizeof( uint32_t ) ) {
+            LOG( LOG_ERR, "Invalid param, param_id: %d.", param_id );
+            rc = -1;
+            break;
+        }
+        int32_t mode = *(uint32_t *)input;
+        p_fsm->ctrl.dcam_mode( p_fsm->sensor_ctx, mode);
+        LOG( LOG_CRIT, "%s: dcam: %d", __func__, mode);
+        break;
+    }
     default:
         rc = -1;
         break;

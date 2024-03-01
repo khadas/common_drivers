@@ -57,7 +57,7 @@ void AWB_fsm_clear( AWB_fsm_t *p_fsm )
     p_fsm->cur_result_gain_frame_id = 0;
     p_fsm->pre_result_gain_frame_id = 0;
 
-	p_fsm->wb[0] = 527;
+    p_fsm->wb[0] = 527;
     p_fsm->wb[1] = 271;
     p_fsm->wb[2] = 271;
     p_fsm->wb[3] = 436;
@@ -332,7 +332,7 @@ int AWB_fsm_set_param( void *fsm, uint32_t param_id, void *input, uint32_t input
 
         break;
     }
-	case FSM_PARAM_SET_AWB_PRESET:
+    case FSM_PARAM_SET_AWB_PRESET:
         if ( !input || input_size != sizeof( isp_awb_preset_t ) ) {
             LOG( LOG_ERR, "Invalid param, param_id: %d.", param_id );
             rc = -1;
@@ -349,12 +349,12 @@ int AWB_fsm_set_param( void *fsm, uint32_t param_id, void *input, uint32_t input
         p_fsm->wb[1] = p_new->wb[1];
         p_fsm->wb[2] = p_new->wb[2];
         p_fsm->wb[3] = p_new->wb[3];
-		acamera_isp_white_balance_gain_00_write( p_fsm->cmn.isp_base, p_fsm->wb[0]);
-		acamera_isp_white_balance_gain_01_write( p_fsm->cmn.isp_base, p_fsm->wb[1]);
-		acamera_isp_white_balance_gain_10_write( p_fsm->cmn.isp_base, p_fsm->wb[2]);
-		acamera_isp_white_balance_gain_11_write( p_fsm->cmn.isp_base, p_fsm->wb[3]);
+        acamera_isp_white_balance_gain_00_write( p_fsm->cmn.isp_base, p_fsm->wb[0]);
+        acamera_isp_white_balance_gain_01_write( p_fsm->cmn.isp_base, p_fsm->wb[1]);
+        acamera_isp_white_balance_gain_10_write( p_fsm->cmn.isp_base, p_fsm->wb[2]);
+        acamera_isp_white_balance_gain_11_write( p_fsm->cmn.isp_base, p_fsm->wb[3]);
 
-		break;
+        break;
     default:
         rc = -1;
         break;

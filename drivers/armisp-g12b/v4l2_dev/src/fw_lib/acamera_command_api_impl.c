@@ -252,9 +252,13 @@ uint8_t sensor_streaming( acamera_fsm_mgr_t *instance, uint32_t value, uint8_t d
             uint32_t streaming = 0;
             instance->isp_seamless = 0;
             acamera_fsm_mgr_set_param( instance, FSM_PARAM_SET_SENSOR_STREAMING, &streaming, sizeof( streaming ) );
-            isp_safe_stop( ACAMERA_MGR2CTX_PTR( instance )->settings.isp_base );
+            if (instance->p_ctx->p_gfw->isp_user)
+                instance->p_ctx->p_gfw->isp_user--;
+            if (instance->p_ctx->p_gfw->isp_user == 0)
+                isp_safe_stop( ACAMERA_MGR2CTX_PTR( instance )->settings.isp_base );
         } else if ( ( value == ON ) && !is_streaming ) {
             uint32_t streaming = 1;
+            acamera_isp_multi_ctx_config_done_write(ACAMERA_MGR2CTX_PTR(instance)->settings.isp_base, 1);
 
             if (instance->isp_seamless) {
                 if (acamera_isp_input_port_mode_status_read( 0 ) == ACAMERA_ISP_INPUT_PORT_MODE_REQUEST_SAFE_START) {
@@ -264,17 +268,22 @@ uint8_t sensor_streaming( acamera_fsm_mgr_t *instance, uint32_t value, uint8_t d
 
             acamera_fsm_mgr_set_param(instance, FSM_PARAM_SET_AUTOCAP_HW_RESET, NULL, 0 );
 
-            acamera_reset_ping_pong_port();
-            acamera_update_cur_settings_to_isp(ISP_CONFIG_PING);
+            if (instance->p_ctx->p_gfw->isp_user == 0)
+            {
+                acamera_reset_ping_pong_port();
+                acamera_update_cur_settings_to_isp(ISP_CONFIG_PING);
 
-            acamera_api_dma_buff_get_next(instance->ctx_id, dma_fr);
-            acamera_update_cur_settings_to_isp(ISP_CONFIG_PONG);
+                acamera_api_dma_buff_get_next(instance->ctx_id, dma_fr);
+                acamera_update_cur_settings_to_isp(ISP_CONFIG_PONG);
 
-            acamera_isp_isp_global_interrupt_mask_vector_write( 0, ISP_IRQ_MASK_VECTOR );
-            acamera_isp_isp_global_mcu_override_config_select_write( 0, 1 );
+                acamera_isp_isp_global_interrupt_mask_vector_write( 0, ISP_IRQ_MASK_VECTOR );
+                acamera_isp_isp_global_mcu_override_config_select_write( 0, 1 );
+            }
 
             isp_safe_start( ACAMERA_MGR2CTX_PTR( instance )->settings.isp_base );
+            instance->p_ctx->p_gfw->isp_user++;
             acamera_fsm_mgr_set_param( instance, FSM_PARAM_SET_SENSOR_STREAMING, &streaming, sizeof( streaming ) );
+            acamera_isp_isp_global_mcu_multi_ctx_mode(0, 1);
         } else {
             result = NOT_SUPPORTED;
         }
@@ -317,11 +326,7 @@ uint8_t sensor_preset( acamera_fsm_mgr_t *instance, uint32_t value, uint8_t dire
         if ( value < param->modes_num ) {
             acamera_fsm_mgr_set_param( instance, FSM_PARAM_SET_SENSOR_PRESET_MODE, &value, sizeof( value ) );
 
-            if (instance->isp_seamless) {
-                if (acamera_isp_input_port_mode_status_read( 0 ) != ACAMERA_ISP_INPUT_PORT_MODE_REQUEST_SAFE_START)
-                    isp_safe_stop( ACAMERA_MGR2CTX_PTR( instance )->settings.isp_base );
-            }
-            else
+            if (instance->p_ctx->p_gfw->isp_user == 0)
                 isp_safe_stop( ACAMERA_MGR2CTX_PTR( instance )->settings.isp_base );
 
             acamera_fsm_mgr_raise_event( instance, event_id_acamera_reset_sensor_hw );
@@ -1019,6 +1024,24 @@ uint8_t system_manual_exposure( acamera_fsm_mgr_t *instance, uint32_t value, uin
         return NOT_SUPPORTED;
     }
     return NOT_SUPPORTED;
+}
+#endif
+
+#ifdef SENSOR_DCAM
+uint8_t sensor_dcam_mode(acamera_fsm_mgr_t *instance, uint32_t value, uint8_t direction, uint32_t *ret_value)
+{
+    uint32_t result = SUCCESS;
+    uint32_t mode = value;
+    if (direction == COMMAND_GET)
+    {
+        result = NOT_SUPPORTED;
+    }
+    else
+    {
+        acamera_fsm_mgr_set_param(instance, FSM_PARAM_SET_SENSOR_DCAM_MODE, &mode, sizeof(mode));
+    }
+
+    return result;
 }
 #endif
 

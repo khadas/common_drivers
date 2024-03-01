@@ -21,10 +21,19 @@
 #include "system_spinlock.h"
 #include <asm/io.h>
 
+#if PLATFORM_G12B
+#define ADAPTOR_MISC 0xFF655000
+#elif PLATFORM_C308X || PLATFORM_C305X
+#define ADAPTOR_MISC 0xFE023000
+#endif
+
+
 static void *p_hw_base = NULL;
 static sys_spinlock reg_lock;
 
-int32_t init_hw_io( resource_size_t addr , resource_size_t size )
+static void *p_hw_base_adap = NULL;
+
+int32_t init_hw_isp_io( resource_size_t addr , resource_size_t size )
 {
     p_hw_base = ioremap( addr, size );
     system_spinlock_init( &reg_lock );
@@ -35,13 +44,32 @@ int32_t init_hw_io( resource_size_t addr , resource_size_t size )
     return 0;
 }
 
+void init_hw_adap_io(void)
+{
+    p_hw_base_adap = ioremap(ADAPTOR_MISC, 0x200);
+}
+
 int32_t close_hw_io( void )
 {
     int32_t result = 0;
     LOG( LOG_DEBUG, "IO functionality has been closed" );
     iounmap( p_hw_base );
+    iounmap(p_hw_base_adap);
     system_spinlock_destroy( reg_lock );
     return result;
+}
+
+uint32_t system_hw_read_adap(uintptr_t addr)
+{
+    uint32_t result = 0;
+    result = ioread32(p_hw_base_adap + addr);
+    return result;
+}
+
+void system_hw_write_adap(uintptr_t addr, uint32_t data)
+{
+    void *ptr = (void *)(p_hw_base_adap + addr);
+    iowrite32(data, ptr);
 }
 
 uint32_t system_hw_read_32( uintptr_t addr )

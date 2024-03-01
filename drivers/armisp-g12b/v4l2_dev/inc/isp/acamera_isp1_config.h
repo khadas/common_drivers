@@ -10186,7 +10186,7 @@ static __inline uint16_t acamera_isp_iridix_collection_correction_read(uintptr_t
     return (uint16_t)((system_sw_read_32(base + 0x1ac38L) & 0xfff) >> 0);
 }
 // ------------------------------------------------------------------------------ //
-// Register: fwd_percept_control
+// Register: fwd_perception_control
 // ------------------------------------------------------------------------------ //
 
 // ------------------------------------------------------------------------------ //
@@ -10199,15 +10199,15 @@ static __inline uint16_t acamera_isp_iridix_collection_correction_read(uintptr_t
 #define ACAMERA_ISP_IRIDIX_FWD_PERCEPT_CONTROL_MASK (0x3)
 
 // args: data (2-bit)
-static __inline void acamera_isp_iridix_fwd_percept_control_write(uintptr_t base, uint8_t data) {
+static __inline void acamera_isp_iridix_fwd_perception_control_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_sw_read_32(base + 0x1ac3cL);
     system_sw_write_32(base + 0x1ac3cL, (((uint32_t) (data & 0x3)) << 0) | (curr & 0xfffffffc));
 }
-static __inline uint8_t acamera_isp_iridix_fwd_percept_control_read(uintptr_t base) {
+static __inline uint8_t acamera_isp_iridix_fwd_perception_control_read(uintptr_t base) {
     return (uint8_t)((system_sw_read_32(base + 0x1ac3cL) & 0x3) >> 0);
 }
 // ------------------------------------------------------------------------------ //
-// Register: rev_percept_control
+// Register: rev_perception_control
 // ------------------------------------------------------------------------------ //
 
 // ------------------------------------------------------------------------------ //
@@ -10220,11 +10220,11 @@ static __inline uint8_t acamera_isp_iridix_fwd_percept_control_read(uintptr_t ba
 #define ACAMERA_ISP_IRIDIX_REV_PERCEPT_CONTROL_MASK (0x300)
 
 // args: data (2-bit)
-static __inline void acamera_isp_iridix_rev_percept_control_write(uintptr_t base, uint8_t data) {
+static __inline void acamera_isp_iridix_rev_perception_control_write(uintptr_t base, uint8_t data) {
     uint32_t curr = system_sw_read_32(base + 0x1ac3cL);
     system_sw_write_32(base + 0x1ac3cL, (((uint32_t) (data & 0x3)) << 8) | (curr & 0xfffffcff));
 }
-static __inline uint8_t acamera_isp_iridix_rev_percept_control_read(uintptr_t base) {
+static __inline uint8_t acamera_isp_iridix_rev_perception_control_read(uintptr_t base) {
     return (uint8_t)((system_sw_read_32(base + 0x1ac3cL) & 0x300) >> 8);
 }
 // ------------------------------------------------------------------------------ //

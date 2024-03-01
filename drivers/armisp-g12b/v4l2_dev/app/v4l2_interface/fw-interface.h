@@ -33,6 +33,8 @@ int fw_intf_isp_get_current_ctx_id( uint32_t ctx_id );
 int fw_intf_isp_get_sensor_info( uint32_t ctx_id, isp_v4l2_sensor_info *sensor_info );
 int fw_intf_isp_get_sensor_preset( uint32_t ctx_id );
 int fw_intf_isp_set_sensor_preset( uint32_t ctx_id, uint32_t preset );
+int fw_intf_isp_get_queue_status( void );
+
 
 //calibration
 uint32_t fw_calibration_update( uint32_t ctx_id );
@@ -85,6 +87,7 @@ int fw_intf_set_custom_snr_manual(uint32_t ctx_id, uint32_t ctrl_val);
 int fw_intf_set_custom_snr_strength(uint32_t ctx_id, uint32_t ctrl_val);
 int fw_intf_set_custom_tnr_manual(uint32_t ctx_id, uint32_t ctrl_val);
 int fw_intf_set_custom_tnr_offset(uint32_t ctx_id, uint32_t ctrl_val);
+int fw_intf_set_custom_dcam_mode( uint32_t ctx_id, uint32_t ctrl_val );
 int fw_intf_set_custom_fr_fps(uint32_t ctx_id, uint32_t ctrl_val);
 int fw_intf_set_custom_ds1_fps(uint32_t ctx_id, uint32_t ctrl_val);
 int fw_intf_set_custom_sensor_testpattern(uint32_t ctx_id, uint32_t ctrl_val);

@@ -453,26 +453,30 @@ static uint16_t _calibration_temper_strength[][2] = {
     {8*256, 135}};
 
 static uint32_t _calibration_af_lms[] = {
-    70 << 6,                       // Down_FarEnd
-    70 << 6,                       // Hor_FarEnd
-    70 << 6,                       // Up_FarEnd
-    112 << 6,                      // Down_Infinity
-    112 << 6,                      // Hor_Infinity
-    112 << 6,                      // Up_Infinity
-    832 << 6,                      // Down_Macro
-    832 << 6,                      // Hor_Macro
-    832 << 6,                      // Up_Macro
-    915 << 6,                      // Down_NearEnd
-    915 << 6,                      // Hor_NearEnd
-    915 << 6,                      // Up_NearEnd
-    11,                            // step_num
+    40 << 6,                       // Down_FarEnd
+    40 << 6,                       // Hor_FarEnd
+    40 << 6,                       // Up_FarEnd
+    50 << 6,                      // Down_Infinity
+    50 << 6,                      // Hor_Infinity
+    50 << 6,                      // Up_Infinity
+    500 << 6,                      // Down_Macro
+    500 << 6,                      // Hor_Macro
+    500 << 6,                      // Up_Macro
+    550 << 6,                      // Down_NearEnd
+    550 << 6,                      // Hor_NearEnd
+    550 << 6,                      // Up_NearEnd
+    25,                            // step_num
     6,                             // skip_frames_init
-    2,                             // skip_frames_move
-    30,                            // dynamic_range_th
-    2 << ( LOG2_GAIN_SHIFT - 2 ),  // spot_tolerance
-    1 << ( LOG2_GAIN_SHIFT - 1 ),  // exit_th
-    16 << ( LOG2_GAIN_SHIFT - 4 ), // caf_trigger_th
-    4 << ( LOG2_GAIN_SHIFT - 4 ),  // caf_stable_th
+    1,                             // skip_frames_move
+    0,                            // dynamic_range_th
+    //2 << ( LOG2_GAIN_SHIFT - 2 ),  // spot_tolerance
+    15000,
+    //1 << ( LOG2_GAIN_SHIFT - 4 ),  // exit_th
+    5000,
+    //16 << ( LOG2_GAIN_SHIFT - 4 ), // caf_trigger_th
+    200000,
+    //4 << ( LOG2_GAIN_SHIFT - 4 ),  // caf_stable_th
+    100000,
     0,                             // print_debug
 };
 

@@ -157,15 +157,15 @@ int clk_am_enable(sensor_bringup_t* sensor_bp, const char* propname)
     int clk_val;
     clk = devm_clk_get(sensor_bp->dev, propname);
     if (IS_ERR(clk)) {
-        pr_err("cannot get %s clk\n", propname);
+        pr_err("DEBUG: cannot get %s clk\n", propname);
         clk = NULL;
         return -1;
     }
 
-    clk_set_rate(clk, 24000000);
+	clk_set_rate(clk, 24000000);
     clk_prepare_enable(clk);
     clk_val = clk_get_rate(clk);
-    pr_info("init mclock is %d MHZ\n",clk_val/1000000);
+    pr_err("DEBUG: init mclock is %d MHZ\n",clk_val/1000000);
 
     sensor_bp->mclk = clk;
     return 0;
@@ -219,7 +219,7 @@ int clk_am_disable(sensor_bringup_t *sensor_bp)
     return 0;
 }
 
-void sensor_set_iface(sensor_mode_t *mode, exp_offset_t offset)
+void sensor_set_iface(sensor_mode_t *mode, exp_offset_t offset, sensor_context_t *p_ctx)
 {
     am_mipi_info_t mipi_info;
     struct am_adap_info info;
@@ -231,7 +231,7 @@ void sensor_set_iface(sensor_mode_t *mode, exp_offset_t offset)
 
     memset(&mipi_info, 0, sizeof(mipi_info));
     memset(&info, 0, sizeof(struct am_adap_info));
-    mipi_info.fte1_flag = get_fte1_flag();
+    mipi_info.fte1_flag = 0; //get_fte1_flag();
     mipi_info.lanes = mode->lanes;
     mipi_info.ui_val = 1000 / mode->bps;
 
@@ -257,9 +257,12 @@ void sensor_set_iface(sensor_mode_t *mode, exp_offset_t offset)
 
     info.img.width = mode->resolution.width;
     info.img.height = mode->resolution.height;
-    info.path = PATH0;
+    info.path = p_ctx->cam_isp_path;
     info.offset.offset_x = offset.offset_x;
     info.offset.offset_y = offset.offset_y;
+    //pr_err("%s x offset %d, y offset %d \n", __func__, offset.offset_x, offset.offset_y);
+    pr_err("%s sensor lanes %d \n", __func__, mipi_info.lanes);
+    pr_err("%s dcam %d wdr mode %d cam_isp_path %d \n", __func__, p_ctx->dcam_mode, mode->wdr_mode, p_ctx->cam_isp_path);
     if (mode->wdr_mode == WDR_MODE_FS_LIN) {
         info.mode = DOL_MODE;
         info.type = mode->dol_type;
@@ -267,16 +270,103 @@ void sensor_set_iface(sensor_mode_t *mode, exp_offset_t offset)
            info.offset.long_offset = offset.long_offset;
            info.offset.short_offset = offset.short_offset;
         }
-    } else
-        info.mode = DIR_MODE;
+    } else {
+        if (p_ctx->dcam_mode)
+            info.mode = DCAM_MODE;
+        else
+            info.mode = DIR_MODE;
+    }
+
+    uint32_t isp_clk_rate = 0;
+    camera_notify(NOTIFY_GET_ISP_CLKRATE, &isp_clk_rate);
+    isp_clk_rate = (isp_clk_rate / 10) * 9;
+    info.align_width = isp_clk_rate / ((mode->resolution.height + 60) * (mode->fps / 256) * 2) - mode->resolution.width;
 
     am_adap_set_info(&info);
-    am_adap_init();
-    am_adap_start(0);
+    am_adap_init(p_ctx->cam_isp_path);
+    am_adap_start(p_ctx->cam_isp_path, p_ctx->dcam_mode);
 }
 
-void sensor_iface_disable(void)
+void sensor_set_iface1(sensor_mode_t *mode, exp_offset_t offset, sensor_context_t *p_ctx)
 {
-    am_adap_deinit();
+    am_mipi_info_t mipi_info;
+    struct am_adap_info info;
+    pr_err("%s start \n", __func__);
+    if (mode == NULL) {
+        pr_info( "Error input param\n");
+        return;
+    }
+
+    pr_err("%s start++ \n", __func__);
+    memset(&mipi_info, 0, sizeof(mipi_info));
+    memset(&info, 0, sizeof(struct am_adap_info));
+    mipi_info.fte1_flag = 0; //get_fte1_flag();
+    //pr_err("%s fte1_flag %d \n", __func__, mipi_info.fte1_flag);
+    mipi_info.lanes = mode->lanes;
+    mipi_info.ui_val = 1000 / mode->bps;
+    pr_err("%s ++ \n", __func__);
+    if ((1000 % mode->bps) != 0)
+        mipi_info.ui_val += 1;
+    pr_err("%s +++ \n", __func__);
+    am_mipi1_init(&mipi_info);
+    pr_err("%s ++++ \n", __func__);
+
+    switch (mode->bits) {
+    case 8:
+        info.fmt = AM_RAW8;
+        break;
+    case 10:
+        info.fmt = AM_RAW10;
+        break;
+    case 12:
+        info.fmt = AM_RAW12;
+        break;
+    default :
+        info.fmt = AM_RAW10;
+        break;
+    }
+
+    info.img.width = mode->resolution.width;
+    info.img.height = mode->resolution.height;
+    info.path = p_ctx->cam_isp_path;
+    info.offset.offset_x = offset.offset_x;
+    info.offset.offset_y = offset.offset_y;
+    pr_err("%s x offset %d, y offset %d \n", __func__, offset.offset_x, offset.offset_y);
+    pr_err("%s dcam %d wdr mode %d cam_isp_path %d \n", __func__, p_ctx->dcam_mode, mode->wdr_mode, p_ctx->cam_isp_path);
+    if (mode->wdr_mode == WDR_MODE_FS_LIN) {
+        info.mode = DOL_MODE;
+        info.type = mode->dol_type;
+        if (info.type == DOL_LINEINFO) {
+           info.offset.long_offset = offset.long_offset;
+           info.offset.short_offset = offset.short_offset;
+        }
+    } else {
+        if (p_ctx->dcam_mode)
+            info.mode = DCAM_MODE;
+        else
+            info.mode = DIR_MODE;
+    }
+
+    uint32_t isp_clk_rate = 0;
+    camera_notify(NOTIFY_GET_ISP_CLKRATE, &isp_clk_rate);
+    isp_clk_rate = (isp_clk_rate / 10) * 9;
+    info.align_width = isp_clk_rate / ((mode->resolution.height + 60) * (mode->fps / 256) * 2) - mode->resolution.width;
+
+    am_adap_set_info(&info);
+    am_adap_init(p_ctx->cam_isp_path);
+    am_adap_start(p_ctx->cam_isp_path, p_ctx->dcam_mode);
+}
+
+
+void sensor_iface_disable(sensor_context_t *p_ctx)
+{
+    am_adap_deinit(p_ctx->cam_isp_path);
     am_mipi_deinit();
 }
+
+void sensor_iface1_disable(sensor_context_t *p_ctx)
+{
+    am_adap_deinit(p_ctx->cam_isp_path);
+    am_mipi1_deinit();
+}
+

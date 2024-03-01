@@ -1108,6 +1108,11 @@
 		reg-data-type = <1>;
 		link-device = <&phycsi>;
 	};
+
+	dw9714@0c {
+		compatible = "dw, dw9714";
+		reg = <0x0c>;
+	};
 };
 
 &audiobus {

@@ -34,6 +34,7 @@ static ssize_t adap_dbg_read(
 {
 	ssize_t ret = 0;
 
+#if 0
 	uint32_t csi_err1 = mipi_csi_reg_rd_ext(MIPI_CSI_DATA_ERR1);
 	uint32_t csi_err2 = mipi_csi_reg_rd_ext(MIPI_CSI_DATA_ERR2);
 	uint32_t phy_lan0 = mipi_phy_reg_rd_ext(MIPI_PHY_DATA_LANE0_STS);
@@ -60,6 +61,7 @@ static ssize_t adap_dbg_read(
 		x_start_isp, x_start_mem, \
 		y_start_isp, y_start_mem, \
 		phy_lan0, phy_lan1, phy_lan2, phy_lan3);
+#endif
 
     return ret;
 }

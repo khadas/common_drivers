@@ -113,6 +113,7 @@ struct _AF_fsm_t {
     uint8_t frame_skip_cnt;
     uint8_t frame_skip_start;
 
+    uint8_t is_moving;
     af_state_t state;
 };
 

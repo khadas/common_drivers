@@ -36,23 +36,6 @@ static int isp_v4l2_ctrl_check_valid( struct v4l2_ctrl *ctrl )
     return 0;
 }
 
-static int isp_v4l2_ctrl_g_ctrl_standard( struct v4l2_ctrl *ctrl )
-{
-    int ret = 0;
-    switch ( ctrl->id ) {
-        case V4L2_CID_MIN_BUFFERS_FOR_OUTPUT:
-            ctrl->val = 6;
-        break;
-        case V4L2_CID_MIN_BUFFERS_FOR_CAPTURE:
-            ctrl->val = 6;
-        break;
-
-        default:
-            ret = -EINVAL;
-    }
-    return ret;
-}
-
 static int isp_v4l2_ctrl_s_ctrl_standard( struct v4l2_ctrl *ctrl )
 {
     int ret = 0;
@@ -574,6 +557,10 @@ static int isp_v4l2_ctrl_s_ctrl_custom( struct v4l2_ctrl *ctrl )
     case ISP_V4L2_CID_ISP_DAYNIGHT_DETECT:
         LOG( LOG_INFO, "new isp day night detect : %d.\n", ctrl->val);
         ret = fw_intf_set_day_night_detect( ctx_id, ctrl->val );
+        break;
+    case ISP_V4L2_CID_CUSTOM_DCAM_MODE:
+        LOG(LOG_INFO, "set dcam mode: %d,%d.\n", ctx_id, ctrl->val);
+        ret = fw_intf_set_custom_dcam_mode(ctx_id, ctrl->val);
         break;
     }
 
@@ -2513,9 +2500,19 @@ static const struct v4l2_ctrl_config isp_v4l2_ctrl_isp_ae_target = {
     .def = 0,
 };
 
+static const struct v4l2_ctrl_config isp_v4l2_ctrl_dcam_mode = {
+    .ops = &isp_v4l2_ctrl_ops_custom,
+    .id = ISP_V4L2_CID_CUSTOM_DCAM_MODE,
+    .name = "ISP Dcam mode",
+    .type = V4L2_CTRL_TYPE_INTEGER,
+    .min = 0,
+    .max = 2,
+    .step = 1,
+    .def = 1,
+};
+
 static const struct v4l2_ctrl_ops isp_v4l2_ctrl_ops = {
     .s_ctrl = isp_v4l2_ctrl_s_ctrl_standard,
-	.g_volatile_ctrl = isp_v4l2_ctrl_g_ctrl_standard,
 };
 
 static const struct v4l2_ctrl_config isp_v4l2_ctrl_class = {
@@ -2533,18 +2530,6 @@ static const struct v4l2_ctrl_config isp_v4l2_ctrl_class = {
                                id, min, max, step, def );        \
         }                                                        \
     }
-
-#define ADD_CTRL_STD_VOLATILE( id, min, max, step, def )         \
-    {                                                            \
-        if ( fw_intf_validate_control( id ) ) {                  \
-            std_ctrl = v4l2_ctrl_new_std( hdl_std_ctrl,          \
-                &isp_v4l2_ctrl_ops,                              \
-                    id, min, max, step, def );                   \
-            if (std_ctrl)                                        \
-                std_ctrl->flags |= V4L2_CTRL_FLAG_VOLATILE;      \
-        }                                                        \
-    }
-
 
 #define ADD_CTRL_STD_MENU( id, max, skipmask, def )                   \
     {                                                                 \
@@ -2606,7 +2591,6 @@ int isp_v4l2_ctrl_init( uint32_t ctx_id, isp_v4l2_ctrl_t *ctrl )
     struct v4l2_ctrl_handler *hdl_std_ctrl = &ctrl->ctrl_hdl_std_ctrl;
     struct v4l2_ctrl_handler *hdl_cst_ctrl = &ctrl->ctrl_hdl_cst_ctrl;
     struct v4l2_ctrl *tmp_ctrl;
-	struct v4l2_ctrl *std_ctrl;
     struct v4l2_ctrl_config tmp_ctrl_cfg;
 
     /* Init and add standard controls */
@@ -2630,7 +2614,7 @@ int isp_v4l2_ctrl_init( uint32_t ctx_id, isp_v4l2_ctrl_t *ctrl )
                        1, 0x0, 0 );
     /*ADD_CTRL_STD( V4L2_CID_EXPOSURE_ABSOLUTE,
                   1, 1000, 1, 33 );*/
-	ADD_CTRL_STD( V4L2_CID_EXPOSURE_ABSOLUTE,
+    ADD_CTRL_STD( V4L2_CID_EXPOSURE_ABSOLUTE,
                   1, 1000, 1, 33 );
     ADD_CTRL_STD( V4L2_CID_EXPOSURE_AUTO_PRIORITY,
                   0, 1, 1, 0 );
@@ -2641,13 +2625,9 @@ int isp_v4l2_ctrl_init( uint32_t ctx_id, isp_v4l2_ctrl_t *ctrl )
                   2000, 8000, 1000, 5000 );
     /* focus */
     //ADD_CTRL_STD( V4L2_CID_FOCUS_AUTO, 0, 1, 1, 1 );
-	ADD_CTRL_STD( V4L2_CID_FOCUS_AUTO, 0, 1, 1, 1 );
+    ADD_CTRL_STD( V4L2_CID_FOCUS_AUTO, 0, 1, 1, 1 );
     ADD_CTRL_STD( V4L2_CID_FOCUS_ABSOLUTE,
                   0, 255, 1, 0 );
-
-    /*get request buffer num*/
-    ADD_CTRL_STD_VOLATILE(V4L2_CID_MIN_BUFFERS_FOR_OUTPUT, 2, 6, 1, 4);
-    ADD_CTRL_STD_VOLATILE(V4L2_CID_MIN_BUFFERS_FOR_CAPTURE, 2, 6, 1, 4);
 
     /* Init and add custom controls */
     v4l2_ctrl_handler_init( hdl_cst_ctrl, 2 );
@@ -2663,12 +2643,12 @@ int isp_v4l2_ctrl_init( uint32_t ctx_id, isp_v4l2_ctrl_t *ctrl )
     ADD_CTRL_CST( ISP_V4L2_CID_CUSTOM_SENSOR_WDR_MODE, &isp_v4l2_ctrl_sensor_wdr_mode, NULL );
     ADD_CTRL_CST( ISP_V4L2_CID_CUSTOM_SENSOR_EXPOSURE, &isp_v4l2_ctrl_sensor_exposure, NULL );
     ADD_CTRL_CST( ISP_V4L2_CID_CUSTOM_SET_FR_FPS, &isp_v4l2_ctrl_fr_fps, NULL);
-	//ADD_CTRL_CST_VOLATILE( ISP_V4L2_CID_CUSTOM_FR_FPS, &isp_v4l2_ctrl_fr_fps, NULL);
+    //ADD_CTRL_CST_VOLATILE( ISP_V4L2_CID_CUSTOM_FR_FPS, &isp_v4l2_ctrl_fr_fps, NULL);
     ADD_CTRL_CST( ISP_V4L2_CID_CUSTOM_SET_SENSOR_TESTPATTERN, &isp_v4l2_ctrl_sensor_testpattern, NULL);
     ADD_CTRL_CST( ISP_V4L2_CID_CUSTOM_SENSOR_IR_CUT, &isp_v4l2_ctrl_sensor_ir_cut, NULL);
     ADD_CTRL_CST( ISP_V4L2_CID_CUSTOM_SET_AE_ZONE_WEIGHT, &isp_v4l2_ctrl_ae_zone_weight, NULL);
     ADD_CTRL_CST( ISP_V4L2_CID_CUSTOM_SET_AWB_ZONE_WEIGHT, &isp_v4l2_ctrl_awb_zone_weight, NULL);
-	//ADD_CTRL_CST_VOLATILE( ISP_V4L2_CID_CUSTOM_AE_ZONE_WEIGHT, &isp_v4l2_ctrl_ae_zone_weight, NULL);
+    //ADD_CTRL_CST_VOLATILE( ISP_V4L2_CID_CUSTOM_AE_ZONE_WEIGHT, &isp_v4l2_ctrl_ae_zone_weight, NULL);
     //ADD_CTRL_CST_VOLATILE( ISP_V4L2_CID_CUSTOM_AWB_ZONE_WEIGHT, &isp_v4l2_ctrl_awb_zone_weight, NULL);
     ADD_CTRL_CST( ISP_V4L2_CID_CUSTOM_SET_MANUAL_EXPOSURE, &isp_v4l2_ctrl_manual_exposure, NULL);
     ADD_CTRL_CST( ISP_V4L2_CID_CUSTOM_SET_SENSOR_INTEGRATION_TIME, &isp_v4l2_ctrl_sensor_integration_time, NULL);
@@ -2676,7 +2656,7 @@ int isp_v4l2_ctrl_init( uint32_t ctx_id, isp_v4l2_ctrl_t *ctrl )
     ADD_CTRL_CST( ISP_V4L2_CID_CUSTOM_SET_ISP_DIGITAL_GAIN, &isp_v4l2_ctrl_isp_digital_gain, NULL);
     ADD_CTRL_CST( ISP_V4L2_CID_CUSTOM_SET_STOP_SENSOR_UPDATE, &isp_v4l2_ctrl_stop_sensor_update, NULL);
     ADD_CTRL_CST( ISP_V4L2_CID_CUSTOM_SET_DS1_FPS, &isp_v4l2_ctrl_ds1_fps, NULL);
-	//ADD_CTRL_CST_VOLATILE( ISP_V4L2_CID_CUSTOM_DS1_FPS, &isp_v4l2_ctrl_ds1_fps, NULL);
+    //ADD_CTRL_CST_VOLATILE( ISP_V4L2_CID_CUSTOM_DS1_FPS, &isp_v4l2_ctrl_ds1_fps, NULL);
     ADD_CTRL_CST( ISP_V4L2_CID_AE_COMPENSATION, &isp_v4l2_ctrl_ae_compensation, NULL);
     ADD_CTRL_CST( ISP_V4L2_CID_CUSTOM_SET_SENSOR_DIGITAL_GAIN, &isp_v4l2_ctrl_sensor_digital_gain, NULL);
     ADD_CTRL_CST( ISP_V4L2_CID_CUSTOM_SET_AWB_RED_GAIN, &isp_v4l2_ctrl_awb_red_gain, NULL);
@@ -2694,7 +2674,7 @@ int isp_v4l2_ctrl_init( uint32_t ctx_id, isp_v4l2_ctrl_t *ctrl )
     ADD_CTRL_CST( ISP_V4L2_CID_CUSTOM_CALIBRATION,  &isp_v4l2_ctrl_calibration, NULL);
 
     ADD_CTRL_CST_VOLATILE( ISP_V4L2_CID_CUSTOM_ANTIFLICKER, &isp_v4l2_ctrl_antiflicker, NULL);
-	//ADD_CTRL_CST( ISP_V4L2_CID_CUSTOM_ANTIFLICKER, &isp_v4l2_ctrl_antiflicker, NULL);
+    //ADD_CTRL_CST( ISP_V4L2_CID_CUSTOM_ANTIFLICKER, &isp_v4l2_ctrl_antiflicker, NULL);
     ADD_CTRL_CST_VOLATILE( ISP_V4L2_CID_SYSTEM_FREEZE_FIRMWARE, &isp_v4l2_ctrl_system_freeze_firmware, NULL );
     ADD_CTRL_CST_VOLATILE( ISP_V4L2_CID_SYSTEM_MANUAL_EXPOSURE, &isp_v4l2_ctrl_system_manual_exposure, NULL );
     ADD_CTRL_CST_VOLATILE( ISP_V4L2_CID_SYSTEM_MANUAL_INTEGRATION_TIME, &isp_v4l2_ctrl_system_manual_integration_time, NULL );
@@ -2753,6 +2733,7 @@ int isp_v4l2_ctrl_init( uint32_t ctx_id, isp_v4l2_ctrl_t *ctrl )
     ADD_CTRL_CST_VOLATILE( ISP_V4L2_CID_SYSTEM_DYNAMIC_GAMMA_ENABLE, &isp_v4l2_ctrl_system_dynamic_gamma_enable, NULL );
     ADD_CTRL_CST_VOLATILE( ISP_V4L2_CID_AF_MODE_ID, &isp_v4l2_ctrl_af_mode_id, NULL );
     ADD_CTRL_CST_VOLATILE( ISP_V4L2_CID_AF_MANUAL_CONTROL_ID, &isp_v4l2_ctrl_af_manual_control, NULL );
+    ADD_CTRL_CST_VOLATILE( ISP_V4L2_CID_AF_STATE_ID, &isp_v4l2_ctrl_af_state_id, NULL);
     ADD_CTRL_CST_VOLATILE( ISP_V4L2_CID_AWB_MODE_ID, &isp_v4l2_ctrl_awb_mode_id, NULL );
     ADD_CTRL_CST_VOLATILE( ISP_V4L2_CID_AWB_TEMPERATURE, &isp_v4l2_ctrl_awb_temperature, NULL );
 
@@ -2807,7 +2788,8 @@ int isp_v4l2_ctrl_init( uint32_t ctx_id, isp_v4l2_ctrl_t *ctrl )
     ADD_CTRL_CST_VOLATILE( ISP_V4L2_CID_AE_TARGET, &isp_v4l2_ctrl_isp_ae_target, NULL );
     ADD_CTRL_CST_VOLATILE( ISP_V4L2_CID_ISP_MODULES_MANUAL_PF, &isp_v4l2_ctrl_isp_modules_manual_pf, NULL );
     ADD_CTRL_CST_VOLATILE( ISP_V4L2_CID_STATUS_ISO, &isp_v4l2_ctrl_isp_status_iso, NULL );
-	/*add by c2*/
+    ADD_CTRL_CST_VOLATILE( ISP_V4L2_CID_CUSTOM_DCAM_MODE, &isp_v4l2_ctrl_dcam_mode, NULL);
+    /*add by c2*/
     //ADD_CTRL_CST_VOLATILE( ISP_V4L2_CID_AF_STATS, &isp_v4l2_ctrl_af_stats, NULL );
     //ADD_CTRL_CST_VOLATILE( ISP_V4L2_CID_SYSTEM_MIN_INTEGRATION_TIME, &isp_v4l2_ctrl_system_min_integration_time, NULL );
 

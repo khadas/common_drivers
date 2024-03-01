@@ -58,11 +58,24 @@ static sensor_mode_t supported_modes[] = {
         .resolution.height = 1080,
         .bits = 12,
         .exposures = 1,
-        .lanes = 4,
+        .lanes = 2,
         .bps = 446,
         .bayer = BAYER_RGGB,
         .dol_type = DOL_NON,
         .num = 0,
+    },
+    {
+        .wdr_mode = WDR_MODE_LINEAR, // 4 Lanes
+        .fps = 30 * 256,
+        .resolution.width = 1920,
+        .resolution.height = 1080,
+        .bits = 12,
+        .exposures = 1,
+        .lanes = 4,
+        .bps = 446,
+        .bayer = BAYER_RGGB,
+        .dol_type = DOL_NON,
+        .num = 1,
     },
     {
         .wdr_mode = WDR_MODE_FS_LIN, // 8 Lanes
@@ -319,18 +332,18 @@ static uint16_t sensor_get_id( void *ctx )
 {
     /* return that sensor id register does not exist */
 
-	sensor_context_t *p_ctx = ctx;
-	uint16_t sensor_id = 0;
+    sensor_context_t *p_ctx = ctx;
+    uint16_t sensor_id = 0;
 
-	sensor_id |= acamera_sbus_read_u8(&p_ctx->sbus, 0x301e) << 8;
-	sensor_id |= acamera_sbus_read_u8(&p_ctx->sbus, 0x301f);
+    sensor_id |= acamera_sbus_read_u8(&p_ctx->sbus, 0x301e) << 8;
+    sensor_id |= acamera_sbus_read_u8(&p_ctx->sbus, 0x301f);
 
     if (sensor_id != SENSOR_CHIP_ID) {
         LOG(LOG_CRIT, "%s: Failed to read sensor id\n", __func__);
         return 0xFFFF;
     }
 
-	LOG(LOG_INFO, "%s: success to read sensor %x\n", __func__, sensor_id);
+    LOG(LOG_INFO, "%s: success to read sensor %x\n", __func__, sensor_id);
     return sensor_id;
 }
 
@@ -340,6 +353,7 @@ static void sensor_set_mode( void *ctx, uint8_t mode )
     imx290_private_t *p_imx290 = (imx290_private_t *)p_ctx->sdrv;
     sensor_param_t *param = &p_ctx->param;
     acamera_sbus_ptr_t p_sbus = &p_ctx->sbus;
+    //mode = 1;
     uint8_t setting_num = param->modes_table[mode].num;
 
     if (initial_sensor ++ >= 1) {
@@ -356,6 +370,7 @@ static void sensor_set_mode( void *ctx, uint8_t mode )
         return;
     }
 
+    pr_err("%s sensor mode: %d, wdr mode %d, setting num %d \n", __func__, mode, param->modes_table[mode].wdr_mode, setting_num);
     switch ( param->modes_table[mode].wdr_mode ) {
     case WDR_MODE_LINEAR:
         sensor_load_sequence( p_sbus, p_ctx->seq_width, p_sensor_data, setting_num );
@@ -450,7 +465,7 @@ static void sensor_set_mode( void *ctx, uint8_t mode )
     p_ctx->vmax_adjust = p_ctx->vmax;
     p_ctx->vmax_fps = p_ctx->s_fps;
 
-    sensor_set_iface(&param->modes_table[mode], p_ctx->win_offset);
+    //sensor_set_iface(&param->modes_table[mode], p_ctx->win_offset);
 
     LOG( LOG_ERR, "Output resolution from sensor: %dx%d", param->active.width, param->active.height ); // LOG_NOTICE Causes errors in some projects
 }
@@ -484,11 +499,12 @@ static void stop_streaming( void *ctx )
     sensor_context_t *p_ctx = ctx;
     acamera_sbus_ptr_t p_sbus = &p_ctx->sbus;
     p_ctx->streaming_flg = 0;
+    p_ctx->dcam_mode = 1;
 
     acamera_sbus_write_u8( p_sbus, 0x3000, 0x01 );
 
     reset_sensor_bus_counter();
-    sensor_iface_disable();
+    sensor_iface_disable(p_ctx);
 }
 
 uint32_t write2_reg(uint32_t val, unsigned long addr)
@@ -509,8 +525,9 @@ static void start_streaming( void *ctx )
     sensor_context_t *p_ctx = ctx;
     acamera_sbus_ptr_t p_sbus = &p_ctx->sbus;
     sensor_param_t *param = &p_ctx->param;
-    sensor_set_iface(&param->modes_table[param->mode], p_ctx->win_offset);
+    sensor_set_iface(&param->modes_table[param->mode], p_ctx->win_offset, p_ctx);
     p_ctx->streaming_flg = 1;
+    pr_err("imx290 start streaming \n");
     acamera_sbus_write_u8( p_sbus, 0x3000, 0x00 );
 }
 
@@ -526,13 +543,21 @@ static void sensor_test_pattern( void *ctx, uint8_t mode )
     sensor_load_sequence( p_sbus, p_ctx->seq_width, p_sensor_data, SENSOR_IMX290_SEQUENCE_DEFAULT_TEST_PATTERN );
 }
 
+static void sensor_dcam_mode( void *ctx, int32_t mode )
+{
+    sensor_context_t *p_ctx = ctx;
+    LOG(LOG_CRIT, "imx290 set dcam mode:%d", mode);
+    p_ctx->dcam_mode = mode;
+}
+
+
 void sensor_deinit_imx290( void *ctx )
 {
     sensor_context_t *t_ctx = ctx;
     reset_sensor_bus_counter();
     acamera_sbus_deinit(&t_ctx->sbus,  sbus_i2c);
-    if (t_ctx != NULL && t_ctx->sbp != NULL)
-        clk_am_disable(t_ctx->sbp);
+    //if (t_ctx != NULL && t_ctx->sbp != NULL)
+        //clk_am_disable(t_ctx->sbp);
 }
 
 static sensor_context_t *sensor_global_parameter(void* sbp)
@@ -558,10 +583,10 @@ static sensor_context_t *sensor_global_parameter(void* sbp)
     write2_reg(0x9000, 0xfe007cd4);
 */
 #if NEED_CONFIG_BSP
-    ret = gp_pl_am_enable(sensor_bp, "24m", 37125000);
-    if (ret < 0 )
-        pr_info("set mclk fail\n");
-    udelay(30);
+    //ret = gp_pl_am_enable(sensor_bp, "24m", 37125000);
+    //if (ret < 0 )
+        //pr_info("set mclk fail\n");
+    //udelay(30);
 #if PLATFORM_C305X
     pwr_am_enable(sensor_bp,"pwdn", 0);
 #endif
@@ -572,7 +597,7 @@ static sensor_context_t *sensor_global_parameter(void* sbp)
 
     sensor_ctx.sbus.mask = SBUS_MASK_SAMPLE_8BITS | SBUS_MASK_ADDR_16BITS | SBUS_MASK_ADDR_SWAP_BYTES;
     sensor_ctx.sbus.control = 0;
-    sensor_ctx.sbus.bus = 1;
+    sensor_ctx.sbus.bus = 0;
     sensor_ctx.sbus.device = SENSOR_DEV_ADDRESS;
     acamera_sbus_init( &sensor_ctx.sbus, sbus_i2c );
 
@@ -622,10 +647,12 @@ static sensor_context_t *sensor_global_parameter(void* sbp)
     sensor_ctx.param.sensor_exp_number = 1;
     sensor_ctx.param.mode = 0;
     sensor_ctx.wdr_mode = DOL_NON;
+    sensor_ctx.dcam_mode = 1;
+    //sensor_ctx.dcam_mode = 0;
     sensor_ctx.param.bayer = BAYER_RGGB;
     if ((acamera_sbus_read_u8(&sensor_ctx.sbus, 0x300c) & 0x01) == 1) {
         sensor_ctx.param.sensor_exp_number = 2;
-        sensor_ctx.param.mode = 1;
+        sensor_ctx.param.mode = 2;
         sensor_ctx.wdr_mode = WDR_MODE_FS_LIN;
         sensor_ctx.param.integration_time_long_max = 1125 * 2 - 256;
         sensor_ctx.param.integration_time_limit = 198;
@@ -640,6 +667,7 @@ static sensor_context_t *sensor_global_parameter(void* sbp)
     sensor_ctx.win_offset.long_offset = 0x8;
     sensor_ctx.win_offset.short_offset = 0x8;
 #endif
+    sensor_ctx.cam_isp_path = CAM0_ACT;
 
     return &sensor_ctx;
 }
@@ -664,6 +692,7 @@ void sensor_init_imx290( void **ctx, sensor_control_t *ctrl, void* sbp)
     ctrl->stop_streaming = stop_streaming;
     ctrl->sensor_test_pattern = sensor_test_pattern;
     ctrl->vmax_fps = sensor_vmax_fps;
+    ctrl->dcam_mode = sensor_dcam_mode;
 
     // Reset sensor during initialization
     sensor_hw_reset_enable();
@@ -679,10 +708,10 @@ int sensor_detect_imx290( void* sbp)
     sensor_ctx.sbp = sbp;
 
 #if NEED_CONFIG_BSP
-    ret = gp_pl_am_enable(sensor_bp, "24m", 37125000);
-    if (ret < 0 )
-        pr_info("set mclk fail\n");
-    udelay(30);
+    //ret = gp_pl_am_enable(sensor_bp, "24m", 37125000);
+    //if (ret < 0 )
+        //pr_info("set mclk fail\n");
+    //udelay(30);
 
 #if PLATFORM_C305X
     pwr_am_enable(sensor_bp,"pwdn", 0);

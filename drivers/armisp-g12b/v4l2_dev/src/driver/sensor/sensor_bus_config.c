@@ -23,9 +23,8 @@
 #include "acamera_types.h"
 
 
-uint32_t bus_addr[] = {
-0x0
-} ;
+uint32_t bus_addr[FIRMWARE_CONTEXT_NUMBER] = {0x0};
+
 static uint32_t sensor_counter = 0 ;
 static uint32_t lens_counter = 0 ;
 

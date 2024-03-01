@@ -94,25 +94,25 @@ int iridix_fsm_set_param( void *fsm, uint32_t param_id, void *input, uint32_t in
         rc = iridix_set_tracking_frame_id( p_fsm, *(uint32_t *)input );
 
         break;
-	case FSM_PARAM_SET_IRIDIX_PRESET:
-		if ( !input || input_size != sizeof( isp_iridix_preset_t ) ) {
-			LOG( LOG_ERR, "Invalid param, param_id: %d.", param_id );
-			rc = -1;
-			break;
-		}
+    case FSM_PARAM_SET_IRIDIX_PRESET:
+        if ( !input || input_size != sizeof( isp_iridix_preset_t ) ) {
+            LOG( LOG_ERR, "Invalid param, param_id: %d.", param_id );
+            rc = -1;
+            break;
+        }
 
-		isp_iridix_preset_t *p_new = (isp_iridix_preset_t *)input;
-		//p_fsm->skip_cnt = p_new->skip_cnt;
-		p_fsm->strength_target = p_new->strength_target;
-		p_fsm->iridix_contrast = p_new->iridix_contrast;
-		p_fsm->dark_enh = p_new->dark_enh;
-		p_fsm->iridix_global_DG = p_new->iridix_global_DG;
+        isp_iridix_preset_t *p_new = (isp_iridix_preset_t *)input;
+        //p_fsm->skip_cnt = p_new->skip_cnt;
+        p_fsm->strength_target = p_new->strength_target;
+        p_fsm->iridix_contrast = p_new->iridix_contrast;
+        p_fsm->dark_enh = p_new->dark_enh;
+        p_fsm->iridix_global_DG = p_new->iridix_global_DG;
 
-		acamera_isp_iridix_gain_gain_write( p_fsm->cmn.isp_base, p_fsm->iridix_global_DG);
-		acamera_isp_iridix_collection_correction_write( p_fsm->cmn.isp_base, p_new->diff);
-		acamera_isp_iridix_strength_inroi_write( p_fsm->cmn.isp_base, p_new->iridix_strength >> 6);
+        acamera_isp_iridix_gain_gain_write( p_fsm->cmn.isp_base, p_fsm->iridix_global_DG);
+        acamera_isp_iridix_collection_correction_write( p_fsm->cmn.isp_base, p_new->diff);
+        acamera_isp_iridix_strength_inroi_write( p_fsm->cmn.isp_base, p_new->iridix_strength >> 6);
         acamera_isp_iridix_dark_enh_write( p_fsm->cmn.isp_base, p_fsm->dark_enh);
-		break;
+        break;
     default:
         rc = -1;
         break;

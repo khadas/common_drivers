@@ -24,7 +24,9 @@
 #include "sensor_bus_config.h"
 /*    - Test the driver in this file                            */
 /*                                                              */
-
+#if ISP_SENSOR_DRIVER_DW9714
+#include "dw9714_vcm.h"
+#endif
 #if ISP_SENSOR_DRIVER_DONGWOON
 #include "dongwoon_vcm.h"
 #endif
@@ -62,6 +64,13 @@ int32_t lens_init( void **ctx, lens_control_t *ctrl )
 {
 
     uint32_t lens_bus = get_next_lens_bus_address();
+#if ISP_SENSOR_DRIVER_DW9714
+        if ( lens_dw9714_test( lens_bus ) ) {
+            lens_dw9714_init( ctx, ctrl, lens_bus );
+            LOG( LOG_NOTICE, "Lens VCM driver is dw9714" );
+            return 0;
+        }
+#endif
 #if ISP_SENSOR_DRIVER_V4L2
     if ( lens_v4l2_subdev_test( lens_bus ) ) {
         lens_v4l2_subdev_init( ctx, ctrl, lens_bus );
@@ -147,6 +156,9 @@ int32_t lens_init( void **ctx, lens_control_t *ctrl )
 
 void lens_deinit( void *ctx )
 {
+#if ISP_SENSOR_DRIVER_DW9714
+    lens_dw9714_deinit( ctx );
+#endif
 #if ISP_SENSOR_DRIVER_V4L2
     lens_v4l2_subdev_deinit( ctx );
 #endif

@@ -1,21 +1,21 @@
 /*
-*
-* SPDX-License-Identifier: GPL-2.0
-*
-* Copyright (C) 2011-2018 ARM or its affiliates
-*
-* This program is free software; you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation; version 2.
-* This program is distributed in the hope that it will be useful, but
-* WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
-* or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License
-* for more details.
-* You should have received a copy of the GNU General Public License along
-* with this program; if not, write to the Free Software Foundation, Inc.,
-* 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
-*
-*/
+ *
+ * SPDX-License-Identifier: GPL-2.0
+ *
+ * Copyright (C) 2011-2018 ARM or its affiliates
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; version 2.
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+ * or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License
+ * for more details.
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+ *
+ */
 
 #include <linux/version.h>
 #include <linux/module.h>
@@ -50,29 +50,26 @@
 // according to the customer needs.
 #include "runtime_initialization_settings.h"
 
-extern uint8_t *isp_kaddr;
-extern resource_size_t isp_paddr;
-extern unsigned int temper_line_offset;
-extern unsigned int temper_frame_num;
-extern unsigned int temper_frame_size;
+extern temper_addr isp_temper_paddr[FIRMWARE_CONTEXT_NUMBER];
+extern unsigned int temper_line_offset[FIRMWARE_CONTEXT_NUMBER];
+extern unsigned int temper_frame_num[FIRMWARE_CONTEXT_NUMBER];
+extern unsigned int temper_frame_size[FIRMWARE_CONTEXT_NUMBER];
 
 static struct task_struct *isp_fw_process_thread = NULL;
 
-#if !V4L2_INTERFACE_BUILD //all these callbacks are managed by v4l2
+#if !V4L2_INTERFACE_BUILD // all these callbacks are managed by v4l2
 // This function can be used to customize initialization process.
 // It is called by the firmware at the end of context initialization.
 // The input pointer to a context can be used to differentiate contexts
-void custom_initialization( uint32_t ctx_num )
+void custom_initialization(uint32_t ctx_num)
 {
 }
-
 
 // The driver can provide the full set of metadata parameters
 // The callback_meta function should be set in initalization settings to support it.
-void callback_meta( uint32_t ctx_num, const void *fw_metadata )
+void callback_meta(uint32_t ctx_num, const void *fw_metadata)
 {
 }
-
 
 // The ISP pipeline can have several outputs such as Full Resolution, DownScaler1, DownScaler2 etc
 // It is possible to set the firmware up for returning metadata on each output frame from
@@ -81,17 +78,17 @@ void callback_meta( uint32_t ctx_num, const void *fw_metadata )
 // The pointer to the context can be used to differentiate contexts
 
 // Callback from FR output pipe
-void callback_fr( uint32_t ctx_num, tframe_t *tframe, const metadata_t *metadata )
+void callback_fr(uint32_t ctx_num, tframe_t *tframe, const metadata_t *metadata)
 {
 }
 
 // Callback from DS1 output pipe
-void callback_ds1( uint32_t ctx_num, tframe_t *tframe, const metadata_t *metadata )
+void callback_ds1(uint32_t ctx_num, tframe_t *tframe, const metadata_t *metadata)
 {
 }
 
 // Callback from DS2 output pipe
-void callback_ds2( uint32_t ctx_num, tframe_t *tframe, const metadata_t *metadata )
+void callback_ds2(uint32_t ctx_num, tframe_t *tframe, const metadata_t *metadata)
 {
 }
 
@@ -101,33 +98,35 @@ void callback_ds2( uint32_t ctx_num, tframe_t *tframe, const metadata_t *metadat
 
 static struct task_struct *isp_fw_connections_thread = NULL;
 
-static int connection_thread( void *foo )
+static int connection_thread(void *foo)
 {
-    LOG( LOG_CRIT, "connection_thread start" );
+    LOG(LOG_CRIT, "connection_thread start");
 
     acamera_connection_init();
 
-    while ( !kthread_should_stop() ) {
+    while (!kthread_should_stop())
+    {
         acamera_connection_process();
     }
 
     acamera_connection_destroy();
 
-    LOG( LOG_CRIT, "connection_thread stop" );
+    LOG(LOG_CRIT, "connection_thread stop");
 
     return 0;
 }
 #endif
 
-static int isp_fw_process( void *data )
+static int isp_fw_process(void *data)
 {
-    LOG( LOG_CRIT, "isp_fw_process start" );
+    LOG(LOG_CRIT, "isp_fw_process start");
 
 #if ISP_HAS_STREAM_CONNECTION && !CONNECTION_IN_THREAD
     acamera_connection_init();
 #endif
 
-    while ( !kthread_should_stop() ) {
+    while (!kthread_should_stop())
+    {
         acamera_process();
 
 #if ISP_HAS_STREAM_CONNECTION && !CONNECTION_IN_THREAD
@@ -139,10 +138,9 @@ static int isp_fw_process( void *data )
     acamera_connection_destroy();
 #endif
 
-    LOG( LOG_CRIT, "isp_fw_process stop" );
+    LOG(LOG_CRIT, "isp_fw_process stop");
     return 0;
 }
-
 
 // this is a main application IRQ handler to drive firmware
 // The main purpose is to redirect irq events to the
@@ -151,7 +149,7 @@ static int isp_fw_process( void *data )
 // The other events are platform specific. The firmware can support several external irq events or
 // does not support any. It totally depends on the system configuration and firmware compile time settings.
 // Please see the ACamera Porting Guide for details.
-static void interrupt_handler( void *data, uint32_t mask )
+static void interrupt_handler(void *data, uint32_t mask)
 {
     acamera_interrupt_handler();
 }
@@ -161,39 +159,41 @@ void isp_update_setting(void)
     aframe_t *aframe = NULL;
     uint32_t fr_num = 0;
     resource_size_t paddr = 0;
-    int i = 0,j = 0;
+    int i = 0, j = 0;
 
-    if (isp_paddr == 0 || isp_kaddr == NULL) {
-        pr_err("%s: Error input isp cma addr\n", __func__);
-        return;
-    }
-
-    paddr = isp_paddr;
-    for (j = 0; j < FIRMWARE_CONTEXT_NUMBER; j++) {
+    for (j = 0; j < g_firmware_context_number; j++)
+    {
+        paddr = isp_temper_paddr[j].isp_paddr;
+        settings[j].temper_frames_number = temper_frame_num[j];
         aframe = settings[j].temper_frames;
         fr_num = settings[j].temper_frames_number;
 
-        for (i = 0; i < fr_num; i++) {
+        for (i = 0; i < fr_num; i++)
+        {
             aframe[i].address = paddr;
-            aframe[i].size = temper_frame_size;
+            aframe[i].size = temper_frame_size[j];
 
-            paddr = aframe[i].address + temper_frame_size;
+            paddr = aframe[i].address + temper_frame_size[j];
 
-            aframe[i].line_offset = temper_line_offset;
+            aframe[i].line_offset = temper_line_offset[j];
         }
 
-        settings[j].temper_frames_number = temper_frame_num;
+        settings[j].temper_frames_number = temper_frame_num[j];
     }
 }
 
-int isp_fw_init( uint32_t hw_isp_addr )
+int isp_fw_init(uint32_t hw_isp_addr)
 {
     int result = 0;
     uint32_t i;
 
+    LOG(LOG_INFO, "fw_init start");
+    pr_err("%s++, g_firmware_context_number: %d\n", __func__, g_firmware_context_number);
+
     isp_update_setting();
 
-    for ( i = 0; i < FIRMWARE_CONTEXT_NUMBER; i++ ) {
+    for (i = 0; i < g_firmware_context_number; i++)
+    {
         settings[i].hw_isp_addr = hw_isp_addr;
     }
 
@@ -203,49 +203,61 @@ int isp_fw_init( uint32_t hw_isp_addr )
     // the structure acamera_settings must be filled properly.
     // the total number of initialized context must not exceed FIRMWARE_CONTEXT_NUMBER
     // all contexts are numerated from 0 till ctx_number - 1
-    result = acamera_init( settings, FIRMWARE_CONTEXT_NUMBER );
+    result = acamera_init(settings, g_firmware_context_number);
 
-    if ( result == 0 ) {
-        //application_command(TGENERAL, ACTIVE_CONTEXT, 0, COMMAND_GET, &prev_ctx_num);
+    if (result == 0)
+    {
+        // application_command(TGENERAL, ACTIVE_CONTEXT, 0, COMMAND_GET, &prev_ctx_num);
 
         // set the interrupt handler. The last parameter may be used
         // to specify the context. The system must call this interrupt_handler
         // function whenever the ISP interrupt happens.
         // This interrupt handling procedure is only advisable and is used in ACamera demo application.
         // It can be changed by a customer discretion.
-        system_interrupt_set_handler( interrupt_handler, NULL );
-    } else {
-        LOG( LOG_ERR, "Failed to start firmware processing thread. " );
+        system_interrupt_set_handler(interrupt_handler, NULL);
+    }
+    else
+    {
+        LOG(LOG_INFO, "Failed to start firmware processing thread. ");
     }
 
-    if ( result == 0 ) {
+    LOG(LOG_INFO, "isp_fw_init result %d", result);
+    if (result == 0)
+    {
 
 #if ISP_HAS_STREAM_CONNECTION && CONNECTION_IN_THREAD
-        isp_fw_connections_thread = kthread_run( connection_thread, NULL, "isp_connection" );
+        LOG(LOG_INFO, "start connection thread %d", result);
+        isp_fw_connections_thread = kthread_run(connection_thread, NULL, "isp_connection");
 #endif
-        isp_fw_process_thread = kthread_run( isp_fw_process, NULL, "isp_process" );
+
+        LOG(LOG_INFO, "start fw thread %d", result);
+        isp_fw_process_thread = kthread_run(isp_fw_process, NULL, "isp_process");
     }
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 15, 0))
-    return PTR_RET( isp_fw_process_thread );
+
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0))
+    return PTR_ERR_OR_ZERO(isp_fw_process_thread);
 #else
-    return PTR_ERR_OR_ZERO( isp_fw_process_thread );
+    return PTR_RET(isp_fw_process_thread);
 #endif
 }
 
-void isp_fw_exit( void )
+void isp_fw_exit(void)
 {
 #if ISP_HAS_STREAM_CONNECTION && CONNECTION_IN_THREAD
-    if ( isp_fw_connections_thread )
-        kthread_stop( isp_fw_connections_thread );
+    if (isp_fw_connections_thread)
+        kthread_stop(isp_fw_connections_thread);
 #endif
 
-    if ( isp_fw_process_thread ) {
-        kthread_stop( isp_fw_process_thread );
+    if (isp_fw_process_thread)
+    {
+        kthread_stop(isp_fw_process_thread);
     }
 
     // this api function will free
     // all resources allocated by the firmware
+    LOG(LOG_CRIT, "acamera_terminate ++");
     acamera_terminate();
+    LOG(LOG_CRIT, "acamera_terminate --");
 
     bsp_destroy();
 }

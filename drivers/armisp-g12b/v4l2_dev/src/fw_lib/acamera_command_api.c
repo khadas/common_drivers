@@ -108,6 +108,9 @@ case  TSENSOR:
 		case  SENSOR_HWID:
 			ret = sensor_hw_id(instance, value, direction, ret_value);
 			break;
+		case  SENSOR_DCAM:
+			ret = sensor_dcam_mode(instance, value, direction, ret_value);
+			break;
 		case  SENSOR_WDRMODE_ID:
 			ret = sensor_mode_dynamic_switch(instance, value, direction, ret_value);
 			value = *ret_value;

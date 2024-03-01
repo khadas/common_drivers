@@ -360,6 +360,13 @@ static __inline void acamera_isp_isp_global_mcu_ping_pong_config_select_write(ui
 static __inline uint8_t acamera_isp_isp_global_mcu_ping_pong_config_select_read(uintptr_t base) {
     return (uint8_t)((system_hw_read_32(0x20L) & 0x2) >> 1);
 }
+
+static __inline void acamera_isp_isp_global_mcu_multi_ctx_mode(uintptr_t base, uint8_t data)
+{
+    uint32_t curr = system_hw_read_32(0x20L);
+    system_hw_write_32(0x20L, (((uint32_t)(data & 0x1)) << 8) | (curr & 0xfffffeff));
+}
+
 // ------------------------------------------------------------------------------ //
 // Register: multi context mode
 // ------------------------------------------------------------------------------ //

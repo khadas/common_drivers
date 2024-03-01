@@ -240,6 +240,10 @@ typedef struct _sensor_control_t {
      */
     void ( *write_sensor_register )( void *ctx, uint32_t address, uint32_t data );
 
+    uint32_t ( *power_on )( void *ctx );
+
+    uint32_t ( *power_off )( void *ctx );
+
 } sensor_control_t;
 
 

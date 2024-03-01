@@ -31,7 +31,7 @@ extern void af_set_new_param( AF_fsm_ptr_t p_fsm, sbuf_af_t *p_sbuf_af );
 void AF_fsm_clear( AF_fsm_t *p_fsm )
 {
     p_fsm->frame_num = 0;
-    p_fsm->mode = AF_MODE_AF;
+    p_fsm->mode = AF_MODE_CAF;
     p_fsm->pos_manual = 0;
     p_fsm->new_pos = 0;
     p_fsm->roi = 0x4040C0C0;
@@ -42,9 +42,9 @@ void AF_fsm_clear( AF_fsm_t *p_fsm )
     p_fsm->last_pos_done = 0;
     p_fsm->new_last_sharp = 0;
     p_fsm->last_sharp_done = 0;
-	p_fsm->zone_weight = NULL;
-	p_fsm->zone_process_statistic = NULL;
-	p_fsm->zone_process_reliability = NULL;
+    p_fsm->zone_weight = NULL;
+    p_fsm->zone_process_statistic = NULL;
+    p_fsm->zone_process_reliability = NULL;
     memset( &p_fsm->lens_ctrl, 0, sizeof( p_fsm->lens_ctrl ) );
 }
 

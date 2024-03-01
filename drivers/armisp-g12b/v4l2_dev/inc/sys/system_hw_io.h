@@ -34,6 +34,9 @@
  */
 uint32_t system_hw_read_32( uintptr_t addr );
 
+uint32_t system_hw_read_adap( uintptr_t addr );
+void system_hw_write_adap( uintptr_t addr, uint32_t data );
+
 
 /**
  *   Read 16 bit word from isp memory

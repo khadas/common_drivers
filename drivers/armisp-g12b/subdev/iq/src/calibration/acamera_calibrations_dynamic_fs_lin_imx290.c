@@ -446,27 +446,27 @@ static uint16_t _calibration_temper_strength[][2] = {
     {9 * 256, 130}};
 
 static uint32_t _calibration_af_lms[] = {
-	70 << 6,  // Down_FarEnd
-	70 << 6,  // Hor_FarEnd
-	70 << 6,  // Up_FarEnd
-	112 << 6, // Down_Infinity
-	112 << 6, // Hor_Infinity
-	112 << 6, // Up_Infinity
-	832 << 6,					   // Down_Macro
-	832 << 6,					   // Hor_Macro
-	832 << 6,					   // Up_Macro
-	915 << 6,					   // Down_NearEnd
-	915 << 6,					   // Hor_NearEnd
-	915 << 6,					   // Up_NearEnd
-	11, 						   // step_num
-	6,							   // skip_frames_init
-	2,							   // skip_frames_move
-	30, 						   // dynamic_range_th
-	2 << ( LOG2_GAIN_SHIFT - 2 ),  // spot_tolerance
-	1 << ( LOG2_GAIN_SHIFT - 1 ),  // exit_th
-	16 << ( LOG2_GAIN_SHIFT - 4 ), // caf_trigger_th
-	4 << ( LOG2_GAIN_SHIFT - 4 ),  // caf_stable_th
-	0,							   // print_debug
+    70 << 6,  // Down_FarEnd
+    70 << 6,  // Hor_FarEnd
+    70 << 6,  // Up_FarEnd
+    112 << 6, // Down_Infinity
+    112 << 6, // Hor_Infinity
+    112 << 6, // Up_Infinity
+    832 << 6,                      // Down_Macro
+    832 << 6,                      // Hor_Macro
+    832 << 6,                      // Up_Macro
+    915 << 6,                      // Down_NearEnd
+    915 << 6,                      // Hor_NearEnd
+    915 << 6,                      // Up_NearEnd
+    11,                            // step_num
+    6,                             // skip_frames_init
+    2,                             // skip_frames_move
+    30,                            // dynamic_range_th
+    2 << ( LOG2_GAIN_SHIFT - 2 ),  // spot_tolerance
+    1 << ( LOG2_GAIN_SHIFT - 1 ),  // exit_th
+    16 << ( LOG2_GAIN_SHIFT - 4 ), // caf_trigger_th
+    4 << ( LOG2_GAIN_SHIFT - 4 ),  // caf_stable_th
+    0,                             // print_debug
 };
 
 static uint16_t _calibration_af_zone_wght_hor[] = {0, 0, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 0, 0};

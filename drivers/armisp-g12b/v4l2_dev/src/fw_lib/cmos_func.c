@@ -73,7 +73,7 @@ void cmos_update_exposure_partitioning_lut( cmos_fsm_ptr_t p_fsm )
     int32_t param[2] = {0, 0}; // in log2
 
 
-    uint16_t *exposure_partitions = cmos_get_partition_lut( p_fsm, PARTITION_LUT_BALANED_INDEX );
+    uint16_t *exposure_partitions = cmos_get_partition_lut( p_fsm, PARTITION_LUT_BALANCED_INDEX );
 #ifdef AE_SPLIT_PRESET_ID
     if ( p_fsm->strategy == AE_SPLIT_INTEGRATION_PRIORITY ) {
         exposure_partitions = cmos_get_partition_lut( p_fsm, PARTITION_LUT_INTEGRATION_PRIORITY_INDEX );
@@ -467,7 +467,7 @@ static void cmos_monitor_frame_start( cmos_fsm_ptr_t p_fsm )
         fsm_param_mon_err_head_t mon_err;
         mon_err.err_type = MON_TYPE_ERR_CMOS_FS_DELAY;
         acamera_fsm_mgr_set_param( p_fsm->cmn.p_fsm_mgr, FSM_PARAM_SET_MON_ERROR_REPORT, &mon_err, sizeof( mon_err ) );
-        LOG( LOG_ERR, "cmos_mon_fe: cur: %u, pre: %u.", cur_frame_id, p_fsm->prev_fs_frame_id );
+        LOG( LOG_INFO, "cmos_mon_fe: cur: %u, pre: %u.", cur_frame_id, p_fsm->prev_fs_frame_id );
     }
 
     p_fsm->prev_fs_frame_id = cur_frame_id;

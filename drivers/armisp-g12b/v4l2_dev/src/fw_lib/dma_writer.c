@@ -296,7 +296,7 @@ uint16_t dma_writer_write_frame_queue( void *handle, dma_type type, tframe_t *fr
         if ( pipe->api.p_acamera_isp_dma_writer_format_read_uv( pipe->settings.isp_base ) != DMA_FORMAT_DISABLE ) {
             pipe->settings.frame_buf_queue[set_i].secondary.status = dma_buf_busy;
             pipe->api.p_acamera_isp_dma_writer_frame_write_on_write_uv( pipe->settings.isp_base, 1 );
-		    pipe->api.p_acamera_isp_dma_writer_line_offset_write_uv( pipe->settings.isp_base, pipe->settings.frame_buf_queue[set_i].secondary.line_offset);
+            pipe->api.p_acamera_isp_dma_writer_line_offset_write_uv( pipe->settings.isp_base, pipe->settings.frame_buf_queue[set_i].secondary.line_offset);
             LOG( LOG_DEBUG, "enabled uv %d", pipe->api.p_acamera_isp_dma_writer_format_read_uv( pipe->settings.isp_base ) );
         } else {
             //cannot enable
@@ -459,10 +459,10 @@ dma_error dma_writer_pipe_update( dma_pipe *pipe , bool drop_frame)
                         pipe->settings.last_address = addr;
                         pipe->api.p_acamera_isp_dma_writer_frame_write_on_write( pipe->settings.isp_base, 1 );
                         /*if ( pipe->settings.enabled == 0 ) {
-							pipe->api.p_acamera_isp_dma_writer_frame_write_on_write( pipe->settings.isp_base, 1 );
-							pipe->settings.enabled = 1;
-							DMA_PRINTF( ( "warning pipe is disabled, enabling" ) );
-						}*/
+                            pipe->api.p_acamera_isp_dma_writer_frame_write_on_write( pipe->settings.isp_base, 1 );
+                            pipe->settings.enabled = 1;
+                            DMA_PRINTF( ( "warning pipe is disabled, enabling" ) );
+                        }*/
                     }
                 }
 
@@ -493,10 +493,10 @@ dma_error dma_writer_pipe_update( dma_pipe *pipe , bool drop_frame)
                         pipe->settings.last_address = addr;
                         pipe->api.p_acamera_isp_dma_writer_frame_write_on_write_uv( pipe->settings.isp_base, 1 );
                         /*if ( pipe->settings.enabled == 0 ) {
-							pipe->api.p_acamera_isp_dma_writer_frame_write_on_write_uv( pipe->settings.isp_base,  1 );
-							//pipe->settings.enabled = 1;
-							DMA_PRINTF( ( "warning pipe is disabled" ) );
-						}*/
+                            pipe->api.p_acamera_isp_dma_writer_frame_write_on_write_uv( pipe->settings.isp_base,  1 );
+                            //pipe->settings.enabled = 1;
+                            DMA_PRINTF( ( "warning pipe is disabled" ) );
+                        }*/
                     }
                 } else {
                     pipe->api.p_acamera_isp_dma_writer_frame_write_on_write_uv( pipe->settings.isp_base, 0 );

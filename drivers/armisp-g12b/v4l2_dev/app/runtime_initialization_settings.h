@@ -42,15 +42,19 @@ static tframe_t sensor0_v4l2_ds1_frames[ ] = {
  {{ FW_OUTPUT_FORMAT, 0, 0, 0x62400000, 7680, 0x5eec00 } , { FW_OUTPUT_FORMAT_SECONDARY, 0, 0, 0x1298be00, 7680, 0x1fa400 }}
 } ;
 #endif
-static aframe_t sensor0_v4l2_temper_frames[ ] = {
- { FW_OUTPUT_FORMAT, 0, 0, 0x72400000, 15360, 0x1fa4000 },
- { FW_OUTPUT_FORMAT, 0, 0, 0x72400000, 15360, 0x1fa4000 }
+static aframe_t sensor0_v4l2_temper_frames[2] = {
+ { FW_OUTPUT_FORMAT, 0, 0, 0x72400000, 15360, 0xBDD800},
+ { FW_OUTPUT_FORMAT, 0, 0, 0x72400000, 15360, 0xBDD800},
 } ;
 
+static aframe_t sensor1_v4l2_temper_frames[2] = {
+ { FW_OUTPUT_FORMAT, 0, 0, 0x72400000, 15360, 0xBDD800},
+ { FW_OUTPUT_FORMAT, 0, 0, 0x72400000, 15360, 0xBDD800},
+} ;
 
 extern void sensor_init_v4l2( void** ctx, sensor_control_t*) ;
 extern void sensor_deinit_v4l2( void *ctx ) ;
-extern uint32_t get_calibrations_v4l2( uint32_t ctx_num,void * sensor_arg,ACameraCalibrations *, char* s_name) ;
+extern uint32_t get_calibrations_v4l2( uint32_t ctx_num, void * sensor_arg, ACameraCalibrations *, char* s_name) ;
 
 extern int32_t lens_init( void** ctx, lens_control_t* ctrl ) ;
 extern void lens_deinit( void * ctx) ;
@@ -92,8 +96,8 @@ static acamera_settings settings[ FIRMWARE_CONTEXT_NUMBER ] = {    {
         .lens_deinit = lens_deinit,
         .custom_initialization = custom_initialization,
         .isp_base = 0x0,
-        .temper_frames = sensor0_v4l2_temper_frames,
-        .temper_frames_number = sizeof( sensor0_v4l2_temper_frames ) / sizeof( aframe_t ),
+        .temper_frames = sensor1_v4l2_temper_frames,
+        .temper_frames_number = sizeof( sensor1_v4l2_temper_frames ) / sizeof( aframe_t ),
         .callback_meta = callback_meta,
         .fr_frames = NULL,//sensor0_v4l2_fr_frames,
         .fr_frames_number = 0,//sizeof( sensor0_v4l2_fr_frames ) / sizeof( tframe_t ),

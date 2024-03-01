@@ -310,22 +310,22 @@ static int32_t sensor_ir_cut_set( void *ctx, int32_t ir_cut_state )
     LOG( LOG_ERR, "ir_cut_state = %d", ir_cut_state);
     LOG( LOG_INFO, "entry ir cut" );
 
-    //ir_cut, 0: close ir cut, 1: open ir cut, 2: no operation
+    //ir_cut_GPIOZ_11, 0: open ir cut, 1: colse ir cut, 2: no operation
 
-   if (sensor_bp->ir_gname[0] <= 0) {
+   	if (sensor_bp->ir_gname[0] <= 0) {
        pr_err("get gpio id fail\n");
        return 0;
     }
 
-    if (ir_cut_state == 0) {
-        ret = pwr_ir_cut_enable(sensor_bp, sensor_bp->ir_gname[0], 0);
-        if (ret < 0 )
-            pr_err("set power fail\n");
-    } else if (ir_cut_state == 1) {
-        ret = pwr_ir_cut_enable(sensor_bp, sensor_bp->ir_gname[0], 1);
-        if (ret < 0 )
-            pr_err("set power fail\n");
-    }
+	if (ir_cut_state == 0) {
+		ret = pwr_ir_cut_enable(sensor_bp, sensor_bp->ir_gname[0], 0);
+	if (ret < 0 )
+		pr_err("set power fail\n");
+	} else if(ir_cut_state == 1) {
+		ret = pwr_ir_cut_enable(sensor_bp, sensor_bp->ir_gname[0], 0);
+	if (ret < 0 )
+		pr_err("set power fail\n");
+	}
 
     LOG( LOG_INFO, "exit ir cut" );
 
@@ -529,7 +529,7 @@ static void sensor_set_mode( void *ctx, uint8_t mode )
     p_ctx->vmax_adjust = p_ctx->vmax;
     p_ctx->vmax_fps = p_ctx->s_fps;
 
-    sensor_set_iface(&param->modes_table[mode], p_ctx->win_offset);
+    //sensor_set_iface(&param->modes_table[mode], p_ctx->win_offset);
 
     LOG( LOG_CRIT, "Mode %d, Setting num: %d, RES:%dx%d\n", mode, setting_num,
                 (int)param->active.width, (int)param->active.height );
@@ -568,7 +568,7 @@ static void stop_streaming( void *ctx )
     acamera_sbus_write_u8(p_sbus, 0x0100, 0x00);
 
     reset_sensor_bus_counter();
-    sensor_iface_disable();
+    sensor_iface_disable(p_ctx);
 }
 
 static void start_streaming( void *ctx )
@@ -576,7 +576,7 @@ static void start_streaming( void *ctx )
     sensor_context_t *p_ctx = ctx;
     acamera_sbus_ptr_t p_sbus = &p_ctx->sbus;
     sensor_param_t *param = &p_ctx->param;
-    sensor_set_iface(&param->modes_table[param->mode], p_ctx->win_offset);
+    sensor_set_iface(&param->modes_table[param->mode], p_ctx->win_offset, p_ctx);
     p_ctx->streaming_flg = 1;
     acamera_sbus_write_u8(p_sbus, 0x0100, 0x01);
 
@@ -597,15 +597,15 @@ static void sensor_test_pattern( void *ctx, uint8_t mode )
 
 uint32_t write1_reg(unsigned long addr, uint32_t val)
 {
-	void __iomem *io_addr;
-	io_addr = ioremap(addr, 8);
-	if (io_addr == NULL) {
-		LOG(LOG_ERR, "%s: Failed to ioremap addr\n", __func__);
-		return -1;
-	}
-	__raw_writel(val, io_addr);
-	iounmap(io_addr);
-	return 0;
+    void __iomem *io_addr;
+    io_addr = ioremap(addr, 8);
+    if (io_addr == NULL) {
+        LOG(LOG_ERR, "%s: Failed to ioremap addr\n", __func__);
+        return -1;
+    }
+    __raw_writel(val, io_addr);
+    iounmap(io_addr);
+    return 0;
 }
 
 void sensor_deinit_ov08a10( void *ctx )
@@ -665,7 +665,7 @@ static sensor_context_t *sensor_global_parameter(void* sbp)
     sensor_ctx.sbus.mask = SBUS_MASK_ADDR_16BITS |
            SBUS_MASK_SAMPLE_8BITS |SBUS_MASK_ADDR_SWAP_BYTES;
     sensor_ctx.sbus.control = I2C_CONTROL_MASK;
-    sensor_ctx.sbus.bus = 1;//get_next_sensor_bus_address();
+    sensor_ctx.sbus.bus = 0;//get_next_sensor_bus_address();
     sensor_ctx.sbus.device = SENSOR_DEV_ADDRESS;
     acamera_sbus_init(&sensor_ctx.sbus, sbus_i2c);
 
@@ -696,6 +696,8 @@ static sensor_context_t *sensor_global_parameter(void* sbp)
     sensor_ctx.param.isp_context_seq.sequence = p_isp_data;
     sensor_ctx.param.isp_context_seq.seq_num = SENSOR_OV08A10_ISP_CONTEXT_SEQ;
     sensor_ctx.param.isp_context_seq.seq_table_max = array_size_s( isp_seq_table );
+    sensor_ctx.cam_isp_path = CAM0_ACT;
+    sensor_ctx.dcam_mode = 0;
 
     memset(&sensor_ctx.win_offset, 0, sizeof(sensor_ctx.win_offset));
 
@@ -728,8 +730,6 @@ void sensor_init_ov08a10( void **ctx, sensor_control_t *ctrl, void *sbp )
     system_timer_usleep( 1000 ); // reset at least 1 ms
     sensor_hw_reset_disable();
     system_timer_usleep( 1000 );
-
-    sensor_ir_cut_set(*ctx, 1);
 
     LOG(LOG_ERR, "%s: Success subdev init\n", __func__);
 }

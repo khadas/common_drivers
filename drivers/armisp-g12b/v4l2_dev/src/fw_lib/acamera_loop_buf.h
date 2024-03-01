@@ -31,6 +31,8 @@ struct _acamera_loop_buf_t {
     volatile int tail;
     uint8_t *p_data_buf;
     int data_buf_size;
+    uint64_t avail_event_mask;
+    uint32_t not_empty_count;
 };
 
 void acamera_loop_buffer_init( acamera_loop_buf_ptr_t p_buf, uint8_t *p_data_buf, int data_buf_size );

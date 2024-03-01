@@ -52,6 +52,4 @@ modules_install:
 	cp $(OUT_DIR)/$(M)/*.ko ${OUT_DIR}/../vendor_lib/modules/
 
 clean:
-	#@$(MAKE) -C $(KERNEL_SRC) M=$(M) clean
-	#@$(make) -C $(KERNEL_SRC) ARCH=$(ARCH) CROSS_COMPILE=$(CROSS_COMPILE) M=$(LOCAL_PATH)/$(1) clean
-	rm -rf $(FW_SRC_OBJ) $(M_PATH)/*.ko
+	@$(MAKE) -C $(KERNEL_SRC) M=$(M) clean

@@ -123,20 +123,46 @@
 #define MIPI_ADAPT_PIXEL0_CNTL1     0x84
 #define MIPI_ADAPT_PIXEL1_CNTL0     0x88
 #define MIPI_ADAPT_PIXEL1_CNTL1     0x8C
+#define MIPI_ADAPT_PIXEL0_ST0       0xA8
+#define MIPI_ADAPT_PIXEL0_ST1       0xAC
+#define MIPI_ADAPT_PIXEL1_ST0       0xB0
+#define MIPI_ADAPT_PIXEL1_ST1       0xB4
 
 #define MIPI_ADAPT_ALIG_CNTL0       0xC0
 #define MIPI_ADAPT_ALIG_CNTL1       0xC4
 #define MIPI_ADAPT_ALIG_CNTL2       0xC8
+#define MIPI_ADAPT_ALIG_CNTL3       0xCC
+#define MIPI_ADAPT_ALIG_CNTL4       0xD0
+#define MIPI_ADAPT_ALIG_CNTL5       0xD4
 #define MIPI_ADAPT_ALIG_CNTL6       0xD8
 #define MIPI_ADAPT_ALIG_CNTL7       0xDC
 #define MIPI_ADAPT_ALIG_CNTL8       0xE0
 #define MIPI_ADAPT_ALIG_CNTL9       0xE4
+#define MIPI_ADAPT_ALIG_ST0         0xE8
+#define MIPI_ADAPT_ALIG_ST1         0xEC
 #define MIPI_ADAPT_ALIG_CNTL10		0xF0
+#define MIPI_ADAPT_ALIG_ST1         0xEC
 
 #define MIPI_OTHER_CNTL0           0x100
 #define MIPI_ADAPT_IRQ_MASK0       0x180
 #define MIPI_ADAPT_IRQ_PENDING0    0x184
+#define MIPI_ADAPT_AXI_CTRL0 (0x18 + 0x800)
+#define DDR_RD0_LBUF_STATUS        0x140
+#define DDR_RD1_LBUF_STATUS        0x144
 
+//Interrupt Bit
+#define FRONT0_WR_DONE             19
+#define READ0_RD_DONE              13
+#define FRONT1_WR_DONE             24
+#define READ1_RD_DONE              11
+#define ALIGN_FRAME_END            8
+
+
+//Camera Flag Bit
+#define CAM_LAST                   26
+#define CAM_CURRENT                24
+#define CAM_NEXT                   22
+#define CAM_NEXT_NEXT              20
 
 typedef enum {
 	FRONTEND_IO,
@@ -150,6 +176,7 @@ typedef enum {
 	DDR_MODE,
 	DIR_MODE,
 	DOL_MODE,
+	DCAM_MODE,
 } adap_mode_t;
 
 typedef enum {
@@ -183,6 +210,28 @@ typedef enum {
 	FTE1_DONE,
 } dol_state_t;
 
+typedef enum {
+	ADAP0_PATH = 0,
+	ADAP1_PATH,
+	ADAP1_ALT0_PATH,
+} adap_chan_t;
+
+typedef enum {
+    CAM0_ACT = 0,
+    CAM1_ACT,
+    CAMS_MAX,
+} cam_num_t;
+
+typedef enum {
+    FRAME_READY,
+    FRAME_NOREADY,
+} frame_status_t;
+
+typedef enum {
+	CAM_DIS,
+	CAM_EN,
+	DUAL_CAM_EN,
+} cam_mode_t;
 
 typedef struct exp_offset {
 	int long_offset;
@@ -197,9 +246,18 @@ struct am_adap {
 	struct resource reg;
 	void __iomem *base_addr;
 	int f_end_irq;
-	int f_fifo;
 	int rd_irq;
 	unsigned int adap_buf_size;
+	int f_fifo;
+	int f_adap;
+
+	uint32_t write_frame_ptr;
+	uint32_t read_frame_ptr;
+
+	int frame_state;
+	struct task_struct *kadap_stream;
+	wait_queue_head_t frame_wq;
+    spinlock_t reg_lock;
 };
 
 struct am_adap_info {
@@ -209,20 +267,24 @@ struct am_adap_info {
 	img_fmt_t fmt;
 	dol_type_t type;
 	exp_offset_t offset;
+	uint8_t alt0_path;
+	uint32_t align_width;
 };
 
 
 int am_adap_parse_dt(struct device_node *node);
 void am_adap_deinit_parse_dt(void);
-int am_adap_init(void);
-int am_adap_start(int idx);
-int am_adap_reset(void);
-int am_adap_deinit(void);
+int am_adap_init(uint8_t channel);
+int am_adap_start(uint8_t channel, uint8_t dcam);
+int am_adap_reset(uint8_t channel);
+int am_adap_deinit(uint8_t channel);
 void am_adap_set_info(struct am_adap_info *info);
-int get_fte1_flag(void);
-int am_adap_get_depth(void);
-void mipi_adap_reg_rd_ext(int addr, adap_io_type_t io_type, uint32_t *val);
-void adapt_set_virtcam(void);
+//int get_fte1_flag(void);
+int am_adap_get_depth(uint8_t channel);
+//void mipi_adap_reg_rd_ext(int addr, adap_io_type_t io_type, uint32_t *val);
+//void adapt_set_virtcam(void);
+extern int32_t system_timer_usleep( uint32_t usec );
+extern int camera_notify( uint notification, void *arg);
 
 #endif
 

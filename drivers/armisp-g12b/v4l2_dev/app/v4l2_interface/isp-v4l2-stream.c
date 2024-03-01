@@ -98,48 +98,48 @@ static isp_v4l2_fmt_t isp_v4l2_supported_formats[] =
             .is_yuv = false,
             .planes = 1,
         },
-		{
-			.name = "NV12",
-			.fourcc = V4L2_PIX_FMT_NV12,
-			.depth = 8,
-			.is_yuv = true,
-			.planes = 2,
-		},
-		{
-			.name = "NV21",
-			.fourcc = V4L2_PIX_FMT_NV21,
-			.depth = 8,
-			.is_yuv = true,
-			.planes = 2,
-		},
-		{
-			.name = "AYUV",
-			.fourcc = V4L2_PIX_FMT_YUV444,
-			.depth = 32,
-			.is_yuv = true,
-			.planes = 1,
-		},
-		{
-			.name = "YUY2",
-			.fourcc = V4L2_PIX_FMT_YUYV,
-			.depth = 16,
-			.is_yuv = true,
-			.planes = 1,
-		},
-		{
-			.name = "UYVY",
-			.fourcc = V4L2_PIX_FMT_UYVY,
-			.depth = 16,
-			.is_yuv = true,
-			.planes = 1,
-		},
-		{
-			.name = "grey",
-			.fourcc = V4L2_PIX_FMT_GREY,
-			.depth = 8,
-			.is_yuv = true,
-			.planes = 1,
-		},
+        {
+            .name = "NV12",
+            .fourcc = V4L2_PIX_FMT_NV12,
+            .depth = 8,
+            .is_yuv = true,
+            .planes = 2,
+        },
+        {
+            .name = "NV21",
+            .fourcc = V4L2_PIX_FMT_NV21,
+            .depth = 8,
+            .is_yuv = true,
+            .planes = 2,
+        },
+        {
+            .name = "AYUV",
+            .fourcc = V4L2_PIX_FMT_YUV444,
+            .depth = 32,
+            .is_yuv = true,
+            .planes = 1,
+        },
+        {
+            .name = "YUY2",
+            .fourcc = V4L2_PIX_FMT_YUYV,
+            .depth = 16,
+            .is_yuv = true,
+            .planes = 1,
+        },
+        {
+            .name = "UYVY",
+            .fourcc = V4L2_PIX_FMT_UYVY,
+            .depth = 16,
+            .is_yuv = true,
+            .planes = 1,
+        },
+        {
+            .name = "grey",
+            .fourcc = V4L2_PIX_FMT_GREY,
+            .depth = 8,
+            .is_yuv = true,
+            .planes = 1,
+        },
         {
             .name = "RAW 16",
             .fourcc = V4L2_PIX_FMT_SBGGR16,
@@ -170,8 +170,7 @@ static isp_v4l2_fmt_t ext_supported_formats[] =
 #endif
 };
 
-extern uint8_t *isp_kaddr;
-extern resource_size_t isp_paddr;
+extern temper_addr isp_temper_paddr[FIRMWARE_CONTEXT_NUMBER];
 
 extern void cache_flush(uint32_t buf_start, uint32_t buf_size);
 
@@ -482,6 +481,7 @@ void callback_raw( uint32_t ctx_num, aframe_t *aframe, const metadata_t *metadat
 }
 #endif
 
+//static int fr_count = 0;
 void callback_fr( uint32_t ctx_num, tframe_t *tframe, const metadata_t *metadata )
 {
     isp_v4l2_stream_t *pstream = NULL;
@@ -489,6 +489,9 @@ void callback_fr( uint32_t ctx_num, tframe_t *tframe, const metadata_t *metadata
     unsigned long flags;
     int rc;
 
+    //if (fr_count % 20 == 0) {
+        //pr_err("%s ctx id %d call back fr \n", __func__, ctx_num);
+    //}
     //if ( !metadata ) {
     //    LOG( LOG_ERR, "callback_fr: metadata is NULL" );
     //    return;
@@ -498,12 +501,14 @@ void callback_fr( uint32_t ctx_num, tframe_t *tframe, const metadata_t *metadata
     rc = isp_v4l2_find_stream( &pstream, ctx_num, V4L2_STREAM_TYPE_FR );
     if ( rc < 0 ) {
         LOG( LOG_DEBUG, "can't find stream on ctx %d (errno = %d)", ctx_num, rc );
+        pr_err("can't find stream on ctx %d (errno = %d) \n", ctx_num, rc);
         return;
     }
 
     /* check if stream is on */
     if ( !pstream->stream_started ) {
         LOG( LOG_DEBUG, "[Stream#%d] stream FR is not started yet on ctx %d", pstream->stream_id, ctx_num );
+        pr_err("[Stream#%d] stream FR is not started yet on ctx %d \n", pstream->stream_id, ctx_num );
         return;
     }
 
@@ -527,6 +532,10 @@ void callback_fr( uint32_t ctx_num, tframe_t *tframe, const metadata_t *metadata
     frame_mgr = &pstream->frame_mgr;
     int wake_up = 0;
 
+    //if (fr_count % 20 == 0) {
+        //pr_err("%s 2 ctx id %d call back fr \n", __func__, ctx_num);
+    //}
+    //fr_count++;
     spin_lock_irqsave( &frame_mgr->frame_slock, flags );
     if ( ISP_FW_FRAME_BUF_INVALID == frame_mgr->frame_buffer.state ) {
         /* save current frame  */
@@ -858,8 +867,8 @@ void isp_v4l2_stream_fill_buf( isp_v4l2_stream_t *pstream, isp_v4l2_buffer_t *bu
 
     //do_gettimeofday( &begin );
     ktime_get_real_ts64( &begin );
-    ddr_mem = (uint8_t *)isp_kaddr;
-    paddr = isp_paddr;
+    ddr_mem = (uint8_t *)phys_to_virt(isp_temper_paddr[0].isp_paddr);
+    paddr = isp_temper_paddr[0].isp_paddr;
     map_size = ISP_DDR_SIZE;
 #if ISP_HAS_RAW_CB
 #if JUNO_DIRECT_DDR_ACCESS
@@ -1031,6 +1040,7 @@ static int isp_v4l2_stream_copy_thread( void *data )
         }
         spin_unlock( &pstream->slock );
 
+        //cache_flush(tframe.primary.address, tframe.primary.size + tframe.secondary.size);
         vvb = &pbuf->vvb;
         vb = &vvb->vb2_buf;
 

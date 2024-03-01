@@ -34,7 +34,7 @@ typedef const struct _cmos_fsm_t *cmos_fsm_const_ptr_t;
 #define API_OTAE_ITERATION_COUNT ( 15 )
 
 typedef enum _cmos_partition_lut_index_ {
-    PARTITION_LUT_BALANED_INDEX = 0,
+    PARTITION_LUT_BALANCED_INDEX = 0,
     PARTITION_LUT_INTEGRATION_PRIORITY_INDEX = 1,
     PARTITION_LUT_INDEX_MAX,
 } cmos_partition_lut_index_t;

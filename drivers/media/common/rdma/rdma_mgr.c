@@ -119,6 +119,7 @@ struct rdma_instance_s {
 	u32 *reg_buf;
 	dma_addr_t dma_handle;
 	u32 *rdma_table_addr;
+	u32 *rdma_table_mirror;
 	ulong rdma_table_phy_addr;
 	int rdma_item_count;
 	int rdma_write_count;
@@ -566,6 +567,8 @@ int rdma_register(struct rdma_op_s *rdma_op, void *op_arg, int table_size)
 				(ulong)(dma_handle);
 			info->rdma_ins[i].reg_buf =
 				kmalloc(table_size, GFP_KERNEL);
+			info->rdma_ins[i].rdma_table_mirror =
+				kmalloc(table_size, GFP_KERNEL);
 			pr_debug("%s, rdma_table_addr %lx phy: %lx reg_buf %lx\n",
 				__func__,
 				(unsigned long)
@@ -576,10 +579,13 @@ int rdma_register(struct rdma_op_s *rdma_op, void *op_arg, int table_size)
 		}
 
 		if (!info->rdma_ins[i].rdma_table_addr ||
-		    !info->rdma_ins[i].reg_buf) {
+		    !info->rdma_ins[i].reg_buf ||
+		    !info->rdma_ins[i].rdma_table_mirror) {
 			if (!info->rdma_ins[i].keep_buf) {
 				kfree(info->rdma_ins[i].reg_buf);
 				info->rdma_ins[i].reg_buf = NULL;
+				kfree(info->rdma_ins[i].rdma_table_mirror);
+				info->rdma_ins[i].rdma_table_mirror = NULL;
 			}
 			if (info->rdma_ins[i].rdma_table_addr) {
 				dma_free_coherent
@@ -618,6 +624,8 @@ void rdma_unregister(int i)
 		if (!info->rdma_ins[i].keep_buf) {
 			kfree(info->rdma_ins[i].reg_buf);
 			info->rdma_ins[i].reg_buf = NULL;
+			kfree(info->rdma_ins[i].rdma_table_mirror);
+			info->rdma_ins[i].rdma_table_mirror = NULL;
 		}
 		if (info->rdma_ins[i].rdma_table_addr) {
 			dma_free_coherent
@@ -859,6 +867,10 @@ int rdma_config(int handle, u32 trigger_type)
 		}
 
 		memcpy(ins->rdma_table_addr, ins->reg_buf,
+		       ins->rdma_item_count *
+		       (rdma_read ? 1 : 2) * sizeof(u32));
+		/* cp to mirror buf */
+		memcpy(ins->rdma_table_mirror, ins->reg_buf,
 		       ins->rdma_item_count *
 		       (rdma_read ? 1 : 2) * sizeof(u32));
 		ins->prev_read_count = ins->rdma_item_count;
@@ -1132,8 +1144,9 @@ u32 rdma_read_reg(int handle, u32 adr)
 			}
 		}
 	}
+	/* changed to read from rdma_table_adr to mirror for optimize */
 	if (!match) {
-		write_table = ins->rdma_table_addr;
+		write_table = ins->rdma_table_mirror;
 		for (i = (ins->rdma_write_count - 1);
 			i >= 0; i--) {
 			if (write_table[i << 1] == adr) {
@@ -1437,8 +1450,9 @@ int rdma_write_reg_bits(int handle, u32 adr, u32 val, u32 start, u32 len)
 			break;
 		}
 	}
+	/* changed to read from rdma_table_adr to mirror for optimize */
 	if (!match) {
-		write_table = ins->rdma_table_addr;
+		write_table = ins->rdma_table_mirror;
 		for (i = (ins->rdma_write_count - 1);
 			i >= 0; i--) {
 			if (write_table[i << 1] == adr) {

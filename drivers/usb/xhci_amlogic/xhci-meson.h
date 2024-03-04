@@ -2084,6 +2084,10 @@ void aml_xhci_dbg_trace(struct aml_xhci_hcd *xhci, void (*trace)(struct va_forma
 /* xHCI memory management */
 void aml_xhci_mem_cleanup(struct aml_xhci_hcd *xhci);
 int aml_xhci_mem_init(struct aml_xhci_hcd *xhci, gfp_t flags);
+#if IS_ENABLED(CONFIG_AMLOGIC_COMMON_USB)
+void xhci_free_stop_ep_timer(struct aml_xhci_hcd *xhci, int slot_id);
+void xhci_del_stop_ep_timer(struct aml_xhci_hcd *xhci, int slot_id);
+#endif
 void aml_xhci_free_virt_device(struct aml_xhci_hcd *xhci, int slot_id);
 int aml_xhci_alloc_virt_device(struct aml_xhci_hcd *xhci, int slot_id, struct usb_device *udev, gfp_t flags);
 int aml_xhci_setup_addressable_virt_dev(struct aml_xhci_hcd *xhci, struct usb_device *udev);

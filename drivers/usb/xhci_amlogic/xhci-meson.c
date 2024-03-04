@@ -1015,13 +1015,27 @@ int aml_xhci_suspend(struct aml_xhci_hcd *xhci, bool do_wakeup)
 	struct usb_hcd		*hcd = xhci_to_hcd(xhci);
 	u32			command;
 	u32			res;
+#if IS_ENABLED(CONFIG_AMLOGIC_COMMON_USB)
+	int i;
+#endif
 
 	if (!hcd->state)
 		return 0;
 
 	if (hcd->state != HC_STATE_SUSPENDED ||
-			xhci->shared_hcd->state != HC_STATE_SUSPENDED)
+			xhci->shared_hcd->state != HC_STATE_SUSPENDED) {
+#if IS_ENABLED(CONFIG_AMLOGIC_COMMON_USB)
+		if (xhci->xhc_state & XHCI_STATE_DYING) {
+			aml_xhci_info(xhci, "-------xhci has been died-----\n");
+			return 0;
+		}
+#endif
 		return -EINVAL;
+	}
+#if IS_ENABLED(CONFIG_AMLOGIC_COMMON_USB)
+	for (i = HCS_MAX_SLOTS(xhci->hcs_params1); i > 0; i--)
+		xhci_free_stop_ep_timer(xhci, i);
+#endif
 
 	/* Clear root port wake on bits if wakeup not allowed. */
 	xhci_disable_hub_port_wake(xhci, &xhci->usb3_rhub, do_wakeup);
@@ -1132,6 +1146,9 @@ int aml_xhci_resume(struct aml_xhci_hcd *xhci, bool hibernated)
 	bool			comp_timer_running = false;
 	bool			pending_portevent = false;
 	bool			reinit_xhc = false;
+#if IS_ENABLED(CONFIG_AMLOGIC_COMMON_USB)
+	int i;
+#endif
 
 	if (!hcd->state)
 		return 0;
@@ -1139,6 +1156,10 @@ int aml_xhci_resume(struct aml_xhci_hcd *xhci, bool hibernated)
 	/* Wait a bit if either of the roothubs need to settle from the
 	 * transition into bus suspend.
 	 */
+#if IS_ENABLED(CONFIG_AMLOGIC_COMMON_USB)
+	for (i = HCS_MAX_SLOTS(xhci->hcs_params1); i > 0; i--)
+		xhci_del_stop_ep_timer(xhci, i);
+#endif
 
 	if (time_before(jiffies, xhci->usb2_rhub.bus_state.next_statechange) ||
 	    time_before(jiffies, xhci->usb3_rhub.bus_state.next_statechange))
@@ -1816,6 +1837,10 @@ static int xhci_urb_dequeue(struct usb_hcd *hcd, struct urb *urb, int status)
 	struct aml_xhci_virt_ep *ep;
 	struct aml_xhci_command *command;
 	struct aml_xhci_virt_device *vdev;
+#if IS_ENABLED(CONFIG_AMLOGIC_COMMON_USB)
+	int delay_stop;
+#endif
+
 
 	xhci = hcd_to_xhci(hcd);
 	spin_lock_irqsave(&xhci->lock, flags);
@@ -1861,7 +1886,14 @@ static int xhci_urb_dequeue(struct usb_hcd *hcd, struct urb *urb, int status)
 		goto err_giveback;
 	}
 
+#if IS_ENABLED(CONFIG_AMLOGIC_COMMON_USB)
+	if ((xhci->xhc_state & XHCI_STATE_HALTED) ||
+	    (hcd->state == HC_STATE_SUSPENDED &&
+	    xhci->shared_hcd->state == HC_STATE_SUSPENDED)) {
+		aml_xhci_err(xhci, "xhci has been suspend , don't using xhci\n");
+#else
 	if (xhci->xhc_state & XHCI_STATE_HALTED) {
+#endif
 		aml_xhci_dbg_trace(xhci, trace_aml_xhci_dbg_cancel_urb,
 				"HC halted, freeing TD manually.");
 		for (i = urb_priv->num_tds_done;
@@ -1901,9 +1933,8 @@ static int xhci_urb_dequeue(struct usb_hcd *hcd, struct urb *urb, int status)
 	 * the first cancellation to be handled.
 	 */
 	if (!(ep->ep_state & EP_STOP_CMD_PENDING)) {
+		ep->ep_state |= EP_STOP_CMD_PENDING;
 #if IS_ENABLED(CONFIG_AMLOGIC_COMMON_USB)
-		int delay_stop;
-
 		if (urb->dev->level == 1 &&
 			(xhci->meson_quirks & XHCI_CRG_HOST_011) &&
 			urb->ep && usb_endpoint_xfer_isoc(&urb->ep->desc) &&
@@ -1911,7 +1942,6 @@ static int xhci_urb_dequeue(struct usb_hcd *hcd, struct urb *urb, int status)
 			urb->dev->speed == USB_SPEED_HIGH) {
 			delay_stop = 5;
 
-			ep->ep_state |= EP_STOP_CMD_PENDING;
 			ep->stop_cmd_queue_timer.expires = jiffies +
 				1 * delay_stop;
 			ep->slot_id = urb->dev->slot_id;
@@ -1931,7 +1961,6 @@ static int xhci_urb_dequeue(struct usb_hcd *hcd, struct urb *urb, int status)
 			else
 				delay_stop = 20;
 
-			ep->ep_state |= EP_STOP_CMD_PENDING;
 			ep->stop_cmd_queue_timer.expires = jiffies +
 				1 * delay_stop;
 			ep->slot_id = urb->dev->slot_id;
@@ -1946,7 +1975,6 @@ static int xhci_urb_dequeue(struct usb_hcd *hcd, struct urb *urb, int status)
 				ret = -ENOMEM;
 				goto done;
 			}
-			ep->ep_state |= EP_STOP_CMD_PENDING;
 			ep->stop_cmd_timer.expires = jiffies +
 				XHCI_STOP_EP_CMD_TIMEOUT * HZ;
 			add_timer(&ep->stop_cmd_timer);
@@ -1962,7 +1990,6 @@ static int xhci_urb_dequeue(struct usb_hcd *hcd, struct urb *urb, int status)
 			ret = -ENOMEM;
 			goto done;
 		}
-		ep->ep_state |= EP_STOP_CMD_PENDING;
 		ep->stop_cmd_timer.expires = jiffies +
 			XHCI_STOP_EP_CMD_TIMEOUT * HZ;
 		add_timer(&ep->stop_cmd_timer);
@@ -4628,6 +4655,7 @@ int aml_xhci_alloc_dev(struct usb_hcd *hcd, struct usb_device *udev)
 	trace_aml_xhci_alloc_dev(slot_ctx);
 
 	udev->slot_id = slot_id;
+	aml_xhci_info(xhci, "%s, slot=%d\n", __func__, slot_id);
 
 	aml_xhci_debugfs_create_slot(xhci, slot_id);
 

@@ -876,6 +876,67 @@ free_tts:
 	return -ENOMEM;
 }
 
+#if IS_ENABLED(CONFIG_AMLOGIC_COMMON_USB)
+void xhci_free_stop_ep_timer(struct aml_xhci_hcd *xhci, int slot_id)
+{
+	struct aml_xhci_virt_device *virt_dev;
+	int i, ep_index = -1;
+
+	/* Slot ID 0 is reserved */
+	if (slot_id == 0 || !xhci->devs[slot_id])
+		return;
+
+	virt_dev = xhci->devs[slot_id];
+	if (!virt_dev)
+		return;
+
+/* Stop any wayward timer functions (which may grab the lock) */
+	//aml_xhci_err(xhci, "---free timer start-%s----\n", __func__);
+	for (i = 0; i < 31; i++) {
+		virt_dev->eps[i].ep_state &= ~EP_STOP_CMD_PENDING;
+
+		if (xhci->meson_quirks & XHCI_CRG_HOST_DELAY) {
+			while (timer_pending(&virt_dev->eps[i].stop_cmd_queue_timer)) {
+				ep_index = i;
+				msleep(20);
+			}
+			del_timer_sync(&virt_dev->eps[i].stop_cmd_queue_timer);
+		}
+
+		while (timer_pending(&virt_dev->eps[i].stop_cmd_timer)) {
+			ep_index = i;
+			msleep(20);
+		}
+		del_timer_sync(&virt_dev->eps[i].stop_cmd_timer);
+	}
+	if (ep_index != -1)
+		aml_xhci_info(xhci, "when xhci suspend, waiting stop ep=%d, slot_id=%d\n",
+				ep_index, slot_id);
+}
+
+void xhci_del_stop_ep_timer(struct aml_xhci_hcd *xhci, int slot_id)
+{
+	struct aml_xhci_virt_device *virt_dev;
+	int i;
+
+	/* Slot ID 0 is reserved */
+	if (slot_id == 0 || !xhci->devs[slot_id])
+		return;
+
+	virt_dev = xhci->devs[slot_id];
+	if (!virt_dev)
+		return;
+
+/* Stop any wayward timer functions (which may grab the lock) */
+	for (i = 0; i < 31; i++) {
+		virt_dev->eps[i].ep_state &= ~EP_STOP_CMD_PENDING;
+		if (xhci->meson_quirks & XHCI_CRG_HOST_DELAY)
+			del_timer(&virt_dev->eps[i].stop_cmd_queue_timer);
+		del_timer(&virt_dev->eps[i].stop_cmd_timer);
+	}
+}
+
+#endif
 
 /* All the xhci_tds in the ring's TD list should be freed at this point.
  * Should be called with xhci->lock held if there is any chance the TT lists

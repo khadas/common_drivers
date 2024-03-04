@@ -1321,6 +1321,7 @@ void aml_xhci_stop_endpoint_command_watchdog(struct timer_list *t)
 
 	aml_xhci_warn(xhci, "xHCI host not responding to stop endpoint command.\n");
 	aml_xhci_warn(xhci, "USBSTS:%s\n", xhci_decode_usbsts(str, usbsts));
+	aml_xhci_warn(xhci, "HC died: slot=%d, ep=%u\n", ep->slot_id, ep->ep_index);
 
 	ep->ep_state &= ~EP_STOP_CMD_PENDING;
 

@@ -184,7 +184,7 @@ int hpd_low_cec_off = 1;
 int disable_port_num;
 int disable_port_en;
 int rx_5v_wake_up_en;
-int vpp_mute_cnt = 3;
+int vpp_mute_cnt = 6;
 int gcp_mute_cnt = 25;
 int gcp_mute_flag[4];
 int edid_auto_sel;

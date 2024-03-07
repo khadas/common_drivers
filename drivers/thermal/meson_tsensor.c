@@ -1027,7 +1027,7 @@ static int meson_tsensor_suspend(struct device *dev)
 
 	meson_tsensor_control(to_platform_device(dev), false);
 	if (!IS_ERR(data->rst)) {
-		dev_warn(dev, "reset sensor...\n");
+		dev_dbg(dev, "reset sensor...\n");
 		reset_control_assert(data->rst);
 	}
 
@@ -1041,7 +1041,7 @@ static int meson_tsensor_resume(struct device *dev)
 		platform_get_drvdata(to_platform_device(dev));
 
 	if (!IS_ERR(data->rst)) {
-		dev_warn(dev, "Release sensor's reset...\n");
+		dev_dbg(dev, "Release sensor's reset...\n");
 		if (reset_control_deassert(data->rst))
 			dev_err(dev, "Release sensor's reset failed!!!...\n");
 	}

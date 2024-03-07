@@ -1,4 +1,4 @@
-From bbb78743a692e92e6230473cfa767988ac759bc7 Mon Sep 17 00:00:00 2001
+From ae1d6d0f8301f1fa68876277dbde6c56b26cf43d Mon Sep 17 00:00:00 2001
 From: Tao Zeng <tao.zeng@amlogic.com>
 Date: Fri, 20 Oct 2023 18:50:01 +0800
 Subject: [PATCH] trace: add white list for trace event [1/1]
@@ -23,7 +23,7 @@ Signed-off-by: Tao Zeng <tao.zeng@amlogic.com>
  3 files changed, 91 insertions(+)
 
 diff --git a/fs/tracefs/inode.c b/fs/tracefs/inode.c
-index 8c11efca87fe..6a4b449201a0 100644
+index 27aadfcb3716..48dc45d99ec8 100644
 --- a/fs/tracefs/inode.c
 +++ b/fs/tracefs/inode.c
 @@ -536,6 +536,77 @@ static struct dentry *__create_dir(const char *name, struct dentry *parent,
@@ -104,10 +104,10 @@ index 8c11efca87fe..6a4b449201a0 100644
  /**
   * tracefs_create_dir - create a directory in the tracefs filesystem
   * @name: a pointer to a string containing the name of the directory to
-@@ -555,6 +626,16 @@ static struct dentry *__create_dir(const char *name, struct dentry *parent,
-  */
- struct dentry *tracefs_create_dir(const char *name, struct dentry *parent)
- {
+@@ -558,6 +629,16 @@ struct dentry *tracefs_create_dir(const char *name, struct dentry *parent)
+ 	if (security_locked_down(LOCKDOWN_TRACEFS))
+ 		return NULL;
+ 
 +#ifdef CONFIG_AMLOGIC_MEMORY_OPT
 +	if (allow_trace_enable && !is_allowed_trace(name)) {
 +		if (parent) {
@@ -122,10 +122,10 @@ index 8c11efca87fe..6a4b449201a0 100644
  }
  
 diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 8668832685c3..efb5e099e753 100644
+index d2962fb5881e..6a10b57fe77c 100644
 --- a/kernel/trace/trace.c
 +++ b/kernel/trace/trace.c
-@@ -8688,8 +8688,10 @@ static struct dentry *tracing_dentry_percpu(struct trace_array *tr, int cpu)
+@@ -8726,8 +8726,10 @@ static struct dentry *tracing_dentry_percpu(struct trace_array *tr, int cpu)
  
  	tr->percpu_dir = tracefs_create_dir("per_cpu", d_tracer);
  
@@ -137,10 +137,10 @@ index 8668832685c3..efb5e099e753 100644
  	return tr->percpu_dir;
  }
 diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index c88f5fe87d6f..86218fc060e9 100644
+index 8f64f6c5ab9e..8c582d45a5af 100644
 --- a/kernel/trace/trace_events.c
 +++ b/kernel/trace/trace_events.c
-@@ -2314,7 +2314,9 @@ event_subsystem_dir(struct trace_array *tr, const char *name,
+@@ -2316,7 +2316,9 @@ event_subsystem_dir(struct trace_array *tr, const char *name,
  
  	dir->entry = tracefs_create_dir(name, parent);
  	if (!dir->entry) {
@@ -150,7 +150,7 @@ index c88f5fe87d6f..86218fc060e9 100644
  		__put_system(system);
  		goto out_free;
  	}
-@@ -2414,7 +2416,9 @@ event_create_dir(struct dentry *parent, struct trace_event_file *file)
+@@ -2416,7 +2418,9 @@ event_create_dir(struct dentry *parent, struct trace_event_file *file)
  	name = trace_event_name(call);
  	file->dir = tracefs_create_dir(name, d_events);
  	if (!file->dir) {
@@ -160,7 +160,7 @@ index c88f5fe87d6f..86218fc060e9 100644
  		return -1;
  	}
  
-@@ -3013,9 +3017,11 @@ __trace_add_event_dirs(struct trace_array *tr)
+@@ -3016,9 +3020,11 @@ __trace_add_event_dirs(struct trace_array *tr)
  
  	list_for_each_entry(call, &ftrace_events, list) {
  		ret = __trace_add_new_event(call, tr);
@@ -172,7 +172,7 @@ index c88f5fe87d6f..86218fc060e9 100644
  	}
  }
  
-@@ -3479,9 +3485,11 @@ static void __trace_early_add_event_dirs(struct trace_array *tr)
+@@ -3482,9 +3488,11 @@ static void __trace_early_add_event_dirs(struct trace_array *tr)
  
  	list_for_each_entry(file, &tr->events, list) {
  		ret = event_create_dir(tr->event_dir, file);

@@ -322,7 +322,7 @@ static int32_t sensor_ir_cut_set( void *ctx, int32_t ir_cut_state )
 	if (ret < 0 )
 		pr_err("set power fail\n");
 	} else if(ir_cut_state == 1) {
-		ret = pwr_ir_cut_enable(sensor_bp, sensor_bp->ir_gname[0], 0);
+		ret = pwr_ir_cut_enable(sensor_bp, sensor_bp->ir_gname[0], 1);
 	if (ret < 0 )
 		pr_err("set power fail\n");
 	}
@@ -730,6 +730,8 @@ void sensor_init_ov08a10( void **ctx, sensor_control_t *ctrl, void *sbp )
     system_timer_usleep( 1000 ); // reset at least 1 ms
     sensor_hw_reset_disable();
     system_timer_usleep( 1000 );
+
+	sensor_ir_cut_set(*ctx, 1);
 
     LOG(LOG_ERR, "%s: Success subdev init\n", __func__);
 }

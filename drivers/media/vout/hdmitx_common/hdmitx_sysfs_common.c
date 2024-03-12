@@ -1395,6 +1395,38 @@ static ssize_t avmute_store(struct device *dev,
 
 static DEVICE_ATTR_RW(avmute);
 
+static ssize_t config_csc_en_show(struct device *dev,
+					struct device_attribute *attr, char *buf)
+{
+	int pos = 0;
+
+	pos += snprintf(buf + pos, PAGE_SIZE, "%d\n\r",
+		global_tx_common->config_csc_en);
+
+	return pos;
+}
+
+static ssize_t config_csc_en_store(struct device *dev,
+					struct device_attribute *attr,
+					const char *buf,
+					size_t count)
+{
+	int csc_en = 0;
+
+	HDMITX_INFO("store config_csc_en as %s\n", buf);
+
+	if (com_str(buf, "0"))
+		csc_en = 0;
+	else if (com_str(buf, "1"))
+		csc_en = 1;
+
+	hdmitx_hw_cntl_config(global_tx_hw, CONFIG_CSC_EN, csc_en);
+
+	return count;
+}
+
+static DEVICE_ATTR_RW(config_csc_en);
+
 /*********************************************************/
 int hdmitx_sysfs_common_create(struct device *dev,
 		struct hdmitx_common *tx_comm,
@@ -1444,6 +1476,7 @@ int hdmitx_sysfs_common_create(struct device *dev,
 
 	ret = device_create_file(dev, &dev_attr_debug);
 	ret = device_create_file(dev, &dev_attr_fake_plug);
+	ret = device_create_file(dev, &dev_attr_config_csc_en);
 
 	return ret;
 }
@@ -1489,6 +1522,7 @@ int hdmitx_sysfs_common_destroy(struct device *dev)
 
 	device_remove_file(dev, &dev_attr_debug);
 	device_remove_file(dev, &dev_attr_fake_plug);
+	device_remove_file(dev, &dev_attr_config_csc_en);
 
 	global_tx_common = 0;
 	global_tx_hw = 0;

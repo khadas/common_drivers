@@ -142,6 +142,10 @@
 	#define CSC_Y422_12BIT      0x2
 	#define CSC_RGB_8BIT        0x3
 	#define CSC_UPDATE_AVI_CS   0x10
+/* set CSC_ENABLE when DV_STD && Adaptive HDR */
+#define CONFIG_CSC_EN           (CMD_CONF_OFFSET + 0x1000 + 0x06)
+	#define CSC_ENABLE          1
+	#define CSC_DISABLE         0
 
 /* Audio part */
 #define CONF_CLR_AVI_PACKET     (CMD_CONF_OFFSET + 0x04)

@@ -5536,6 +5536,12 @@ static int hdmitx_cntl_config(struct hdmitx_hw_common *tx_hw, unsigned int cmd,
 		hdmitx_set_reg_bits(HDMITX_TOP_EMP_CNTL1, 1, 17, 1); /*little*/
 		hdmitx_set_reg_bits(HDMITX_TOP_EMP_CNTL1, 120, 0, 16);
 		break;
+	case CONFIG_CSC_EN:
+		if (argv == CSC_ENABLE)
+			hdev->tx_comm.config_csc_en = true;
+		if (argv == CSC_DISABLE)
+			hdev->tx_comm.config_csc_en = false;
+		break;
 	case CONFIG_CSC:
 		if (!hdev->tx_comm.config_csc_en)
 			break;

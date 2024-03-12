@@ -1301,6 +1301,9 @@ enum hdmi_color_depth get_hdmi_colordepth(const struct vinfo_s *vinfo)
 {
 	enum hdmi_color_depth cd = COLORDEPTH_24B;
 
+	if (!vinfo)
+		return cd;
+
 	if (vinfo->cd)
 		cd = vinfo->cd;
 

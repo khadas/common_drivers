@@ -2744,6 +2744,14 @@ static void hdmitx_debug(struct hdmitx_hw_common *tx_hw, const char *buf)
 			hdev->drm_hdcp.test_hdcp_enable(hdev->drm_hdcp.test_hdcp_mode);
 		else if (value == 2 && hdev->drm_hdcp.test_hdcp_disconnect)
 			hdev->drm_hdcp.test_hdcp_disconnect();
+	} else if (strncmp(tmpbuf, "config_csc_en", 13) == 0) {
+		ret = kstrtoul(tmpbuf + 13, 0, &value);
+		pr_info("config_csc_en to %lu\n", value);
+
+		if (value == 0)
+			hdev->tx_comm.config_csc_en = false;
+		else if (value == 1)
+			hdev->tx_comm.config_csc_en = true;
 	}
 }
 
@@ -2942,10 +2950,88 @@ static int hdmitx_get_hdmi_dvi_config(struct hdmitx_dev *hdev)
 	return HDMI_MODE;
 }
 
+static void hdmitx21_vp_conf(unsigned char color_depth, unsigned char output_color_format)
+{
+	u8 data8 = 0;
+	u32 data32 = 0;
+
+	if (output_color_format == HDMI_COLORSPACE_RGB) {
+		hdmitx21_wr_reg(VP_CMS_CSC0_MULTI_CSC_CONFIG_IVCTX, 0x65);
+		hdmitx21_wr_reg((VP_CMS_CSC0_MULTI_CSC_CONFIG_IVCTX + 1), 0x08);
+	} else {
+		hdmitx21_wr_reg(VP_CMS_CSC0_MULTI_CSC_CONFIG_IVCTX, 0x0);
+		hdmitx21_wr_reg((VP_CMS_CSC0_MULTI_CSC_CONFIG_IVCTX + 1), 0x0);
+	}
+
+	// [5:4] disable_lsbs_cr / [3:2] disable_lsbs_cb / [1:0] disable_lsbs_y
+	// 0=12bit; 1=10bit(disable 2-LSB), 2=8bit(disable 4-LSB), 3=6bit(disable 6-LSB)
+	data8 = 0;
+	data8 |= ((6 - color_depth) << 4);
+	data8 |= ((6 - color_depth) << 2);
+	data8 |= ((6 - color_depth) << 0);
+	hdmitx21_wr_reg(VP_INPUT_MASK_IVCTX, data8);
+
+	// [11: 9] select_cr: 0=y; 1=cb; 2=Cr; 3={cr[11:4],cb[7:4]};
+	//					  4={cr[3:0],y[3:0],cb[3:0]};
+	//					  5={y[3:0],cr[3:0],cb[3:0]};
+	//					  6={cb[3:0],y[3:0],cr[3:0]};
+	//					  7={y[3:0],cb[3:0],cr[3:0]}.
+	// [ 8: 6] select_cb: 0=y; 1=cb; 2=Cr; 3={cr[11:4],cb[7:4]};
+	//					  4={cr[3:0],y[3:0],cb[3:0]};
+	//					  5={y[3:0],cr[3:0],cb[3:0]};
+	//					  6={cb[3:0],y[3:0],cr[3:0]};
+	//					  7={y[3:0],cb[3:0],cr[3:0]}.
+	// [ 5: 3] select_y : 0=y; 1=cb; 2=Cr; 3={y[11:4],cb[7:4]};
+	//					  4={cb[3:0],cr[3:0],y[3:0]};
+	//					  5={cr[3:0],cb[3:0],y[3:0]};
+	//					  6={y[3:0],cb[3:0],cr[3:0]};
+	//					  7={y[3:0],cr[3:0],cb[3:0]}.
+	// [	2] reverse_cr
+	// [	1] reverse_cb
+	// [ 0] reverse_y
+	//Output 422
+	if (output_color_format == HDMI_COLORSPACE_YUV422) {
+		data32 = 0;
+		data32 |= (2 << 9);
+		data32 |= (4 << 6);
+		data32 |= (0 << 3);
+		data32 |= (0 << 2);
+		data32 |= (0 << 1);
+		data32 |= (0 << 0);
+
+		// [5:4] disable_lsbs_cr / [3:2] disable_lsbs_cb / [1:0] disable_lsbs_y
+		// 0=12bit; 1=10bit(disable 2-LSB),
+		// 2=8bit(disable 4-LSB), 3=6bit(disable 6-LSB)
+		data8 = 0;
+		data8 |= (2 << 4);
+		data8 |= (2 << 2);
+		data8 |= (2 << 0);
+	} else {
+		data32 = 0;
+		data32 |= (2 << 9);
+		data32 |= (1 << 6);
+		data32 |= (0 << 3);
+		data32 |= (0 << 2);
+		data32 |= (0 << 1);
+		data32 |= (0 << 0);
+
+		// [5:4] disable_lsbs_cr / [3:2] disable_lsbs_cb / [1:0] disable_lsbs_y
+		// 0=12bit; 1=10bit(disable 2-LSB),
+		// 2=8bit(disable 4-LSB), 3=6bit(disable 6-LSB)
+		data8 = 0;
+		data8 |= (0 << 4);
+	}
+	//mapping for yuv422 12bit
+	hdmitx21_wr_reg(VP_OUTPUT_MAPPING_IVCTX, data32 & 0xff);
+	hdmitx21_wr_reg(VP_OUTPUT_MAPPING_IVCTX + 1, (data32 >> 8) & 0xff);
+	hdmitx21_wr_reg(VP_OUTPUT_MASK_IVCTX, data8);
+}
+
 static int hdmitx_cntl_config(struct hdmitx_hw_common *tx_hw, u32 cmd,
 			      u32 argv)
 {
 	int ret = 0;
+	u32 data32 = 0;
 	struct hdmitx_dev *hdev = to_hdmitx21_dev(tx_hw);
 
 	if ((cmd & CMD_CONF_OFFSET) != CMD_CONF_OFFSET) {
@@ -3019,6 +3105,116 @@ static int hdmitx_cntl_config(struct hdmitx_hw_common *tx_hw, u32 cmd,
 		break;
 	case CONF_HW_INIT:
 		hdmi_hwp_init(hdev, 1);
+		break;
+	case CONFIG_CSC_EN:
+		if (argv == CSC_ENABLE)
+			hdev->tx_comm.config_csc_en = true;
+		if (argv == CSC_DISABLE)
+			hdev->tx_comm.config_csc_en = false;
+		break;
+	case CONFIG_CSC:
+		if (!hdev->tx_comm.config_csc_en)
+			break;
+		/* Y422,12bit to Y444,8bit */
+		if ((argv & 0xF) == CSC_Y444_8BIT) {
+			/* 1.VPU_HDMI_FMT*/
+			data32 = 0;
+			data32 = (0 << 0) |
+				(2 << 2) |
+				(0 << 4) |
+				(0 << 5) |
+				(0 << 6) |
+				(1 << 10) |
+				(0 << 11) |
+				(0 << 12) |
+				(2 << 22) |
+				(0 << 24);
+			hd21_write_reg(VPU_HDMI_FMT_CTRL, data32);
+			/* 2.VPU_HDMI_DITH */
+			data32 = 0;
+			data32 = (0 << 2) |
+				(0 << 3) |
+				(0 << 4) |
+				(0 << 5) |
+				(0 << 6) |
+				(1 << 10) |
+				(0 << 12);
+			if (hdmitx_dv_en(tx_hw) == 0)
+				data32 |= (1 << 4);
+			hd21_write_reg(VPU_HDMI_DITH_CNTL, data32);
+			/* 3.vp config */
+			hdmitx21_vp_conf(COLORDEPTH_24B, HDMI_COLORSPACE_YUV444);
+			/* 4.avi cs */
+			if (argv & CSC_UPDATE_AVI_CS)
+				hdmi_avi_infoframe_config(CONF_AVI_CS, HDMI_COLORSPACE_YUV444);
+			pr_debug("csc to Y444_8BIT\n");
+		} else if ((argv & 0xF) == CSC_RGB_8BIT) {
+			/* Y422,12bit to RGB,8bit */
+			/* 1.VPU_HDMI_FMT*/
+			data32 = 0;
+			data32 = (0 << 0) |
+				(2 << 2) |
+				(0 << 4) |
+				(0 << 5) |
+				(0 << 6) |
+				(1 << 10) |
+				(0 << 11) |
+				(0 << 12) |
+				(2 << 22) |
+				(0 << 24);
+			hd21_write_reg(VPU_HDMI_FMT_CTRL, data32);
+			/* 2.VPU_HDMI_DITH */
+			data32 = 0;
+			data32 = (0 << 2) |
+				(0 << 3) |
+				(0 << 4) |
+				(0 << 5) |
+				(0 << 6) |
+				(1 << 10) |
+				(0 << 12);
+			if (hdmitx_dv_en(tx_hw) == 0)
+				data32 |= (1 << 4);
+			hd21_write_reg(VPU_HDMI_DITH_CNTL, data32);
+			/* 3.vp config */
+			hdmitx21_vp_conf(COLORDEPTH_24B, HDMI_COLORSPACE_RGB);
+			/* 4.avi cs */
+			if (argv & CSC_UPDATE_AVI_CS)
+				hdmi_avi_infoframe_config(CONF_AVI_CS, HDMI_COLORSPACE_RGB);
+			pr_debug("csc to RGB_8BIT\n");
+		} else if ((argv & 0xF) == CSC_Y422_12BIT) {
+			/* RGB/Y444,8bit to Y422,12bit */
+			/* 1.VPU_HDMI_FMT*/
+			data32 = 0;
+			data32 = (1 << 0) |
+				(2 << 2) |
+				(0 << 4) |
+				(0 << 5) |
+				(0 << 6) |
+				(0 << 10) |
+				(0 << 11) |
+				(0 << 12) |
+				(2 << 22) |
+				(0 << 24);
+			hd21_write_reg(VPU_HDMI_FMT_CTRL, data32);
+			/* 2.VPU_HDMI_DITH */
+			data32 = 0;
+			data32 = (0 << 2) |
+				(0 << 3) |
+				(0 << 4) |
+				(0 << 5) |
+				(0 << 6) |
+				(0 << 10) |
+				(0 << 12);
+			hd21_write_reg(VPU_HDMI_DITH_CNTL, data32);
+			/* 3.vp config */
+			hdmitx21_vp_conf(COLORDEPTH_36B, HDMI_COLORSPACE_YUV422);
+			/* 4.avi cs */
+			if (argv & CSC_UPDATE_AVI_CS)
+				hdmi_avi_infoframe_config(CONF_AVI_CS, HDMI_COLORSPACE_YUV422);
+			pr_debug("csc to Y444_12BIT\n");
+		} else {
+			pr_debug("csc not support/implemented yet\n");
+		}
 		break;
 	default:
 		break;

@@ -64,6 +64,7 @@
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_format_para.h>
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_platform_linux.h>
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_audio.h>
+#include <linux/amlogic/media/vout/hdmitx_common/hdmitx_edid.h>
 #include "../hdmitx_common/hdmitx_compliance.h"
 
 #ifdef CONFIG_AMLOGIC_DSC
@@ -793,16 +794,33 @@ static void hdmitx_set_drm_pkt(struct master_display_info_s *data)
 	static u8 db[28] = {0x0};
 	u8 *drm_db = &db[1]; /* db[0] is the checksum */
 	unsigned long flags = 0;
+	struct rx_cap *prxcap = &hdev->tx_comm.rxcap;
 
 	HDMITX_DEBUG_PACKET("%s[%d]\n", __func__, __LINE__);
 	if (!is_cur_hdmi_mode())
 		return;
 
 	spin_lock_irqsave(&hdev->tx_comm.edid_spinlock, flags);
+
 	/* if ready is 0, only can clear pkt */
 	if (hdev->tx_comm.ready == 0 && data) {
 		spin_unlock_irqrestore(&hdev->tx_comm.edid_spinlock, flags);
 		return;
+	}
+
+	/* if currently output 8bit, and EDID don't
+	 * support Y422, and config_csc_en is 0, switch to SDR output
+	 */
+	if (hdev->tx_comm.fmt_para.cd == COLORDEPTH_24B) {
+		if (!(hdev->tx_comm.config_csc_en && is_support_y422(prxcap))) {
+			hdev->hdr_transfer_feature = T_BT709;
+			hdev->hdr_color_feature = C_BT709;
+			schedule_work(&hdev->work_hdr);
+			hdmitx_tracer_write_event(hdev->tx_comm.tx_tracer,
+					HDMITX_HDR_MODE_SDR);
+			spin_unlock_irqrestore(&hdev->tx_comm.edid_spinlock, flags);
+			return;
+		}
 	}
 	if (hdr_status_pos == 4) {
 		/* zero hdr10+ VSIF being sent - disable it */
@@ -845,7 +863,7 @@ static void hdmitx_set_drm_pkt(struct master_display_info_s *data)
 	/* if VSIF/DV or VSIF/HDR10P packet is enabled, disable it */
 	if (hdmitx_dv_en(&hdev->tx_hw.base)) {
 		hdmi_avi_infoframe_config(CONF_AVI_CS, hdev->tx_comm.fmt_para.cs);
-/* if using VSIF/DOVI, then only clear DV_VS10_SIG, else disable VSIF */
+	/* if using VSIF/DOVI, then only clear DV_VS10_SIG, else disable VSIF */
 		if (hdmitx_hw_cntl_config(&hdev->tx_hw.base, CONF_CLR_DV_VS10_SIG, 0) == 0)
 			/* hdmi_vend_infoframe_set(NULL); */
 			hdmi_vend_infoframe_rawset(NULL, NULL);
@@ -885,6 +903,31 @@ static void hdmitx_set_drm_pkt(struct master_display_info_s *data)
 			hdmitx_tracer_write_event(hdev->tx_comm.tx_tracer,
 						HDMITX_HDR_MODE_SDR);
 			drm_db[0] = 0;
+		}
+		/* back to previous cs */
+		/* currently output y444,8bit or rgb,8bit, if exit playing,
+		 * then switch back to 8bit mode
+		 */
+		if (hdev->tx_comm.fmt_para.cs == HDMI_COLORSPACE_YUV444 &&
+			hdev->tx_comm.fmt_para.cd == COLORDEPTH_24B) {
+			/* hdev->hwop.cntlconfig(hdev, */
+			/* CONF_AVI_RGBYCC_INDIC, */
+			/* COLORSPACE_YUV444); */
+			hdmitx_hw_cntl_config(&hdev->tx_hw.base, CONFIG_CSC,
+				CSC_Y444_8BIT | CSC_UPDATE_AVI_CS);
+				HDMITX_INFO("%s: switch back to cs:%d, cd:%d\n",
+				__func__, hdev->tx_comm.fmt_para.cs,
+				hdev->tx_comm.fmt_para.cd);
+		} else if (hdev->tx_comm.fmt_para.cs == HDMI_COLORSPACE_RGB &&
+			hdev->tx_comm.fmt_para.cd == COLORDEPTH_24B) {
+			/* hdev->hwop.cntlconfig(hdev, */
+			/* CONF_AVI_RGBYCC_INDIC, */
+			/* COLORSPACE_RGB444); */
+			hdmitx_hw_cntl_config(&hdev->tx_hw.base, CONFIG_CSC,
+				CSC_RGB_8BIT | CSC_UPDATE_AVI_CS);
+			HDMITX_INFO("%s: switch back to cs:%d, cd:%d\n",
+				__func__, hdev->tx_comm.fmt_para.cs,
+				hdev->tx_comm.fmt_para.cd);
 		}
 		spin_unlock_irqrestore(&hdev->tx_comm.edid_spinlock, flags);
 		return;
@@ -1001,6 +1044,24 @@ static void hdmitx_set_drm_pkt(struct master_display_info_s *data)
 			schedule_work(&hdev->work_hdr_unmute);
 		}
 		schedule_work(&hdev->work_hdr);
+	}
+	if (hdev->tx_comm.hdmi_current_hdr_mode == 1 ||
+		hdev->tx_comm.hdmi_current_hdr_mode == 2 ||
+		hdev->tx_comm.hdmi_current_hdr_mode == 3) {
+		/* currently output y444,8bit or rgb,8bit, and EDID
+		 * support Y422, then switch to y422,12bit mode
+		 */
+		if ((hdev->tx_comm.fmt_para.cs == HDMI_COLORSPACE_YUV444 ||
+			hdev->tx_comm.fmt_para.cs == HDMI_COLORSPACE_RGB) &&
+			hdev->tx_comm.fmt_para.cd == COLORDEPTH_24B &&
+			is_support_y422(prxcap)) {
+			/* hdev->hwop.cntlconfig(hdev,*/
+					/* CONF_AVI_RGBYCC_INDIC, */
+					/* COLORSPACE_YUV422);*/
+			hdmitx_hw_cntl_config(&hdev->tx_hw.base, CONFIG_CSC,
+				CSC_Y422_12BIT | CSC_UPDATE_AVI_CS);
+			HDMITX_DEBUG_PACKET("%s: switch to 422,12bit\n", __func__);
+		}
 	}
 	spin_unlock_irqrestore(&hdev->tx_comm.edid_spinlock, flags);
 }
@@ -1394,6 +1455,7 @@ static void hdmitx_set_hdr10plus_pkt(u32 flag,
 	u8 ven_hb[3] = {0x81, 0x01, 0x1b};
 	u8 db[28] = {0x00};
 	u8 *ven_db = &db[1];
+	struct rx_cap *prxcap = &hdev->tx_comm.rxcap;
 
 	HDMITX_DEBUG_PACKET("%s[%d]\n", __func__, __LINE__);
 	if (!is_cur_hdmi_mode())
@@ -1409,6 +1471,19 @@ static void hdmitx_set_hdr10plus_pkt(u32 flag,
 		vic == HDMI_93_3840x2160p24_16x9 ||
 		vic == HDMI_98_4096x2160p24_256x135)
 		hdmi_vic_4k_flag = 1;
+	/* if currently output 8bit, and EDID don't
+	 * support Y422, and config_csc_en is 0, switch to SDR output
+	 */
+	if (hdev->tx_comm.fmt_para.cd == COLORDEPTH_24B) {
+		if (!(hdev->tx_comm.config_csc_en && is_support_y422(prxcap))) {
+			hdev->hdr_transfer_feature = T_BT709;
+			hdev->hdr_color_feature = C_BT709;
+			schedule_work(&hdev->work_hdr);
+			hdmitx_tracer_write_event(hdev->tx_comm.tx_tracer,
+					HDMITX_HDR_MODE_SDR);
+			return;
+		}
+	}
 	if (flag == HDR10_PLUS_ZERO_VSIF) {
 		/* needed during hdr10+ to sdr transition */
 		HDMITX_INFO("%s: zero vsif\n", __func__);
@@ -1480,6 +1555,21 @@ static void hdmitx_set_hdr10plus_pkt(u32 flag,
 		hdmi_avi_infoframe_config(CONF_AVI_VIC, vic & 0xff);
 	hdmitx_tracer_write_event(hdev->tx_comm.tx_tracer,
 				HDMITX_HDR_MODE_HDR10PLUS);
+
+	/* currently output y444,8bit or rgb,8bit, and EDID
+	 * support Y422, then switch to y422,12bit mode
+	 */
+	if ((hdev->tx_comm.fmt_para.cs == HDMI_COLORSPACE_YUV444 ||
+		hdev->tx_comm.fmt_para.cs == HDMI_COLORSPACE_RGB) &&
+		hdev->tx_comm.fmt_para.cd == COLORDEPTH_24B &&
+		is_support_y422(prxcap)) {
+		/* hdev->hwop.cntlconfig(hdev,*/
+		/* CONF_AVI_RGBYCC_INDIC, */
+		/* COLORSPACE_YUV422);*/
+		hdmitx_hw_cntl_config(&hdev->tx_hw.base, CONFIG_CSC,
+			CSC_Y422_12BIT | CSC_UPDATE_AVI_CS);
+		HDMITX_DEBUG_PACKET("%s: switch to 422,12bit\n", __func__);
+	}
 }
 
 static void hdmitx_set_cuva_hdr_vsif(struct cuva_hdr_vsif_para *data)

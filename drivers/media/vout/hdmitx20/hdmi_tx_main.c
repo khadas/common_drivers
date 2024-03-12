@@ -67,6 +67,7 @@
 #include <hdmitx_sysfs_common.h>
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_common.h>
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_platform_linux.h>
+#include <linux/amlogic/media/vout/hdmitx_common/hdmitx_edid.h>
 #include "../hdmitx_common/hdmitx_compliance.h"
 
 #define DEVICE_NAME "amhdmitx"
@@ -607,16 +608,16 @@ static void hdmitx_set_drm_pkt(struct master_display_info_s *data)
 	static unsigned char DRM_DB[26] = {0x0};
 	unsigned long flags = 0;
 	struct hdmitx_hw_common *tx_hw_base = &hdev->tx_hw.base;
+	struct rx_cap *prxcap = &hdev->tx_comm.rxcap;
 
 	HDMITX_DEBUG_PACKET("%s[%d]\n", __func__, __LINE__);
 	spin_lock_irqsave(&hdev->tx_comm.edid_spinlock, flags);
 
-	/* if currently output 8bit, and EDID don't
-	 * support Y422, and config_csc_en is 0, switch to SDR output
+	/* if currently output 8bit, when csc_en is 1 and
+	 * 422 is supported, output HDR, otherwise SDR
 	 */
 	if (hdev->tx_comm.fmt_para.cd == COLORDEPTH_24B) {
-		if (!(hdev->tx_comm.config_csc_en &&
-					(hdev->tx_comm.rxcap.native_Mode & (1 << 4)))) {
+		if (!(hdev->tx_comm.config_csc_en && is_support_y422(prxcap))) {
 			hdev->hdr_transfer_feature = T_BT709;
 			hdev->hdr_color_feature = C_BT709;
 			schedule_work(&hdev->work_hdr);
@@ -686,7 +687,7 @@ static void hdmitx_set_drm_pkt(struct master_display_info_s *data)
 	if (hdmitx_dv_en(&hdev->tx_hw.base)) {
 		hdmitx_hw_cntl_config(&hdev->tx_hw.base, CONF_AVI_RGBYCC_INDIC,
 			hdev->tx_comm.fmt_para.cs);
-/* if using VSIF/DOVI, then only clear DV_VS10_SIG, else disable VSIF */
+	/* if using VSIF/DOVI, then only clear DV_VS10_SIG, else disable VSIF */
 		if (hdmitx_hw_cntl_config(&hdev->tx_hw.base, CONF_CLR_DV_VS10_SIG, 0) == 0)
 			hdmitx_hw_set_packet(tx_hw_base, HDMI_PACKET_VEND, NULL, NULL);
 	}
@@ -734,8 +735,8 @@ static void hdmitx_set_drm_pkt(struct master_display_info_s *data)
 		if (hdev->tx_comm.fmt_para.cs == HDMI_COLORSPACE_YUV444 &&
 			hdev->tx_comm.fmt_para.cd == COLORDEPTH_24B) {
 			/* hdev->hwop.cntlconfig(hdev, */
-					/* CONF_AVI_RGBYCC_INDIC, */
-					/* COLORSPACE_YUV444); */
+			/* CONF_AVI_RGBYCC_INDIC, */
+			/* COLORSPACE_YUV444); */
 			hdmitx_hw_cntl_config(&hdev->tx_hw.base, CONFIG_CSC,
 				CSC_Y444_8BIT | CSC_UPDATE_AVI_CS);
 			HDMITX_INFO("%s: switch back to cs:%d, cd:%d\n",
@@ -744,8 +745,8 @@ static void hdmitx_set_drm_pkt(struct master_display_info_s *data)
 		} else if (hdev->tx_comm.fmt_para.cs == HDMI_COLORSPACE_RGB &&
 			hdev->tx_comm.fmt_para.cd == COLORDEPTH_24B) {
 			/* hdev->hwop.cntlconfig(hdev, */
-					/* CONF_AVI_RGBYCC_INDIC, */
-					/* COLORSPACE_RGB444); */
+			/* CONF_AVI_RGBYCC_INDIC, */
+			/* COLORSPACE_RGB444); */
 			hdmitx_hw_cntl_config(&hdev->tx_hw.base, CONFIG_CSC,
 				CSC_RGB_8BIT | CSC_UPDATE_AVI_CS);
 			HDMITX_INFO("%s: switch back to cs:%d, cd:%d\n",
@@ -891,7 +892,7 @@ static void hdmitx_set_drm_pkt(struct master_display_info_s *data)
 		if ((hdev->tx_comm.fmt_para.cs == HDMI_COLORSPACE_YUV444 ||
 			hdev->tx_comm.fmt_para.cs == HDMI_COLORSPACE_RGB) &&
 			hdev->tx_comm.fmt_para.cd == COLORDEPTH_24B &&
-			(hdev->tx_comm.rxcap.native_Mode & (1 << 4))) {
+			is_support_y422(prxcap)) {
 			/* hdev->hwop.cntlconfig(hdev,*/
 					/* CONF_AVI_RGBYCC_INDIC, */
 					/* COLORSPACE_YUV422);*/
@@ -1249,17 +1250,17 @@ static void hdmitx_set_hdr10plus_pkt(unsigned int flag,
 	unsigned char VEN_HB[3] = {0x81, 0x01, 0x1b};
 	unsigned char VEN_DB[27] = {0x00};
 	struct hdmitx_hw_common *tx_hw_base = &hdev->tx_hw.base;
+	struct rx_cap *prxcap = &hdev->tx_comm.rxcap;
 
 	HDMITX_DEBUG_PACKET("%s[%d]\n", __func__, __LINE__);
 	if (hdev->bist_lock)
 		return;
 
-	/* if currently output 8bit, and EDID don't
-	 * support Y422, and config_csc_en is 0, switch to SDR output
+	/* if currently output 8bit, when csc_en is 1 and
+	 * 422 is supported, output HDR, otherwise SDR
 	 */
 	if (hdev->tx_comm.fmt_para.cd == COLORDEPTH_24B) {
-		if (!(hdev->tx_comm.config_csc_en &&
-					(hdev->tx_comm.rxcap.native_Mode & (1 << 4)))) {
+		if (!(hdev->tx_comm.config_csc_en && is_support_y422(prxcap))) {
 			hdev->hdr_transfer_feature = T_BT709;
 			hdev->hdr_color_feature = C_BT709;
 			schedule_work(&hdev->work_hdr);
@@ -1364,7 +1365,7 @@ static void hdmitx_set_hdr10plus_pkt(unsigned int flag,
 	if ((hdev->tx_comm.fmt_para.cs == HDMI_COLORSPACE_YUV444 ||
 		hdev->tx_comm.fmt_para.cs == HDMI_COLORSPACE_RGB) &&
 		hdev->tx_comm.fmt_para.cd == COLORDEPTH_24B &&
-		(hdev->tx_comm.rxcap.native_Mode & (1 << 4))) {
+		is_support_y422(prxcap)) {
 		/* hdev->hwop.cntlconfig(hdev,*/
 		/* CONF_AVI_RGBYCC_INDIC, */
 		/* COLORSPACE_YUV422);*/
@@ -2599,9 +2600,12 @@ static ssize_t hdmitx_basic_config_show(struct device *dev,
 			pos += snprintf(buf + pos, PAGE_SIZE, "HDR10-GAMMA_HLG");
 		else if (type == HDMI_HDR_HDR)
 			pos += snprintf(buf + pos, PAGE_SIZE, "HDR10-others");
+		else if (type == HDMI_HDR_SDR)
+			pos += snprintf(buf + pos, PAGE_SIZE, "SDR");
 	}
-	/* default is SDR */
-	pos += snprintf(buf + pos, PAGE_SIZE, "SDR");
+	if (type == HDMI_NONE)
+		/* default is SDR */
+		pos += snprintf(buf + pos, PAGE_SIZE, "SDR");
 	pos += snprintf(buf + pos, PAGE_SIZE, "\n");
 
 	pos += snprintf(buf + pos, PAGE_SIZE, "hdr_status out:");

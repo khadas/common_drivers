@@ -7,6 +7,7 @@
 #include <linux/mm.h>
 #include <linux/printk.h>
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_common.h>
+#include <linux/amlogic/media/vout/hdmitx_common/hdmitx_edid.h>
 #include "hdmitx_log.h"
 
 const struct hdmi_timing *hdmitx_mode_match_timing_name(const char *name);
@@ -63,6 +64,7 @@ void edidinfo_attach_to_vinfo(struct hdmitx_common *tx_comm)
 	struct vinfo_s *info = &tx_comm->hdmitx_vinfo;
 	struct hdmi_format_para *para = &tx_comm->fmt_para;
 	struct vout_device_s *vdev = tx_comm->vdev;
+	struct rx_cap *prxcap = &tx_comm->rxcap;
 
 	hdrinfo_to_vinfo(&info->hdr_info, tx_comm);
 
@@ -72,11 +74,10 @@ void edidinfo_attach_to_vinfo(struct hdmitx_common *tx_comm)
 	 * 420 conversion, the hdr capability of 420 is blocked.
 	 * Otherwise, the 8-bit output will shield the HDR capability.
 	 */
-	if (tx_comm->config_csc_en && (tx_comm->rxcap.native_Mode & (1 << 4))) {
-		if (para->cd == COLORDEPTH_24B && para->cs == HDMI_COLORSPACE_YUV420)
+	if (para->cd == COLORDEPTH_24B && !tx_comm->hdr_8bit_en) {
+		if (!tx_comm->config_csc_en || !is_support_y422(prxcap) ||
+				para->cs == HDMI_COLORSPACE_YUV420)
 			memset(&info->hdr_info, 0, sizeof(struct hdr_info));
-	} else if (para->cd == COLORDEPTH_24B && !tx_comm->hdr_8bit_en) {
-		memset(&info->hdr_info, 0, sizeof(struct hdr_info));
 	}
 
 	rxlatency_to_vinfo(tx_comm);

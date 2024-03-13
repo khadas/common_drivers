@@ -36,6 +36,23 @@ static int isp_v4l2_ctrl_check_valid( struct v4l2_ctrl *ctrl )
     return 0;
 }
 
+static int isp_v4l2_ctrl_g_ctrl_standard( struct v4l2_ctrl *ctrl )
+{
+    int ret = 0;
+    switch ( ctrl->id ) {
+        case V4L2_CID_MIN_BUFFERS_FOR_OUTPUT:
+            ctrl->val = 6;
+        break;
+        case V4L2_CID_MIN_BUFFERS_FOR_CAPTURE:
+            ctrl->val = 6;
+        break;
+
+        default:
+            ret = -EINVAL;
+    }
+    return ret;
+}
+
 static int isp_v4l2_ctrl_s_ctrl_standard( struct v4l2_ctrl *ctrl )
 {
     int ret = 0;
@@ -2513,6 +2530,7 @@ static const struct v4l2_ctrl_config isp_v4l2_ctrl_dcam_mode = {
 
 static const struct v4l2_ctrl_ops isp_v4l2_ctrl_ops = {
     .s_ctrl = isp_v4l2_ctrl_s_ctrl_standard,
+    .g_volatile_ctrl = isp_v4l2_ctrl_g_ctrl_standard,
 };
 
 static const struct v4l2_ctrl_config isp_v4l2_ctrl_class = {
@@ -2530,6 +2548,18 @@ static const struct v4l2_ctrl_config isp_v4l2_ctrl_class = {
                                id, min, max, step, def );        \
         }                                                        \
     }
+
+#define ADD_CTRL_STD_VOLATILE( id, min, max, step, def )         \
+    {                                                            \
+        if ( fw_intf_validate_control( id ) ) {                  \
+            std_ctrl = v4l2_ctrl_new_std( hdl_std_ctrl,          \
+                &isp_v4l2_ctrl_ops,                              \
+                    id, min, max, step, def );                   \
+            if (std_ctrl)                                        \
+                std_ctrl->flags |= V4L2_CTRL_FLAG_VOLATILE;      \
+        }                                                        \
+    }
+
 
 #define ADD_CTRL_STD_MENU( id, max, skipmask, def )                   \
     {                                                                 \
@@ -2591,6 +2621,7 @@ int isp_v4l2_ctrl_init( uint32_t ctx_id, isp_v4l2_ctrl_t *ctrl )
     struct v4l2_ctrl_handler *hdl_std_ctrl = &ctrl->ctrl_hdl_std_ctrl;
     struct v4l2_ctrl_handler *hdl_cst_ctrl = &ctrl->ctrl_hdl_cst_ctrl;
     struct v4l2_ctrl *tmp_ctrl;
+    struct v4l2_ctrl *std_ctrl;
     struct v4l2_ctrl_config tmp_ctrl_cfg;
 
     /* Init and add standard controls */
@@ -2628,6 +2659,10 @@ int isp_v4l2_ctrl_init( uint32_t ctx_id, isp_v4l2_ctrl_t *ctrl )
     ADD_CTRL_STD( V4L2_CID_FOCUS_AUTO, 0, 1, 1, 1 );
     ADD_CTRL_STD( V4L2_CID_FOCUS_ABSOLUTE,
                   0, 255, 1, 0 );
+
+    /*get request buffer num*/
+    ADD_CTRL_STD_VOLATILE(V4L2_CID_MIN_BUFFERS_FOR_OUTPUT, 2, 6, 1, 4);
+    ADD_CTRL_STD_VOLATILE(V4L2_CID_MIN_BUFFERS_FOR_CAPTURE, 2, 6, 1, 4);
 
     /* Init and add custom controls */
     v4l2_ctrl_handler_init( hdl_cst_ctrl, 2 );

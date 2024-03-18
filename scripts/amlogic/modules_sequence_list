@@ -58,6 +58,7 @@ VENDOR_MODULES_LOAD_LAST_LIST=(
 )
 
 RECOVERY_MODULES_LOAD_LIST=(
+	i2c-dev.ko
 	dwc_otg.ko
 )
 

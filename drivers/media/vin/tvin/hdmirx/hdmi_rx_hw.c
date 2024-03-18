@@ -5422,7 +5422,7 @@ void hdmirx_config_video(u8 port)
 		rx[port].emp_vid_idx = 0;
 		rx[port].emp_info = &rx_info.emp_buff_a;
 	}
-	//rx_sw_reset_t7(2, port);
+	rx_sw_reset_t7(2, port);
 	//frl_debug
 	if (rx_info.chip_id >= CHIP_ID_T3X && rx[port].var.frl_rate)
 		/* 2ppc */

@@ -727,8 +727,8 @@
 				system-clock-frequency = <12288000>;
 			};
 			tdmbcodec: codec {
-				prefix-names = "AMP";
-				sound-dai = <&ad82128 &acodec>;
+				prefix-names = "AMP","AMP2","AMP3";
+				sound-dai = <&ad82128 &ad82128_2 &acodec>;
 			};
 		};
 
@@ -1683,6 +1683,14 @@
 		reset_pin = <&gpio GPIOD_9 GPIO_ACTIVE_HIGH>;
 		reg = <0x34>;
 		status = "okay";
+	};
+	ad82128_2: ad82128@31 {
+	    compatible = "ESMT,ad82128";
+	    #sound-dai-cells = <0>;
+	    reset_pin = <&gpio GPIOD_9 GPIO_ACTIVE_HIGH>;
+	    reg = <0x31>;
+	    subwoofer-enable = <1>;
+	    status = "okay";
 	};
 };
 

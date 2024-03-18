@@ -118,8 +118,9 @@
 // frc_2024-0319 frc sync alg macro
 // frc_2024-0315 buf num configure
 // frc_2024-0325 frc sync motion from drv
+// frc_2024-0407 frc modify urgent control
 
-#define FRC_FW_VER			"2024-0407 frc modify urgent control"
+#define FRC_FW_VER			"2024-0417 frc add debug setting for T5M user"
 #define FRC_KERDRV_VER                  3500
 
 #define FRC_DEVNO	1
@@ -290,12 +291,25 @@ extern int frc_dbg_en;
 #define FRC_BYPASS_FRAME_NUM_T3X  7
 #define FRC_FREEZE_FRAME_NUM_T3X  8  // should less than 16
 
+#define FRC_TITLE        "Display_FRC"
+#define DEFAULT_TITLE    "default"
+#define DEBUG_LEVEL      "debuglevel"
+#define DEBUG_NODES      6
+#define CMD_LEN          32
+#define MODULE_LEN       128
+
 enum chip_id {
 	ID_NULL = 0,
 	ID_T3,
 	ID_T5M,
 	ID_T3X,
 	ID_TMAX,
+};
+
+typedef void (*set_debug_func) (const char *module, const char *debug_mode);
+struct module_debug_node {
+	const char *name;
+	set_debug_func set_debug_func_notify;
 };
 
 struct dts_match_data {

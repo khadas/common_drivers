@@ -53,6 +53,7 @@
 #include <linux/amlogic/media/frc/frc_reg.h>
 #include <linux/amlogic/media/frc/frc_common.h>
 #include <linux/amlogic/power_domain.h>
+#include <linux/amlogic/media/resource_mgr/resourcemanage.h>
 #if IS_ENABLED(CONFIG_AMLOGIC_DMC_DEV_ACCESS)
 #include <linux/amlogic/dmc_dev_access.h>
 #endif
@@ -1306,6 +1307,8 @@ static int frc_probe(struct platform_device *pdev)
 	/*register a notify*/
 	vout_register_client(&frc_notifier_nb);
 	vd_signal_register_client(&frc_notifier_vb);
+	if (frc_data->match_data->chip == ID_T5M)
+		resman_register_debug_callback(FRC_TITLE, set_frc_config);
 
 	/*driver internal data initial*/
 	frc_drv_initial(frc_devp);

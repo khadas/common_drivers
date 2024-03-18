@@ -1370,3 +1370,227 @@ void frc_dbg_frame_show(struct frc_dev_s *devp)
 
 	pre_flag = enable;
 }
+
+static void debug_level_func(const char *module, const char *debug_flags)
+{
+	int value;
+
+	if (kstrtoint(debug_flags, 10, &value) == 0) {
+		frc_dbg_en = value;
+		PR_FRC("debug_level = %d\n", frc_dbg_en);
+	}
+}
+
+static void debug_status_func(const char *module, const char *debug_flags)
+{
+	struct frc_dev_s *devp = get_frc_devp();
+
+	if (strcmp(debug_flags, "status") == 0)
+		frc_status(devp);
+}
+
+static void debug_ctrl_func(const char *module, const char *debug_flags)
+{
+	int value;
+
+	if (kstrtoint(debug_flags, 10, &value) == 0)
+		frc_dbg_ctrl = value;
+}
+
+static void auto_ctrl_func(const char *module, const char *debug_flags)
+{
+	int value;
+	struct frc_dev_s *devp = get_frc_devp();
+
+	if (kstrtoint(debug_flags, 10, &value) == 0) {
+		if (frc_dbg_ctrl) {
+			if (value < 100) { //for debug:forbid user-layer call
+				pr_frc(0, "ctrl test..\n");
+				return;
+			}
+			value = value - 100;
+		}
+		devp->frc_sts.auto_ctrl = value;
+	}
+}
+
+static void debug_mode_func(const char *module, const char *debug_flags)
+{
+	int value;
+
+	if (kstrtoint(debug_flags, 10, &value) == 0) {
+		if (frc_dbg_ctrl) {
+			if (value < 100) { //for debug:forbid user-layer call
+				pr_frc(0, "ctrl test..\n");
+				return;
+			}
+			value = value - 100;
+		}
+		if (value < FRC_STATE_NULL)
+			frc_set_mode(value);
+	}
+}
+
+static void debug_pattern_func(const char *module, const char *debug_flags)
+{
+	struct frc_dev_s *devp = get_frc_devp();
+
+	if (!strcmp(debug_flags, "enable"))
+		devp->frc_test_ptn = 1;
+	else if (!strcmp(debug_flags, "disable"))
+		devp->frc_test_ptn = 0;
+	frc_pattern_on(devp->frc_test_ptn);
+}
+
+static struct module_debug_node debug_nodes[] = {
+	{
+		.name = "debug_level",
+		.set_debug_func_notify = debug_level_func,
+	},
+	{
+		.name = "status",
+		.set_debug_func_notify = debug_status_func,
+	},
+	{
+		.name = "debug_ctrl",
+		.set_debug_func_notify = debug_ctrl_func,
+	},
+	{
+		.name = "auto_ctrl",
+		.set_debug_func_notify = auto_ctrl_func,
+	},
+	{
+		.name = "debug_mode",
+		.set_debug_func_notify = debug_mode_func,
+	},
+	{
+		.name = "test_pattern",
+		.set_debug_func_notify = debug_pattern_func,
+	},
+};
+
+static bool get_module_config(const char *configs, const char *title, char *cmd)
+{
+	char *module_str;
+	char *str_end;
+	u8 cmd_len;
+
+	if (!configs || !title)
+		return false;
+
+	module_str = strstr(configs, title);
+
+	if (module_str) {
+		if (module_str > configs && module_str[-1] != ';')
+			return false;
+
+		module_str += strlen(title);
+		if (module_str[0] != ':' ||  module_str[1] == '\0')
+			return false;
+
+		module_str += 1;
+		str_end = strchr(module_str, ';');
+		if (str_end) {
+			cmd_len = str_end - module_str;
+			if (cmd_len > MODULE_LEN - 1) {
+				pr_frc(dbg_frc, "module_len is too long\n");
+				return false;
+			}
+			strncpy(cmd, module_str, cmd_len);
+			cmd[str_end - module_str] = '\0';
+		} else {
+			return false;
+		}
+
+	} else {
+		return false;
+	}
+	return true;
+}
+
+static void set_frc_debug_flag(char *module_str, char *cmd_str)
+{
+	char *node_str;
+	char *str_end;
+	u8 node;
+	u8 cmd_len;
+
+	for (node = 0; node < DEBUG_NODES; node++) {
+		node_str = strstr(module_str, debug_nodes[node].name);
+		if (!node_str)
+			continue;
+
+		if (node_str > module_str && node_str[-1] != ',')
+			break;
+
+		node_str += strlen(debug_nodes[node].name);
+		if (node_str[0] != ':' || node_str[1] == '\0')
+			break;
+
+		node_str += 1;
+		str_end = strstr(node_str, ",");
+		if (str_end)
+			cmd_len = str_end - node_str;
+		else
+			cmd_len = strlen(node_str);
+		if (cmd_len > CMD_LEN - 1) {
+			pr_frc(dbg_frc, "cmd len is too long\n");
+			break;
+		}
+
+		strncpy(cmd_str, node_str, cmd_len);
+		cmd_str[cmd_len] = '\0';
+		pr_frc(dbg_frc + 2, "%s ok\n", __func__);
+		debug_nodes[node].set_debug_func_notify(debug_nodes[node].name, cmd_str);
+	}
+}
+
+static void set_default_debug_flag(char *default_str, char *cmd_str)
+{
+	char *node_str;
+	u8 cmd_len;
+
+	node_str = strstr(default_str, DEBUG_LEVEL);
+	if (!node_str)
+		return;
+	if (node_str > default_str && node_str[-1] != ',')
+		return;
+
+	node_str += strlen(DEBUG_LEVEL);
+	if (node_str[0] != ':' || node_str[1] == '\0')
+		return;
+
+	node_str += 1;
+	cmd_len = strlen(node_str);
+	if (cmd_len > CMD_LEN - 1) {
+		pr_frc(dbg_frc, "cmd len is too long\n");
+		return;
+	}
+
+	strncpy(cmd_str, node_str, cmd_len);
+	cmd_str[cmd_len] = '\0';
+	pr_frc(dbg_frc + 2, "%s ok\n", __func__);
+	if (strcmp(cmd_str, "0") == 0)
+		debug_level_func(NULL, cmd_str);
+	else
+		debug_level_func(NULL, "2");
+}
+
+void set_frc_config(const char *module, const char *debug, int len)
+{
+	char *default_str = kzalloc(sizeof(char) * 128, GFP_KERNEL);
+	char *module_str = kzalloc(sizeof(char) * 128, GFP_KERNEL);
+	char *cmd_str = kzalloc(sizeof(char) * 32, GFP_KERNEL);
+
+	if (get_module_config(debug, FRC_TITLE, module_str)) {
+		pr_frc(dbg_frc, "%s: Display_FRC:%s\n", __func__, module_str);
+		set_frc_debug_flag(module_str, cmd_str);
+	} else if (get_module_config(debug, DEFAULT_TITLE, default_str)) {
+		set_default_debug_flag(default_str, cmd_str);
+	}
+
+	kfree(default_str);
+	kfree(module_str);
+	kfree(cmd_str);
+}
+

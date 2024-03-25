@@ -389,8 +389,7 @@ static void lcd_venc_set(struct aml_lcd_drv_s *pdrv)
 		reg_disp_viu_ctrl = VPU_DISP_VIU2_CTRL;
 		break;
 	default:
-		LCDERR("[%d]: %s: invalid drv_index\n",
-		pdrv->index, __func__);
+		LCDERR("[%d]: %s: invalid drv_index\n", pdrv->index, __func__);
 		return;
 	}
 
@@ -449,8 +448,7 @@ static void lcd_venc_change_timing(struct aml_lcd_drv_s *pdrv)
 					pdrv->config.timing.act_timing.v_period - 1);
 		}
 		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
-			LCDPR("[%d]: venc changed: %d,%d\n",
-			      pdrv->index,
+			LCDPR("[%d]: venc changed: %d,%d\n", pdrv->index,
 			      pdrv->config.timing.act_timing.h_period,
 			      pdrv->config.timing.act_timing.v_period);
 		}

@@ -417,26 +417,6 @@ static void lcd_vmode_vinfo_update(struct aml_lcd_drv_s *pdrv)
 	lcd_optical_vinfo_update(pdrv);
 }
 
-static unsigned int lcd_parse_vout_init_name(char *name)
-{
-	char *p, *frac_str;
-	unsigned int frac = 0;
-
-	p = strchr(name, ',');
-	if (!p) {
-		frac = 0;
-	} else {
-		frac_str = p + 1;
-		*p = '\0';
-		if (strcmp(frac_str, "frac") == 0)
-			frac = 1;
-	}
-	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
-		LCDPR("%s: frac: %d\n", __func__, frac);
-
-	return frac;
-}
-
 /* ************************************************** *
  * vout server api
  * **************************************************
@@ -1067,7 +1047,7 @@ static int lcd_resume(void *data)
 static void lcd_vinfo_update_default(struct aml_lcd_drv_s *pdrv)
 {
 	struct lcd_detail_timing_s *ptiming;
-	unsigned int frac;
+	// unsigned int frac;
 	enum vmode_e vmode;
 	char *mode;
 
@@ -1081,11 +1061,10 @@ static void lcd_vinfo_update_default(struct aml_lcd_drv_s *pdrv)
 		return;
 
 	ptiming = &pdrv->config.timing.act_timing;
-	frac = lcd_parse_vout_init_name(mode);
 	pdrv->vmode_mgr.cur_vmode_info = &lcd_vmode_ref[4];
 
 	lcd_output_vmode_init(pdrv);
-	vmode = lcd_validate_vmode(mode, frac, (void *)pdrv);
+	vmode = lcd_validate_vmode(mode, 0, (void *)pdrv);
 	if (vmode == VMODE_LCD) {
 		if (pdrv->vmode_mgr.next_vmode_info) {
 			pdrv->vmode_mgr.cur_vmode_info = pdrv->vmode_mgr.next_vmode_info;
@@ -1132,7 +1111,7 @@ void lcd_tv_vout_server_init(struct aml_lcd_drv_s *pdrv)
 		kfree(vserver);
 		return;
 	}
-	pdrv->vout_server[0] = vserver;
+	pdrv->vout_server = vserver;
 
 	sprintf(vserver->name, "lcd%d_vout_server", pdrv->index);
 	vserver->op.get_vinfo = lcd_get_current_info;
@@ -1156,19 +1135,19 @@ void lcd_tv_vout_server_init(struct aml_lcd_drv_s *pdrv)
 
 	lcd_vinfo_update_default(pdrv);
 
-	vout_register_server(pdrv->vout_server[0]);
+	vout_register_server(pdrv->vout_server);
 }
 
 void lcd_tv_vout_server_remove(struct aml_lcd_drv_s *pdrv)
 {
-	vout_unregister_server(pdrv->vout_server[0]);
+	vout_unregister_server(pdrv->vout_server);
 }
 
 static void lcd_vmode_init(struct aml_lcd_drv_s *pdrv)
 {
 	char *mode, *init_mode;
 	enum vmode_e vmode;
-	unsigned int frac;
+	// unsigned int frac;
 
 	init_mode = get_vout_mode_uboot();
 	mode = kstrdup(init_mode, GFP_KERNEL);
@@ -1177,8 +1156,7 @@ static void lcd_vmode_init(struct aml_lcd_drv_s *pdrv)
 
 	lcd_output_vmode_init(pdrv);
 	LCDPR("[%d]: %s: mode: %s\n", pdrv->index, __func__, mode);
-	frac = lcd_parse_vout_init_name(mode);
-	vmode = lcd_validate_vmode(mode, frac, (void *)pdrv);
+	vmode = lcd_validate_vmode(mode, 0, (void *)pdrv);
 	if (vmode == VMODE_LCD)
 		lcd_vmode_update(pdrv);
 

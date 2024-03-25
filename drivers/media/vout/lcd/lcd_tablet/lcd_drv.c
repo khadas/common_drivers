@@ -28,6 +28,7 @@
 #include "lcd_tablet.h"
 #include "../lcd_reg.h"
 #include "../lcd_common.h"
+#include <linux/sched/clock.h>
 
 static int lcd_type_supported(struct lcd_config_s *pconf)
 {
@@ -138,6 +139,41 @@ void lcd_tablet_driver_disable_post(struct aml_lcd_drv_s *pdrv)
 
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
 		LCDPR("[%d]: %s finished\n", pdrv->index, __func__);
+}
+
+int lcd_tablet_driver_change(struct aml_lcd_drv_s *pdrv)
+{
+	int ret;
+
+	LCDPR("[%d]: tablet driver change(ver %s): %s\n",
+	      pdrv->index, LCD_DRV_VERSION,
+	      lcd_type_type_to_str(pdrv->config.basic.lcd_type));
+	ret = lcd_type_supported(&pdrv->config);
+	if (ret)
+		return -1;
+
+#ifdef CONFIG_AMLOGIC_VPU
+	vpu_dev_clk_request(pdrv->lcd_vpu_dev, pdrv->config.timing.enc_clk);
+#endif
+
+	if (pdrv->status & LCD_STATUS_ENCL_ON) {
+		if (pdrv->config.basic.lcd_type == LCD_VBYONE) {
+			if (pdrv->status & LCD_STATUS_IF_ON)
+				lcd_vbyone_interrupt_enable(pdrv, 0);
+		}
+	}
+
+	lcd_clk_change(pdrv);
+	lcd_venc_change(pdrv);
+
+	if ((pdrv->status & LCD_STATUS_ON) == LCD_STATUS_ON) {
+		if (pdrv->config.basic.lcd_type == LCD_VBYONE)
+			lcd_vbyone_wait_stable(pdrv);
+	}
+
+	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+		LCDPR("[%d]: %s finished\n", pdrv->index, __func__);
+	return 0;
 }
 
 int lcd_tablet_driver_init(struct aml_lcd_drv_s *pdrv)

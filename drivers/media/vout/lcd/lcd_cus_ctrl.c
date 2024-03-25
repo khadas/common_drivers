@@ -202,9 +202,205 @@ int lcd_cus_ctrl_dump_info(struct aml_lcd_drv_s *pdrv, char *buf, int offset)
 	return len;
 }
 
+static int lcd_cus_ctrl_parse_clk_adv_dts(struct aml_lcd_drv_s *pdrv,
+		struct lcd_cus_ctrl_attr_config_s *attr_conf, struct device_node *child)
+{
+	struct lcd_clk_adv_s *adv_attr;
+	unsigned int para[2];
+
+	adv_attr = kzalloc(sizeof(*adv_attr), GFP_KERNEL);
+	if (!adv_attr)
+		return -1;
+
+	if (of_property_read_u32_array(child, "clk_advanced", &para[0], 2)) {
+		LCDERR("[%d]: failed to get clk_advanced\n", pdrv->index);
+		kfree(adv_attr);
+		return -1;
+	}
+	adv_attr->ss_freq = para[0];
+	adv_attr->ss_mode = para[1];
+
+	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+		LCDPR("[%d]: %s: freq=%hu, mode=%hu\n", pdrv->index, __func__, para[0], para[1]);
+
+	attr_conf->attr.clk_adv_attr = adv_attr;
+	return 0;
+}
+
+#define LCD_EXT_TIMING_MAX 8
+static int lcd_cus_ctrl_parse_extend_tmg_dts(struct aml_lcd_drv_s *pdrv,
+		struct lcd_cus_ctrl_attr_config_s *attr_conf, struct device_node *child)
+{
+	struct lcd_extend_tmg_s *extend_tmg_attr;
+	struct lcd_detail_timing_s *ptiming = NULL, *ptiming0 = NULL;
+	char snode[32];
+	int ret;
+	//unsigned char etmg_idx, tmp, c_bit;
+	unsigned char etmg_idx, c_bit;
+	unsigned int para[14];
+
+	extend_tmg_attr = kzalloc(sizeof(*extend_tmg_attr), GFP_KERNEL);
+	if (!extend_tmg_attr)
+		return -1;
+
+	for (etmg_idx = 0; etmg_idx < LCD_EXT_TIMING_MAX; etmg_idx++) {
+		memset(snode, 0, 32 * sizeof(char));
+		sprintf(snode, "extend_tmg_%hu", etmg_idx);
+
+		ret = of_property_read_u32_array(child, snode, &para[0], 14);
+		if (ret) {
+			LCDERR("[%d]: failed to get %s\n", pdrv->index, snode);
+			break;
+		}
+
+		ptiming = ptiming0;
+		ptiming0 = krealloc(ptiming,
+			(etmg_idx + 1) * sizeof(struct lcd_detail_timing_s), GFP_KERNEL);
+		if (!ptiming0) {
+			LCDERR("[%d]: %s: detailed tmg realloc(%d) failed\n",
+				pdrv->index, __func__, etmg_idx + 1);
+			ptiming0 = ptiming;
+			break;
+		}
+
+		extend_tmg_attr->group_cnt++;
+
+		ptiming = ptiming0 + etmg_idx;
+		memset(ptiming, 0, sizeof(struct lcd_detail_timing_s));
+
+		ptiming->h_period    = para[0];
+		ptiming->h_active    = para[1];
+		ptiming->hsync_width = para[2];
+		ptiming->hsync_bp    = para[3];
+		ptiming->hsync_pol   = para[4];
+		ptiming->hsync_fp    = ptiming->h_period - ptiming->h_active -
+					ptiming->hsync_width - ptiming->hsync_bp;
+		ptiming->v_period    = para[5];
+		ptiming->v_active    = para[6];
+		ptiming->vsync_width = para[7];
+		ptiming->vsync_bp    = para[8];
+		ptiming->vsync_pol   = para[9];
+		ptiming->vsync_fp    = ptiming->v_period - ptiming->v_active -
+					ptiming->vsync_width - ptiming->vsync_bp;
+
+		c_bit = para[10];
+		ptiming->pixel_clk = para[13];
+
+		memset(snode, 0, 32 * sizeof(char));
+		sprintf(snode, "extend_tmg_%hu_frame_rate", etmg_idx);
+		ret = of_property_read_u32_array(child, snode, &para[0], 2);
+		ptiming->frame_rate_min = ret ? 0 : para[0];
+		ptiming->frame_rate_max = ret ? 0 : para[1];
+
+		memset(snode, 0, 32 * sizeof(char));
+		sprintf(snode, "extend_tmg_%hu_range_setting", etmg_idx);
+		ret = of_property_read_u32_array(child, snode, &para[0], 6);
+		ptiming->h_period_min = ret ? ptiming->h_period  : para[0];
+		ptiming->h_period_max = ret ? ptiming->h_period  : para[1];
+		ptiming->v_period_min = ret ? ptiming->v_period  : para[2];
+		ptiming->v_period_max = ret ? ptiming->v_period  : para[3];
+		ptiming->pclk_min     = ret ? ptiming->pixel_clk : para[4];
+		ptiming->pclk_max     = ret ? ptiming->pixel_clk : para[5];
+		ptiming->fr_adjust_type = ret ? 0xff : 3;
+
+		//ptiming->fixed_type = 0xff;
+		//memset(snode, 0, 32 * sizeof(char));
+		//sprintf(snode, "extend_tmg_%hu_fixed", etmg_idx);
+		//ret = of_property_read_variable_u32_array(child, snode, &para[0], 1, 9);
+		//if (ret > 0) {
+		//	ptiming->fixed_type = para[0];
+		//	for (tmp = 0; tmp < ret; tmp++)
+		//		ptiming->fixed_val_set[tmp] = para[tmp + 1];
+		//}
+
+		lcd_clk_frame_rate_init(ptiming);
+		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
+			LCDPR("[%d]: %s: extend_tmg[%d]: %dx%dp%dhz\n", pdrv->index, __func__,
+			      etmg_idx, ptiming->h_active, ptiming->v_active, ptiming->frame_rate);
+		}
+
+		lcd_config_timing_check(pdrv, ptiming);
+	}
+
+	extend_tmg_attr->timing = ptiming0;
+	pdrv->config.cus_ctrl.timing_cnt += extend_tmg_attr->group_cnt;
+	attr_conf->attr.extend_tmg_attr = extend_tmg_attr;
+
+	return 0;
+}
+
 int lcd_cus_ctrl_load_from_dts(struct aml_lcd_drv_s *pdrv, struct device_node *child)
 {
-	//todo
+	char cusnode[25];
+	unsigned int cut_attr_para[4];
+
+	unsigned char timing_ctrl_valid = 0, ctrl_cnt = 0, cus_idx, cus_type;
+	struct lcd_cus_ctrl_attr_config_s *cus_cfg = NULL, *cus_cfg_tmp = NULL;
+	int ret;
+
+	pdrv->config.cus_ctrl.ctrl_en = 0;
+	pdrv->config.cus_ctrl.ctrl_cnt = 0;
+	pdrv->config.cus_ctrl.timing_cnt = 0;
+	pdrv->config.cus_ctrl.active_timing_type = LCD_CUS_CTRL_TYPE_MAX;
+	pdrv->config.cus_ctrl.timing_switch_flag = 0;
+
+	for (cus_idx = 0; cus_idx < LCD_CUS_CTRL_ATTR_CNT_MAX; cus_idx++) {
+		sprintf(cusnode, "cus_ctrl_%hu_attr", cus_idx);
+		ret = of_property_read_variable_u32_array(child, cusnode, &cut_attr_para[0], 1, 4);
+		if (ret <= 0)
+			break;
+
+		cus_cfg_tmp = cus_cfg;
+		cus_cfg = krealloc(cus_cfg_tmp,
+			(ctrl_cnt + 1) * sizeof(struct lcd_cus_ctrl_attr_config_s), GFP_KERNEL);
+		if (!cus_cfg) {
+			LCDERR("[%d]: %s: realloc[%d] failed\n", pdrv->index, __func__, ctrl_cnt);
+			cus_cfg = cus_cfg_tmp;
+			break;
+		}
+		cus_cfg_tmp = cus_cfg + ctrl_cnt;
+
+		cus_cfg_tmp->attr_index = cus_idx;
+		cus_cfg_tmp->param_flag = 0;
+		cus_cfg_tmp->param_size = 1;
+		cus_cfg_tmp->priv_sel = 0;
+
+		cus_type = cut_attr_para[0];
+		cus_cfg_tmp->attr_type = cus_type;
+		switch (cus_type) {
+		case LCD_CUS_CTRL_TYPE_EXTEND_TMG:
+			pdrv->config.cus_ctrl.timing_switch_flag = cut_attr_para[1];
+			ret = lcd_cus_ctrl_parse_extend_tmg_dts(pdrv, cus_cfg_tmp, child);
+			if (ret >= 0) {
+				cus_cfg_tmp->param_flag = ret;
+				cus_cfg_tmp->attr_flag = pdrv->config.cus_ctrl.timing_switch_flag;
+				pdrv->config.cus_ctrl.timing_cnt += ret;
+				ctrl_cnt++;
+				pdrv->config.cus_ctrl.ctrl_en |= 1 << cus_idx;
+				timing_ctrl_valid++;
+			}
+			break;
+		case LCD_CUS_CTRL_TYPE_CLK_ADV:
+			ret = lcd_cus_ctrl_parse_clk_adv_dts(pdrv, cus_cfg_tmp, child);
+			if (ret >= 0) {
+				ctrl_cnt++;
+				pdrv->config.cus_ctrl.ctrl_en |= 1 << cus_idx;
+			}
+			break;
+		default:
+			LCDERR("[%d]: %s: invalid cus_type: %d\n", pdrv->index, __func__, cus_type);
+			break;
+		}
+	}
+	pdrv->config.cus_ctrl.attr_config = cus_cfg;
+	pdrv->config.cus_ctrl.ctrl_cnt = ctrl_cnt;
+	pdrv->config.cus_ctrl.timing_ctrl_valid = (bool)timing_ctrl_valid;
+
+	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
+		LCDPR("[%d]: %s: ctrl_en=0x%x, ctrl_cnt=%d, timing_switch_flag=%d\n",
+			pdrv->index, __func__, pdrv->config.cus_ctrl.ctrl_en, ctrl_cnt,
+			pdrv->config.cus_ctrl.timing_switch_flag);
+	}
 	return 0;
 }
 

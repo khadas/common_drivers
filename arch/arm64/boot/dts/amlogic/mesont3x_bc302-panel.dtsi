@@ -139,7 +139,7 @@
 			backlight_index = <0xff>;
 		};
 		vbyone_0{
-			model_name = "public_2region";
+			model_name = "2region";
 			interface = "vbyone"; /*lcd_interface(lvds, vbyone)*/
 			basic_setting = <
 				3840 2160 /*h_active, v_active*/
@@ -182,7 +182,7 @@
 			backlight_index = <0>;
 		};
 		vbyone_1{
-			model_name = "public_1region";
+			model_name = "1region";
 			interface = "vbyone"; /*lcd_interface(lvds, vbyone)*/
 			basic_setting = <
 				3840 2160 /*h_active, v_active*/
@@ -225,7 +225,7 @@
 			backlight_index = <0>;
 		};
 		vbyone_2{
-			model_name = "vbyone_1region_hdmi";
+			model_name = "1region_hdmi";
 			interface = "vbyone"; /*lcd_interface(lvds, vbyone)*/
 			basic_setting = <
 				3840 2160 /*h_active, v_active*/
@@ -269,7 +269,7 @@
 			backlight_index = <0xff>;
 		};
 		vbyone_3{
-			model_name = "vbyone_2region_hdmi";
+			model_name = "2region_hdmi";
 			interface = "vbyone"; /*lcd_interface(lvds, vbyone)*/
 			basic_setting = <
 				3840 2160 /*h_active, v_active*/

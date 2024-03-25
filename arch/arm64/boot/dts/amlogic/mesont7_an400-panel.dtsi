@@ -311,6 +311,51 @@
 			backlight_index = <3>;
 		};
 
+		vbyone_5{
+			model_name = "2region_var_res";
+			interface = "vbyone"; /*lcd_interface(lvds, vbyone)*/
+			basic_setting = <
+				3840 2160 /*h_active, v_active*/
+				4400 2250 /*h_period, v_period*/
+				10     /*lcd_bits */
+				160 90>; /*screen_widht, screen_height*/
+			lcd_timing = <
+				33 477 0  /*hs_width, hs_bp, hs_pol*/
+				6  65 0>; /*vs_width, vs_bp, vs_pol*/
+			clk_attr = <
+				0xff /*fr_adj_type: 0=clk, 1=htotal, 2=vtotal, 3=auto, 4=hdmi */
+				0 /*clk_ss: [0:7]:level, [8:11]:freq, [12:15]: mode*/
+				1 /*clk_auto_generate*/
+				594000000>; /*pixel_clk(unit in Hz)*/
+			vbyone_attr = <
+				8 /*lane_count*/
+				2 /*region_num*/
+				4 /*byte_mode*/
+				4>; /*color_fmt*/
+			vbyone_intr_enable = <
+				1 /*vbyone_intr_enable */
+				3>; /*vbyone_vsync_intr_enable*/
+			cus_ctrl_0_attr = <0x02 0x03>;
+			extend_tmg_0 = <2720 2560 60 40  0 1481 1440 5 20 0 8 344 193 241500000>;
+			extend_tmg_1 = <2200 1920 44 148 0 1125 1080 4  5 0 8 344 193 148500000>;
+			extend_tmg_2 = <1650 1280 40 220 0 750  720  5  5 0 8 344 193  74250000>;
+			extend_tmg_3 = <800  640  96 40  0 525  480  2 25 0 8 344 193  25175000>;
+
+			phy_attr=<0x8 0xf>; /* vswing_level, preem_level */
+			hw_filter=<0 0>;  /* filter_time, filter_cnt*/
+
+			/* power step: type, index, value, delay(ms) */
+			power_on_step = <
+				0 2 1 200  /*panel power on*/
+				2 0 0 10  /*signal enable*/
+				0xff 0 0 0>; /*ending*/
+			power_off_step = <
+				2 0 0 10 /*signal disable*/
+				0 2 0 100 /*panel power off*/
+				0xff 0 0 0>; /*ending*/
+			backlight_index = <0xff>;
+		};
+
 		edp_0{
 			model_name = "edp_1080p60";
 			interface = "edp"; /*lcd_interface(lvds, vbyone)*/
@@ -393,7 +438,60 @@
 				0xff 0 0 0>; /*ending*/
 			backlight_index = <0x0>;
 		};
+		edp_2{
+			model_name = "edp_ext_timing";
+			interface = "edp"; /*lcd_interface(lvds, vbyone)*/
+			basic_setting = <
+				1920 1080 /*h_active, v_active*/
+				2180 1282 /*h_period, v_period*/
+				8      /*lcd_bits*/
+				344 193>; /*screen_widht, screen_height*/
+			lcd_timing = <
+				32 40 0   /*hs_width, hs_bp, hs_pol*/
+				5  16  0>; /*vs_width, vs_bp, vs_pol*/
+			clk_attr = <0xff 0 1 168000000>; /*60Hz*/
 
+			/* cus_type(0x02=extend_tmg) timing_switch(0:off,1:full,2:limit,3:min) */
+			cus_ctrl_0_attr = <0x02 0x03>;
+
+			extend_tmg_0 = <2200 1920 32 40 0 1125 1080 5 20 0 8 344 193 330000000>;
+			/* H(min max) V(..) PCLK(..)*/
+			extend_tmg_0_range_setting = <2150 2250 1120 1130 133000000 335000000>;
+			extend_tmg_0_frame_rate = <48 120>;
+			/* custom framerate(0=PCLK,1=H,2=V) fix_val0 fix_val1 ..*/
+			/*extend_tmg_0_fixed = <2 1425 1600 1800 2200>;*/ /* fixed_vtotal */
+
+			// 2560x1440p60hz (qms(pclk):48~75hz)
+			extend_tmg_1 = <2720 2560 60 40 0 1481 1440 5 20 0 8 344 193 303000000>;
+			extend_tmg_1_range_setting = <2720 2720 1481 2481 303000000 303000000>;
+			extend_tmg_1_frame_rate = <48 75>;
+			/* extend_tmg_1_fixed = <0 222000000 312000000>;*/ /* fixed_pclk */
+
+			// 3840x2160p30hz/3840x2160p24hz/3840x2160p25hz
+			/* H(period active sync bp sync-pol) V(..) lcd_bits width height dft_pclk*/
+			extend_tmg_2 = <4080 3840 32 160 0  2222 2160 5 54 0  8 344 193 330000000>;
+			extend_tmg_2_frame_rate = <23 32>;
+			/*extend_tmg_2_fixed = <0x00 218000000 272000000>;*/
+
+			/* cus_type(0x03=clk_adv)*/
+			cus_ctrl_1_attr = <0x03>;
+			clk_advanced = <0x7 0x3>;
+
+			/* lane_count(0/1/2/4) link_rate(*0.27G) training_mode edid_en / / / / / */
+			edp_attr = <4 0xa 1 0 0 0 0 0 0>;
+			phy_attr = <0x9 0xa>; /*vswing_level, preem_level*/
+
+			/* power step: type, index, value, delay(ms) */
+			power_on_step = <
+				0 0 1 50  /*panel power on*/
+				2 0 0 0   /*signal enable*/
+				0xff 0 0 0>; /*ending*/
+			power_off_step = <
+				2 0 0 10  /*signal disable*/
+				0 0 0 0  /*panel power of*/
+				0xff 0 0 0>; /*ending*/
+			backlight_index = <0x0>;
+		};
 		mipi_0{
 			model_name = "TL070WSH27";
 			interface = "mipi";

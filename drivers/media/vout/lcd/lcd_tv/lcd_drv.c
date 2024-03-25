@@ -43,8 +43,7 @@ static int lcd_type_supported(struct lcd_config_s *pconf)
 		ret = 0;
 		break;
 	default:
-		LCDERR("invalid lcd type: %s(%d)\n",
-		       lcd_type_type_to_str(lcd_type), lcd_type);
+		LCDERR("invalid lcd type: %s(%d)\n", lcd_type_type_to_str(lcd_type), lcd_type);
 		break;
 	}
 	return ret;
@@ -102,9 +101,6 @@ void lcd_tv_driver_disable_post(struct aml_lcd_drv_s *pdrv)
 int lcd_tv_driver_init(struct aml_lcd_drv_s *pdrv)
 {
 	int ret;
-	unsigned long long local_time[3];
-
-	local_time[0] = sched_clock();
 
 	ret = lcd_type_supported(&pdrv->config);
 	if (ret)
@@ -144,17 +140,12 @@ int lcd_tv_driver_init(struct aml_lcd_drv_s *pdrv)
 
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
 		LCDPR("[%d]: %s finished\n", pdrv->index, __func__);
-	local_time[1] = sched_clock();
-	pdrv->config.cus_ctrl.driver_init_time = local_time[1] - local_time[0];
 	return 0;
 }
 
 void lcd_tv_driver_disable(struct aml_lcd_drv_s *pdrv)
 {
 	int ret;
-	unsigned long long local_time[3];
-
-	local_time[0] = sched_clock();
 
 	LCDPR("[%d]: disable driver\n", pdrv->index);
 	ret = lcd_type_supported(&pdrv->config);
@@ -193,21 +184,17 @@ void lcd_tv_driver_disable(struct aml_lcd_drv_s *pdrv)
 
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
 		LCDPR("[%d]: %s finished\n", pdrv->index, __func__);
-	local_time[1] = sched_clock();
-	pdrv->config.cus_ctrl.driver_disable_time = local_time[1] - local_time[0];
 }
 
 int lcd_tv_driver_change(struct aml_lcd_drv_s *pdrv)
 {
 	int ret;
-	unsigned long long local_time[3];
 
 	if (!pdrv->probe_done) {
 		LCDPR("[%d]: config not loaded, bypass %s", pdrv->index, __func__);
 		return 0;
 	}
 
-	local_time[0] = sched_clock();
 
 	LCDPR("[%d]: tv driver change(ver %s): %s\n",
 	      pdrv->index, LCD_DRV_VERSION,
@@ -235,7 +222,5 @@ int lcd_tv_driver_change(struct aml_lcd_drv_s *pdrv)
 
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
 		LCDPR("[%d]: %s finished\n", pdrv->index, __func__);
-	local_time[1] = sched_clock();
-	pdrv->config.cus_ctrl.driver_change_time = local_time[1] - local_time[0];
 	return 0;
 }

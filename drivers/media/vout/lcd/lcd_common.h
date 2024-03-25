@@ -63,7 +63,8 @@
 /* 20240307: update swpdf support*/
 /* 20240319: add tcon pre_proc_clk_en control*/
 /* 20240403: update lcd status, notifier event and bypass ufr switch when power off */
-#define LCD_DRV_VERSION    "20240403"
+/* 20240528: lcd tablet multi timing support */
+#define LCD_DRV_VERSION    "20240528"
 
 static inline unsigned char __p_to_u8(void *p)
 {
@@ -113,6 +114,9 @@ static inline unsigned long long div_around(unsigned long long num, unsigned int
 
 	return ret;
 }
+
+unsigned int str_add_vmode(char *buf, unsigned char newline,
+		unsigned short width, unsigned short height, unsigned short fr);
 
 /* lcd common */
 void lcd_dbg_mem_dump(void *addr, size_t size);

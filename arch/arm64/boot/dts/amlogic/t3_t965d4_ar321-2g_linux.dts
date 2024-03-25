@@ -6,9 +6,9 @@
 /dts-v1/;
 
 #include "mesont3.dtsi"
-#include "mesont3_drm.dtsi"
 #include "partition_normal_linux.dtsi"
 #include "mesont3_ar301_linux-panel.dtsi"
+#include "mesont3_drm.dtsi"
 #include "meson-ir-map-linux.dtsi"
 
 / {

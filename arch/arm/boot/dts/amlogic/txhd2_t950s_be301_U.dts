@@ -6,8 +6,8 @@
 /dts-v1/;
 
 #include "mesontxhd2.dtsi"
-#include "mesontxhd2_drm.dtsi"
 #include "meson_txhd2-panel.dtsi"
+#include "mesontxhd2_drm.dtsi"
 #include "partition_mbox_normal_dynamic.dtsi"
 #include "mesontxhd2_audio.dtsi"
 / {

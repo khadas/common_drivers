@@ -6,9 +6,9 @@
 /dts-v1/;
 
 #include "meson-tm2.dtsi"
-#include "mesontm2_drm.dtsi"
 #include "partition_normal_linux.dtsi"
 #include "mesontm2_ab301-panel.dtsi"
+#include "mesontm2_drm.dtsi"
 
 / {
 	compatible = "amlogic,tm2";

@@ -6,9 +6,9 @@
 /dts-v1/;
 
 #include "mesont3.dtsi"
-#include "mesont3_drm.dtsi"
 #include "partition_mbox_ab.dtsi"
 #include "mesont3_ar321-panel.dtsi"
+#include "mesont3_drm.dtsi"
 
 / {
 	amlogic-dt-id = "t3_t965d4_ar321-2g";

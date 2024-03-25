@@ -6,8 +6,8 @@
 /dts-v1/;
 
 #include "mesont5m.dtsi"
-#include "mesont5m_drm.dtsi"
 #include "mesont5m_ay301-panel.dtsi"
+#include "mesont5m_drm.dtsi"
 
 / {
 	amlogic-dt-id = "t5m_t963d4_ay301-3g";

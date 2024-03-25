@@ -7,8 +7,8 @@
 
 #include "mesont3x.dtsi"
 #include "partition_mbox_ab.dtsi"
-#include "mesont3x_drm.dtsi"
 #include "mesont3x_bc302_linux-panel.dtsi"
+#include "mesont3x_drm.dtsi"
 #include <dt-bindings/input/input.h>
 #include "meson-ir-map-linux.dtsi"
 

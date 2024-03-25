@@ -6,8 +6,8 @@
 /dts-v1/;
 
 #include "mesonsm1.dtsi"
-#include "mesonsm1_drm.dtsi"
 #include "mesonsm1_ac200-panel.dtsi"
+#include "mesonsm1_drm.dtsi"
 #include "partition_mbox_normal_dynamic.dtsi"
 
 / {

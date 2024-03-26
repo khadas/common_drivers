@@ -1,4 +1,4 @@
-From 9a44e6ff7c7a086a2b72609854f6d914b548c6e5 Mon Sep 17 00:00:00 2001
+From e564e4ab85a9dfae81928179cad02dbc052baf47 Mon Sep 17 00:00:00 2001
 From: Jianxiong Pan <jianxiong.pan@amlogic.com>
 Date: Tue, 20 Jun 2023 19:32:11 +0800
 Subject: [PATCH] mm: add memory optimization. [1/1]
@@ -17,18 +17,37 @@ local.
 Change-Id: I28b07555f88ce0c395edd384d7664217f6ddc329
 Signed-off-by: Jianxiong Pan <jianxiong.pan@amlogic.com>
 ---
+ drivers/base/core.c            |  2 ++
  drivers/of/base.c              |  5 ++++-
  include/linux/android_kabi.h   |  5 ++++-
  include/linux/android_vendor.h | 10 ++++++++++
  include/linux/printk.h         |  4 ++++
  include/linux/scs.h            |  4 ++++
  init/init_task.c               |  2 ++
- kernel/Makefile                |  2 ++
+ kernel/Makefile                | 10 ++++++++++
  kernel/fork.c                  |  2 ++
+ kernel/module.c                |  6 ++++++
+ kernel/printk/printk.c         |  5 +++++
  kernel/scs.c                   | 17 +++++++++++++++++
  mm/slab_common.c               |  4 ++++
- 10 files changed, 53 insertions(+), 2 deletions(-)
+ scripts/link-vmlinux.sh        |  4 +++-
+ 14 files changed, 77 insertions(+), 3 deletions(-)
 
+diff --git a/drivers/base/core.c b/drivers/base/core.c
+index 741d7c3bcba5..7d892ea6c9d8 100644
+--- a/drivers/base/core.c
++++ b/drivers/base/core.c
+@@ -3105,8 +3105,10 @@ static int device_add_class_symlinks(struct device *dev)
+ 
+ 	if (of_node) {
+ 		error = sysfs_create_link(&dev->kobj, of_node_kobj(of_node), "of_node");
++#ifndef CONFIG_AMLOGIC_MEMORY_OPT
+ 		if (error)
+ 			dev_warn(dev, "Error %d creating of_node link\n",error);
++#endif
+ 		/* An error here doesn't warrant bringing down the device */
+ 	}
+ 
 diff --git a/drivers/of/base.c b/drivers/of/base.c
 index 7c617b497356..14b584f6f32c 100644
 --- a/drivers/of/base.c
@@ -155,7 +174,7 @@ index 559eff84a620..dfe427268949 100644
  EXPORT_SYMBOL(init_task);
  
 diff --git a/kernel/Makefile b/kernel/Makefile
-index 2e0dac3da346..821d003cd236 100644
+index 2e0dac3da346..a0d5ebd7c843 100644
 --- a/kernel/Makefile
 +++ b/kernel/Makefile
 @@ -81,7 +81,9 @@ obj-$(CONFIG_UTS_NS) += utsname.o
@@ -168,6 +187,23 @@ index 2e0dac3da346..821d003cd236 100644
  obj-$(CONFIG_SMP) += stop_machine.o
  obj-$(CONFIG_KPROBES_SANITY_TEST) += test_kprobes.o
  obj-$(CONFIG_AUDIT) += audit.o auditfilter.o
+@@ -146,8 +148,16 @@ $(obj)/config_data.gz: $(obj)/config_data FORCE
+ 
+ filechk_cat = cat $<
+ 
++ifdef CONFIG_AMLOGIC_MEMORY_OPT
++$(obj)/cfg_less.txt: $(KCONFIG_CONFIG) FORCE
++	$(shell sed '/#/d' $(KCONFIG_CONFIG) > $(src)/cfg_less.txt)
++
++$(obj)/config_data: $(obj)/cfg_less.txt FORCE
++	$(call filechk,cat)
++else
+ $(obj)/config_data: $(KCONFIG_CONFIG) FORCE
+ 	$(call filechk,cat)
++endif
+ 
+ $(obj)/kheaders.o: $(obj)/kheaders_data.tar.xz
+ 
 diff --git a/kernel/fork.c b/kernel/fork.c
 index d8b26077824c..993e24f06f1d 100644
 --- a/kernel/fork.c
@@ -184,6 +220,50 @@ index d8b26077824c..993e24f06f1d 100644
  #endif
  	trace_android_vh_dup_task_struct(tsk, orig);
  	return tsk;
+diff --git a/kernel/module.c b/kernel/module.c
+index f99e733f451a..2995dd5e4bd9 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -2743,15 +2743,21 @@ static bool is_core_symbol(const Elf_Sym *src, const Elf_Shdr *sechdrs,
+ 	    || !src->st_name)
+ 		return false;
+ 
++#ifndef CONFIG_AMLOGIC_KALLSYM_OPT
+ #ifdef CONFIG_KALLSYMS_ALL
+ 	if (src->st_shndx == pcpundx)
+ 		return true;
++#endif
+ #endif
+ 
+ 	sec = sechdrs + src->st_shndx;
+ 	if (!(sec->sh_flags & SHF_ALLOC)
++#ifdef CONFIG_AMLOGIC_KALLSYM_OPT
++	    || !(sec->sh_flags & SHF_EXECINSTR)
++#else
+ #ifndef CONFIG_KALLSYMS_ALL
+ 	    || !(sec->sh_flags & SHF_EXECINSTR)
++#endif
+ #endif
+ 	    || (sec->sh_entsize & INIT_OFFSET_MASK))
+ 		return false;
+diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+index 41b7b07afcf5..443561532c76 100644
+--- a/kernel/printk/printk.c
++++ b/kernel/printk/printk.c
+@@ -421,8 +421,13 @@ static u32 log_buf_len = __LOG_BUF_LEN;
+ #if CONFIG_LOG_BUF_SHIFT <= PRB_AVGBITS
+ #error CONFIG_LOG_BUF_SHIFT value too small.
+ #endif
++#ifdef CONFIG_AMLOGIC_PRINTK_OPT
++_DEFINE_PRINTKRB(printk_rb_static, CONFIG_LOG_BUF_SHIFT - PRB_AVGBITS - 2,
++		 PRB_AVGBITS, &__log_buf[0]);
++#else
+ _DEFINE_PRINTKRB(printk_rb_static, CONFIG_LOG_BUF_SHIFT - PRB_AVGBITS,
+ 		 PRB_AVGBITS, &__log_buf[0]);
++#endif
+ 
+ static struct printk_ringbuffer printk_rb_dynamic;
+ 
 diff --git a/kernel/scs.c b/kernel/scs.c
 index d7809affe740..aa4135c3c43e 100644
 --- a/kernel/scs.c
@@ -262,6 +342,21 @@ index 9fad291c443c..2d727cb4c5c3 100644
  
  static int __init setup_slab_nomerge(char *str)
  {
+diff --git a/scripts/link-vmlinux.sh b/scripts/link-vmlinux.sh
+index 57ef6accbb40..6f2ba76b3612 100755
+--- a/scripts/link-vmlinux.sh
++++ b/scripts/link-vmlinux.sh
+@@ -245,7 +245,9 @@ kallsyms()
+ {
+ 	local kallsymopt;
+ 
+-	if [ -n "${CONFIG_KALLSYMS_ALL}" ]; then
++	# we don't need all symbols, this can help to save about 1MB memory
++	#if [ -n "${CONFIG_KALLSYMS_ALL}" ]; then
++	if [[ -n "${CONFIG_KALLSYMS_ALL}" && ! -n "${CONFIG_AMLOGIC_KALLSYM_OPT}" ]]; then
+ 		kallsymopt="${kallsymopt} --all-symbols"
+ 	fi
+ 
 -- 
 2.42.0
 

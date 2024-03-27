@@ -26,6 +26,7 @@
 #include <linux/dma-mapping.h>
 #include <linux/highmem.h>
 #include <linux/amlogic/clk_measure.h>
+#include <linux/amlogic/media/video_sink/video.h>
 
 /* Local Include */
 #include "hdmi_rx_repeater.h"
@@ -5962,5 +5963,39 @@ void rx_switch_to_analog_clk(u8 port)
 void rx_clr_f_det(bool en, u8 port)
 {
 	hdmirx_wr_bits_cor(VP_FDET_CLEAR_VID_IVCRX, _BIT(0), en, port);
+}
+
+void rx_mute_t3x(bool en, u8 port_type)
+{
+	if (rx_info.chip_id != CHIP_ID_T3X)
+		return;
+	if (en) {
+		if (port_type == TVIN_PORT_MAIN) {
+			rx_mute_dual_video_rdma(E_RX_MUTE, E_RX_NA);
+			rx_mute_dual_video_vcbus(E_RX_MUTE, E_RX_NA);
+			rx_pr("main port mute\n");
+		} else if (port_type == TVIN_PORT_SUB) {
+			rx_mute_dual_video_rdma(E_RX_NA, E_RX_MUTE);
+			rx_mute_dual_video_vcbus(E_RX_NA, E_RX_MUTE);
+			rx_pr("sub port mute\n");
+		} else {
+			rx_mute_dual_video_rdma(E_RX_NA, E_RX_NA);
+			rx_mute_dual_video_vcbus(E_RX_NA, E_RX_NA);
+			rx_pr("Na\n");
+		}
+	} else {
+		if (port_type == TVIN_PORT_MAIN) {
+			rx_mute_dual_video_rdma(E_RX_UNMUTE, E_RX_NA);
+			rx_mute_dual_video_vcbus(E_RX_UNMUTE, E_RX_NA);
+			rx_pr("main port unmute\n");
+		} else if (port_type == TVIN_PORT_SUB) {
+			rx_mute_dual_video_rdma(E_RX_NA, E_RX_UNMUTE);
+			rx_mute_dual_video_vcbus(E_RX_NA, E_RX_UNMUTE);
+			rx_pr("sub port unmute\n");
+		} else {
+			rx_mute_dual_video_rdma(E_RX_NA, E_RX_NA);
+			rx_mute_dual_video_vcbus(E_RX_NA, E_RX_NA);
+		}
+	}
 }
 

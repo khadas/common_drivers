@@ -7225,6 +7225,17 @@ void vdin_source_bitdepth_reinit(struct vdin_dev_s *devp)
 	}
 }
 
+void vdin_set_hdmi_channel_id(struct vdin_dev_s *devp, struct vframe_s *vf)
+{
+	if (devp->index == 0) {
+		vf->vdin_channel_id = 0;
+	} else if (devp->index == 1) {
+		vf->vdin_channel_id = 1;
+	} else {
+		;
+	}
+}
+
 void vdin_clk_on_off(struct vdin_dev_s *devp, bool on_off)
 {
 	unsigned int offset = devp->addr_offset;

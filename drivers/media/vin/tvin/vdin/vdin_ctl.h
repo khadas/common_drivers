@@ -290,6 +290,8 @@ void vdin_set_source_mode(struct vdin_dev_s *devp, struct vframe_s *vf);
 void vdin_set_source_bitdepth(struct vdin_dev_s *devp,
 			      struct vframe_s *vf);
 void vdin_set_lossy_param(struct vdin_dev_s *devp, struct vframe_s *vf);
+void vdin_set_hdmi_channel_id(struct vdin_dev_s *devp, struct vframe_s *vf);
+
 void vdin_set_pixel_aspect_ratio(struct vdin_dev_s *devp,
 				 struct vframe_s *vf);
 void vdin_set_display_ratio(struct vdin_dev_s *devp,

@@ -610,6 +610,12 @@ struct vf_lossycomp_param_s {
 	u32 ofset_burst4_en;
 };
 
+enum vdin_channel_id_e {
+	CHANNEL_VDIN0 = 0,
+	CHANNEL_VDIN1,
+	CHANNEL_VDIN_MAX,
+};
+
 struct vframe_s {
 	u32 index;
 	u32 index_disp;
@@ -826,6 +832,8 @@ struct vframe_s {
 	struct vframe_s *uvm_vf;
 	struct vf_lossycomp_param_s vf_lossycomp_param;
 	struct src_crop_s src_crop;
+	/*vdin.0:0  vdin.2:1*/
+	enum vdin_channel_id_e vdin_channel_id;
 } /*vframe_t */;
 
 #define VC_FLAG_AI_SR		0x1

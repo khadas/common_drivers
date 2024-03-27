@@ -1005,6 +1005,8 @@ static void vdin_vf_init(struct vdin_dev_s *devp)
 		    ((devp->vdin_function_sel & VDIN_SET_DISPLAY_RATIO) &&
 		     (IS_TVAFE_SRC(devp->parm.port) || IS_HDMI_SRC(devp->parm.port))))
 			vdin_set_display_ratio(devp, vf);
+		if (IS_HDMI_SRC(devp->parm.port))
+			vdin_set_hdmi_channel_id(devp, vf);
 		vdin_set_source_bitdepth(devp, vf);
 		vdin_set_lossy_param(devp, vf);
 		/* init slave vframe */

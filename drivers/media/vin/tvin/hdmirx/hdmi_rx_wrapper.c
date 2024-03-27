@@ -594,11 +594,11 @@ EXPORT_SYMBOL(rx_update_edid_callback);
 
 static bool video_mute_enabled(u8 port)
 {
-	if (rx[port].state != FSM_SIG_READY || port == rx_info.sub_port)
+	if (rx[port].state != FSM_SIG_READY)
 		return false;
 
-	if (!rx_info.main_port_open)
-		return false;
+	//if (!rx_info.main_port_open)
+		//return false;
 	/* for debug with flicker issues, especially
 	 * unplug or switch timing under game mode
 	 */
@@ -1747,10 +1747,7 @@ irqreturn_t irq0_handler(int irq, void *params)
 	if (rx[port].irq_err_cnt >= irq_err_max) {
 		rx_pr("DE ERR\n");
 		if (video_mute_enabled(port)) {
-			rx_mute_vpp(rx_get_port_type(port));
-			rx[port].vpp_mute = true;
-			set_video_mute(HDMI_RX_MUTE_SET, true);
-			rx_pr("vpp mute\n");
+			hdmirx_mute_vpp(true, port);
 		}
 		rx[port].irq_err_cnt = 0;
 		rx_irq_en(0, port);
@@ -1798,12 +1795,7 @@ reisr:hdmirx_top_intr_stat = hdmirx_rd_top(TOP_INTR_STAT, port);
 		if (need_check) {
 			need_check = false;
 			if (video_mute_enabled(port)) {
-				rx[port].vpp_mute = true;
-				rx_mute_vpp(rx_get_port_type(port));
-				set_video_mute(HDMI_RX_MUTE_SET, true);
-				rx[port].var.mute_cnt = 0;
-				if (log_level & 0x100)
-					rx_pr("vpp mute\n");
+				hdmirx_mute_vpp(true, port);
 			}
 			skip_frame(skip_frame_cnt, port, "irq0 sqofclk_fall");
 			if (log_level & 0x100)
@@ -1943,9 +1935,7 @@ irqreturn_t irq1_handler(int irq, void *params)
 	if (rx[E_PORT1].irq_err_cnt >= irq_err_max) {
 		rx_pr("DE ERR\n");
 		if (video_mute_enabled(E_PORT1)) {
-			rx_mute_vpp(rx_get_port_type(E_PORT1));
-			set_video_mute(HDMI_RX_MUTE_SET, true);
-			rx_pr("vpp mute\n");
+			hdmirx_mute_vpp(true, E_PORT1);
 		}
 		rx[E_PORT1].irq_err_cnt = 0;
 		rx_irq_en(0, E_PORT1);
@@ -1968,16 +1958,12 @@ irqreturn_t irq1_handler(int irq, void *params)
 	/* top interrupt handler */
 	if (hdmirx_top_intr_stat & (1 << 20)) {
 		if (video_mute_enabled(E_PORT1)) {
-			rx[E_PORT1].vpp_mute = true;
-			set_video_mute(HDMI_RX_MUTE_SET, true);
-				rx[E_PORT1].var.mute_cnt = 0;
-				if (log_level & 0x100)
-					rx_pr("vpp mute\n");
-			}
-			skip_frame(skip_frame_cnt, E_PORT1, "irq1 sqofclk_fall");
-			if (log_level & 0x100)
-				rx_pr("[isr] sqofclk_fall\n");
+			hdmirx_mute_vpp(true, E_PORT1);
 		}
+		skip_frame(skip_frame_cnt, E_PORT1, "irq1 sqofclk_fall");
+		if (log_level & 0x100)
+			rx_pr("[isr] sqofclk_fall\n");
+	}
 	if (hdmirx_top_intr_stat & (1 << 28)) {
 		if (log_level & 0x100)
 			rx_pr("[isr] sqofclk_rise\n");
@@ -2078,9 +2064,7 @@ irqreturn_t irq2_handler(int irq, void *params)
 	if (rx[E_PORT2].irq_err_cnt >= irq_err_max) {
 		rx_pr("IRQ ERR\n");
 		if (video_mute_enabled(E_PORT2)) {
-			rx_mute_vpp(rx_get_port_type(E_PORT2));
-			set_video_mute(HDMI_RX_MUTE_SET, true);
-			rx_pr("vpp mute\n");
+			hdmirx_mute_vpp(true, E_PORT2);
 		}
 		rx[E_PORT2].irq_err_cnt = 0;
 		rx_irq_en(0, E_PORT2);
@@ -2098,9 +2082,7 @@ irqreturn_t irq2_handler(int irq, void *params)
 	if (rx[E_PORT2].de_err_cnt >= de_err_max) {
 		rx_pr("DE ERR\n");
 		if (video_mute_enabled(E_PORT2)) {
-			rx_mute_vpp(rx_get_port_type(E_PORT2));
-			set_video_mute(HDMI_RX_MUTE_SET, true);
-			rx_pr("vpp mute\n");
+			hdmirx_mute_vpp(true, E_PORT2);
 		}
 		rx[E_PORT2].de_err_cnt = 0;
 		rx_irq_en(0, E_PORT2);
@@ -2121,11 +2103,7 @@ irqreturn_t irq2_handler(int irq, void *params)
 	if (rx[E_PORT2].var.frl_rate == 0) {
 		if (hdmirx_top_intr_stat & (1 << 20)) {
 			if (video_mute_enabled(E_PORT2)) {
-				rx[E_PORT2].vpp_mute = true;
-				set_video_mute(HDMI_RX_MUTE_SET, true);
-				rx[E_PORT2].var.mute_cnt = 0;
-				if (log_level & 0x100)
-					rx_pr("vpp mute\n");
+				hdmirx_mute_vpp(true, E_PORT2);
 			}
 			skip_frame(skip_frame_cnt, E_PORT2, "irq2 sqofclk_fall");
 			if (log_level & 0x100)
@@ -2135,12 +2113,7 @@ irqreturn_t irq2_handler(int irq, void *params)
 	if (rx[E_PORT2].var.frl_rate) {
 		if (hdmirx_top_intr_stat & (1 << 29)) {
 			if (video_mute_enabled(E_PORT2)) {
-				rx[E_PORT2].vpp_mute = true;
-				rx_mute_vpp(rx_get_port_type(E_PORT2));
-				set_video_mute(HDMI_RX_MUTE_SET, true);
-				rx[E_PORT2].var.mute_cnt = 0;
-				if (log_level & 0x100)
-					rx_pr("vpp mute\n");
+				hdmirx_mute_vpp(true, E_PORT2);
 			}
 			skip_frame(skip_frame_cnt, E_PORT2, "irq2 valid_m_fall");
 			if (log_level & 0x100)
@@ -2266,9 +2239,7 @@ irqreturn_t irq3_handler(int irq, void *params)
 	if (rx[E_PORT3].irq_err_cnt >= irq_err_max) {
 		rx_pr("IRQ ERR\n");
 		if (video_mute_enabled(E_PORT3)) {
-			rx_mute_vpp(rx_get_port_type(E_PORT3));
-			set_video_mute(HDMI_RX_MUTE_SET, true);
-			rx_pr("vpp mute\n");
+			hdmirx_mute_vpp(true, E_PORT3);
 		}
 		rx[E_PORT3].irq_err_cnt = 0;
 		rx_irq_en(0, E_PORT3);
@@ -2286,9 +2257,7 @@ irqreturn_t irq3_handler(int irq, void *params)
 	if (rx[E_PORT3].de_err_cnt >= de_err_max) {
 		rx_pr("DE ERR\n");
 		if (video_mute_enabled(E_PORT3)) {
-			rx_mute_vpp(rx_get_port_type(E_PORT3));
-			set_video_mute(HDMI_RX_MUTE_SET, true);
-			rx_pr("vpp mute\n");
+			hdmirx_mute_vpp(true, E_PORT3);
 		}
 		rx[E_PORT3].de_err_cnt = 0;
 		rx_irq_en(0, E_PORT3);
@@ -2309,11 +2278,7 @@ irqreturn_t irq3_handler(int irq, void *params)
 	if (rx[E_PORT3].var.frl_rate == 0) {
 		if (hdmirx_top_intr_stat & (1 << 20)) {
 			if (video_mute_enabled(E_PORT3)) {
-				rx[E_PORT3].vpp_mute = true;
-				set_video_mute(HDMI_RX_MUTE_SET, true);
-				rx[E_PORT3].var.mute_cnt = 0;
-				if (log_level & 0x100)
-					rx_pr("vpp mute\n");
+				hdmirx_mute_vpp(true, E_PORT3);
 			}
 			skip_frame(skip_frame_cnt, E_PORT3, "irq3 sqofclk_fall");
 			if (log_level & 0x100)
@@ -2323,12 +2288,7 @@ irqreturn_t irq3_handler(int irq, void *params)
 	if (rx[E_PORT3].var.frl_rate) {
 		if (hdmirx_top_intr_stat & (1 << 29)) {
 			if (video_mute_enabled(E_PORT3)) {
-				rx[E_PORT3].vpp_mute = true;
-				rx_mute_vpp(rx_get_port_type(E_PORT3));
-				set_video_mute(HDMI_RX_MUTE_SET, true);
-				rx[E_PORT3].var.mute_cnt = 0;
-				if (log_level & 0x100)
-					rx_pr("vpp mute\n");
+				hdmirx_mute_vpp(true, E_PORT3);
 			}
 			skip_frame(skip_frame_cnt, E_PORT3, "irq3 valid_m_fail");
 			if (log_level & 0x100)
@@ -4615,6 +4575,29 @@ void skip_frame(unsigned int cnt, u8 port, char *str)
 	tvin_notify_vdin_skip_frame(skip_frame_cnt, rx_get_port_type(port));
 }
 
+void hdmirx_mute_vpp(bool en, u8 port)
+{
+	if (en) {
+		if (rx_info.chip_id == CHIP_ID_T3X) {
+			rx[port].vpp_mute = true;
+			rx_mute_t3x(true, rx_get_port_type(port));
+			rx[port].var.mute_cnt = 0;
+		} else {
+			rx_mute_vpp(rx_get_port_type(port));
+			rx[port].vpp_mute = true;
+			set_video_mute(HDMI_RX_MUTE_SET, true);
+			rx[port].var.mute_cnt = 0;
+		}
+		rx_pr("vpp mute\n");
+	} else {
+		if (rx_info.chip_id == CHIP_ID_T3X)
+			rx_mute_t3x(false, rx_get_port_type(port));
+		else
+			set_video_mute(HDMI_RX_MUTE_SET, false);
+		rx_pr("vpp unmute\n");
+	}
+}
+
 u8 get_frame_interval_cnt(u8 cnt, u8 port)
 {
 	u8 ret = 2 * cnt;
@@ -5366,12 +5349,7 @@ void rx_main_state_machine(void)
 		/* video info change */
 		if (!is_tmds_valid(port)) {
 			if (video_mute_enabled(port)) {
-				set_video_mute(HDMI_RX_MUTE_SET, true);
-				rx_mute_vpp(rx_get_port_type(port));
-				rx[port].vpp_mute = true;
-				rx[port].var.mute_cnt = 0;
-				if (log_level & 0x100)
-					rx_pr("vpp mute\n");
+				hdmirx_mute_vpp(true, port);
 			}
 			skip_frame(skip_frame_cnt, port, "fsm tmds skip");
 			rx[port].unready_timestamp = rx_info.timestamp;
@@ -5818,12 +5796,7 @@ void rx_port0_main_state_machine(void)
 		/* video info change */
 		if (!is_tmds_valid(port)) {
 			if (video_mute_enabled(port)) {
-				set_video_mute(HDMI_RX_MUTE_SET, true);
-				rx_mute_vpp(rx_get_port_type(port));
-				rx[port].vpp_mute = true;
-				rx[port].var.mute_cnt = 0;
-				if (log_level & 0x100)
-					rx_pr("vpp mute\n");
+				hdmirx_mute_vpp(true, port);
 			}
 			skip_frame(skip_frame_cnt, port, "fsm0 tmds skip");
 			rx[port].unready_timestamp = rx_info.timestamp;
@@ -5929,14 +5902,13 @@ void rx_port0_main_state_machine(void)
 					break;
 				}
 				/* clear vpp mute after signal stable */
-				if (get_video_mute_val(HDMI_RX_MUTE_SET) &&
-					port != rx_info.sub_port) {
+				if (rx[port].vpp_mute) {
 					if (rx[port].var.mute_cnt++ <
 						get_frame_interval_cnt(1, port))
 						break;
 					rx[port].var.mute_cnt = 0;
 					rx[port].vpp_mute = false;
-					set_video_mute(HDMI_RX_MUTE_SET, false);
+					hdmirx_mute_vpp(false, port);
 				}
 			}
 		}
@@ -6225,12 +6197,7 @@ void rx_port1_main_state_machine(void)
 		/* video info change */
 		if (!is_tmds_valid(port)) {
 			if (video_mute_enabled(port)) {
-				set_video_mute(HDMI_RX_MUTE_SET, true);
-				rx_mute_vpp(rx_get_port_type(port));
-				rx[port].vpp_mute = true;
-				rx[port].var.mute_cnt = 0;
-				if (log_level & 0x100)
-					rx_pr("vpp mute\n");
+				hdmirx_mute_vpp(true, port);
 			}
 			skip_frame(skip_frame_cnt, port, "fsm1 tmds skip");
 			rx[port].unready_timestamp = rx_info.timestamp;
@@ -6336,14 +6303,13 @@ void rx_port1_main_state_machine(void)
 					break;
 				}
 				/* clear vpp mute after signal stable */
-				if (get_video_mute_val(HDMI_RX_MUTE_SET) &&
-					port != rx_info.sub_port) {
+				if (rx[port].vpp_mute) {
 					if (rx[port].var.mute_cnt++ <
 						get_frame_interval_cnt(1, port))
 						break;
 					rx[port].var.mute_cnt = 0;
 					rx[port].vpp_mute = false;
-					set_video_mute(HDMI_RX_MUTE_SET, false);
+					hdmirx_mute_vpp(false, port);
 				}
 			}
 		}
@@ -6771,12 +6737,7 @@ void rx_port2_main_state_machine(void)
 		if (!is_tmds_valid(port)) {
 			rx[port].clk.t_clk_pre = rx[port].clk.tclk;
 			if (video_mute_enabled(port)) {
-				set_video_mute(HDMI_RX_MUTE_SET, true);
-				rx_mute_vpp(rx_get_port_type(port));
-				rx[port].vpp_mute = true;
-				rx[port].var.mute_cnt = 0;
-				if (log_level & 0x100)
-					rx_pr("vpp mute\n");
+				hdmirx_mute_vpp(true, port);
 			}
 			skip_frame(skip_frame_cnt, port, "fsm2 tmds skip");
 			rx[port].unready_timestamp = rx_info.timestamp;
@@ -6885,14 +6846,13 @@ void rx_port2_main_state_machine(void)
 					break;
 				}
 				/* clear vpp mute after signal stable */
-				if (get_video_mute_val(HDMI_RX_MUTE_SET) &&
-					port != rx_info.sub_port) {
+				if (rx[port].vpp_mute) {
 					if (rx[port].var.mute_cnt++ <
 						get_frame_interval_cnt(1, port))
 						break;
 					rx[port].var.mute_cnt = 0;
 					rx[port].vpp_mute = false;
-					set_video_mute(HDMI_RX_MUTE_SET, false);
+					hdmirx_mute_vpp(false, port);
 				}
 			}
 		}
@@ -7351,12 +7311,7 @@ void rx_port3_main_state_machine(void)
 		}
 		if (!is_tmds_valid(port)) {
 			if (video_mute_enabled(port)) {
-				set_video_mute(HDMI_RX_MUTE_SET, true);
-				rx_mute_vpp(rx_get_port_type(port));
-				rx[port].vpp_mute = true;
-				rx[port].var.mute_cnt = 0;
-				if (log_level & 0x100)
-					rx_pr("vpp mute\n");
+				hdmirx_mute_vpp(true, port);
 			}
 			skip_frame(skip_frame_cnt, port, "fsm3 tmds skip");
 			rx[port].unready_timestamp = rx_info.timestamp;
@@ -7464,15 +7419,13 @@ void rx_port3_main_state_machine(void)
 					rx[port].vpp_mute_cnt--;
 					break;
 				}
-				/* clear vpp mute after signal stable */
-				if (get_video_mute_val(HDMI_RX_MUTE_SET) &&
-					port != rx_info.sub_port) {
+				if (rx[port].vpp_mute) {
 					if (rx[port].var.mute_cnt++ <
 						get_frame_interval_cnt(1, port))
 						break;
 					rx[port].var.mute_cnt = 0;
 					rx[port].vpp_mute = false;
-					set_video_mute(HDMI_RX_MUTE_SET, false);
+					hdmirx_mute_vpp(false, port);
 				}
 			}
 		}
@@ -8196,6 +8149,11 @@ int hdmirx_debug(const char *buf, int size)
 			rx[port].dsc_flag = false;
 			rx_switch_to_self_hsync(port, false);
 		}
+	} else if (strncmp(tmpbuf, "mute_set", 8) == 0) {
+		if (tmpbuf[8] == '0')
+			hdmirx_mute_vpp(false, port);
+		else
+			hdmirx_mute_vpp(true, port);
 	}
 	return 0;
 }

@@ -281,6 +281,8 @@ void rx_switch_to_self_hsync(u8 port, bool en);
 bool rx_is_switch_to_analog_clk(u8 port);
 void rx_switch_to_analog_clk(u8 port);
 void rx_clr_f_det(bool en, u8 port);
+void rx_mute_t3x(bool en, u8 port_type);
+
 bool rx_get_clkready_sts(u8 port);
 bool rx_get_valid_m_sts(u8 port);
 

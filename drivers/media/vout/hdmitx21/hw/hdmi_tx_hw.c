@@ -34,6 +34,7 @@
 #include "../hdmi_tx_ext.h"
 #include <linux/amlogic/clk_measure.h>
 #include "../hdmi_tx.h"
+#include "../../hdmitx_common/hdmitx_compliance.h"
 
 #define to_hdmitx21_dev(x)     container_of(x, struct hdmitx_dev, tx_hw.base)
 
@@ -3496,6 +3497,34 @@ static void hdmi_phy_wakeup(struct hdmitx_dev *hdev)
 	hdmitx_set_phy(hdev);
 }
 
+static int hdmi_move_hdr_pkt(bool flag)
+{
+	struct hdmitx_dev *hdev = get_hdmitx21_device();
+	enum hdmi_vic vic = hdev->tx_comm.fmt_para.vic;
+	const struct hdmi_timing *timing;
+	u8 move_val = 0;
+
+	/* Only S7 and later SOCs have this function */
+	if (hdev->tx_hw.chip_data->chip_type == MESON_CPU_ID_S7 ||
+			hdev->tx_hw.chip_data->chip_type == MESON_CPU_ID_S7D) {
+		if (flag) {
+			timing = hdmitx_mode_vic_to_hdmi_timing(vic);
+			if (timing) {
+				move_val = timing->v_front + timing->v_sync + 1;
+				HDMITX_INFO("vic = %d, move_val = %d\n", vic, move_val);
+				/* Move HDR PKT behind VSYNC */
+				pkt_send_position_change(0x40, move_val);
+			}
+		} else {
+			/* Restore HDR PKT to default position */
+			hdmitx21_wr_reg(PKT_AUTO_0_IVCTX,
+					hdmitx21_rd_reg(PKT_AUTO_0_IVCTX) | 0x40);
+			hdmitx21_wr_reg(PKT_LOC_GEN_IVCTX, 0);
+		}
+	}
+	return 0;
+}
+
 #define COLORDEPTH_24B            4
 #define HDMI_COLOR_DEPTH_30B            5
 #define HDMI_COLOR_DEPTH_36B            6
@@ -3711,6 +3740,13 @@ static void config_hdmi21_tx(struct hdmitx_dev *hdev)
 		hdmitx21_set_reg_bits(TPI_SC_IVCTX, 1, 0, 1);
 	else
 		hdmitx21_set_reg_bits(TPI_SC_IVCTX, 0, 0, 1);
+	/* On Huawei TVs, HDR will cause a flickering screen,
+	 * and HDR PKT needs to be moved behind VSYNC on S7 or S7D
+	 */
+	if (hdmitx_find_hdr_pkt_delay_to_vsync(hdev->tx_comm.EDID_buf))
+		hdmi_move_hdr_pkt(true);
+	else
+		hdmi_move_hdr_pkt(false);
 } /* config_hdmi21_tx */
 
 static void hdmitx_csc_config(u8 input_color_format,

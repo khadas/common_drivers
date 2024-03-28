@@ -36,6 +36,12 @@ static struct edid_venddat_t vendor_phy_delay[] = {
 	/* Add new vendor data here */
 };
 
+static struct edid_venddat_t hdr_delay_id[] = {
+	/* HUAWEI */
+	{ {0x22, 0xf6, 0x30, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0x1d} }
+	/* Add new vendor data here */
+};
+
 /* HDMIPLL_CTRL3/4 under 4k50/60hz 6G mode should use the setting
  * witch is used under 4k59.94hz, specailly for SAMSUNG UA55KS7300JXXZ
  * flash screen/no signal issue on SM1/SC2
@@ -94,6 +100,23 @@ bool hdmitx_find_vendor_phy_delay(unsigned char *edid_buf)
 	for (i = 0; i < ARRAY_SIZE(vendor_phy_delay); i++) {
 		if (memcmp(&edid_buf[8], vendor_phy_delay[i].data,
 		    sizeof(vendor_phy_delay[i].data)) == 0)
+			return true;
+	}
+	return false;
+}
+
+/* On Huawei TVs, HDR will cause a flickering screen,
+ * and HDR PKT needs to be moved behind VSYNC on S7 or later SOCs
+ */
+bool hdmitx_find_hdr_pkt_delay_to_vsync(unsigned char *edid_buf)
+{
+	int i;
+
+	if (!edid_buf)
+		return false;
+	for (i = 0; i < ARRAY_SIZE(hdr_delay_id); i++) {
+		if (memcmp(&edid_buf[8], hdr_delay_id[i].data,
+			sizeof(hdr_delay_id[i].data)) == 0)
 			return true;
 	}
 	return false;

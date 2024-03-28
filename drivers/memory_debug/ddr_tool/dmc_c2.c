@@ -24,6 +24,7 @@
 #include <linux/kallsyms.h>
 #include <linux/of_irq.h>
 #include <linux/interrupt.h>
+#include <linux/sched/clock.h>
 #include <linux/amlogic/page_trace.h>
 #include "ddr_port.h"
 #include "dmc_monitor.h"
@@ -43,39 +44,98 @@
 #define DMC_PROT_VIO_3		((0x0099  << 2))
 
 #define DMC_PROT_IRQ_CTRL	((0x009a  << 2))
-#define DMC_IRQ_STS		((0x009b  << 2))
+#define DMC_IRQ_STS		((0x0030  << 2))
 
-#define DMC_IRQ_STS_C2		((0x0090  << 2))
-
-#define DMC_SEC_STATUS		((0x009a  << 2))
-#define DMC_VIO_ADDR0		((0x009b  << 2))
-#define DMC_VIO_ADDR1		((0x009c  << 2))
-#define DMC_VIO_ADDR2		((0x009d  << 2))
-#define DMC_VIO_ADDR3		((0x009e  << 2))
+#define DMC_SEC_STATUS		((0x00fa  << 2))
+#define DMC_VIO_ADDR0		((0x00fb  << 2))
+#define DMC_VIO_ADDR1		((0x00fc  << 2))
+#define DMC_VIO_ADDR2		((0x00fd  << 2))
+#define DMC_VIO_ADDR3		((0x00fe  << 2))
 
 static size_t c2_dmc_dump_reg(char *buf)
 {
 	size_t sz = 0, i;
 	unsigned long val;
+	void *io = dmc_mon->mon_comm[0].io_mem;
 
 	for (i = 0; i < 2; i++) {
-		val = dmc_prot_rw(dmc_mon->io_mem1, DMC_PROT0_RANGE + (i * 12), 0, DMC_READ);
+		val = dmc_prot_rw(io, DMC_PROT0_RANGE + (i * 12), 0, DMC_READ);
 		sz += sprintf(buf + sz, "DMC_PROT%zu_RANGE:%lx\n", i, val);
-		val = dmc_prot_rw(dmc_mon->io_mem1, DMC_PROT0_CTRL + (i * 12), 0, DMC_READ);
+		val = dmc_prot_rw(io, DMC_PROT0_CTRL + (i * 12), 0, DMC_READ);
 		sz += sprintf(buf + sz, "DMC_PROT%zu_CTRL:%lx\n", i, val);
-		val = dmc_prot_rw(dmc_mon->io_mem1, DMC_PROT0_CTRL1 + (i * 12), 0, DMC_READ);
+		val = dmc_prot_rw(io, DMC_PROT0_CTRL1 + (i * 12), 0, DMC_READ);
 		sz += sprintf(buf + sz, "DMC_PROT%zu_CTRL1:%lx\n", i, val);
 	}
 	for (i = 0; i < 4; i++) {
-		val = dmc_prot_rw(dmc_mon->io_mem1, DMC_PROT_VIO_0 + (i << 2), 0, DMC_READ);
+		val = dmc_prot_rw(io, DMC_PROT_VIO_0 + (i << 2), 0, DMC_READ);
 		sz += sprintf(buf + sz, "DMC_PROT_VIO_%zu:%lx\n", i, val);
 	}
-	val = dmc_prot_rw(dmc_mon->io_mem1, DMC_PROT_IRQ_CTRL, 0, DMC_READ);
+	val = dmc_prot_rw(io, DMC_PROT_IRQ_CTRL, 0, DMC_READ);
 	sz += sprintf(buf + sz, "DMC_PROT_IRQ_CTRL:%lx\n", val);
-	val = dmc_prot_rw(dmc_mon->io_mem1, DMC_IRQ_STS_C2, 0, DMC_READ);
+	val = dmc_prot_rw(io, DMC_IRQ_STS, 0, DMC_READ);
 	sz += sprintf(buf + sz, "DMC_IRQ_STS:%lx\n", val);
 
 	return sz;
+}
+
+static int check_violation(struct dmc_monitor *mon, void *data)
+{
+	int ret = -1;
+	unsigned long irqreg;
+	struct page *page;
+	struct page_trace *trace;
+	struct dmc_mon_comm *mon_comm = (struct dmc_mon_comm *)data;
+
+	irqreg = dmc_prot_rw(mon_comm->io_mem, DMC_IRQ_STS, 0, DMC_READ);
+
+	if (irqreg & DMC_WRITE_VIOLATION) {
+		mon_comm->time = sched_clock();
+		mon_comm->status = dmc_prot_rw(mon_comm->io_mem, DMC_PROT_VIO_1, 0, DMC_READ);
+		mon_comm->addr = dmc_prot_rw(mon_comm->io_mem, DMC_PROT_VIO_0, 0, DMC_READ);
+		mon_comm->rw = 'w';
+		page = phys_to_page(mon_comm->addr);
+		trace = dmc_find_page_base(page);
+		if (trace)
+			mon_comm->trace = *trace;
+		else
+			mon_comm->trace.ip_data = IP_INVALID;
+		mon_comm->page_flags = page->flags & PAGEFLAGS_MASK;
+		ret = 0;
+	} else if (irqreg & DMC_READ_VIOLATION) {
+		mon_comm->time = sched_clock();
+		mon_comm->status = dmc_prot_rw(mon_comm->io_mem, DMC_PROT_VIO_3, 0, DMC_READ);
+		mon_comm->addr = dmc_prot_rw(mon_comm->io_mem, DMC_PROT_VIO_2, 0, DMC_READ);
+		mon_comm->rw = 'r';
+		page = phys_to_page(mon_comm->addr);
+		trace = dmc_find_page_base(page);
+		if (trace)
+			mon_comm->trace = *trace;
+		else
+			mon_comm->trace.ip_data = IP_INVALID;
+		mon_comm->page_flags = page->flags & PAGEFLAGS_MASK;
+		ret = 0;
+	}
+	return ret;
+}
+
+static int c2_dmc_mon_irq(struct dmc_monitor *mon, void *data, char clear)
+{
+	unsigned long irqreg;
+	struct dmc_mon_comm *mon_comm = (struct dmc_mon_comm *)data;
+
+	if (clear) {
+		/* clear irq */
+		irqreg = dmc_prot_rw(mon_comm->io_mem, DMC_PROT_IRQ_CTRL, 0, DMC_READ);
+		if (dmc_mon->debug & DMC_DEBUG_SUSPEND)
+			irqreg &= ~0x04;
+		else
+			irqreg |= 0x04;		/* en */
+		dmc_prot_rw(mon_comm->io_mem, DMC_PROT_IRQ_CTRL, irqreg, DMC_WRITE);
+	} else {
+		return check_violation(mon, data);
+	}
+
+	return 0;
 }
 
 static int get_c2_port(unsigned int awuser)
@@ -90,93 +150,37 @@ static int get_c2_port(unsigned int awuser)
 	return awuser - 4;
 }
 
-static void check_violation(struct dmc_monitor *mon, void *data)
+static void c2_dmc_vio_to_port(void *data, unsigned long *vio_bit)
 {
-	char rw = 'n';
-	int port, subport;
-	unsigned long irqreg;
-	unsigned long addr = 0, status = 0;
-	char title[10];
-	unsigned int vio_bit = 19;
-	unsigned int awuser = 0;
+	int port = 0, subport = 0;
+	struct dmc_mon_comm *mon_comm = (struct dmc_mon_comm *)data;
 
-	switch (mon->chip) {
-	case DMC_TYPE_TM2:
-		vio_bit = 19;
-		break;
-	case DMC_TYPE_C2:
-		vio_bit = 30;
-		break;
-	default:
-		break;
-	}
+	*vio_bit = BIT(31) | BIT(30);
+	port = get_c2_port((mon_comm->status >> 16) & 0x3ff);
+	subport = (mon_comm->status >> 6) & 0xf;
 
-	if (mon->chip == DMC_TYPE_C2)
-		irqreg = dmc_prot_rw(dmc_mon->io_mem1, 0 - DMC_IRQ_STS_C2, 0, DMC_READ);
-	else
-		irqreg = dmc_prot_rw(dmc_mon->io_mem1, DMC_IRQ_STS, 0, DMC_READ);
+	mon_comm->port.name = to_ports(port);
+	if (!mon_comm->port.name)
+		sprintf(mon_comm->port.id, "%d", port);
 
-	if (irqreg & DMC_WRITE_VIOLATION) {
-		status = dmc_prot_rw(dmc_mon->io_mem1, DMC_PROT_VIO_1, 0, DMC_READ);
-		addr = dmc_prot_rw(dmc_mon->io_mem1, DMC_PROT_VIO_0, 0, DMC_READ);
-		rw = 'w';
-	} else if (irqreg & DMC_READ_VIOLATION) {
-		status = dmc_prot_rw(dmc_mon->io_mem1, DMC_PROT_VIO_3, 0, DMC_READ);
-		addr = dmc_prot_rw(dmc_mon->io_mem1, DMC_PROT_VIO_2, 0, DMC_READ);
-		rw = 'r';
-	}
-
-	/* clear irq */
-	if (dmc_mon->debug & DMC_DEBUG_SUSPEND)
-		irqreg &= ~0x04;
-	else
-		irqreg |= 0x04;		/* en */
-	dmc_prot_rw(dmc_mon->io_mem1, DMC_PROT_IRQ_CTRL, irqreg, DMC_WRITE);
-
-	if (!(status & (0x3 << vio_bit)))
-		return;
-
-	if (addr > mon->addr_end)
-		return;
-
-	if (mon->chip == DMC_TYPE_C2) {
-		awuser = (status >> 16) & 0x3ff;
-		port = get_c2_port(awuser);
-	} else {
-		port = (status >> 11) & 0x1f;
-	}
-	subport = (status >> 6) & 0xf;
-
-	if (dmc_violation_ignore(title, addr, status | (0x3 << vio_bit), port, subport, rw))
-		return;
-
-#if IS_ENABLED(CONFIG_EVENT_TRACING)
-	if (mon->debug & DMC_DEBUG_TRACE) {
-		show_violation_mem_trace_event(addr, status, port, subport, rw);
-		return;
-	}
-#endif
-	show_violation_mem_printk(title, addr, status, port, subport, rw);
-}
-
-static void c2_dmc_mon_irq(struct dmc_monitor *mon, void *data)
-{
-	check_violation(mon, data);
-
+	mon_comm->sub.name = to_sub_ports_name(port, subport, mon_comm->rw);
+	if (!mon_comm->sub.name)
+		sprintf(mon_comm->sub.id, "%d", subport);
 }
 
 static int c2_dmc_mon_set(struct dmc_monitor *mon)
 {
 	unsigned long value, end;
 	unsigned int wb;
+	void *io = mon->mon_comm[0].io_mem;
 
 	/* aligned to 64KB */
 	wb = mon->addr_start & 0x01;
 	end = ALIGN_DOWN(mon->addr_end, DMC_ADDR_SIZE);
 	value = (mon->addr_start >> 16) | ((end >> 16) << 16);
-	dmc_prot_rw(dmc_mon->io_mem1, DMC_PROT0_RANGE, value, DMC_WRITE);
+	dmc_prot_rw(io, DMC_PROT0_RANGE, value, DMC_WRITE);
 
-	dmc_prot_rw(dmc_mon->io_mem1, DMC_PROT0_CTRL, mon->device, DMC_WRITE);
+	dmc_prot_rw(io, DMC_PROT0_CTRL, mon->device, DMC_WRITE);
 
 	value = wb << 25;
 	if (dmc_mon->debug & DMC_DEBUG_WRITE)
@@ -184,13 +188,13 @@ static int c2_dmc_mon_set(struct dmc_monitor *mon)
 	/* if set, will be crash when read access */
 	if (dmc_mon->debug & DMC_DEBUG_READ)
 		value |= (1 << 26);
-	dmc_prot_rw(dmc_mon->io_mem1, DMC_PROT0_CTRL1, value, DMC_WRITE);
+	dmc_prot_rw(io, DMC_PROT0_CTRL1, value, DMC_WRITE);
 
 	if (dmc_mon->debug & DMC_DEBUG_SUSPEND)
 		value = 0X3;
 	else
 		value = 0X7;
-	dmc_prot_rw(dmc_mon->io_mem1, DMC_PROT_IRQ_CTRL, value, DMC_WRITE);
+	dmc_prot_rw(io, DMC_PROT_IRQ_CTRL, value, DMC_WRITE);
 
 	pr_emerg("range:%08lx - %08lx, device:%llx\n",
 		 mon->addr_start, mon->addr_end, mon->device);
@@ -199,10 +203,12 @@ static int c2_dmc_mon_set(struct dmc_monitor *mon)
 
 void c2_dmc_mon_disable(struct dmc_monitor *mon)
 {
-	dmc_prot_rw(dmc_mon->io_mem1, DMC_PROT0_RANGE, 0, DMC_WRITE);
-	dmc_prot_rw(dmc_mon->io_mem1, DMC_PROT0_CTRL, 0, DMC_WRITE);
-	dmc_prot_rw(dmc_mon->io_mem1, DMC_PROT0_CTRL1, 0, DMC_WRITE);
-	dmc_prot_rw(dmc_mon->io_mem1, DMC_PROT_IRQ_CTRL, 0, DMC_WRITE);
+	void *io = mon->mon_comm[0].io_mem;
+
+	dmc_prot_rw(io, DMC_PROT0_RANGE, 0, DMC_WRITE);
+	dmc_prot_rw(io, DMC_PROT0_CTRL, 0, DMC_WRITE);
+	dmc_prot_rw(io, DMC_PROT0_CTRL1, 0, DMC_WRITE);
+	dmc_prot_rw(io, DMC_PROT_IRQ_CTRL, 0, DMC_WRITE);
 	mon->device     = 0;
 	mon->addr_start = 0;
 	mon->addr_end   = 0;
@@ -255,11 +261,11 @@ static int c2_dmc_reg_control(char *input, char control, char *output)
 		count = c2_reg_analysis(input, output);
 		break;
 	case 'c':	/* clear sec statue reg */
-		dmc_prot_rw(NULL, 0x1000 + DMC_SEC_STATUS, 0x3, DMC_WRITE);
+		dmc_prot_rw(NULL, DMC_SEC_STATUS, 0x3, DMC_WRITE);
 		break;
 	case 'd':	/* dump sec vio reg */
 		count += sprintf(output + count, "DMC SEC INFO:\n");
-		val = dmc_prot_rw(NULL, 0x1000 + DMC_SEC_STATUS, 0, DMC_READ);
+		val = dmc_prot_rw(NULL, DMC_SEC_STATUS, 0, DMC_READ);
 		count += sprintf(output + count, "DMC_SEC_STATUS:%lx\n", val);
 		for (i = 0; i < 4; i++) {
 			val = dmc_prot_rw(NULL, 0x1000 + DMC_VIO_ADDR0 + (i << 2), 0, DMC_READ);
@@ -274,9 +280,10 @@ static int c2_dmc_reg_control(char *input, char control, char *output)
 }
 
 struct dmc_mon_ops c2_dmc_mon_ops = {
-	.handle_irq = c2_dmc_mon_irq,
+	.handle_irq  = c2_dmc_mon_irq,
+	.vio_to_port = c2_dmc_vio_to_port,
 	.set_monitor = c2_dmc_mon_set,
-	.disable    = c2_dmc_mon_disable,
-	.dump_reg   = c2_dmc_dump_reg,
-	.reg_control   = c2_dmc_reg_control,
+	.disable     = c2_dmc_mon_disable,
+	.dump_reg    = c2_dmc_dump_reg,
+	.reg_control = c2_dmc_reg_control,
 };

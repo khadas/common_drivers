@@ -1570,8 +1570,9 @@
 
 &i2c1 {
 	status = "okay";
-	pinctrl-names="default";
 	pinctrl-0=<&i2c1_pins1>;
+	pinctrl-1=<&i2c1_pins1_sleep>;
+	pinctrl-names="default", "sleep";
 	clock-frequency = <100000>; /* default 100k */
 
 	tas5707_36: tas5707_36@1b {
@@ -1592,9 +1593,9 @@
 
 &i2c2 {
 	status = "okay";
-	pinctrl-names = "default";//, "sleep"
-	pinctrl-0 = <&i2c2_pins3>;
-	//pinctrl-1 = <&i2c2_sleep_pins2>;
+	pinctrl-0=<&i2c2_pins3>;
+	pinctrl-1=<&i2c2_pins3_sleep>;
+	pinctrl-names="default", "sleep";
 	clock-frequency = <400000>; /* default 100k */
 	amlsens_0: sensor0@1a {
 		compatible = "amlogic, sensor-csi-a", "amlogic, sensor";
@@ -1670,8 +1671,9 @@
 
 &i2c3 {
 	status = "okay";
-	pinctrl-names = "default";//, "sleep"
-	pinctrl-0 = <&i2c3_pins1>;
+	pinctrl-0=<&i2c3_pins1>;
+	pinctrl-1=<&i2c3_pins1_sleep>;
+	pinctrl-names="default", "sleep";
 	clock-frequency = <100000>; /* default 100k */
 	amlsens_2: sensor2@1a {
 		compatible = "amlogic, sensor-csi-b", "amlogic, sensor";
@@ -1686,7 +1688,7 @@
 				<&clkc CLKID_MCLK_PLL>,
 				<&xtal>;
 		clock-names = "mclk","mclk_sel","mclk_pre","mclk_p","mclk_x";
-		pwdn-gpios = <&gpio GPIOM_4 GPIO_ACTIVE_HIGH>;
+		//pwdn-gpios = <&gpio GPIOM_4 GPIO_ACTIVE_HIGH>;
 		reset-gpios = <&gpio GPIOM_10 GPIO_ACTIVE_HIGH>;
 		port {
 			amlsens_2_ep: endpoint {
@@ -1747,9 +1749,9 @@
 
 &i2c4 {
 	status = "okay";
-	pinctrl-names = "default";//, "sleep"
-	pinctrl-0 = <&i2c4_pins1>;
-	//pinctrl-1 = <&i2c2_sleep_pins2>;
+	pinctrl-0=<&i2c4_pins1>;
+	pinctrl-1=<&i2c4_pins1_sleep>;
+	pinctrl-names="default", "sleep";
 	clock-frequency = <100000>; /* default 100k */
 
 	touchscreen@14 {
@@ -2288,7 +2290,8 @@
 
 &pwm_ab {
 	pinctrl-0 = <&pwm_a_pins>;
-	pinctrl-names = "default";
+	pinctrl-1 = <&pwm_a_pins_sleep>;
+	pinctrl-names = "default", "sleep";
 	status = "okay";
 };
 
@@ -2310,8 +2313,9 @@
 };
 
 &pwmao_cd {
-	pinctrl-names = "default";
+	pinctrl-names = "default", "sleep";
 	pinctrl-0 = <&pwm_ao_d_pins>;
+	pinctrl-1 = <&pwm_ao_d_pins_sleep>;
 	status = "okay";
 };
 

@@ -391,6 +391,7 @@ enum tvin_hdr_state_e {
 enum tvin_port_type_e {
 	TVIN_PORT_MAIN,
 	TVIN_PORT_SUB,
+	TVIN_PORT_UNKNOWN,
 };
 
 struct tvin_hdr_property_s {

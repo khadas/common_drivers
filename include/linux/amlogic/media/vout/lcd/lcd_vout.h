@@ -21,6 +21,7 @@
 #include <linux/amlogic/media/vout/vout_notify.h>
 #include <linux/amlogic/media/vrr/vrr.h>
 #include <linux/amlogic/media/vout/lcd/aml_lcd.h>
+#include <linux/amlogic/media/vout/lcd/lcd_cus_ctrl.h>
 #include <linux/amlogic/media/vout/lcd/lcd_tcon_data.h>
 
 /* **********************************
@@ -138,6 +139,7 @@ struct lcd_basic_s {
 
 #define LCD_CLK_FRAC_UPDATE     BIT(0)
 #define LCD_CLK_PLL_CHANGE      BIT(1)
+#define LCD_CLK_PLL_RESET       BIT(2)
 struct lcd_timing_s {
 	struct lcd_detail_timing_s dft_timing; //panel parameter probe stage
 	struct lcd_detail_timing_s base_timing; //panel parameter init stage
@@ -522,8 +524,15 @@ enum lcd_phy_set_status {
 };
 
 struct cus_ctrl_config_s {
-	unsigned int flag;
-	unsigned char ufr_flag;
+	unsigned int ctrl_en;
+	unsigned int ctrl_cnt;
+	unsigned int timing_cnt;
+	unsigned int active_timing_type;
+	unsigned char timing_switch_flag;
+	unsigned char timing_ctrl_valid;
+
+	struct lcd_cus_ctrl_attr_config_s *attr_config;
+
 	unsigned long long mute_time;
 	unsigned long long unmute_time;
 	unsigned long long switch_time;
@@ -538,14 +547,6 @@ struct cus_ctrl_config_s {
 	unsigned long long data_set_time;
 	unsigned long long level_shift_time;
 	unsigned long long dlg_time;
-	unsigned short attr_0_para0;
-	unsigned short attr_0_para1;
-	unsigned short attr_0_para2;
-	unsigned short attr_0_para3;
-	unsigned short attr_0_para4;
-	unsigned short attr_0_para5;
-	unsigned short attr_0_para6;
-	unsigned short attr_0_para7;
 };
 
 struct lcd_power_ctrl_s {
@@ -577,6 +578,7 @@ struct lcd_config_s {
 	unsigned char custom_pinmux;
 	unsigned char fr_auto_cus;  //0=follow global setting, 0xff=disable
 	unsigned char fr_auto_flag; //final fr_auto policy
+	unsigned int customer_sw_pdf;
 };
 
 #define LCD_INIT_LEVEL_NORMAL         0
@@ -625,11 +627,35 @@ struct lcd_debug_ctrl_s {
 	unsigned char debug_lcd_mode;
 };
 
+#define LCD_DURATION_MAX    8
 struct lcd_duration_s {
 	unsigned int frame_rate;
 	unsigned int duration_num;
 	unsigned int duration_den;
 	unsigned int frac;
+};
+
+struct lcd_vmode_info_s {
+	char name[32];
+	unsigned int width;
+	unsigned int height;
+	unsigned int base_fr;
+	unsigned int duration_index;
+	unsigned int duration_cnt;
+	struct lcd_duration_s duration[LCD_DURATION_MAX];
+	struct lcd_detail_timing_s *dft_timing;
+};
+
+struct lcd_vmode_list_s {
+	struct lcd_vmode_info_s *info;
+	struct lcd_vmode_list_s *next;
+};
+
+struct lcd_vmode_mgr_s {
+	unsigned int vmode_cnt;
+	struct lcd_vmode_list_s *vmode_list_header;
+	struct lcd_vmode_info_s *cur_vmode_info;
+	struct lcd_vmode_info_s *next_vmode_info;
 };
 
 struct lcd_data_s {
@@ -691,7 +717,7 @@ struct aml_lcd_drv_s {
 	char vsync_isr_name[3][15];
 	char vbyone_isr_name[10];
 	char output_name[30];
-	unsigned int vmode_update;
+	unsigned int vmode_switch;
 	unsigned char config_check_glb;
 	unsigned char config_check_en;
 
@@ -701,7 +727,7 @@ struct aml_lcd_drv_s {
 	struct platform_device *pdev;
 	struct lcd_config_s config;
 	struct lcd_duration_s *std_duration;
-	struct lcd_duration_s cur_duration;
+	struct lcd_vmode_mgr_s vmode_mgr;
 	struct vinfo_s vinfo;
 	void *clk_conf;
 	struct lcd_reg_map_s *reg_map;

@@ -36,6 +36,10 @@
 
 #include <linux/input.h>
 
+#ifdef CONFIG_AMLOGIC_MODIFY
+#include <linux/async.h>
+#endif
+
 #if defined(CONFIG_AMLOGIC_LEGACY_EARLY_SUSPEND) && defined(CONFIG_AMLOGIC_GX_SUSPEND)
 #include <linux/amlogic/pm.h>
 static struct early_suspend bt_early_suspend;
@@ -431,6 +435,18 @@ static int bt_resume(struct platform_device *pdev)
 	return 0;
 }
 
+#ifdef CONFIG_AMLOGIC_MODIFY
+static void do_bt_device_on_async(void *data, async_cookie_t cookie)
+{
+	struct bt_dev_data *temp;
+
+	temp = data;
+	temp->power_down_disable = 0;
+	bt_device_on(temp, 100, 0);
+	temp->power_down_disable = 1;
+}
+#endif
+
 static int bt_probe(struct platform_device *pdev)
 {
 	int ret = 0;
@@ -541,9 +557,13 @@ static int bt_probe(struct platform_device *pdev)
 	bt_device_init(pdata);
 
 	if (pdata->power_down_disable == 1) {
+#ifdef CONFIG_AMLOGIC_MODIFY
+		async_schedule(do_bt_device_on_async, (void *)pdata);
+#else
 		pdata->power_down_disable = 0;
 		bt_device_on(pdata, 100, 0);
 		pdata->power_down_disable = 1;
+#endif
 	}
 
 	/* default to bluetooth off */
@@ -559,8 +579,11 @@ static int bt_probe(struct platform_device *pdev)
 		ret = -ENOMEM;
 		goto err_rfk_alloc;
 	}
-
+#if IS_ENABLED(CONFIG_AMLOGIC_RFKILL_INIT_SW_UNBLOCK)
+	rfkill_init_sw_state(bt_rfk, false);
+#else
 	rfkill_init_sw_state(bt_rfk, true);
+#endif
 	ret = rfkill_register(bt_rfk);
 	if (ret) {
 		pr_err("rfkill_register fail\n");
@@ -689,6 +712,7 @@ static struct platform_driver bt_driver = {
 	.driver		= {
 		.name	= "aml_bt",
 		.of_match_table = bt_dev_dt_match,
+		.probe_type = PROBE_PREFER_ASYNCHRONOUS,
 	},
 	.probe		= bt_probe,
 	.remove		= bt_remove,

@@ -510,8 +510,7 @@ ssize_t frc_debug_buf_if_help(struct frc_dev_s *devp, char *buf)
 	len += sprintf(buf + len, "dump_fixed_reg\t: dump fixed table\n");
 	len += sprintf(buf + len, "dump_buf_reg\t: dump buffer register\n");
 	len += sprintf(buf + len, "dump_data addr size\t: dump cma buf data\n");
-	len += sprintf(buf + len,
-		"buf_num val\t: val(1 - 16) frc and logo frame buffer number\n");
+	len += sprintf(buf + len, "buf_num\t\t:%d\n", devp->buf.frm_buf_num);
 	len += sprintf(buf + len,
 		"dc_set\t: x x x(me:mc_y:mc_c) set frc me,mc_y and mc_c comprate\n");
 	len += sprintf(buf + len,
@@ -960,8 +959,14 @@ ssize_t frc_debug_other_if_help(struct frc_dev_s *devp, char *buf)
 	len += sprintf(buf + len, "del_120_pth\t=%d\n", devp->ud_dbg.res2_dbg_en);
 	len += sprintf(buf + len, "pr_dbg\t\t=%d\n", devp->ud_dbg.pr_dbg);
 	len += sprintf(buf + len, "pre_vsync\t=%d\n", devp->use_pre_vsync);
-	len += sprintf(buf + len, "mute_en\t\t=%d\t%d\n", devp->in_sts.enable_mute_flag,
-							devp->in_sts.mute_vsync_cnt);
+	len += sprintf(buf + len, "mute_en\t\t=%d\t%d\n",
+		devp->in_sts.enable_mute_flag, devp->in_sts.mute_vsync_cnt);
+	len += sprintf(buf + len, "task_hi_en\t=%d\t%d\n",
+		devp->in_sts.hi_en, devp->out_sts.hi_en);
+	len += sprintf(buf + len, "timer_ctrl\t=en:%d level:%d interval:%d\n",
+			devp->timer_dbg.timer_en, devp->timer_dbg.timer_level,
+			devp->timer_dbg.time_interval);
+	len += sprintf(buf + len, "frm_seg_en\t=%d\n", devp->in_sts.frm_en);
 	return len;
 }
 
@@ -1070,7 +1075,7 @@ void frc_debug_other_if(struct frc_dev_s *devp, const char *buf, size_t count)
 				devp->frc_sts.re_config = true;
 			}
 		}
-	} else if (!strcmp(parm[0], "en_mute")) {
+	} else if (!strcmp(parm[0], "mute_en")) {
 		if (!parm[2])
 			goto exit;
 		if (kstrtoint(parm[1], 10, &val1) == 0) {
@@ -1087,6 +1092,29 @@ void frc_debug_other_if(struct frc_dev_s *devp, const char *buf, size_t count)
 			goto exit;
 		if (kstrtoint(parm[1], 10, &val1) == 0)
 			devp->ud_dbg.align_dbg_en = val1;
+	} else if (!strcmp(parm[0], "task_hi_en")) {
+		if (!parm[2])
+			goto exit;
+		if (kstrtoint(parm[1], 10, &val1) == 0)
+			devp->in_sts.hi_en = val1;
+		if (kstrtoint(parm[2], 10, &val1) == 0)
+			devp->out_sts.hi_en = val1;
+	} else if (!strcmp(parm[0], "timer_ctrl")) {
+		if (!parm[3])
+			goto exit;
+		if (kstrtoint(parm[1], 10, &val1) == 0)
+			devp->timer_dbg.timer_en = (u8)val1;
+		if (kstrtoint(parm[2], 10, &val1) == 0)
+			devp->timer_dbg.timer_level = (u16)val1;
+		if (kstrtoint(parm[3], 10, &val1) == 0)
+			devp->timer_dbg.time_interval =
+				(u8)(val1 > 16 ? 16 : val1);
+		frc_timer_proc(devp);
+	} else if (!strcmp(parm[0], "frm_seg_en")) {
+		if (!parm[1])
+			goto exit;
+		if (kstrtoint(parm[1], 10, &val1) == 0)
+			devp->in_sts.frm_en = val1;
 	}
 exit:
 	kfree(buf_orig);
@@ -1215,4 +1243,113 @@ void frc_tool_dbg_store(struct frc_dev_s *devp, const char *buf)
 
 free_buf:
 	kfree(buf_orig);
+}
+
+// timer
+static enum hrtimer_restart frc_timer_callback(struct hrtimer *timer)
+{
+	u8 i, time;
+	u16 log;
+	u32 reg_val;
+	struct frc_dev_s *devp = get_frc_devp();
+
+	log = devp->timer_dbg.timer_level;
+	time = devp->timer_dbg.time_interval;
+
+	for (i = 0; i < rdma_trace_num; i++) {
+		reg_val = READ_FRC_REG(rdma_trace_reg[i]);
+		pr_frc(log, "reg[%04x]=0x%08x %9d\n", rdma_trace_reg[i], reg_val, reg_val);
+	}
+
+	hrtimer_forward(&frc_hi_timer,
+		hrtimer_cb_get_time(timer), ktime_set(0, time * 1000000)); // unit: ns
+
+	return HRTIMER_RESTART;
+}
+
+void frc_timer_proc(struct frc_dev_s *devp)
+{
+	u8 timer_en, time;
+
+	timer_en = devp->timer_dbg.timer_en;
+	time = devp->timer_dbg.time_interval;
+	frc_hi_timer.function = frc_timer_callback;
+
+	if (time > 16)
+		time = 16;
+	else if (time < 1)
+		time = 1;
+
+	if (timer_en)
+		hrtimer_start(&frc_hi_timer,
+			ktime_set(0, time * 1000000), HRTIMER_MODE_REL); // unit: ns
+	else
+		hrtimer_cancel(&frc_hi_timer);
+}
+
+/* column: 1~8, color: 0~7, number: 0~15 */
+static void update_seg_7_show(u8 enable, u8 column, u8 color, u8 number)
+{
+	u8 value;
+
+	value = ((enable & 0x01) << 7) + ((color & 0x07) << 4) + (number & 0x0F);
+
+	// enable flag_number 2_1 ~ 2_8
+	if (column == 1)
+		UPDATE_FRC_REG_BITS(FRC_MC_SEVEN_FLAG_NUM17_NUM18_NUM21_NUM22,
+			value << 8, 0xFF00);
+	else if (column == 2)
+		UPDATE_FRC_REG_BITS(FRC_MC_SEVEN_FLAG_NUM17_NUM18_NUM21_NUM22,
+			value, 0xFF);
+	else if (column == 3)
+		UPDATE_FRC_REG_BITS(FRC_MC_SEVEN_FLAG_NUM23_NUM24_NUM25_NUM26,
+			value << 24, 0xFF000000);
+	else if (column == 4)
+		UPDATE_FRC_REG_BITS(FRC_MC_SEVEN_FLAG_NUM23_NUM24_NUM25_NUM26,
+			value << 16, 0xFF0000);
+	else if (column == 5)
+		UPDATE_FRC_REG_BITS(FRC_MC_SEVEN_FLAG_NUM23_NUM24_NUM25_NUM26,
+			value << 8, 0xFF00);
+	else if (column == 6)
+		UPDATE_FRC_REG_BITS(FRC_MC_SEVEN_FLAG_NUM23_NUM24_NUM25_NUM26,
+			value, 0xFF);
+	else if (column == 7)
+		UPDATE_FRC_REG_BITS(FRC_MC_SEVEN_FLAG_NUM27_NUM28,
+			value << 24, 0xFF000000);
+	else if (column == 8)
+		UPDATE_FRC_REG_BITS(FRC_MC_SEVEN_FLAG_NUM27_NUM28,
+			value << 16, 0xFF0000);
+}
+
+void frc_dbg_frame_show(struct frc_dev_s *devp)
+{
+	u8 i, enable, tmp_cnt;
+	static u8 pre_flag;
+
+	if (!devp)
+		return;
+
+	enable = devp->in_sts.frm_en;
+
+	if (enable) {
+		// in cnt
+		tmp_cnt = (devp->in_sts.vs_cnt / 100) % 10;
+		update_seg_7_show(1, 1, 1, tmp_cnt);
+		tmp_cnt = (devp->in_sts.vs_cnt / 10) % 10;
+		update_seg_7_show(1, 2, 1, tmp_cnt);
+		tmp_cnt = devp->in_sts.vs_cnt % 10;
+		update_seg_7_show(1, 3, 1, tmp_cnt);
+		// out cnt
+		tmp_cnt = (devp->out_sts.vs_cnt / 100) % 10;
+		update_seg_7_show(1, 6, 2, tmp_cnt);
+		tmp_cnt = (devp->out_sts.vs_cnt / 10) % 10;
+		update_seg_7_show(1, 7, 2, tmp_cnt);
+		tmp_cnt = devp->out_sts.vs_cnt % 10;
+		update_seg_7_show(1, 8, 2, tmp_cnt);
+	} else if (enable == 0 && enable != pre_flag) {
+		for (i = 1; i < 9; i++)
+			update_seg_7_show(0, i, 0, 0);  // clear
+	}
+
+	pre_flag = enable;
 }

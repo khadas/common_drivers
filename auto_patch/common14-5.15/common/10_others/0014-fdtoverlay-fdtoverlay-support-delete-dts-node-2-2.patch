@@ -1,0 +1,78 @@
+From 4c556688dcbd1490666b824a22e709a465fcc94b Mon Sep 17 00:00:00 2001
+From: "haotian.qu" <haotian.qu@amlogic.com>
+Date: Fri, 15 Mar 2024 14:34:33 +0800
+Subject: [PATCH] fdtoverlay: fdtoverlay support delete dts node [1/2]
+
+PD#SWPL-150301
+
+Problem:
+Fdtoverlay cann't support remove unnecessary dts node.
+
+Solution:
+Add __removenode__ key work to support the function.
+
+Verify:
+local
+
+Change-Id: I3819a82663a90ae7a4da1d9c30c990af2d3a5fa0
+Signed-off-by: haotian.qu <haotian.qu@amlogic.com>
+---
+ scripts/dtc/Makefile             |  4 ++++
+ scripts/dtc/libfdt/fdt_overlay.c | 26 ++++++++++++++++++++++++++
+ 2 files changed, 30 insertions(+)
+
+diff --git a/scripts/dtc/Makefile b/scripts/dtc/Makefile
+index 2d5f274d6efd..d4f920fbbfda 100644
+--- a/scripts/dtc/Makefile
++++ b/scripts/dtc/Makefile
+@@ -5,6 +5,10 @@
+ hostprogs-always-$(CONFIG_DTC)		+= dtc fdtoverlay
+ hostprogs-always-$(CHECK_DT_BINDING)	+= dtc
+ 
++ifdef CONFIG_AMLOGIC_FDTO_REMOVE_NODE
++HOST_EXTRACFLAGS += -DEN_AMLOGIC_FDTO_REMOVE_NODE
++endif
++
+ dtc-objs	:= dtc.o flattree.o fstree.o data.o livetree.o treesource.o \
+ 		   srcpos.o checks.o util.o
+ dtc-objs	+= dtc-lexer.lex.o dtc-parser.tab.o
+diff --git a/scripts/dtc/libfdt/fdt_overlay.c b/scripts/dtc/libfdt/fdt_overlay.c
+index d217e79b6722..9f8d5111e2ce 100644
+--- a/scripts/dtc/libfdt/fdt_overlay.c
++++ b/scripts/dtc/libfdt/fdt_overlay.c
+@@ -620,6 +620,32 @@ static int overlay_merge(void *fdt, void *fdto)
+ {
+ 	int fragment;
+ 
++#if defined(EN_AMLOGIC_FDTO_REMOVE_NODE)
++	fdt_for_each_subnode(fragment, fdto, 0) {
++		int removenode;
++		int target;
++		int ret;
++		/*
++		 * If the fragments have an __removenode__ node, the
++		 * node defined in "target-path" will be removed.
++		 */
++		removenode = fdt_subnode_offset(fdto, fragment, "__removenode__");
++		if (removenode == -FDT_ERR_NOTFOUND)
++			continue;
++
++		if (removenode < 0)
++			return removenode;
++
++		target = overlay_get_target(fdt, fdto, fragment, NULL);
++		if (target < 0)
++			return target;
++
++		ret = fdt_del_node(fdt, target);
++		if (ret)
++			return ret;
++	}
++#endif /* EN_AMLOGIC_FDTO_REMOVE_NODE */
++
+ 	fdt_for_each_subnode(fragment, fdto, 0) {
+ 		int overlay;
+ 		int target;
+-- 
+2.25.1
+

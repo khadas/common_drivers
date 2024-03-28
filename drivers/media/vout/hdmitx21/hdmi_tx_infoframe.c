@@ -67,7 +67,7 @@ void hdmi_vend_infoframe_set(struct hdmi_vendor_infoframe *info)
  * with  ALLM_Mode = 1(case B2), or should only send Dolby VSIF,
  * not send HF-VSIF(case A)
  */
-/* only used for DV_VSIF / HDMI1.4b_VSIF / HDR10+ VSIF */
+/* only used for DV_VSIF / HDMI1.4b_VSIF / CUVA_VSIF / HDR10+ VSIF */
 void hdmi_vend_infoframe_rawset(u8 *hb, u8 *pb)
 {
 	u8 body[31] = {0};
@@ -128,6 +128,282 @@ void hdmi_vend_infoframe2_rawset(u8 *hb, u8 *pb)
 	}
 }
 
+/* refer DV HDMI 1.4b/2.0/2.1 Transmission
+ * 1.DV source device signals the video-timing
+ * format by using the CTA VICs in its AVI InfoFrame
+ * 2.DV source must not simultaneously transmit
+ * a DV and any form of H14b VSIF, even for the case
+ * of 4Kp24/25/30
+ */
+/* only used for DV_VSIF / CUVA VSIF / HDMI1.4b_VSIF / HDR10+ VSIF */
+int hdmi_vend_infoframe_get(struct hdmitx_dev *hdev, u8 *body)
+{
+	int ret;
+
+	if (!hdev || !body)
+		return 0;
+
+	if (hdev->tx_comm.rxcap.ifdb_present && hdev->tx_comm.rxcap.additional_vsif_num >= 1) {
+		/* dolby cts case93 B1 */
+		ret = hdmitx_infoframe_rawget(HDMI_INFOFRAME_TYPE_VENDOR, body);
+	} else if (!hdev->tx_comm.rxcap.ifdb_present) {
+		/* dolby cts case92 B2 */
+		ret = hdmitx_infoframe_rawget(HDMI_INFOFRAME_TYPE_VENDOR2, body);
+	} else {
+		/* case89 */
+		ret = hdmitx_infoframe_rawget(HDMI_INFOFRAME_TYPE_VENDOR, body);
+	}
+	return ret;
+}
+
+/******************sync from upstream start: drivers/video/hdmi.c*************************/
+#define HDMI_INFOFRAME_HEADER_SIZE  4
+#define HDMI_AVI_INFOFRAME_SIZE    13
+#define HDMI_SPD_INFOFRAME_SIZE    25
+#define HDMI_AUDIO_INFOFRAME_SIZE  10
+#define HDMI_DRM_INFOFRAME_SIZE    26
+
+#define HDMI_INFOFRAME_SIZE(type)	\
+	(HDMI_INFOFRAME_HEADER_SIZE + HDMI_ ## type ## _INFOFRAME_SIZE)
+
+/* from upstream */
+static u8 hdmi_infoframe_checksum(const u8 *ptr, size_t size)
+{
+	u8 csum = 0;
+	size_t i;
+
+	/* compute checksum */
+	for (i = 0; i < size; i++)
+		csum += ptr[i];
+
+	return 256 - csum;
+}
+
+/* from upstream */
+static void hdmi_infoframe_set_checksum(void *buffer, size_t size)
+{
+	u8 *ptr = buffer;
+
+	ptr[3] = hdmi_infoframe_checksum(buffer, size);
+}
+
+/* re-construct from upstream */
+static int hdmi_avi_infoframe_check_only_renew(const struct hdmi_avi_infoframe *frame)
+{
+	/* refer to CTA-861-H Page 69 */
+	if (frame->type != HDMI_INFOFRAME_TYPE_AVI ||
+	    frame->version < 2 ||
+	    frame->version > 4 ||
+	    frame->length != HDMI_AVI_INFOFRAME_SIZE)
+		return -EINVAL;
+
+	if (frame->picture_aspect > HDMI_PICTURE_ASPECT_16_9)
+		return -EINVAL;
+
+	return 0;
+}
+
+/* re-construct from upstream
+ * hdmi_avi_infoframe_check() - check a HDMI AVI infoframe
+ * @frame: HDMI AVI infoframe
+ *
+ * Validates that the infoframe is consistent and updates derived fields
+ * (eg. length) based on other fields.
+ *
+ * Returns 0 on success or a negative error code on failure.
+ */
+static int hdmi_avi_infoframe_check_renew(struct hdmi_avi_infoframe *frame)
+{
+	return hdmi_avi_infoframe_check_only_renew(frame);
+}
+
+/* re-construct from upstream
+ * hdmi_avi_infoframe_pack_only() - write HDMI AVI infoframe to binary buffer
+ * @frame: HDMI AVI infoframe
+ * @buffer: destination buffer
+ * @size: size of buffer
+ *
+ * Packs the information contained in the @frame structure into a binary
+ * representation that can be written into the corresponding controller
+ * registers. Also computes the checksum as required by section 5.3.5 of
+ * the HDMI 1.4 specification.
+ *
+ * Returns the number of bytes packed into the binary buffer or a negative
+ * error code on failure.
+ */
+static ssize_t hdmi_avi_infoframe_pack_only_renew(const struct hdmi_avi_infoframe *frame,
+				     void *buffer, size_t size)
+{
+	u8 *ptr = buffer;
+	size_t length;
+	int ret;
+
+	ret = hdmi_avi_infoframe_check_only_renew(frame);
+	if (ret)
+		return ret;
+
+	length = HDMI_INFOFRAME_HEADER_SIZE + frame->length;
+
+	if (size < length)
+		return -ENOSPC;
+
+	memset(buffer, 0, size);
+
+	ptr[0] = frame->type;
+	ptr[1] = frame->version;
+	ptr[2] = frame->length;
+	ptr[3] = 0; /* checksum */
+
+	/* start infoframe payload */
+	ptr += HDMI_INFOFRAME_HEADER_SIZE;
+
+	ptr[0] = ((frame->colorspace & 0x3) << 5) | (frame->scan_mode & 0x3);
+
+	/*
+	 * Data byte 1, bit 4 has to be set if we provide the active format
+	 * aspect ratio
+	 */
+	if (frame->active_aspect & 0xf)
+		ptr[0] |= BIT(4);
+
+	/* Bit 3 and 2 indicate if we transmit horizontal/vertical bar data */
+	if (frame->top_bar || frame->bottom_bar)
+		ptr[0] |= BIT(3);
+
+	if (frame->left_bar || frame->right_bar)
+		ptr[0] |= BIT(2);
+
+	ptr[1] = ((frame->colorimetry & 0x3) << 6) |
+		 ((frame->picture_aspect & 0x3) << 4) |
+		 (frame->active_aspect & 0xf);
+
+	ptr[2] = ((frame->extended_colorimetry & 0x7) << 4) |
+		 ((frame->quantization_range & 0x3) << 2) |
+		 (frame->nups & 0x3);
+
+	if (frame->itc)
+		ptr[2] |= BIT(7);
+
+	ptr[3] = frame->video_code;
+
+	ptr[4] = ((frame->ycc_quantization_range & 0x3) << 6) |
+		 ((frame->content_type & 0x3) << 4) |
+		 (frame->pixel_repeat & 0xf);
+
+	ptr[5] = frame->top_bar & 0xff;
+	ptr[6] = (frame->top_bar >> 8) & 0xff;
+	ptr[7] = frame->bottom_bar & 0xff;
+	ptr[8] = (frame->bottom_bar >> 8) & 0xff;
+	ptr[9] = frame->left_bar & 0xff;
+	ptr[10] = (frame->left_bar >> 8) & 0xff;
+	ptr[11] = frame->right_bar & 0xff;
+	ptr[12] = (frame->right_bar >> 8) & 0xff;
+
+	hdmi_infoframe_set_checksum(buffer, length);
+
+	return length;
+}
+
+/* re-construct from upstream
+ * hdmi_avi_infoframe_pack() - check a HDMI AVI infoframe,
+ *                             and write it to binary buffer
+ * @frame: HDMI AVI infoframe
+ * @buffer: destination buffer
+ * @size: size of buffer
+ *
+ * Validates that the infoframe is consistent and updates derived fields
+ * (eg. length) based on other fields, after which it packs the information
+ * contained in the @frame structure into a binary representation that
+ * can be written into the corresponding controller registers. This function
+ * also computes the checksum as required by section 5.3.5 of the HDMI 1.4
+ * specification.
+ *
+ * Returns the number of bytes packed into the binary buffer or a negative
+ * error code on failure.
+ */
+static ssize_t hdmi_avi_infoframe_pack_renew(struct hdmi_avi_infoframe *frame,
+				void *buffer, size_t size)
+{
+	int ret;
+
+	ret = hdmi_avi_infoframe_check_renew(frame);
+	if (ret)
+		return ret;
+
+	return hdmi_avi_infoframe_pack_only_renew(frame, buffer, size);
+}
+
+/* re-construct from upstream
+ * hdmi_avi_infoframe_unpack() - unpack binary buffer to a HDMI AVI infoframe
+ * @frame: HDMI AVI infoframe
+ * @buffer: source buffer
+ * @size: size of buffer
+ *
+ * Unpacks the information contained in binary @buffer into a structured
+ * @frame of the HDMI Auxiliary Video (AVI) information frame.
+ * Also verifies the checksum as required by section 5.3.5 of the HDMI 1.4
+ * specification.
+ *
+ * Returns 0 on success or a negative error code on failure.
+ */
+int hdmi_avi_infoframe_unpack_renew(struct hdmi_avi_infoframe *frame,
+				     const void *buffer, size_t size)
+{
+	const u8 *ptr = buffer;
+
+	if (size < HDMI_INFOFRAME_SIZE(AVI))
+		return -EINVAL;
+
+	if (ptr[0] != HDMI_INFOFRAME_TYPE_AVI ||
+	    ptr[1] < 2 ||
+	    ptr[1] > 4 ||
+
+	    ptr[2] != HDMI_AVI_INFOFRAME_SIZE)
+		return -EINVAL;
+
+	if (hdmi_infoframe_checksum(buffer, HDMI_INFOFRAME_SIZE(AVI)) != 0)
+		return -EINVAL;
+
+	hdmi_avi_infoframe_init(frame);
+
+	ptr += HDMI_INFOFRAME_HEADER_SIZE;
+
+	frame->colorspace = (ptr[0] >> 5) & 0x3;
+	if (ptr[0] & 0x10)
+		frame->active_aspect = ptr[1] & 0xf;
+	if (ptr[0] & 0x8) {
+		frame->top_bar = (ptr[6] << 8) | ptr[5];
+		frame->bottom_bar = (ptr[8] << 8) | ptr[7];
+	}
+	if (ptr[0] & 0x4) {
+		frame->left_bar = (ptr[10] << 8) | ptr[9];
+		frame->right_bar = (ptr[12] << 8) | ptr[11];
+	}
+	frame->scan_mode = ptr[0] & 0x3;
+
+	frame->colorimetry = (ptr[1] >> 6) & 0x3;
+	frame->picture_aspect = (ptr[1] >> 4) & 0x3;
+	frame->active_aspect = ptr[1] & 0xf;
+
+	frame->itc = ptr[2] & 0x80 ? true : false;
+	frame->extended_colorimetry = (ptr[2] >> 4) & 0x7;
+	frame->quantization_range = (ptr[2] >> 2) & 0x3;
+	frame->nups = ptr[2] & 0x3;
+
+	frame->video_code = ptr[3];
+	/* refer to CTA-861-H Page 69 */
+	if (frame->video_code >= 128)
+		frame->version = 0x3;
+	frame->ycc_quantization_range = (ptr[4] >> 6) & 0x3;
+	frame->content_type = (ptr[4] >> 4) & 0x3;
+
+	frame->pixel_repeat = ptr[4] & 0xf;
+
+	return 0;
+}
+
+/******************sync from upstream end*************************/
+
 void hdmi_avi_infoframe_set(struct hdmi_avi_infoframe *info)
 {
 	u8 body[31] = {0};
@@ -137,7 +413,12 @@ void hdmi_avi_infoframe_set(struct hdmi_avi_infoframe *info)
 		return;
 	}
 
-	hdmi_avi_infoframe_pack(info, body, sizeof(body));
+	/* refer to CTA-861-H Page 69 */
+	if (info->video_code >= 128)
+		info->version = 0x3;
+	else
+		info->version = 0x2;
+	hdmi_avi_infoframe_pack_renew(info, body, sizeof(body));
 	hdmitx_infoframe_send(HDMI_INFOFRAME_TYPE_AVI, body);
 }
 
@@ -153,6 +434,16 @@ void hdmi_avi_infoframe_rawset(u8 *hb, u8 *pb)
 	memcpy(body, hb, 3);
 	memcpy(&body[3], pb, 28);
 	hdmitx_infoframe_send(HDMI_INFOFRAME_TYPE_AVI, body);
+}
+
+int hdmi_avi_infoframe_get(u8 *body)
+{
+	int ret;
+
+	if (!body)
+		return 0;
+	ret = hdmitx_infoframe_rawget(HDMI_INFOFRAME_TYPE_AVI, body);
+	return ret;
 }
 
 void hdmi_avi_infoframe_config(enum avi_component_conf conf, u8 val)

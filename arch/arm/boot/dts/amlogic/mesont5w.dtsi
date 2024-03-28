@@ -1283,6 +1283,12 @@
 			       0xff646000 0x4a0>; /* clk reg */
 		};
 
+		di_process {
+			compatible = "amlogic, di_process";
+			dev_name = "di_process";
+			status = "okay";
+		};
+
 		vout_mux: vout_mux {
 			compatible = "amlogic, vout_mux-t5w";
 			status = "okay";
@@ -1370,6 +1376,10 @@
 			};
 			pcpd_monitor_a: pcpd_monitor@0 {
 				compatible = "amlogic, pcpda_monitor";
+				/*regbase:0xff600000 + 0x3b0 << 2*/
+				/*size 0x28 byte*/
+				reg =<0xec0 0x28>;
+				reg-names = "pcpd_reg";
 				interrupts = <GIC_SPI 225
 					IRQ_TYPE_EDGE_RISING>;
 				interrupt-names = "irq_pcpd";
@@ -1377,6 +1387,8 @@
 			};
 			pcpd_monitor_b: pcpd_monitor@1 {
 				compatible = "amlogic, pcpdb_monitor";
+				reg =<0xf00 0x28>;
+				reg-names = "pcpd_reg";
 				interrupts = <GIC_SPI 224
 					IRQ_TYPE_EDGE_RISING>;
 				interrupt-names = "irq_pcpd";

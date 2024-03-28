@@ -597,6 +597,50 @@
 			backlight_index = <0>;
 		};
 
+		dsi_detect{
+			model_name = "dsi_panel_detect";
+			interface = "mipi";
+
+			//<H_active, V_active, H_period, V_period, lcd_bits, width, height>
+			basic_setting = <640 480 800 525 8 40 30>;
+			//<HSync, HS_backporch, HS_pol, VSync, VS_backporch, VS_pol>
+			lcd_timing = <96 40 0 2 25 0>;
+			//<fr_adj_type clk_ss clk_auto_generate PixelClk>
+			clk_attr = <0xff 0 1 25175000>;
+			//<lane_num bit_rate \ mode_init mode_display video_mode clk_always_hs \>
+			mipi_attr = <4 200 0 1 0 2 1 0>;
+
+			//<stored2env \ \ \>
+			dsi_detect_attr = <1 0 0 0>;
+			/* dsi_init: data_type, num, data... */
+			det0_init_table = <
+				0x39 4 0xff 0x98 0x81 0x01
+				0x06 1 0x00 0x06 1 0x01 0x06 1 0x02
+				0xff 0>;
+			det0_match_seq = <3 0x98 0x81 0x5c>;
+			det0_type = "mipi_2";
+
+			det1_match_seq = <8 0xff 0xff 0xff 0xff 0xff 0xff 0xff 0xff>;
+			det1_type = "mipi_1";
+
+			fallback_type = "mipi_0";
+
+			/* power step: type, index, value, delay(ms) */
+			power_on_step = <
+				0 0 1 10 /*vcc en*/
+				0 1 1 1 /*rst high*/
+				0 3 1 30 /*3v3 high*/
+				0 1 0 10 /*rst low*/
+				0 1 1 20 /*rst high*/
+				2 0 0 0
+				0 0 0 1
+				0 1 0 1 /*rst low*/
+				0 3 0 1 /*3v3 low*/
+				0xff 0 0 0>; /*ending*/
+			power_off_step = <0xff 0 0 0>; /*ending*/
+			backlight_index = <0xff>;
+		};
+
 		ports {
 			port {
 				#address-cells = <1>;

@@ -7,6 +7,8 @@
 #define _AML_MBOX_H_
 #include <linux/cdev.h>
 #include <linux/completion.h>
+#include <linux/delay.h>
+#include <linux/io.h>
 #include <linux/mailbox_client.h>
 #include <linux/mailbox_controller.h>
 #include "aml_mbox_cmd.h"
@@ -79,6 +81,7 @@ struct aml_mbox_chan {
 	void __iomem *mbox_fset_addr;
 	void __iomem *mbox_fclr_addr;
 	void __iomem *mbox_fsts_addr;
+	void __iomem *aocpu_tick_cnt_addr;
 	struct mutex mutex; /* for aml mbox chan mutex */
 	struct mbox_controller *mbox;
 	void *tx_complete;
@@ -141,6 +144,33 @@ static inline struct mbox_chan *aml_mbox_request_channel_byname(struct device *d
 	return mbox_chan;
 }
 
+/*
+ * Check if the aocpu is alive
+ * @sts_addr: aocpu tick count read address
+ * return - 0: aocpu is alive
+ *        - 1: aocpu is not alive
+ */
+static inline int check_aocpu_status(void __iomem *sts_addr)
+{
+	u32 aocpu_tick_count_1;
+	u32 aocpu_tick_count_2;
+	int ret;
+
+	aocpu_tick_count_1 = readl(sts_addr);
+	pr_info("%s: aocpu_tick_count_1 = 0x%x\n", __func__,
+			aocpu_tick_count_1);
+	/* Sleep for 50 msec to let tick count update */
+	msleep(50);
+	aocpu_tick_count_2 = readl(sts_addr);
+	pr_info("%s: aocpu_tick_count_2 = 0x%x\n", __func__,
+			aocpu_tick_count_2);
+	if (aocpu_tick_count_1 != aocpu_tick_count_2)
+		ret = 0;
+	else
+		ret = 1;
+	return ret;
+}
+
 /**
  * aml_mbox_transfer_data - A way for transfer mbox data
  * @mbox_chan:            Mbox channel, this requested by mbox consumer driver
@@ -157,7 +187,9 @@ static inline int aml_mbox_transfer_data(struct mbox_chan *mbox_chan, int cmd,
 {
 	struct aml_mbox_data aml_data;
 	struct aml_mbox_chan *aml_chan;
+	void __iomem *sts_addr;
 	int ret;
+	int chk_ret;
 
 	if (IS_ERR_OR_NULL(mbox_chan)) {
 		pr_err("mbox chan is NULL\n");
@@ -176,7 +208,15 @@ static inline int aml_mbox_transfer_data(struct mbox_chan *mbox_chan, int cmd,
 	mutex_unlock(&aml_chan->mutex);
 	if (ret < 0) {
 		dev_err(mbox_chan->cl->dev, "Fail to send mbox data %d\n", ret);
-		return ret;
+		sts_addr = aml_chan->aocpu_tick_cnt_addr;
+		if (sts_addr) {
+			chk_ret = check_aocpu_status(sts_addr);
+			if (!chk_ret)
+				pr_info("Info: aocpu is alive\n");
+			else
+				pr_info("Info: aocpu is not alive\n");
+			return ret;
+		}
 	}
 	if (sync == MBOX_TSYNC)
 		ret = wait_for_completion_killable(&aml_data.complete);

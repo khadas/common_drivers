@@ -452,6 +452,7 @@ static bool check_physical_addr_valid(int timeout)
 			break;
 		if (phy_addr_test)
 			break;
+#if (defined(CONFIG_AMLOGIC_HDMITX) || defined(CONFIG_AMLOGIC_HDMITX21))
 		/* physical address for box */
 		if (get_hpd_state() &&
 		    get_hdmitx_phy_addr() &&
@@ -461,6 +462,9 @@ static bool check_physical_addr_valid(int timeout)
 		} else {
 			break;
 		}
+#else
+		break;
+#endif
 	}
 	if (timeout <= 0)
 		return false;
@@ -1027,9 +1031,11 @@ static ssize_t port_status_show(struct class *cla,
 				struct class_attribute *attr, char *buf)
 {
 	unsigned int tmp;
+#if (defined(CONFIG_AMLOGIC_HDMITX) || defined(CONFIG_AMLOGIC_HDMITX21))
 	unsigned int tx_hpd;
 
 	tx_hpd = get_hpd_state();
+#endif
 	if (cec_dev->dev_type != CEC_TV_ADDR) {
 		tmp = tx_hpd;
 		return sprintf(buf, "%x\n", tmp);
@@ -1038,13 +1044,16 @@ static ssize_t port_status_show(struct class *cla,
 	CEC_INFO("TOP_HPD_PWR5V:%x\n", tmp);
 	tmp >>= 20;
 	tmp &= 0xf;
+#if (defined(CONFIG_AMLOGIC_HDMITX) || defined(CONFIG_AMLOGIC_HDMITX21))
 	tmp |= (tx_hpd << 16);
+#endif
 	return sprintf(buf, "%x\n", tmp);
 }
 
 static ssize_t pin_status_show(struct class *cla,
 			       struct class_attribute *attr, char *buf)
 {
+#if (defined(CONFIG_AMLOGIC_HDMITX) || defined(CONFIG_AMLOGIC_HDMITX21))
 	unsigned int tx_hpd;
 	char p;
 
@@ -1066,6 +1075,9 @@ static ssize_t pin_status_show(struct class *cla,
 	} else {
 		return sprintf(buf, "%s\n", pin_status ? "ok" : "fail");
 	}
+#else
+	return sprintf(buf, "%s\n", pin_status ? "ok" : "fail");
+#endif
 }
 
 static ssize_t physical_addr_show(struct class *cla,
@@ -2810,6 +2822,7 @@ static int aml_aocec_probe(struct platform_device *pdev)
 	}
 #endif
 #endif
+#if (defined(CONFIG_AMLOGIC_HDMITX) || defined(CONFIG_AMLOGIC_HDMITX21))
 	if (get_hpd_state() &&
 	    tx_phy_addr &&
 	    tx_phy_addr->valid == 1) {
@@ -2822,6 +2835,7 @@ static int aml_aocec_probe(struct platform_device *pdev)
 				phy_addr,
 				false);
 	}
+#endif
 	CEC_ERR("%s success end\n", __func__);
 	cec_dev->probe_finish = true;
 	return 0;

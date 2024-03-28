@@ -2330,7 +2330,7 @@ void amvecm_process(struct path_id_s *path_id,
 			vd_layer[0].vpp_index);
 	else if (path_id->vd2_path_id == p_gvideo_recv->path_id) {
 		if (p_gvideo_recv->vpp_id != VPP0)
-			vpp_index = vd_layer_vpp[p_gvideo_recv->vpp_id - VPP0].vpp_index;
+			vpp_index = vd_layer_vpp[p_gvideo_recv->vpp_id - VPP1].vpp_index;
 		else
 			vpp_index = vd_layer[1].vpp_index;
 		amvecm_on_vs
@@ -2349,7 +2349,7 @@ void amvecm_process(struct path_id_s *path_id,
 			vpp_index);
 	} else if (path_id->vd3_path_id == p_gvideo_recv->path_id) {
 		if (p_gvideo_recv->vpp_id != VPP0)
-			vpp_index = vd_layer_vpp[p_gvideo_recv->vpp_id - VPP0].vpp_index;
+			vpp_index = vd_layer_vpp[p_gvideo_recv->vpp_id - VPP1].vpp_index;
 		else
 			vpp_index = vd_layer[2].vpp_index;
 		amvecm_on_vs
@@ -2800,6 +2800,9 @@ static int amvideo_early_proc(u8 layer_id)
 	struct vframe_s *vf_tmp;
 	s32 vd1_path_id = glayer_info[0].display_path_id;
 	struct cur_line_info_t *cur_line_info = get_cur_line_info(0);
+#if defined(CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_VECM)
+	u16 line = glayer_info[0].layer_top;
+#endif
 
 	vd_dispbuf_to_put(layer_id);
 	get_count_pip[0] = 0;
@@ -2861,9 +2864,9 @@ static int amvideo_early_proc(u8 layer_id)
 		vd1_path_id == VFM_PATH_DEF)) {
 		/*need call every vsync*/
 		if (vf_tmp)
-			frame_lock_process(vf_tmp, cur_frame_par[0]);
+			frame_lock_process(vf_tmp, cur_frame_par[0], line);
 		else
-			frame_lock_process(NULL, cur_frame_par[0]);
+			frame_lock_process(NULL, cur_frame_par[0], line);
 	}
 #endif
 
@@ -3300,6 +3303,9 @@ static struct vframe_s *do_renderx_toggle_frame
 	struct path_id_s *path_id)
 {
 	struct vframe_s *path_new_frame = NULL;
+#if defined(CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_VECM)
+	u16 line = glayer_info[0].layer_top;
+#endif
 
 	/* video_render.x toggle frame */
 	if (gvideo_recv[path_index]) {
@@ -3323,12 +3329,12 @@ static struct vframe_s *do_renderx_toggle_frame
 				/*need call every vsync*/
 				if (path_new_frame)
 					frame_lock_process(path_new_frame,
-						cur_frame_par[0]);
+						cur_frame_par[0], line);
 				else if (vd_layer[0].dispbuf)
 					frame_lock_process(vd_layer[0].dispbuf,
-						cur_frame_par[0]);
+						cur_frame_par[0], line);
 				else
-					frame_lock_process(NULL, cur_frame_par[0]);
+					frame_lock_process(NULL, cur_frame_par[0], line);
 			}
 #endif
 		}
@@ -3781,6 +3787,14 @@ static void force_switch_slice(void)
 			/* frc is ready on */
 			/* 4k120hz and frc_n2m_worked 1 slice */
 			slice_num = 1;
+			if (slice_num != vd_layer[0].slice_num) {
+				video_prop_status |= VIDEO_PROP_CHANGE_SLICE_NUM;
+				if (debug_flag)
+					pr_info("%s slice_num=%d-> %d, video_prop_status=%d\n",
+						__func__,
+						vd_layer[0].slice_num, slice_num,
+						video_prop_status);
+			}
 			vd_layer[0].slice_num = slice_num;
 			vd_layer[0].property_changed = true;
 			if (debug_common_flag & DEBUG_FLAG_COMMON_FRC)
@@ -3790,6 +3804,16 @@ static void force_switch_slice(void)
 			/* frc is ready off */
 			/* 4k120hz and frc_n2m_not_worked 2 slice */
 			slice_num = 2;
+			if (slice_num != vd_layer[0].slice_num) {
+				video_prop_status |= VIDEO_PROP_CHANGE_SLICE_NUM;
+				if (debug_flag)
+					pr_info("%s slice_num=%d-> %d, video_prop_status=%d\n",
+						__func__,
+						vd_layer[0].slice_num, slice_num,
+						video_prop_status);
+			}
+			if (is_aisr_enable(&vd_layer[0]))
+				vd_layer[0].aisr_mif_setting.aisr_enable = 0;
 			vd_layer[0].slice_num = slice_num;
 			vd_layer[0].property_changed = true;
 			if (debug_common_flag & DEBUG_FLAG_COMMON_FRC)
@@ -3798,6 +3822,7 @@ static void force_switch_slice(void)
 		}
 	}
 }
+
 #endif
 
 bool force_switch_to_2slice(void)
@@ -3819,9 +3844,16 @@ bool force_switch_to_2slice(void)
 			pr_info("%s:slice_num = %d gslice_num = %d\n",
 				__func__, slice_num, vd_layer[0].slice_num);
 		if (slice_num != vd_layer[0].slice_num) {
+			video_prop_status |= VIDEO_PROP_CHANGE_SLICE_NUM;
+			if (debug_flag)
+				pr_info("%s slice_num=%d-> %d, video_prop_status=%d\n",
+					__func__,
+					vd_layer[0].slice_num, slice_num,
+					video_prop_status);
+			if (is_aisr_enable(&vd_layer[0]))
+				vd_layer[0].aisr_mif_setting.aisr_enable = 0;
 			vd_layer[0].slice_num = slice_num;
 			vd_layer[0].property_changed = true;
-//			set_frc_bypass_byself(&vd_layer[0]);
 			return true;
 		}
 	}
@@ -4197,6 +4229,7 @@ static int misc_early_proc(void)
 		vd_layer[i].bypass_pps = bypass_pps;
 		vd_layer[i].global_debug = debug_flag;
 		vd_layer[i].vout_type = vout_type;
+		vd_layer[i].display_cnt++;
 	}
 
 #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
@@ -4930,9 +4963,7 @@ void post_vsync_process(void)
 	int enc_line;
 
 #if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_IOTRACE)
-	__this_cpu_write(vsync_iotrace_cut, 1);
-	if (ramoops_ftrace_en && ramoops_trace_mask & 0x2)
-		aml_pstore_write(AML_PSTORE_TYPE_SCHED, "vsync in", 0, irqs_disabled(), 0);
+	iotrace_misc_record_write(RECORD_TYPE_VSYNC_IN, 0, 0, 0);
 #endif
 
 	set_cur_line_info(0);
@@ -5279,9 +5310,7 @@ LATE_PROC:
 
 #endif
 #if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_IOTRACE)
-	__this_cpu_write(vsync_iotrace_cut, 0);
-	if (ramoops_ftrace_en  && ramoops_trace_mask & 0x2)
-		aml_pstore_write(AML_PSTORE_TYPE_SCHED, "vsync out", 0, irqs_disabled(), 0);
+	iotrace_misc_record_write(RECORD_TYPE_VSYNC_OUT, 0, 0, 0);
 #endif
 }
 

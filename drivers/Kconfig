@@ -60,4 +60,5 @@ source "$(COMMON_DRIVERS_DIR)/drivers/firmware/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/timestamp/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/seckey/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/aml_trusted_keys/Kconfig"
+source "$(COMMON_DRIVERS_DIR)/scripts/Kconfig"
 endmenu

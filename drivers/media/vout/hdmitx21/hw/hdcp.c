@@ -337,8 +337,7 @@ void hdcptx2_reauth_send(void)
 
 	hdmitx21_wr_reg(CP2TX_CTRL_1_IVCTX, 0x21);
 	hdmitx21_wr_reg(CP2TX_CTRL_1_IVCTX, 0x20);
-
-	hdmitx21_set_bit(AON_CYP_CTL_IVCTX, BIT(3), false);
+	/* hdmitx21_set_bit(AON_CYP_CTL_IVCTX, BIT(3), false); */
 }
 
 u8 hdcptx2_topology_get(void)
@@ -391,6 +390,11 @@ void hdcptx2_src_auth_start(u8 content_type)
 		content_type = 0;
 
 	/* reset hdcp2x logic and HW state machine */
+	/* mostly, ddc bus is already free after previous stop
+	 * operation, now double check
+	 */
+	if (!ddc_bus_wait_free())
+		HDMITX_INFO("%s: reset during ddc busy!!\n", __func__);
 	reset_val = hdmitx21_rd_reg(HDCP2X_TX_SRST_IVCTX);
 	//hdmitx21_set_bit(HDCP2X_TX_SRST_IVCTX, BIT(5), true);
 	hdmitx21_wr_reg(HDCP2X_TX_SRST_IVCTX, reset_val | 0x20);
@@ -398,6 +402,7 @@ void hdcptx2_src_auth_start(u8 content_type)
 	hdmitx21_wr_reg(HDCP2X_TX_SRST_IVCTX, reset_val &  (~0x20));
 
 	hdmitx21_set_bit(AON_CYP_CTL_IVCTX, BIT(3), true);
+	hdmitx21_set_bit(AON_CYP_CTL_IVCTX, BIT(3), false);
 
 	hdmitx21_set_bit(HDCP2X_CTL_1_IVCTX, BIT_HDCP2X_CTL_1_HPD_SW, true);
 	hdmitx21_set_bit(HDCP2X_CTL_1_IVCTX, BIT_HDCP2X_CTL_1_HPD_OVR, true);
@@ -420,4 +425,32 @@ u8 hdcp2x_get_state_st(void)
 void hdcptx1_query_aksv(struct hdcp_ksv_t *p_val)
 {
 	hdmitx21_seq_rd_reg(AKSV_1_IVCTX, p_val->b, KSV_SIZE);
+}
+
+void hdcptx_ctrl_gate(int hdcp_mode, bool en)
+{
+	if (hdcp_mode == 1) {
+		hdmitx21_set_bit(HDMITX_TOP_CLK_GATE, BIT_HDMITX_TOP_CLK_GATE_HDCP1X, en);
+		HDMITX_DEBUG("hdcp1x gate %d\n", en);
+	} else if (hdcp_mode == 2) {
+		hdmitx21_set_bit(HDMITX_TOP_CLK_GATE, BIT_HDMITX_TOP_CLK_GATE_HDCP2X, en);
+		HDMITX_DEBUG("hdcp2x gate %d\n", en);
+	} else if (hdcp_mode == 0) {
+		hdmitx21_set_bit(HDMITX_TOP_CLK_GATE, BIT_HDMITX_TOP_CLK_GATE_HDCP1X, en);
+		hdmitx21_set_bit(HDMITX_TOP_CLK_GATE, BIT_HDMITX_TOP_CLK_GATE_HDCP2X, en);
+		HDMITX_DEBUG("hdcp gate %d\n", en);
+	}
+}
+
+u32 hdmitx21_get_gate_status(void)
+{
+	int status = 0;
+
+	status = hdmitx21_rd_reg(HDMITX_TOP_CLK_GATE);
+	return status;
+}
+
+void hdcptx_en_aes_dualpipe(bool en)
+{
+	hdmitx21_set_reg_bits(CP2TX_AESCTL_IVCTX, en ? 3 : 0, 2, 2);
 }

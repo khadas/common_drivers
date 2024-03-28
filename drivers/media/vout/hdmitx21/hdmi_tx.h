@@ -33,6 +33,9 @@
 #define AUDIO_MUTE_PATH_3 0x2000000 //mute by stream type 1
 #define AUDIO_MUTE_PATH_4 0x1000000 //mute by rx request auth
 
+#define AVMUTE_PATH_1 0x80 //mute by avmute sysfs node
+#define AVMUTE_PATH_2 0x40 //mute by upstream side request re-auth
+
 struct emp_packet_st;
 enum emp_component_conf;
 
@@ -95,8 +98,12 @@ void hdmitx_infoframe_send(u16 info_type, u8 *body);
 void hdmi_vend_infoframe_set(struct hdmi_vendor_infoframe *info);
 void hdmi_vend_infoframe_rawset(u8 *hb, u8 *pb);
 void hdmi_vend_infoframe2_rawset(u8 *hb, u8 *pb);
+int hdmi_vend_infoframe_get(struct hdmitx_dev *hdev, u8 *body);
 void hdmi_avi_infoframe_set(struct hdmi_avi_infoframe *info);
 void hdmi_avi_infoframe_rawset(u8 *hb, u8 *pb);
+int hdmi_avi_infoframe_get(u8 *body);
+int hdmi_avi_infoframe_unpack_renew(struct hdmi_avi_infoframe *frame,
+	const void *buffer, size_t size);
 void hdmi_spd_infoframe_set(struct hdmi_spd_infoframe *info);
 void hdmi_audio_infoframe_set(struct hdmi_audio_infoframe *info);
 void hdmi_audio_infoframe_rawset(u8 *hb, u8 *pb);
@@ -248,6 +255,18 @@ enum emp_component_conf {
 	CONF_SBTM_FRMPBLIMITINT,
 };
 
+/* CONF_AVI_BT2020 */
+#define CLR_AVI_BT2020	0x0
+#define SET_AVI_BT2020	0x1
+/* CONF_AVI_Q01 */
+#define RGB_RANGE_DEFAULT	0
+#define RGB_RANGE_LIM		1
+#define RGB_RANGE_FUL		2
+#define RGB_RANGE_RSVD		3
+/* CONF_AVI_YQ01 */
+#define YCC_RANGE_LIM		0
+#define YCC_RANGE_FUL		1
+#define YCC_RANGE_RSVD		2
 void hdmi_avi_infoframe_config(enum avi_component_conf conf, u8 val);
 
 int hdmitx_infoframe_rawget(u16 info_type, u8 *body);
@@ -279,7 +298,9 @@ union intr_u {
 		struct intr_t cp2tx_intr1;
 		struct intr_t cp2tx_intr2;
 		struct intr_t cp2tx_intr3;
+		struct intr_t scdc_intr;
 		struct intr_t intr2;
+		struct intr_t intr5;
 	} entity;
 };
 
@@ -351,6 +372,7 @@ struct hdcp_t {
 	bool hdcp14_second_part_pass;
 };
 
+/* hdcp related */
 extern unsigned int rx_hdcp2_ver;
 bool get_hdcp1_lstore(void);
 bool get_hdcp2_lstore(void);
@@ -394,18 +416,29 @@ void hdcptx1_bcaps_get(u8 *p_bcaps_status);
 void hdcptx2_smng_auto(bool en);
 u8 hdcp2x_get_state_st(void);
 void hdcptx1_query_aksv(struct hdcp_ksv_t *p_val);
-void hdmitx_top_intr_handler(struct work_struct *work);
-void hdmitx_setupirqs(struct hdmitx_dev *phdev);
-void ddc_toggle_sw_tpi(void);
-bool hdmitx_ddcm_read(u8 seg_index, u8 slave_addr, u8 reg_addr, u8 *p_buf, u16 len);
-bool hdmitx_ddcm_write(u8 seg_index, u8 slave_addr, u8 reg_addr, u8 data);
 
+u8 hdmitx_reauth_request(u8 hdcp_version);
+void set_hdcp2_topo(u32 topo_type);
+bool get_hdcp2_topo(void);
+void hdmitx21_enable_hdcp(struct hdmitx_dev *hdev);
+void hdmitx21_disable_hdcp(struct hdmitx_dev *hdev);
+void hdmitx21_rst_stream_type(struct hdcp_t *hdcp);
+bool hdcp_need_control_by_upstream(struct hdmitx_dev *hdev);
+u32 hdmitx21_get_hdcp_mode(void);
+void hdcptx_en_aes_dualpipe(bool en);
+void pr_hdcp_info(const char *fmt, ...);
+void set_hdcp2_topo(u32 topo_type);
+bool get_hdcp2_topo(void);
 extern unsigned long hdcp_reauth_dbg;
 extern unsigned long streamtype_dbg;
 extern unsigned long en_fake_rcv_id;
-
-void set_hdcp2_topo(u32 topo_type);
-bool get_hdcp2_topo(void);
+void hdmitx_top_intr_handler(struct work_struct *work);
+void hdmitx_setupirqs(struct hdmitx_dev *phdev);
+void intr_status_init_clear(void);
+void ddc_toggle_sw_tpi(void);
+bool hdmitx_ddcm_read(u8 seg_index, u8 slave_addr, u8 reg_addr, u8 *p_buf, u16 len);
+bool hdmitx_ddcm_write(u8 seg_index, u8 slave_addr, u8 reg_addr, u8 data);
+bool ddc_bus_wait_free(void);
 
 /* VRR parts */
 irqreturn_t hdmitx_vrr_vsync_handler(struct hdmitx_dev *hdev);
@@ -421,16 +454,21 @@ ssize_t _vrr_cap_show(struct device *dev, struct device_attribute *attr,
 int hdmitx_dump_vrr_status(struct seq_file *s, void *p);
 void hdmitx_vrr_enable(void);
 void hdmitx_vrr_disable(void);
-u8 hdmitx_reauth_request(u8 hdcp_version);
-void hdmitx21_enable_hdcp(struct hdmitx_dev *hdev);
-void hdmitx21_disable_hdcp(struct hdmitx_dev *hdev);
-void hdmitx21_rst_stream_type(struct hdcp_t *hdcp);
-bool hdcp_need_control_by_upstream(struct hdmitx_dev *hdev);
-int likely_frac_rate_mode(const char *m);
-u32 hdmitx21_get_hdcp_mode(void);
+
+/* mute realted */
 extern unsigned long avmute_ms;
 extern unsigned long vid_mute_ms;
+void hdmitx21_av_mute_op(u32 flag, unsigned int path);
+void hdmitx21_video_mute_op(u32 flag, unsigned int path);
+void hdmitx21_audio_mute_op(u32 flag, unsigned int path);
 
+/* gate realted */
+void hdmitx21_clks_gate_ctrl(bool en);
+void hdcptx_ctrl_gate(int hdcp_mode, bool en);
+void hdmitx21_ctrl_hdcp_gate(int hdcp_mode, bool en);
+u32 hdmitx21_get_gate_status(void);
+
+int likely_frac_rate_mode(const char *m);
 /* FRL */
 struct frl_work {
 	u32 delay_ms;
@@ -468,6 +506,7 @@ struct frl_train_t {
 	bool flt_running; /* if flt_running is false, return */
 };
 
+/* SCDC related */
 #define LT_TX_CMD_TXFFE_UPDATE 0x02
 #define LT_TX_CMD_LTP_UPDATE   0x03
 void scdc_bus_stall_set(bool en);
@@ -479,6 +518,8 @@ u8 scdc_tx_flt_ready_status_get(void);
 u8 scdc_tx_sink_version_get(void);
 void scdc_tx_source_version_set(u8 src_ver);
 u8 scdc_tx_source_test_cfg_get(void);
+void scdc_tx_frl_get_rx_rate(u8 *data);
+
 bool flt_tx_cmd_execute(u8 lt_cmd);
 void flt_tx_ltp_req_write(u8 ltp01, u8 ltp23);
 void flt_tx_update_set(void);
@@ -499,11 +540,26 @@ bool frl_tx_tx_phy_init(bool disable_ffe);
 void frl_tx_tx_init(void);
 void frl_tx_tx_phy_set(void);
 void tmds_tx_phy_set(void);
-
-enum frl_rate_enum hdmitx_select_frl_rate(bool dsc_en, enum hdmi_vic vic,
-		enum hdmi_colorspace cs, enum hdmi_color_depth cd);
+void frl_tx_lts_1_hdmi21_config(void);
 void frl_tx_training_handler(struct hdmitx_dev *hdev);
 void frl_tx_stop(void);
+unsigned int drm_hdmitx_get_rx_hdcp_cap(void);
+bool frl_check_full_bw(enum hdmi_colorspace cs, enum hdmi_color_depth cd, u32 pixel_clock,
+	u32 h_active, enum frl_rate_enum frl_rate, u32 *tri_bytes);
+void fifo_flow_enable_intrs(bool en);
+void hdmitx_soft_reset(u32 bits);
+/* dsc related */
+#ifdef CONFIG_AMLOGIC_DSC
+irqreturn_t hdmitx_emp_vsync_handler(struct hdmitx_dev *hdev);
+void hdmitx_dsc_cvtem_pkt_send(struct dsc_pps_data_s *pps,
+	struct hdmi_timing *timing);
+void hdmitx_dsc_cvtem_pkt_disable(void);
+#endif
+
+unsigned int hdmitx21_get_vender_infoframe_ieee(void);
+bool hdmitx21_edid_only_support_sd(struct hdmitx_dev *hdev);
+/* bool is_4k_sink(struct hdmitx_dev *hdev); */
+void hdmitx_clks_gate_ctrl(bool en);
 
 #endif /* __HDMI_TX_H__ */
 

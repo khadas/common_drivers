@@ -1,0 +1,10 @@
+EXTRA_CLOSED_SOURCE_MODULE_LIST=(
+	tcon_fw.ko
+	dnlp_alg.ko
+	amlogic_fbc_lib.ko
+	ldim_fw.ko
+	hdr10_tmo_alg.ko
+	cuva_hdr_alg.ko
+	*_fe.ko
+	frc*.ko
+)

@@ -294,8 +294,9 @@ static void lcd_dlg_switch_mode(struct aml_lcd_drv_s *pdrv)
 #ifdef CONFIG_AMLOGIC_LCD_EXTERN
 	struct lcd_extern_driver_s *edrv;
 	struct lcd_extern_dev_s *edev;
+	unsigned int index;
 #endif
-	unsigned int i = 0, index;
+	unsigned int i = 0;
 	unsigned long long local_time[3];
 
 	LCDPR("[%d]: %s\n", pdrv->index, __func__);
@@ -353,9 +354,10 @@ static void lcd_dlg_power_ctrl(struct aml_lcd_drv_s *pdrv, int status)
 #ifdef CONFIG_AMLOGIC_LCD_EXTERN
 	struct lcd_extern_driver_s *edrv;
 	struct lcd_extern_dev_s *edev;
-#endif
-	unsigned int i, index;
+	unsigned int index;
 	unsigned long long local_time[3];
+#endif
+	unsigned int i;
 
 	LCDPR("[%d]: %s: %d\n", pdrv->index, __func__, status);
 	i = 0;
@@ -424,7 +426,22 @@ static void lcd_dlg_power_ctrl(struct aml_lcd_drv_s *pdrv, int status)
 
 static void lcd_power_encl_on(struct aml_lcd_drv_s *pdrv)
 {
+	int ret;
+
 	mutex_lock(&lcd_vout_mutex);
+
+	if (pdrv->config_check_en == 0) {
+		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+			LCDPR("[%d]: config_check disabled\n", pdrv->index);
+	} else {
+		ret = lcd_config_timing_check(pdrv, &pdrv->config.timing.act_timing);
+		if (ret & 0x55) {
+			LCDERR("[%d]: %s: config timing check fatal error!\n",
+				pdrv->index, __func__);
+			mutex_unlock(&lcd_vout_mutex);
+			return;
+		}
+	}
 
 	if (pdrv->status & LCD_STATUS_ENCL_ON) {
 		LCDPR("[%d]: %s: on already\n", pdrv->index, __func__);
@@ -478,10 +495,10 @@ static void lcd_dlg_power_if_on(struct aml_lcd_drv_s *pdrv)
 {
 	mutex_lock(&lcd_vout_mutex);
 	if (!(pdrv->status & LCD_STATUS_IF_ON)) {
-		if (pdrv->config.cus_ctrl.ufr_flag) {
-			if (pdrv->config.cus_ctrl.ufr_flag == 1)
+		if (lcd_cus_ctrl_timing_is_valid(pdrv)) {
+			if (pdrv->config.cus_ctrl.timing_switch_flag == 1)
 				lcd_power_ctrl(pdrv, 1);
-			else if (pdrv->config.cus_ctrl.ufr_flag == 2)
+			else if (pdrv->config.cus_ctrl.timing_switch_flag == 2)
 				lcd_dlg_power_ctrl(pdrv, 1);
 		} else {
 			lcd_power_ctrl(pdrv, 1);
@@ -498,10 +515,10 @@ static void lcd_dlg_power_if_off(struct aml_lcd_drv_s *pdrv)
 	mutex_lock(&lcd_vout_mutex);
 	if (pdrv->status & LCD_STATUS_IF_ON) {
 		pdrv->status &= ~LCD_STATUS_IF_ON;
-		if (pdrv->config.cus_ctrl.ufr_flag) {
-			if (pdrv->config.cus_ctrl.ufr_flag == 1)
+		if (lcd_cus_ctrl_timing_is_valid(pdrv)) {
+			if (pdrv->config.cus_ctrl.timing_switch_flag == 1)
 				lcd_power_ctrl(pdrv, 0);
-			else if (pdrv->config.cus_ctrl.ufr_flag == 2)
+			else if (pdrv->config.cus_ctrl.timing_switch_flag == 2)
 				lcd_dlg_power_ctrl(pdrv, 0);
 		} else {
 			lcd_power_ctrl(pdrv, 0);
@@ -690,13 +707,6 @@ static inline void lcd_vsync_handler(struct aml_lcd_drv_s *pdrv)
 		}
 	}
 	spin_unlock_irqrestore(&pdrv->isr_lock, flags);
-
-	if (!(pdrv->vsync_cnt % LCD_DEBUG_VSYNC_INTERVAL)) {
-		if (lcd_debug_print_flag & LCD_DBG_PR_ISR) {
-			LCDPR("[%d]: %s: viu_sel: %d, mute_count: %d\n",
-			      pdrv->index, __func__, pdrv->viu_sel, pdrv->mute_count);
-		}
-	}
 }
 
 static irqreturn_t lcd_vsync_isr(int irq, void *data)
@@ -970,6 +980,10 @@ static int lcd_power_if_on_notifier(struct notifier_block *nb,
 	if ((pdrv->status & LCD_STATUS_ENCL_ON) == 0) {
 		LCDPR("[%d]: %s: force power on controller ahead\n", pdrv->index, __func__);
 		lcd_power_encl_on(pdrv);
+		if ((pdrv->status & LCD_STATUS_ENCL_ON) == 0) {
+			LCDERR("[%d]: %s: encl_on failed!\n", pdrv->index, __func__);
+			return NOTIFY_DONE;
+		}
 	}
 
 	lcd_power_if_on(pdrv);
@@ -1809,6 +1823,15 @@ static void lcd_config_default(struct aml_lcd_drv_s *pdrv)
 	pdrv->init_flag = 0;
 
 	init_state = lcd_get_venc_init_config(pdrv);
+	pdrv->config.timing.base_timing.h_active = pdrv->config.timing.act_timing.h_active;
+	pdrv->config.timing.dft_timing.h_active = pdrv->config.timing.act_timing.h_active;
+	pdrv->config.timing.base_timing.v_active = pdrv->config.timing.act_timing.v_active;
+	pdrv->config.timing.dft_timing.v_active = pdrv->config.timing.act_timing.v_active;
+	pdrv->config.timing.base_timing.h_period = pdrv->config.timing.act_timing.h_period;
+	pdrv->config.timing.dft_timing.h_period = pdrv->config.timing.act_timing.h_period;
+	pdrv->config.timing.base_timing.v_period = pdrv->config.timing.act_timing.v_period;
+	pdrv->config.timing.dft_timing.v_period = pdrv->config.timing.act_timing.v_period;
+
 	if (init_state) {
 		switch (pdrv->boot_ctrl->init_level) {
 		case LCD_INIT_LEVEL_NORMAL:
@@ -1863,6 +1886,8 @@ static void lcd_bootup_config_init(struct aml_lcd_drv_s *pdrv)
 	pdrv->config.basic.lcd_type = pdrv->boot_ctrl->lcd_type;
 	pdrv->config.timing.clk_mode = pdrv->boot_ctrl->clk_mode;
 	pdrv->config.timing.dft_timing.frame_rate = pdrv->boot_ctrl->base_frame_rate;
+	pdrv->config.timing.dft_timing.frame_rate_min = pdrv->boot_ctrl->base_frame_rate;
+	pdrv->config.timing.dft_timing.frame_rate_max = pdrv->boot_ctrl->base_frame_rate;
 	pdrv->config.timing.base_timing.frame_rate = pdrv->boot_ctrl->base_frame_rate;
 	pdrv->config.timing.act_timing.frame_rate = pdrv->boot_ctrl->base_frame_rate;
 	switch (pdrv->boot_ctrl->ppc) {

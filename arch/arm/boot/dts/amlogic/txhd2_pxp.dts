@@ -270,6 +270,8 @@
 		status = "okay";
 		amlvideo2_id = <1>;
 		cma_mode = <1>;
+		/*all NV21 1:720P 2:1080P 3:4K*/
+		codec_mm_alloc = <1>;
 	};
 }; /* end of / */
 

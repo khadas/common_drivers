@@ -29,4 +29,7 @@
 #define T5M_MBOX_REE2AO    3
 #define T5M_MBOX_NUMS      2
 
+// AOCPU STATUS MBOX CHANNEL ID
+#define T5M_MBOX_AO2TEE    4
+
 #endif /* __T5M_MBOX_H__ */

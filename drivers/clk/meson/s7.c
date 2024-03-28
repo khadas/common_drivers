@@ -636,19 +636,13 @@ MESON_CLK_GATE_RO(fclk_clk50m, ANACTRL_FIXPLL_CTRL1, 31, 0, &fclk_clk50m_div.hw,
 
 #ifdef CONFIG_ARM
 static const struct pll_params_table gp0_pll_table[] = {
-	PLL_PARAMS(140, 1, 1), /* DCO = 1680M OD = 2 PLL = 840M */
-	PLL_PARAMS(264, 1, 2), /* DCO = 3168M OD = 4 PLL = 792M */
-	PLL_PARAMS(256, 1, 2), /* DCO = 3072M OD = 4 PLL = 768M */
-	PLL_PARAMS(248, 1, 2), /* DCO = 2976M OD = 4 PLL = 744M */
+	PLL_PARAMS(256, 1, 1), /* DCO = 3072M OD = 4 PLL = 1536M */
 	PLL_PARAMS(192, 1, 1), /* DCO = 2304M OD = 2 PLL = 1152M */
 	{ /* sentinel */  }
 };
 #else
 static const struct pll_params_table gp0_pll_table[] = {
-	PLL_PARAMS(140, 1), /* DCO = 1680M */
-	PLL_PARAMS(264, 1), /* DCO = 3168M */
 	PLL_PARAMS(256, 1), /* DCO = 3072M */
-	PLL_PARAMS(248, 1), /* DCO = 2976M */
 	PLL_PARAMS(192, 1), /* DCO = 2304M */
 	{ /* sentinel */  }
 };
@@ -947,7 +941,7 @@ MESON_CLK_DIV_RW(clk_12_24m, CLKCTRL_CLK12_24_CTRL, 10, 1, NULL, 0,
 /*vclk*/
 static u32 vclk_parent_table[] = { 1, 2, 4, 5, 6, 7 };
 static const struct clk_parent_data vclk_parent_data[] = {
-	{ .fw_name = "gp1pll", },
+	{ .fw_name = "gp1_pll", },
 	{ .hw = &hifi_pll.hw },
 	{ .hw = &fclk_div3.hw },
 	{ .hw = &fclk_div4.hw },
@@ -1180,7 +1174,7 @@ MESON_CLK_GATE_RW(ts, CLKCTRL_TS_CLK_CTRL, 8, 0,
 static u32 mali_pre_parent_table[] = { 0, 1, 3, 4, 5, 6, 7 };
 static const struct clk_parent_data mali_pre_parent_data[] = {
 	{ .fw_name = "xtal", },
-	{ .fw_name = "gp1pll", },
+	{ .fw_name = "gp1_pll", },
 	{ .hw = &fclk_div2p5.hw },
 	{ .hw = &fclk_div3.hw },
 	{ .hw = &fclk_div4.hw },
@@ -1214,7 +1208,7 @@ static const struct clk_parent_data vdec_pre_parent_data[] = {
 	{ .hw = &fclk_div5.hw },
 	{ .hw = &fclk_div7.hw },
 	{ .hw = &hifi_pll.hw },
-	{ .fw_name = "gp1pll", },
+	{ .fw_name = "gp1_pll", },
 	{ .fw_name = "xtal", }
 };
 
@@ -1273,7 +1267,7 @@ static const struct clk_parent_data vpu_pre_parent_data[] = {
 	{ .hw = &fclk_div7.hw },
 	{ .hw = &fclk_div2.hw },
 	{ .hw = &hifi_pll.hw },
-	{ .fw_name = "gp1pll", }
+	{ .fw_name = "gp1_pll", }
 };
 
 MESON_CLK_COMPOSITE_RW(vpu_0, CLKCTRL_VPU_CLK_CTRL, 0x7, 9,
@@ -1329,7 +1323,7 @@ static const struct clk_parent_data vpu_clkc_pre_parent_data[] = {
 	{ .hw = &fclk_div7.hw },
 	{ .hw = &fclk_div2.hw },
 	{ .hw = &hifi_pll.hw },
-	{ .fw_name = "gp1pll", }
+	{ .fw_name = "gp1_pll", }
 };
 
 MESON_CLK_COMPOSITE_RW(vpu_clkc_0, CLKCTRL_VPU_CLKC_CTRL, 0x7, 9,
@@ -1418,7 +1412,7 @@ static const struct clk_parent_data sd_emmc_clk_parent_data[] = {
 	{ .hw = &fclk_div3.hw },
 	{ .hw = &hifi_pll.hw },
 	{ .hw = &fclk_div2p5.hw },
-	{ .fw_name = "gp1pll", },
+	{ .fw_name = "gp1_pll", },
 	{ .hw = &gp0_pll.hw }
 };
 
@@ -1466,7 +1460,7 @@ static const struct clk_parent_data spicc_parent_data[] = {
 	{ .hw = &fclk_div2.hw },
 	{ .hw = &fclk_div5.hw },
 	{ .hw = &fclk_div7.hw },
-	{ .fw_name = "gp1pll", }
+	{ .fw_name = "gp1_pll", }
 };
 
 MESON_CLK_COMPOSITE_RW(spicc, CLKCTRL_SPICC_CLK_CTRL, 0x7, 7,
@@ -1539,7 +1533,7 @@ MESON_CLK_COMPOSITE_RW(pwm_h, CLKCTRL_PWM_CLK_GH_CTRL, 0x3, 25,
 		       CLKCTRL_PWM_CLK_GH_CTRL, 16, 8, NULL,
 		       0, CLK_SET_RATE_PARENT,
 		       CLKCTRL_PWM_CLK_GH_CTRL, 24,
-		       0, CLK_SET_RATE_PARENT);
+		       0, CLK_SET_RATE_PARENT | CLK_IGNORE_UNUSED);
 
 MESON_CLK_COMPOSITE_RW(pwm_i, CLKCTRL_PWM_CLK_IJ_CTRL, 0x3, 9,
 		       pwm_parent_table, 0, pwm_parent_data, 0,
@@ -1553,7 +1547,7 @@ MESON_CLK_COMPOSITE_RW(pwm_j, CLKCTRL_PWM_CLK_IJ_CTRL, 0x3, 25,
 		       CLKCTRL_PWM_CLK_IJ_CTRL, 16, 8, NULL,
 		       0, CLK_SET_RATE_PARENT,
 		       CLKCTRL_PWM_CLK_IJ_CTRL, 24,
-		       0, CLK_SET_RATE_PARENT);
+		       0, CLK_SET_RATE_PARENT | CLK_IGNORE_UNUSED);
 
 /*cts_sar_adc_clk*/
 static const struct clk_parent_data sar_adc_parent_data[] = {

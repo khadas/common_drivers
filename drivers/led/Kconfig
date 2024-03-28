@@ -6,6 +6,7 @@
 config AMLOGIC_LED
 	tristate "Amlogic LED Support"
 	default n
+	depends on LEDS_CLASS
 	help
 	  amlogic led support
 	  select y for built-in
@@ -15,11 +16,9 @@ config AMLOGIC_LED
 	  If you say N, all options in this submenu will be
 	  skipped and disabled.
 
-if AMLOGIC_LED
-
 config AMLOGIC_LEDS_TLC59116
 	bool "LED Support for the TLC59116"
-	depends on LEDS_CLASS
+	depends on AMLOGIC_LED
 	default n
 	help
 	  Choose this option if you want to use the LED on
@@ -27,7 +26,7 @@ config AMLOGIC_LEDS_TLC59116
 
 config AMLOGIC_LEDS_AW9523B
 	bool "LED Support for the AW9523B"
-	depends on LEDS_CLASS
+	depends on AMLOGIC_LED
 	default n
 	help
 	  Choose this option if you want to use the LED on
@@ -35,7 +34,7 @@ config AMLOGIC_LEDS_AW9523B
 
 config AMLOGIC_LEDS_STATE
 	bool "LED state support"
-	depends on LEDS_CLASS
+	depends on AMLOGIC_LED
 	default n
 	help
 	  Choose this option if you want to use the LED state
@@ -43,7 +42,7 @@ config AMLOGIC_LEDS_STATE
 
 config AMLOGIC_LEDS_DCON
 	bool "DCON LED support"
-	depends on LEDS_CLASS
+	depends on AMLOGIC_LED
 	default n
 	help
 	  Choose this option if you want to use the DCON LED
@@ -51,10 +50,8 @@ config AMLOGIC_LEDS_DCON
 
 config AMLOGIC_LEDS_FD650
 	bool "LEDS_DISPLAY"
-	depends on LEDS_CLASS
+	depends on AMLOGIC_LED
 	default n
 	help
 	  Choose this option if you want to use the LEDS display
 	  function
-
-endif

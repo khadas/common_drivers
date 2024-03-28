@@ -95,9 +95,9 @@ extern int lut3d_en;/*0:disable;1:enable */
 extern int lut3d_order;/* 0 RGB 1 GBR */
 extern int lut3d_debug;
 
-extern u16 gamma_data_r[256];
-extern u16 gamma_data_g[256];
-extern u16 gamma_data_b[256];
+extern u16 gamma_data_r[257];
+extern u16 gamma_data_g[257];
+extern u16 gamma_data_b[257];
 void vpp_get_lcd_gamma_table(u32 rgb_mask);
 void vpp_get_lcd_gamma_table_sub(void);
 

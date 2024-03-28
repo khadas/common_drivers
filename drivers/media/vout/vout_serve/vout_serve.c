@@ -628,7 +628,8 @@ static ssize_t vout_vinfo_show(struct class *class,
 		       "    cur_enc_ppc:           %d\n"
 		       "    3d_info:               %d\n"
 		       "    cs:                    %d\n"
-		       "    cd:                    %d\n\n",
+		       "    cd:                    %d\n"
+		       "    vpp_post_out_color_fmt:%d\n\n",
 		       info->name, info->mode, info->frac,
 		       info->width, info->height, info->field_height,
 		       info->aspect_ratio_num, info->aspect_ratio_den,
@@ -639,7 +640,7 @@ static ssize_t vout_vinfo_show(struct class *class,
 		       info->htotal, info->vtotal, info->video_clk,
 		       info->fr_adj_type, info->viu_color_fmt,
 		       info->viu_mux, info->cur_enc_ppc, info->info_3d,
-		       info->cs, info->cd);
+		       info->cs, info->cd, info->vpp_post_out_color_fmt);
 	len += sprintf(buf + len, "master_display_info:\n"
 		       "    present_flag          %d\n"
 		       "    features              0x%x\n"

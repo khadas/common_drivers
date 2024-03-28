@@ -363,6 +363,8 @@ int attach_aicolor_hook_mod_info(int shared_fd,
 		if (vf->width > 3840 ||
 		    vf->height > 2160 ||
 		    vf->flag & VFRAME_FLAG_VIDEO_SECURE ||
+		    vf->flag & VFRAME_FLAG_GAME_MODE ||
+		    vf->flag & VFRAME_FLAG_PC_MODE ||
 		    vf->canvas0_config[0].bit_depth & P010_MODE) {
 			aicolor_print(PRINT_OTHER, "bypass %d %d\n",
 				vf->width, vf->height);
@@ -616,6 +618,7 @@ int aicolor_getinfo(void *arg, char *buf)
 		output.width = aicolor_info->nn_input_frame_width;
 		output.height = aicolor_info->nn_input_frame_height;
 		aicolor_info->omx_index = vf->omx_index;
+		aicolor_info->ge2d_out_phy_addr = (ulong)phy_addr;
 
 		output.format = GE2D_FORMAT_S24_RGB;
 		output.addr = (ulong)phy_addr;

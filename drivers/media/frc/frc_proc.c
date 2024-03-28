@@ -50,6 +50,7 @@
 #include "frc_proc.h"
 #include "frc_hw.h"
 #include "frc_rdma.h"
+#include "frc_dbg.h"
 #if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_IOTRACE)
 #include <linux/amlogic/aml_iotrace.h>
 #endif
@@ -272,6 +273,7 @@ irqreturn_t frc_input_isr(int irq, void *dev_id)
 		return IRQ_HANDLED;
 
 	devp->in_sts.vs_cnt++;
+
 	/*update vs time*/
 	timestamp = div64_u64(timestamp, 1000);
 	devp->in_sts.vs_duration = timestamp - devp->in_sts.vs_timestamp;
@@ -284,7 +286,10 @@ irqreturn_t frc_input_isr(int irq, void *dev_id)
 	if (devp->in_sts.vs_cnt == devp->dbg_mvrd_mode)
 		if ((READ_FRC_REG(FRC_MC_MVRD_CTRL) & BIT_0) == BIT_0)
 			WRITE_FRC_REG_BY_CPU(FRC_MC_MVRD_CTRL, 0x100);
-	tasklet_schedule(&devp->input_tasklet);
+	if (devp->in_sts.hi_en)
+		tasklet_hi_schedule(&devp->input_tasklet);
+	else
+		tasklet_schedule(&devp->input_tasklet);
 
 	FRC_RDMA_WR_REG_IN(FRC_REG_TOP_RESERVE13, devp->in_sts.vs_cnt);
 	frc_rdma_config(1, 0);
@@ -310,9 +315,7 @@ void frc_input_tasklet_pro(unsigned long arg)
 	if (devp->clk_state == FRC_CLOCK_OFF)
 		return;
 #if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_IOTRACE)
-	__this_cpu_write(frc_iotrace_cut, 1);
-	if (ramoops_ftrace_en && ramoops_trace_mask & 0x2)
-		aml_pstore_write(AML_PSTORE_TYPE_SCHED, "frc_input in", 0, irqs_disabled(), 0);
+	iotrace_misc_record_write(RECORD_TYPE_FRC_INPUT_IN, 0, 0, 0);
 #endif
 	devp->in_sts.vs_tsk_cnt++;
 	if (!devp->frc_fw_pause) {
@@ -325,9 +328,7 @@ void frc_input_tasklet_pro(unsigned long arg)
 			frc_in_task_print(sched_clock() - timestamp);
 	}
 #if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_IOTRACE)
-	__this_cpu_write(frc_iotrace_cut, 0);
-	if (ramoops_ftrace_en  && ramoops_trace_mask & 0x2)
-		aml_pstore_write(AML_PSTORE_TYPE_SCHED, "frc_input out", 0, irqs_disabled(), 0);
+	iotrace_misc_record_write(RECORD_TYPE_FRC_INPUT_OUT, 0, 0, 0);
 #endif
 }
 
@@ -356,7 +357,10 @@ irqreturn_t frc_output_isr(int irq, void *dev_id)
 
 	if (devp->dbg_reg_monitor_o)
 		frc_out_reg_monitor(devp);
-	tasklet_schedule(&devp->output_tasklet);
+	if (devp->out_sts.hi_en)
+		tasklet_hi_schedule(&devp->output_tasklet);
+	else
+		tasklet_schedule(&devp->output_tasklet);
 
 	// frc_rdma->rdma_item_count = 0;
 	// rdma trigger 0 manual, 1-7 auto path
@@ -386,9 +390,7 @@ void frc_output_tasklet_pro(unsigned long arg)
 		return;
 
 #if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_IOTRACE)
-	__this_cpu_write(frc_iotrace_cut, 1);
-	if (ramoops_ftrace_en  && ramoops_trace_mask & 0x2)
-		aml_pstore_write(AML_PSTORE_TYPE_SCHED, "frc_output in", 0, irqs_disabled(), 0);
+	iotrace_misc_record_write(RECORD_TYPE_FRC_OUTPUT_IN, 0, 0, 0);
 #endif
 	devp->out_sts.vs_tsk_cnt++;
 	if (devp->in_sts.enable_mute_flag == 1 &&
@@ -410,10 +412,9 @@ void frc_output_tasklet_pro(unsigned long arg)
 		if (devp->ud_dbg.outud_time_en)
 			frc_out_task_print(sched_clock() - timestamp);
 	}
+	frc_dbg_frame_show(devp);
 #if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_IOTRACE)
-	__this_cpu_write(frc_iotrace_cut, 0);
-	if (ramoops_ftrace_en  && ramoops_trace_mask & 0x2)
-		aml_pstore_write(AML_PSTORE_TYPE_SCHED, "frc_output out", 0, irqs_disabled(), 0);
+	iotrace_misc_record_write(RECORD_TYPE_FRC_OUTPUT_OUT, 0, 0, 0);
 #endif
 }
 
@@ -673,10 +674,12 @@ enum efrc_event frc_input_sts_check(struct frc_dev_s *devp,
 
 	/* check h size change */
 	devp->in_sts.size_chged = 0;
+	devp->in_sts.t3x_proc_size_chg = 0;
 	if (devp->in_sts.in_hsize != cur_in_sts->in_hsize) {
 		pr_frc(1, "hsize change (%d - %d)\n",
 			devp->in_sts.in_hsize, cur_in_sts->in_hsize);
 		devp->in_sts.in_hsize = cur_in_sts->in_hsize;
+		devp->in_sts.t3x_proc_size_chg = 1;
 		if (get_chip_type() == ID_T3X) {
 			frc_disable_deal_diff_win(is_osd_window);
 		} else if (devp->frc_sts.state == FRC_STATE_ENABLE && get_chip_type() >= ID_T5M) {
@@ -706,6 +709,7 @@ enum efrc_event frc_input_sts_check(struct frc_dev_s *devp,
 		pr_frc(1, "vsize change (%d - %d)\n",
 			devp->in_sts.in_vsize, cur_in_sts->in_vsize);
 		devp->in_sts.in_vsize = cur_in_sts->in_vsize;
+		devp->in_sts.t3x_proc_size_chg = 1;
 		if (get_chip_type() == ID_T3X) {
 			frc_disable_deal_diff_win(is_osd_window);
 		} else if (devp->frc_sts.state == FRC_STATE_ENABLE && get_chip_type() >= ID_T5M) {
@@ -967,24 +971,11 @@ void frc_input_vframe_handle(struct frc_dev_s *devp, struct vframe_s *vf,
 				devp->in_sts.st_flag & (~FRC_FLAG_PIC_MODE);
 		}
 
-		if (vf->height < FRC_V_LIMIT || vf->width < FRC_H_LIMIT) {
-			if ((devp->in_sts.st_flag & FRC_FLAG_LIMIT_SIZE) !=
-						FRC_FLAG_LIMIT_SIZE) {
-				devp->in_sts.st_flag =
-				devp->in_sts.st_flag | FRC_FLAG_LIMIT_SIZE;
-				pr_frc(1, "video = limit_size");
-			}
-			no_input = true;
-		} else {
-			devp->in_sts.st_flag =
-				devp->in_sts.st_flag & (~FRC_FLAG_LIMIT_SIZE);
-		}
-
 		if (!cur_video_sts) {
 			pr_frc(1, "vpp_frame_par_s is NULL");
 			no_input = true;
-		} else if (cur_video_sts->frc_h_size == 0 ||
-				cur_video_sts->frc_v_size == 0) {
+		} else if (cur_video_sts->frc_h_size < FRC_H_LIMIT ||
+				cur_video_sts->frc_v_size < FRC_V_LIMIT) {
 			if ((devp->in_sts.st_flag & FRC_FLAG_INSIZE_ERR) !=
 						FRC_FLAG_INSIZE_ERR) {
 				devp->in_sts.st_flag =
@@ -1091,9 +1082,8 @@ void frc_input_vframe_handle(struct frc_dev_s *devp, struct vframe_s *vf,
 			devp->buf.secured == 1) {
 			no_input = true;
 			frc_re_cfg_cnt = 0;  // need reopen instantly
-		} else {
-			schedule_work(&devp->frc_secure_work);
 		}
+		schedule_work(&devp->frc_secure_work);
 		//pr_frc(2, "frc_re_cfg_cnt:%d pre_secure_mode:%d\n",
 			//frc_re_cfg_cnt, devp->buf.secured);
 	} else {
@@ -1108,8 +1098,10 @@ void frc_input_vframe_handle(struct frc_dev_s *devp, struct vframe_s *vf,
 	if (cur_in_sts.vf_sts) {
 		devp->frc_sts.vs_data_cnt++;
 		if (devp->frc_sts.vs_data_cnt < 50)
-			pr_frc(2, "vpp vsync (data) idx : %d\n",
-				devp->frc_sts.vs_data_cnt);
+			pr_frc(2, "vpp vsync (data) idx =%d, 0x1a1c =0x%x, 0x3f01 =0x%x\n",
+				devp->frc_sts.vs_data_cnt,
+				vpu_reg_read(devp->vpu_byp_frc_reg_addr),
+				READ_FRC_REG(0x3f01));
 	}
 	frc_update_in_sts(devp, &cur_in_sts, vf, cur_video_sts);
 
@@ -1252,10 +1244,12 @@ void frc_state_handle(struct frc_dev_s *devp)
 			new_state, frame_cnt);
 		if (chg_flag < 0x1F && frame_cnt < 20 &&
 					devp->clk_state == FRC_CLOCK_NOR)
-			pr_frc(log, "rd_frm:%d, reg_0x102:0x%08X, reg_0x113:0x%08X\n",
+			pr_frc(log, "frm:%d,reg_0x102:0x%8X,0x113:0x%8X,0x146:0x%8X,0x147:0x%8X\n",
 				frame_cnt,
 				READ_FRC_REG(FRC_REG_PAT_POINTER),
-				READ_FRC_REG(FRC_REG_OUT_FID));
+				READ_FRC_REG(FRC_REG_OUT_FID),
+				READ_FRC_REG(FRC_REG_FWD_PHS),
+				READ_FRC_REG(FRC_REG_FWD_FID));
 		pr_frc(log, "in_cnt:%X,out_cnt:%X,DBG1:0x%08X,DBG2:0x%08X,DBG3:0x%08X\n",
 			READ_FRC_REG(0x6d),
 			READ_FRC_REG(0x6e),
@@ -1288,6 +1282,7 @@ void frc_state_handle(struct frc_dev_s *devp)
 				} else if (devp->clk_state == FRC_CLOCK_NOR &&
 					devp->buf.cma_mem_alloced) {
 					// frc_mm_secure_set(devp);
+					frc_clr_badedit_effect_before_enable();
 					schedule_work(&devp->frc_secure_work);
 					get_vout_info(devp);
 					frc_hw_initial(devp);
@@ -1443,6 +1438,7 @@ void frc_state_handle(struct frc_dev_s *devp)
 				} else if (devp->clk_state == FRC_CLOCK_NOR &&
 					devp->buf.cma_mem_alloced) {
 					//first frame set bypass off
+					frc_clr_badedit_effect_before_enable();
 					schedule_work(&devp->frc_secure_work);
 					frc_memc_clr_vbuffer(devp, 1);
 					get_vout_info(devp);
@@ -1579,10 +1575,12 @@ void frc_state_handle_new(struct frc_dev_s *devp)
 			new_state, frame_cnt, vframe_idx);
 		if (chg_flag < 0x1F && frame_cnt < 30 &&
 					devp->clk_state == FRC_CLOCK_NOR) {
-			pr_frc(log, "rd_frm:%d, reg_0x102:0x%08X, reg_0x113:0x%08X\n",
+			pr_frc(log, "frm:%d,reg_0x102:0x%8X,0x113:0x%8X,0x146:0x%8X,0x147:0x%8X\n",
 				frame_cnt,
 				READ_FRC_REG(FRC_REG_PAT_POINTER),
-				READ_FRC_REG(FRC_REG_OUT_FID));
+				READ_FRC_REG(FRC_REG_OUT_FID),
+				READ_FRC_REG(FRC_REG_FWD_PHS),
+				READ_FRC_REG(FRC_REG_FWD_FID));
 			pr_frc(log, "0x3217 = %x  0x1d21 = %x  0x3218 = %x  0x35 = %x\n",
 				vpu_reg_read(0x3217), vpu_reg_read(0x1d21),
 				vpu_reg_read(0x3218), READ_FRC_REG(FRC_REG_OUT_INT_FLAG));
@@ -1623,6 +1621,7 @@ void frc_state_handle_new(struct frc_dev_s *devp)
 					devp->buf.cma_mem_alloced) {
 					devp->frc_sts.frame_cnt++;
 					devp->need_bypass = 2;
+					frc_clr_badedit_effect_before_enable();
 				}
 				off2on_cnt++;
 			} else if (devp->frc_sts.frame_cnt == 1) {
@@ -1650,17 +1649,19 @@ void frc_state_handle_new(struct frc_dev_s *devp)
 				devp->st_change = 1;
 				devp->need_bypass = 0;
 			} else if (devp->frc_sts.frame_cnt == 2) {
-				frc_input_init(devp, frc_top);
-				tmp_frm_size = frc_top->hsize;
-				tmp_frm_size |= (frc_top->vsize) << 16;
-				FRC_RDMA_WR_REG_IN(FRC_FRAME_SIZE, tmp_frm_size);
+				if (devp->in_sts.t3x_proc_size_chg) {
+					frc_input_init(devp, frc_top);
+					tmp_frm_size = frc_top->hsize;
+					tmp_frm_size |= (frc_top->vsize) << 16;
+					FRC_RDMA_WR_REG_IN(FRC_FRAME_SIZE, tmp_frm_size);
+				}
 				devp->st_change = 3;
 				devp->frc_sts.frame_cnt++;
 				off2on_cnt++;
 			} else if (devp->frc_sts.frame_cnt == 3) {
 				pr_frc(2, "post 0x3f05 = %x\n", READ_FRC_REG(FRC_FRAME_SIZE));
 
-				if (pfw_data->frc_input_cfg)
+				if (pfw_data->frc_input_cfg && devp->in_sts.t3x_proc_size_chg)
 					pfw_data->frc_input_cfg(devp->fw_data);
 				devp->frc_sts.frame_cnt++;
 				off2on_cnt++;
@@ -1738,6 +1739,7 @@ void frc_state_handle_new(struct frc_dev_s *devp)
 				devp->st_change = 2;
 				devp->frc_sts.frame_cnt++;
 			} else {
+				frc_clr_badedit_effect_before_enable();
 				devp->frc_sts.frame_cnt = 0;
 				devp->st_change = 0;
 				pr_frc(log, "stat_chg %s -> %s done\n",
@@ -1755,6 +1757,7 @@ void frc_state_handle_new(struct frc_dev_s *devp)
 				devp->st_change = 2;
 				devp->frc_sts.frame_cnt++;
 			} else if (devp->frc_sts.frame_cnt == 1) {
+				frc_clr_badedit_effect_before_enable();
 				devp->st_change = 0;
 				devp->need_bypass = 1;
 				devp->frc_sts.frame_cnt++;
@@ -1807,6 +1810,7 @@ void frc_state_handle_new(struct frc_dev_s *devp)
 					//first frame set bypass off
 					devp->need_bypass = 2;
 					devp->frc_sts.frame_cnt++;
+					frc_clr_badedit_effect_before_enable();
 				}
 				off2on_cnt++;
 			} else if (devp->frc_sts.frame_cnt == 1) {
@@ -1832,15 +1836,17 @@ void frc_state_handle_new(struct frc_dev_s *devp)
 				devp->frc_sts.frame_cnt++;
 				off2on_cnt++;
 			} else if (devp->frc_sts.frame_cnt == 2) {
-				frc_input_init(devp, frc_top);
-				tmp_frm_size = frc_top->hsize;
-				tmp_frm_size |= (frc_top->vsize) << 16;
-				FRC_RDMA_WR_REG_IN(FRC_FRAME_SIZE, tmp_frm_size);
+				if (devp->in_sts.t3x_proc_size_chg) {
+					frc_input_init(devp, frc_top);
+					tmp_frm_size = frc_top->hsize;
+					tmp_frm_size |= (frc_top->vsize) << 16;
+					FRC_RDMA_WR_REG_IN(FRC_FRAME_SIZE, tmp_frm_size);
+				}
 				devp->st_change = 3;
 				devp->frc_sts.frame_cnt++;
 				off2on_cnt++;
 			} else if (devp->frc_sts.frame_cnt == 3) {
-				if (pfw_data->frc_input_cfg)
+				if (pfw_data->frc_input_cfg && devp->in_sts.t3x_proc_size_chg)
 					pfw_data->frc_input_cfg(devp->fw_data);
 				devp->frc_sts.frame_cnt++;
 				off2on_cnt++;
@@ -2052,6 +2058,24 @@ void frc_lge_memc_init(void)
 	frc_change_to_state(FRC_STATE_ENABLE);
 	// devp->frc_sts.re_config = true;
 	pr_frc(0, "frc lge memc init done\n");
+}
+
+int frc_memc_set_deblur(u8 level)
+{
+	struct frc_dev_s *devp = get_frc_devp();
+	// struct frc_fw_alg_ctrl_s *pfrc_fw_alg_ctrl;
+	struct frc_fw_data_s *pfw_data;
+
+	if (!devp || !devp->probe_ok || !devp->fw_data)
+		return 0;
+	pfw_data = (struct frc_fw_data_s *)devp->fw_data;
+	pr_frc(1, "set_deblur_level:%d\n", level);
+	if (level != pfw_data->frc_top_type.frc_deblur_level) {
+		pfw_data->frc_top_type.frc_deblur_level = level;
+		if (pfw_data->frc_memc_level)
+			pfw_data->frc_memc_level(pfw_data);
+	}
+	return 1;
 }
 
 int frc_memc_set_demo(u8 setdemo)

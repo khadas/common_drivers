@@ -3218,9 +3218,7 @@ irqreturn_t aml_xhci_irq(struct usb_hcd *hcd)
 	u32 temp;
 
 #if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_IOTRACE)
-	__this_cpu_write(usb_iotrace_cut, 1);
-	if (ramoops_ftrace_en && ramoops_trace_mask & 0x2)
-		aml_pstore_write(AML_PSTORE_TYPE_SCHED, "usb in", 0, irqs_disabled(), 0);
+	iotrace_misc_record_write(RECORD_TYPE_USB_IN, 0, 0, 0);
 #endif
 
 	spin_lock(&xhci->lock);
@@ -3301,9 +3299,7 @@ out:
 	spin_unlock(&xhci->lock);
 
 #if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_IOTRACE)
-	__this_cpu_write(usb_iotrace_cut, 0);
-	if (ramoops_ftrace_en && ramoops_trace_mask & 0x2)
-		aml_pstore_write(AML_PSTORE_TYPE_SCHED, "usb out", 0, irqs_disabled(), 0);
+	iotrace_misc_record_write(RECORD_TYPE_USB_OUT, 0, 0, 0);
 #endif
 
 	return ret;

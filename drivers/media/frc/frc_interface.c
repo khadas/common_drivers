@@ -112,6 +112,87 @@ int frc_set_mode(enum frc_state_e state)
  * get current frc video latency
  * return: ms
  */
+int frc_get_video_latency_for_gd(void)
+{
+	struct frc_dev_s *devp = get_frc_devp();
+	struct frc_fw_data_s *fw_data;
+	struct frc_top_type_s *frc_top;
+
+	// u32 out_frm_dly_num;
+	struct vinfo_s *vinfo = get_current_vinfo();
+	u32 vout_hz = 0;
+	int delay_time = -1;   /*ms*/
+
+	fw_data = (struct frc_fw_data_s *)devp->fw_data;
+	frc_top = &fw_data->frc_top_type;
+
+	if (vinfo && vinfo->sync_duration_den != 0)
+		vout_hz = vinfo->sync_duration_num / vinfo->sync_duration_den;
+	// delay_time = out_frm_dly_num;
+	if (!devp || !vinfo)
+		return -1;
+
+	if (devp->frc_sts.auto_ctrl == 1) {
+		if (devp->in_sts.frc_vf_rate == 0)
+			return -1;
+		else if (frc_top->film_mode == 0)
+			delay_time =  35 * 100 / devp->in_sts.frc_vf_rate;
+		else if (frc_top->film_mode != 0) // 30hz or 25hz
+			delay_time =  35 * 100 / devp->in_sts.frc_vf_rate;
+		else
+			delay_time = -2;
+	} else {
+		delay_time = -1;
+	}
+	return delay_time;
+}
+EXPORT_SYMBOL(frc_get_video_latency_for_gd);
+
+/*
+ * get current frc video latency 1
+ * return: out vsync num
+ */
+int frc_get_video_latency_for_gd1(void)
+{
+	struct frc_dev_s *devp = get_frc_devp();
+	struct frc_fw_data_s *fw_data;
+	struct frc_top_type_s *frc_top;
+	// u32 out_frm_dly_num;
+	struct vinfo_s *vinfo = get_current_vinfo();
+	u32 vout_hz = 0;
+
+	int delay_time = -1;   /*ms*/
+	int delay_vsync_num = 0;
+
+	fw_data = (struct frc_fw_data_s *)devp->fw_data;
+	frc_top = &fw_data->frc_top_type;
+
+	if (!devp || !vinfo)
+		return -1;
+	if (vinfo && vinfo->sync_duration_den != 0)
+		vout_hz = vinfo->sync_duration_num / vinfo->sync_duration_den;
+
+	if (devp->frc_sts.auto_ctrl == 1) {
+		if (devp->in_sts.frc_vf_rate == 0)
+			return -1;
+		else if (frc_top->film_mode == 0)
+			delay_time =  35 * 100 / devp->in_sts.frc_vf_rate;
+		else if (frc_top->film_mode != 0) // 30hz or 25hz
+			delay_time =  35 * 100 / devp->in_sts.frc_vf_rate;
+		else
+			delay_time = -2;
+	} else {
+		return -1;
+	}
+
+	if (delay_time > 0)
+		delay_vsync_num = delay_time * vout_hz / 1000;
+	else
+		delay_vsync_num = -2;
+	return delay_vsync_num;
+}
+EXPORT_SYMBOL(frc_get_video_latency_for_gd1);
+
 int frc_get_video_latency(void)
 {
 	struct frc_dev_s *devp = get_frc_devp();

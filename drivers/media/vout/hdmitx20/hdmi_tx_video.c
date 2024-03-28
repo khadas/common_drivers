@@ -107,9 +107,10 @@ int hdmitx_set_display(struct hdmitx_dev *hdev, enum hdmi_vic videocode)
 				hdmitx_common_setup_vsif_packet(&hdev->tx_comm, VT_ALLM, 1, NULL);
 				hdmitx_hw_cntl_config(tx_hw_base, CONF_CT_MODE,
 					SET_CT_OFF);
+			} else {
+				hdmitx_hw_cntl_config(tx_hw_base, CONF_CT_MODE,
+					hdev->tx_comm.ct_mode);
 			}
-			hdmitx_hw_cntl_config(tx_hw_base, CONF_CT_MODE,
-				hdev->tx_comm.ct_mode);
 			ret = 0;
 		}
 	}
@@ -118,6 +119,7 @@ int hdmitx_set_display(struct hdmitx_dev *hdev, enum hdmi_vic videocode)
 	return ret;
 }
 
+/* TODO: merge in hdmitx_common_setup_vsif_packet() */
 static void hdmi_set_vend_spec_infofram(struct hdmitx_dev *hdev,
 					enum hdmi_vic videocode)
 {

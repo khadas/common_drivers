@@ -11,3 +11,10 @@ config AMLOGIC_VIDEOBUF_RESOURCE
 	default n
 	help
 		Select to enable V4L UTIL support
+
+config AMLOGIC_MEDIA_V4L2
+	bool "Amlogic Modify V4L2 In Kernel Support"
+	depends on AMLOGIC_BREAK_GKI
+	default n
+	help
+		Select to enable AMLOGIC V4L2 support

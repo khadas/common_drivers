@@ -48,6 +48,7 @@
 #include "../hdmi_tx_module.h"
 #include <linux/amlogic/clk_measure.h>
 #include "../../hdmitx_common/hdmitx_compliance.h"
+#include "../meson_drm_hdmitx.h"
 
 #define HDMITX_VIC_MASK			0xff
 
@@ -697,6 +698,9 @@ static int hdmitx_validate_mode(struct hdmitx_hw_common *tx_hw, u32 vic)
 static int hdmitx_calc_formatpara(struct hdmitx_hw_common *tx_hw,
 	struct hdmi_format_para *para)
 {
+	if (!tx_hw || !para)
+		return -EINVAL;
+
 	/*update tmds clock.*/
 	para->tmds_clk = hdmitx_calc_tmds_clk(para->timing.pixel_freq,
 		para->cs, para->cd);
@@ -2400,6 +2404,7 @@ static enum hdmi_tf_type hdmitx_get_cur_dv_st(void)
 	unsigned int ieee_code = 0;
 	unsigned int size = hdmitx_rd_reg(HDMITX_DWC_FC_VSDSIZE);
 	unsigned int cs = hdmitx_rd_reg(HDMITX_DWC_FC_AVICONF0) & 0x3;
+	unsigned int amdv_signal = hdmitx_rd_reg(HDMITX_DWC_FC_VSDPAYLOAD0) & 0x3;
 
 	if (!hdmitx_vsif_en())
 		return type;
@@ -2408,9 +2413,17 @@ static enum hdmi_tf_type hdmitx_get_cur_dv_st(void)
 
 	if ((ieee_code == HDMI_IEEE_OUI && size == 0x18) ||
 	    (ieee_code == DOVI_IEEEOUI && size == 0x1b)) {
-		if (cs == 0x1) /* Y422 */
+		/* When outputting DV_LL, cs needs to be 422,
+		 * Dolby_Vision_Signal (bit1) is 1,
+		 * and Low_Latency (bit0) is 1
+		 */
+		if (cs == 0x1 && amdv_signal == 0x3)
 			type = HDMI_DV_VSIF_LL;
-		if (cs == 0x0) /* RGB */
+		/* When outputting DV_STD, cs needs to be rgb,
+		 * Dolby_Vision_Signal (bit1) is 1,
+		 * and Low_Latency (bit0) is 0
+		 */
+		if (cs == 0x0 && amdv_signal == 0x2)
 			type = HDMI_DV_VSIF_STD;
 	}
 	return type;
@@ -2442,6 +2455,7 @@ static void hdmitx_set_packet(int type, unsigned char *DB, unsigned char *HB)
 	case HDMI_PACKET_AVI:
 		break;
 	case HDMI_PACKET_VEND:
+	case HDMI_INFOFRAME_TYPE_VENDOR:
 	/* 21 allm will use vendor2 */
 	case HDMI_INFOFRAME_TYPE_VENDOR2:
 		if (!DB || !HB) {
@@ -2760,6 +2774,8 @@ static void set_aud_fifo_rst(void)
 	/* need reset again */
 	hdmitx_set_reg_bits(HDMITX_DWC_AUD_SPDIF0, 1, 7, 1);
 	hdmitx_set_reg_bits(HDMITX_DWC_AUD_SPDIF0, 0, 7, 1);
+	usleep_range(9, 11);
+	hdmitx_wr_reg(HDMITX_DWC_AUD_N1, hdmitx_rd_reg(HDMITX_DWC_AUD_N1));
 }
 
 static void set_aud_samp_pkt(struct aud_para *audio_param)
@@ -2824,15 +2840,17 @@ static void audio_mute_op(bool flag)
 		hdmitx_set_reg_bits(HDMITX_DWC_FC_PACKET_TX_EN, 0, 0, 1);
 		hdmitx_set_reg_bits(HDMITX_DWC_FC_PACKET_TX_EN, 0, 3, 1);
 	} else {
+		set_aud_fifo_rst();
+		hdmitx_set_reg_bits(HDMITX_DWC_FC_DATAUTO3, 1, 0, 1);
 		if (GET_OUTCHN_MSK(aud_output_i2s_ch))
 			hdmitx_set_reg_bits(HDMITX_DWC_AUD_CONF0,
 				GET_OUTCHN_MSK(aud_output_i2s_ch), 0, 4);
 		else
 			hdmitx_set_reg_bits(HDMITX_DWC_AUD_CONF0, 0xf, 0, 4);
 		hdmitx_set_reg_bits(HDMITX_DWC_AUD_CONF0, !!tx_aud_param->aud_src_if, 5, 1);
+		if (tx_aud_param->fifo_rst)
+			hdmitx_hw_cntl_misc(&hdev->tx_hw.base, MISC_AUDIO_RESET, 1);
 		usleep_range(2000, 3000);
-		hdmitx_wr_reg(HDMITX_DWC_MC_SWRSTZREQ, 0xe7);
-		hdmitx_set_reg_bits(HDMITX_DWC_AUD_SPDIF0, 1, 7, 1);
 		hdmitx_set_reg_bits(HDMITX_DWC_FC_PACKET_TX_EN, 1, 0, 1);
 		hdmitx_set_reg_bits(HDMITX_DWC_FC_PACKET_TX_EN, 1, 3, 1);
 	}
@@ -2940,19 +2958,22 @@ static int hdmitx_set_audmode(struct hdmitx_hw_common *tx_hw,
 		usleep_range(40, 50);
 	}
 	set_aud_fifo_rst();
-	usleep_range(9, 11);
-	hdmitx_wr_reg(HDMITX_DWC_AUD_N1, hdmitx_rd_reg(HDMITX_DWC_AUD_N1));
 	hdmitx_set_reg_bits(HDMITX_DWC_FC_DATAUTO3, 1, 0, 1);
-	if (GET_OUTCHN_MSK(aud_output_i2s_ch))
-		hdmitx_set_reg_bits(HDMITX_DWC_AUD_CONF0,
-			GET_OUTCHN_MSK(aud_output_i2s_ch), 0, 4);
-	else
-		hdmitx_set_reg_bits(HDMITX_DWC_AUD_CONF0, 0xf, 0, 4);
-	hdmitx_set_reg_bits(HDMITX_DWC_AUD_CONF0, !!audio_param->aud_src_if, 5, 1);
+	if (audio_param->aud_output_en) {
+		if (GET_OUTCHN_MSK(aud_output_i2s_ch))
+			hdmitx_set_reg_bits(HDMITX_DWC_AUD_CONF0,
+				GET_OUTCHN_MSK(aud_output_i2s_ch), 0, 4);
+		else
+			hdmitx_set_reg_bits(HDMITX_DWC_AUD_CONF0, 0xf, 0, 4);
+		hdmitx_set_reg_bits(HDMITX_DWC_AUD_CONF0, !!audio_param->aud_src_if, 5, 1);
+	}
 	if (audio_param->fifo_rst)
 		hdmitx_hw_cntl_misc(tx_hw, MISC_AUDIO_RESET, 1);
-	usleep_range(2000, 3000);
-	hdmitx_set_reg_bits(HDMITX_DWC_FC_PACKET_TX_EN, 1, 0, 1);
+	if (audio_param->aud_output_en) {
+		hdmitx_wr_reg(HDMITX_DWC_AUD_N1, hdmitx_rd_reg(HDMITX_DWC_AUD_N1));
+		usleep_range(2000, 3000);
+		hdmitx_set_reg_bits(HDMITX_DWC_FC_PACKET_TX_EN, 1, 0, 1);
+	}
 	mutex_unlock(&aud_mutex);
 
 	return 0;
@@ -3242,6 +3263,17 @@ static void hdmitx_debug(struct hdmitx_hw_common *tx_hw, const char *buf)
 	} else if (strncmp(tmpbuf, "i2c_reactive", 12) == 0) {
 		hdmitx_hw_cntl_misc(&hdev->tx_hw.base, MISC_I2C_RESET, 0);
 		return;
+	} else if (strncmp(tmpbuf, "edid_check", 10) == 0) {
+		if (strncmp(tmpbuf + 10, "=0", 2) == 0)
+			hdev->tx_comm.rxcap.edid_check = 0;
+		else if (strncmp(tmpbuf + 10, "=1", 2) == 0)
+			hdev->tx_comm.rxcap.edid_check = 1;
+		else if (strncmp(tmpbuf + 10, "=2", 2) == 0)
+			hdev->tx_comm.rxcap.edid_check = 2;
+		else if (strncmp(tmpbuf + 10, "=3", 2) == 0)
+			hdev->tx_comm.rxcap.edid_check = 3;
+		HDMITX_INFO("edid_check = %d\n", hdev->tx_comm.rxcap.edid_check);
+		return;
 	} else if (strncmp(tmpbuf, "bist", 4) == 0) {
 		if (strncmp(tmpbuf + 4, "off", 3) == 0) {
 			hdev->bist_lock = 0;
@@ -3479,6 +3511,8 @@ static void hdmitx_debug(struct hdmitx_hw_common *tx_hw, const char *buf)
 			hdmitx_hw_cntl_ddc(&hdev->tx_hw.base,
 				DDC_SCDC_DIV40_SCRAMB, value);
 		}
+	} else if (strncmp(tmpbuf, "drm_hdcp_ver", 12) == 0) {
+		HDMITX_INFO("test drm_hdcp_ver: %d\n", meson_hdcp_get_rx_cap());
 	}
 }
 
@@ -5438,7 +5472,7 @@ static int hdmitx_cntl_config(struct hdmitx_hw_common *tx_hw, unsigned int cmd,
 	case CONF_GET_AVI_BT2020:
 		if (((hdmitx_rd_reg(HDMITX_DWC_FC_AVICONF1) & 0xC0) == 0xC0) &&
 		    ((hdmitx_rd_reg(HDMITX_DWC_FC_AVICONF2) & 0x70) == 0x60))
-			ret = 1;
+			ret = HDMI_EXTENDED_COLORIMETRY_BT2020;
 		else
 			ret = 0;
 		break;
@@ -5465,23 +5499,19 @@ static int hdmitx_cntl_config(struct hdmitx_hw_common *tx_hw, unsigned int cmd,
 		hdmitx_set_reg_bits(HDMITX_DWC_FC_AVICONF3, argv, 2, 2);
 		break;
 	case CONF_CT_MODE:
-		if (argv == SET_CT_OFF) {
+		if ((argv & 0xF) == SET_CT_OFF) {
 			hdmitx_set_reg_bits(HDMITX_DWC_FC_AVICONF2, 0, 7, 1);
 			hdmitx_set_reg_bits(HDMITX_DWC_FC_AVICONF3, 0, 0, 2);
-		}
-		if (argv == SET_CT_GAME) {
+		} else if ((argv & 0xF) == SET_CT_GAME) {
 			hdmitx_set_reg_bits(HDMITX_DWC_FC_AVICONF2, 1, 7, 1);
 			hdmitx_set_reg_bits(HDMITX_DWC_FC_AVICONF3, 3, 0, 2);
-		}
-		if (argv == SET_CT_GRAPHICS) {
+		} else if ((argv & 0xF) == SET_CT_GRAPHICS) {
 			hdmitx_set_reg_bits(HDMITX_DWC_FC_AVICONF2, 1, 7, 1);
 			hdmitx_set_reg_bits(HDMITX_DWC_FC_AVICONF3, 0, 0, 2);
-		}
-		if (argv == SET_CT_PHOTO) {
+		} else if ((argv & 0xF) == SET_CT_PHOTO) {
 			hdmitx_set_reg_bits(HDMITX_DWC_FC_AVICONF2, 1, 7, 1);
 			hdmitx_set_reg_bits(HDMITX_DWC_FC_AVICONF3, 1, 0, 2);
-		}
-		if (argv == SET_CT_CINEMA) {
+		} else if ((argv & 0xF) == SET_CT_CINEMA) {
 			hdmitx_set_reg_bits(HDMITX_DWC_FC_AVICONF2, 1, 7, 1);
 			hdmitx_set_reg_bits(HDMITX_DWC_FC_AVICONF3, 2, 0, 2);
 		}

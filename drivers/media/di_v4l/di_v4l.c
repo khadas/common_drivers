@@ -397,6 +397,7 @@ static void di_init(struct di_v4l_dev *dev)
 	dev->di_parm.ops.empty_input_done = empty_input_done;
 	dev->di_parm.ops.fill_output_done = fill_output_done;
 	dev->di_parm.caller_data = (void *)dev;
+	dev->di_parm.buffer_keep = 0;
 	dev->di_index = di_create_instance(dev->di_parm);
 	if (dev->di_index < 0) {
 		di_v4l_print(dev->index, PRINT_ERROR,

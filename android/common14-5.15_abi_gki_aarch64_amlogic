@@ -1,3 +1,20 @@
 # aml_drm.ko
   drm_connector_list_iter_end
   drm_wait_one_vblank
+
+# amlogic-memory-debug.ko
+  bpf_trace_run9
+
+# amlogic_debug.ko
+  __tracepoint_android_rvh_select_task_rq_fair
+  __traceiter_android_rvh_select_task_rq_fair
+
+# amlogic-debug-iotrace.ko
+  log_post_read_mmio
+  log_post_write_mmio
+  log_read_mmio
+  log_write_mmio
+
+# amlogic-wireless.ko
+  async_schedule_node
+

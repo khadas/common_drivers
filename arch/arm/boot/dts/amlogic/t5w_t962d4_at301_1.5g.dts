@@ -44,7 +44,7 @@
 		/* global autoconfigured region for contiguous allocations */
 		ramoops@0x07400000 {
 			compatible = "ramoops";
-			reg = <0x0 0x07400000 0x0 0x00100000>;
+			reg = <0x07400000 0x00100000>;
 			record-size = <0x20000>;
 			console-size = <0x40000>;
 			ftrace-size = <0x80000>;
@@ -68,10 +68,7 @@
 
 		defendkey_reserved:linux,defendkey {
 			compatible = "amlogic, defendkey";
-			reusable;
-			size = <0x100000>;
-			alignment = <0x100000>;
-			alloc-ranges = <0x04F00000 0x100000>;
+			reg = <0x04e00000 0x100000>;
 		};
 
 		secmon_reserved: linux,secmon {
@@ -87,13 +84,13 @@
 			/* keep sync with fb */
 			/* fox example:logo_addr = "0x3f800000"*/
 			alignment = <0x400000>;
-			reg = <0x2f800000 0x800000>;
+			reg = <0x2ec00000 0x800000>;
 		};
 
 		lcd_tcon_reserved:linux,lcd_tcon {
 			compatible = "amlogic, lcd_tcon";
-			reg = <0x2ec00000 0x00c00000>;
-			no-map;
+			reg = <0x2f400000 0x00c00000>;
+			//no-map;
 		};
 
 		/*  vdin0 CMA pool */
@@ -115,7 +112,7 @@
 			 */
 			size = <0x01400000>;
 			alignment = <0x400000>;
-			alloc-ranges = <0x00000000 0x30000000>;
+			alloc-ranges = <0x00000000 0x2ec00000>;
 		};
 
 		codec_mm_cma:linux,codec_mm_cma {
@@ -167,14 +164,16 @@
 			no-map;
 			size = <0x1000000>;
 			alignment = <0x100000>;
+			alloc-ranges = <0x00000000 0x30000000>;
 		};
 
 		dmaheap_cma_reserved:heap-gfx {
 			compatible = "shared-dma-pool";
 			reusable;
 			/* 1080p TV androidT size 88M */
-			size = <0x5800000>;
+			size = <0x0>;
 			alignment = <0x400000>;
+			alloc-ranges = <0x00000000 0x30000000>;
 		};
 		dmaheap_fb_reserved:heap-fb {
 			compatible = "shared-dma-pool";
@@ -182,6 +181,7 @@
 			/* 1080p TV androidT size 36M */
 			size = <0x2400000>;
 			alignment = <0x400000>;
+			alloc-ranges = <0x00000000 0x30000000>;
 		};
 
 		ion_cma_reserved:linux,ion-dev {
@@ -189,7 +189,7 @@
 			reusable;
 			size = <0x0>;
 			alignment = <0x400000>;
-			alloc-ranges = <0x00000000 0x30000000>;
+			alloc-ranges = <0x00000000 0x2ec00000>;
 		};
 
 		ion_fb_reserved:linux,ion-fb {
@@ -197,16 +197,17 @@
 			reusable;
 			size = <0x0>;
 			alignment = <0x400000>;
-			alloc-ranges = <0x00000000 0x30000000>;
+			alloc-ranges = <0x00000000 0x2ec00000>;
 		};
 
-		ldc_mem_reserved:linux,ldc_mem {
-			compatible = "shared-dma-pool";
-			reusable;
-			size = <0x400000>;
-			alignment = <0x400000>;
-			alloc-ranges = <0x00000000 0x30000000>;
-		};
+		/*ldc_mem_reserved:linux,ldc_mem {
+		 *	compatible = "shared-dma-pool";
+		 *	reusable;
+		 *	size = <0x400000>;
+		 *	alignment = <0x400000>;
+		 *	alloc-ranges = <0x00000000 0x2ec00000>;
+		 *};
+		 */
 	};
 
 	vddio_3v3_reg: fixedregulator@5{
@@ -824,6 +825,7 @@
 	};
 	dvbci {
 		compatible = "amlogic, dvbci";
+		status = "okay";
 		dev_name = "dvbci";
 		io_type = <4>; /* 0=iobus,1=spi,2=cimax,3=spi-t312 4:T5D,ci bus*/
 		addr_ts_mode_multiplex = <0>; /*AT301 not multi ts and addr,default 1*/
@@ -955,8 +957,6 @@
 		/* enable control gain */
 		ctrl_gain = <1>;
 
-		/* pcpd_monitor*/
-		pcpd_monitor_src = <&pcpd_monitor_a>;
 		status = "okay";
 
 		/* !!!For --TV platform-- ONLY */
@@ -978,6 +978,10 @@
 				&clkc CLKID_MPLL2>;
 		clock-names = "mclk", "clk_srcpll";
 		tdmin-src-name = "hdmirx";
+
+		/* pcpd_monitor*/
+		pcpd_monitor_src = <&pcpd_monitor_a>;
+
 		status = "okay";
 	};
 
@@ -1541,7 +1545,7 @@
 	status = "disabled";
 	display_size_default = <1920 1080 1920 2160 32>;
 	mem_size = <0x00800000 0x1980000 0x100000 0x100000>;
-	logo_addr = "0x2f800000";
+	logo_addr = "0x2ec00000";
 	/* display_device_cnt = <2>; */ /* for dual screen upport */
 	mem_alloc = <0>;
 	pxp_mode = <0>; /** 0:normal mode 1:pxp mode */
@@ -1549,7 +1553,7 @@
 
 &drm_vpu {
 	status = "okay";
-	logo_addr = "0x2f800000";
+	logo_addr = "0x2ec00000";
 	connectors_dev: port@1 {
 		drm_to_lcd0: endpoint@0 {
 			reg = <0>;

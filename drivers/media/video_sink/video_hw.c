@@ -3239,6 +3239,11 @@ static void vd_afbc_setting_tl1(struct video_layer_s *layer, struct mif_pos_s *s
 			(mif_blk_bgn_v << 16) |
 			mif_blk_end_v);
 	}
+	if (video_is_meson_t3_cpu() ||
+		video_is_meson_t5w_cpu()) {
+		if ((pix_end_v - pix_bgn_v + 1) % 2)
+			pix_end_v++;
+	}
 	cur_dev->rdma_func[vpp_index].rdma_wr
 		(vd_afbc_reg->afbc_pixel_ver_scope,
 		(pix_bgn_v << 16) |
@@ -7047,6 +7052,23 @@ static void post_blend_dummy_data_update(u32 vpp_index)
 	}
 }
 
+void vppx_vdx_mux_set(void)
+{
+	u32 vd_path_msic_ctrl;
+
+	vd_path_msic_ctrl =
+		READ_VCBUS_REG(viu_misc_reg.vd_path_misc_ctrl);
+	/* remove vpp0 */
+	vd_path_msic_ctrl &= 0xfffff00f;
+	/* set vd2 vpp1 */
+	vd_path_msic_ctrl |= 2 << 12;
+	/* set vd3 vpp2 */
+	vd_path_msic_ctrl &= 0xfffff0ff;
+	vd_path_msic_ctrl |= 3 << 16;
+	WRITE_VCBUS_REG(viu_misc_reg.vd_path_misc_ctrl,
+		vd_path_msic_ctrl);
+}
+
 #ifndef CONFIG_AMLOGIC_C3_REMOVE
 void vpp_blend_update_t7(const struct vinfo_s *vinfo)
 {
@@ -9073,6 +9095,8 @@ static bool is_vframe_changed
 	       cur_vf->compHeight != new_vf->compHeight) ||
 	       (cur_vf->flag & VFRAME_FLAG_COMPOSER_DONE) !=
 	       (new_vf->flag & VFRAME_FLAG_COMPOSER_DONE))) ||
+	    (cur_vf->flag & VFRAME_FLAG_FIX_TUNNEL) !=
+	    (new_vf->flag & VFRAME_FLAG_FIX_TUNNEL) ||
 	     cur_vf->bufWidth != new_vf->bufWidth ||
 	     cur_vf->width != new_vf->width ||
 	     cur_vf->height != new_vf->height ||
@@ -9818,9 +9842,10 @@ int set_layer_display_canvas(struct video_layer_s *layer,
 		struct canvas_s tmp;
 
 		canvas_read(cur_canvas_tbl[0], &tmp);
-		pr_info("%s %d: update_mif %d: vf:%p, omx_index=%d, y:%02x, adr:0x%lx (0x%lx), canvas0:%x, pnum:%d, type:%x, flag:%x, afbc:0x%lx-0x%lx, vf_ext:%px uvm_vf:%px di_flag:%x size:%d %d, vframe size:%d line:%d\n",
+		pr_info("%s %d: update_mif %d: vf(%p):%d, vsync =%d, omx_index=%d, y:%02x, adr:0x%lx (0x%lx), canvas0:%x, pnum:%d, type:%x, flag:%x, afbc:0x%lx-0x%lx, vf_ext:%px uvm_vf:%px di_flag:%x size:%d %d, vframe size:%d line:%d\n",
 			__func__, layer_id, update_mif ? 1 : 0,
-			vf, vf->omx_index, cur_canvas_tbl[0],
+			vf, vf->index_disp, layer->display_cnt,
+			vf->omx_index, cur_canvas_tbl[0],
 			tmp.addr, vf->canvas0_config[0].phy_addr,
 			vf->canvas0Addr, vf->plane_num,
 			vf->type, vf->flag,
@@ -9828,6 +9853,7 @@ int set_layer_display_canvas(struct video_layer_s *layer,
 			vf->vf_ext, vf->uvm_vf, vf->di_flag,
 			vf->compWidth, vf->width, (u32)sizeof(struct vframe_s), line);
 	}
+	layer->display_cnt = 0;
 	return 0;
 }
 
@@ -11911,7 +11937,7 @@ bool aisr_update_frame_info(struct video_layer_s *layer,
 	/* update layer->aisr_mif_setting */
 	if (vf->vc_private &&
 	    vf->vc_private->flag & VC_FLAG_AI_SR &&
-	    check_aisr_need_disable(layer)) {
+	    !check_aisr_need_disable(layer)) {
 		struct vf_nn_sr_t *srout_data = NULL;
 
 		//layer->slice_num = 1;
@@ -13571,7 +13597,10 @@ int video_hw_init(void)
 		/* arb rd2:  vpp_arb1, */
 		/* VPU[0x3978]=0x0aa00000 */
 		/* VPU[0x279d]=0x00900000 */
-		WRITE_VCBUS_REG(VPU_RDARB_UGT_L2C1, 0xffff);
+		/*
+		 *setting move to vpu arb driver init
+		 *WRITE_VCBUS_REG(VPU_RDARB_UGT_L2C1, 0xffff);
+		 */
 	} else if (video_is_meson_t5m_cpu()) {
 		/* vpu port map for t5m */
 		/* vpp_arb0: vd1, vd2, dolby0 */

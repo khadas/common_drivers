@@ -67,6 +67,7 @@ static unsigned int vrr_mnt_table[VRR_MNT_MAX] = {
 static unsigned int vrr_mnt_buf[VRR_MNT_MAX * 5];
 static int vrr_mnt_cnt;
 
+unsigned int vrr_dly_new;
 static struct vrr_trace_s vrr_trace;
 
 static void vrr_monitor_save(void)
@@ -552,10 +553,16 @@ int vrr_drv_lfc_update(struct aml_vrr_drv_s *vdrv, int flag, int fps)
 /* return: 0:need restart, 1:no need restart */
 static int vrr_restart_check(struct aml_vrr_drv_s *vdrv)
 {
-	unsigned int mode;
+	unsigned int mode, temp, offset = 0;
 
-	if (vdrv->enable == 0)
+	offset = vdrv->data->offset[vdrv->index];
+
+	temp = vrr_reg_getb(VENC_VRR_CTRL + offset, 8, 16);
+	if (vdrv->enable == 0 || vrr_dly_new != temp) {
+		vdrv->state &= ~VRR_STATE_EN;
 		return 0;
+	}
+
 	mode = (vdrv->state & VRR_STATE_POLICY) ? 1 : 0;
 	if (vdrv->policy != mode) {
 		vdrv->state |= VRR_STATE_RESET;

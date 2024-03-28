@@ -14,12 +14,13 @@
 #include <linux/of.h>
 #include <linux/ctype.h>
 #include <linux/kallsyms.h>
-
+#include <linux/amlogic/gki_module.h>
 #include "gki_tool.h"
 
 static int __init gki_tool_init(void)
 {
-	gki_module_init();
+	module_debug_init();
+
 	return 0;
 }
 

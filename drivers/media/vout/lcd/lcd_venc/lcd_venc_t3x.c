@@ -458,11 +458,11 @@ static void lcd_venc_change_timing(struct aml_lcd_drv_s *pdrv)
 	ppc = pdrv->config.timing.ppc;
 	htotal = (lcd_vcbus_getb(ENCL_VIDEO_MAX_CNT + offset, 16, 16) + 1) * ppc;
 
-	if (pdrv->vmode_update) {
+	if (pdrv->vmode_switch) {
 		lcd_venc_set_timing(pdrv);
 	} else if (pdrv->config.basic.lcd_type == LCD_VBYONE &&
 		pdrv->config.timing.act_timing.h_period != htotal) {
-		lcd_enc_timing_init_config(pdrv);
+		lcd_enc_h_timing_change(pdrv);
 		lcd_venc_set_timing(pdrv);
 	} else {
 		vtotal = lcd_vcbus_getb(ENCL_VIDEO_MAX_CNT + offset, 0, 16) + 1;
@@ -514,23 +514,14 @@ static int lcd_venc_get_init_config(struct aml_lcd_drv_s *pdrv)
 
 	size = lcd_vcbus_getb(ENCL_VIDEO_HAVON_PX_RNG + offset, 0, 16)
 		- lcd_vcbus_getb(ENCL_VIDEO_HAVON_PX_RNG + offset, 16, 16) + 1;
-	pconf->timing.dft_timing.h_active = size * ppc;
+	pconf->timing.act_timing.h_active = size * ppc;
 	size = lcd_vcbus_getb(ENCL_VIDEO_VAVON_LN_RNG + offset, 0, 16)
 		- lcd_vcbus_getb(ENCL_VIDEO_VAVON_LN_RNG + offset, 16, 16) + 1;
-	pconf->timing.dft_timing.v_active = size;
+	pconf->timing.act_timing.v_active = size;
 	size = lcd_vcbus_getb(ENCL_VIDEO_MAX_CNT + offset, 16, 16) + 1;
-	pconf->timing.dft_timing.h_period = size * ppc;
+	pconf->timing.act_timing.h_period = size * ppc;
 	size = lcd_vcbus_getb(ENCL_VIDEO_MAX_CNT + offset, 0, 16) + 1;
-	pconf->timing.dft_timing.v_period = size;
-
-	pconf->timing.base_timing.h_active = pconf->timing.dft_timing.h_active;
-	pconf->timing.act_timing.h_active = pconf->timing.dft_timing.h_active;
-	pconf->timing.base_timing.v_active = pconf->timing.dft_timing.v_active;
-	pconf->timing.act_timing.v_active = pconf->timing.dft_timing.v_active;
-	pconf->timing.base_timing.h_period = pconf->timing.dft_timing.h_period;
-	pconf->timing.act_timing.h_period = pconf->timing.dft_timing.h_period;
-	pconf->timing.base_timing.v_period = pconf->timing.dft_timing.v_period;
-	pconf->timing.act_timing.v_period = pconf->timing.dft_timing.v_period;
+	pconf->timing.act_timing.v_period = size;
 
 	lcd_venc_gamma_check_en(pdrv);
 

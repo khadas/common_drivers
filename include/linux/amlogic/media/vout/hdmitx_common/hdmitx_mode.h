@@ -276,8 +276,8 @@ struct hdmi_timing {
 
 	unsigned short h_pol; /*hsync_polarity*/
 	unsigned short v_pol; /*vsync_polarity*/
-	unsigned short h_pict;
-	unsigned short v_pict;
+	unsigned short h_pict; /* aspect ratio */
+	unsigned short v_pict; /* aspect ratio */
 	unsigned short h_pixel;
 	unsigned short v_pixel;
 

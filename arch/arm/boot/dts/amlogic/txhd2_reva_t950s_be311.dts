@@ -295,8 +295,8 @@
 
 		lcd_tcon_reserved:linux,lcd_tcon {
 			compatible = "amlogic, lcd_tcon";
-			reg = <0x3f000000 0x00502840>;
-			no-map;
+			reg = <0x3f000000 0x00402840>;
+			//no-map;
 		};
 
 		/*  vdin0 CMA pool */
@@ -666,6 +666,8 @@
 		status = "okay";
 		amlvideo2_id = <1>;
 		cma_mode = <1>;
+		/*all NV21 1:720P 2:1080P 3:4K*/
+		codec_mm_alloc = <1>;
 	};
 
 	/* for external keypad */

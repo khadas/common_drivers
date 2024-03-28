@@ -618,6 +618,8 @@ static void lcd_set_tcon_clk_tl1(struct aml_lcd_drv_s *pdrv)
 
 static void lcd_set_tcon_clk_t5(struct aml_lcd_drv_s *pdrv)
 {
+	if (pdrv->status & LCD_STATUS_IF_ON)
+		return;
 	if (pdrv->config.basic.lcd_type != LCD_MLVDS &&
 	    pdrv->config.basic.lcd_type != LCD_P2P)
 		return;
@@ -650,6 +652,8 @@ static void lcd_set_tcon_clk_txhd2(struct aml_lcd_drv_s *pdrv)
 	unsigned int val = 0;
 	struct lcd_config_s *pconf = &pdrv->config;
 
+	if (pdrv->status & LCD_STATUS_IF_ON)
+		return;
 	if (pdrv->config.basic.lcd_type != LCD_MLVDS)
 		return;
 

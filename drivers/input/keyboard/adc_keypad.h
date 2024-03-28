@@ -13,6 +13,7 @@
 #include <linux/mutex.h>
 #include <linux/iio/consumer.h>
 #include <dt-bindings/iio/adc/amlogic-saradc.h>
+#include <linux/leds.h>
 
 #define DRIVE_NAME "adc_keypad"
 #define MAX_NAME_LEN 20
@@ -49,6 +50,10 @@ struct meson_adc_kp {
 	struct delayed_work work;
 	struct input_dev *input;
 	struct iio_channel *pchan[SARADC_CH_NUM];
+	struct led_trigger *led_blink;
+	unsigned long led_delay_on;
+	unsigned long led_delay_off;
+	const char *led_trigger_name;
 };
 
 #endif

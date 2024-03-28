@@ -52,6 +52,12 @@ struct pll_params_table {
 #define CLK_MESON_PLL_POWER_OF_TWO			BIT(3)
 #define CLK_MESON_PLL_FIXED_N				BIT(4)
 #define CLK_MESON_PLL_FIXED_EN0P5			BIT(5)
+/*
+ * when PLL set the same rate, Do nothing in clk_set_rate,
+ * enable callback relock it, OD should not be cleared in ARM64,
+ * and retain it.
+ */
+#define CLK_MESON_PLL_RETAIN_OD				BIT(6)
 
 struct meson_clk_pll_data {
 	struct parm en;

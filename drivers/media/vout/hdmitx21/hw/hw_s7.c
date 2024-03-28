@@ -28,7 +28,7 @@
 			} \
 		} \
 		if (cnt < 9) \
-			pr_info("pll[0x%x] reset %d times\n", reg, 9 - cnt);\
+			HDMITX_INFO("pll[0x%x] reset %d times\n", reg, 9 - cnt);\
 	} while (0)
 
 static const char od_map[9] = {
@@ -94,7 +94,7 @@ void set21_s7_htxpll_clk_out(const u32 clk, u32 div)
 	cs = para->cs;
 	cd = para->cd;
 
-	pr_info("%s[%d] htxpll vco %d div %d\n", __func__, __LINE__, clk, div);
+	HDMITX_INFO("%s[%d] htxpll vco %d div %d\n", __func__, __LINE__, clk, div);
 
 	if (clk <= 3000000 || clk > 6000000) {
 		pr_err("%s[%d] %d out of htxpll range(3~6G]\n", __func__, __LINE__, clk);
@@ -155,7 +155,7 @@ void set21_s7_htxpll_clk_out(const u32 clk, u32 div)
 		pll_od3 = 2;//pll_div3 = 7.5;
 
 	hd21_set_reg_bits(ANACTRL_HDMIPLL_CTRL0, 1, 19, 1);
-	pr_info("pll_od1 = %d, pll_od2 = %d, pll_od3 = %d\n",
+	HDMITX_INFO("pll_od1 = %d, pll_od2 = %d, pll_od3 = %d\n",
 		pll_od1, pll_od2, pll_od3);
 	if (hdev->tx_hw.s7_clk_config)
 		hd21_set_reg_bits(ANACTRL_HDMIPLL_CTRL0, pll_od3, 9, 2);
@@ -231,5 +231,51 @@ void set21_hpll_sspll_s7(enum hdmi_vic vic)
 	default:
 		break;
 	}
+}
+
+/* CLKCTRL_HTX_CLK_CTRL0 bit8 gate for cts_hdmitx_prif_clk
+ * it's necessary for register access of controller
+ * CLKCTRL_HTX_CLK_CTRL0 bit24 gate for cts_hdmitx_200m_clk
+ * it's necessary for i2c clk
+ * CLKCTRL_HDMI_CLK_CTRL bit8 gate for cts_hdmitx_sys_clk
+ * it's necessary for register access of hdmitx top
+ */
+static int gate_bit_mask = 0x01c7f;
+module_param(gate_bit_mask, int, 0644);
+MODULE_PARM_DESC(gate_bit_mask, "for gate_bit_mask");
+
+void hdmitx_s7_clock_gate_ctrl(struct hdmitx_dev *hdev, bool en)
+{
+	HDMITX_INFO("hdmitx_s7_clock_gate %d\n", en);
+	if (gate_bit_mask & BIT(1))
+		hd21_set_reg_bits(CLKCTRL_VID_PLL_CLK0_DIV, en, 19, 1);
+	if (gate_bit_mask & BIT(2))
+		hd21_set_reg_bits(CLKCTRL_ENC_HDMI_CLK_CTRL, en, 4, 1);
+	if (gate_bit_mask & BIT(3))
+		hd21_set_reg_bits(CLKCTRL_ENC_HDMI_CLK_CTRL, en, 20, 1);
+	if (gate_bit_mask & BIT(4))
+		hd21_set_reg_bits(CLKCTRL_ENC_HDMI_CLK_CTRL, en, 12, 1);
+	if (gate_bit_mask & BIT(5))
+		hd21_set_reg_bits(CLKCTRL_VID_CLK0_CTRL2, en, 3, 1);
+	if (gate_bit_mask & BIT(6))
+		hd21_set_reg_bits(CLKCTRL_HTX_CLK_CTRL1, en, 8, 1);
+	if (gate_bit_mask & BIT(7))
+		hd21_set_reg_bits(CLKCTRL_HTX_CLK_CTRL0, en, 24, 1);
+	if (gate_bit_mask & BIT(8))
+		hd21_set_reg_bits(CLKCTRL_HTX_CLK_CTRL0, en, 8, 1);
+	if (gate_bit_mask & BIT(9))
+		hd21_set_reg_bits(CLKCTRL_HDMI_CLK_CTRL, en, 8, 1);
+
+	if (gate_bit_mask & BIT(10)) {/* this will enable during the mode setting */
+		hd21_write_reg(ANACTRL_HDMIPHY_CTRL0, 0x0);
+		hd21_write_reg(ANACTRL_HDMIPHY_CTRL5, 0x0);
+	}
+	if (gate_bit_mask & BIT(11)) {// power off need
+		hd21_write_reg(ANACTRL_HDMIPHY_CTRL3, 0x304efc1b);
+		hd21_write_reg(ANACTRL_HDMIPHY_CTRL3, 0xc1b);
+	}
+	usleep_range(1, 10);
+	if (gate_bit_mask & BIT(12)) /* this will enable during the pll setting */
+		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x0);
 }
 

@@ -42,13 +42,15 @@ static const struct di_ext_ops di_ext = {
 	.new_get_output_buffer_num	= new_get_output_buffer_num,
 	.new_get_input_buffer_num	= new_get_input_buffer_num,
 	.config_crc_ic		= dim_config_crc_icl,
+	.dim_ic_sub		= dim_is_ic_sub,
 	.pre_vpp_link_display	= dim_pre_vpp_link_display,
 	.pre_vpp_link_check_vf	= dpvpp_check_vf,
 	.pre_vpp_link_check_act = dpvpp_check_di_act,
 	.pre_vpp_link_sw	= dpvpp_sw,
 	.pre_vpp_get_ins_id	= dpvpp_get_ins_id,
 	.get_vpu_clkb_ext	= dim_get_vpu_clk_ext,
-	.is_pre_link		= dim_pre_link_state
+	.is_pre_link		= dim_pre_link_state,
+	.set_buffer_num		= set_buffer_num
 };
 
 void dim_attach_to_local(void)

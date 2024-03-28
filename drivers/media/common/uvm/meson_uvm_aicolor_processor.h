@@ -14,6 +14,7 @@ enum aicolor_get_info_type_e {
 struct uvm_aicolor_info {
 	s32 shared_fd;
 	s32 aicolor_fd;
+	s64 ge2d_out_phy_addr;
 	u8 color_value[AI_COLOR_COUNT];
 	s32 aicolor_buf_index;
 	s32 aicolor_value_index;
@@ -26,6 +27,7 @@ struct uvm_aicolor_info {
 	s32 nn_input_frame_height;
 	s32 nn_status;
 	s32 omx_index;
+	s32 reserved[10];
 };
 
 int attach_aicolor_hook_mod_info(int shared_fd,

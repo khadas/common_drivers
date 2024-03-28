@@ -26,9 +26,6 @@ char name_crg[32];
 
 #define PHY_CRG_DRD_TUNING_DISCONNECT_THRESHOLD_BIT_5_0 0x3f
 #define PHY_CRG_DRD_TUNING_DISCONNECT_THRESHOLD_BIT6_0 0x7f
-/* TODO: if this field is changed again, use this marco instand. */
-#define PHY_CRG_DRD_TUNING_DISCONNECT_THRESHOLD_MASK(a, b)\
-		(((u32)-1 >> (31 - (b))) & ~((1U << (a)) - 1))
 
 static void usb_set_calibration_trim
 	(void __iomem *reg, struct amlogic_usb_v2 *phy)
@@ -214,6 +211,7 @@ static void set_usb_pll_v2(struct amlogic_usb_v2 *phy, void __iomem	*reg)
 #define USBPLL_EN_BIT		11
 #define USB2_MPLL_EN_CTRL_BIT 1
 #define USBPLL_RST_BIT		0
+#define PHY_CRG_DRD_TUNING_DISCONNECT_THRESHOLD_BIT6_0_v2 0x7
 
 	u32 retry = 5;
 	u32 pll_val0 = phy->pll_setting[0],
@@ -236,7 +234,7 @@ __retry:
 	writel(pll_val0 | (1 << USB2_MPLL_EN_CTRL_BIT) | (1 << USBPLL_EN_BIT),
 		(reg + 0x40));
 	usleep_range(99, 100);
-	writel(PHY_CRG_DRD_TUNING_DISCONNECT_THRESHOLD_BIT6_0, reg + 0xC);
+	writel(PHY_CRG_DRD_TUNING_DISCONNECT_THRESHOLD_BIT6_0_v2, reg + 0xC);
 	// wait for 200us
 	usleep_range(199, 200);
 	//check lock bit

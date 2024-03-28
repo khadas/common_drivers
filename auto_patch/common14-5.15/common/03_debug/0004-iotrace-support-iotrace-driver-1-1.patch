@@ -1,4 +1,4 @@
-From 979495497535b2c1ec8c51c2aa41e4ec6bc6d85f Mon Sep 17 00:00:00 2001
+From ac8eeac8b8d916bfd16fab81d935212cd54b480c Mon Sep 17 00:00:00 2001
 From: "qiankun.wang" <qiankun.wang@amlogic.com>
 Date: Thu, 11 May 2023 15:08:24 +0800
 Subject: [PATCH] iotrace: support iotrace driver [1/1]
@@ -17,10 +17,11 @@ on s4d_ap222 and c2_af400
 Change-Id: Id4dc4f64d886dc551f32d776ebaa2c9c2d5650b0
 Signed-off-by: qiankun.wang <qiankun.wang@amlogic.com>
 ---
- arch/arm/Kconfig          | 1 +
- arch/arm/include/asm/io.h | 5 +++--
- include/asm-generic/io.h  | 7 +++++++
- 3 files changed, 11 insertions(+), 2 deletions(-)
+ arch/arm/Kconfig            | 1 +
+ arch/arm/include/asm/io.h   | 5 +++--
+ arch/arm64/include/asm/io.h | 4 ++++
+ include/asm-generic/io.h    | 7 +++++++
+ 4 files changed, 15 insertions(+), 2 deletions(-)
 
 diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
 index 2bf1244b0ac8..2ab99334e660 100644
@@ -71,6 +72,28 @@ index 79d246ac93ab..9df35303c0f7 100644
  #else
  #define memset_io(c,v,l)	_memset_io(c,(v),(l))
  #define memcpy_fromio(a,c,l)	_memcpy_fromio((a),c,(l))
+diff --git a/arch/arm64/include/asm/io.h b/arch/arm64/include/asm/io.h
+index 3995652daf81..8f6e6980b5c7 100644
+--- a/arch/arm64/include/asm/io.h
++++ b/arch/arm64/include/asm/io.h
+@@ -112,6 +112,9 @@ static inline u64 __raw_readq(const volatile void __iomem *addr)
+ #define __iowmb()		dma_wmb()
+ #define __iomb()		dma_mb()
+ 
++#if IS_BUILTIN(CONFIG_AMLOGIC_DEBUG_IOTRACE) || \
++    ((IS_MODULE(CONFIG_AMLOGIC_DEBUG_IOTRACE)) && defined(MODULE))
++#else
+ /*
+  * Relaxed I/O memory access primitives. These follow the Device memory
+  * ordering rules but do not guarantee any ordering relative to Normal memory
+@@ -141,6 +144,7 @@ static inline u64 __raw_readq(const volatile void __iomem *addr)
+ #define writew(v,c)		({ __iowmb(); writew_relaxed((v),(c)); })
+ #define writel(v,c)		({ __iowmb(); writel_relaxed((v),(c)); })
+ #define writeq(v,c)		({ __iowmb(); writeq_relaxed((v),(c)); })
++#endif
+ 
+ /*
+  *  I/O port access primitives.
 diff --git a/include/asm-generic/io.h b/include/asm-generic/io.h
 index c154199269b1..6e64abad09a6 100644
 --- a/include/asm-generic/io.h

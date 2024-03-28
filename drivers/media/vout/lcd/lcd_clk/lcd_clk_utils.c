@@ -558,6 +558,7 @@ p2p_clk_without_tcon_div_done:
 	return done;
 }
 
+#ifdef CONFIG_AMLOGIC_LCD_TABLET
 #define DSI_CLK_TB_SIZE 32
 /********************** DSI 1PLL model **********************/
 /* PLL_VCO / OD[1/3] / PLL_CLK_DIV(optional) == VID_PLL_CLK */
@@ -739,6 +740,7 @@ static unsigned char lcd_clk_generate_DP_1PLL(struct aml_lcd_drv_s *pdrv)
 		edp_div1_table[min_err_div1], cconf->fout, cconf->fout, min_err);
 	return 1;
 }
+#endif
 
 static int lcd_pll_frac_generate_dependence(struct aml_lcd_drv_s *pdrv)
 {
@@ -1007,6 +1009,7 @@ void lcd_clk_generate_dft(struct aml_lcd_drv_s *pdrv)
 	bit_rate = pconf->timing.bit_rate;
 
 	switch (pconf->basic.lcd_type) {
+#ifdef CONFIG_AMLOGIC_LCD_TABLET
 	case LCD_RGB:
 		clk_div_sel = CLK_DIV_SEL_1;
 		for (xd = 1; xd <= cconf->data->xd_max; xd++) {
@@ -1033,6 +1036,7 @@ void lcd_clk_generate_dft(struct aml_lcd_drv_s *pdrv)
 				goto generate_clk_dft_done;
 		}
 		break;
+#endif
 	case LCD_LVDS:
 		if (pdrv->data->chip_type == LCD_CHIP_T3X) {
 			if (pconf->control.lvds_cfg.dual_port)
@@ -1274,12 +1278,14 @@ void lcd_clk_generate_dft(struct aml_lcd_drv_s *pdrv)
 				done = lcd_clk_generate_p2p_without_tcon_div(cconf, bit_rate);
 		}
 		break;
+#ifdef CONFIG_AMLOGIC_LCD_TABLET
 	case LCD_MIPI:
 		done = lcd_clk_generate_DSI_1PLL(pdrv);
 		break;
 	case LCD_EDP:
 		done = lcd_clk_generate_DP_1PLL(pdrv);
 		break;
+#endif
 	default:
 		break;
 	}

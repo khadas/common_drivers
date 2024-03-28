@@ -59,7 +59,11 @@ int hdmitx_common_set_contenttype(int content_type)
 	 * reset allm to enable contenttype.
 	 * TODO: follow spec to skip contenttype when ALLM is on.
 	 */
-	hdmitx_common_setup_vsif_packet(global_tx_base, VT_HDMI14_4K, 1, NULL);
+	/* recover hdmi1.4 vsif if necessary */
+	if (hdmitx_edid_get_hdmi14_4k_vic(global_tx_base->fmt_para.vic) &&
+		!hdmitx_dv_en(global_tx_base->tx_hw) &&
+		!hdmitx_hdr10p_en(global_tx_base->tx_hw))
+		hdmitx_common_setup_vsif_packet(global_tx_base, VT_HDMI14_4K, 1, NULL);
 
 	/*reset previous ct.*/
 	hdmitx_hw_cntl_config(global_tx_hw, CONF_CT_MODE, SET_CT_OFF);
@@ -94,6 +98,7 @@ int hdmitx_common_set_contenttype(int content_type)
 }
 EXPORT_SYMBOL(hdmitx_common_set_contenttype);
 
+/* similar as disp_cap_show() */
 int hdmitx_common_get_vic_list(int **vics)
 {
 	struct rx_cap *prxcap = &global_tx_base->rxcap;
@@ -103,11 +108,13 @@ int hdmitx_common_get_vic_list(int **vics)
 	int count = 0;
 	int *viclist = 0;
 	int *edid_vics = 0;
+	enum hdmi_vic prefer_vic = HDMI_0_UNKNOWN;
 
 	viclist = kcalloc(len, sizeof(int),  GFP_KERNEL);
 	edid_vics = vmalloc(len * sizeof(int));
 	memset(edid_vics, 0, len * sizeof(int));
 
+	/* step1: only select VIC which is supported in EDID */
 	/*copy edid vic list*/
 	if (prxcap->VIC_count > 0)
 		memcpy(edid_vics, prxcap->VIC, sizeof(int) * prxcap->VIC_count);
@@ -119,22 +126,22 @@ int hdmitx_common_get_vic_list(int **vics)
 		if (vic == HDMI_0_UNKNOWN)
 			continue;
 
-		if (vic == HDMI_2_720x480p60_4x3 ||
-			vic == HDMI_6_720x480i60_4x3 ||
-			vic == HDMI_17_720x576p50_4x3 ||
-			vic == HDMI_21_720x576i50_4x3) {
-			if (hdmitx_edid_validate_mode(prxcap, vic + 1) == true) {
-				//HDMITX_INFO("%s: check vic exist, handle [%d] later.\n",
-				//	__func__, vic + 1);
-				continue;
-			}
+		prefer_vic = hdmitx_get_prefer_vic(global_tx_base, vic);
+		/* if mode_best_vic is support by RX, try 16x9 first */
+		if (prefer_vic != vic) {
+			HDMITX_DEBUG("%s: check prefer vic:%d exist, ignore [%d] later.\n",
+				__func__, prefer_vic, vic);
+			continue;
 		}
 
+		/* step2, check if VIC is supported by SOC hdmitx */
 		if (hdmitx_common_validate_vic(global_tx_base, vic) != 0) {
 			//HDMITX_ERROR("%s: vic[%d] over range.\n", __func__, vic);
 			continue;
 		}
-
+		/* step3, build format with basic mode/attr and check
+		 * if it's supported by EDID/hdmitx_cap
+		 */
 		if (hdmitx_common_check_valid_para_of_vic(global_tx_base, vic) != 0) {
 			//HDMITX_ERROR("%s: vic[%d] check fmt attr failed.\n", __func__, vic);
 			continue;
@@ -155,6 +162,14 @@ int hdmitx_common_get_vic_list(int **vics)
 }
 EXPORT_SYMBOL(hdmitx_common_get_vic_list);
 
+/* similar as hdmitx_common_validate_mode_locked() but without lock,
+ * it's almost the same as valid_mode_store()
+ * validation step:
+ * step1, check if mode related VIC is supported in EDID
+ * step2, check if VIC is supported by SOC hdmitx
+ * step3, build format with mode/attr and check if it's
+ * supported by EDID/hdmitx_cap
+ */
 bool hdmitx_common_chk_mode_attr_sup(char *mode, char *attr)
 {
 	struct hdmi_format_para tst_para;
@@ -206,6 +221,16 @@ EXPORT_SYMBOL(hdmitx_common_chk_mode_attr_sup);
 int hdmitx_common_get_timing_para(int vic, struct drm_hdmitx_timing_para *para)
 {
 	const struct hdmi_timing *timing;
+
+	/* TO CONFIRM */
+	//if (vic == HDMI_2_720x480p60_4x3 ||
+	//	vic == HDMI_6_720x480i60_4x3 ||
+	//	vic == HDMI_17_720x576p50_4x3 ||
+	//	vic == HDMI_21_720x576i50_4x3) {
+	//	if (hdmitx_check_vic(vic + 1))
+	//		return -1;
+	//	vic++;
+	//}
 
 	timing = hdmitx_mode_vic_to_hdmi_timing(vic);
 	if (!timing)

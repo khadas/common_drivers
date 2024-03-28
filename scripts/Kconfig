@@ -1,0 +1,5 @@
+config AMLOGIC_FDTO_REMOVE_NODE
+	bool "Amlogic Fdtoverlay Remove Node"
+	default n
+	help
+	  Fdtoverlay support remove dtb node.

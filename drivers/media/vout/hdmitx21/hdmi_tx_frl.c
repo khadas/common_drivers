@@ -20,6 +20,89 @@ ulong g_flt_1_e; /* record the clear time of FLT_UPDATE */
 static bool frl_schedule_work(struct frl_train_t *p, u32 delay_ms, u32 period_ms);
 static bool frl_stop_work(struct frl_train_t *p);
 
+#define CALC_COEFF 10000
+
+bool frl_check_full_bw(enum hdmi_colorspace cs, enum hdmi_color_depth cd, u32 pixel_clock,
+	u32 h_active, enum frl_rate_enum frl_rate, u32 *tri_bytes)
+{
+	u32 tmds_clock = 0;
+	u32 overhead_max_num = 0;
+	u32 overhead_max_den = 10000;
+	u32 tri_bytes_per_line = 0;
+	u32 time_for_1_active_video_line = 0;
+	u32 effective_link_rate = 0;
+	u32 effective_chars_per_sec = 0;
+	u32 effective_active_bytes_per_line = 0;
+	u32 bytes_per_active_line = 0;
+	u32 frl_mega_bits_rate = 0;
+	u32 temp = 0;
+
+	if (!frl_rate || !tri_bytes)
+		return 0;
+
+	if (cs == HDMI_COLORSPACE_YUV420)
+		pixel_clock = pixel_clock / 2;
+	tmds_clock = pixel_clock;
+	tri_bytes_per_line = h_active;
+	bytes_per_active_line = h_active;
+	frl_mega_bits_rate = pixel_clock;
+
+	/* TCLK update */
+	if (cs != HDMI_COLORSPACE_YUV422) {
+		if (cd == COLORDEPTH_30B)
+			tmds_clock = (pixel_clock * 5) / 4;
+		else if (cd == COLORDEPTH_36B)
+			tmds_clock = (pixel_clock * 3) / 2;
+		else
+			tmds_clock = pixel_clock;
+	}
+	if (cs == HDMI_COLORSPACE_YUV420)
+		tri_bytes_per_line >>= 1;
+
+	if (cs != HDMI_COLORSPACE_YUV422) {
+		if (cd == COLORDEPTH_30B)
+			tri_bytes_per_line = (tri_bytes_per_line * 5) / 4;
+		else if (cd == COLORDEPTH_36B)
+			tri_bytes_per_line = ((tri_bytes_per_line * 3) / 2);
+	}
+	tmds_clock = tmds_clock / CALC_COEFF;
+	time_for_1_active_video_line = tri_bytes_per_line * 200;
+	time_for_1_active_video_line = time_for_1_active_video_line / tmds_clock;
+	time_for_1_active_video_line = time_for_1_active_video_line / 201;
+
+	frl_mega_bits_rate = hdmitx_get_frl_bandwidth(frl_rate);
+	if (frl_rate == FRL_3G3L || frl_rate == FRL_6G3L) {
+		/* for 3 lanes, overhead max is 2.136% */
+		overhead_max_num = 267;
+		overhead_max_den = 12500;
+	} else {
+		/* for 4 lanes, overhead max is 2.184% */
+		overhead_max_num = 273;
+		overhead_max_den = 12500;
+	}
+
+	effective_link_rate = frl_mega_bits_rate * 1000 / CALC_COEFF;
+	temp = effective_link_rate * 3 / 10000;
+	effective_link_rate = effective_link_rate - temp;
+	effective_chars_per_sec = effective_link_rate / 18;
+	temp = effective_chars_per_sec * overhead_max_num / overhead_max_den;
+	effective_chars_per_sec = effective_chars_per_sec - temp;
+	effective_active_bytes_per_line =
+		(effective_chars_per_sec * time_for_1_active_video_line) * 2;
+	bytes_per_active_line = tri_bytes_per_line * 3;
+	temp = bytes_per_active_line / 200;
+	bytes_per_active_line = bytes_per_active_line + temp + 6;
+	tri_bytes_per_line = ((tri_bytes_per_line * 3) >> 1) + 3;
+	*tri_bytes = tri_bytes_per_line;
+
+	HDMITX_INFO("bytes_per_active_line %d  effective_active_bytes_per_line %d\n",
+		bytes_per_active_line, effective_active_bytes_per_line);
+	if (bytes_per_active_line >= effective_active_bytes_per_line)
+		return 1;
+	else
+		return 0;
+}
+
 /* In LTS:3, increase FFE level for the specified lane */
 static bool check_ffe_change_request(struct frl_train_t *p, u8 lane)
 {
@@ -98,6 +181,7 @@ static void start_frl_transmission(struct frl_train_t *p, bool gap_only)
 	if (gap_only)
 		frl_tx_av_enable(false); /* Disable the video */
 	else
+		/* Note reset p2t fifo here will cause LG OLED55CX PCA "invalid signal" */
 		frl_tx_av_enable(true); /* Enable the video */
 	HDMITX_INFO("FRL with %s\n", gap_only ? "Gap" : "Video");
 	/* enable the super block */
@@ -144,7 +228,7 @@ static bool query_flt_update(struct frl_train_t *p)
 
 	if ((p->update_flags & FLT_UPDATE) != 0)
 		g_flt_1 = jiffies;
-/*	HDMITX_INFO("FLT_update: 1\n"); */
+	/* HDMITX_INFO("FLT_update: 1\n"); */
 	return (p->update_flags & FLT_UPDATE) != 0;
 }
 
@@ -153,9 +237,16 @@ static void clear_frl_start(struct frl_train_t *p)
 {
 	p->update_flags |= FRL_START;
 	scdc_tx_update_flags_set(p->update_flags);
-/*	HDMITX_INFO("Clr FRL_start\n"); */
+	/* HDMITX_INFO("Clr FRL_start\n"); */
 }
 
+/* scdc bus stall operation is async with other ddc operation
+ * (such as hdcp version read), also it's used in FRL training
+ * process which is time-sensitive, so not use it with mutex
+ * with other ddc operation which may delay frl status polling,
+ * place other ddc operation in positions where no polling
+ * operation of frl status.
+ */
 static void poll_update_flags(struct frl_train_t *p)
 {
 	scdc_bus_stall_set(true);
@@ -275,6 +366,7 @@ static void tx_train_fsm(struct work_struct *work)
 		struct frl_work, dwork);
 	struct frl_train_t *p = container_of(frl_work,
 		struct frl_train_t, timer_frl_flt);
+	struct hdmitx_dev *hdev = get_hdmitx21_device();
 
 	if (p->last_state != p->flt_tx_state) {
 		HDMITX_INFO("FRL: %s to %s\n", flt_tx_string[p->last_state],
@@ -295,6 +387,7 @@ static void tx_train_fsm(struct work_struct *work)
 			frl_tx_tx_phy_set();
 		else
 			tmds_tx_phy_set();
+		frl_tx_lts_1_hdmi21_config();
 		stop_frl_transmission(p);
 		/* LTS:1 Source reads EDID
 		 * if Source selects legacy TMDS Mode, EXIT to LTS:L
@@ -349,6 +442,7 @@ tx_lts_3:
 		if (!p->flt_running)
 			return;
 		HDMITX_INFO("FRL: %s\n", flt_tx_string[FLT_TX_LTS_3]);
+		hdmitx_soft_reset(BIT(0));
 		/* LTS:3 Source conducts Link Training for the specified FRL_Rate */
 		frl_tx_pattern_init(0x8765);
 
@@ -359,11 +453,11 @@ tx_lts_3:
 		while (!(b_time_out = time_after(jiffies, frl_tmo)) || p->flt_no_timeout) {
 			u8 lane;
 			u16 ltp0123;
+			static u16 ltp_pre;
 
 			/* waits for FLT_update flag, poll every 2 ms or less */
 			if (!query_flt_update(p))
 				continue;
-
 			/* FLT_update flag = 1, Source reads Ln(x)_LTP_req */
 			ltp0123 = scdc_tx_ltp0123_get();
 			/* handle each Ln(x)_LTP_req registers */
@@ -384,15 +478,16 @@ tx_lts_3:
 					/* Source updates FFE setting for the specific Lane */
 					if ((ltp0123 & mask) == (0xEEEE & mask))
 						check_ffe_change_request(p, lane);
-					else if ((ltp0123 & mask) == (0x3333 & mask) &&
-						p->flt_no_timeout)
-						check_pattern_change(p, lane, ltp0123);
+					else if ((ltp0123 & mask) == (0x3333 & mask))
+						check_pattern_change(p, lane,
+							p->flt_no_timeout ? ltp0123 : ltp_pre);
 					/* Source transmits Ln(x)_LTP_req register 1 ~ 8 */
 					else if ((ltp0123 & mask) != 0)
 						check_pattern_change(p, lane, ltp0123);
 				}
 			}
-
+			if (ltp_pre != ltp0123)
+				ltp_pre = ltp0123;
 			/* clear the FLT_update within 10 ms */
 			clrear_flt_update(p);
 			HDMITX_INFO("LTS:3 LTP=0x%04x  cost %ld ms\n", ltp0123,
@@ -447,11 +542,13 @@ tx_lts_4:
 			clrear_flt_update(p);
 			HDMITX_INFO("LTS:L cost %ld ms\n", (g_flt_1_e - g_flt_1 + 3) / 4);
 			frl_tx_callback(FRL_EVENT_LEGACY);
+			/* disable hdcp if fallback to legacy mode */
+			hdmitx21_disable_hdcp(hdev);
+			p->flt_timeout = 0;
 		}
-
-		if (p->ds_frl_support && p->req_frl_mode)
-			/* requests a new FRL mode, goto LTS:2 */
-			p->flt_tx_state = FLT_TX_LTS_2;
+		// if (p->ds_frl_support && p->req_frl_mode)
+		//	// requests a new FRL mode, goto LTS:2
+		//	p->flt_tx_state = FLT_TX_LTS_2;
 
 		p->req_legacy_mode = false;
 
@@ -468,6 +565,7 @@ tx_lts_p1:
 		 * and Super Block structure
 		 */
 		start_frl_transmission(p, true);
+		fifo_flow_enable_intrs(1);
 		frl_tx_pattern_stop();
 		clrear_flt_update(p);
 		HDMITX_INFO("LTS:P cost %ld ms\n", (g_flt_1_e - g_flt_1 + 3) / 4);
@@ -501,11 +599,29 @@ tx_lts_p3:
 			frl_tx_callback(FRL_EVENT_STOP);
 			p->flt_tx_state = FLT_TX_LTS_3;
 			break;
+		} else {
+			/* start hdcp after training pass */
+			/* if no hdcp2.2 key on board, then skip */
+			if (get_hdcp2_lstore() &&
+				hdmitx21_get_hdcp_mode() == 0) {
+				/* get downstream hdcp2.2 version in certain place,
+				 * as ddc stall request in poll_update_flags() may
+				 * affect hdcp version read.
+				 */
+				if (!hdev->dw_hdcp22_cap)
+					hdev->dw_hdcp22_cap = is_rx_hdcp2ver();
+				schedule_delayed_work(&hdev->work_start_hdcp, HZ / 4);
+			}
 		}
 		break;
 	}
-	if (p->flt_running)
-		frl_schedule_work(p, 0, FRL_TX_TASK_INTERVAL);
+	if (p->flt_running) {
+		u32 frl_tick = FRL_TX_TASK_INTERVAL;
+
+		if (p->flt_tx_state == FLT_TX_LTS_P3)
+			frl_tick = 180; /* hfr1-68 requires at least 200ms */
+		frl_schedule_work(p, 0, frl_tick);
+	}
 }
 
 static bool frl_schedule_work(struct frl_train_t *p, u32 delay_ms, u32 period_ms)
@@ -559,6 +675,8 @@ void frl_tx_training_handler(struct hdmitx_dev *hdev)
 {
 	struct rx_cap *rxcap;
 
+	if (!hdev)
+		return;
 	if (!p_frl_train) {
 		p_frl_train = &frl_train_inst;
 		p_frl_train->frl_wq = alloc_workqueue("hdmitx21_frl",
@@ -571,8 +689,9 @@ void frl_tx_training_handler(struct hdmitx_dev *hdev)
 	/* TODO hard code */
 	rxcap = &hdev->tx_comm.rxcap;
 	p_frl_train->min_frl_rate = FRL_3G3L;
-	p_frl_train->user_max_frl_rate = FRL_10G4L;
-	p_frl_train->max_frl_rate = FRL_10G4L;
+	/* configured in dts, maximum FRL_10G4L */
+	p_frl_train->user_max_frl_rate = hdev->tx_hw.base.hdmi_tx_cap.tx_max_frl_rate;
+	p_frl_train->max_frl_rate = hdev->tx_hw.base.hdmi_tx_cap.tx_max_frl_rate;
 	p_frl_train->frl_rate = hdev->frl_rate;
 	p_frl_train->flt_tx_state = FLT_TX_LTS_L;
 	frl_tx_frl_mode_init(p_frl_train, rxcap, false);

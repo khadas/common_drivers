@@ -72,7 +72,10 @@
 /* 2023/12/01 --- V3.04 --- Fix prop setting. */
 /* 2024/01/10 --- V3.05 --- Fix cvbs line output jitter. */
 /* 2024/01/15 --- V3.06 --- Fix scan audio detect and frequency sync. */
-#define AMLATVDEMOD_VER "V3.06"
+/* 2024/02/04 --- V3.07 --- Fix get frontend. */
+/* 2024/03/06 --- V3.08 --- Fix pal bg gde filter and peaking. */
+/* 2024/03/15 --- V3.09 --- Fix afc value sync. */
+#define AMLATVDEMOD_VER "V3.09"
 
 struct aml_atvdemod_device *amlatvdemod_devp;
 

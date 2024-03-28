@@ -103,7 +103,7 @@ set -e
 
 export_env_variable
 
-autotest
+copy_pre_commit
 
 adjust_config_action
 

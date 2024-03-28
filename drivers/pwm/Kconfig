@@ -3,6 +3,7 @@
 config AMLOGIC_PWM
 	tristate "Amlogic PWM Support"
 	default n
+	depends on COMMON_CLK && HAS_IOMEM
 	help
 	  amlogic pwm support
 	  select y for built-in
@@ -12,18 +13,15 @@ config AMLOGIC_PWM
 	  If you say N, all options in this submenu will be
 	  skipped and disabled.
 
-if AMLOGIC_PWM
-
 config AMLOGIC_PWM_MESON
 	bool "Amlogic Meson PWM driver"
-	depends on COMMON_CLK && HAS_IOMEM
+	depends on AMLOGIC_PWM
 	help
 	  The platform driver for Amlogic Meson PWM controller.
 
 config AMLOGIC_PWM_MESON_TEE
 	bool "Amlogic Meson PWM TEE driver"
-	depends on COMMON_CLK && HAS_IOMEM
+	depends on AMLOGIC_PWM
 	help
 	  The platform driver for Amlogic Meson PWM TEE controller.
 
-endif

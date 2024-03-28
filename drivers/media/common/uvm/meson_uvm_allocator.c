@@ -641,6 +641,7 @@ static int mua_attach(int fd, int type, char *buf)
 	info.acquire_fence = NULL;
 
 	switch (type) {
+#ifndef CONFIG_AMLOGIC_TXHD2_REMOVE
 	case PROCESS_NN:
 		ret = attach_nn_hook_mod_info(fd, buf, &info);
 		if (ret)
@@ -661,7 +662,7 @@ static int mua_attach(int fd, int type, char *buf)
 		if (ret)
 			return -EINVAL;
 		break;
-
+#endif
 	default:
 		MUA_PRINTK(MUA_DBG, "mod_type is not valid.\n");
 	}

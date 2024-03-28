@@ -743,6 +743,10 @@ unsigned long unpack_ip(struct page_trace *trace)
 	return text + ((trace->ret_ip) << 2);
 }
 
+#if IS_MODULE(CONFIG_AMLOGIC_PAGE_TRACE)
+EXPORT_SYMBOL(unpack_ip);
+#endif
+
 #ifdef CONFIG_ARM64
 /*
  * We can only safely access per-cpu stacks from current in a non-preemptible

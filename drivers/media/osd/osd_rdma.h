@@ -99,7 +99,7 @@ enum {
 	~OSD_RDMA_FLAG_REJECT)))
 
 
-int rdma_watchdog_setting(int flag);
+int rdma_watchdog_setting(int flag, int handle);
 int read_rdma_table(u32 vpp_index);
 int osd_rdma_enable(u32 vpp_index, u32 enable);
 int osd_rdma_reset_and_flush(u32 output_index, u32 reset_bit);

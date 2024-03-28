@@ -1941,6 +1941,7 @@ static void vdin_dump_state(struct vdin_dev_s *devp)
 		devp->prop.imax_flag);
 	pr_info("dv emp size:%d crc_flag:%d\n", devp->prop.emp_data.size,
 		devp->dv.dv_crc_check);
+	pr_info("dv_is_not_std:%d\n", devp->dv_is_not_std);
 	pr_info("size of struct vdin_dev_s: %d\n", devp->vdin_dev_ssize);
 	pr_info("devp->dv.dv_vsif:(%d,%d,%d,%d,%d,%d,%d,%d);\n",
 		devp->dv.dv_vsif.dolby_vision_signal,
@@ -4476,6 +4477,14 @@ start_chk:
 		pr_info("vdin%d:dbg_dv_hw5:%#x;%d,%d,%d\n", devp->index,
 			devp->debug.dbg_dv_hw5, devp->debug.dbg_dw_h, devp->debug.dbg_dw_v,
 			devp->debug.dbg_dw_dfmt);
+	} else if (!strcmp(parm[0], "hconv_mode")) {
+		if (!parm[1]) {
+			pr_err("miss parameters .\n");
+		} else if (kstrtoul(parm[1], 10, &val) == 0) {
+			devp->debug.hconv_mode = val;
+			pr_info("hconv_mode(%d):0x%x\n\n", devp->index,
+				devp->debug.hconv_mode);
+		}
 	}
 #endif
 	else if (!strcmp(parm[0], "state")) {
@@ -4812,26 +4821,34 @@ static inline unsigned int vdin_do_div(unsigned long long num, unsigned int den)
 
 //for vrr get input fate
 static ssize_t input_rate_show(struct device *dev,
-			 struct device_attribute *attr,
-			 char *buf)
+	struct device_attribute *attr, char *buf)
 {
 	u64 tmp_msr_clk_val;
-	unsigned int input_rate = 0;
+	unsigned int tmp;
+	static unsigned int input_rate = 60000;//60.000hz
 	struct vdin_dev_s *devp = dev_get_drvdata(dev);
 
-	if (devp->flags & VDIN_FLAG_DEC_STARTED && devp->irq_cnt > 2) {
-		if (devp->cycle != 0 && devp->msr_clk_val != 0) {
+	if (devp->parm.info.status == TVIN_SIG_STATUS_STABLE) {
+		if (devp->irq_cnt > 2 && devp->cycle != 0) {
 			tmp_msr_clk_val = (u64)devp->msr_clk_val * 1000;
-			input_rate = vdin_do_div(tmp_msr_clk_val, devp->cycle);
+			tmp = vdin_do_div(tmp_msr_clk_val, devp->cycle);
+			if (tmp > devp->parm.info.fps * 1000) {
+				if (vdin_dbg_en)
+					pr_info("invalid input_rate:%d.%03d,fps:%d\n",
+						(input_rate / 1000), (input_rate % 1000),
+						devp->parm.info.fps);
+			} else {
+				input_rate = tmp;
+			}
 			return sprintf(buf, "%d.%03d\n",
 				 (input_rate / 1000), (input_rate % 1000));
 		} else {
-			input_rate = devp->parm.info.fps;
-			return sprintf(buf, "%d.000\n", input_rate);
+			input_rate = devp->parm.info.fps * 1000;
+			return sprintf(buf, "%d.000\n", (input_rate / 1000));
 		}
 	} else {
-		input_rate = devp->parm.info.fps;
-		return sprintf(buf, "%d.000\n", input_rate);
+		input_rate = 60000;//unstable default 60hz
+		return sprintf(buf, "%d.000\n", (input_rate / 1000));
 	}
 }
 static DEVICE_ATTR_RO(input_rate);
@@ -4844,11 +4861,11 @@ static void vdin_dump_sct_state(struct vdin_dev_s *devp)
 	struct vdin_mmu_box *box = NULL;
 
 	pr_info("mem_type:%d\n", devp->mem_type);
-	pr_info("irq:%d,frm:%d,que:%d,run:%d,pause:%d,af_num:%d\n",
+	pr_info("irq:%d,frm:%d,que:%d,run:%d,af_num:%d\n",
 		devp->irq_cnt, devp->frame_cnt,
 		devp->msct_top.que_work_cnt,
 		devp->msct_top.worker_run_cnt,
-		devp->msct_top.sct_pause_dec, devp->af_num);
+		devp->af_num);
 
 	pr_info("pool,size:%d,wr_list:%d,wr_mode:%d,rd_list:%d,rd_mode:%d\n",
 		devp->vfp->size, devp->vfp->wr_list_size,

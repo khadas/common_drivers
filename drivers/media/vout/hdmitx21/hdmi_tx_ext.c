@@ -9,18 +9,6 @@
 #include "hdmi_tx_ext.h"
 #include "hdmi_tx_module.h"
 
-unsigned int hdmitx_drv_ver(void)
-{
-#if defined(CONFIG_AMLOGIC_HDMITX)
-	if (get_hdmitx20_init() == 1)
-		return 20;
-#endif
-#if defined(CONFIG_AMLOGIC_HDMITX21)
-	if (get_hdmitx21_init() == 1)
-		return 21;
-#endif
-	return 0;
-}
 /* for notify to cec */
 int hdmitx_event_notifier_regist(struct notifier_block *nb)
 {

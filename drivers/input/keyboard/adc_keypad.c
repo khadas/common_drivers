@@ -19,9 +19,7 @@
 #include <linux/mailbox_controller.h>
 #include <linux/mailbox_client.h>
 #include <linux/amlogic/aml_mbox.h>
-#ifdef CONFIG_AMLOGIC_GX_SUSPEND
 #include <linux/amlogic/pm.h>
-#endif
 #include "adc_keypad.h"
 
 #define POLL_INTERVAL_DEFAULT 25
@@ -58,6 +56,17 @@ static int meson_adc_kp_search_key(struct meson_adc_kp *kp)
 	return KEY_RESERVED;
 }
 
+static void meson_adc_kp_report_key(struct meson_adc_kp *kp, int code, int value)
+{
+	input_report_key(kp->input, code, value);
+	input_sync(kp->input);
+
+	if (kp->led_blink && value) {
+		led_trigger_blink_oneshot(kp->led_blink, &kp->led_delay_on,
+					  &kp->led_delay_off, 0);
+	}
+}
+
 static void meson_adc_kp_poll(struct work_struct *pwork)
 {
 	struct meson_adc_kp *kp =
@@ -67,8 +76,7 @@ static void meson_adc_kp_poll(struct work_struct *pwork)
 	if (kp->report_code && kp->report_code != code) {
 		dev_info(&kp->input->dev,
 			 "key %d up\n", kp->report_code);
-		input_report_key(kp->input, kp->report_code, 0);
-		input_sync(kp->input);
+		meson_adc_kp_report_key(kp, kp->report_code, 0);
 
 		kp->report_code = 0;
 	}
@@ -83,8 +91,7 @@ static void meson_adc_kp_poll(struct work_struct *pwork)
 			if (keypad_enable_flag && kp->report_code != code) {
 				dev_info(&kp->input->dev,
 					 "key %d down\n", code);
-				input_report_key(kp->input, code, 1);
-				input_sync(kp->input);
+				meson_adc_kp_report_key(kp, code, 1);
 				if (code == KEY_POWER)
 					pm_wakeup_hard_event(kp->input->dev.parent);
 
@@ -488,6 +495,45 @@ static void meson_adc_kp_init_keybit(struct meson_adc_kp *kp)
 			kp->input->keybit); /*set event code*/
 }
 
+static void meson_adc_kp_led_blink_register(struct platform_device *pdev)
+{
+	struct meson_adc_kp *kp = platform_get_drvdata(pdev);
+	struct device_node *blink_node;
+	u32 value;
+	const char *str;
+	int ret;
+
+	kp->led_delay_on = 100;
+	kp->led_delay_off = 100;
+	kp->led_trigger_name = DRIVE_NAME;
+
+	blink_node = of_find_node_by_name(pdev->dev.of_node, "led_blink");
+	if (blink_node) {
+		ret = of_property_read_u32(blink_node, "delay_on", &value);
+		if (!ret)
+			kp->led_delay_on = value;
+
+		ret = of_property_read_u32(blink_node, "delay_off", &value);
+		if (!ret)
+			kp->led_delay_off = value;
+
+		ret = of_property_read_string(blink_node, "trigger_name", &str);
+		if (!ret)
+			kp->led_trigger_name = str;
+	}
+
+	led_trigger_register_simple(kp->led_trigger_name, &kp->led_blink);
+}
+
+static void meson_adc_kp_led_blink_unregister(struct platform_device *pdev)
+{
+	struct meson_adc_kp *kp = platform_get_drvdata(pdev);
+
+	if (kp->led_blink)
+		led_trigger_unregister_simple(kp->led_blink);
+	kp->led_blink = NULL;
+}
+
 static int meson_adc_kp_probe(struct platform_device *pdev)
 {
 	struct meson_adc_kp *kp;
@@ -564,6 +610,9 @@ static int meson_adc_kp_probe(struct platform_device *pdev)
 
 	mod_delayed_work(system_wq, &kp->work,
 			 msecs_to_jiffies(kp->poll_period));
+
+	meson_adc_kp_led_blink_register(pdev);
+
 	return ret;
 
 err2:
@@ -583,6 +632,7 @@ static int meson_adc_kp_remove(struct platform_device *pdev)
 {
 	struct meson_adc_kp *kp = platform_get_drvdata(pdev);
 
+	meson_adc_kp_led_blink_unregister(pdev);
 	class_unregister(&kp->kp_class);
 	cancel_delayed_work_sync(&kp->work);
 	input_unregister_device(kp->input);
@@ -593,28 +643,24 @@ static int meson_adc_kp_remove(struct platform_device *pdev)
 	return 0;
 }
 
-#ifdef CONFIG_AMLOGIC_GX_SUSPEND
-static int meson_adc_kp_suspend(struct platform_device *pdev,
-				pm_message_t state)
+static int __maybe_unused meson_adc_kp_suspend(struct device *dev)
 {
 	return 0;
 }
 
-static int meson_adc_kp_resume(struct platform_device *pdev)
+static int __maybe_unused meson_adc_kp_resume(struct device *dev)
 {
 	struct adc_key *key;
-	struct meson_adc_kp *kp = platform_get_drvdata(pdev);
+	struct meson_adc_kp *kp = dev_get_drvdata(dev);
 	int val = 0;
 
 	if (get_resume_method() == POWER_KEY_WAKEUP) {
 		list_for_each_entry(key, &kp->adckey_head, list) {
 			if (key->code == KEY_POWER) {
-				dev_info(&pdev->dev, "adc keypad wakeup\n");
+				dev_info(dev, "adc keypad wakeup\n");
 
-				input_report_key(kp->input, KEY_POWER, 1);
-				input_sync(kp->input);
-				input_report_key(kp->input, KEY_POWER, 0);
-				input_sync(kp->input);
+				meson_adc_kp_report_key(kp, KEY_POWER, 1);
+				meson_adc_kp_report_key(kp, KEY_POWER, 0);
 
 				aml_mbox_transfer_data(adc_mbox_chan, MBOX_CMD_WAKEUP_REASON_CLR,
 						       NULL, 0, &val, sizeof(val), MBOX_SYNC);
@@ -626,7 +672,10 @@ static int meson_adc_kp_resume(struct platform_device *pdev)
 
 	return 0;
 }
-#endif
+
+static const struct dev_pm_ops meson_adc_kp_pm_ops = {
+	SET_SYSTEM_SLEEP_PM_OPS(meson_adc_kp_suspend, meson_adc_kp_resume)
+};
 
 static void meson_adc_kp_shutdown(struct platform_device *pdev)
 {
@@ -643,13 +692,10 @@ static const struct of_device_id key_dt_match[] = {
 static struct platform_driver kp_driver = {
 	.probe      = meson_adc_kp_probe,
 	.remove     = meson_adc_kp_remove,
-#ifdef CONFIG_AMLOGIC_GX_SUSPEND
-	.suspend    = meson_adc_kp_suspend,
-	.resume     = meson_adc_kp_resume,
-#endif
 	.shutdown   = meson_adc_kp_shutdown,
 	.driver     = {
-		.name   = DRIVE_NAME,
+		.name = DRIVE_NAME,
+		.pm = &meson_adc_kp_pm_ops,
 		.of_match_table = key_dt_match,
 	},
 };

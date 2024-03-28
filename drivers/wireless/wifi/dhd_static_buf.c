@@ -201,13 +201,6 @@ void *bcmdhd_mem_prealloc(int section, unsigned long size)
 	int index = 0;
 #endif
 
-#if defined(BCMDHD_MDRIVER) && !defined(DHD_STATIC_IN_DRIVER)
-	DHD_STATIC_MSG("bus_type %d, index %d, section %d, size %ld\n",
-		bus_type, index, section, size);
-#else
-	DHD_STATIC_MSG("section %d, size %ld\n", section, size);
-#endif
-
 	if (section == DHD_PREALLOC_PROT)
 		return wlan_static_prot[index];
 
@@ -429,8 +422,8 @@ dhd_init_wlan_mem(int index, unsigned int buf_level)
 			if (!wlan_static_skb[index][i])
 				goto err_mem_alloc;
 			size += DHD_SKB_1PAGE_BUFSIZE;
-			DHD_STATIC_TRACE("section %d skb[%d], size=%ld\n",
-				DHD_PREALLOC_SKB_BUF, i, DHD_SKB_1PAGE_BUFSIZE);
+			//DHD_STATIC_TRACE("section %d skb[%d], size=%ld\n",
+				//DHD_PREALLOC_SKB_BUF, i, DHD_SKB_1PAGE_BUFSIZE);
 		}
 #endif
 		for (i = DHD_SKB_1PAGE_BUF_NUM; i < WLAN_SKB_1_2PAGE_BUF_NUM; i++) {
@@ -438,8 +431,8 @@ dhd_init_wlan_mem(int index, unsigned int buf_level)
 			if (!wlan_static_skb[index][i])
 				goto err_mem_alloc;
 			size += DHD_SKB_2PAGE_BUFSIZE;
-			DHD_STATIC_TRACE("section %d skb[%d], size=%ld\n",
-				DHD_PREALLOC_SKB_BUF, i, DHD_SKB_2PAGE_BUFSIZE);
+			//DHD_STATIC_TRACE("section %d skb[%d], size=%ld\n",
+				//DHD_PREALLOC_SKB_BUF, i, DHD_SKB_2PAGE_BUFSIZE);
 		}
 #endif /* BCMSDIO | BCMPCIE */
 
@@ -448,61 +441,61 @@ dhd_init_wlan_mem(int index, unsigned int buf_level)
 		if (!wlan_static_skb[index][i])
 			goto err_mem_alloc;
 		size += DHD_SKB_4PAGE_BUFSIZE;
-		DHD_STATIC_TRACE("section %d skb[%d], size=%ld\n",
-			DHD_PREALLOC_SKB_BUF, i, DHD_SKB_4PAGE_BUFSIZE);
+		//DHD_STATIC_TRACE("section %d skb[%d], size=%ld\n",
+			//DHD_PREALLOC_SKB_BUF, i, DHD_SKB_4PAGE_BUFSIZE);
 #endif /* BCMSDIO */
 
 		wlan_static_prot[index] = kmalloc(DHD_PREALLOC_PROT_SIZE, GFP_KERNEL);
 		if (!wlan_static_prot[index])
 			goto err_mem_alloc;
 		size += DHD_PREALLOC_PROT_SIZE;
-		DHD_STATIC_TRACE("section %d, size=%d\n",
-			DHD_PREALLOC_PROT, DHD_PREALLOC_PROT_SIZE);
+		//DHD_STATIC_TRACE("section %d, size=%d\n",
+			//DHD_PREALLOC_PROT, DHD_PREALLOC_PROT_SIZE);
 
 #if defined(BCMSDIO)
 		wlan_static_rxbuf[index] = kmalloc(DHD_PREALLOC_RXBUF_SIZE, GFP_KERNEL);
 		if (!wlan_static_rxbuf[index])
 			goto err_mem_alloc;
 		size += DHD_PREALLOC_RXBUF_SIZE;
-		DHD_STATIC_TRACE("section %d, size=%d\n",
-			DHD_PREALLOC_RXBUF, DHD_PREALLOC_RXBUF_SIZE);
+		//DHD_STATIC_TRACE("section %d, size=%d\n",
+			//DHD_PREALLOC_RXBUF, DHD_PREALLOC_RXBUF_SIZE);
 
 		wlan_static_databuf[index] = kmalloc(DHD_PREALLOC_DATABUF_SIZE, GFP_KERNEL);
 		if (!wlan_static_databuf[index])
 			goto err_mem_alloc;
 		size += DHD_PREALLOC_DATABUF_SIZE;
-		DHD_STATIC_TRACE("section %d, size=%d\n",
-			DHD_PREALLOC_DATABUF, DHD_PREALLOC_DATABUF_SIZE);
+		//DHD_STATIC_TRACE("section %d, size=%d\n",
+			//DHD_PREALLOC_DATABUF, DHD_PREALLOC_DATABUF_SIZE);
 #endif /* BCMSDIO */
 
 		wlan_static_osl_buf[index] = kmalloc(DHD_PREALLOC_OSL_BUF_SIZE, GFP_KERNEL);
 		if (!wlan_static_osl_buf[index])
 			goto err_mem_alloc;
 		size += DHD_PREALLOC_OSL_BUF_SIZE;
-		DHD_STATIC_TRACE("section %d, size=%ld\n",
-			DHD_PREALLOC_OSL_BUF, DHD_PREALLOC_OSL_BUF_SIZE);
+		//DHD_STATIC_TRACE("section %d, size=%ld\n",
+			//DHD_PREALLOC_OSL_BUF, DHD_PREALLOC_OSL_BUF_SIZE);
 
 		wlan_static_scan_buf0[index] = kmalloc(DHD_PREALLOC_WIPHY_ESCAN0_SIZE, GFP_KERNEL);
 		if (!wlan_static_scan_buf0[index])
 			goto err_mem_alloc;
 		size += DHD_PREALLOC_WIPHY_ESCAN0_SIZE;
-		DHD_STATIC_TRACE("section %d, size=%d\n",
-			DHD_PREALLOC_WIPHY_ESCAN0, DHD_PREALLOC_WIPHY_ESCAN0_SIZE);
+		//DHD_STATIC_TRACE("section %d, size=%d\n",
+			//DHD_PREALLOC_WIPHY_ESCAN0, DHD_PREALLOC_WIPHY_ESCAN0_SIZE);
 
 		wlan_static_dhd_info_buf[index] = kmalloc(DHD_PREALLOC_DHD_INFO_SIZE, GFP_KERNEL);
 		if (!wlan_static_dhd_info_buf[index])
 			goto err_mem_alloc;
 		size += DHD_PREALLOC_DHD_INFO_SIZE;
-		DHD_STATIC_TRACE("section %d, size=%d\n",
-			DHD_PREALLOC_DHD_INFO, DHD_PREALLOC_DHD_INFO_SIZE);
+		//DHD_STATIC_TRACE("section %d, size=%d\n",
+			//DHD_PREALLOC_DHD_INFO, DHD_PREALLOC_DHD_INFO_SIZE);
 
 #if defined(BCMSDIO) || defined(BCMDBUS)
 		wlan_static_dhd_wlfc_info_buf[index] = kmalloc(WLAN_DHD_WLFC_BUF_SIZE, GFP_KERNEL);
 		if (!wlan_static_dhd_wlfc_info_buf[index])
 			goto err_mem_alloc;
 		size += WLAN_DHD_WLFC_BUF_SIZE;
-		DHD_STATIC_TRACE("section %d, size=%d\n",
-			DHD_PREALLOC_DHD_WLFC_INFO, WLAN_DHD_WLFC_BUF_SIZE);
+		//DHD_STATIC_TRACE("section %d, size=%d\n",
+			//DHD_PREALLOC_DHD_WLFC_INFO, WLAN_DHD_WLFC_BUF_SIZE);
 #endif /* BCMSDIO | BCMDBUS */
 
 #ifdef BCMPCIE
@@ -511,8 +504,8 @@ dhd_init_wlan_mem(int index, unsigned int buf_level)
 		if (!wlan_static_if_flow_lkup[index])
 			goto err_mem_alloc;
 		size += DHD_PREALLOC_IF_FLOW_LKUP_SIZE;
-		DHD_STATIC_TRACE("section %d, size=%d\n",
-			DHD_PREALLOC_IF_FLOW_LKUP, DHD_PREALLOC_IF_FLOW_LKUP_SIZE);
+		//DHD_STATIC_TRACE("section %d, size=%d\n",
+			//DHD_PREALLOC_IF_FLOW_LKUP, DHD_PREALLOC_IF_FLOW_LKUP_SIZE);
 #endif /* BCMPCIE */
 	}
 
@@ -521,8 +514,8 @@ dhd_init_wlan_mem(int index, unsigned int buf_level)
 	if (!wlan_static_dhd_memdump_ram_buf[index])
 		goto err_mem_alloc;
 	size += DHD_PREALLOC_MEMDUMP_RAM_SIZE;
-	DHD_STATIC_TRACE("section %d, size=%d\n",
-		DHD_PREALLOC_MEMDUMP_RAM, DHD_PREALLOC_MEMDUMP_RAM_SIZE);
+	//DHD_STATIC_TRACE("section %d, size=%d\n",
+		//DHD_PREALLOC_MEMDUMP_RAM, DHD_PREALLOC_MEMDUMP_RAM_SIZE);
 #endif /* DHD_USE_STATIC_MEMDUMP | BCMDBUS */
 
 	if (buf_level > 0) {
@@ -532,8 +525,8 @@ dhd_init_wlan_mem(int index, unsigned int buf_level)
 		if (!wlan_static_dhd_wlfc_hanger_buf[index])
 			goto err_mem_alloc;
 		size += DHD_PREALLOC_DHD_WLFC_HANGER_SIZE;
-		DHD_STATIC_TRACE("section %d, size=%d\n",
-			DHD_PREALLOC_DHD_WLFC_HANGER, DHD_PREALLOC_DHD_WLFC_HANGER_SIZE);
+		//DHD_STATIC_TRACE("section %d, size=%d\n",
+			//DHD_PREALLOC_DHD_WLFC_HANGER, DHD_PREALLOC_DHD_WLFC_HANGER_SIZE);
 #endif /* BCMSDIO | BCMDBUS */
 
 		if (buf_level > 1) {
@@ -543,17 +536,17 @@ dhd_init_wlan_mem(int index, unsigned int buf_level)
 			if (!wlan_static_dhd_log_dump_buf[index])
 				goto err_mem_alloc;
 			size += DHD_PREALLOC_DHD_LOG_DUMP_BUF_SIZE;
-			DHD_STATIC_TRACE("section %d, size=%d\n",
-				DHD_PREALLOC_DHD_LOG_DUMP_BUF, DHD_PREALLOC_DHD_LOG_DUMP_BUF_SIZE);
+			//DHD_STATIC_TRACE("section %d, size=%d\n",
+			//DHD_PREALLOC_DHD_LOG_DUMP_BUF, DHD_PREALLOC_DHD_LOG_DUMP_BUF_SIZE);
 
 			wlan_static_dhd_log_dump_buf_ex[index] =
 				kmalloc(DHD_PREALLOC_DHD_LOG_DUMP_BUF_EX_SIZE, GFP_KERNEL);
 			if (!wlan_static_dhd_log_dump_buf_ex[index])
 				goto err_mem_alloc;
 			size += DHD_PREALLOC_DHD_LOG_DUMP_BUF_EX_SIZE;
-			DHD_STATIC_TRACE("section %d, size=%d\n",
-				DHD_PREALLOC_DHD_LOG_DUMP_BUF_EX,
-				DHD_PREALLOC_DHD_LOG_DUMP_BUF_EX_SIZE);
+			//DHD_STATIC_TRACE("section %d, size=%d\n",
+				//DHD_PREALLOC_DHD_LOG_DUMP_BUF_EX,
+				//DHD_PREALLOC_DHD_LOG_DUMP_BUF_EX_SIZE);
 #endif /* DHD_USE_STATIC_MEMDUMP */
 		}
 
@@ -562,43 +555,43 @@ dhd_init_wlan_mem(int index, unsigned int buf_level)
 		if (!wlan_static_wl_escan_info_buf[index])
 			goto err_mem_alloc;
 		size += DHD_PREALLOC_WL_ESCAN_SIZE;
-		DHD_STATIC_TRACE("section %d, size=%d\n",
-			DHD_PREALLOC_WL_ESCAN, DHD_PREALLOC_WL_ESCAN_SIZE);
+		//DHD_STATIC_TRACE("section %d, size=%d\n",
+			//DHD_PREALLOC_WL_ESCAN, DHD_PREALLOC_WL_ESCAN_SIZE);
 	}
 
 	wlan_static_fw_verbose_ring_buf[index] = kmalloc(FW_VERBOSE_RING_SIZE, GFP_KERNEL);
 	if (!wlan_static_fw_verbose_ring_buf[index])
 		goto err_mem_alloc;
 	size += FW_VERBOSE_RING_SIZE;
-	DHD_STATIC_TRACE("section %d, size=%d\n",
-		DHD_PREALLOC_FW_VERBOSE_RING, FW_VERBOSE_RING_SIZE);
+	//DHD_STATIC_TRACE("section %d, size=%d\n",
+		//DHD_PREALLOC_FW_VERBOSE_RING, FW_VERBOSE_RING_SIZE);
 
 	if (buf_level > 0) {
 		wlan_static_fw_event_ring_buf[index] = kmalloc(FW_EVENT_RING_SIZE, GFP_KERNEL);
 		if (!wlan_static_fw_event_ring_buf[index])
 			goto err_mem_alloc;
 		size += FW_EVENT_RING_SIZE;
-		DHD_STATIC_TRACE("section %d, size=%d\n",
-			DHD_PREALLOC_FW_EVENT_RING, FW_EVENT_RING_SIZE);
+		//DHD_STATIC_TRACE("section %d, size=%d\n",
+			//DHD_PREALLOC_FW_EVENT_RING, FW_EVENT_RING_SIZE);
 
 		wlan_static_dhd_event_ring_buf[index] = kmalloc(DHD_EVENT_RING_SIZE, GFP_KERNEL);
 		if (!wlan_static_dhd_event_ring_buf[index])
 			goto err_mem_alloc;
 		size += DHD_EVENT_RING_SIZE;
-		DHD_STATIC_TRACE("section %d, size=%d\n",
-			DHD_PREALLOC_DHD_EVENT_RING, DHD_EVENT_RING_SIZE);
+		//DHD_STATIC_TRACE("section %d, size=%d\n",
+			//DHD_PREALLOC_DHD_EVENT_RING, DHD_EVENT_RING_SIZE);
 
 #if defined(BCMDHD_UNUSE_MEM)
 		wlan_static_nan_event_ring_buf[index] = kmalloc(NAN_EVENT_RING_SIZE, GFP_KERNEL);
 		if (!wlan_static_nan_event_ring_buf[index])
 			goto err_mem_alloc;
 		size += NAN_EVENT_RING_SIZE;
-		DHD_STATIC_TRACE("section %d, size=%d\n",
-			DHD_PREALLOC_NAN_EVENT_RING, NAN_EVENT_RING_SIZE);
+		//DHD_STATIC_TRACE("section %d, size=%d\n",
+			//DHD_PREALLOC_NAN_EVENT_RING, NAN_EVENT_RING_SIZE);
 #endif /* BCMDHD_UNUSE_MEM */
 	}
 
-	DHD_STATIC_MSG("prealloc ok for index %d: %ld(%ldK)\n", index, size, size / 1024);
+	//DHD_STATIC_MSG("prealloc ok for index %d: %ld(%ldK)\n", index, size, size / 1024);
 	return 0;
 
 err_mem_alloc:
@@ -616,7 +609,7 @@ bcmdhd_init_wlan_mem(unsigned int all_buf)
 {
 	int i, ret = 0;
 
-	DHD_STATIC_MSG("%s\n", DHD_STATIC_VERSION_STR);
+	//DHD_STATIC_MSG("%s\n", DHD_STATIC_VERSION_STR);
 
 	for (i = 0; i < MAX_NUM_ADAPTERS; i++) {
 		ret = dhd_init_wlan_mem(i, all_buf);
@@ -644,7 +637,7 @@ dhd_static_buf_exit(void)
 {
 	int i;
 
-	DHD_STATIC_MSG("Enter\n");
+	//DHD_STATIC_MSG("Enter\n");
 
 	for (i = 0; i < MAX_NUM_ADAPTERS; i++)
 		dhd_deinit_wlan_mem(i);

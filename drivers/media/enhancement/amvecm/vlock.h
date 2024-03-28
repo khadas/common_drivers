@@ -24,7 +24,7 @@
 #include <linux/amlogic/media/vfm/vframe.h>
 #include "linux/amlogic/media/amvecm/ve.h"
 
-#define VLOCK_VER "Ref.2023/0410: for t5x vlock bringup"
+#define VLOCK_VER "Ref.2024/0222: adaptive for vlock 100/120hz phase"
 
 #define VLOCK_REG_NUM					33
 #define VLOCK_ALL_LOCK_CNT				400

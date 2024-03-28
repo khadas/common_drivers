@@ -179,3 +179,6 @@ CONFIG_AMLOGIC_LMK=y
 
 # boot optimize
 CONFIG_AMLOGIC_BOOT_TIME=y
+
+# amlogic-media.ko
+CONFIG_AMLOGIC_MEDIA_V4L2=y

@@ -72,10 +72,22 @@
 /* vcbus */
 #define VPU_CLK_GATE                 0x2723
 
+#define VPP_RDARB_MODE               0x3978
+#define VPP_RDARB_REQEN_SLV          0x3979
 #define VPU_RDARB_MODE_L1C1          0x2790
+#define DI_RDARB_MODE_L1C1           0x2050
+#define DI_RDARB_REQEN_SLV_L1C1      0x2051
+#define DI_WRARB_MODE_L1C1           0x2054
+#define DI_WRARB_REQEN_SLV_L1C1      0x2055
+#define DI_RDARB_UGT_L1C1            0x205b
+#define DI_WRARB_UGT_L1C1            0x205d
 #define VPU_RDARB_MODE_L1C2          0x2799
 #define VPU_RDARB_MODE_L2C1          0x279d
+#define VPP_RDARB_REQEN_SLV_L2C1     0x279e
 #define VPU_WRARB_MODE_L2C1          0x27a2
+#define VPU_WRARB_REQEN_SLV_L2C1     0x27a3
+#define VPU_RDARB_UGT_L2C1           0x27c2
+#define VPU_WRARB_UGT_L2C1           0x27c3
 
 #define VENC_VDAC_TST_VAL            0x1b7f
 #define VPP_DUMMY_DATA               0x1d00

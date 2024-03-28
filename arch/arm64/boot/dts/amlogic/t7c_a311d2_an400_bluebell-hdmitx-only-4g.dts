@@ -209,14 +209,14 @@
 		dmaheap_cma_reserved:heap-gfx {
 			compatible = "shared-dma-pool";
 			reusable;
-			/* 1080p+4K TV androidT size 4M, no direct render */
-			size = <0x0 0x400000>;
+			/* 1080p STB androidU size 88M for direct render*/
+			size = <0x0 0x5800000>;
 			alignment = <0x0 0x400000>;
 		};
 		dmaheap_fb_reserved:heap-fb {
 			compatible = "shared-dma-pool";
 			reusable;
-			/* 4KUI 3840x2160x4x6 androidU size 212M */
+			/* 1080p UI 1920x1080x4x6 androidU size 56M */
 			size = <0x0 0x3800000>;
 			alignment = <0x0 0x400000>;
 		};
@@ -533,7 +533,7 @@
 		#address-cells=<1>;
 		#size-cells=<1>;
 		/*memory-region = <&hdmirx_emp_cma_reserved>;*/
-		status = "okay";
+		status = "disable";
 		pinctrl-names = "hdmirx_pins";
 		pinctrl-0 = <&hdmirx_a_mux &hdmirx_b_mux
 			&hdmirx_c_mux>;
@@ -1828,6 +1828,11 @@
 	enc_idx = <0>;
 	vrr_type = <2>; /* 1: GAME-VRR, 2: QMS-VRR */
 	hdmi_repeater = <1>;
+};
+
+&aocec {
+	status = "okay";
+	port_num = <1>;
 };
 
 /*if you want to use vdin just modify status to "ok"*/

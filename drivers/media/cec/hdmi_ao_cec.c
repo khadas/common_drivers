@@ -353,6 +353,7 @@ static irqreturn_t ceca_isr(int irq, void *dev_instance)
 /* --------end of AOCEC (CECA)-------- */
 static bool check_physical_addr_valid(int timeout)
 {
+#if (defined(CONFIG_AMLOGIC_HDMITX) || defined(CONFIG_AMLOGIC_HDMITX21))
 	while (timeout > 0) {
 		if (cec_dev->dev_type == CEC_TV_ADDR)
 			break;
@@ -368,6 +369,7 @@ static bool check_physical_addr_valid(int timeout)
 			break;
 		}
 	}
+#endif
 	if (timeout <= 0)
 		return false;
 	return true;
@@ -973,6 +975,7 @@ static ssize_t port_status_show(struct class *cla,
 				struct class_attribute *attr, char *buf)
 {
 	unsigned int tmp;
+#if (defined(CONFIG_AMLOGIC_HDMITX) || defined(CONFIG_AMLOGIC_HDMITX21))
 	unsigned int tx_hpd;
 
 	tx_hpd = get_hpd_state();
@@ -980,17 +983,21 @@ static ssize_t port_status_show(struct class *cla,
 		tmp = tx_hpd;
 		return sprintf(buf, "%x\n", tmp);
 	}
+#endif
 	tmp = hdmirx_rd_top(TOP_HPD_PWR5V);
 	CEC_INFO("TOP_HPD_PWR5V:%x\n", tmp);
 	tmp >>= 20;
 	tmp &= 0xf;
+#if (defined(CONFIG_AMLOGIC_HDMITX) || defined(CONFIG_AMLOGIC_HDMITX21))
 	tmp |= (tx_hpd << 16);
+#endif
 	return sprintf(buf, "%x\n", tmp);
 }
 
 static ssize_t pin_status_show(struct class *cla,
 			       struct class_attribute *attr, char *buf)
 {
+#if (defined(CONFIG_AMLOGIC_HDMITX) || defined(CONFIG_AMLOGIC_HDMITX21))
 	unsigned int tx_hpd;
 	char p;
 
@@ -1012,6 +1019,9 @@ static ssize_t pin_status_show(struct class *cla,
 	} else {
 		return sprintf(buf, "%s\n", pin_status ? "ok" : "fail");
 	}
+#else
+	return sprintf(buf, "%s\n", pin_status ? "ok" : "fail");
+#endif
 }
 
 static ssize_t physical_addr_show(struct class *cla,
@@ -1645,6 +1655,7 @@ static long hdmitx_cec_ioctl(struct file *f,
 		 * judgement hpd, the hpd is written as 1 again in the plugin, so the phy addr will
 		 * report a wrong value. Therefore, after judgement hpd, and get the phy addr
 		 */
+#if (defined(CONFIG_AMLOGIC_HDMITX) || defined(CONFIG_AMLOGIC_HDMITX21))
 		if (cec_dev->dev_type != CEC_TV_ADDR) {
 			if (get_hpd_state() == 0) {
 				cec_dev->phy_addr = 0xffff;
@@ -1658,6 +1669,9 @@ static long hdmitx_cec_ioctl(struct file *f,
 		} else {
 			cec_dev->phy_addr = 0;
 		}
+#else
+		cec_dev->phy_addr = 0;
+#endif
 
 		/*don't use ioctrl cmd to update phy addr reg,it will be updated when plug in*/
 //		if (!phy_addr_test) {
@@ -1818,7 +1832,11 @@ static long hdmitx_cec_ioctl(struct file *f,
 			else
 				tmp = 0;
 		} else {
+#if (defined(CONFIG_AMLOGIC_HDMITX) || defined(CONFIG_AMLOGIC_HDMITX21))
 			tmp = get_hpd_state();
+#else
+			tmp = 0;
+#endif
 		}
 		/*CEC_ERR("port id:%d, sts:%d\n", a, tmp);*/
 		if (copy_to_user(argp, &tmp, _IOC_SIZE(cmd))) {
@@ -2513,8 +2531,9 @@ static void cec_func_init(unsigned int cec_func_config)
 
 	if (!(cec_func_config & CEC_FUNC_CFG_CEC_ON))
 		cec_func &= ~(CEC_FUNC_CFG_CEC_ON);
-	if (!(cec_func_config & CEC_FUNC_CFG_AUTO_POWER_ON))
-		cec_func &= ~(CEC_FUNC_CFG_AUTO_POWER_ON);
+	//default cfg enalbe all function
+//	if (!(cec_func_config & CEC_FUNC_CFG_AUTO_POWER_ON))
+//		cec_func &= ~(CEC_FUNC_CFG_AUTO_POWER_ON);
 	cec_config(cec_func, 1);
 }
 

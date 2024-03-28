@@ -1,0 +1,77 @@
+From ea78c3729ae48070717d59abf3b4788e95655020 Mon Sep 17 00:00:00 2001
+From: Hao Shi <hao.shi@amlogic.com>
+Date: Mon, 11 Mar 2024 02:37:32 +0000
+Subject: [PATCH] v4l: Adjust gfp_flag according to the order [1/1]
+
+PD#SWPL-153208
+PD#SWPL-131346
+
+Problem:
+1.When the memory is in short supply, if the
+order is too large, the memory will not be
+allocated at one time, which will increase
+the allocation time.
+2.Modify in vb2 did not following gki2.0
+
+Solution:
+1.According to the degree of memory shortage,
+adjust the size of the order, so as to allocate
+memory in small amounts and multiple times to
+improve efficiency.
+2.The modify in vb2 only for versions prior to
+androidT and do not need to follow gki2.0. Now
+use the new config to pass gki check.
+
+Verify:
+ohm
+
+Change-Id: I4be66b8b06f9870041afefe9506d1e9f480c0bdd
+Signed-off-by: Hao Shi <hao.shi@amlogic.com>
+---
+ .../media/common/videobuf2/videobuf2-dma-sg.c | 21 +++++++++++++++++++
+ 1 file changed, 21 insertions(+)
+
+diff --git a/drivers/media/common/videobuf2/videobuf2-dma-sg.c b/drivers/media/common/videobuf2/videobuf2-dma-sg.c
+index 0d6389dd9b0c..ca9093d9e2e1 100644
+--- a/drivers/media/common/videobuf2/videobuf2-dma-sg.c
++++ b/drivers/media/common/videobuf2/videobuf2-dma-sg.c
+@@ -57,6 +57,15 @@ struct vb2_dma_sg_buf {
+ 
+ static void vb2_dma_sg_put(void *buf_priv);
+ 
++#ifdef CONFIG_AMLOGIC_MEDIA_V4L2
++#define low_order_gfp_flags(gfp_flags)	((gfp_flags) | (GFP_KERNEL) | (__GFP_ZERO))
++#define mid_order_gfp_flags(gfp_flags)	((gfp_flags) | (GFP_KERNEL) | (__GFP_ZERO) | \
++				(__GFP_NOWARN) | (__GFP_NORETRY))
++#define high_order_gfp_flags(gfp_flags)	(((gfp_flags) | ((GFP_KERNEL) | (__GFP_ZERO) | \
++				(__GFP_NOWARN) | (__GFP_NORETRY))) \
++				& (~__GFP_RECLAIM))
++#endif
++
+ static int vb2_dma_sg_alloc_compacted(struct vb2_dma_sg_buf *buf,
+ 		gfp_t gfp_flags)
+ {
+@@ -75,8 +84,20 @@ static int vb2_dma_sg_alloc_compacted(struct vb2_dma_sg_buf *buf,
+ 
+ 		pages = NULL;
+ 		while (!pages) {
++#ifdef CONFIG_AMLOGIC_MEDIA_V4L2
++			gfp_t flags = gfp_flags;
++
++			if (order >= 3)
++				flags = high_order_gfp_flags(gfp_flags);
++			else if (order >= 1)
++				flags = mid_order_gfp_flags(gfp_flags);
++			else
++				flags = low_order_gfp_flags(gfp_flags);
++			pages = alloc_pages(flags, order);
++#else
+ 			pages = alloc_pages(GFP_KERNEL | __GFP_ZERO |
+ 					__GFP_NOWARN | gfp_flags, order);
++#endif
+ 			if (pages)
+ 				break;
+ 
+-- 
+2.25.1
+

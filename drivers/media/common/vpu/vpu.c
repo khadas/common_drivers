@@ -20,11 +20,14 @@
 #ifdef CONFIG_AMLOGIC_LEGACY_EARLY_SUSPEND
 #include <linux/amlogic/pm.h>
 #endif
+#include <linux/string.h>
+#include <linux/ctype.h>
 #include <linux/amlogic/media/vpu/vpu.h>
 #include "vpu_reg.h"
 #include "vpu.h"
 #include "vpu_ctrl.h"
 #include "vpu_module.h"
+#include "vpu_arb.h"
 
 /* v20200530: initial version */
 /* v20220607: add c3 support */
@@ -35,6 +38,9 @@
 #define VPU_VERSION        "v20230801"
 
 int vpu_debug_print_flag;
+unsigned int vpu_print_level;
+MODULE_PARM_DESC(vpu_print_level, "\n vpu_print_level\n");
+module_param(vpu_print_level, uint, 0664);
 static spinlock_t vpu_mem_lock;
 static spinlock_t vpu_clk_gate_lock;
 
@@ -1017,7 +1023,7 @@ static const char *vpu_usage_str = {
 "	request & release will change vpu clk if the max level in all vmod vpu clk holdings is unequal to current vpu clk level.\n"
 "	vclk both support level(1~10) and frequency value (unit in Hz).\n"
 "	vclk level & frequency:\n"
-"		0: 24M     1: 100M    2: 167M    3: 200M\n"
+"		0: 25M     1: 100M    2: 167M    3: 200M\n"
 "		4: 250M    5: 333M    6: 400M    7: 500M\n"
 "		8: 667M    9: 800M    10: 744M   11:768M\n"
 "\n"
@@ -1099,6 +1105,45 @@ static ssize_t vpu_clk_debug(struct class *class, struct class_attribute *attr,
 		break;
 	}
 
+	return count;
+}
+
+static int parse_para(const char *para, int para_num, int *result)
+{
+	char *token = NULL;
+	char *params, *params_base;
+	int *out = result;
+	int len = 0, count = 0;
+	int res = 0;
+	int ret = 0;
+
+	if (!para)
+		return 0;
+
+	params = kstrdup(para, GFP_KERNEL);
+	params_base = params;
+	token = params;
+	if (!token)
+		return 0;
+	len = strlen(token);
+	do {
+		token = strsep(&params, " ");
+		while (token && (isspace(*token) ||
+				 !isgraph(*token)) && len) {
+			token++;
+			len--;
+		}
+		if (len == 0 || !token)
+			break;
+		ret = kstrtoint(token, 0, &res);
+		if (ret < 0)
+			break;
+		len = strlen(token);
+		*out++ = res;
+		count++;
+	} while ((token) && (count < para_num) && (len > 0));
+
+	kfree(params_base);
 	return count;
 }
 
@@ -1268,6 +1313,108 @@ static ssize_t vpu_dev_debug(struct class *class, struct class_attribute *attr,
 	return count;
 }
 
+static ssize_t vpu_arb_info_debug(struct class *class, struct class_attribute *attr,
+			     const char *buf, size_t count)
+{
+	int ret = 0;
+
+	vpu_print_level = 1;
+	if (strncmp(buf, "rdarb0_2", strlen("rdarb0_2")) == 0)
+		ret = 1;
+	else if (strncmp(buf, "rdarb1", strlen("rdarb1")) == 0)
+		ret = 2;
+	else if (strncmp(buf, "wrarb0", strlen("wrarb0")) == 0)
+		ret = 3;
+	else if (strncmp(buf, "wrarb1", strlen("wrarb1")) == 0)
+		ret = 4;
+	switch (ret) {
+	case 1:
+		get_rdarb0_2_module_info();
+		break;
+	case 2:
+		get_rdarb1_module_info();
+		break;
+	case 3:
+		get_wrarb0_module_info();
+		break;
+	case 4:
+		get_wrarb1_module_info();
+		break;
+	default:
+		break;
+	}
+	vpu_print_level = 0;
+	return count;
+}
+
+static ssize_t vpu_arb_bind_debug(struct class *class, struct class_attribute *attr,
+			     const char *buf, size_t count)
+{
+	int ret = 0;
+
+	vpu_print_level = 1;
+	if (strncmp(buf, "rdarb0_2", strlen("rdarb0_2")) == 0)
+		ret = 1;
+	else if (strncmp(buf, "rdarb1", strlen("rdarb1")) == 0)
+		ret = 2;
+	else if (strncmp(buf, "wrarb0", strlen("wrarb0")) == 0)
+		ret = 3;
+	else if  (strncmp(buf, "wrarb1", strlen("wrarb1")) == 0)
+		ret = 4;
+	switch (ret) {
+	case 1:
+		dump_vpu_clk2_rdarb_table();
+		break;
+	case 2:
+		dump_vpu_clk1_rdarb_table();
+		break;
+	case 3:
+		dump_vpu_clk2_wrarb_table();
+		break;
+	case 4:
+		dump_vpu_clk1_wrarb_table();
+		break;
+	default:
+		break;
+	}
+	vpu_print_level = 0;
+	return count;
+}
+
+static ssize_t vpu_urgent_debug(struct class *class, struct class_attribute *attr,
+			     const char *buf, size_t count)
+{
+	int ret = 0;
+
+	vpu_print_level = 2;
+	if (strncmp(buf, "rdarb0_2", strlen("rdarb0_2")) == 0)
+		ret = 1;
+	else if (strncmp(buf, "rdarb1", strlen("rdarb1")) == 0)
+		ret = 2;
+	else if  (strncmp(buf, "wrarb0", strlen("wrarb0")) == 0)
+		ret = 3;
+	else if (strncmp(buf, "wrarb1", strlen("wrarb1")) == 0)
+		ret = 4;
+	switch (ret) {
+	case 1:
+		dump_vpu_urgent_table(VPU_READ0);
+		break;
+	case 2:
+		dump_vpu_urgent_table(VPU_READ1);
+		break;
+	case 3:
+		dump_vpu_urgent_table(VPU_WRITE0);
+		break;
+	case 4:
+		dump_vpu_urgent_table(VPU_WRITE1);
+		break;
+	default:
+		break;
+	}
+	vpu_print_level = 0;
+	return count;
+}
+
 static void vcbus_test(void)
 {
 	unsigned int *test_table;
@@ -1330,6 +1477,42 @@ static ssize_t vpu_debug_print_store(struct class *class,
 	ret = kstrtoint(buf, 10, &vpu_debug_print_flag);
 	pr_info("set vpu debug_print_flag: %d\n", vpu_debug_print_flag);
 
+	return count;
+}
+
+static ssize_t vpu_arb_bind_store(struct class *class,
+				     struct class_attribute *attr,
+				     const char *buf, size_t count)
+{
+	int parsed[3];
+
+	vpu_print_level = 1;
+	if (likely(parse_para(buf, 3, parsed) == 3)) {
+		if (parsed[0] == 1)
+			vpu_rdarb0_2_bind_l1(parsed[1], parsed[2]);
+		else if (parsed[0] == 2)
+			vpu_rdarb0_2_bind_l2(parsed[1], parsed[2]);
+		else
+			VPUERR("level set error 1:level1 bind; 2:level2 bind\n");
+	} else {
+		VPUPR("set arb_bind parameters error\n");
+	}
+	vpu_print_level = 0;
+	return count;
+}
+
+static ssize_t vpu_urgent_store(struct class *class,
+				     struct class_attribute *attr,
+				     const char *buf, size_t count)
+{
+	int parsed[2];
+
+	vpu_print_level = 2;
+	if (likely(parse_para(buf, 2, parsed) == 2))
+		vpu_urgent_set(parsed[0], parsed[1]);
+	else
+		VPUPR("set arb_bind parameters error\n");
+	vpu_print_level = 0;
 	return count;
 }
 
@@ -1531,15 +1714,20 @@ static ssize_t vpu_debug_reg_store(struct class *class,
 }
 
 static struct class_attribute vpu_debug_class_attrs[] = {
-	__ATTR(clk,   0644, NULL, vpu_clk_debug),
-	__ATTR(mem,   0644, NULL, vpu_mem_debug),
-	__ATTR(gate,  0644, NULL, vpu_clk_gate_debug),
-	__ATTR(dev,   0644, NULL, vpu_dev_debug),
-	__ATTR(test,  0644, NULL, vpu_test_debug),
-	__ATTR(print, 0644, vpu_debug_print_show, vpu_debug_print_store),
-	__ATTR(reg,   0644, vpu_debug_reg_show, vpu_debug_reg_store),
-	__ATTR(info,  0444, vpu_debug_info, NULL),
-	__ATTR(help,  0444, vpu_debug_help, NULL),
+	__ATTR(clk,         0644, NULL, vpu_clk_debug),
+	__ATTR(mem,         0644, NULL, vpu_mem_debug),
+	__ATTR(gate,        0644, NULL, vpu_clk_gate_debug),
+	__ATTR(dev,         0644, NULL, vpu_dev_debug),
+	__ATTR(test,        0644, NULL, vpu_test_debug),
+	__ATTR(arb_info,    0644, NULL, vpu_arb_info_debug),
+	__ATTR(arb_bind,    0644, NULL, vpu_arb_bind_debug),
+	__ATTR(urgent,      0644, NULL, vpu_urgent_debug),
+	__ATTR(bind_set,    0644, NULL, vpu_arb_bind_store),
+	__ATTR(urgent_set,  0644, NULL, vpu_urgent_store),
+	__ATTR(print,       0644, vpu_debug_print_show, vpu_debug_print_store),
+	__ATTR(reg,         0644, vpu_debug_reg_show, vpu_debug_reg_store),
+	__ATTR(info,        0444, vpu_debug_info, NULL),
+	__ATTR(help,        0444, vpu_debug_help, NULL),
 };
 
 static struct class *vpu_debug_class;

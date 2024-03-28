@@ -1226,6 +1226,7 @@ int __nocfi aml_cma_alloc_range(unsigned long start, unsigned long end,
 		.no_set_skip_hint = true,
 		.gfp_mask = current_gfp_context(gfp_mask),
 		.alloc_contig = true,
+		.contended = false,
 	};
 	INIT_LIST_HEAD(&cc.migratepages);
 
@@ -1327,7 +1328,12 @@ try_again:
 	outer_end = aml_iso_free_range(&cc, outer_start, end);
 #endif
 	if (!outer_end) {
-		ret = -EBUSY;
+		if (cc.contended) {
+			ret = -EINTR;
+			pr_info("cma_alloc [%lx-%lx] aborted\n", start, end);
+		} else {
+			ret = -EBUSY;
+		}
 		cma_debug(1, NULL, "iso free range(%lx, %lx) failed\n",
 			  outer_start, end);
 		goto done;

@@ -213,7 +213,7 @@ void set21_s5_htxpll_clk_out(const u32 clk, const u32 div)
 	cs = hdev->tx_comm.fmt_para.cs;
 	cd = hdev->tx_comm.fmt_para.cd;
 
-	HDMITX_INFO("%s[%d] htxpll vco %d div %d\n", __func__, __LINE__, clk, div);
+	HDMITX_DEBUG("%s[%d] htxpll vco %d div %d\n", __func__, __LINE__, clk, div);
 
 	if (clk <= 3000000 || clk > 6000000) {
 		HDMITX_INFO("%s[%d] %d out of htxpll range(3~6G]\n", __func__, __LINE__, clk);
@@ -355,22 +355,23 @@ void hdmitx_set_s5_gp2pll(u32 clk, u32 div)
 	hd21_set_reg_bits(CLKCTRL_GP2PLL_CTRL3, 1, 9, 1); /* enable pll_lock_rst */
 	WAIT_FPLL_GP2PLL_LOCK(CLKCTRL_GP2PLL_CTRL0, CLKCTRL_GP2PLL_STS);
 
-	hd21_set_reg_bits(CLKCTRL_FPLL_CTRL0, od_map[div], 23, 2); // gp2pll_tmds_od<2:0>
+	hd21_set_reg_bits(CLKCTRL_GP2PLL_CTRL0, od_map[div], 10, 3);
 }
 
-void hdmitx_set_s5_clkdiv(struct hdmitx_dev *hdev)
+void hdmitx_set_s5_tmds_clk_div(struct hdmitx_dev *hdev)
 {
 	if (!hdev)
 		return;
 
 	/* cts_htx_tmds_clk selects the htx_tmds20_clk or fll_tmds_clk */
+	/* RJ for cts_htx_tmds_clk[92]
+	 * bit[26:25] source, bit[24] enable, bit[22:16] div
+	 */
 	hd21_set_reg_bits(CLKCTRL_HTX_CLK_CTRL1, hdev->frl_rate ? 1 : 0, 25, 2);
 	if (!hdev->frl_rate && hdev->tx_comm.fmt_para.cs == HDMI_COLORSPACE_YUV420)
 		hd21_set_reg_bits(CLKCTRL_HTX_CLK_CTRL1, 1, 16, 7);
 	else
 		hd21_set_reg_bits(CLKCTRL_HTX_CLK_CTRL1, 0, 16, 7);
-	/* master_clk selects the vid_pll_clk or fpll_pixel_clk */
-	hd21_set_reg_bits(CLKCTRL_VID_CLK0_CTRL, hdev->frl_rate ? 4 : 0, 16, 3);
 }
 
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
@@ -453,7 +454,7 @@ void hdmitx_set_s5_phypara(enum frl_rate_enum frl_rate, u32 tmds_clk)
 		[FRL_6G4L] = 0x00,
 		[FRL_8G4L] = 0x01,
 		[FRL_10G4L] = 0x0a,
-		[FRL_12G4L] = 0x0b,
+		[FRL_12G4L] = 0x2b,
 	};
 	const u8 drv[] = {
 		[FRL_NONE] = 0x11,
@@ -464,19 +465,36 @@ void hdmitx_set_s5_phypara(enum frl_rate_enum frl_rate, u32 tmds_clk)
 		[FRL_10G4L] = 0x77,
 		[FRL_12G4L] = 0x77,
 	};
-	u8 rterm = 0; /* this will get from ufuse */
+	const u16 rterm_val[] = {
+		[1] = 0x00,
+		[2] = 0x04,
+		[3] = 0x0c,
+		[4] = 0x1c,
+		[5] = 0x3c,
+		[6] = 0x01,
+		[7] = 0x05,
+		[8] = 0x0d,
+		[9] = 0x1d,
+		[10] = 0x3d,
+		[11] = 0x03,
+		[12] = 0x07,
+		[13] = 0x0f,
+		[14] = 0x1f,
+		[15] = 0x3f,
+	};
+	u8 rterm_efuse = 9; /* this will get from efuse */
 	struct arm_smccc_res res;
 
-	/* Stage6: enable Rterm */
+	/* Stage6: enable rterm_efuse */
 	hd21_set_reg_bits(ANACTRL_HDMIPHY_CTRL0, 0xd8, 16, 8);
 	hd21_set_reg_bits(ANACTRL_HDMIPHY_CTRL0, 0x3, 24, 2);
 	arm_smccc_smc(HDCPTX_IOOPR, HDMITX_GET_RTERM, 0, 0, 0, 0, 0, 0, &res);
-	rterm = (unsigned int)((res.a0) & 0xffffffff);
-	rterm = rterm & 0x3f;
-	HDMITX_INFO("%s[%d] rterm = %d\n", __func__, __LINE__, rterm);
-	if (!rterm)
-		rterm = 9; /* default value when efuse invalid */
-	hd21_set_reg_bits(ANACTRL_HDMIPHY_CTRL0, rterm, 26, 6);
+	rterm_efuse = (unsigned int)((res.a0) & 0xffffffff);
+	rterm_efuse = rterm_efuse & 0x3f;
+	HDMITX_INFO("%s[%d] rterm_efuse = %d\n", __func__, __LINE__, rterm_efuse);
+	if (!rterm_efuse)
+		rterm_efuse = 9; /* default value when efuse invalid */
+	hd21_set_reg_bits(ANACTRL_HDMIPHY_CTRL0, rterm_val[rterm_efuse], 26, 6);
 	hd21_set_reg_bits(ANACTRL_HDMIPHY_CTRL3, 0x06, 8, 8);
 	ndelay(10);
 
@@ -486,12 +504,12 @@ void hdmitx_set_s5_phypara(enum frl_rate_enum frl_rate, u32 tmds_clk)
 	} else {
 		u32 swing = 0;
 
-		if (tmds_clk >= 290000)
+		if (tmds_clk > 300000)
 			swing = 0x90d5;
-		else if (tmds_clk >= 148000)
-			swing = 0x90d4;
+		else if (tmds_clk > 150000)
+			swing = 0x7082;
 		else
-			swing = 0x90d3;
+			swing = 0x5062;
 		hd21_set_reg_bits(ANACTRL_HDMIPHY_CTRL0, swing, 0, 16);
 	};
 	ndelay(10);
@@ -509,12 +527,10 @@ void hdmitx_set_s5_phypara(enum frl_rate_enum frl_rate, u32 tmds_clk)
 	} else {
 		u32 drv = 0;
 
-		if (tmds_clk >= 290000)
+		if (tmds_clk > 300000)
 			drv = 0x17;
-		else if (tmds_clk >= 148000)
-			drv = 0x13;
 		else
-			drv = 0x11;
+			drv = 0x13;
 		hd21_set_reg_bits(ANACTRL_HDMIPHY_CTRL3, drv, 16, 8);
 	}
 }
@@ -560,3 +576,61 @@ void hdmitx21_s5_clk_div_rst(u32 clk_idx)
 		hd21_set_reg_bits(CLKCTRL_HDMI_VID_PLL_CLK_DIV, 0, 15, 1);
 	}
 }
+
+/* CLKCTRL_HTX_CLK_CTRL0 bit8 gate for cts_hdmitx_prif_clk
+ * it's necessary for register access of controller
+ * CLKCTRL_HTX_CLK_CTRL0 bit24 gate for cts_hdmitx_200m_clk
+ * it's necessary for i2c clk
+ * CLKCTRL_HDMI_CLK_CTRL bit8 gate for cts_hdmitx_sys_clk
+ * it's necessary for register access of hdmitx top
+ */
+static int s5_gate_bit_mask = 0xffc7f;
+module_param(s5_gate_bit_mask, int, 0644);
+MODULE_PARM_DESC(s5_gate_bit_mask, "for s5_gate_bit_mask");
+
+void hdmitx_s5_clock_gate_ctrl(struct hdmitx_dev *hdev, bool en)
+{
+	if (s5_gate_bit_mask & BIT(0))
+		hd21_set_reg_bits(CLKCTRL_FPLL_CTRL0, en, 28, 1);
+	if (s5_gate_bit_mask & BIT(1))
+		hd21_set_reg_bits(CLKCTRL_HDMI_VID_PLL_CLK_DIV, en, 19, 1);
+	if (s5_gate_bit_mask & BIT(2))
+		hd21_set_reg_bits(CLKCTRL_ENC_HDMI_CLK_CTRL, en, 4, 1);
+	if (s5_gate_bit_mask & BIT(3))
+		hd21_set_reg_bits(CLKCTRL_ENC_HDMI_CLK_CTRL, en, 20, 1);
+	if (s5_gate_bit_mask & BIT(4))
+		hd21_set_reg_bits(CLKCTRL_ENC_HDMI_CLK_CTRL, en, 12, 1);
+	if (s5_gate_bit_mask & BIT(5))
+		hd21_set_reg_bits(CLKCTRL_VID_CLK0_CTRL2, en, 3, 1);
+	if (s5_gate_bit_mask & BIT(6))
+		hd21_set_reg_bits(CLKCTRL_HTX_CLK_CTRL1, en, 8, 1);
+	if (s5_gate_bit_mask & BIT(7))
+		hd21_set_reg_bits(CLKCTRL_HTX_CLK_CTRL0, en, 24, 1);
+	if (s5_gate_bit_mask & BIT(8))
+		hd21_set_reg_bits(CLKCTRL_HTX_CLK_CTRL0, en, 8, 1);
+	if (s5_gate_bit_mask & BIT(9))
+		hd21_set_reg_bits(CLKCTRL_HDMI_CLK_CTRL, en, 8, 1);
+	if (s5_gate_bit_mask & BIT(10))
+		hd21_set_reg_bits(CLKCTRL_HDMI_PLL_TMDS_CLK_DIV, en, 19, 1);
+		// hdmitx21_set_reg_bits(HDMITX_TOP_CLK_CNTL, en, 1, 1);
+	/* ANACTRL_HDMIPLL_CTRL4 bit[25] for frl mode 1618 coding
+	 * enable bit[25] may lead no signal in TMDS mode when
+	 * suspend/resume. so disable it in suspend, not enable in resume,
+	 * it will be enabled in setting frl mode later.
+	 */
+	if (s5_gate_bit_mask & BIT(11) && !en)
+		hd21_set_reg_bits(ANACTRL_HDMIPLL_CTRL4, en, 25, 1);
+	if (s5_gate_bit_mask & BIT(12))
+		hd21_set_reg_bits(CLKCTRL_HTX_CLK_CTRL1, en, 24, 1);
+	if (s5_gate_bit_mask & BIT(13))
+		hd21_set_reg_bits(ANACTRL_HDMIPLL_CTRL3, en, 18, 1);
+	if (s5_gate_bit_mask & BIT(14))
+		hd21_set_reg_bits(ANACTRL_HDMIPLL_CTRL3, en, 19, 1);
+	if (s5_gate_bit_mask & BIT(15))
+		hd21_set_reg_bits(ANACTRL_HDMIPLL_CTRL3, en, 0, 1);
+	if (s5_gate_bit_mask & BIT(16))
+		hd21_set_reg_bits(ANACTRL_HDMIPLL_CTRL0, en, 0, 1);
+	if (en == 0) /* this will enable during the mode setting */
+		hd21_write_reg(ANACTRL_HDMIPHY_CTRL5, 0x0);
+}
+

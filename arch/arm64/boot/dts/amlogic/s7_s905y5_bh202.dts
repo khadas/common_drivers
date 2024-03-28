@@ -97,13 +97,14 @@
 		dmaheap_cma_reserved:heap-gfx {
 			compatible = "shared-dma-pool";
 			reusable;
-			/* 1080p STB androidT size 56M */
+			/* 1080p STB androidU size 88M */
 			size = <0x0 0x5800000>;
 			alignment = <0x0 0x400000>;
 		};
 		dmaheap_fb_reserved:heap-fb {
 			compatible = "shared-dma-pool";
 			reusable;
+			/* 1080p STB androidU size 56M */
 			size = <0x0 0x3800000>;
 			alignment = <0x0 0x400000>;
 		};
@@ -166,10 +167,10 @@
 		vdin1_cma_reserved:linux,vdin1_cma {
 			compatible = "shared-dma-pool";
 			reusable;
-			/* up to 1920x1080 yuv420 8bit (nv21) and 4 buffers
-			 * 1920x1080x1.5x4 = 12 M
+			/* up to 1280x720 yuv420 8bit (nv21) and 4 buffers
+			 * 1280x720x1.5x4 = 8 M
 			 */
-			size = <0x0 0x00c00000>;
+			size = <0x0 0x00800000>;
 			alignment = <0x0 0x400000>;
 		};
 		/* global autoconfigured region for contiguous allocations */
@@ -228,6 +229,16 @@
 			0x1b56  0x333
 			0x1c59  0xf850
 			0xffff  0x0>; /* ending flag */
+	};
+
+	gpio_leds {
+		compatible = "gpio-leds";
+		status = "okay";
+		pwr_led {
+			label = "pwr_led";
+			gpios = <&gpio GPIOD_11 GPIO_ACTIVE_LOW>;
+			default-state = "on";
+		};
 	};
 
 	dvb-extern {
@@ -888,7 +899,7 @@
 };
 
 &vddcpu0 {
-	status = "disabled";
+	status = "okay";
 };
 
 &pinctrl_audio {
@@ -969,7 +980,7 @@
 
 /* SDIO */
 &sd_emmc_a {
-	status = "disabled";
+	status = "okay";
 	pinctrl-0 = <&sdio_pins>;
 	pinctrl-1 = <&sdio_clk_gate_pins>;
 	pinctrl-names = "default", "clk-gate";
@@ -1148,6 +1159,8 @@
 };
 
 &ethmac {
+	pinctrl-0 = <&eth_led_pins>;
+	pinctrl-names = "default";
 	status = "okay";
 	phy-handle = <&internal_ephy>;
 	phy-mode = "rmii";
@@ -1230,16 +1243,22 @@
 };
 
 &aml_wifi{
-	status = "disabled";
+	status = "okay";
 	interrupt-gpios = <&gpio  GPIOX_7  GPIO_ACTIVE_HIGH>;
 	power_on-gpios = <&gpio   GPIOX_6  GPIO_ACTIVE_HIGH>;
 };
 
 &aml_bt {
-	status = "disabled";
+	status = "okay";
 	reset-gpios = <&gpio    GPIOX_17 GPIO_ACTIVE_HIGH>;
 	btwakeup-gpios = <&gpio    GPIOX_18 GPIO_ACTIVE_HIGH>;
 	hostwake-gpios = <&gpio GPIOX_19 GPIO_ACTIVE_HIGH>;
+};
+
+&pwm_e {
+	pinctrl-0 = <&pwm_e_pins1>;
+	pinctrl-names = "default";
+	status = "okay";
 };
 
 &uart_A {

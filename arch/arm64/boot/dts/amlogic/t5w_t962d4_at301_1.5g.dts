@@ -80,8 +80,7 @@
 		};
 
 		logo_reserved:linux,meson-fb {
-			compatible = "shared-dma-pool";
-			reusable;
+			compatible = "amlogic, meson-fb";
 			/* keep sync with fb */
 			/* fox example:logo_addr = "0x27000000"*/
 			alignment = <0x0 0x400000>;
@@ -91,7 +90,7 @@
 		lcd_tcon_reserved:linux,lcd_tcon {
 			compatible = "amlogic, lcd_tcon";
 			reg = <0x0 0x27800000 0x0 0x00c00000>;
-			no-map;
+			//no-map;
 		};
 
 		/*  vdin0 CMA pool */
@@ -190,13 +189,14 @@
 			alloc-ranges = <0x0 0x00000000 0x0 0x27000000>;
 		};
 
-		ldc_mem_reserved:linux,ldc_mem {
-			compatible = "shared-dma-pool";
-			reusable;
-			size = <0x0 0x400000>;
-			alignment = <0x0 0x400000>;
-			alloc-ranges = <0x0 0x00000000 0x0 0x27000000>;
-		};
+		/*ldc_mem_reserved:linux,ldc_mem {
+		 *	compatible = "shared-dma-pool";
+		 *	reusable;
+		 *	size = <0x0 0x400000>;
+		 *	alignment = <0x0 0x400000>;
+		 *	alloc-ranges = <0x0 0x00000000 0x0 0x27000000>;
+		 *};
+		 */
 	};
 
 	vddio_3v3_reg: fixedregulator@5{

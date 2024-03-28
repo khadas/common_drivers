@@ -1758,8 +1758,7 @@ static int aml_dai_tdm_prepare(struct snd_pcm_substream *substream,
 		 *  case, we still config spdif module
 		 *  TODO FIXME, consider 8 ch i2s, 2 ch spdif case even hdmitx 8 ch.
 		 */
-		if (p_tdm->samesource_sel != SHAREBUFFER_NONE &&
-			get_i2s2hdmitx_audio_format(rtd->card) == AUD_CODEC_TYPE_STEREO_PCM)
+		if (p_tdm->samesource_sel != SHAREBUFFER_NONE)
 			tdm_sharebuffer_prepare(substream, p_tdm);
 
 		/* i2s source to hdmix */
@@ -1797,7 +1796,9 @@ static int aml_dai_tdm_prepare(struct snd_pcm_substream *substream,
 			iec_get_channel_status_info(&chsts, codec_type,
 				runtime->rate, bit_depth, 0);
 			set_aud_param_ch_status(&chsts, &aud_param);
+#if (defined(CONFIG_AMLOGIC_HDMITX) || defined(CONFIG_AMLOGIC_HDMITX21))
 			aout_notifier_call_chain(event_type, &aud_param);
+#endif
 		}
 
 		fifo_id = aml_frddr_get_fifo_id(fr);

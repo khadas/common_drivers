@@ -91,7 +91,7 @@
 		lcd_tcon_reserved:linux,lcd_tcon {
 			compatible = "amlogic, lcd_tcon";
 			reg = <0x0 0x3c000000 0x0 0x00c00000>;
-			no-map;
+			//no-map;
 		};
 
 		/*  vdin0 CMA pool */
@@ -196,12 +196,13 @@
 			alloc-ranges = <0x0 0x0 0x0 0x3f400000>;
 		};
 
-		ldc_mem_reserved:linux,ldc_mem {
-			compatible = "shared-dma-pool";
-			reusable;
-			size = <0x0 0x400000>;
-			alignment = <0x0 0x400000>;
-		};
+		/*ldc_mem_reserved:linux,ldc_mem {
+		 *	compatible = "shared-dma-pool";
+		 *	reusable;
+		 *	size = <0x0 0x400000>;
+		 *	alignment = <0x0 0x400000>;
+		 *};
+		 */
 	};
 
 	vddio_3v3_reg: fixedregulator@5{

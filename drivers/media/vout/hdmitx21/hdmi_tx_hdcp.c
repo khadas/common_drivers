@@ -112,11 +112,6 @@ static DEFINE_MUTEX(hdcp_mutex);
  * the first hdcp1.4 auth break and then restart-->
  * TE doesn't respond to this re-auth, timeout and fail.
  */
-//for built pass, when rx ready, rm there
-bool __weak get_rx_active_sts(void)
-{
-	return 0;
-}
 
 bool hdcp_need_control_by_upstream(struct hdmitx_dev *hdev)
 {
@@ -166,35 +161,49 @@ void hdmitx21_enable_hdcp(struct hdmitx_dev *hdev) //s7 todo
 	}
 
 	if (hdev->lstore == 0) {
-		if (get_hdcp2_lstore() && is_rx_hdcp2ver()) {
-			//s7 todo
+		if (get_hdcp2_lstore() && hdev->dw_hdcp22_cap) {
 			// enable hdcp gate
+			hdmitx21_ctrl_hdcp_gate(2, true);
 			hdev->tx_comm.hdcp_mode = 2;
 			rx_hdcp2_ver = 1;
 			hdcp_mode_set(2);
 		} else {
 			rx_hdcp2_ver = 0;
-			if (get_hdcp1_lstore()) {
+			if (hdev->frl_rate > FRL_NONE && hdev->frl_rate < FRL_RATE_MAX) {
+				hdev->tx_comm.hdcp_mode = 0;
+				pr_hdcp_info(L_0, "[%s] should not enable hdcp1.4 under FRL mode\n",
+					__func__);
+			} else if (get_hdcp1_lstore()) {
+				hdmitx21_ctrl_hdcp_gate(1, true);
 				hdev->tx_comm.hdcp_mode = 1;
 				hdcp_mode_set(1);
 			} else {
+				hdmitx21_ctrl_hdcp_gate(0, false);
 				hdev->tx_comm.hdcp_mode = 0;
 			}
 		}
 	} else if (hdev->lstore & 0x2) {
-		if (get_hdcp2_lstore() && is_rx_hdcp2ver()) {
+		if (get_hdcp2_lstore() && hdev->dw_hdcp22_cap) {
+			hdmitx21_ctrl_hdcp_gate(2, true);
 			hdev->tx_comm.hdcp_mode = 2;
 			rx_hdcp2_ver = 1;
 			hdcp_mode_set(2);
 		} else {
+			hdmitx21_ctrl_hdcp_gate(0, false);
 			rx_hdcp2_ver = 0;
 			hdev->tx_comm.hdcp_mode = 0;
 		}
 	} else if (hdev->lstore & 0x1) {
-		if (get_hdcp1_lstore()) {
+		if (hdev->frl_rate > FRL_NONE && hdev->frl_rate < FRL_RATE_MAX) {
+			hdev->tx_comm.hdcp_mode = 0;
+			pr_hdcp_info(L_0, "[%s] should not enable hdcp1.4 under FRL mode\n",
+				__func__);
+		} else if (get_hdcp1_lstore()) {
+			hdmitx21_ctrl_hdcp_gate(1, true);
 			hdev->tx_comm.hdcp_mode = 1;
 			hdcp_mode_set(1);
 		} else {
+			hdmitx21_ctrl_hdcp_gate(0, false);
 			hdev->tx_comm.hdcp_mode = 0;
 		}
 	} else {
@@ -219,6 +228,7 @@ void hdmitx21_disable_hdcp(struct hdmitx_dev *hdev)
 		hdev->tx_comm.hdcp_mode = 0;
 		hdcp_mode_set(0);
 		mdelay(10);
+		hdmitx21_ctrl_hdcp_gate(0, false);
 	}
 	mutex_unlock(&hdcp_mutex);
 }
@@ -791,7 +801,7 @@ static void hdcp_req_reauth_whandler(struct work_struct *work)
 	} else if (p_hdcp->req_reauth_ver == 2) {
 		/* force hdcp2.x mode */
 		mutex_lock(&hdcp_mutex);
-		if (get_hdcp2_lstore() && is_rx_hdcp2ver()) {
+		if (get_hdcp2_lstore() && hdev->dw_hdcp22_cap) {
 			hdev->tx_comm.hdcp_mode = 2;
 			hdcp_mode_set(2);
 		} else {
@@ -1090,7 +1100,7 @@ static void hdcp1x_process_intr(struct hdcp_t *p_hdcp, u8 int_reg[])
 	hdcp1xcoppst = hdcptx1_copp_status_get(); // 0x629
 	prime_ri = hdcptx1_get_prime_ri(); // 0x222 0x223
 	pr_hdcp_info(L_2, "%s[%d] hdcp1xauthintst 0x%x hdcp1xcoppst 0x%x Ri 0x%x\n",
-		__func__, __LINE__, hdcp1xauthintst, hdcp1xcoppst, prime_ri);
+			__func__, __LINE__, hdcp1xauthintst, hdcp1xcoppst, prime_ri);
 	if ((hdcp1xauthintst & BIT_TPI_INTR_ST0_BKSV_ERR) ||
 		(hdcp1xauthintst & BIT_TPI_INTR_ST0_BKSV_BCAPS_ERR))
 		hdcptx_update_failures(p_hdcp, HDCP_FAIL_BKSV_RXID);
@@ -1452,12 +1462,13 @@ static void hdcp1x_auth_stop(struct hdcp_t *p_hdcp)
 	ddc_toggle_sw_tpi();
 }
 
-static bool ddc_bus_wait_free(void)
+bool ddc_bus_wait_free(void)
 {
 	u8 tmo1 = 10;
 	u8 tmo2 = 2;
 
 	while (tmo2--) {
+		tmo1 = 10;
 		while (tmo1--) {
 			if (!hdmi_ddc_busy_check())
 				return true;
@@ -1492,8 +1503,15 @@ static bool ddc_check_busy(struct hdcp_t *p_hdcp)
 static void hdcp2x_auth_stop(struct hdcp_t *p_hdcp)
 {
 	hdcp_stop_work(&p_hdcp->timer_ddc_check_nak);
-	if (ddc_check_busy(p_hdcp))
-		hdcptx2_auth_stop();
+	/* should always stop auth, otherwise the hw DDC may be
+	 * free currently but will transact later,
+	 * if do AON_CYP_CTL bit3 reset(DDC Master) during
+	 * DDC transaction may pull SCL low.
+	 * ddc busy check will add delay for ddc free before
+	 * ddc stop
+	 */
+	ddc_check_busy(p_hdcp);
+	hdcptx2_auth_stop();
 }
 
 static void hdcp_reset_hw(struct hdcp_t *p_hdcp)
@@ -1605,9 +1623,9 @@ static bool hdcp_stop_work(struct hdcp_work *work)
 static void hdcptx_auth_start(struct hdcp_t *p_hdcp)
 {
 	enum hdcp_ver_t hdcp_mode;
+	struct hdmitx_dev *hdev = get_hdmitx21_device();
 
 	hdcp_mode = p_hdcp->req_hdcp_ver;
-
 	if (hdcp_mode != HDCP_VER_NONE) {
 		hdcp_mode = p_hdcp->req_hdcp_ver;
 		if (p_hdcp->hdcptx_enabled) {
@@ -1615,33 +1633,43 @@ static void hdcptx_auth_start(struct hdcp_t *p_hdcp)
 			hdcp_enable_intrs(1);
 			hdcp_schedule_work(&p_hdcp->timer_hdcp_rcv_auth,
 				HDCP_STAGE1_RETRY_TIMER, 0);
-			if (hdcp_mode == HDCP_VER_HDCP1X)
+			if (hdcp_mode == HDCP_VER_HDCP1X) {
+				hdcptx_en_aes_dualpipe(false);
 				hdcp1x_auth_start(p_hdcp);
-			if (hdcp_mode == HDCP_VER_HDCP2X)
+			} else if (hdcp_mode == HDCP_VER_HDCP2X) {
+				if (hdev->frl_rate == FRL_NONE)
+					hdcptx_en_aes_dualpipe(false);
+				else
+					hdcptx_en_aes_dualpipe(true);
 				hdcp2x_auth_start(p_hdcp);
+			}
 			hdcp_schedule_work(&p_hdcp->timer_ddc_check_nak, 100, 200);
 		}
 	}
 }
 
 const static char *fail_string[] = {
-	"none",
-	"ddc_nack",
-	"bksv_rxid",
-	"auth_fail",
-	"ready_to",
-	"v",
-	"topology",
-	"ri",
-	"reauth_req",
-	"content_type",
-	"auth_time_out",
-	"hash",
-	"unknown",
+	[HDCP_FAIL_NONE] = "none",
+	[HDCP_FAIL_DDC_NACK] = "ddc_nack",
+	[HDCP_FAIL_BKSV_RXID] = "bksv_rxid",
+	[HDCP_FAIL_AUTH_FAIL] = "auth_fail",
+	[HDCP_FAIL_READY_TO] = "ready_to",
+	[HDCP_FAIL_V] = "v",
+	[HDCP_FAIL_TOPOLOGY] = "topology",
+	[HDCP_FAIL_RI] = "ri",
+	[HDCP_FAIL_REAUTH_REQ] = "reauth_req",
+	[HDCP_FAIL_CONTENT_TYPE] = "content_type",
+	[HDCP_FAIL_AUTH_TIME_OUT] = "auth_time_out",
+	[HDCP_FAIL_HASH] = "hash",
+	[HDCP_FAIL_UNKNOWN] = "unknown",
 };
 
 static void hdcptx_update_failures(struct hdcp_t *p_hdcp, enum hdcp_fail_types_t types)
 {
+	if (types > HDCP_FAIL_UNKNOWN) {
+		types = HDCP_FAIL_UNKNOWN;
+		dump_stack();
+	}
 	if (fail_reason != types) {
 		/* if fail type is DDC_NAK, and then comes BKSV_RXID, don't print */
 		if (fail_reason == HDCP_FAIL_DDC_NACK ||
@@ -1867,6 +1895,19 @@ static int  hdmitx21_hdcp_stat_monitor(void *data)
 		msleep_interruptible(100);
 	}
 	return 0;
+}
+
+void hdmitx21_ctrl_hdcp_gate(int hdcp_mode, bool en)
+{
+	struct hdmitx_dev *hdev = get_hdmitx21_device();
+
+	switch (hdev->tx_hw.chip_data->chip_type) {
+	case MESON_CPU_ID_S7:
+		hdcptx_ctrl_gate(hdcp_mode, en);
+		break;
+	default:
+		break;
+	}
 }
 
 int hdmitx21_hdcp_init(void)

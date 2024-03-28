@@ -1533,8 +1533,9 @@
 
 &i2c1 {
 	status = "okay";
-	pinctrl-names="default";
 	pinctrl-0=<&i2c1_pins1>;
+	pinctrl-1=<&i2c1_pins1_sleep>;
+	pinctrl-names="default", "sleep";
 
 	tas5707_36: tas5707_36@1b {
 		compatible = "ti,tas5707";
@@ -1554,9 +1555,9 @@
 
 &i2c2 {
 	status = "okay";
-	pinctrl-names = "default";//, "sleep"
-	pinctrl-0 = <&i2c2_pins3>;
-	//pinctrl-1 = <&i2c2_sleep_pins2>;
+	pinctrl-0=<&i2c2_pins3>;
+	pinctrl-1=<&i2c2_pins3_sleep>;
+	pinctrl-names="default", "sleep";
 	clock-frequency = <400000>; /* default 100k */
 
 	sensor-i2c@6c {
@@ -1619,8 +1620,9 @@
 
 &i2c3 {
 	status = "okay";
-	pinctrl-names = "default";//, "sleep"
-	pinctrl-0 = <&i2c3_pins1>;
+	pinctrl-0=<&i2c3_pins1>;
+	pinctrl-1=<&i2c3_pins1_sleep>;
+	pinctrl-names="default", "sleep";
 	clock-frequency = <400000>; /* default 100k */
 
 	sensor-i2c@6c {
@@ -1683,9 +1685,9 @@
 
 &i2c4 {
 	status = "okay";
-	pinctrl-names = "default";//, "sleep"
-	pinctrl-0 = <&i2c4_pins1>;
-	//pinctrl-1 = <&i2c2_sleep_pins2>;
+	pinctrl-0=<&i2c4_pins1>;
+	pinctrl-1=<&i2c4_pins1_sleep>;
+	pinctrl-names="default", "sleep";
 	clock-frequency = <100000>; /* default 100k */
 
 	touchscreen@14 {
@@ -2160,7 +2162,8 @@
 
 &pwm_ab {
 	pinctrl-0 = <&pwm_a_pins>;
-	pinctrl-names = "default";
+	pinctrl-1 = <&pwm_a_pins_sleep>;
+	pinctrl-names = "default", "sleep";
 	status = "okay";
 };
 
@@ -2182,8 +2185,9 @@
 };
 
 &pwmao_cd {
-	pinctrl-names = "default";
+	pinctrl-names = "default", "sleep";
 	pinctrl-0 = <&pwm_ao_d_pins>;
+	pinctrl-1 = <&pwm_ao_d_pins_sleep>;
 	status = "okay";
 };
 

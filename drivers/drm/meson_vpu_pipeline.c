@@ -643,7 +643,7 @@ int vpu_pipeline_video_update(struct meson_vpu_sub_pipeline *sub_pipeline,
 int vpu_pipeline_osd_update(struct meson_vpu_sub_pipeline *sub_pipeline,
 			struct drm_atomic_state *old_state)
 {
-#ifdef CONFIG_DEBUG_FS
+#if defined(CONFIG_DEBUG_FS) || defined(CONFIG_AMLOGIC_ZAPPER_CUT)
 	int i;
 #endif
 	int crtc_index;
@@ -677,7 +677,7 @@ int vpu_pipeline_osd_update(struct meson_vpu_sub_pipeline *sub_pipeline,
 		}
 	}
 
-#ifdef CONFIG_DEBUG_FS
+#if defined(CONFIG_DEBUG_FS) || defined(CONFIG_AMLOGIC_ZAPPER_CUT)
 	if (overwrite_enable) {
 		for (i = 0; i < reg_num; i++)
 			meson_vpu_write_reg(overwrite_reg[i], overwrite_val[i]);
@@ -730,7 +730,7 @@ int vpu_video_plane_update(struct meson_vpu_sub_pipeline *sub_pipeline,
 int vpu_osd_pipeline_update(struct meson_vpu_sub_pipeline *sub_pipeline,
 			struct drm_atomic_state *old_state)
 {
-#ifdef CONFIG_DEBUG_FS
+#if defined(CONFIG_DEBUG_FS) || defined(CONFIG_AMLOGIC_ZAPPER_CUT)
 	int i;
 #endif
 
@@ -784,7 +784,7 @@ int vpu_osd_pipeline_update(struct meson_vpu_sub_pipeline *sub_pipeline,
 		}
 	}
 
-#ifdef CONFIG_DEBUG_FS
+#if defined(CONFIG_DEBUG_FS) || defined(CONFIG_AMLOGIC_ZAPPER_CUT)
 	if (overwrite_enable) {
 		for (i = 0; i < reg_num; i++)
 			meson_vpu_write_reg(overwrite_reg[i], overwrite_val[i]);

@@ -133,6 +133,7 @@ static struct aml_ldim_driver_s ldim_driver = {
 	.pwm_vs_irq_cnt = 0,
 	.arithmetic_time = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 	.xfer_time = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+	.level_curve = {{0, 100}, {1024, 1024}, {2048, 2048}, {3072, 3072}, {4095, 4095}},
 
 	.data = NULL,
 	.conf = &ldim_config,
@@ -222,10 +223,62 @@ static int ldim_power_off(void)
 	return 0;
 }
 
+static unsigned int interpolate(unsigned int pdim,
+				unsigned int x0,
+				unsigned int y0,
+				unsigned int x1,
+				unsigned int y1)
+{
+	if (x0 == x1)
+		return y0;
+
+	return y0 + (pdim - x0) * (y1 - y0) / (x1 - x0);
+}
+
+static unsigned int ldim_level_curve_mapping(struct aml_ldim_driver_s *ldim_driver,
+						unsigned int level)
+{
+	unsigned int x0, x1, y0, y1,
+		 x2, y2, x3, y3, x4, y4;
+
+	x0 = ldim_driver->level_curve[0][0];
+	y0 = ldim_driver->level_curve[0][1];
+	x1 = ldim_driver->level_curve[1][0];
+	y1 = ldim_driver->level_curve[1][1];
+	x2 = ldim_driver->level_curve[2][0];
+	y2 = ldim_driver->level_curve[2][1];
+	x3 = ldim_driver->level_curve[3][0];
+	y3 = ldim_driver->level_curve[3][1];
+	x4 = ldim_driver->level_curve[4][0];
+	y4 = ldim_driver->level_curve[4][1];
+
+	if (level <= x1)
+		level = interpolate(level, x0, y0, x1, y1);
+	else if (level <= x2)
+		level = interpolate(level, x1, y1, x2, y2);
+	else if (level <= x3)
+		level = interpolate(level, x2, y2, x3, y3);
+	else if (level <= x4)
+		level = interpolate(level, x3, y3, x4, y4);
+
+	return level;
+}
+
 static int ldim_set_level(unsigned int level)
 {
 	struct aml_bl_drv_s *bdrv = aml_bl_get_driver(0);
+	struct ldim_dev_driver_s *dev_drv = ldim_driver.dev_drv;
 	unsigned int level_max, level_min;
+
+	if (ldim_driver.init_on_flag == 0) {
+		LDIMWARN("%s: init_on_flag is 0\n", __func__);
+		return -1;
+	}
+
+	if (!dev_drv) {
+		LDIMERR("%s: dev_drv is null\n", __func__);
+		return -1;
+	}
 
 	ldim_driver.brightness_level = level;
 
@@ -234,9 +287,17 @@ static int ldim_set_level(unsigned int level)
 
 	level = ((level - level_min) * (ldim_driver.data_max - ldim_driver.data_min)) /
 		(level_max - level_min) + ldim_driver.data_min;
-	level &= 0xfff;
-	ldim_driver.litgain = (unsigned long)level;
-	ldim_driver.level_update = 1;
+
+	level = ldim_level_curve_mapping(&ldim_driver, level);
+
+	if (strcmp(dev_drv->name, "blmcu") == 0) {
+		level = (level >> 4) & 0xff;
+		dev_drv->mcu_dim = (dev_drv->mcu_dim & 0xffffff00) | (level & 0xff);
+	} else {
+		level &= 0xfff;
+		ldim_driver.litgain = (unsigned int)level;
+		ldim_driver.level_update = 1;
+	}
 
 	return 0;
 }
@@ -632,6 +693,8 @@ static long ldim_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	struct aml_ldim_bin_s ldim_buff;
 	struct aml_bl_drv_s *bdrv = aml_bl_get_driver(0);
 	unsigned int temp = 0;
+	struct ldim_fw_s *fw = aml_ldim_get_fw();
+	unsigned int *bl_matrix;
 
 	mcd_nr = _IOC_NR(cmd);
 	LDIMPR("%s: cmd_dir = 0x%x, cmd_nr = 0x%x\n",
@@ -644,6 +707,11 @@ static long ldim_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
 	if (ldim_driver.dev_drv->init_loaded == 0) {
 		LDIMERR("%s: dev_drv->init_loaded == 0!!\n", __func__);
+		return -1;
+	}
+
+	if (!fw) {
+		LDIMERR("%s: ldim_driver.fw is null!!\n", __func__);
 		return -1;
 	}
 
@@ -744,6 +812,31 @@ static long ldim_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		temp = ldim_config.seg_col * ldim_config.seg_row;
 		if (copy_to_user(argp, ldim_driver.bl_matrix_cur, temp * sizeof(unsigned int)))
 			ret = -EFAULT;
+		break;
+	case AML_LDIM_IOC_NR_GET_GLB_HIST:
+		if (!fw->stts || !fw->stts->global_hist) {
+			LDIMERR("%s fw->stts is null\n", __func__);
+			return -EFAULT;
+		}
+		if (copy_to_user(argp, fw->stts->global_hist, 64 * sizeof(unsigned int)))
+			ret = -EFAULT;
+		break;
+	case AML_LDIM_IOC_NR_SET_REMAP_BL:
+		temp = ldim_config.seg_col * ldim_config.seg_row;
+		bl_matrix = vmalloc(temp * sizeof(unsigned int));
+		if (!bl_matrix) {
+			LDIMERR("%s vmalloc buf for receive blmatrix failed\n", __func__);
+			vfree(bl_matrix);
+			return -EFAULT;
+		}
+		if (copy_from_user(bl_matrix, argp, temp * sizeof(unsigned int))) {
+			vfree(bl_matrix);
+			return -EFAULT;
+		}
+		fw->fw_ctrl |= 0x1000;//FW_CTRL_BYPASS_REMAP_BL
+		if (fw->fw_rmem_duty_set)
+			fw->fw_rmem_duty_set(bl_matrix);
+		vfree(bl_matrix);
 		break;
 	case AML_LDIM_IOC_NR_GET_BL_MAPPING_PATH:
 		LDIMPR("get bl_mapping_path is(%s)\n", ldim_driver.dev_drv->bl_mapping_path);

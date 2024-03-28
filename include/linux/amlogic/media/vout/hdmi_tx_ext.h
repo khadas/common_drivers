@@ -173,7 +173,6 @@ int hdmitx_event_notifier_unregist(struct notifier_block *nb);
 struct vsdb_phyaddr *get_hdmitx_phy_addr(void);
 int register_earcrx_callback(pf_callback callback);
 void unregister_earcrx_callback(void);
-unsigned int hdmitx_drv_ver(void);
 
 /*
  * HDMI TX output enable, such as ACRPacket/AudInfo/AudSample

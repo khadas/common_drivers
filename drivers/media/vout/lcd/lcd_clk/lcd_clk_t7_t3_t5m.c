@@ -716,6 +716,8 @@ static void lcd_set_tcon_clk_t3(struct aml_lcd_drv_s *pdrv)
 	if (pdrv->index > 0) /* tcon_clk only valid for lcd0 */
 		return;
 
+	if (pdrv->status & LCD_STATUS_IF_ON)
+		return;
 	if (pdrv->config.basic.lcd_type != LCD_MLVDS &&
 	    pdrv->config.basic.lcd_type != LCD_P2P)
 		return;

@@ -17,3 +17,5 @@ include $(COMMON_DRIVERS_DIR)/drivers/media/vout/vdac/Makefile
 include $(COMMON_DRIVERS_DIR)/drivers/media/vout/lcd/Makefile
 
 include $(COMMON_DRIVERS_DIR)/drivers/media/vout/peripheral_lcd/Makefile
+
+include $(COMMON_DRIVERS_DIR)/drivers/media/vout/dsc/Makefile

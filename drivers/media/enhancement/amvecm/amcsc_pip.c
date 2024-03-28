@@ -166,10 +166,12 @@ static void hdr_proc(struct vframe_s *vf,
 		__func__, module_sel, limit_full);
 
 	/* RGB / YUV vdin input handling  prepare extra op code or info */
-	if (vf && vf->type & VIDTYPE_RGB_444 && !is_amdv_on())
+	if (vf && vf->type & VIDTYPE_RGB_444 && !is_amdv_on() &&
+		get_amdv_src_format(VD1_PATH) != HDRTYPE_DOVI)
 		hdr_process_select |= RGB_VDIN;
 
-	if (limit_full && !is_amdv_on())
+	if (limit_full && !is_amdv_on() &&
+		get_amdv_src_format(VD1_PATH) != HDRTYPE_DOVI)
 		hdr_process_select |= FULL_VDIN;
 	/* RGB / YUV input handling */
 
@@ -3386,7 +3388,13 @@ void video_post_process(struct vframe_s *vf,
 		break;
 	}
 
-	if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A &&
+	if (chip_type_id == chip_a4) {
+		if (!(vinfo->mode == VMODE_LCD ||
+			vinfo->mode == VMODE_DUMMY_ENCP))
+			mtx_setting(POST2_MTX, MATRIX_NULL, MTX_OFF);
+		else
+			mtx_setting(POST2_MTX, MATRIX_YUV709_RGB, MTX_ON);
+	} else if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A &&
 		chip_type_id != chip_s5 &&
 		chip_type_id != chip_t3x) {
 		if (!(vinfo->mode == VMODE_LCD ||

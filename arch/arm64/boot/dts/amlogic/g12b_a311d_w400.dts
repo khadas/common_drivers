@@ -1422,17 +1422,15 @@
 	max-frequency = <200000000>;
 	non-removable;
 	disable-wp;
-	//mmc-ddr-1_8v;
-	//mmc-hs200-1_8v;
-	//mmc-hs400-1_8v;
+	mmc-ddr-1_8v;
+	mmc-hs200-1_8v;
+	mmc-hs400-1_8v;
 	//mmc-pwrseq = <&emmc_pwrseq>;
 	//vmmc-supply = <&vcc_3v3>;
 	//vqmmc-supply = <&vddio_boot>;
 };
 
 &sd_emmc_b {
-	//vmmc-supply = <&vddao3v3_reg>;
-	//vqmmc-supply = <&vddio_c>;
 	status = "okay";
 	pinctrl-0 = <&sdcard_pins>;
 	pinctrl-1 = <&sdcard_clk_gate_pins>;
@@ -1449,26 +1447,26 @@
 	//	&ao_to_sd_uart_pins>;
 
 	pinctrl-names = "sd_default",
-				"clk-gate",
-				"sd_1bit_pins";
-	//			"sd_clk_cmd_uart_pins",
-	//			"sd_1bit_uart_pins",
-	//			"sd_to_ao_uart_pins",
-	//			"ao_to_sd_uart_pins",
-	//			"sd_to_ao_jtag_pins",
-	//			"ao_to_sd_jtag_pins";
-				bus-width = <4>;
-				cap-sd-highspeed;
-//      sd-uhs-sdr12;
-//      sd-uhs-sdr25;
-//      sd-uhs-sdr50;
-//      sd-uhs-sdr104;
-				max-frequency = <200000000>;
-				disable-wp;
-				dat1-gpios = <&gpio GPIOC_1 GPIO_ACTIVE_HIGH>;
-				cd-gpios = <&gpio GPIOC_6 GPIO_ACTIVE_HIGH>;
-				//vmmc-supply = <&vddao_3v3>;
-				//vqmmc-supply = <&emmc_1v8>;
+			"clk-gate",
+			"sd_1bit_pins";
+	//		"sd_clk_cmd_uart_pins",
+	//		"sd_1bit_uart_pins",
+	//		"sd_to_ao_uart_pins",
+	//		"ao_to_sd_uart_pins",
+	//		"sd_to_ao_jtag_pins",
+	//		"ao_to_sd_jtag_pins";
+			bus-width = <4>;
+			cap-sd-highspeed;
+			sd-uhs-sdr12;
+			sd-uhs-sdr25;
+			sd-uhs-sdr50;
+			sd-uhs-sdr104;
+			max-frequency = <200000000>;
+			disable-wp;
+			dat1-gpios = <&gpio GPIOC_1 GPIO_ACTIVE_HIGH>;
+			cd-gpios = <&gpio GPIOC_6 GPIO_ACTIVE_HIGH>;
+			vmmc-supply = <&vddao3v3_reg>;
+			vqmmc-supply = <&vddio_c>;
 };
 
 &sd_emmc_a {

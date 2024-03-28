@@ -1546,7 +1546,7 @@
 		reg = <0x0 0xffe07000 0x0 0x800>,
 			<0x0 0xffe07000 0x0 0x800>,
 			<0x0 0xffe07000 0x0 0x800>;
-		interrupts = <GIC_SPI 191 IRQ_TYPE_LEVEL_HIGH>;
+		interrupts = <GIC_SPI 191 IRQ_TYPE_EDGE_RISING>;
 			//interrupts = <0 191 1>;
 		clocks = <&clkc CLKID_SD_EMMC_C>,
 				<&clkc CLKID_SD_EMMC_C_CLK0_SEL>,
@@ -1556,6 +1556,9 @@
 				<&clkc CLKID_FCLK_DIV2P5>;
 		clock-names = "core","mux0","mux1","clkin0","clkin1","clkin2";
 		tx_delay = <16>;
+		//ignore_desc_busy;
+		hs4_core_phase = <0>;
+		hs4_tx_phase = <0>;
 		card_type = <1>;
 		mmc_debug_flag;
 		disable-wp;

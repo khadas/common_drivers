@@ -113,6 +113,15 @@ static inline int dsc_dec_init(void)
 }
 #endif
 
+#ifdef CONFIG_AMLOGIC_DSC
+int dsc_enc_init(void);
+#else
+static inline int dsc_enc_init(void)
+{
+	return 0;
+}
+#endif
+
 #ifdef CONFIG_AMLOGIC_MEDIA_FB
 int osd_init_module(void);
 #else
@@ -196,11 +205,6 @@ static inline int aml_vdac_init(void)
 
 #ifdef CONFIG_AMLOGIC_MEDIA_VRR
 int __init vrr_init(void);
-#else
-static int vrr_init(void)
-{
-	return 0;
-}
 #endif
 
 #if IS_ENABLED(CONFIG_AMLOGIC_ION_DEV)
@@ -269,11 +273,6 @@ static inline int ge2d_init_module(void)
 
 #ifdef CONFIG_AMLOGIC_MEDIA_VICP
 int vicp_init_module(void);
-#else
-static inline int vicp_init_module(void)
-{
-	return 0;
-}
 #endif
 
 #ifdef CONFIG_AMLOGIC_MEDIA_CODEC_MM
@@ -296,20 +295,10 @@ static inline int video_init(void)
 
 #ifdef CONFIG_AMLOGIC_VOUT2_SERVE
 int vout2_init_module(void);
-#else
-static inline int vout2_init_module(void)
-{
-	return 0;
-}
 #endif
 
 #ifdef CONFIG_AMLOGIC_VOUT3_SERVE
 int vout3_init_module(void);
-#else
-static inline int vout3_init_module(void)
-{
-	return 0;
-}
 #endif
 
 #ifdef CONFIG_AMLOGIC_POST_PROCESS_MANAGER
@@ -332,20 +321,10 @@ static inline int videosync_init(void)
 
 #ifdef CONFIG_AMLOGIC_PIC_DEC
 int picdec_init_module(void);
-#else
-static inline int picdec_init_module(void)
-{
-	return 0;
-}
 #endif
 
 #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
 int amdolby_vision_init(void);
-#else
-static inline int amdolby_vision_init(void)
-{
-	return 0;
-}
 #endif
 
 #ifdef CONFIG_AMLOGIC_MEDIA_FRAME_SYNC
@@ -365,11 +344,6 @@ static inline int tsync_pcr_init(void)
 
 #ifdef CONFIG_AMLOGIC_BL_EXTERN
 int aml_bl_extern_i2c_init(void);
-#else
-static inline int aml_bl_extern_i2c_init(void)
-{
-	return 0;
-}
 #endif
 
 #ifdef CONFIG_AMLOGIC_VIDEO_COMPOSER
@@ -397,11 +371,6 @@ static inline void meson_videotunnel_exit(void)
 
 #ifdef CONFIG_AMLOGIC_LCD_EXTERN
 int aml_lcd_extern_i2c_dev_init(void);
-#else
-static inline int aml_lcd_extern_i2c_dev_init(void)
-{
-	return 0;
-}
 #endif
 
 #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_VECM
@@ -438,11 +407,6 @@ static inline int videoqueue_init(void)
 
 #ifdef CONFIG_AMLOGIC_MEDIA_FRC
 int frc_init(void);
-#else
-static inline int frc_init(void)
-{
-	return 0;
-}
 #endif
 
 #ifdef CONFIG_AMLOGIC_IONVIDEO
@@ -483,38 +447,18 @@ static inline int amlvideo2_init(void)
 
 #ifdef CONFIG_AMLOGIC_BL_EXTERN
 int aml_bl_extern_init(void);
-#else
-static inline int aml_bl_extern_init(void)
-{
-	return 0;
-}
 #endif
 
 #ifdef CONFIG_AMLOGIC_MEDIA_GDC
 int gdc_driver_init(void);
-#else
-static inline int gdc_driver_init(void)
-{
-	return 0;
-}
 #endif
 
 #ifdef CONFIG_AMLOGIC_LCD_EXTERN
 int aml_lcd_extern_init(void);
-#else
-static inline int aml_lcd_extern_init(void)
-{
-	return 0;
-}
 #endif
 
 #ifdef CONFIG_AMLOGIC_BL_LDIM
 int ldim_dev_init(void);
-#else
-static inline int ldim_dev_init(void)
-{
-	return 0;
-}
 #endif
 
 #ifdef CONFIG_AMLOGIC_BACKLIGHT
@@ -567,20 +511,10 @@ static int cec_init(void)
 
 #ifdef CONFIG_AMLOGIC_MEDIA_TVIN_BT656
 int amvdec_656in_init_module(void);
-#else
-static int amvdec_656in_init_module(void)
-{
-	return 0;
-}
 #endif
 
 #ifdef CONFIG_AMLOGIC_MEDIA_TVIN_CSI
 int amvdec_csi_init_module(void);
-#else
-static int amvdec_csi_init_module(void)
-{
-	return 0;
-}
 #endif
 
 #ifdef CONFIG_AMLOGIC_MEDIA_SECURITY

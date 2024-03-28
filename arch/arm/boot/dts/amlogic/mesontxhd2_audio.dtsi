@@ -251,8 +251,8 @@
 		 * 4: spdifout_b;
 		 * 5: earc;
 		 */
-
-		samesource_sel = <5>;
+		spdif_soft_mute = <1>;
+		samesource_sel = <4>;
 		src-clk-freq = <491520000>;
 		/*spdif clk tuning enable*/
 		clk_tuning_enable = <1>;
@@ -272,6 +272,7 @@
 				"gate_spdifout", "clk_spdifout";
 		src-clk-freq = <491520000>;
 		suspend-clk-off = <1>;
+		spdif_soft_mute = <1>;
 		status = "okay";
 	};
 

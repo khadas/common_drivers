@@ -368,7 +368,7 @@ int get_inter_pq_flag(void);
 void set_inter_pq_flag(int flag);
 void set_cfg_id(uint id);
 void update_cp_cfg(void);
-void update_cp_cfg_hw5(bool update_pyramid, bool enable);
+void update_cp_cfg_hw5(bool update_pyramid, bool is_top1, bool enable);
 void update_user_cfg_to_bin(void);
 void update_ambient_lightsense(struct ambient_cfg_s *p_ambient);
 void calculate_user_pq_config(void);

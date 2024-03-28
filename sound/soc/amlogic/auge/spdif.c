@@ -445,10 +445,13 @@ int spdifout_get_lane_mask_version(int id)
 	return ret;
 }
 
-unsigned int spdif_get_codec(void)
+unsigned int spdif_get_codec(int id)
 {
-	if (spdif_priv[0])
-		return spdif_priv[0]->codec_type;
+	if (id < 0 || id > 1)
+		id = 0;
+
+	if (spdif_priv[id])
+		return spdif_priv[id]->codec_type;
 	return 0;
 }
 
@@ -519,8 +522,7 @@ static int aml_spdif_platform_suspend(struct platform_device *pdev, pm_message_t
 
 	if (p_spdif->chipinfo->regulator || (p_spdif->suspend_clk_off && !is_pm_s2idle_mode())) {
 		/* warning:parent clk already close */
-		if (__clk_is_enabled(clk_get_parent(p_spdif->clk_spdifout)) ||
-			__clk_is_enabled(p_spdif->clk_spdifout)) {
+		if (__clk_is_enabled(clk_get_parent(p_spdif->clk_spdifout))) {
 			if (!IS_ERR(p_spdif->clk_spdifout)) {
 				while (__clk_is_enabled(p_spdif->clk_spdifout))
 					clk_disable_unprepare(p_spdif->clk_spdifout);
@@ -881,7 +883,7 @@ static const struct snd_kcontrol_new snd_spdif_controls[] = {
 				spdifin_source_get_enum,
 				spdifin_source_set_enum),
 
-#ifdef CONFIG_AMLOGIC_HDMITX
+#if defined(CONFIG_AMLOGIC_HDMITX) || defined(CONFIG_AMLOGIC_HDMITX21)
 	SOC_SINGLE_BOOL_EXT("Audio hdmi-out mute",
 				0, aml_get_hdmi_out_audio,
 				aml_set_hdmi_out_audio),
@@ -2030,28 +2032,27 @@ static int aml_spdif_parse_of(struct platform_device *pdev)
 		p_spdif->gate_spdifin = devm_clk_get(dev, "gate_spdifin");
 		if (IS_ERR(p_spdif->gate_spdifin)) {
 			dev_err(dev, "Can't get spdifin gate\n");
-			return PTR_ERR(p_spdif->gate_spdifin);
 		}
 		/* pll */
 		p_spdif->fixed_clk = devm_clk_get(dev, "fixed_clk");
 		if (IS_ERR(p_spdif->fixed_clk)) {
 			dev_err(dev, "Can't retrieve fixed_clk\n");
-			return PTR_ERR(p_spdif->fixed_clk);
+
 		}
 		/* spdif in clk */
 		p_spdif->clk_spdifin = devm_clk_get(dev, "clk_spdifin");
 		if (IS_ERR(p_spdif->clk_spdifin)) {
 			dev_err(dev, "Can't retrieve spdifin clock\n");
-			return PTR_ERR(p_spdif->clk_spdifin);
 		}
-		ret = clk_set_parent(p_spdif->clk_spdifin, p_spdif->fixed_clk);
-		if (ret) {
-			dev_err(dev,
-				"Can't set clk_spdifin parent clock\n");
-			ret = PTR_ERR(p_spdif->clk_spdifin);
-			return ret;
+		if (!IS_ERR(p_spdif->fixed_clk) && !IS_ERR(p_spdif->clk_spdifin)) {
+			ret = clk_set_parent(p_spdif->clk_spdifin, p_spdif->fixed_clk);
+			if (ret) {
+				dev_err(dev,
+					"Can't set clk_spdifin parent clock\n");
+				ret = PTR_ERR(p_spdif->clk_spdifin);
+				return ret;
+			}
 		}
-
 		/* irqs */
 		p_spdif->irq_spdifin =
 			platform_get_irq_byname(pdev, "irq_spdifin");

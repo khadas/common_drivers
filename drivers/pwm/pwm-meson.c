@@ -42,6 +42,7 @@
 #include <linux/pwm.h>
 #include <linux/slab.h>
 #include <linux/spinlock.h>
+#include <linux/pinctrl/consumer.h>
 
 #ifdef CONFIG_AMLOGIC_MODIFY
 #include <linux/amlogic/pwm-meson.h>
@@ -970,6 +971,7 @@ static int meson_pwm_freeze(struct device *dev)
 	struct meson_pwm *meson = platform_get_drvdata(pdev);
 	int i;
 
+	pinctrl_pm_select_sleep_state(dev);
 	for (i = 0; i < PWM_REG_NUMS; i++) {
 		meson->regs_restore[i] = readl(meson->base + 4 * i);
 		pr_debug("pwm freeze, reg%d: 0x%x\n", i, meson->regs_restore[i]);
@@ -989,6 +991,7 @@ static int meson_pwm_restore(struct device *dev)
 	struct meson_pwm *meson = platform_get_drvdata(pdev);
 	int i;
 
+	pinctrl_pm_select_default_state(dev);
 	for (i = 0; i < PWM_REG_NUMS; i++) {
 		writel(meson->regs_restore[i], meson->base + 4 * i);
 		pr_debug("pwm restore, reg%d: 0x%x\n", i, meson->regs_restore[i]);

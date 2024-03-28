@@ -15,6 +15,8 @@
 #include <hdmitx_boot_parameters.h>
 #include "hdmitx_log.h"
 #include "../../../efuse_unifykey/efuse.h"
+#include <linux/amlogic/media/vout/vout_notify.h>
+#include <linux/amlogic/media/vout/dsc.h>
 
 int hdmitx_format_para_init(struct hdmi_format_para *para,
 		enum hdmi_vic vic, u32 frac_rate_policy,
@@ -32,6 +34,7 @@ void hdmitx_get_init_state(struct hdmitx_common *tx_common,
 }
 EXPORT_SYMBOL(hdmitx_get_init_state);
 
+/* init hdmitx_common struct which is done only when driver probe */
 int hdmitx_common_init(struct hdmitx_common *tx_comm, struct hdmitx_hw_common *hw_comm)
 {
 	struct hdmitx_boot_param *boot_param = get_hdmitx_boot_params();
@@ -47,8 +50,11 @@ int hdmitx_common_init(struct hdmitx_common *tx_comm, struct hdmitx_hw_common *h
 	tx_comm->config_csc_en = boot_param->config_csc;
 	tx_comm->res_1080p = 0;
 	tx_comm->max_refreshrate = 60;
+	tx_comm->rxcap.edid_check = boot_param->edid_check;
 
 	tx_comm->tx_hw = hw_comm;
+	if (tx_comm->tx_hw)
+		tx_comm->tx_hw->hdmi_tx_cap.dsc_policy = boot_param->dsc_policy;
 	hw_comm->hdcp_repeater_en = 0;
 
 	tx_comm->rxcap.physical_addr = 0xffff;
@@ -88,6 +94,7 @@ int hdmitx_common_destroy(struct hdmitx_common *tx_comm)
 	return 0;
 }
 
+/* check if vic is supported by SOC hdmitx */
 int hdmitx_common_validate_vic(struct hdmitx_common *tx_comm, u32 vic)
 {
 	const struct hdmi_timing *timing = hdmitx_mode_vic_to_hdmi_timing(vic);
@@ -103,7 +110,6 @@ int hdmitx_common_validate_vic(struct hdmitx_common *tx_comm, u32 vic)
 		 */
 		if (vic == HDMI_0_UNKNOWN || vic >= HDMITX_VESA_OFFSET)
 			return -ERANGE;
-
 		/* check the resolution is over 1920x1080 or not */
 		if (timing->h_active > 1920 || timing->v_active > 1080)
 			return -ERANGE;
@@ -141,30 +147,26 @@ int hdmitx_common_validate_vic(struct hdmitx_common *tx_comm, u32 vic)
 	return 0;
 }
 
+/* check fmt para is supported or not by hdmitx/edid.
+ * note that vic is not checked if supported by hdmitx/edid
+ */
 int hdmitx_common_validate_format_para(struct hdmitx_common *tx_comm,
 	struct hdmi_format_para *para)
 {
 	int ret = 0;
-	unsigned int calc_tmds_clk = para->tmds_clk / 1000;
 
 	if (para->vic == HDMI_0_UNKNOWN)
 		return -EPERM;
 
-	/* if current status already limited to 1080p, so here also needs to
-	 * limit the rx_max_tmds_clk as 150 * 1.5 = 225 to make the valid mode
-	 * checking works
-	 */
-	if (tx_comm->res_1080p) {
-		if (calc_tmds_clk > 225)
-			return -ERANGE;
-	}
-
-	ret = hdmitx_edid_validate_format_para(&tx_comm->tx_hw->txcap, &tx_comm->rxcap, para);
+	/* check if the format param is within capability of both TX/RX */
+	ret = hdmitx_edid_validate_format_para(&tx_comm->tx_hw->hdmi_tx_cap,
+		&tx_comm->rxcap, para);
 
 	return ret;
 }
 EXPORT_SYMBOL(hdmitx_common_validate_format_para);
 
+/* build format para of current mode + cs/cd + frac */
 int hdmitx_common_build_format_para(struct hdmitx_common *tx_comm,
 		struct hdmi_format_para *para, enum hdmi_vic vic, u32 frac_rate_policy,
 		enum hdmi_colorspace cs, enum hdmi_color_depth cd, enum hdmi_quantization_range cr)
@@ -181,14 +183,78 @@ int hdmitx_common_build_format_para(struct hdmitx_common *tx_comm,
 }
 EXPORT_SYMBOL(hdmitx_common_build_format_para);
 
+/* similar as valid_mode_store(), but with additional lock */
+/* validation step:
+ * step1, check if mode related VIC is supported in EDID
+ * step2, check if VIC is supported by SOC hdmitx
+ * step3, build format with mode/attr and check if it's
+ * supported by EDID/hdmitx_cap
+ */
+int hdmitx_common_validate_mode_locked(struct hdmitx_common *tx_comm,
+				       struct hdmitx_common_state *new_state,
+				       char *mode, char *attr, bool do_validate)
+{
+	int ret = 0;
+	struct hdmi_format_para *new_para;
+	struct hdmi_format_para tst_para;
+	enum hdmi_vic vic = HDMI_0_UNKNOWN;
+
+	new_para = &new_state->para;
+
+	mutex_lock(&tx_comm->hdmimode_mutex);
+
+	if (!mode || !attr) {
+		ret = -EINVAL;
+		goto out;
+	}
+
+	vic = hdmitx_common_parse_vic_in_edid(tx_comm, mode);
+	if (vic == HDMI_0_UNKNOWN) {
+		HDMITX_ERROR("%s: get vic from (%s) fail\n", __func__, mode);
+		ret = -EINVAL;
+		goto out;
+	}
+
+	ret = hdmitx_common_validate_vic(tx_comm, vic);
+	if (ret != 0) {
+		HDMITX_ERROR("validate vic [%s,%s]-%d return error %d\n", mode, attr, vic, ret);
+		goto out;
+	}
+
+	hdmitx_parse_color_attr(attr, &tst_para.cs, &tst_para.cd, &tst_para.cr);
+	ret = hdmitx_common_build_format_para(tx_comm,
+		new_para, vic, tx_comm->frac_rate_policy,
+		tst_para.cs, tst_para.cd, tst_para.cr);
+	if (ret != 0) {
+		hdmitx_format_para_reset(new_para);
+		HDMITX_ERROR("build formatpara [%s,%s] return error %d\n", mode, attr, ret);
+		goto out;
+	}
+
+	if (do_validate) {
+		ret = hdmitx_common_validate_format_para(tx_comm, new_para);
+		if (ret)
+			HDMITX_ERROR("validate formatpara [%s,%s] return error %d\n",
+				     mode, attr, ret);
+	}
+
+out:
+	mutex_unlock(&tx_comm->hdmimode_mutex);
+	return ret;
+}
+EXPORT_SYMBOL(hdmitx_common_validate_mode_locked);
+
+/* init format para only when probe */
 int hdmitx_common_init_bootup_format_para(struct hdmitx_common *tx_comm,
 		struct hdmi_format_para *para)
 {
 	int ret = 0;
 	struct hdmitx_hw_common *tx_hw = tx_comm->tx_hw;
 	enum hdmi_tf_type dv_type;
+	bool dsc_en = false;
 
 	if (hdmitx_hw_get_state(tx_hw, STAT_TX_OUTPUT, 0)) {
+		/* TODO: it has not consider VESA mode witch HW VIC = 0 */
 		para->vic = hdmitx_hw_get_state(tx_hw, STAT_VIDEO_VIC, 0);
 		para->cs = hdmitx_hw_get_state(tx_hw, STAT_VIDEO_CS, 0);
 		para->cd = hdmitx_hw_get_state(tx_hw, STAT_VIDEO_CD, 0);
@@ -202,11 +268,22 @@ int hdmitx_common_init_bootup_format_para(struct hdmitx_common *tx_comm,
 				para->cs = HDMI_COLORSPACE_YUV444;
 		}
 
+		/* when already output in uboot, use uboot fmt_attr to update cs cd
+		 * if dsc is enabled, as cd from HW register is 8bit under dsc
+		 */
+		if (hdmitx_hw_get_state(tx_hw, STAT_TX_DSC_EN, 0)) {
+			hdmitx_parse_color_attr(tx_comm->fmt_attr, &para->cs, &para->cd, &para->cr);
+			dsc_en = true;
+		}
+
 		ret = hdmitx_common_build_format_para(tx_comm, para, para->vic,
 			tx_comm->frac_rate_policy, para->cs, para->cd,
 			HDMI_QUANTIZATION_RANGE_FULL);
 		if (ret == 0) {
 			HDMITX_INFO("%s init ok\n", __func__);
+			/* for bootup, override build format with HW state */
+			para->dsc_en = dsc_en;
+			para->frl_rate = hdmitx_hw_cntl_misc(tx_hw, MISC_GET_FRL_MODE, 0);
 			hdmitx_format_para_print(para, NULL);
 		} else {
 			HDMITX_INFO("%s: init uboot format para fail (%d,%d,%d)\n",
@@ -475,12 +552,12 @@ int hdmitx_get_hdrinfo(struct hdmitx_common *tx_comm, struct hdr_info *hdrinfo)
 	return 0;
 }
 
-static enum hdmi_vic get_alternate_ar_vic(enum hdmi_vic vic)
+enum hdmi_vic hdmitx_get_prefer_vic(struct hdmitx_common *tx_comm, enum hdmi_vic vic)
 {
 	int i = 0;
-	struct {
-		u32 mode_16x9_vic;
-		u32 mode_4x3_vic;
+	const struct {
+		u32 mode_prefer_vic;
+		u32 mode_alternate_vic;
 	} vic_pairs[] = {
 		{HDMI_7_720x480i60_16x9, HDMI_6_720x480i60_4x3},
 		{HDMI_3_720x480p60_16x9, HDMI_2_720x480p60_4x3},
@@ -489,15 +566,26 @@ static enum hdmi_vic get_alternate_ar_vic(enum hdmi_vic vic)
 	};
 
 	for (i = 0; i < ARRAY_SIZE(vic_pairs); i++) {
-		if (vic_pairs[i].mode_16x9_vic == vic)
-			return vic_pairs[i].mode_4x3_vic;
-		if (vic_pairs[i].mode_4x3_vic == vic)
-			return vic_pairs[i].mode_16x9_vic;
+		if (vic_pairs[i].mode_alternate_vic == vic || vic_pairs[i].mode_prefer_vic == vic) {
+			/* check if mode_best_vic supported by RX */
+			if (hdmitx_edid_validate_mode(&tx_comm->rxcap,
+						vic_pairs[i].mode_prefer_vic))
+				return vic_pairs[i].mode_prefer_vic;
+			if (hdmitx_edid_validate_mode(&tx_comm->rxcap,
+						vic_pairs[i].mode_alternate_vic))
+				return vic_pairs[i].mode_alternate_vic;
+			return HDMI_0_UNKNOWN;
+		}
 	}
 
-	return HDMI_0_UNKNOWN;
+	return vic;
 }
 
+/* check VIC supported or not with basic cs/cd
+ * compare with hdmitx_common_validate_mode_locked()
+ * or valid_mode_store(), it doesn't check if vic
+ * is supported by hdmitx/rx or not
+ */
 int hdmitx_common_check_valid_para_of_vic(struct hdmitx_common *tx_comm, enum hdmi_vic vic)
 {
 	struct hdmi_format_para tst_para;
@@ -509,10 +597,7 @@ int hdmitx_common_check_valid_para_of_vic(struct hdmitx_common *tx_comm, enum hd
 	if (vic == HDMI_0_UNKNOWN)
 		return -EINVAL;
 
-	if (vic == HDMI_96_3840x2160p50_16x9 ||
-		vic == HDMI_97_3840x2160p60_16x9 ||
-		vic == HDMI_101_4096x2160p50_256x135 ||
-		vic == HDMI_102_4096x2160p60_256x135) {
+	if (hdmitx_mode_validate_y420_vic(vic)) {
 		cs = HDMI_COLORSPACE_YUV420;
 		cd = COLORDEPTH_24B;
 		if (hdmitx_common_build_format_para(tx_comm,
@@ -546,51 +631,33 @@ int hdmitx_common_check_valid_para_of_vic(struct hdmitx_common *tx_comm, enum hd
 }
 EXPORT_SYMBOL(hdmitx_common_check_valid_para_of_vic);
 
+/* get corresponding vic of mode, and will check if it's supported in EDID */
 int hdmitx_common_parse_vic_in_edid(struct hdmitx_common *tx_comm, const char *mode)
 {
 	const struct hdmi_timing *timing;
-	enum hdmi_vic vic = HDMI_0_UNKNOWN;
-	enum hdmi_vic alternate_vic = HDMI_0_UNKNOWN;
+	enum hdmi_vic prefer_vic = HDMI_0_UNKNOWN;
 
 	/*parse by name to find default mode*/
 	timing = hdmitx_mode_match_timing_name(mode);
 	if (!timing || timing->vic == HDMI_0_UNKNOWN)
 		return HDMI_0_UNKNOWN;
 
-	vic = timing->vic;
-	/* for compatibility: 480p/576p
-	 * 480p/576p use same short name in hdmitx_timing table, so when match name, will return
-	 * 4x3 mode fist. But user prefer 16x9 first, so try 16x9 first;
-	 */
-	alternate_vic = get_alternate_ar_vic(vic);
-	if (alternate_vic != HDMI_0_UNKNOWN) {
-		//HDMITX_INFO("get alternate vic %d->%d\n", vic, alternate_vic);
-		vic = alternate_vic;
-	}
+	prefer_vic = hdmitx_get_prefer_vic(tx_comm, timing->vic);
 
-	/*check if vic supported by rx*/
-	if (hdmitx_edid_validate_mode(&tx_comm->rxcap, vic) == true)
-		return vic;
-
-	/* for compatibility: 480p/576p, will get 0 if there is no alternate vic;*/
-	alternate_vic = get_alternate_ar_vic(vic);
-	if (alternate_vic != vic) {
-		//HDMITX_INFO("get alternate vic %d->%d\n", vic, alternate_vic);
-		vic = alternate_vic;
-	}
-
-	if (vic != HDMI_0_UNKNOWN && hdmitx_edid_validate_mode(&tx_comm->rxcap, vic) == false)
-		vic = HDMI_0_UNKNOWN;
+	/*check if vic supported by rx, except:480i 480p 576i 576p*/
+	if (prefer_vic != HDMI_0_UNKNOWN &&
+		hdmitx_edid_validate_mode(&tx_comm->rxcap, prefer_vic) == false)
+		prefer_vic = HDMI_0_UNKNOWN;
 
 	/* Dont call hdmitx_common_check_valid_para_of_vic anymore.
 	 * This function used to parse user passed mode name which should already
 	 * checked by hdmitx_common_check_valid_para_of_vic().
 	 */
 
-	if (vic == HDMI_0_UNKNOWN)
-		HDMITX_ERROR("%s: parse mode %s vic %d\n", __func__, mode, vic);
+	if (prefer_vic == HDMI_0_UNKNOWN)
+		HDMITX_ERROR("%s: parse mode %s vic %d\n", __func__, mode, prefer_vic);
 
-	return vic;
+	return prefer_vic;
 }
 EXPORT_SYMBOL(hdmitx_common_parse_vic_in_edid);
 
@@ -615,7 +682,6 @@ int hdmitx_common_notify_hpd_status(struct hdmitx_common *tx_comm, bool force_ue
 	}
 
 	/* notify to other driver module:cec/rx
-	 * TODO: need lock for EDID_buf
 	 * note should not be used under TV product
 	 */
 	if (tx_comm->hdmi_repeater == 1) {
@@ -628,25 +694,59 @@ int hdmitx_common_notify_hpd_status(struct hdmitx_common *tx_comm, bool force_ue
 	return 0;
 }
 
+bool hdmitx_hdr_en(struct hdmitx_hw_common *tx_hw)
+{
+	if (!tx_hw)
+		return false;
+
+	return (hdmitx_hw_get_state(tx_hw, STAT_TX_HDR, 0) & HDMI_HDR_TYPE) == HDMI_HDR_TYPE;
+}
+
+bool hdmitx_dv_en(struct hdmitx_hw_common *tx_hw)
+{
+	if (!tx_hw)
+		return false;
+
+	return (hdmitx_hw_get_state(tx_hw, STAT_TX_DV, 0) & HDMI_DV_TYPE) == HDMI_DV_TYPE;
+}
+
+bool hdmitx_hdr10p_en(struct hdmitx_hw_common *tx_hw)
+{
+	if (!tx_hw)
+		return false;
+
+	return (hdmitx_hw_get_state(tx_hw, STAT_TX_HDR10P, 0) & HDMI_HDR10P_TYPE) ==
+		HDMI_HDR10P_TYPE;
+}
+
 int hdmitx_common_set_allm_mode(struct hdmitx_common *tx_comm, int mode)
 {
 	struct hdmitx_hw_common *tx_hw_base = tx_comm->tx_hw;
 
+	/* disable ALLM HF-VSIF, recover HDMI1.4 4k VSIF if it's legacy 4k24/25/30hz */
 	if (mode == 0) {
 		tx_comm->allm_mode = 0;
 		hdmitx_common_setup_vsif_packet(tx_comm, VT_ALLM, 0, NULL);
-		hdmitx_common_setup_vsif_packet(tx_comm, VT_HDMI14_4K, 1, NULL);
+		if (hdmitx_edid_get_hdmi14_4k_vic(tx_comm->fmt_para.vic) > 0 &&
+			!hdmitx_dv_en(tx_hw_base) &&
+			!hdmitx_hdr10p_en(tx_hw_base))
+			hdmitx_common_setup_vsif_packet(tx_comm, VT_HDMI14_4K, 1, NULL);
 	}
+	/* enable ALLM HF-VSIF, will config vic in AVI if it's legacy 4k24/25/30hz */
 	if (mode == 1) {
 		tx_comm->allm_mode = 1;
 		hdmitx_common_setup_vsif_packet(tx_comm, VT_ALLM, 1, NULL);
+		tx_comm->ct_mode = 0;
 		hdmitx_hw_cntl_config(tx_hw_base, CONF_CT_MODE, SET_CT_OFF);
 	}
-
+	/* disable ALLM HF-VSIF, not recover HDMI1.4 legacy 4k VSIF */
 	if (mode == -1) {
 		if (tx_comm->allm_mode == 1) {
 			tx_comm->allm_mode = 0;
+			/* just for hdmitx20, TODO: remove later */
 			hdmitx_hw_disable_packet(tx_hw_base, HDMI_PACKET_VEND);
+			/* common for hdmitx20/21 to disable HF-VSIF */
+			hdmitx_common_setup_vsif_packet(tx_comm, VT_ALLM, 0, NULL);
 		}
 	}
 	return 0;
@@ -674,7 +774,6 @@ int hdmitx_common_avmute_locked(struct hdmitx_common *tx_comm,
 		tx_comm->debug_param.avmute_frame * get_frame_duration(&tx_comm->hdmitx_vinfo);
 
 	mutex_lock(&avmute_mutex);
-
 	if (mute_flag == SET_AVMUTE) {
 		global_avmute_mask |= mute_path_hint;
 		HDMITX_DEBUG("%s: AVMUTE path=0x%x\n", __func__, mute_path_hint);
@@ -754,7 +853,7 @@ int hdmitx_common_get_edid(struct hdmitx_common *tx_comm)
 		hdmitx_hw_cntl_ddc(tx_hw_base, DDC_EDID_READ_DATA, 0);
 	}
 	/* If EDID is not correct at first time, then retry */
-	if (hdmitx_edid_check_data_valid(tx_comm->EDID_buf) == false) {
+	if (hdmitx_edid_check_data_valid(tx_comm->rxcap.edid_check, tx_comm->EDID_buf) == false) {
 		struct timespec64 kts;
 		struct rtc_time tm;
 
@@ -836,6 +935,278 @@ void hdmitx_common_edid_clear(struct hdmitx_common *tx_comm)
 		rx_edid_physical_addr(0, 0, 0, 0);
 }
 
+void hdmitx_hdr_state_init(struct hdmitx_common *tx_comm)
+{
+	enum hdmi_tf_type hdr_type = HDMI_NONE;
+	unsigned int colorimetry = 0;
+	unsigned int hdr_mode = 0;
+	struct hdmitx_hw_common *tx_hw_base = tx_comm->tx_hw;
+
+	hdr_type = hdmitx_hw_get_hdr_st(tx_hw_base);
+	colorimetry = hdmitx_hw_cntl_config(tx_hw_base, CONF_GET_AVI_BT2020, 0);
+	/* 1:standard HDR, 2:non-standard, 3:HLG, 0:other */
+	if (hdr_type == HDMI_HDR_SMPTE_2084) {
+		if (colorimetry == HDMI_EXTENDED_COLORIMETRY_BT2020)
+			hdr_mode = 1;
+		else
+			hdr_mode = 2;
+	} else if (hdr_type == HDMI_HDR_HLG) {
+		if (colorimetry == HDMI_EXTENDED_COLORIMETRY_BT2020)
+			hdr_mode = 3;
+	} else {
+		hdr_mode = 0;
+	}
+
+	tx_comm->hdmi_last_hdr_mode = hdr_mode;
+	tx_comm->hdmi_current_hdr_mode = hdr_mode;
+}
+
+u32 hdmitx_calc_tmds_clk(u32 pixel_freq,
+	enum hdmi_colorspace cs, enum hdmi_color_depth cd)
+{
+	u32 tmds_clk = pixel_freq;
+
+	if (cs == HDMI_COLORSPACE_YUV420)
+		tmds_clk = tmds_clk / 2;
+	if (cs != HDMI_COLORSPACE_YUV422) {
+		switch (cd) {
+		case COLORDEPTH_48B:
+			tmds_clk *= 2;
+			break;
+		case COLORDEPTH_36B:
+			tmds_clk = tmds_clk * 3 / 2;
+			break;
+		case COLORDEPTH_30B:
+			tmds_clk = tmds_clk * 5 / 4;
+			break;
+		case COLORDEPTH_24B:
+		default:
+			break;
+		}
+	}
+
+	return tmds_clk;
+}
+
+/* get the corresponding bandwidth of current FRL_RATE, Unit: MHz */
+u32 hdmitx_get_frl_bandwidth(const enum frl_rate_enum rate)
+{
+	const u32 frl_bandwidth[] = {
+		[FRL_NONE] = 0,
+		[FRL_3G3L] = 9000,
+		[FRL_6G3L] = 18000,
+		[FRL_6G4L] = 24000,
+		[FRL_8G4L] = 32000,
+		[FRL_10G4L] = 40000,
+		[FRL_12G4L] = 48000,
+	};
+
+	if (rate > FRL_12G4L)
+		return 0;
+	return frl_bandwidth[rate];
+}
+
+u32 hdmitx_calc_frl_bandwidth(u32 pixel_freq, enum hdmi_colorspace cs,
+	enum hdmi_color_depth cd)
+{
+	u32 bandwidth;
+
+	bandwidth = hdmitx_calc_tmds_clk(pixel_freq, cs, cd);
+
+	/* bandwidth = tmds_bandwidth * 24 * 1.122 */
+	bandwidth = bandwidth * 24;
+	bandwidth = bandwidth * 561 / 500;
+
+	return bandwidth;
+}
+
+/* for legacy HDMI2.0 or earlier modes, still select TMDS */
+enum frl_rate_enum hdmitx_select_frl_rate(u8 *dsc_en, u8 dsc_policy, enum hdmi_vic vic,
+	enum hdmi_colorspace cs, enum hdmi_color_depth cd)
+{
+	const struct hdmi_timing *timing;
+	enum frl_rate_enum frl_rate = FRL_NONE;
+	u32 tx_frl_bandwidth = 0;
+	u32 tx_tmds_bandwidth = 0;
+
+	if (!dsc_en)
+		return frl_rate;
+	HDMITX_DEBUG("dsc_policy %d  vic %d  cs %d  cd %d\n", dsc_policy, vic, cs, cd);
+	*dsc_en = 0;
+	timing = hdmitx_mode_vic_to_hdmi_timing(vic);
+	if (!timing)
+		return FRL_NONE;
+
+	tx_tmds_bandwidth = hdmitx_calc_tmds_clk(timing->pixel_freq / 1000, cs, cd);
+	HDMITX_DEBUG("Hactive=%d Vactive=%d Vfreq=%d TMDS_BandWidth=%d\n",
+		timing->h_active, timing->v_active,
+		timing->v_freq, tx_tmds_bandwidth);
+	/* If the tmds bandwidth is less than 594MHz, then select the tmds mode */
+	/* the HxVp48hz is new introduced in HDMI 2.1 / CEA-861-H */
+	if (timing->h_active <= 4096 && timing->v_active <= 2160 &&
+		timing->v_freq != 48000 && tx_tmds_bandwidth <= 594 &&
+		timing->pixel_freq / 1000 < 600)
+		return FRL_NONE;
+	/* tx_frl_bandwidth = tmds_bandwidth * 24 * 1.122 */
+	tx_frl_bandwidth = tx_tmds_bandwidth * 24;
+	tx_frl_bandwidth = tx_frl_bandwidth * 561 / 500;
+	for (frl_rate = FRL_3G3L; frl_rate < FRL_12G4L + 1; frl_rate++) {
+		if (tx_frl_bandwidth <= hdmitx_get_frl_bandwidth(frl_rate)) {
+			HDMITX_DEBUG("select frl_rate as %d\n", frl_rate);
+			break;
+		}
+	}
+
+#ifdef CONFIG_AMLOGIC_DSC
+	/* check tx_cap outside */
+	//if (!tx_hw->base.hdmi_tx_cap.dsc_capable) {
+	//	HDMITX_DEBUG("%s hdmitx not support DSC\n", __func__);
+	//	return frl_rate;
+	//}
+	/* DSC specific, automatically enable dsc if necessary */
+	if (vic == HDMI_199_7680x4320p60_16x9 ||
+		vic == HDMI_207_7680x4320p60_64x27) {
+		if (cs == HDMI_COLORSPACE_YUV444 ||
+			cs == HDMI_COLORSPACE_RGB) {
+			*dsc_en = 1;
+			/* note: previously spec FRL_6G4L can't work */
+			frl_rate = FRL_6G4L;
+			HDMITX_DEBUG_DSC("%s automatically dsc enable\n", __func__);
+		} else if ((cs == HDMI_COLORSPACE_YUV420 &&
+			cd == COLORDEPTH_36B) ||
+			(cs == HDMI_COLORSPACE_YUV422)) {
+			*dsc_en = 1;
+			/* note: previously spec FRL_6G3L can't work */
+			frl_rate = FRL_6G3L;
+			HDMITX_DEBUG_DSC("%s automatically dsc enable\n", __func__);
+		} else if (dsc_policy == 1) {
+			/* for 420,8/10bit */
+			/* force mode for dsc test, may need to also set manual_frl_rate */
+			*dsc_en = 1;
+			/* note: previously spec FRL_6G3L can't work */
+			frl_rate = FRL_6G3L;
+		} else {
+			*dsc_en = 0;
+		}
+		if (*dsc_en == 1)
+			HDMITX_DEBUG_DSC("forced DSC rate %d\n", frl_rate);
+	} else if (vic == HDMI_198_7680x4320p50_16x9 ||
+		vic == HDMI_206_7680x4320p50_64x27) {
+		if (cs == HDMI_COLORSPACE_YUV444 ||
+			cs == HDMI_COLORSPACE_RGB) {
+			*dsc_en = 1;
+			frl_rate = FRL_6G4L;
+			HDMITX_DEBUG_DSC("%s automatically dsc enable\n", __func__);
+		} else if ((cs == HDMI_COLORSPACE_YUV420 &&
+			cd == COLORDEPTH_36B) ||
+			(cs == HDMI_COLORSPACE_YUV422)) {
+			*dsc_en = 1;
+			frl_rate = FRL_6G3L;
+			HDMITX_DEBUG_DSC("%s automatically dsc enable\n", __func__);
+		} else if (dsc_policy == 1) {
+			/* for 420,8/10bit */
+			/* force mode for dsc test, may need to also set manual_frl_rate */
+			*dsc_en = 1;
+			frl_rate = FRL_6G3L;
+		} else {
+			*dsc_en = 0;
+		}
+		if (*dsc_en)
+			HDMITX_DEBUG_DSC("spec recommended DSC frl rate: %d\n", frl_rate);
+	} else if (vic == HDMI_195_7680x4320p25_16x9 ||
+		vic == HDMI_203_7680x4320p25_64x27 ||
+		vic == HDMI_194_7680x4320p24_16x9 ||
+		vic == HDMI_202_7680x4320p24_64x27) {
+		if ((cs == HDMI_COLORSPACE_YUV444 ||
+			cs == HDMI_COLORSPACE_RGB) &&
+			cd == COLORDEPTH_36B) {
+			*dsc_en = 1;
+			frl_rate = FRL_6G3L;
+			HDMITX_DEBUG_DSC("%s automatically dsc enable\n", __func__);
+		} else if (dsc_policy == 1) {
+			/* force mode for test, may need to also set manual_frl_rate */
+			*dsc_en = 1;
+			/* for y444/rgb,8/10bit */
+			if (cs == HDMI_COLORSPACE_YUV444 ||
+				cs == HDMI_COLORSPACE_RGB)
+				frl_rate = FRL_6G3L;
+			else
+				frl_rate = FRL_3G3L; //for 422/420
+		} else {
+			*dsc_en = 0;
+		}
+		if (*dsc_en)
+			HDMITX_DEBUG_DSC("spec recommended DSC frl rate: %d\n", frl_rate);
+	} else if (vic == HDMI_196_7680x4320p30_16x9 ||
+		vic == HDMI_204_7680x4320p30_64x27) {
+		if ((cs == HDMI_COLORSPACE_YUV444 ||
+			cs == HDMI_COLORSPACE_RGB) &&
+			cd == COLORDEPTH_36B) {
+			*dsc_en = 1;
+			frl_rate = FRL_6G3L;
+			HDMITX_DEBUG_DSC("%s automatically dsc enable\n", __func__);
+		} else if (dsc_policy == 1) {
+			/* force mode for test, may need to also set manual_frl_rate */
+			*dsc_en = 1;
+			/* for 444/rgb,8/10bit */
+			if (cs == HDMI_COLORSPACE_YUV444 ||
+				cs == HDMI_COLORSPACE_RGB)
+				frl_rate = FRL_6G3L;
+			else /* for 422/420, note: previously spec FRL_3G3L can't work */
+				frl_rate = FRL_3G3L;
+		} else {
+			*dsc_en = 0;
+		}
+		if (*dsc_en)
+			HDMITX_DEBUG_DSC("forced DSC frl rate: %d\n", frl_rate);
+	} else if (vic == HDMI_97_3840x2160p60_16x9 ||
+		vic == HDMI_107_3840x2160p60_64x27 ||
+		vic == HDMI_96_3840x2160p50_16x9 ||
+		vic == HDMI_106_3840x2160p50_64x27) {
+		if (dsc_policy == 1) {
+			/* force mode for test, may need to also set manual_frl_rate */
+			*dsc_en = 1;
+			frl_rate = FRL_3G3L;
+		} else {
+			*dsc_en = 0;
+		}
+		if (*dsc_en)
+			HDMITX_DEBUG_DSC("spec recommended DSC frl rate: %d\n", frl_rate);
+	} else if (vic == HDMI_117_3840x2160p100_16x9 ||
+		vic == HDMI_119_3840x2160p100_64x27 ||
+		vic == HDMI_118_3840x2160p120_16x9 ||
+		vic == HDMI_120_3840x2160p120_64x27) {
+		/* need 12G4L under uncompressed format */
+		if ((cs == HDMI_COLORSPACE_YUV444 ||
+			cs == HDMI_COLORSPACE_RGB) &&
+			cd == COLORDEPTH_36B) {
+			*dsc_en = 1;
+			frl_rate = FRL_6G3L;
+			HDMITX_DEBUG_DSC("%s automatically dsc enable\n", __func__);
+		} else if (dsc_policy == 1) {
+			/* force mode for test, may need to also set manual_frl_rate */
+			*dsc_en = 1;
+			/* for 444/rgb,8/10bit */
+			if (cs == HDMI_COLORSPACE_YUV444 ||
+				cs == HDMI_COLORSPACE_RGB)
+				frl_rate = FRL_6G3L;
+			else /* for 422/420, note: previously spec FRL_3G3L can't work */
+				frl_rate = FRL_3G3L;
+		} else {
+			*dsc_en = 0;
+		}
+		if (*dsc_en)
+			HDMITX_DEBUG_DSC("spec recommended DSC frl rate: %d\n", frl_rate);
+	} else {
+		/* when switch mode to lower resolution, need to back to non-dsc mode */
+		if (dsc_policy != 2)
+			*dsc_en = 0;
+	}
+#endif
+
+	return frl_rate;
+}
+
 unsigned int hdmitx_get_frame_duration(void)
 {
 	unsigned int frame_duration;
@@ -879,23 +1250,23 @@ void get_hdmi_efuse(struct hdmitx_common *tx_comm)
 				switch (i) {
 				case 0:
 					tx_comm->efuse_dis_hdmi_4k60 = 1;
-					pr_info("get efuse FEAT_DISABLE_HDMI_60HZ = 1\n");
+					HDMITX_INFO("get efuse FEAT_DISABLE_HDMI_60HZ = 1\n");
 					break;
 				case 1:
 					tx_comm->efuse_dis_output_4k = 1;
-					pr_info("get efuse FEAT_DISABLE_OUTPUT_4K = 1\n");
+					HDMITX_INFO("get efuse FEAT_DISABLE_OUTPUT_4K = 1\n");
 					break;
 				case 2:
 					tx_comm->efuse_dis_hdcp_tx22 = 1;
-					pr_info("get efuse FEAT_DISABLE_HDCP_TX_22 = 1\n");
+					HDMITX_INFO("get efuse FEAT_DISABLE_HDCP_TX_22 = 1\n");
 					break;
 				case 3:
 					tx_comm->efuse_dis_hdmi_tx3d = 1;
-					pr_info("get efuse FEAT_DISABLE_HDMI_TX_3D = 1\n");
+					HDMITX_INFO("get efuse FEAT_DISABLE_HDMI_TX_3D = 1\n");
 					break;
 				case 4:
 					tx_comm->efuse_dis_hdcp_tx14 = 1;
-					pr_info("get efuse FEAT_DISABLE_HDMI = 1\n");
+					HDMITX_INFO("get efuse FEAT_DISABLE_HDMI = 1\n");
 					break;
 				default:
 					break;
@@ -906,3 +1277,550 @@ void get_hdmi_efuse(struct hdmitx_common *tx_comm)
 		}
 	}
 }
+
+enum hdmi_color_depth get_hdmi_colordepth(const struct vinfo_s *vinfo)
+{
+	enum hdmi_color_depth cd = COLORDEPTH_24B;
+
+	if (vinfo->cd)
+		cd = vinfo->cd;
+
+	return cd;
+}
+
+bool hdmitx_edid_check_y420_support(struct rx_cap *prxcap, enum hdmi_vic vic)
+{
+	unsigned int i = 0;
+	bool ret = false;
+	const struct hdmi_timing *timing = hdmitx_mode_vic_to_hdmi_timing(vic);
+
+	if (!timing || !prxcap)
+		return false;
+
+	if (hdmitx_mode_validate_y420_vic(vic)) {
+		for (i = 0; i < Y420_VIC_MAX_NUM; i++) {
+			if (prxcap->y420_vic[i]) {
+				if (prxcap->y420_vic[i] == vic) {
+					ret = true;
+					break;
+				}
+			} else {
+				ret = false;
+				break;
+			}
+		}
+	}
+
+	return ret;
+}
+
+/* only check if vic is in edid */
+bool hdmitx_edid_validate_mode(struct rx_cap *rxcap, u32 vic)
+{
+	int i = 0;
+	bool edid_matched = false;
+
+	if (!rxcap)
+		return false;
+
+	if (vic < HDMITX_VESA_OFFSET) {
+		/*check cea cap*/
+		for (i = 0 ; i < rxcap->VIC_count; i++) {
+			if (rxcap->VIC[i] == vic) {
+				edid_matched = true;
+				break;
+			}
+		}
+	} else {
+		enum hdmi_vic *vesa_t = &rxcap->vesa_timing[0];
+		/*check vesa mode.*/
+		for (i = 0; i < VESA_MAX_TIMING && vesa_t[i]; i++) {
+			if (vic == vesa_t[i]) {
+				edid_matched = true;
+				break;
+			}
+		}
+	}
+
+	return edid_matched;
+}
+
+bool hdmitx_edid_only_support_sd(struct rx_cap *prxcap)
+{
+	enum hdmi_vic vic;
+	u32 i, j;
+	bool only_support_sd = true;
+	/* EDID of SL8800 equipment only support below formats */
+	static enum hdmi_vic sd_fmt[] = {
+		1, 3, 4, 17, 18
+	};
+
+	if (!prxcap)
+		return false;
+
+	for (i = 0; i < prxcap->VIC_count; i++) {
+		vic = prxcap->VIC[i];
+		for (j = 0; j < ARRAY_SIZE(sd_fmt); j++) {
+			if (vic == sd_fmt[j])
+				break;
+		}
+		if (j == ARRAY_SIZE(sd_fmt)) {
+			only_support_sd = false;
+			break;
+		}
+	}
+
+	return only_support_sd;
+}
+
+/* When connect both hdmi and panel, here will use different parameters
+ * for HDR packets send out. Before hdmitx send HDR packets, check
+ * current mode is HDMI or not. specially for T7
+ */
+bool is_cur_hdmi_mode(void)
+{
+	struct vinfo_s *vinfo = NULL;
+
+	vinfo = get_current_vinfo();
+	if (vinfo && vinfo->mode == VMODE_HDMI)
+		return 1;
+	vinfo = get_current_vinfo2();
+	if (vinfo && vinfo->mode == VMODE_HDMI)
+		return 1;
+	return 0;
+}
+
+#ifdef CONFIG_AMLOGIC_DSC
+/* get the needed frl rate, refer to 2.1 spec table 7-37/38,
+ * actually it may also need to check bpp
+ */
+static enum frl_rate_enum get_dsc_frl_rate(enum dsc_encode_mode dsc_mode)
+{
+	enum frl_rate_enum frl_rate = FRL_RATE_MAX;
+
+	switch (dsc_mode) {
+	case DSC_RGB_3840X2160_60HZ:
+	case DSC_YUV444_3840X2160_60HZ:
+	case DSC_YUV422_3840X2160_60HZ:
+	case DSC_YUV420_3840X2160_60HZ:
+	case DSC_RGB_3840X2160_50HZ:
+	case DSC_YUV444_3840X2160_50HZ:
+	case DSC_YUV422_3840X2160_50HZ:
+	case DSC_YUV420_3840X2160_50HZ:
+		frl_rate = FRL_3G3L;
+		break;
+	case DSC_RGB_3840X2160_120HZ:
+	case DSC_YUV444_3840X2160_120HZ:
+	case DSC_RGB_3840X2160_100HZ:
+	case DSC_YUV444_3840X2160_100HZ:
+		frl_rate = FRL_6G3L;
+		break;
+	case DSC_YUV422_3840X2160_120HZ:
+	case DSC_YUV420_3840X2160_120HZ:
+	case DSC_YUV422_3840X2160_100HZ:
+	case DSC_YUV420_3840X2160_100HZ:
+		frl_rate = FRL_3G3L;
+		break;
+
+	case DSC_RGB_7680X4320_60HZ:
+	case DSC_YUV444_7680X4320_60HZ:
+		/* 6G4L is spec recommended, but actually it can't
+		 * work on board, need to work under 8G4L
+		 */
+		frl_rate = FRL_6G4L;
+		break;
+	case DSC_YUV422_7680X4320_60HZ:
+	case DSC_YUV420_7680X4320_60HZ:
+		/* 6G3L is spec recommended, but actually it can't
+		 * work on board, need to work under 6G4L
+		 */
+		frl_rate = FRL_6G3L;
+		break;
+
+	case DSC_RGB_7680X4320_50HZ:
+	case DSC_YUV444_7680X4320_50HZ:
+		frl_rate = FRL_6G4L;
+		break;
+	case DSC_YUV422_7680X4320_50HZ:
+	case DSC_YUV420_7680X4320_50HZ:
+		frl_rate = FRL_6G3L;
+		break;
+
+	case DSC_YUV444_7680X4320_30HZ: /* bpp = 12 */
+	case DSC_RGB_7680X4320_30HZ: /* bpp = 12 */
+		frl_rate = FRL_6G3L;
+		break;
+	case DSC_YUV422_7680X4320_30HZ: /* bpp = 7.375 */
+	case DSC_YUV420_7680X4320_30HZ: /* bpp = 7.375 */
+		/* 3G3L is spec recommended, but actually it can't
+		 * work on board, need to work under 6G3L
+		 */
+		frl_rate = FRL_3G3L;
+		break;
+
+	case DSC_YUV444_7680X4320_25HZ: /* bpp = 12 */
+	case DSC_RGB_7680X4320_25HZ: /* bpp = 12 */
+	case DSC_YUV444_7680X4320_24HZ: /* bpp = 12 */
+	case DSC_RGB_7680X4320_24HZ: /* bpp = 12 */
+		frl_rate = FRL_6G3L;
+		break;
+	case DSC_YUV422_7680X4320_25HZ: /* bpp = 7.6875 */
+	case DSC_YUV420_7680X4320_25HZ: /* bpp = 7.6875 */
+	case DSC_YUV422_7680X4320_24HZ: /* bpp = 7.6875 */
+	case DSC_YUV420_7680X4320_24HZ: /* bpp = 7.6875 */
+		frl_rate = FRL_3G3L;
+		break;
+	case DSC_ENCODE_MAX:
+	default:
+		frl_rate = FRL_RATE_MAX;
+		break;
+	}
+	return frl_rate;
+}
+
+static bool hdmitx_check_dsc_support(struct tx_cap *hdmi_tx_cap,
+		struct rx_cap *rxcap, struct hdmi_format_para *para)
+{
+	enum dsc_encode_mode dsc_mode = DSC_ENCODE_MAX;
+	u8 dsc_slice_num = 0;
+	enum frl_rate_enum dsc_frl_rate = FRL_NONE;
+	u32 bytes_target = 0;
+	u8 dsc_policy;
+
+	if (!hdmi_tx_cap || !rxcap || !para)
+		return false;
+
+	/* step1: check if DSC mode is supported by SOC driver & policy */
+	if (!hdmi_tx_cap->dsc_capable) {
+		HDMITX_DEBUG_EDID("tx not capable of dsc\n");
+		return false;
+	}
+	dsc_policy = hdmi_tx_cap->dsc_policy;
+
+	dsc_mode = dsc_enc_confirm_mode(para->timing.h_active,
+		para->timing.v_active, para->timing.v_freq, para->cs);
+
+	if (dsc_mode == DSC_ENCODE_MAX) {
+		HDMITX_DEBUG_EDID("dsc mode not supported!\n");
+		return false;
+	}
+	if (dsc_policy == 0) {
+		/* force not support below 12bit format temporarily */
+		switch (dsc_mode) {
+		/* 4k120hz */
+		case DSC_RGB_3840X2160_120HZ:
+		case DSC_YUV444_3840X2160_120HZ:
+		/* 4k100hz */
+		case DSC_RGB_3840X2160_100HZ:
+		case DSC_YUV444_3840X2160_100HZ:
+		/* 8k60hz */
+		case DSC_RGB_7680X4320_60HZ:
+		case DSC_YUV444_7680X4320_60HZ:
+		/* 8k50hz */
+		case DSC_RGB_7680X4320_50HZ:
+		case DSC_YUV444_7680X4320_50HZ:
+		/* 8k24hz */
+		case DSC_RGB_7680X4320_24HZ:
+		case DSC_YUV444_7680X4320_24HZ:
+		/* 8k25hz */
+		case DSC_RGB_7680X4320_25HZ:
+		case DSC_YUV444_7680X4320_25HZ:
+		/* 8k30hz */
+		case DSC_RGB_7680X4320_30HZ:
+		case DSC_YUV444_7680X4320_30HZ:
+			if (para->cd == COLORDEPTH_36B)
+				return false;
+			break;
+		default:
+			break;
+		}
+	}
+
+	/* step2: check if DSC mode is supported by RX */
+	if (rxcap->dsc_1p2 == 0) {
+		HDMITX_DEBUG_EDID("RX not support DSC\n");
+		return false;
+	}
+	/* check dsc color depth cap */
+	if (para->cd == COLORDEPTH_30B &&
+		!rxcap->dsc_10bpc) {
+		HDMITX_DEBUG_EDID("RX not support 10bpc DSC\n");
+		return false;
+	} else if (para->cd == COLORDEPTH_36B &&
+		!rxcap->dsc_12bpc) {
+		HDMITX_DEBUG_EDID("RX not support 12bpc DSC\n");
+		return false;
+	}
+	/* check dsc color space cap */
+	if (para->cs == HDMI_COLORSPACE_YUV420 &&
+		!rxcap->dsc_native_420) {
+		HDMITX_DEBUG_EDID("RX not support Y420 DSC\n");
+		return false;
+	}
+	dsc_slice_num = dsc_get_slice_num(dsc_mode);
+	/* slice num exceed rx cap */
+	if (dsc_slice_num == 0 ||
+		dsc_slice_num > dsc_max_slices_num[rxcap->dsc_max_slices]) {
+		HDMITX_DEBUG_EDID("current slice num %d exceed rx cap %d\n",
+			dsc_slice_num, dsc_max_slices_num[rxcap->dsc_max_slices]);
+		return false;
+	}
+	/* note: pixel clock per slice not checked, assume
+	 * it's always within rx cap
+	 */
+	/* check dsc frl rate within rx cap */
+	dsc_frl_rate = get_dsc_frl_rate(dsc_mode);
+	if (dsc_frl_rate == FRL_RATE_MAX ||
+		dsc_frl_rate > rxcap->dsc_max_frl_rate ||
+		dsc_frl_rate > rxcap->max_frl_rate) {
+		HDMITX_DEBUG_EDID("current dsc frl rate %d exceed rx cap %d-%d\n",
+			dsc_frl_rate, rxcap->dsc_max_frl_rate, rxcap->max_frl_rate);
+		return false;
+	}
+	/* 2.1 spec table 6-56, if Bytes Target is greater than
+	 * the value indicated by DSC_TotalChunkKBytes (see Sections
+	 * 7.7.1 and 7.7.4.2), then the configuration is not
+	 * supported with Compressed Video Transport.
+	 */
+	bytes_target = dsc_get_bytes_target_by_mode(dsc_mode);
+	if (bytes_target > (rxcap->dsc_total_chunk_bytes + 1) * 1024) {
+		HDMITX_DEBUG_EDID("bytes_target %d exceed DSC_TotalChunkKBytes %d\n",
+			bytes_target, (rxcap->dsc_total_chunk_bytes + 1) * 1024);
+		return false;
+	}
+	return true;
+}
+#endif
+
+/* For some TV's EDID, there maybe exist some information ambiguous.
+ * Such as EDID declare support 2160p60hz(Y444 8bit), but no valid
+ * Max_TMDS_Clock2 to indicate that it can support 5.94G signal.
+ */
+int hdmitx_edid_validate_format_para(struct tx_cap *hdmi_tx_cap,
+		struct rx_cap *prxcap, struct hdmi_format_para *para)
+{
+	const struct dv_info *dv;
+	/* needed tmds clk bandwidth for current format */
+	unsigned int calc_tmds_clk = 0;
+	/* max tmds clk supported by RX */
+	unsigned int rx_max_tmds_clk = 0;
+	/* bandwidth needed for current FRL mode */
+	u32 tx_frl_bandwidth = 0;
+	/* maximum supported frl bandwidth of RX */
+	u32 rx_frl_bandwidth_cap = 0;
+	/* maximum supported frl bandwidth of soc */
+	u32 tx_frl_bandwidth_cap = 0;
+	bool must_frl_flag = 0;
+	int ret = 0;
+	u8 dsc_policy;
+
+	if (!hdmi_tx_cap || !prxcap || !para)
+		return -EPERM;
+
+	dsc_policy = hdmi_tx_cap->dsc_policy;
+	dv = &prxcap->dv_info;
+	/* step1: check if mode + cs/cd is supported by TX */
+	switch (para->timing.vic) {
+	/* Note: below check for formats which should use FRL
+	 * is also checked in step3, so remove
+	 */
+	/* case HDMI_96_3840x2160p50_16x9: */
+	/* case HDMI_97_3840x2160p60_16x9: */
+	/* case HDMI_101_4096x2160p50_256x135: */
+	/* case HDMI_102_4096x2160p60_256x135: */
+	/* case HDMI_106_3840x2160p50_64x27: */
+	/* case HDMI_107_3840x2160p60_64x27: */
+		/* if (para->cs == HDMI_COLORSPACE_RGB || */
+		    /* para->cs == HDMI_COLORSPACE_YUV444) */
+			/* if (para->cd != COLORDEPTH_24B && */
+				/* (prxcap->max_frl_rate == FRL_NONE || */
+				/* hdmi_tx_cap->tx_max_frl_rate == FRL_NONE)) */
+				/* return -EPERM; */
+		/* break; */
+	case HDMI_6_720x480i60_4x3:
+	case HDMI_7_720x480i60_16x9:
+	case HDMI_21_720x576i50_4x3:
+	case HDMI_22_720x576i50_16x9:
+		if (para->cs == HDMI_COLORSPACE_YUV422)
+			return -EPERM;
+		break;
+	/* don't support 640x480p60 */
+	case HDMI_1_640x480p60_4x3:
+		return -EPERM;
+	default:
+		break;
+	}
+
+	/* step2: DVI case, only rgb,8bit */
+	if (prxcap->ieeeoui != HDMI_IEEE_OUI) {
+		if (para->cd != COLORDEPTH_24B || para->cs != HDMI_COLORSPACE_RGB) {
+			HDMITX_DEBUG_EDID("cs:%d, cd:%d not support by DVI sink\n",
+				para->cs, para->cd);
+			return -EPERM;
+		}
+	}
+
+	/* step3: check TMDS/FRL bandwidth is within TX/RX cap */
+	if (prxcap->Max_TMDS_Clock2) {
+		rx_max_tmds_clk = prxcap->Max_TMDS_Clock2 * 5;
+	} else {
+		/* Default min is 74.25 / 5 */
+		if (prxcap->Max_TMDS_Clock1 < 0xf)
+			prxcap->Max_TMDS_Clock1 = DEFAULT_MAX_TMDS_CLK;
+		rx_max_tmds_clk = prxcap->Max_TMDS_Clock1 * 5;
+	}
+	calc_tmds_clk = para->tmds_clk / 1000;
+
+	/* more > 4k60 must use frl mode */
+	if (para->timing.h_active > 4096 || para->timing.v_active > 2160 ||
+		para->timing.v_freq == 48000 || calc_tmds_clk > 594 ||
+		para->timing.pixel_freq / 1000 > 600)
+		must_frl_flag = true;
+
+	if (hdmi_tx_cap->tx_max_frl_rate == FRL_NONE) {
+		/* output format need FRL while SOC not support FRL */
+		if (must_frl_flag) {
+			HDMITX_DEBUG_EDID("output format need FRL, while tx not support\n");
+			return -EPERM;
+		}
+		/* tmds clk of the output format exceed TX/RX cap */
+		if (calc_tmds_clk > hdmi_tx_cap->tx_max_tmds_clk) {
+			HDMITX_DEBUG_EDID("output tmds clk:%d exceed tx cap: %d\n",
+				calc_tmds_clk, hdmi_tx_cap->tx_max_tmds_clk);
+			return -EPERM;
+		}
+		if (calc_tmds_clk > rx_max_tmds_clk) {
+			HDMITX_DEBUG_EDID("output tmds clk:%d exceed rx cap: %d\n",
+				calc_tmds_clk, rx_max_tmds_clk);
+			return -EPERM;
+		}
+	} else {
+#ifdef CONFIG_AMLOGIC_DSC
+		if (dsc_policy == 1) {
+			/* force enable policy */
+			if (hdmitx_check_dsc_support(hdmi_tx_cap, prxcap, para))
+				return 0;
+		} else if (dsc_policy == 2) {
+			/* for debug test */
+			return 0;
+		}
+#endif
+		if (!must_frl_flag) {
+			if (calc_tmds_clk > hdmi_tx_cap->tx_max_tmds_clk) {
+				HDMITX_DEBUG_EDID("output tmds clk:%d exceed tx cap: %d\n",
+					calc_tmds_clk, hdmi_tx_cap->tx_max_tmds_clk);
+				return -EPERM;
+			}
+			if (calc_tmds_clk > rx_max_tmds_clk) {
+				HDMITX_DEBUG_EDID("output tmds clk:%d exceed rx cap: %d\n",
+					calc_tmds_clk, rx_max_tmds_clk);
+				return -EPERM;
+			}
+		} else {
+			/* try to check if able to run under FRL mode */
+
+			/* output format need FRL while RX not support FRL
+			 * no need below check, it will be checked with rx_frl_bandwidth_cap
+			 */
+			if (prxcap->max_frl_rate == FRL_NONE) {
+				HDMITX_DEBUG_EDID("output format need FRL, while rx not support\n");
+				return -EPERM;
+			}
+			/* tx_frl_bandwidth = timing->pixel_freq / 1000 * 24 * 1.122 */
+			tx_frl_bandwidth = hdmitx_calc_frl_bandwidth(para->timing.pixel_freq / 1000,
+				para->cs, para->cd);
+			tx_frl_bandwidth_cap =
+				hdmitx_get_frl_bandwidth(hdmi_tx_cap->tx_max_frl_rate);
+			rx_frl_bandwidth_cap = hdmitx_get_frl_bandwidth(prxcap->max_frl_rate);
+
+			if (prxcap->dsc_1p2 == 0) {
+				/* RX not support DSC */
+				if (tx_frl_bandwidth > tx_frl_bandwidth_cap) {
+					HDMITX_DEBUG_EDID("frl bandwitch:%d exceed tx_cap:%d\n",
+						tx_frl_bandwidth, tx_frl_bandwidth_cap);
+					return -EPERM;
+				}
+				if (tx_frl_bandwidth > rx_frl_bandwidth_cap) {
+					HDMITX_DEBUG_EDID("frl bandwitch:%d exceed rx_cap:%d\n",
+						tx_frl_bandwidth, rx_frl_bandwidth_cap);
+					return -EPERM;
+				}
+			} else {
+				if (tx_frl_bandwidth <= tx_frl_bandwidth_cap &&
+					tx_frl_bandwidth <= rx_frl_bandwidth_cap)
+					; // non-dsc bandwidth is within cap, continue check
+#ifdef CONFIG_AMLOGIC_DSC
+				else if (dsc_policy == 3) //forcely filter out dsc mode output
+					return -EPERM;
+				else if (!hdmitx_check_dsc_support(hdmi_tx_cap, prxcap, para))
+					return -EPERM;
+#else
+				else
+					return -EPERM;
+#endif
+			}
+		}
+	}
+
+	/* step4: check color space/depth is within RX cap */
+	if (para->cs == HDMI_COLORSPACE_YUV444) {
+		enum hdmi_color_depth rx_y444_max_dc = COLORDEPTH_24B;
+		/* Rx may not support Y444 */
+		if (!(prxcap->native_Mode & (1 << 5)))
+			return -EACCES;
+		if (prxcap->dc_y444 && (prxcap->dc_30bit ||
+					dv->sup_10b_12b_444 == 0x1))
+			rx_y444_max_dc = COLORDEPTH_30B;
+		if (prxcap->dc_y444 && (prxcap->dc_36bit ||
+					dv->sup_10b_12b_444 == 0x2))
+			rx_y444_max_dc = COLORDEPTH_36B;
+
+		if (para->cd <= rx_y444_max_dc)
+			ret = 0;
+		else
+			ret = -EACCES;
+
+		return ret;
+	}
+
+	if (para->cs == HDMI_COLORSPACE_YUV422) {
+		/* Rx may not support Y422 */
+		if (prxcap->native_Mode & (1 << 4))
+			ret = 0;
+		else
+			ret = -EACCES;
+
+		return ret;
+	}
+
+	if (para->cs == HDMI_COLORSPACE_RGB) {
+		enum hdmi_color_depth rx_rgb_max_dc = COLORDEPTH_24B;
+		/* Always assume RX supports RGB444 */
+		if (prxcap->dc_30bit || dv->sup_10b_12b_444 == 0x1)
+			rx_rgb_max_dc = COLORDEPTH_30B;
+		if (prxcap->dc_36bit || dv->sup_10b_12b_444 == 0x2)
+			rx_rgb_max_dc = COLORDEPTH_36B;
+
+		if (para->cd <= rx_rgb_max_dc)
+			ret = 0;
+		else
+			ret = -EACCES;
+
+		return ret;
+	}
+
+	if (para->cs == HDMI_COLORSPACE_YUV420) {
+		ret = 0;
+		if (!hdmitx_edid_check_y420_support(prxcap, para->vic))
+			ret = -EACCES;
+		else if (!prxcap->dc_30bit_420 && para->cd == COLORDEPTH_30B)
+			ret = -EACCES;
+		else if (!prxcap->dc_36bit_420 && para->cd == COLORDEPTH_36B)
+			ret = -EACCES;
+
+		return ret;
+	}
+
+	return -EACCES;
+}
+

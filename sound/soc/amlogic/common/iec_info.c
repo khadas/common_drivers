@@ -462,6 +462,7 @@ void spdif_notify_to_hdmitx(struct snd_pcm_substream *substream,
 	aud_param.i2s_ch_mask = 0x1;
 	aud_param.aud_src_if = AUD_SRC_IF_SPDIF;
 
+#if (defined(CONFIG_AMLOGIC_HDMITX) || defined(CONFIG_AMLOGIC_HDMITX21))
 	if (codec_type == AUD_CODEC_TYPE_AC3) {
 		aout_notifier_call_chain(AOUT_EVENT_RAWDATA_AC_3,
 					 &aud_param);
@@ -486,19 +487,22 @@ void spdif_notify_to_hdmitx(struct snd_pcm_substream *substream,
 		aout_notifier_call_chain(AOUT_EVENT_IEC_60958_PCM,
 					 &aud_param);
 	}
+#endif
 }
 
 /* notify hdmitx to prepare for changing audio format or settings */
 void notify_hdmitx_to_prepare(void)
 {
+#if (defined(CONFIG_AMLOGIC_HDMITX) || defined(CONFIG_AMLOGIC_HDMITX21))
 	struct aud_para aud_param;
 
 	memset(&aud_param, 0, sizeof(aud_param));
 	aud_param.prepare = true;
 	aout_notifier_call_chain(AOUT_EVENT_IEC_60958_PCM, &aud_param);
+#endif
 }
 
-#ifdef CONFIG_AMLOGIC_HDMITX
+#if defined(CONFIG_AMLOGIC_HDMITX) || defined(CONFIG_AMLOGIC_HDMITX21)
 unsigned int aml_audio_hdmiout_mute_flag;
 /* call HDMITX API to enable/disable internal audio out */
 int aml_get_hdmi_out_audio(struct snd_kcontrol *kcontrol,

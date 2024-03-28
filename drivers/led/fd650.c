@@ -17,10 +17,23 @@
 #include <linux/leds.h>
 #include <linux/string.h>
 #include <linux/platform_device.h>
+#include <linux/amlogic/aml_mbox.h>
+
 
 #define		PIN_DATA			0
 #define		PIN_CLK				1
 #define DEFAULT_UDELAY			1
+
+#define MESON_FD650_SCPI_CNT		50
+
+struct mbox_chan *fd650_mbox_chan;
+
+enum FD650State {
+	FD650_STATE_DEFAULT = 0,
+	FD650_STATE_SHOW,
+	FD650_STATE_TIME,
+	FD650_STATE_INVALID,
+};
 
 struct fd650_bus {
 	/*
@@ -34,6 +47,7 @@ struct fd650_bus {
 	int (*get_sda)(struct fd650_bus *bus);
 	void (*set_sda)(struct fd650_bus *bus, int bit);
 	void (*set_scl)(struct fd650_bus *bus, int bit);
+	bool use_bl30_ctrl;
 };
 
 #define LED_MAP_NUM 22
@@ -226,12 +240,33 @@ static ssize_t fd650_display_store(struct device *dev,
 			struct fd650_bus, cdev);
 	char display_str[10];
 	int colon_on;
-	int res;
+	int ret;
+	int count;
+	char data[6];
 
-	res = sscanf(buf, "%d %s", &colon_on, display_str);
-	if (res != 2) {
+	ret = sscanf(buf, "%d %s", &colon_on, display_str);
+	if (ret != 2) {
 		dev_err(dev, "Can't parse! usage:[colon_on(1/0) strings]\n");
 		return -EINVAL;
+	}
+	if (bus->use_bl30_ctrl) {
+		data[0] = FD650_STATE_SHOW;
+		data[1] = colon_on;
+		memcpy(data + 2, display_str, 4);
+		for (count = 0; count < MESON_FD650_SCPI_CNT; count++) {
+			ret = aml_mbox_transfer_data(fd650_mbox_chan, MBOX_CMD_SET_FD650,
+						(void *)data, sizeof(data),
+						NULL, 0, MBOX_SYNC);
+			if (ret >= 0)
+				break;
+			mdelay(5);
+		}
+
+		if (count == MESON_FD650_SCPI_CNT) {
+			dev_err(dev, "%s Can't set fd650 display count=%d\n", __func__, count);
+			return -EINVAL;
+		}
+		return size;
 	}
 	led_show_650(bus, display_str, colon_on, 1);
 
@@ -257,10 +292,14 @@ static ssize_t fd650_sec_store(struct device *dev,
 	struct led_classdev *led_cdev = dev_get_drvdata(dev);
 	struct fd650_bus *bus = container_of(led_cdev,
 			struct fd650_bus, cdev);
-	int leds_num, sec_num, res;
+	int leds_num, sec_num, ret;
 
-	res = sscanf(buf, "%d %d", &leds_num, &sec_num);
-	if (res != 2 || leds_num > 4 || sec_num > 7) {
+	if (bus->use_bl30_ctrl) {
+		dev_err(dev, "controlled by bl30\n");
+		return -EINVAL;
+	}
+	ret = sscanf(buf, "%d %d", &leds_num, &sec_num);
+	if (ret != 2 || leds_num > 4 || sec_num > 7) {
 		dev_err(dev, "Can't parse! usage:[leds_num sec_num]\n");
 		return -EINVAL;
 	}
@@ -296,14 +335,49 @@ static ssize_t fd650_sec_store(struct device *dev,
 	return size;
 }
 
+static ssize_t fd650_time_store(struct device *dev,
+			   struct device_attribute *attr,
+			   const char *buf, size_t size)
+{
+	struct led_classdev *led_cdev = dev_get_drvdata(dev);
+	struct fd650_bus *bus = container_of(led_cdev,
+			struct fd650_bus, cdev);
+	char data[6];
+	int count, ret;
+
+	if (!bus->use_bl30_ctrl) {
+		dev_err(dev, "this function valid only when controlled by bl30\n");
+		return -EINVAL;
+	}
+	for (count = 0; count < MESON_FD650_SCPI_CNT; count++) {
+		data[0] = FD650_STATE_TIME;
+		ret = aml_mbox_transfer_data(fd650_mbox_chan, MBOX_CMD_SET_FD650,
+					(void *)data, sizeof(data),
+					NULL, 0, MBOX_SYNC);
+		if (ret >= 0)
+			break;
+		mdelay(5);
+	}
+
+	if (count == MESON_FD650_SCPI_CNT) {
+		dev_err(dev, "%s Can't set fd650 count=%d\n",
+			__func__, count);
+		return -EINVAL;
+	}
+
+	return size;
+}
+
 static DEVICE_ATTR_WO(fd650_sec);
 static DEVICE_ATTR_WO(fd650_clear);
 static DEVICE_ATTR_RW(fd650_display);
+static DEVICE_ATTR_WO(fd650_time);
 
 static struct attribute *fd650_attributes[] = {
 	&dev_attr_fd650_display.attr,
 	&dev_attr_fd650_clear.attr,
 	&dev_attr_fd650_sec.attr,
+	&dev_attr_fd650_time.attr,
 	NULL
 };
 
@@ -358,9 +432,11 @@ static int fd650_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "fd650 gpio scl set dir failed\n");
 		return ret;
 	}
-
-	gpio_set_value(bus->gpios[PIN_DATA], 1);
-	gpio_set_value(bus->gpios[PIN_CLK], 1);
+	if (fwnode_property_present(&np->fwnode, "use-bl30-ctrl"))
+		bus->use_bl30_ctrl = true;
+	if (bus->use_bl30_ctrl)
+		/* mbox request channel */
+		fd650_mbox_chan = aml_mbox_request_channel_byidx(&pdev->dev, 0);
 	ret = device_property_read_u32(&pdev->dev, "fd650-gpio,delay-us",
 					   &bus->udelay);
 	if (!ret)

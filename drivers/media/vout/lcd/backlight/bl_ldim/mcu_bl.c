@@ -219,6 +219,8 @@ static int blmcu_smr(struct aml_ldim_driver_s *ldim_drv, unsigned int *buf,
 		return -1;
 	}
 
+	bl_mcu->pdim = dev_drv->mcu_dim & 0xff;
+
 	ldim_data_mapping(buf, dev_drv->dim_max, dev_drv->dim_min,
 				  dev_drv->zone_num);
 	ldim_vs_debug_info(ldim_drv);
@@ -390,10 +392,12 @@ static ssize_t blmcu_store(struct class *class, struct class_attribute *attr,
 		LDIMPR("adim: 0x%x\n", bl_mcu->adim);
 	} else if (!strcmp(parm[0], "pdim")) {
 		if (parm[1]) {
-			if (kstrtouint(parm[1], 0, &bl_mcu->pdim) < 0)
+			if (kstrtouint(parm[1], 0, &val) < 0)
 				goto blmcu_store_err;
+			dev_drv->mcu_dim &= ~0xff;
+			dev_drv->mcu_dim |= (val & 0xff);
 		}
-		LDIMPR("pdim: 0x%x\n", bl_mcu->pdim);
+		LDIMPR("pdim: 0x%x\n", dev_drv->mcu_dim & 0xff);
 	} else if (!strcmp(parm[0], "type")) {
 		if (parm[1]) {
 			if (kstrtouint(parm[1], 0, &bl_mcu->type) < 0)

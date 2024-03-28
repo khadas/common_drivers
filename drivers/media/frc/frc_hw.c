@@ -246,23 +246,37 @@ void frc_osdbit_setfalsecolor(struct frc_dev_s *devp, u32 falsecolor)
 void frc_init_config(struct frc_dev_s *devp)
 {
 	enum chip_id chip;
+	struct frc_fw_data_s *fw_data;
+	struct frc_top_type_s *frc_top;
 
+	if (!devp)
+		return;
+	fw_data = (struct frc_fw_data_s *)devp->fw_data;
+	frc_top = &fw_data->frc_top_type;
+	frc_load_reg_table(devp, 0);
+	frc_set_val_from_reg();
 	chip = get_chip_type();
+
+	if (chip == ID_T3)
+		frc_top->frc_fb_num = FRC_BUF_NUM_T3;
+	else if (chip == ID_T5M)
+		frc_top->frc_fb_num = FRC_BUF_NUM_T5M;
+	else if (chip == ID_T3X)
+		frc_top->frc_fb_num = FRC_BUF_NUM_T3X;
+	else
+		frc_top->frc_fb_num = FRC_TOTAL_BUF_NUM;
+
+	frc_set_buf_num(frc_top->frc_fb_num);
+
 	/*1: before postblend, 0: after postblend*/
 	if (devp->frc_hw_pos == FRC_POS_AFTER_POSTBLEND) {
-		if (chip == ID_T3X)
-			vpu_reg_write_bits(VIU_FRC_MISC, 0, 4, 1);
-		else
-			vpu_reg_write_bits(VPU_FRC_TOP_CTRL, 0, 4, 1);
+		vpu_reg_write_bits(devp->vpu_byp_frc_reg_addr, 0, 4, 1);
 		frc_config_reg_value(0x02, 0x02, &regdata_blkscale_012c);
 		WRITE_FRC_REG_BY_CPU(FRC_REG_BLK_SCALE, regdata_blkscale_012c);
 		frc_config_reg_value(0x800000, 0xF00000, &regdata_iplogo_en_0503);
 		WRITE_FRC_REG_BY_CPU(FRC_IPLOGO_EN, regdata_iplogo_en_0503);
 	} else {
-		if (chip == ID_T3X)
-			vpu_reg_write_bits(VIU_FRC_MISC, 1, 4, 1);
-		else
-			vpu_reg_write_bits(VPU_FRC_TOP_CTRL, 1, 4, 1);
+		vpu_reg_write_bits(devp->vpu_byp_frc_reg_addr, 1, 4, 1);
 		frc_config_reg_value(0x0, 0x02, &regdata_blkscale_012c);
 		WRITE_FRC_REG_BY_CPU(FRC_REG_BLK_SCALE, regdata_blkscale_012c);
 		frc_config_reg_value(0x0, 0xF00000, &regdata_iplogo_en_0503);
@@ -375,7 +389,34 @@ void frc_crc_enable(struct frc_dev_s *frc_devp)
 
 void frc_set_buf_num(u32 frc_fb_num)
 {
-	WRITE_FRC_REG_BY_CPU(FRC_FRAME_BUFFER_NUM, frc_fb_num << 8 | frc_fb_num);
+	struct frc_fw_data_s *fw_data;
+	struct frc_top_type_s *frc_top;
+	u32 temp;
+	u8  frm_buf_num;
+	struct frc_dev_s *frc_devp = get_frc_devp();
+
+	if (!frc_devp)
+		return;
+
+	fw_data = (struct frc_fw_data_s *)frc_devp->fw_data;
+	frc_top = &fw_data->frc_top_type;
+
+	temp = READ_FRC_REG(FRC_FRAME_BUFFER_NUM);
+	frm_buf_num = temp & 0x1F;
+	pr_frc(0, "buf num (read: %d, set: %d)\n",
+			frm_buf_num, frc_fb_num);
+	if (frc_fb_num != frm_buf_num) {
+		WRITE_FRC_REG_BY_CPU(FRC_FRAME_BUFFER_NUM,
+		frc_fb_num << 8 | frc_fb_num);
+		frc_top->frc_fb_num = frc_fb_num;
+		temp = READ_FRC_REG(FRC_FRAME_BUFFER_NUM);
+		frm_buf_num = temp & 0x1F;
+		if (frm_buf_num != frc_top->frc_fb_num)
+			pr_frc(1, "set buf num error (set %d, read back %d)\n",
+			frc_top->frc_fb_num, frm_buf_num);
+	}
+	frc_devp->buf.frm_buf_num = frc_fb_num;
+	frc_devp->buf.logo_buf_num = frc_fb_num;
 }
 
 void frc_check_hw_stats(struct frc_dev_s *frc_devp, u8 checkflag)
@@ -2708,9 +2749,6 @@ void frc_internal_initial(struct frc_dev_s *frc_devp)
 	frc_set_urgent_cfg(2, 3);
 	// sys_fw_param_frc_init(frc_top->hsize, frc_top->vsize, frc_top->is_me1mc4);
 	// init_bb_xyxy(frc_top->hsize, frc_top->vsize, frc_top->is_me1mc4);
-
-	frc_set_buf_num(frc_top->frc_fb_num);
-
 	frc_inp_init();
 	if (frc_devp->in_out_ratio == FRC_RATIO_1_1)
 		frc_devp->ud_dbg.res2_time_en = 3;
@@ -2765,7 +2803,6 @@ void frc_internal_initial(struct frc_dev_s *frc_devp)
 			(frc_devp->out_sts.vout_height & 0x3fff) << 16 |
 			(frc_devp->out_sts.vout_width & 0x3fff));
 
-	pr_frc(0, "%s done\n ", __func__);
 	return;
 }
 
@@ -3859,4 +3896,30 @@ void t3x_verB_60hz_patch(void)
 	WRITE_FRC_REG_BY_CPU(FRC_MCDW_PATH_CTRL, mcdw_path_ctl_39fd);
 
 	pr_frc(0, "%s ok", __func__);
+}
+
+void frc_clr_badedit_effect_before_enable(void)
+{
+	regdata_fwd_sign_ro_016e = READ_FRC_REG(FRC_REG_FWD_SIGN_RO);
+	if (((regdata_fwd_sign_ro_016e >> 28) & 0x3) != 0) {
+		pr_frc(1, "%s  read FRC_REG_FWD_SIGN_RO %8x\n", __func__,
+			regdata_fwd_sign_ro_016e);
+		regdata_fwd_sign_ro_016e &= 0xCFFFFFFF;
+		WRITE_FRC_REG_BY_CPU(FRC_REG_FWD_SIGN_RO, regdata_fwd_sign_ro_016e);
+		pr_frc(1, "set FRC_REG_FWD_SIGN_RO %8x\n", regdata_fwd_sign_ro_016e);
+	}
+	regdata_fwd_phs_0146 = READ_FRC_REG(FRC_REG_FWD_PHS);
+	if ((regdata_fwd_phs_0146 & BIT_29) == BIT_29) {
+		pr_frc(1, "%s  read FRC_REG_FWD_PHS %8x\n", __func__, regdata_fwd_phs_0146);
+		regdata_fwd_phs_0146 &= 0xDFFFFFFF;
+		WRITE_FRC_REG_BY_CPU(FRC_REG_FWD_PHS, regdata_fwd_phs_0146);
+		pr_frc(1, "set FRC_REG_FWD_PHS %8x\n", regdata_fwd_phs_0146);
+	}
+	regdata_fwd_fid_0147 = READ_FRC_REG(FRC_REG_FWD_FID);
+	if (regdata_fwd_fid_0147 != 0) {
+		pr_frc(1, "%s  read FRC_REG_FWD_FID %8x\n", __func__, regdata_fwd_fid_0147);
+		regdata_fwd_fid_0147 = 0;
+		WRITE_FRC_REG_BY_CPU(FRC_REG_FWD_FID, regdata_fwd_fid_0147);
+		pr_frc(1, "set FRC_REG_FWD_FID %8x\n", regdata_fwd_fid_0147);
+	}
 }

@@ -5,12 +5,7 @@
 #ifndef __HDMITX_EDID_H_
 #define __HDMITX_EDID_H_
 
-#include <linux/types.h>
-#include <linux/amlogic/media/vout/vinfo.h>
-#include <linux/amlogic/media/vout/hdmitx_common/hdmitx_mode.h>
-#include <linux/amlogic/media/vout/hdmitx_common/hdmitx_format_para.h>
-#include <linux/amlogic/media/vout/hdmitx_common/hdmitx_hw_common.h>
-#include <linux/amlogic/media/vout/hdmi_tx_ext.h>
+#include "hdmitx_edid_header.h"
 
 struct hdmitx_common;
 
@@ -134,7 +129,17 @@ struct rx_cap {
 	u32 dc_30bit_420:1;
 	u32 dc_36bit_420:1;
 	u32 dc_48bit_420:1;
-	enum frl_rate_enum max_frl_rate:4;
+	enum frl_rate_enum max_frl_rate;
+	/* for dsc */
+	u8 dsc_10bpc:1;
+	u8 dsc_12bpc:1;
+	u8 dsc_16bpc:1;
+	u8 dsc_all_bpp:1;
+	u8 dsc_native_420:1;
+	u8 dsc_1p2:1;
+	u8 dsc_max_slices:4;
+	enum frl_rate_enum dsc_max_frl_rate;
+	u8 dsc_total_chunk_bytes:6;
 	u32 cnc0:1; /* Graphics */
 	u32 cnc1:1; /* Photo */
 	u32 cnc2:1; /* Cinema */
@@ -212,6 +217,13 @@ struct rx_cap {
 	u8 hdmichecksum[11]; /* string with 0xAABBCCDD */
 	u8 head_err;
 	u8 chksum_err;
+	u8 edid_changed;
+	/* edid_check = 0 is default check
+	 * Bit 0     (0x01)  don't check block header
+	 * Bit 1     (0x02)  don't check edid checksum
+	 * Bit 0+1   (0x03)  don't check both block header and checksum
+	 */
+	u8 edid_check;
 };
 
 /* VSIF: Vendor Specific InfoFrame
@@ -257,19 +269,13 @@ enum vsif_type {
 
 /*edid apis*/
 u32 hdmitx_edid_get_hdmi14_4k_vic(u32 vic);
-bool hdmitx_edid_check_y420_support(struct rx_cap *prxcap,
-	enum hdmi_vic vic);
-
-bool hdmitx_edid_validate_mode(struct rx_cap *rxcap, u32 vic);
-int hdmitx_edid_validate_format_para(struct tx_cap *txcap,
-		struct rx_cap *prxcap, struct hdmi_format_para *para);
 
 /*dump rx cap information in edid*/
 int hdmitx_edid_print_sink_cap(const struct rx_cap *prxcap, char *buffer, int buffer_len);
 
 /*edid is good return 0, otherwise return < 0.*/
 bool hdmitx_edid_is_all_zeros(unsigned char *rawedid);
-bool hdmitx_edid_check_data_valid(unsigned char *buf);
+bool hdmitx_edid_check_data_valid(u8 edid_check, unsigned char *buf);
 ssize_t _show_aud_cap(struct rx_cap *prxcap, char *buf);
 int hdmitx_edid_parse(struct rx_cap *prxcap, u8 *edid_buf);
 unsigned int hdmitx_edid_valid_block_num(unsigned char *edid_buf);
@@ -277,8 +283,5 @@ bool hdmitx_mode_validate_y420_vic(enum hdmi_vic vic);
 void hdmitx_edid_print(u8 *edid_buf);
 void hdmitx_edid_buffer_clear(u8 *edid_buf, int size);
 void hdmitx_edid_rxcap_clear(struct rx_cap *prxcap);
-bool hdmitx_edid_only_support_sd(struct rx_cap *prxcap);
-int hdmitx_edid_init(struct hdmitx_common *tx_base);
-int hdmitx_edid_uninit(void);
 
 #endif

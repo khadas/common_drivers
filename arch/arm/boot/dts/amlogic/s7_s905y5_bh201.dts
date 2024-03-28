@@ -98,13 +98,14 @@
 		dmaheap_cma_reserved:heap-gfx {
 			compatible = "shared-dma-pool";
 			reusable;
-			/* 1080p STB androidT size 56M */
+			/* 1080p STB androidU size 88M */
 			size = <0x5800000>;
 			alignment = <0x400000>;
 		};
 		dmaheap_fb_reserved:heap-fb {
 			compatible = "shared-dma-pool";
 			reusable;
+			/* 1080p STB androidU size 56M */
 			size = <0x3800000>;
 			alignment = <0x400000>;
 		};
@@ -167,9 +168,10 @@
 		vdin1_cma_reserved:linux,vdin1_cma {
 			compatible = "shared-dma-pool";
 			reusable;
-			/* 420 mode:1280x720x2x4=8MB */
+			/* 420 mode:1280x720x1.5x4=8MB */
+			/* 422 mode:1280x720x2x4=8MB */
 			/* 444 mode:1280x720x3x4=12MB */
-			size = <0x01400000>;
+			size = <0x00800000>;
 			alignment = <0x400000>;
 		};
 		/* global autoconfigured region for contiguous allocations */
@@ -230,32 +232,58 @@
 			0xffff  0x0>; /* ending flag */
 	};
 
+	gpio_leds {
+		compatible = "gpio-leds";
+		status = "okay";
+		pwr_led {
+			label = "pwr_led";
+			gpios = <&gpio GPIOD_11 GPIO_ACTIVE_LOW>;
+			default-state = "on";
+		};
+	};
+
 	dvb-extern {
 		compatible = "amlogic, dvb-extern";
 		dev_name = "dvb-extern";
 		status = "okay";
 
-		/* dvb hardware main power. */
-		//dvb_power_gpio = <&gpio GPIOZ_5 GPIO_ACTIVE_HIGH>;
-		//dvb_power_value = <1>;
-		//dvb_power_dir = <0>; /* 0: out, 1: in. */
+		//dvb hardware main power.
+		dvb_power_gpio = <&gpio GPIOZ_5 GPIO_ACTIVE_HIGH>;
+		dvb_power_value = <0>;
+		dvb_power_dir = <0>; //0: out, 1: in.
 
-		fe_num = <1>;
-		fe0_demod = "cxd2878";
+		fe_num = <2>;
+		fe0_demod = "cxd2856";
 		fe0_i2c_adap_id = <&i2c3>;
 		fe0_demod_i2c_addr = <0xD8>;
 		fe0_reset_value = <0>;
 		fe0_reset_gpio = <&gpio GPIOZ_4 GPIO_ACTIVE_HIGH>;
-		fe0_reset_dir = <1>; //0: out, 1: in.
+		fe0_reset_dir = <0>; //0: out, 1: in.
 		fe0_ant_poweron_value = <0>;
 		fe0_ant_power_gpio = <&gpio GPIOH_9 GPIO_ACTIVE_HIGH>;
 		fe0_ts = <0>;
 		fe0_ts_out_mode = <0>; //0: serial, 1: parallel.
-		fe0_tuner0 = <0>;
+		fe0_tuner0 = <0>; //T/C
+		fe0_tuner1 = <1>; //S
 
-		tuner_num = <1>;
-		tuner0_name = "si2151_tuner";
-		tuner0_i2c_addr = <0x61>; //7bit
+		fe1_demod = "cxd2856";
+		fe1_i2c_adap_id = <&i2c3>;
+		fe1_demod_i2c_addr = <0xCA>;
+		fe1_reset_value = <0>;
+		fe1_reset_gpio = <&gpio GPIOZ_4 GPIO_ACTIVE_HIGH>;
+		fe1_reset_dir = <0>; //0: out, 1: in.
+		fe1_ant_poweron_value = <0>;
+		fe1_ant_power_gpio = <&gpio GPIOH_9 GPIO_ACTIVE_HIGH>;
+		fe1_ts = <1>;
+		fe1_ts_out_mode = <0>; //0: serial, 1: parallel.
+		fe1_tuner0 = <0>; //T/C
+		fe1_tuner1 = <1>; //S
+
+		tuner_num = <2>; //for extern demod use tuner
+		tuner0_name = "r836_tuner";
+		tuner0_i2c_addr = <0x1A>;
+		tuner1_name = "av2018_tuner";
+		tuner1_i2c_addr = <0xC4>;
 	};
 
 	dvb-demux {
@@ -1198,6 +1226,8 @@
 };
 
 &ethmac {
+	pinctrl-0 = <&eth_led_pins>;
+	pinctrl-names = "default";
 	status = "okay";
 	phy-handle = <&internal_ephy>;
 	phy-mode = "rmii";

@@ -1048,6 +1048,9 @@ void cm2_frame_switch_patch(void)
 	int data_port;
 	struct cm_port_s cm_port;
 
+	if (chip_type_id == chip_s7)
+		return;
+
 	if (chip_type_id == chip_s5 ||
 		chip_type_id == chip_t3x) {
 		cm_port = get_cm_port();
@@ -1072,9 +1075,6 @@ void cm_regmap_latch(struct am_regs_s *am_regs, unsigned int reg_map, int vpp_in
 
 void cm_latch_process(int vpp_index)
 {
-	if (chip_type_id == chip_s7)
-		return;
-
 	/*if ((vecm_latch_flag & FLAG_REG_MAP0) ||*/
 	/*(vecm_latch_flag & FLAG_REG_MAP1) ||*/
 	/*(vecm_latch_flag & FLAG_REG_MAP2) ||*/

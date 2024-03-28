@@ -156,6 +156,7 @@
 /*  V3.5.029 fix atsc-c signal strength issue */
 /*  V3.5.030 fix dvbt overflow when 6M 1/4 and other param */
 /*  V3.5.031 calibrate dvbc signal strength read from R842 */
+/*  V3.5.032 rebuild dtmb driver */
 /****************************************************/
 /****************************************************************/
 /*               AMLDTVDEMOD_VER  Description:                  */
@@ -172,8 +173,8 @@
 /*->The last four digits indicate the release time              */
 /****************************************************************/
 #define KERNEL_4_9_EN		1
-#define AMLDTVDEMOD_VER "V3.5.031"
-#define DTVDEMOD_VER	"2024/01/03: calibrate dvbc signal strength read from R842"
+#define AMLDTVDEMOD_VER "V3.5.032"
+#define DTVDEMOD_VER	"2024/02/27: rebuild dtmb driver"
 #define AMLDTVDEMOD_T2_FW_VER "20231019_141000"
 #define DEMOD_DEVICE_NAME  "dtvdemod"
 
@@ -201,6 +202,7 @@
 
 #ifdef AML_DEMOD_SUPPORT_DTMB
 #define THRD_TUNER_STRENGTH_DTMB (-100)
+#define TIMEOUT_DTMB		2500
 #endif
 
 #ifdef AML_DEMOD_SUPPORT_DVBC

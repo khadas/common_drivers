@@ -28,6 +28,6 @@ extern u32 dp_buf_mgr_print_flag;
 extern u32 total_fill_count;
 
 struct file_private_data *di_proc_get_file_private_data(struct file *file_vf, bool alloc_if_null);
-void dp_put_file_ext(struct file *file_vf);
+void dp_put_file_ext(int dev_index, struct file *file_vf);
 
 #endif /* _DI_PROC_FILE_H */

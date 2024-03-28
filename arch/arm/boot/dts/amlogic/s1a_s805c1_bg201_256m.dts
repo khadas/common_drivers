@@ -94,7 +94,7 @@
 		dmaheap_cma_reserved:heap-gfx {
 			compatible = "shared-dma-pool";
 			reusable;
-			size = <0x1000000>;
+			size = <0x1400000>;
 			alignment = <0x400000>;
 		};
 
@@ -578,6 +578,8 @@
 	fd650: fd650 {
 		compatible = "amlogic,fd650";
 		status = "okay";
+		mboxes = <&mbox_fifo S1A_REE2AO_FD650>;
+		//use-bl30-ctrl = <1>;
 		sda-gpios = <&gpio GPIOD_3 GPIO_ACTIVE_HIGH>;
 		scl-gpios =  <&gpio GPIOD_4 GPIO_ACTIVE_HIGH>;
 		fd650-gpio,delay-us = <1>;
@@ -696,13 +698,9 @@
 		#sound-dai-cells = <0>;
 		clocks = <&clkc CLKID_HIFI_PLL
 				&clkc CLKID_HIFI1_PLL
-				&clkc CLKID_FCLK_DIV4
-				&clkaudio CLKID_AUDIO_GATE_SPDIFIN
 				&clkaudio CLKID_AUDIO_GATE_SPDIFOUT_A
-				&clkaudio CLKID_AUDIO_SPDIFIN
 				&clkaudio CLKID_AUDIO_SPDIFOUT_A>;
-		clock-names = "sysclk", "clk_src_cd", "fixed_clk", "gate_spdifin",
-				"gate_spdifout", "clk_spdifin", "clk_spdifout";
+		clock-names = "sysclk", "clk_src_cd", "gate_spdifout","clk_spdifout";
 		interrupts =
 				<GIC_SPI 35 IRQ_TYPE_EDGE_RISING>;
 

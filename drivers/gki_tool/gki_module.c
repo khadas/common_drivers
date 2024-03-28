@@ -21,6 +21,7 @@
 #include <linux/amlogic/gki_module.h>
 #include <linux/kconfig.h>
 #include <linux/security.h>
+#include <linux/kprobes.h>
 #include "gki_tool.h"
 
 #if defined(CONFIG_CMDLINE_FORCE)
@@ -71,6 +72,12 @@ void __module_init_hook(struct module *m)
 	const struct kernel_symbol *sym;
 	struct gki_module_setup_struct *s;
 	int i, j;
+	static int initialized;
+
+	if (!initialized) {
+		gki_module_init();
+		initialized = 1;
+	}
 
 	for (i = 0; i < m->num_syms; i++) {
 		sym = &m->syms[i];
@@ -173,3 +180,70 @@ void gki_module_init(void)
 	cmdline_parse_args(cmdline);
 }
 
+static int ramoops_io_en;
+
+static int ramoops_io_en_gki_setup(char *buf)
+{
+	if (!buf)
+		return -EINVAL;
+
+	if (kstrtoint(buf, 0, &ramoops_io_en)) {
+		pr_err("ramoops_io_en error: %s\n", buf);
+		return -EINVAL;
+	}
+
+	return 0;
+}
+__setup("ramoops_io_en=", ramoops_io_en_gki_setup);
+
+static struct kprobe do_free_init_kp = {
+	.symbol_name = "do_free_init",
+};
+
+static struct work_struct *w;
+
+static struct delayed_work mod_free_work;
+
+static int do_free_init_hook(struct kprobe *p, struct pt_regs *regs)
+{
+#ifdef CONFIG_ARM64
+	w = (struct work_struct *)regs->regs[0];
+	instruction_pointer_set(regs, regs->regs[30]);
+#elif CONFIG_ARM
+	w = (struct work_struct *)regs->ARM_r0;
+	instruction_pointer_set(regs, regs->ARM_lr);
+#endif
+
+	// return to lr, skip do_free_init function
+	return 1;
+}
+
+static void mod_free_func(struct work_struct *work)
+{
+	unregister_kprobe(&do_free_init_kp);
+
+	// free module init_layout memory, w->func = do_free_init
+	schedule_work(w);
+}
+
+int module_debug_init(void)
+{
+	int ret;
+
+	if (ramoops_io_en) {
+		do_free_init_kp.pre_handler = do_free_init_hook;
+		ret = register_kprobe(&do_free_init_kp);
+
+		if (ret < 0) {
+			pr_err("register_kprobe failed, returned %d\n", ret);
+			return ret;
+		}
+
+		INIT_DELAYED_WORK(&mod_free_work, mod_free_func);
+
+		// trigger free module init_layout memory work
+		queue_delayed_work(system_unbound_wq, &mod_free_work, 60 * HZ);
+	}
+
+	return 0;
+}

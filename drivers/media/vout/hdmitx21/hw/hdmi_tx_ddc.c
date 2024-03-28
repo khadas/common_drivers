@@ -34,6 +34,11 @@ void scdc21_rd_sink(u8 adr, u8 *val)
 	hdmitx_ddcm_read(0, DDC_SCDC_ADDR, adr, val, 1);
 }
 
+void scdc21_sequential_rd_sink(u8 adr, u8 *val, u8 len)
+{
+	hdmitx_ddcm_read(0, DDC_SCDC_ADDR, adr, val, len);
+}
+
 void scdc21_wr_sink(u8 adr, u8 val)
 {
 	hdmitx_ddcm_write(0, DDC_SCDC_ADDR, adr, val);
@@ -117,10 +122,11 @@ static u8 ddc_tx_busy_check(void)
 static bool ddc_wait_free(void)
 {
 	u8 val;
-	s8 tmo1 = 5; /* unit: ms */
-	s8 tmo2 = 2;
+	u8 tmo1 = 5; /* unit: ms */
+	u8 tmo2 = 2;
 
 	while (tmo2--) {
+		tmo1 = 5;
 		while (tmo1--) {
 			val = ddc_tx_busy_check();
 			if (!val)
@@ -219,6 +225,10 @@ static enum ddc_err_t _hdmitx_ddcm_read_(u8 seg_index,
 			break;
 
 		if (!ddc_wait_free()) {
+			/* need to clr DDC_STALL_REQ, otherwise
+			 * DDC will always be occupied by SCDC
+			 */
+			ddc_tx_scdc_clr(val);
 			mutex_unlock(&ddc_mutex);
 			return DDC_ERR_BUSY;
 		}
@@ -276,6 +286,7 @@ static enum ddc_err_t _hdmitx_ddcm_write_(u8 seg_index,
 
 	mutex_lock(&ddc_mutex);
 	if (!ddc_wait_free()) {
+		ddc_tx_scdc_clr(val);
 		mutex_unlock(&ddc_mutex);
 		return DDC_ERR_BUSY;
 	}
@@ -339,8 +350,16 @@ enum ddc_err_t hdmitx_ddc_read_1byte(u8 slave_addr, u8 reg_addr, u8 *p_buf)
 bool is_rx_hdcp2ver(void)
 {
 	u8 cap_val = 0;
+	bool ret = false;
 
-	hdmitx_ddc_read_1byte(DDC_HDCP_DEVICE_ADDR, REG_DDC_HDCP_VERSION, &cap_val);
+	/* it easily read fails under FRL mode as FRL ddc bus stall operation,
+	 * so use hdmitx_ddcm_read() method instead
+	 */
+	/* hdmitx_ddc_read_1byte(DDC_HDCP_DEVICE_ADDR, REG_DDC_HDCP_VERSION, &cap_val); */
+	ret = hdmitx_ddcm_read(0, DDC_HDCP_DEVICE_ADDR, REG_DDC_HDCP_VERSION, &cap_val, 1);
+	if (ret)
+		HDMITX_INFO("hdmitx: ddc read hdcp version failed\n");
 
 	return cap_val == 0x04;
 }
+

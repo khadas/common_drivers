@@ -4079,6 +4079,15 @@ uint32_t sink_dv_support(const struct vinfo_s *vinfo)
 		/*in the future, some new flag in vsvdb will be used to judge dv cap*/
 		return 0;
 	}
+	/* the display effect of 480/576p is not good on some TVs. */
+	/* currently some TVs not support smpte. */
+	if (strstr(vinfo->name, "480p") ||
+		strstr(vinfo->name, "576p") ||
+		strstr(vinfo->name, "720x480p") ||
+		strstr(vinfo->name, "720x576p") ||
+		strstr(vinfo->name, "smpte")) {
+		return 0;
+	}
 	/* for interlace output */
 	if (vinfo->height != vinfo->field_height)
 		return 0;
@@ -4103,8 +4112,11 @@ uint32_t sink_hdr_support(const struct vinfo_s *vinfo)
 	bool u_force = false;
 
 	/* hdr_cap from vinfo for Android U force mode*/
-	if (get_amdv_policy() == AMDV_FORCE_OUTPUT_MODE ||
-		hdr_policy == 4)
+#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
+	if (get_amdv_policy() == AMDV_FORCE_OUTPUT_MODE)
+		u_force = true;
+#endif
+	if (hdr_policy == 4)
 		u_force = true;
 
 	/* when policy == follow sink(0) or force output (2) */

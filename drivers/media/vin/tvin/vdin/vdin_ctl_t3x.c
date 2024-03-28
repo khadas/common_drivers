@@ -1711,7 +1711,7 @@ static inline void vdin_set_wr_ctrl_t3x(struct vdin_dev_s *devp,
 		/*not swap 2 64bits words in 128 words */
 		wr_bits(offset, VDIN0_WRMIF_CTRL, 0, 31, 1);
 		/*little endian*/
-		wr_bits(offset, VDIN0_WRMIF_CTRL, 1, 25, 1);
+		wr_bits(offset, VDIN0_WRMIF_CTRL2, 1, 25, 1);
 	} else {
 		wr_bits(offset, VDIN0_WRMIF_CTRL, 1, 31, 1);
 	}
@@ -1934,7 +1934,7 @@ void vdin_set_frame_mif_write_addr_t3x(struct vdin_dev_s *devp,
 			stride_luma, stride_chroma);
 	}
 
-	if (devp->pause_dec || devp->debug.pause_mif_dec  || devp->msct_top.sct_pause_dec)
+	if (devp->pause_dec || devp->debug.pause_mif_dec)
 		reg_en = false;
 
 	if (rdma_enable) {
@@ -2475,7 +2475,8 @@ static void filter_unstable_vsync_t3x(struct vdin_dev_s *devp)
 {
 	unsigned int offset = devp->addr_offset;
 
-	if (devp->index || devp->debug.bypass_filter_vsync)
+	if (devp->index || devp->debug.bypass_filter_vsync ||
+	    vdin_is_convert_to_nv21(devp->format_convert))
 		return;
 
 	wr_bits(offset, VDIN0_SYNC_CONVERT_SYNC_CTRL0, 1, HSYNC_MASK_EN_BIT, HSYNC_MASK_EN_WID);

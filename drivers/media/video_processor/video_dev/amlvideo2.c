@@ -116,6 +116,8 @@ KERNEL_VERSION(\
 #define DUR2PTS_RM(x) ((x) & 0xf)
 
 #define CMA_ALLOC_SIZE 24
+#define CMA_ALLOC_SIZE_720P 6
+#define CMA_ALLOC_SIZE_1080P 12
 #define CMA_ALLOC_SIZE_4K 48
 
 #define CANVAS_WIDTH_ALIGN 32
@@ -344,6 +346,7 @@ struct amlvideo2_device {
 	bool use_reserve;
 	int support_4k_capture;
 	u32 framebuffer_total_size;
+	int codec_mm_alloc;
 };
 
 struct crop_info_s {
@@ -4431,7 +4434,7 @@ static void amlvideo2_sleep(struct amlvideo2_fh *fh)
 
 	/* stop_task: */
 	/* remove_wait_queue(&dma_q->wq, &wait); */
-	try_to_freeze();
+	/*try_to_freeze();*/
 }
 
 static int amlvideo2_thread(void *data)
@@ -4452,11 +4455,11 @@ static int amlvideo2_thread(void *data)
 	}
 	dpr_err(node->vid_dev, 1, "thread started\n");
 
-	set_freezable();
+	/*set_freezable();*/
 
 	while (1) {
 #ifdef CONFIG_PM
-		if (atomic_read(&node->is_suspend))
+		if (atomic_read(&node->is_suspend) && node->vidq.task_running == 1)
 			wait_for_completion(&node->thread_sema);
 #endif
 		if (kthread_should_stop()) {
@@ -4558,6 +4561,12 @@ static int amlvideo2_start_thread(struct amlvideo2_fh *fh)
 	node->tmp_vf = NULL;
 	dma_q->task_running = 1;
 
+	node->context = create_ge2d_work_queue();
+	if (!node->context) {
+		mutex_unlock(&node->mutex);
+		pr_info("amlvideo2 create_ge2d_work_queue error!\n");
+		return -1;
+	}
 	#ifdef MULTI_NODE
 	dma_q->kthread =
 		kthread_run(amlvideo2_thread, fh,
@@ -4617,12 +4626,15 @@ static void amlvideo2_stop_thread(struct amlvideo2_node_dmaqueue *dma_q)
 			else
 				pr_info("ready to stop amlvideo2.1 thread\n");
 		}
+		complete(&node->thread_sema);
 		ret = kthread_stop(dma_q->kthread);
 		if (ret < 0)
 			pr_info("%s, ret = %d .\n", __func__, ret);
 
 		dma_q->kthread = NULL;
 	}
+	if (node->context)
+		destroy_ge2d_work_queue(node->context);
 	mutex_unlock(&node->mutex);
 	if (amlvideo2_dbg_en & 1) {
 		if (node->vid == 0)
@@ -6705,11 +6717,10 @@ static const struct vframe_receiver_op_s video_vf_receiver = {
  * -----------------------------------------------------------------
  */
 #ifdef CONFIG_PM
-static int amlvideo2_drv_suspend(struct platform_device *pdev,
-				 pm_message_t state)
+static int amlvideo2_drv_suspend(struct device *dev)
 {
 	int i;
-	struct v4l2_device *v4l2_dev = platform_get_drvdata(pdev);
+	struct v4l2_device *v4l2_dev = dev_get_drvdata(dev);
 	struct amlvideo2_device *vid_dev =
 		container_of(v4l2_dev, struct amlvideo2_device, v4l2_dev);
 	struct amlvideo2_node_dmaqueue *dma_q;
@@ -6728,10 +6739,10 @@ static int amlvideo2_drv_suspend(struct platform_device *pdev,
 	return 0;
 }
 
-static int amlvideo2_drv_resume(struct platform_device *pdev)
+static int amlvideo2_drv_resume(struct device *dev)
 {
 	int i;
-	struct v4l2_device *v4l2_dev = platform_get_drvdata(pdev);
+	struct v4l2_device *v4l2_dev = dev_get_drvdata(dev);
 	struct amlvideo2_device *vid_dev =
 		container_of(v4l2_dev, struct amlvideo2_device, v4l2_dev);
 	struct amlvideo2_node_dmaqueue *dma_q;
@@ -6747,6 +6758,14 @@ static int amlvideo2_drv_resume(struct platform_device *pdev)
 	}
 	return 0;
 }
+
+static const struct dev_pm_ops meson_amlvideo2_pm_ops = {
+	.suspend = amlvideo2_drv_suspend,
+	.resume = amlvideo2_drv_resume,
+	.freeze = amlvideo2_drv_suspend,
+	.thaw = amlvideo2_drv_resume,
+	.restore = amlvideo2_drv_resume,
+};
 #endif
 
 static int amlvideo2_release_node(struct amlvideo2_device *vid_dev)
@@ -6760,9 +6779,6 @@ static int amlvideo2_release_node(struct amlvideo2_device *vid_dev)
 			vfd = vid_dev->node[i]->vfd;
 			video_device_release(vfd);
 			vf_unreg_receiver(&vid_dev->node[i]->recv);
-			if (vid_dev->node[i]->context)
-				destroy_ge2d_work_queue
-					(vid_dev->node[i]->context);
 			kfree(vid_dev->node[i]->fh);
 			kfree(vid_dev->node[i]->amlvideo2_pool_ready);
 			vid_dev->node[i]->fh = NULL;
@@ -6835,12 +6851,7 @@ static int amlvideo2_create_node(struct platform_device *pdev, int node_id)
 			 (struct vframe_s **)
 			 &vid_node->amlvideo2_pool_ready[0]);
 	}
-	vid_node->context = create_ge2d_work_queue();
-	if (!vid_node->context) {
-		kfree(vid_node->amlvideo2_pool_ready);
-		kfree(vid_node);
-		return ret;
-	}
+
 	/* init video dma queues */
 	INIT_LIST_HEAD(&vid_node->vidq.active);
 	init_waitqueue_head(&vid_node->vidq.wq);
@@ -6855,7 +6866,6 @@ static int amlvideo2_create_node(struct platform_device *pdev, int node_id)
 #endif
 	vfd = video_device_alloc();
 	if (!vfd) {
-		destroy_ge2d_work_queue(vid_node->context);
 		kfree(vid_node->amlvideo2_pool_ready);
 		kfree(vid_node);
 		return ret;
@@ -6870,7 +6880,6 @@ static int amlvideo2_create_node(struct platform_device *pdev, int node_id)
 	if (ret < 0) {
 		ret = -ENODEV;
 		video_device_release(vfd);
-		destroy_ge2d_work_queue(vid_node->context);
 		kfree(vid_node->amlvideo2_pool_ready);
 		kfree(vid_node);
 		return ret;
@@ -6879,7 +6888,6 @@ static int amlvideo2_create_node(struct platform_device *pdev, int node_id)
 	fh = kzalloc(sizeof(*fh), GFP_KERNEL);
 	if (!fh) {
 		video_device_release(vfd);
-		destroy_ge2d_work_queue(vid_node->context);
 		kfree(vid_node->amlvideo2_pool_ready);
 		kfree(vid_node);
 		return ret;
@@ -6979,7 +6987,20 @@ static int amlvideo2_driver_probe(struct platform_device *pdev)
 		pr_info("support_4k %d for amlvideo2.%d\n", dev->support_4k_capture, dev->node_id);
 	}
 
-	dev->framebuffer_total_size = dev->support_4k_capture ? CMA_ALLOC_SIZE_4K : CMA_ALLOC_SIZE;
+	ret = of_property_read_u32(pdev->dev.of_node,
+				   "codec_mm_alloc", &dev->codec_mm_alloc);
+	if (ret)
+		pr_err("don't find codec_mm_alloc, use default parm.\n");
+
+	if (dev->codec_mm_alloc == 1)
+		dev->framebuffer_total_size = CMA_ALLOC_SIZE_720P;
+	else if (dev->codec_mm_alloc == 2)
+		dev->framebuffer_total_size = CMA_ALLOC_SIZE_1080P;
+	else if (dev->codec_mm_alloc == 3 || dev->support_4k_capture)
+		dev->framebuffer_total_size = CMA_ALLOC_SIZE_4K;
+	else
+		dev->framebuffer_total_size = CMA_ALLOC_SIZE;
+
 	dev->pdev = pdev;
 
 	if (v4l2_device_register(&pdev->dev, &dev->v4l2_dev) < 0) {
@@ -7061,14 +7082,13 @@ static const struct of_device_id amlvideo2_dt_match[] = {
 static struct platform_driver amlvideo2_drv = {
 	.probe = amlvideo2_driver_probe,
 	.remove = amlvideo2_drv_remove,
-#ifdef CONFIG_PM
-	.suspend = amlvideo2_drv_suspend,
-	.resume = amlvideo2_drv_resume,
-#endif
 	.driver = {
 		.name = "amlvideo2",
 		.owner = THIS_MODULE,
 		.of_match_table = amlvideo2_dt_match,
+#ifdef CONFIG_PM
+		.pm = &meson_amlvideo2_pm_ops,
+#endif
 	}
 };
 

@@ -197,11 +197,19 @@ const struct di_cfg_ctr_s di_cfg_top_ctr[K_DI_CFG_NUB] = {
 			K_DI_CFG_T_FLG_DTS},
 	[EDI_CFG_TMODE_1]  = {"tmode1",
 			EDI_CFG_TMODE_1,
+#ifdef CONFIG_AMLOGIC_LOWMEM
+			1,
+#else
 			2,
+#endif
 			K_DI_CFG_T_FLG_DTS},
 	[EDI_CFG_TMODE_2]  = {"tmode2",
 			EDI_CFG_TMODE_2,
+#ifdef CONFIG_AMLOGIC_LOWMEM
+			1,
+#else
 			2,
+#endif
 			K_DI_CFG_T_FLG_DTS},
 	[EDI_CFG_TMODE_3]  = {"tmode3",
 			EDI_CFG_TMODE_3,
@@ -297,6 +305,12 @@ const struct di_cfg_ctr_s di_cfg_top_ctr[K_DI_CFG_NUB] = {
 			0,
 			K_DI_CFG_T_FLG_DTS},
 #endif
+	[EDI_CFG_PRE_NUB]  = {"pre_nub",
+			/* 0:not config pre nub;*/
+			EDI_CFG_PRE_NUB,
+			5,
+			K_DI_CFG_T_FLG_DTS},
+
 	[EDI_CFG_END]  = {"cfg top end ", EDI_CFG_END, 0,
 			K_DI_CFG_T_FLG_NONE},
 
@@ -2474,12 +2488,19 @@ bool di_tout_contr(enum EDI_TOUT_CONTR cmd, struct di_time_out_s *tout)
 	return ret;
 }
 
+#ifdef CONFIG_AMLOGIC_LOWMEM
+const unsigned int di_ch2mask_table[DI_CHANNEL_MAX] = {
+	DI_BIT0,
+	DI_BIT1,
+};
+#else
 const unsigned int di_ch2mask_table[DI_CHANNEL_MAX] = {
 	DI_BIT0,
 	DI_BIT1,
 	DI_BIT2,
 	DI_BIT3,
 };
+#endif
 
 /****************************************
  *bit control
@@ -3155,7 +3176,7 @@ void dip_init_value_reg(unsigned int ch, struct vframe_s *vframe)
 	struct di_ch_s *pch = get_chdata(ch);
 	struct div2_mm_s *mm;
 	enum EDI_SGN sgn;
-	unsigned int post_nub;
+	unsigned int post_nub, pre_nub;
 	bool ponly_enable = false;
 	bool ponly_by_firstp = false;
 
@@ -3271,6 +3292,10 @@ void dip_init_value_reg(unsigned int ch, struct vframe_s *vframe)
 		mm->cfg.fix_buf = 1;
 	else
 		mm->cfg.fix_buf = 0;
+
+	pre_nub = cfgg(PRE_NUB);
+		if ((pre_nub) && pre_nub <= MAX_LOCAL_BUF_NUM)
+			mm->cfg.num_local = pre_nub;
 
 	if (pch->ponly)
 		mm->cfg.num_local = 0;
@@ -5607,6 +5632,16 @@ bool dim_config_crc_icl(void)
 		return 0;
 	else
 		return de_devp->is_crc_ic;
+}
+
+unsigned int dim_is_ic_sub(void)
+{
+	struct di_dev_s  *de_devp = get_dim_de_devp();
+
+	if (IS_ERR_OR_NULL(de_devp))
+		return 0;
+	else
+		return de_devp->sub_v;
 }
 
 /************************************************

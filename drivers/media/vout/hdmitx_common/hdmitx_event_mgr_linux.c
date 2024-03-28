@@ -197,6 +197,7 @@ int hdmitx_event_mgr_send_uevent(struct hdmitx_event_mgr *uevent_mgr,
 	return ret;
 }
 
+/* below interfaces are for hpd/phy_addr/edid notify to cec/hdmirx */
 int hdmitx_event_mgr_notifier_register(struct hdmitx_event_mgr *event_mgr,
 	struct hdmitx_notifier_client *nb)
 {

@@ -128,6 +128,8 @@ void lcd_clk_generate_parameter(struct aml_lcd_drv_s *pdrv)
 	}
 	if (cconf->data->clk_generate_parameter)
 		cconf->data->clk_generate_parameter(pdrv);
+	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+		LCDPR("[%d]: %s\n", pdrv->index, __func__);
 }
 
 int lcd_get_ss_num(struct aml_lcd_drv_s *pdrv,
@@ -370,7 +372,13 @@ void lcd_update_clk_frac(struct aml_lcd_drv_s *pdrv)
 	mutex_lock(&lcd_clk_mutex);
 	if (cconf->data->pll_frac_set)
 		cconf->data->pll_frac_set(pdrv, cconf->pll_frac);
+	pdrv->config.timing.clk_change = 0; /* clear clk_change flag */
 	mutex_unlock(&lcd_clk_mutex);
+
+	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
+		LCDPR("[%d]: %s: clk_change=0x%x\n",
+			pdrv->index, __func__, pdrv->config.timing.clk_change);
+	}
 }
 
 /* for timing init */
@@ -407,10 +415,13 @@ lcd_set_clk_retry:
 
 	if (cconf->data->clktree_set)
 		cconf->data->clktree_set(pdrv);
+	pdrv->config.timing.clk_change = 0; /* clear clk_change flag */
 	mutex_unlock(&lcd_clk_mutex);
 
-	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
-		LCDPR("[%d]: %s\n", pdrv->index, __func__);
+	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
+		LCDPR("[%d]: %s: clk_change=0x%x\n",
+			pdrv->index, __func__, pdrv->config.timing.clk_change);
+	}
 }
 
 void lcd_disable_clk(struct aml_lcd_drv_s *pdrv)
@@ -427,6 +438,20 @@ void lcd_disable_clk(struct aml_lcd_drv_s *pdrv)
 	mutex_unlock(&lcd_clk_mutex);
 
 	LCDPR("[%d]: %s\n", pdrv->index, __func__);
+}
+
+void lcd_clk_change(struct aml_lcd_drv_s *pdrv)
+{
+	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
+		LCDPR("[%d]: %s: clk_change:0x%x\n",
+			pdrv->index, __func__, pdrv->config.timing.clk_change);
+	}
+
+	if ((pdrv->config.timing.clk_change & LCD_CLK_PLL_CHANGE) ||
+	    (pdrv->config.timing.clk_change & LCD_CLK_PLL_RESET))
+		lcd_set_clk(pdrv);
+	else if (pdrv->config.timing.clk_change & LCD_CLK_FRAC_UPDATE)
+		lcd_update_clk_frac(pdrv);
 }
 
 void lcd_clk_gate_switch(struct aml_lcd_drv_s *pdrv, int status)

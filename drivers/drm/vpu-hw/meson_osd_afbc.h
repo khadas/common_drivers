@@ -293,7 +293,13 @@ enum afbc_pix_format_e {
 	YUV422_10B = 14,
 };
 
-void arm_fbc_start(struct meson_vpu_pipeline_state *pipeline_state);
+enum afbc_core_e {
+	AFBC_CORE1 = 0,
+	AFBC_CORE2,
+	AFBC_CORE3,
+};
+
+void arm_fbc_start(struct meson_vpu_pipeline_state *pipeline_state, struct rdma_reg_ops *reg_ops);
 void arm_fbc_check_error(void);
 
 #endif

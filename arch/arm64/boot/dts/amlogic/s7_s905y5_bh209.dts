@@ -97,13 +97,14 @@
 		dmaheap_cma_reserved:heap-gfx {
 			compatible = "shared-dma-pool";
 			reusable;
-			/* 1080p STB androidT size 56M */
+			/* 1080p STB androidU size 88M */
 			size = <0x0 0x5800000>;
 			alignment = <0x0 0x400000>;
 		};
 		dmaheap_fb_reserved:heap-fb {
 			compatible = "shared-dma-pool";
 			reusable;
+			/* 1080p STB androidU size 56M */
 			size = <0x0 0x3800000>;
 			alignment = <0x0 0x400000>;
 		};
@@ -166,10 +167,10 @@
 		vdin1_cma_reserved:linux,vdin1_cma {
 			compatible = "shared-dma-pool";
 			reusable;
-			/* up to 1920x1080 nv21 8bit and 4 buffers
-			 * 1920x1080x1.5x4 = 12 M
+			/* up to 1280x720 nv21 8bit and 4 buffers
+			 * 1280x720x1.5x4 = 8 M
 			 */
-			size = <0x0 0x00c00000>;
+			size = <0x0 0x00800000>;
 			alignment = <0x0 0x400000>;
 		};
 		/* global autoconfigured region for contiguous allocations */
@@ -230,70 +231,64 @@
 			0xffff  0x0>; /* ending flag */
 	};
 
+	gpio_leds {
+		compatible = "gpio-leds";
+		status = "okay";
+		pwr_led {
+			label = "pwr_led";
+			gpios = <&gpio GPIOD_10 GPIO_ACTIVE_LOW>;
+			default-state = "on";
+		};
+	};
+
 	dvb-extern {
 		compatible = "amlogic, dvb-extern";
 		dev_name = "dvb-extern";
-		status = "disabled";
+		status = "okay";
 
-		/* dvb hardware main power. */
+		//dvb hardware main power.
 		dvb_power_gpio = <&gpio GPIOZ_5 GPIO_ACTIVE_HIGH>;
-		dvb_power_value = <1>;
-		dvb_power_dir = <0>; /* 0: out, 1: in. */
+		dvb_power_value = <0>;
+		dvb_power_dir = <0>; //0: out, 1: in.
 
-		fe_num = <3>; /* internal 2 * dvb-c, extern 1 * dvb-s */
-		fe0_demod = "internal";
-		fe0_tuner0 = <0>; /* use tuner0 */
+		fe_num = <2>;
+		fe0_demod = "cxd2856";
+		fe0_i2c_adap_id = <&i2c3>;
+		fe0_demod_i2c_addr = <0xD8>;
+		fe0_reset_value = <0>;
+		fe0_reset_gpio = <&gpio GPIOZ_4 GPIO_ACTIVE_HIGH>;
+		fe0_reset_dir = <0>; //0: out, 1: in.
+		fe0_ant_poweron_value = <0>;
+		fe0_ant_power_gpio = <&gpio GPIOH_9 GPIO_ACTIVE_HIGH>;
+		fe0_ts = <0>;
+		fe0_ts_out_mode = <0>; //0: serial, 1: parallel.
+		fe0_tuner0 = <0>; //T/C
+		fe0_tuner1 = <1>; //S
 
-		fe1_demod = "internal";
-		fe1_tuner0 = <1>; /* use tuner1 */
+		fe1_demod = "cxd2856";
+		fe1_i2c_adap_id = <&i2c3>;
+		fe1_demod_i2c_addr = <0xCA>;
+		fe1_reset_value = <0>;
+		fe1_reset_gpio = <&gpio GPIOZ_4 GPIO_ACTIVE_HIGH>;
+		fe1_reset_dir = <0>; //0: out, 1: in.
+		fe1_ant_poweron_value = <0>;
+		fe1_ant_power_gpio = <&gpio GPIOH_9 GPIO_ACTIVE_HIGH>;
+		fe1_ts = <1>;
+		fe1_ts_out_mode = <0>; //0: serial, 1: parallel.
+		fe1_tuner0 = <0>; //T/C
+		fe1_tuner1 = <1>; //S
 
-		fe2_demod = "cxd2856";
-		fe2_i2c_adap_id = <&i2c4>;
-		fe2_demod_i2c_addr = <0xD8>;
-		fe2_reset_value = <0>;
-		fe2_reset_gpio = <&gpio GPIOZ_4 GPIO_ACTIVE_HIGH>;
-		fe2_reset_dir = <0>; /* 0: out, 1: in. */
-		fe2_ant_poweron_value = <0>;
-		fe2_ant_power_gpio = <&gpio GPIOH_9 GPIO_ACTIVE_HIGH>;
-		fe2_ts = <0>;
-		fe2_tuner1 = <3>; /* use tuner3, only S. */
-
-		tuner_num = <4>; /* tuner number, multi tuner support */
+		tuner_num = <2>; //for extern demod use tuner
 		tuner0_name = "r836_tuner";
-		tuner0_i2c_adap = <&i2c3>;
-		tuner0_i2c_addr = <0x1a>; /* 7bit */
-		tuner0_xtal = <0>; /* 0: 16MHz, 1: 24MHz */
-		tuner0_xtal_mode = <0>;
-					/* NO_SHARE_XTAL(0)
-					 * SLAVE_XTAL_SHARE(3)
-					 */
-		tuner0_xtal_cap = <16>;
-		tuner0_lt_out = <1>;
-
-		tuner1_name = "r836_tuner";
-		tuner1_i2c_adap = <&i2c3>;
-		tuner1_i2c_addr = <0x3a>; /* 7bit */
-		tuner1_xtal = <0>; /* 0: 16MHz, 1: 24MHz */
-		tuner1_xtal_mode = <0>;
-					/* NO_SHARE_XTAL(0)
-					 * SLAVE_XTAL_SHARE(3)
-					 */
-		tuner1_xtal_cap = <16>;
-		tuner1_lt_out = <1>;
-
-		tuner2_name = "av2018_tuner";
-		tuner2_i2c_adap = <&i2c3>;
-		tuner2_i2c_addr = <0xC4>; /* 8bit */
-		tuner2_lt_out = <1>;
-
-		tuner3_name = "av2018_tuner";
-		tuner3_lt_out = <1>;
+		tuner0_i2c_addr = <0x1A>;
+		tuner1_name = "av2018_tuner";
+		tuner1_i2c_addr = <0xC4>;
 	};
 
 	dvb-demux {
 		compatible = "amlogic sc2, dvb-demux";
 		dev_name = "dvb-demux";
-		status = "disabled";
+		status = "okay";
 
 		reg = <0x0 0xfe000000 0x0 0x480000>;
 
@@ -1084,7 +1079,7 @@
 
 /* SDIO */
 &sd_emmc_a {
-	status = "disabled";
+	status = "okay";
 	pinctrl-0 = <&sdio_pins>;
 	pinctrl-1 = <&sdio_clk_gate_pins>;
 	pinctrl-names = "default", "clk-gate";
@@ -1263,6 +1258,8 @@
 };
 
 &ethmac {
+	pinctrl-0 = <&eth_led_pins>;
+	pinctrl-names = "default";
 	status = "okay";
 	phy-handle = <&internal_ephy>;
 	phy-mode = "rmii";
@@ -1345,16 +1342,22 @@
 };
 
 &aml_wifi{
-	status = "disabled";
+	status = "okay";
 	interrupt-gpios = <&gpio  GPIOX_7  GPIO_ACTIVE_HIGH>;
 	power_on-gpios = <&gpio   GPIOX_6  GPIO_ACTIVE_HIGH>;
 };
 
 &aml_bt {
-	status = "disabled";
+	status = "okay";
 	reset-gpios = <&gpio    GPIOX_17 GPIO_ACTIVE_HIGH>;
 	btwakeup-gpios = <&gpio    GPIOX_18 GPIO_ACTIVE_HIGH>;
 	hostwake-gpios = <&gpio GPIOX_19 GPIO_ACTIVE_HIGH>;
+};
+
+&pwm_e {
+	pinctrl-0 = <&pwm_e_pins1>;
+	pinctrl-names = "default";
+	status = "okay";
 };
 
 &uart_A {

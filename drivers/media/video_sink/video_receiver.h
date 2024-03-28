@@ -46,6 +46,8 @@ struct video_recv_s {
 	struct vframe_s *rdma_buf;
 	struct vframe_s *buf_to_put[DISPBUF_TO_PUT_MAX];
 	struct vframe_s *original_vf;
+	struct vframe_s *save_vf;
+	struct vframe_s *toggle_vf;
 	DECLARE_KFIFO(put_q, struct vframe_s *, RECEIVER_BUFFER_POOL_SIZE);
 
 	bool switch_vf;
@@ -64,6 +66,7 @@ struct video_recv_s {
 	u32 drop_vf_cnt;
 	u8 path_id;
 	s8 buf_to_put_num;
+	bool save_vf_en;
 	struct recv_func_s *func;
 };
 

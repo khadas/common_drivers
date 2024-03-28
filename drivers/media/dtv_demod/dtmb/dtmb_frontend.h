@@ -21,6 +21,8 @@
 #define DTMBM_POLL_DELAY_NO_SIGNAL     (120)
 #define DTMBM_POLL_DELAY_HAVE_SIGNAL    (100)
 
+extern unsigned char dtmb_new_driver;
+
 void dtmb_save_status(struct aml_dtvdemod *demod, unsigned int s);
 void dtmb_poll_start(struct aml_dtvdemod *demod);
 void dtmb_poll_stop(struct aml_dtvdemod *demod);
@@ -41,6 +43,8 @@ int gxtv_demod_dtmb_read_ucblocks(struct dvb_frontend *fe, u32 *ucblocks);
 int gxtv_demod_dtmb_set_frontend(struct dvb_frontend *fe);
 int gxtv_demod_dtmb_get_frontend(struct dvb_frontend *fe);
 int gxtv_demod_dtmb_tune(struct dvb_frontend *fe, bool re_tune,
+	unsigned int mode_flags, unsigned int *delay, enum fe_status *status);
+int dtmb_tune(struct dvb_frontend *fe, bool re_tune,
 	unsigned int mode_flags, unsigned int *delay, enum fe_status *status);
 int Gxtv_Demod_Dtmb_Init(struct aml_dtvdemod *demod);
 int amdemod_stat_dtmb_islock(struct aml_dtvdemod *demod,

@@ -18,6 +18,8 @@ struct hdmitx_boot_param {
 	u32		hdr_mask;
 	u8		init_state;
 	bool	config_csc;
+	int	edid_check;
+	u8 dsc_policy;
 };
 
 struct hdmitx_boot_param *get_hdmitx_boot_params(void);

@@ -78,7 +78,6 @@ void page_trace_mem_init(void);
 struct page_trace *find_page_base(struct page *page);
 unsigned long find_back_trace(void);
 unsigned long get_page_trace(struct page *page);
-void show_data(unsigned long addr, int nbytes, const char *name);
 int save_obj_stack(unsigned long *stack, int depth);
 #else
 static inline u64 get_iow_time(u64 *cpu)

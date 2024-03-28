@@ -68,7 +68,7 @@
 		lcd_tcon_reserved:linux,lcd_tcon {
 			compatible = "amlogic, lcd_tcon";
 			reg = <0x3f000000 0x00502840>;
-			no-map;
+			//no-map;
 		};
 
 		codec_mm_cma:linux,codec_mm_cma {
@@ -89,7 +89,7 @@
 			size = <0x0>;
 			/*alignment = <0x100000>;*/
 			//no-map;
-			alloc-ranges = <0x0 0x3f000000>;
+			alloc-ranges = <0x0 0x30000000>;
 		};
 
 		ion_cma_reserved:linux,ion-dev {
@@ -97,14 +97,14 @@
 			reusable;
 			size = <0x0>;
 			alignment = <0x400000>;
-			alloc-ranges = <0x0 0x3f000000>;
+			alloc-ranges = <0x0 0x30000000>;
 		};
 		ion_fb_reserved:linux,ion-fb {
 			compatible = "shared-dma-pool";
 			reusable;
 			size = <0x0>;
 			alignment = <0x400000>;
-			alloc-ranges = <0x0 0x3f000000>;
+			alloc-ranges = <0x0 0x30000000>;
 		};
 		/* secure ion for gpu, advice size is 80M */
 		ion_secure_reserved:linux,ion-secure {
@@ -145,7 +145,7 @@
 			/* 1920x1080x2x4  =16 M */
 			size = <0x1400000>;
 			alignment = <0x400000>;
-			alloc-ranges = <0x0 0x3f000000>;
+			alloc-ranges = <0x0 0x30000000>;
 		};
 
 		/* demod_reserved:linux,demod {
@@ -163,7 +163,7 @@
 		 *	// 40M
 		 *	size = <0x02800000>;
 		 *	alignment = <0x400000>;
-		 *	alloc-ranges = <0x0 0x3f000000>;
+		 *	alloc-ranges = <0x0 0x30000000>;
 		 *};
 		 */
 

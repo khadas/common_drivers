@@ -603,11 +603,18 @@ struct video_layer_s {
 	u32 slice_num;
 	u32 pi_enable;
 	u32 vd1s1_vd2_prebld_en;
+	u32 display_cnt;//count the number of times vf is displayed
 	u32 mosaic_mode;
 	struct sub_slice_s sub_slice[SLICE_NUM - 1];
 	struct vframe_s *vf_top1;
 	u32 frc_h_size_pre;
 	u32 frc_v_size_pre;
+};
+
+struct video_save_s {
+	struct vframe_s *save_vf;
+	struct vframe_s *toggle_vf;
+	bool save_vf_en;
 };
 
 enum {

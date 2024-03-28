@@ -30,6 +30,7 @@
 #include <linux/kfifo.h>
 
 #include <linux/amlogic/media/di/di_interface.h>
+#include <linux/amlogic/media/di/di.h>
 #include <linux/amlogic/media/video_sink/v4lvideo_ext.h>
 
 #include "di_proc_buf_mgr_internal.h"
@@ -111,6 +112,7 @@ struct di_process_dev {
 	bool last_frame_bypass;
 	bool di_is_tvp;
 	struct vframe_s last_vf;
+	bool cur_is_i;
 };
 
 #define DI_PROCESS_IOC_MAGIC  'I'
@@ -123,5 +125,4 @@ int di_get_ref_vf(struct file *file, struct vframe_s **vf_1, struct vframe_s **v
 	struct file **file_1, struct file **file_2);
 struct uvm_di_mgr_t *get_uvm_di_mgr(struct file *file_vf);
 int di_processed_checkin(struct file *file);
-
 #endif

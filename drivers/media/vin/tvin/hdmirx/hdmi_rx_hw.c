@@ -1677,6 +1677,8 @@ void hdmirx_top_irq_en(int en, int lvl, u8 port)
 
 		hdmirx_wr_top(TOP_INTR_MASKN, top_intr_maskn_value, port);
 	} else {
+		rx[port].irq_err_cnt = 0;
+		rx[port].de_err_cnt = 0;
 		hdmirx_wr_top(TOP_INTR_MASKN, 0, port);
 	}
 }
@@ -1691,6 +1693,8 @@ void rx_get_aud_info(struct aud_info_s *audio_info, u8 port)
 	struct aud_infoframe_st *pkt =
 		(struct aud_infoframe_st *)&prx->aud_pktinfo;
 
+	if (port == rx_info.sub_port)
+		return;
 	/* refer to hdmi spec. CT = 0 */
 	audio_info->coding_type = 0;
 	/* refer to hdmi spec. SS = 0 */
@@ -1925,7 +1929,7 @@ bool is_clk_stable(u8 port)
 	port = (rx_info.chip_id >= CHIP_ID_T3X) ? port : rx_info.main_port;
 
 	//t3x frl todo
-	if (force_clk_stable)
+	if (rx[port].var.frl_rate)
 		return true;
 	switch (rx_info.chip_id) {
 	case CHIP_ID_TXHD:
@@ -1941,6 +1945,7 @@ bool is_clk_stable(u8 port)
 	case CHIP_ID_T3:
 	case CHIP_ID_T5W:
 	case CHIP_ID_T5M:
+	case CHIP_ID_TXHD2:
 	case CHIP_ID_T3X:
 	default:
 		if (rx[port].clk.cable_clk > TMDS_CLK_MIN * KHz &&
@@ -2001,6 +2006,8 @@ u32 hdmirx_audio_fifo_rst(u8 port)
 {
 	int error = 0;
 
+	if (port == rx_info.sub_port)
+		return 0;
 	if (rx_info.chip_id >= CHIP_ID_T7) {
 		if (rx_info.chip_id >= CHIP_ID_T5M) {
 			hdmirx_wr_cor(RX_AUDIO_FIFO_RST, 0xff, port);
@@ -2040,9 +2047,11 @@ int hdmirx_control_clk_range(unsigned long min, unsigned long max)
 }
 
 /*
- * set_scdc_cfg
+ * hdmirx_clr_scdc
+ * en: for chip_id >= T7, clear and recovery are done together
+ *	0: recover scdc; 1: clear scdc
  */
-void set_scdc_cfg(int hpdlow, int pwr_provided, u8 port)
+void hdmirx_clr_scdc(bool en, u8 port)
 {
 	switch (rx_info.chip_id) {
 	case CHIP_ID_TXHD:
@@ -2054,8 +2063,10 @@ void set_scdc_cfg(int hpdlow, int pwr_provided, u8 port)
 	case CHIP_ID_TL1:
 	case CHIP_ID_TM2:
 	case CHIP_ID_T5:
-		hdmirx_wr_dwc(DWC_SCDC_CONFIG,
-			(hpdlow << 1) | (pwr_provided << 0));
+		if (en)
+			hdmirx_wr_dwc(DWC_SCDC_CONFIG, 0x2);
+		else
+			hdmirx_wr_dwc(DWC_SCDC_CONFIG, 0x1);
 		break;
 	case CHIP_ID_T7:
 	case CHIP_ID_T3:
@@ -2063,7 +2074,8 @@ void set_scdc_cfg(int hpdlow, int pwr_provided, u8 port)
 	case CHIP_ID_T5M:
 	case CHIP_ID_TXHD2:
 	default:
-		rx_clr_scdc(port);
+		if (en)
+			rx_clr_scdc(port);
 		break;
 	}
 }
@@ -2266,7 +2278,7 @@ bool rx_is_need_edid_reset(u8 port)
 
 	sts = hdmirx_rd_top(TOP_EDID_GEN_STAT, port);
 	ddc_sts = (sts >> 20) & 0x1f;
-	ddc_offset = sts & 0xff;
+	ddc_offset = sts & 0x1ff;
 	if (ddc_offset != 0 && ddc_offset != 0xff)
 		ret = true;
 	return ret;
@@ -2863,6 +2875,7 @@ void rx_clr_scdc(u8 port)
 {
 	if (rx_info.chip_id < CHIP_ID_T7)
 		return;
+
 	scdc_dwork.port = port;
 	queue_work(scdc_wq, &scdc_dwork.work_wq);
 }
@@ -2913,6 +2926,10 @@ int rx_set_port_hpd(u8 port_id, bool val)
 void rx_set_cur_hpd(u8 val, u8 func, u8 port)
 {
 	rx_pr("func-%d\n", func);
+	if (val == 0) {
+		if (rx_is_need_edid_reset(port))
+			rx_edid_module_reset();
+	}
 	rx_set_port_hpd(port, val);
 	port_hpd_rst_flag |= (1 << port);
 }
@@ -3724,32 +3741,29 @@ bool rx_clk_rate_monitor(u8 port)
 		rx[port].phy.cablesel = 0;
 		rx[port].phy.phy_bw = phy_band;
 		rx[port].phy.pll_bw = pll_band;
+		changed = true;
 	}
-	/* } */
 
 	if (clk_rate != rx[port].phy.clk_rate) {
 		changed = true;
+		if (log_level & VIDEO_LOG)
+			rx_pr("clk_rate:%d, last_clk_rate: %d\n",
+					clk_rate, rx[port].phy.clk_rate);
+		rx[port].phy.clk_rate = clk_rate;
+	}
+	if (changed) {
+		rx[port].cableclk_stb_flg = false;
+		i2c_err_cnt[port] = 0;
 		if (rx_info.chip_id < CHIP_ID_TL1) {
 			for (i = 0; i < 3; i++) {
 				error = hdmirx_wr_bits_phy(PHY_CDR_CTRL_CNT,
 							   CLK_RATE_BIT, clk_rate);
-
 				if (error == 0)
 					break;
 			}
 		} else {
 			hdmirx_phy_init(port);
 		}
-		if (log_level & VIDEO_LOG)
-			rx_pr("clk_rate:%d, last_clk_rate: %d\n",
-			      clk_rate, rx[port].phy.clk_rate);
-		rx[port].phy.clk_rate = clk_rate;
-	}
-	if (changed) {
-		rx[port].cableclk_stb_flg = false;
-		//if (rx[port].state >= FSM_WAIT_CLK_STABLE)
-			//rx[port].state = FSM_WAIT_CLK_STABLE;
-		i2c_err_cnt[port] = 0;
 	}
 	return changed;
 }
@@ -4527,12 +4541,16 @@ bool is_aud_fifo_error(void)
 bool is_aud_pll_error(void)
 {
 	bool ret = true;
-	u32 clk = rx[rx_info.main_port].aud_info.aud_clk;
-	u32 aud_128fs = rx[rx_info.main_port].aud_info.real_sr * 128;
-	u32 aud_512fs = rx[rx_info.main_port].aud_info.real_sr * 512;
+	u32 clk;
+	u32 aud_128fs;
+	u32 aud_512fs;
 
 	if (rx_info.chip_id >= CHIP_ID_T7)
 		return false;
+
+	clk = rx[rx_info.main_port].aud_info.aud_clk;
+	aud_128fs = rx[rx_info.main_port].aud_info.real_sr * 128;
+	aud_512fs = rx[rx_info.main_port].aud_info.real_sr * 512;
 	if (rx[rx_info.main_port].aud_info.real_sr == 0)
 		return false;
 	if (abs(clk - aud_128fs) < AUD_PLL_THRESHOLD ||
@@ -4551,6 +4569,10 @@ void rx_aud_pll_ctl(bool en, u8 port)
 	int tmp = 0;
 	/*u32 od, od2;*/
 
+	if (rx_is_pip_on() && port == rx_info.sub_port) {
+		rx_pr("%s sub_port mute\n", __func__);
+		return;
+	}
 	if (rx_info.chip_id >= CHIP_ID_TL1) {
 		if (rx_info.chip_id == CHIP_ID_T7) {
 			if (en) {
@@ -5399,6 +5421,7 @@ void hdmirx_config_video(u8 port)
 	if (rx_info.chip_id >= CHIP_ID_T3) {
 		if (rx[port].pre.sw_vic >= HDMI_VESA_OFFSET ||
 			rx[port].pre.sw_vic == HDMI_640x480p60 ||
+			rx[port].pre.repeat == 0 ||
 			rx[port].pre.sw_dvi)
 			/* for T7, bit7 must be written as 1 in order to de-repeat */
 			hdmirx_wr_bits_top(TOP_VID_CNTL, _BIT(7), 1, port);
@@ -5443,6 +5466,8 @@ void hdmirx_config_video(u8 port)
  */
 void hdmirx_config_audio(u8 port)
 {
+	if (port == rx_info.sub_port)
+		return;
 	if (rx_info.chip_id >= CHIP_ID_T7) {
 		/* set MCLK for I2S/SPDIF */
 		hdmirx_wr_cor(AAC_MCLK_SEL_AUD_IVCRX, 0x80, port);
@@ -6016,6 +6041,9 @@ int rx_debug_wr_reg(const char *buf, char *tmpbuf, int i, u8 port)
 		} else if (buf[2] == 'A') {
 			hdmirx_wr_amlphy_t3x(adr, value, port);
 			rx_pr("write %x to port%d [%x]\n", value, port, adr);
+		} else if (buf[2] == 'c') {
+			wr_reg_clk_ctl(adr, value);
+			rx_pr("write %x to [%x]\n", value, adr);
 		}
 	}
 	return 0;
@@ -6062,6 +6090,9 @@ int rx_debug_rd_reg(const char *buf, char *tmpbuf, u8 port)
 		} else if (buf[2] == 'A') {
 			value = hdmirx_rd_amlphy_t3x(adr, port);
 			rx_pr("port%d, amlphy [%x]=%x\n", port, adr, value);
+		} else if (buf[2] == 'c') {
+			value = rd_reg_clk_ctl(adr);
+			rx_pr("amlphy [%x]=%x\n", adr, value);
 		}
 	}
 	return 0;
@@ -6574,6 +6605,11 @@ void rx_phy_power_on(u32 onoff)
 		if (onoff == 0)
 			aml_phy_power_off();
 	}
+}
+
+bool rx_is_phy_power_off(u8 port)
+{
+	return rx_is_power_off_t3x(port);
 }
 
 void aml_phy_iq_skew_monitor(void)

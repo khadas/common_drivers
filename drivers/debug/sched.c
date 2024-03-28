@@ -590,11 +590,24 @@ static void tick_entry_hook(void *data, struct rq *rq)
 }
 #endif
 
-int aml_sched_init(void)
+void rebuild_sched_flag(void)
 {
 	int cpu, old_flags;
 	struct sched_domain *sd;
 
+	for_each_possible_cpu(cpu) {
+		for_each_domain(cpu, sd) {
+			old_flags = sd->flags;
+			sd->flags &= ~SD_WAKE_AFFINE;
+			sd->flags |= (SD_BALANCE_WAKE | SD_BALANCE_NEWIDLE);
+			pr_info("cpu:%d sd:%px flags:%x->%x\n", cpu, sd, old_flags, sd->flags);
+		}
+	}
+}
+EXPORT_SYMBOL(rebuild_sched_flag);
+
+int aml_sched_init(void)
+{
 #if defined(CONFIG_ANDROID_VENDOR_HOOKS) && defined(CONFIG_FAIR_GROUP_SCHED)
 	register_trace_android_rvh_select_task_rq_rt(aml_select_rt_nice, NULL);
 	register_trace_android_rvh_check_preempt_wakeup(aml_check_preempt_wakeup, NULL);
@@ -609,15 +622,7 @@ int aml_sched_init(void)
 	register_trace_android_rvh_tick_entry(tick_entry_hook, NULL);
 	register_trace_android_vh_sched_show_task(sched_show_task_hook, NULL);
 #endif
-
-	for_each_possible_cpu(cpu) {
-		for_each_domain(cpu, sd) {
-			old_flags = sd->flags;
-			sd->flags &= ~SD_WAKE_AFFINE;
-			sd->flags |= (SD_BALANCE_WAKE | SD_BALANCE_NEWIDLE);
-			pr_info("cpu:%d sd:%px flags:%x->%x\n", cpu, sd, old_flags, sd->flags);
-		}
-	}
+	rebuild_sched_flag();
 
 	return 0;
 }

@@ -118,6 +118,7 @@ struct meson_i2c {
 	unsigned int		frequency;
 	int retain_fastmode;
 	int irq;
+	bool is_runtime_sleep;
 #endif
 	struct meson_i2c_data		*data;
 };
@@ -722,36 +723,32 @@ static int meson_i2c_remove(struct platform_device *pdev)
 	return 0;
 }
 #endif
-
-#ifdef CONFIG_AMLOGIC_MODIFY
-static int __maybe_unused meson_i2c_runtime_suspend(struct device *dev)
+static int meson_i2c_put(struct meson_i2c *i2c)
 {
-	struct meson_i2c *i2c = (struct meson_i2c *)dev_get_drvdata(dev);
 
 	disable_irq(i2c->irq);
-	pinctrl_pm_select_sleep_state(dev);
+	pinctrl_pm_select_sleep_state(i2c->dev);
 	clk_disable(i2c->clk);
 	clk_unprepare(i2c->clk);
 
 	return 0;
 }
 
-static int __maybe_unused meson_i2c_runtime_resume(struct device *dev)
+static int meson_i2c_regain(struct meson_i2c *i2c)
 {
-	struct meson_i2c *i2c = (struct meson_i2c *)dev_get_drvdata(dev);
-	int ret, i;
+	int i, ret;
 
 	ret = clk_prepare(i2c->clk);
 	if (ret < 0) {
-		dev_err(dev, "can not prepare clock\n");
+		dev_err(i2c->dev, "can not prepare clock\n");
 		return ret;
 	}
 	ret = clk_enable(i2c->clk);
 	if (ret < 0) {
-		dev_err(dev, "can not enable clock\n");
+		dev_err(i2c->dev, "can not enable clock\n");
 		return ret;
 	}
-	pinctrl_pm_select_default_state(dev);
+	pinctrl_pm_select_default_state(i2c->dev);
 	enable_irq(i2c->irq);
 
 	/*
@@ -764,9 +761,68 @@ static int __maybe_unused meson_i2c_runtime_resume(struct device *dev)
 	return 0;
 }
 
+#ifdef CONFIG_HIBERNATION
+static int meson_i2c_freeze(struct device *dev)
+{
+	int ret;
+	struct meson_i2c *i2c = (struct meson_i2c *)dev_get_drvdata(dev);
+
+	if (i2c->is_runtime_sleep)
+		return 0;
+	ret = meson_i2c_put(i2c);
+
+	return ret;
+}
+
+static int meson_i2c_thaw(struct device *dev)
+{
+	return 0;
+}
+
+static int meson_i2c_restore(struct device *dev)
+{
+	int ret;
+	struct meson_i2c *i2c = (struct meson_i2c *)dev_get_drvdata(dev);
+
+	if (i2c->is_runtime_sleep)
+		return 0;
+	ret = meson_i2c_regain(i2c);
+
+	return ret;
+}
+#endif
+
+#ifdef CONFIG_AMLOGIC_MODIFY
+static int __maybe_unused meson_i2c_runtime_suspend(struct device *dev)
+{
+	int ret;
+	struct meson_i2c *i2c = (struct meson_i2c *)dev_get_drvdata(dev);
+
+	ret = meson_i2c_put(i2c);
+	i2c->is_runtime_sleep = true;
+
+	return ret;
+}
+
+static int __maybe_unused meson_i2c_runtime_resume(struct device *dev)
+{
+	int ret;
+	struct meson_i2c *i2c = (struct meson_i2c *)dev_get_drvdata(dev);
+
+	ret = meson_i2c_regain(i2c);
+	i2c->is_runtime_sleep = false;
+
+	return ret;
+}
+
 static const struct dev_pm_ops meson_i2c_pm_ops = {
 	SET_RUNTIME_PM_OPS(meson_i2c_runtime_suspend,
 			   meson_i2c_runtime_resume, NULL)
+#ifdef CONFIG_HIBERNATION
+	.freeze		= meson_i2c_freeze,
+	.thaw		= meson_i2c_thaw,
+	.restore	= meson_i2c_restore,
+#endif
 };
 #endif
 

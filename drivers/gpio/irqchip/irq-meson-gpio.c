@@ -352,6 +352,8 @@ struct meson_gpio_irq_controller {
 	u32 *channel_irqs;
 	unsigned long *channel_map;
 	u8 channel_num;
+	u32 *shadow;
+	int shadow_size;
 #endif
 	spinlock_t lock;		//
 };
@@ -834,12 +836,23 @@ static int meson_gpio_irq_parse_dt(struct device_node *node,
 	return 0;
 }
 
+#if defined(CONFIG_AMLOGIC_MODIFY)
+static int meson_gpio_irq_probe(struct platform_device *pdev)
+#else
 static int meson_gpio_irq_of_init(struct device_node *node,
 				  struct device_node *parent)
+#endif /* CONFIG_AMLOGIC_MODIFY */
 {
 	struct irq_domain *domain, *parent_domain;
 	struct meson_gpio_irq_controller *ctl;
 	int ret;
+#if defined(CONFIG_AMLOGIC_MODIFY)
+	struct device *irq_dev = &pdev->dev;
+	struct device_node *node = irq_dev->of_node;
+	struct device_node *parent = of_irq_find_parent(node);
+	struct resource res;
+	resource_size_t res_size;
+#endif /* CONFIG_AMLOGIC_MODIFY */
 
 	if (!parent) {
 		pr_err("missing parent interrupt node\n");
@@ -887,6 +900,25 @@ static int meson_gpio_irq_of_init(struct device_node *node,
 	gclt = ctl;
 #endif
 
+#if defined(CONFIG_AMLOGIC_MODIFY)
+	ret = of_address_to_resource(node, 0, &res);
+	if (ret)
+		goto free_channel_irqs;
+	res_size = resource_size(&res);
+	dev_dbg(irq_dev, "resource size: %d\n", (int)res_size);
+	if (res_size & 0x3)
+		dev_warn(irq_dev, "resource size is not a multiple of 4byte\n");
+
+	ctl->shadow = devm_kmalloc(irq_dev, res_size, GFP_KERNEL);
+	if (!ctl->shadow) {
+		ret = -ENOMEM;
+		goto free_channel_irqs;
+	}
+	ctl->shadow_size = res_size;
+
+	platform_set_drvdata(pdev, ctl);
+#endif /* CONFIG_AMLOGIC_MODIFY */
+
 	return 0;
 
 free_channel_irqs:
@@ -897,6 +929,7 @@ free_ctl:
 	return ret;
 }
 
+#if !defined(CONFIG_AMLOGIC_MODIFY)
 static int meson_gpio_irq_probe(struct platform_device *pdev)
 {
 	struct device_node *np = pdev->dev.of_node;
@@ -904,6 +937,40 @@ static int meson_gpio_irq_probe(struct platform_device *pdev)
 
 	return meson_gpio_irq_of_init(np, parent);
 }
+#endif /* CONFIG_AMLOGIC_MODIFY */
+
+#if defined(CONFIG_AMLOGIC_MODIFY)
+static int meson_gpio_irq_restore(struct device *dev)
+{
+	struct meson_gpio_irq_controller *ctl = dev_get_drvdata(dev);
+	int index;
+
+	for (index = 0; index < ctl->shadow_size; index += 4)
+		writel_relaxed(ctl->shadow[index >> 2], ctl->base + index);
+
+	dev_dbg(dev, "restore register completed\n");
+
+	return 0;
+}
+
+static int meson_gpio_irq_freeze(struct device *dev)
+{
+	struct meson_gpio_irq_controller *ctl = dev_get_drvdata(dev);
+	int index;
+
+	for (index = 0; index < ctl->shadow_size; index += 4)
+		ctl->shadow[index >> 2] = readl_relaxed(ctl->base + index);
+
+	dev_dbg(dev, "save register completed\n");
+
+	return 0;
+}
+
+static const struct dev_pm_ops meson_gpio_irq_pm_ops = {
+	.freeze = meson_gpio_irq_freeze,
+	.restore = meson_gpio_irq_restore,
+};
+#endif /* CONFIG_AMLOGIC_MODIFY */
 
 static const struct of_device_id meson_gpio_irq_match_table[] = {
 	{ .compatible = "amlogic,meson-gpio-intc" },
@@ -915,6 +982,9 @@ static struct platform_driver meson_gpio_irq_driver = {
 	.probe = meson_gpio_irq_probe,
 	.driver = {
 		.name = "meson_gpio_irq",
+#if defined(CONFIG_AMLOGIC_MODIFY)
+		.pm = &meson_gpio_irq_pm_ops,
+#endif /* CONFIG_AMLOGIC_MODIFY */
 		.of_match_table = meson_gpio_irq_match_table,
 	},
 };

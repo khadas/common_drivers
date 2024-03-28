@@ -23,6 +23,7 @@ enum lut_dma_wr_id_e {
 };
 
 void am_dma_init(void);
+void am_dma_reset_lc(int enable, int rdma_mode, int vpp_index);
 void am_dma_set_wr_cfg(enum lut_dma_wr_id_e dma_wr_id, int enable,
 	unsigned int stride, unsigned int addr_mode, unsigned int rpt_num);
 

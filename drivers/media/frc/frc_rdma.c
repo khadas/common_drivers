@@ -49,9 +49,9 @@ static struct frc_rdma_irq_reg_s irq_status;
 
 static int rdma_cnt;
 
-static u32 rdma_trace_num;
+u32 rdma_trace_num;
 static u32 rdma_trace_enable;
-static u32 rdma_trace_reg[MAX_TRACE_NUM];
+u32 rdma_trace_reg[MAX_TRACE_NUM];
 
 struct frc_rdma_s frc_rdma;
 struct frc_rdma_info rdma_info[RDMA_CHANNEL]; // 0:man 1:input 2:output 3:dbg

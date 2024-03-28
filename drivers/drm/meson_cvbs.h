@@ -19,7 +19,15 @@ struct am_drm_cvbs_s {
 	struct meson_connector base;
 	struct drm_encoder encoder;
 	struct meson_hdmitx_dev *hdmitx_dev;
+	struct drm_property *update_attr_prop;
 };
+
+struct am_cvbs_connector_state {
+	struct drm_connector_state base;
+	bool update : 1;
+};
+
+#define to_am_cvbs_connector_state(x)	container_of(x, struct am_cvbs_connector_state, base)
 
 int meson_cvbs_dev_bind(struct drm_device *drm,
 	int type, struct meson_connector_dev *intf);

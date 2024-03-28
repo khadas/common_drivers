@@ -32,7 +32,7 @@ static unsigned int video_nr_base = 13;
 static int scaling_rate = 100;
 static int ionvideo_seek_flag;
 
-#ifdef CONFIG_AMLOGIC_MEDIA_MULTI_DEC
+#if defined(CONFIG_AMLOGIC_MEDIA_MULTI_DEC) && !defined(CONFIG_AMLOGIC_LOWMEM)
 static unsigned int n_devs = 9;
 #else
 static unsigned int n_devs = 1;

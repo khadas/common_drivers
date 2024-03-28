@@ -19,6 +19,9 @@
 
 #define VF_LIST_COUNT 64
 
+#define VF_REF_FLAG_DIPROCESS_CHECKIN             0x1
+#define VF_REF_FLAG_DECREASE_SELF                 0x2
+
 enum dec_type_t {
 	DEC_TYPE_V4L_DEC = 0,
 	DEC_TYPE_V4LVIDEO = 1,
@@ -39,6 +42,7 @@ struct vf_ref_t {
 	bool di_processed;
 	int buf_mgr_reset_id;
 	int qbuf_id;
+	u32 flag;
 };
 
 struct dp_buf_mgr_t {

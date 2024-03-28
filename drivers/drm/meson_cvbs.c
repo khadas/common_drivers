@@ -163,11 +163,34 @@ static struct drm_encoder *am_cvbs_connector_best_encoder
 	return &am_drm_cvbs->encoder;
 }
 
+int am_cvbs_tx_atomic_check(struct drm_connector *connector,
+	struct drm_atomic_state *state)
+{
+	struct drm_crtc_state *new_crtc_state = NULL;
+	struct am_cvbs_connector_state *cvbs_state = NULL;
+
+	cvbs_state = to_am_cvbs_connector_state
+		(drm_atomic_get_new_connector_state(state, connector));
+
+	if (cvbs_state->base.crtc)
+		new_crtc_state = drm_atomic_get_new_crtc_state(state,
+			cvbs_state->base.crtc);
+	else
+		return 0;
+
+	/*force set mode.*/
+	if (cvbs_state->update)
+		new_crtc_state->connectors_changed = true;
+
+	return 0;
+}
+
 static const
 struct drm_connector_helper_funcs am_cvbs_connector_helper_funcs = {
 	.get_modes = am_cvbs_tx_get_modes,
 	.mode_valid = am_cvbs_tx_check_mode,
 	.best_encoder = am_cvbs_connector_best_encoder,
+	.atomic_check	= am_cvbs_tx_atomic_check,
 };
 
 static enum drm_connector_status am_cvbs_connector_detect
@@ -182,13 +205,70 @@ static void am_cvbs_connector_destroy(struct drm_connector *connector)
 	drm_connector_cleanup(connector);
 }
 
+static int am_cvbs_connector_atomic_set_property
+	(struct drm_connector *connector,
+	struct drm_connector_state *state,
+	struct drm_property *property, uint64_t val)
+{
+	struct am_cvbs_connector_state *cvbs_state =
+		to_am_cvbs_connector_state(state);
+
+	if (property == am_drm_cvbs->update_attr_prop) {
+		cvbs_state->update = true;
+		return 0;
+	}
+
+	return -EINVAL;
+}
+
+static int am_cvbs_connector_atomic_get_property
+	(struct drm_connector *connector,
+	const struct drm_connector_state *state,
+	struct drm_property *property, uint64_t *val)
+{
+	if (property == am_drm_cvbs->update_attr_prop) {
+		*val = 0;
+		return 0;
+	}
+
+	return -EINVAL;
+}
+
+struct drm_connector_state *am_cvbs_atomic_duplicate_state
+	(struct drm_connector *connector)
+{
+	struct am_cvbs_connector_state *new_state;
+
+	new_state = kzalloc(sizeof(*new_state), GFP_KERNEL);
+	if (!new_state)
+		return NULL;
+
+	__drm_atomic_helper_connector_duplicate_state(connector,
+		&new_state->base);
+
+	new_state->update = false;
+	return &new_state->base;
+}
+
+void am_cvbs_atomic_destroy_state(struct drm_connector *connector,
+	 struct drm_connector_state *state)
+{
+	struct am_cvbs_connector_state *cvbs_state;
+
+	cvbs_state = to_am_cvbs_connector_state(state);
+	__drm_atomic_helper_connector_destroy_state(&cvbs_state->base);
+	kfree(cvbs_state);
+}
+
 static const struct drm_connector_funcs am_cvbs_connector_funcs = {
 	.detect			= am_cvbs_connector_detect,
 	.fill_modes		= drm_helper_probe_single_connector_modes,
 	.destroy		= am_cvbs_connector_destroy,
 	.reset			= drm_atomic_helper_connector_reset,
-	.atomic_duplicate_state	= drm_atomic_helper_connector_duplicate_state,
-	.atomic_destroy_state	= drm_atomic_helper_connector_destroy_state,
+	.atomic_duplicate_state	= am_cvbs_atomic_duplicate_state,
+	.atomic_destroy_state	= am_cvbs_atomic_destroy_state,
+	.atomic_set_property	= am_cvbs_connector_atomic_set_property,
+	.atomic_get_property	= am_cvbs_connector_atomic_get_property,
 };
 
 void am_cvbs_encoder_mode_set(struct drm_encoder *encoder,
@@ -233,6 +313,20 @@ static const struct drm_encoder_helper_funcs am_cvbs_encoder_helper_funcs = {
 static const struct drm_encoder_funcs am_cvbs_encoder_funcs = {
 	.destroy        = drm_encoder_cleanup,
 };
+
+static void meson_cvbs_init_update_property(struct drm_device *drm_dev,
+						  struct drm_connector *connector)
+{
+	struct drm_property *prop;
+
+	prop = drm_property_create_bool(drm_dev, 0, "UPDATE");
+	if (prop) {
+		am_drm_cvbs->update_attr_prop = prop;
+		drm_object_attach_property(&connector->base, prop, 0);
+	} else {
+		DRM_ERROR("Failed to UPDATE property\n");
+	}
+}
 
 int meson_cvbs_dev_bind(struct drm_device *drm,
 	int type, struct meson_connector_dev *intf)
@@ -282,6 +376,8 @@ int meson_cvbs_dev_bind(struct drm_device *drm,
 		DRM_ERROR("Failed to init cvbs attach\n");
 		goto cvbs_err;
 	}
+
+	meson_cvbs_init_update_property(drm, connector);
 
 	DRM_DEBUG("%s out[%d]\n", __func__, __LINE__);
 	return ret;

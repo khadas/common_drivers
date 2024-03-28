@@ -109,6 +109,16 @@
 			threshold = <80 255>;
 		};
 
+		dvfs828_cfg:dvfs828_cfg {
+			clk_freq = <828000000>;
+			clk_parent = "sys2_pll";
+			clkp_freq = <828000000>;
+			clk_reg = <0x200>;
+			voltage = <1150>;
+			keep_count = <5>;
+			threshold = <80 255>;
+		};
+
 		dvfs852_cfg:dvfs852_cfg {
 			clk_freq = <852000000>;
 			clk_parent = "sys2_pll";

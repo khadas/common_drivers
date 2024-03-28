@@ -289,6 +289,8 @@
 		mbox-nums = <S7_MBOX_NUMS>;
 		mboxids = <S7_MBOX_AO2REE>,
 			  <S7_MBOX_REE2AO>;
+		aocpu_sts_mboxid = <S7_MBOX_AO2TEE>;
+		ree2aocpu_mboxid = <S7_MBOX_REE2AO>;
 		#mbox-cells = <1>;
 	};
 
@@ -392,9 +394,11 @@
 				      <0x8000 0x384>;
 				reg-names = "basic", "pll";
 				clocks = <&xtal>,
-					 <&scmi_clk CLKID_GP1PLL>,
-					 <&scmi_clk CLKID_PLL_TOP>;
-				clock-names = "xtal", "gp1pll", "pll_top_in";
+					 <&scmi_clk CLKID_SCMI_GP1_PLL>,
+					 <&scmi_clk CLKID_SCMI_PLL_TOP>,
+					 <&scmi_clk CLKID_SCMI_ACLKM>;
+				clock-names = "xtal", "gp1_pll", "pll_top_in",
+					      "aclkm";
 				status = "okay";
 			};
 
@@ -649,6 +653,7 @@
 				phy_pll_mode = <2>;
 				phy_mode = <3>;
 				tx_amp_src = <0xFE010330>;
+				led_setting = <0x42>;
 
 				ext_mdio: mdio@0 {
 					reg = <0>;
@@ -817,7 +822,7 @@
 			card_type = <1>;
 			ignore_desc_busy;
 			mmc_debug_flag;
-			src_clk_rate = <1152000000>;
+			src_clk_rate = <1536000000>;
 			tx_delay = <17>;
 		//	nwr_cnt = <0>;
 		//	resets = <&reset RESET_SD_EMMC_C>;
@@ -855,7 +860,7 @@
 				<&clkc CLKID_SD_EMMC_A_SEL>,
 				 <&clkc CLKID_SD_EMMC_A>,
 				 <&xtal>,
-				 <&clkc CLKID_FCLK_DIV2>;
+				 <&clkc CLKID_GP0_PLL>;
 			clock-names = "core", "mux0", "mux1",
 					"clkin0", "clkin1";
 			card_type = <3>;
@@ -863,6 +868,7 @@
 			cap-sdio-irq;
 			keep-power-in-suspend;
 			use_intf3_tuning;
+			src_clk_rate = <1536000000>;
 			no-mmc;
 			no-sd;
 			//resets = <&reset RESET_SD_EMMC_A>;
@@ -883,15 +889,15 @@
 		ethmac: ethernet@fe368000 {
 			compatible = "amlogic,meson-axg-dwmac",
 				     "snps,dwmac-4.00";
-			reg = <0x0 0xfe368000 0x0 0x12ec>,
-			      <0x0 0xfe364000 0x0 0x8>;
+			reg = <0xfe368000 0x12ec>,
+			      <0xfe364000 0x8>;
 			interrupts = <GIC_SPI 74 IRQ_TYPE_LEVEL_HIGH>;
 			interrupt-names = "macirq";
 			clocks = <&clkc CLKID_SYS_ETHPHY>,
 				 <&clkc CLKID_FCLK_DIV2>,
 				 <&clkc CLKID_FCLK_CLK50M>;
 			clock-names = "stmmaceth", "clkin0", "clkin1";
-//			mboxes = <&mbox_fifo S1A_REE2AO_ETH>;
+			mboxes = <&mbox_fifo S7_REE2AO_ETH>;
 			snps,force_thresh_dma_mode;
 			status = "disabled";
 			analog_version = <1>;
@@ -1231,7 +1237,7 @@
 		status = "okay";
 		reg =	<0xfe000000 0x100    /* clk */
 			 0xfe00c000 0x70     /* pwrctrl */
-			 0xff000000 0xa000>; /* vcbus */
+			 0xff000000 0xf000>; /* vcbus */
 		clocks = <&clkc CLKID_VAPB>,
 			<&clkc CLKID_SYS_VPU_INTR>,
 			<&clkc CLKID_VPU_0>,
@@ -1352,7 +1358,8 @@
 		reg = <0xfe020000 0x50>;
 		tsensor_id = <1>;
 		cal_type = <0x11>;
-		cal_coeff = <296 396 2757 8526>;
+		cal_coeff = <296 396 2907 8739>;
+		cal_coeff2 = <296 396 2757 8526>;
 		rtemp = <110000>;
 		interrupts = <GIC_SPI 30 IRQ_TYPE_LEVEL_HIGH>;
 		clocks = <&clkc CLKID_TS>;
@@ -1548,7 +1555,7 @@
 	};
 
 	vpu_security {
-		compatible = "amlogic, meson-s4, vpu_security";
+		compatible = "amlogic, meson-s7, vpu_security";
 		dev_name = "amlogic-vpu-security";
 		status = "okay";
 		interrupts = <GIC_SPI 220 IRQ_TYPE_EDGE_RISING>;
@@ -1919,14 +1926,14 @@
 				 "emmc_cmd";
 			function = "emmc";
 			bias-pull-up;
-			drive-strength-microamp = <4000>;
+			drive-strength-microamp = <3000>;
 		};
 
 		mux-1 {
 			groups = "emmc_clk";
 			function = "emmc";
 			bias-pull-up;
-			drive-strength-microamp = <4000>;
+			drive-strength-microamp = <3000>;
 		};
 	};
 
@@ -1935,7 +1942,7 @@
 			groups = "emmc_nand_ds";
 			function = "emmc";
 			bias-pull-down;
-			drive-strength-microamp = <4000>;
+			drive-strength-microamp = <3000>;
 		};
 	};
 
@@ -1944,7 +1951,7 @@
 			groups = "GPIOB_8";
 			function = "gpio_periphs";
 			bias-pull-down;
-			drive-strength-microamp = <4000>;
+			drive-strength-microamp = <3000>;
 		};
 	};
 
@@ -1993,7 +2000,7 @@
 				 "sdcard_cmd_c";
 			function = "sdcard";
 			bias-pull-up;
-			drive-strength-microamp = <4000>;
+			drive-strength-microamp = <3000>;
 		};
 	};
 
@@ -2052,7 +2059,7 @@
 				 "sdcard_cmd_c";
 			function = "sdcard";
 			bias-pull-up;
-			drive-strength-microamp = <4000>;
+			drive-strength-microamp = <3000>;
 		};
 	};
 
@@ -2061,7 +2068,7 @@
 			groups = "GPIOC_4";
 			function = "gpio_periphs";
 			bias-pull-down;
-			drive-strength-microamp = <4000>;
+			drive-strength-microamp = <3000>;
 		};
 	};
 
@@ -2085,7 +2092,7 @@
 				 "sdio_cmd";
 			function = "sdio";
 			bias-pull-up;
-			drive-strength-microamp = <4000>;
+			drive-strength-microamp = <3000>;
 		};
 	};
 
@@ -2094,7 +2101,7 @@
 			groups = "GPIOX_4";
 			function = "gpio_periphs";
 			bias-pull-down;
-			drive-strength-microamp = <4000>;
+			drive-strength-microamp = <3000>;
 		};
 	};
 
@@ -2409,6 +2416,14 @@
 			function = "spdif_in";
 		};
 	};
+
+	eth_led_pins: eth {
+		mux {
+			groups = "eth_link_led",
+				 "eth_act_led";
+			function = "eth";
+		};
+	};
 };
 
 &gpu{
@@ -2430,7 +2445,7 @@
 	 * MALI_0 and MALI_1 muxed to a single clock by a glitch
 	 * free mux to safely change frequency while running.
 	 */
-	assigned-clocks = <&scmi_clk CLKID_GP1PLL>,
+	assigned-clocks = <&scmi_clk CLKID_SCMI_GP1_PLL>,
 			<&clkc CLKID_MALI_0_SEL>,
 			<&clkc CLKID_MALI_0>,
 			<&clkc CLKID_MALI>; /* Glitch free mux */

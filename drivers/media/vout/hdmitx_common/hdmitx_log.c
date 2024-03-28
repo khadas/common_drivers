@@ -26,7 +26,8 @@ MODULE_PARM_DESC(hdmitx_debug, "Enable debug output, where each bit enables a de
 "\t\tBit 8 (0x100)  will enable SCDC messages (hdmitx scdc)\n"
 "\t\tBit 9 (0x200)  will enable VINFO messages (hdmitx vinfo)\n"
 "\t\tBit 10 (0x400)  will enable EVENT messages (hdmitx event)\n"
-"\t\tBit 11 (0x800)  will enable HPD messages (hdmitx HPD)");
+"\t\tBit 11 (0x800)  will enable HPD messages (hdmitx HPD)\n"
+"\t\tBit 12 (0x1000)  will enable DSC messages (hdmitx DSC)");
 
 module_param_named(hdmitx_debug, __hdmitx_debug, int, 0600);
 

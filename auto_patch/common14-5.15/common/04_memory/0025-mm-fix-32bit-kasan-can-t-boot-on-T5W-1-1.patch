@@ -1,4 +1,4 @@
-From 09b0ed89a441600394c0503d8edcbf303df05433 Mon Sep 17 00:00:00 2001
+From 5d6ff0c0f477772628a202424e7f7b3d667a3a42 Mon Sep 17 00:00:00 2001
 From: Jianxiong Pan <jianxiong.pan@amlogic.com>
 Date: Fri, 22 Dec 2023 16:03:59 +0800
 Subject: [PATCH] mm: fix 32bit kasan can't boot on T5W [1/1]
@@ -23,10 +23,11 @@ Change-Id: Id72d26046a2155ee8fea35c3bf8c7aa4fe52e7a4
 Signed-off-by: Jianxiong Pan <jianxiong.pan@amlogic.com>
 ---
  arch/arm/kernel/head-common.S | 15 +++++++++++++++
- 1 file changed, 15 insertions(+)
+ mm/page_alloc.c               |  6 +++---
+ 2 files changed, 18 insertions(+), 3 deletions(-)
 
 diff --git a/arch/arm/kernel/head-common.S b/arch/arm/kernel/head-common.S
-index ae5f69292a11..f271626c9888 100644
+index 936210f509ac..109765da442c 100644
 --- a/arch/arm/kernel/head-common.S
 +++ b/arch/arm/kernel/head-common.S
 @@ -105,6 +105,21 @@ __mmap_switched:
@@ -51,6 +52,37 @@ index ae5f69292a11..f271626c9888 100644
  	ldmia	r4, {r0, r1, r2, r3}
  	str	r9, [r0]			@ Save processor ID
  	str	r7, [r1]			@ Save machine type
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 753ee06e1fbd..1049d1358108 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -3228,7 +3228,7 @@ __rmqueue(struct zone *zone, unsigned int order, int migratetype,
+ 	return page;
+ }
+ 
+-#ifdef CONFIG_AMLOGIC_CMA
++#if defined(CONFIG_AMLOGIC_CMA) && !defined(CONFIG_KASAN)
+ /*
+  * get page but not cma
+  */
+@@ -3971,7 +3971,7 @@ struct page *__rmqueue_pcplist(struct zone *zone, unsigned int order,
+ {
+ 	struct page *page = NULL;
+ 	struct list_head *list = NULL;
+-#ifdef CONFIG_AMLOGIC_CMA
++#if defined(CONFIG_AMLOGIC_CMA) && !defined(CONFIG_KASAN)
+ 	bool cma = can_use_cma(gfp_flags);
+ 
+ 	if (cma)
+@@ -3994,7 +3994,7 @@ struct page *__rmqueue_pcplist(struct zone *zone, unsigned int order,
+ 		}
+ 
+ 		page = list_first_entry(list, struct page, pcp_list);
+-	#ifdef CONFIG_AMLOGIC_CMA
++	#if defined(CONFIG_AMLOGIC_CMA) && !defined(CONFIG_KASAN)
+ 		/*
+ 		 * USING CMA FIRST POLICY situations:
+ 		 * 1. CMA pages may return to pcp and allocated next
 -- 
 2.42.0
 

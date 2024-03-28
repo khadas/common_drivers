@@ -28,7 +28,7 @@ static struct parse_cr parse_cr_[] = {
 	{HDMI_QUANTIZATION_RANGE_FULL, "full",},
 };
 
-/* parse the string from "dhmitx output FORMAT" */
+/* parse the string from "hdmitx output FORMAT" */
 void hdmitx_parse_color_attr(char const *attr_str,
 	enum hdmi_colorspace *cs, enum hdmi_color_depth *cd,
 	enum hdmi_quantization_range *cr)
@@ -115,6 +115,7 @@ int hdmitx_format_para_reset(struct hdmi_format_para *para)
 	para->cd = COLORDEPTH_RESERVED;
 	para->cr = HDMI_QUANTIZATION_RANGE_RESERVED;
 	para->frl_rate = FRL_NONE;
+	para->dsc_en = false;
 
 	return 0;
 }
@@ -160,13 +161,14 @@ int hdmitx_format_para_print(struct hdmi_format_para *para, char *log_buf)
 		pos += snprintf(buf + pos, len - pos, "format_para: TMDS %d DIV40 %d,%d\n",
 			para->tmds_clk, para->tmds_clk_div40, para->scrambler_en);
 
-		HDMITX_INFO("format_para: frl_rate %d\n", para->frl_rate);
+		pos += snprintf(buf + pos, len - pos, "format_para: frl_rate %d, dsc_en: %d\n",
+			para->frl_rate, para->dsc_en);
 	}
 
 	if (log_buf)
 		sprintf(log_buf, "%s", buf);
 	else
-		HDMITX_INFO("%s", buf);
+		HDMITX_DEBUG("%s", buf);
 
 	return pos;
 }
@@ -212,23 +214,5 @@ int hdmitx_format_para_rebuild_fmtattr_str(struct hdmi_format_para *para, char *
 
 	HDMITX_DEBUG("rebuild fmt_string %s from (%d,%d)\n", attr_str, para->cs, para->cd);
 	return 0;
-}
-
-/* get the corresponding bandwidth of current FRL_RATE, Unit: MHz */
-u32 hdmitx_get_frl_bandwidth(const enum frl_rate_enum rate)
-{
-	const u32 frl_bandwidth[] = {
-		[FRL_NONE] = 0,
-		[FRL_3G3L] = 9000,
-		[FRL_6G3L] = 18000,
-		[FRL_6G4L] = 24000,
-		[FRL_8G4L] = 32000,
-		[FRL_10G4L] = 40000,
-		[FRL_12G4L] = 48000,
-	};
-
-	if (rate > FRL_12G4L)
-		return 0;
-	return frl_bandwidth[rate];
 }
 

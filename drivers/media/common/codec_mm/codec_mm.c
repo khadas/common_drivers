@@ -250,6 +250,7 @@ int cma_mmu_op(struct page *page, int count, bool set)
 #define DEFAULT_TVP_SIZE_FOR_4K (236 * SZ_1M)
 #define DEFAULT_TVP_SIZE_FOR_NO4K (160 * SZ_1M)
 #define DEFAULT_TVP_SEGMENT_MIN_SIZE (16 * SZ_1M)
+#define AV1_4K_FG_MEM_SIZE 342 // 3 segments 240M/70M/32M
 
 #define ALLOC_MAX_RETRY 1
 
@@ -484,6 +485,7 @@ struct codec_mm_mgt_s {
 	struct mutex tvp_protect_lock;
 	struct codec_state_node cs;
 	void *trk_h;
+	struct work_struct	tvp_alloc_wrk;
 };
 
 #define PHY_OFF() offsetof(struct codec_mm_s, phy_addr)
@@ -981,7 +983,7 @@ static int codec_mm_alloc_in(struct codec_mm_mgt_s *mgt, struct codec_mm_s *mem)
 		if (can_from_res) {
 			if (mgt->cma_res_pool.total_size > 0 &&
 			    (mgt->cma_res_pool.alloced_size +
-			    mem->buffer_size) < mgt->cma_res_pool.total_size) {
+			    mem->buffer_size) <= mgt->cma_res_pool.total_size) {
 				/*
 				 *from cma res first.
 				 */
@@ -2037,6 +2039,32 @@ alloced_finished:
 
 	return try_alloced_size;
 }
+
+static void codec_mm_tvp_alloc_monitor(struct work_struct *work)
+{
+	int ret = 0;
+	struct codec_mm_mgt_s *mgt = container_of(work,
+		struct codec_mm_mgt_s, tvp_alloc_wrk);
+
+	while (mgt->tvp_pool.total_size < (AV1_4K_FG_MEM_SIZE * 1024 * 1024)) {
+		ret = codec_mm_tvp_pool_alloc_by_slot(&mgt->tvp_pool, 0, mgt->tvp_enable);
+		if (ret == 0) {
+			pr_err("prealloc tvp_pool fail\n");
+			return;
+		}
+	}
+}
+
+void codec_mm_prealloc_tvp_pool(void)
+{
+	struct codec_mm_mgt_s *mgt = get_mem_mgt();
+
+	if (mgt->tvp_enable < 2 || tvp_dynamic_increase_disable) // not 4k secure video,do nothing
+		return;
+
+	schedule_work(&mgt->tvp_alloc_wrk);
+}
+EXPORT_SYMBOL(codec_mm_prealloc_tvp_pool);
 
 int codec_mm_extpool_pool_alloc(struct extpool_mgt_s *tvp_pool,
 	int size, int memflags, int for_tvp)
@@ -3148,6 +3176,7 @@ int codec_mm_mgt_init(struct device *dev)
 	mutex_init(&mgt->tvp_pool.pool_lock);
 	mutex_init(&mgt->cma_res_pool.pool_lock);
 	spin_lock_init(&mgt->lock);
+	INIT_WORK(&mgt->tvp_alloc_wrk, codec_mm_tvp_alloc_monitor);
 	return 0;
 }
 EXPORT_SYMBOL(codec_mm_mgt_init);

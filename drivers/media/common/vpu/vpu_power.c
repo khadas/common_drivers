@@ -13,6 +13,7 @@
 #include <linux/amlogic/media/vpu/vpu.h>
 #include "vpu_reg.h"
 #include "vpu.h"
+#include "vpu_arb.h"
 
 int vpu_power_init_check_dft(void)
 {
@@ -29,7 +30,9 @@ int vpu_power_init_check_dft(void)
 		VPUPR("%s: vpu_clk_ctrl: 0x%08x, ret=%d\n",
 		      __func__, vpu_clk_read(vpu_conf.data->vpu_clk_reg), ret);
 	}
-
+	if (vpu_conf.data->chip_type == VPU_CHIP_T7 ||
+		vpu_conf.data->chip_type == VPU_CHIP_S7)
+		ret = init_arb_urgent_table();
 	return ret;
 }
 

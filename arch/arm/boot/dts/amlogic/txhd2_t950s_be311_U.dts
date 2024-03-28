@@ -8,7 +8,7 @@
 #include "mesontxhd2.dtsi"
 #include "mesontxhd2_drm.dtsi"
 #include "meson_txhd2-panel.dtsi"
-#include "partition_mbox_ab.dtsi"
+#include "partition_mbox_normal_dynamic.dtsi"
 #include "mesontxhd2_audio.dtsi"
 / {
 	amlogic-dt-id = "txhd2_t950s_be311";
@@ -275,7 +275,7 @@
 		ion_cma_reserved:linux,ion-dev {
 			compatible = "shared-dma-pool";
 			reusable;
-			size = <0x0>;
+			size = <0x2800000>;
 			alignment = <0x400000>;
 			alloc-ranges = <0x0 0x3f000000>;
 		};
@@ -296,8 +296,8 @@
 
 		lcd_tcon_reserved:linux,lcd_tcon {
 			compatible = "amlogic, lcd_tcon";
-			reg = <0x3f000000 0x00502840>;
-			no-map;
+			reg = <0x3f000000 0x00402840>;
+			//no-map;
 		};
 
 		/*  vdin0 CMA pool */
@@ -672,6 +672,8 @@
 		status = "okay";
 		amlvideo2_id = <1>;
 		cma_mode = <1>;
+		/*all NV21 1:720P 2:1080P 3:4K*/
+		codec_mm_alloc = <1>;
 	};
 
 	/* for external keypad */
@@ -767,6 +769,11 @@
 	clock-frequency = <300000>;
 	pinctrl-names="default";
 	pinctrl-0=<&i2c1_pins1>;
+};
+
+&aml_bt {
+	status = "okay";
+	power_down_disable = <1>;
 };
 
 &CPU0 {

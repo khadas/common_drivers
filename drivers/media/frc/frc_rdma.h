@@ -94,6 +94,8 @@ struct frc_rdma_s {
 	struct frc_rdma_info *rdma_info[RDMA_CHANNEL];
 };
 
+extern u32 rdma_trace_num;
+extern u32 rdma_trace_reg[MAX_TRACE_NUM];
 
 void frc_rdma_alloc_buf(struct frc_dev_s *devp);
 void frc_rdma_release_buf(void);

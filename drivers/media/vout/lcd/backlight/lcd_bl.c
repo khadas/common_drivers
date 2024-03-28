@@ -633,9 +633,9 @@ static void bl_power_off(struct aml_bl_drv_s *bdrv)
 		goto exit_power_off_bl;
 		break;
 	}
-	if (bconf->power_off_delay > 0)
+	if (bconf->power_off_delay > 0 &&
+		((bdrv->state & BL_STATE_PWM_SWITCH) == 0))
 		lcd_delay_ms(bconf->power_off_delay);
-
 	bdrv->state &= ~BL_STATE_BL_ON;
 	BLPR("backlight power off\n");
 
@@ -759,6 +759,11 @@ static inline unsigned int bl_brightness_level_map(struct aml_bl_drv_s *bdrv,
 	else
 		level = brightness;
 
+	if (lcd_debug_print_flag & LCD_DBG_PR_BL_ADV) {
+		BLPR("%s: input brightness=%d, output level=%d\n",
+			__func__, brightness, level);
+	}
+
 	return level;
 }
 
@@ -768,7 +773,16 @@ static inline unsigned int bl_gd_level_map(struct aml_bl_drv_s *bdrv, unsigned i
 
 	min = bdrv->bconf.level_min;
 	max = bdrv->bconf.level_max;
+
+	if (bdrv->level_brightness <= min)
+		return min;
+
 	val = (gd_level * (bdrv->level_brightness - min)) / 4095 + min;
+
+	if (lcd_debug_print_flag & LCD_DBG_PR_BL_ADV) {
+		BLPR("%s: input gd_level=%d, output val=%d, min=%d, max=%d\n",
+			__func__, gd_level, val, min, max);
+	}
 
 	return val;
 }
@@ -922,7 +936,7 @@ static void bl_config_print(struct aml_bl_drv_s *bdrv)
 		BLPR("pwm_on_delay        = %dms\n", bconf->pwm_on_delay);
 		BLPR("pwm_off_delay       = %dms\n", bconf->pwm_off_delay);
 		BLPR("en_sequence_reverse = %d\n", bconf->en_sequence_reverse);
-		/* pwm_combo_0 */
+		/* pwm_combo_0, switch channel default is 0*/
 		if (bconf->bl_pwm_combo0) {
 			bl_pwm = bconf->bl_pwm_combo0;
 			BLPR("pwm_combo0_index     = %d\n", bl_pwm->index);
@@ -1345,7 +1359,7 @@ static int bl_config_load_from_unifykey(struct aml_bl_drv_s *bdrv, char *key_nam
 	unsigned char *p;
 	const char *str;
 	unsigned char temp;
-	struct aml_lcd_unifykey_header_s bl_header;
+	struct aml_lcd_unifykey_header_s *bl_header;
 	struct bl_pwm_config_s *bl_pwm;
 	struct bl_pwm_config_s *pwm_combo0, *pwm_combo1;
 	unsigned int level, tempfreq;
@@ -1354,29 +1368,31 @@ static int bl_config_load_from_unifykey(struct aml_bl_drv_s *bdrv, char *key_nam
 	if (!key_name)
 		return -1;
 
-	key_len = LCD_UKEY_BL_SIZE;
+	ret = lcd_unifykey_get_size(key_name, &key_len);
+	if (ret)
+		return -1;
+
 	para = kcalloc(key_len, (sizeof(unsigned char)), GFP_KERNEL);
 	if (!para)
 		return -1;
 
-	ret = lcd_unifykey_get(key_name, para, &key_len);
+	ret = lcd_unifykey_get(key_name, para, key_len);
 	if (ret < 0) {
 		kfree(para);
 		return -1;
 	}
 
 	/* step 1: check header */
-	len = LCD_UKEY_HEAD_SIZE;
-	ret = lcd_unifykey_len_check(key_len, len);
-	if (ret < 0) {
-		BLERR("[%d]: unifykey header length is incorrect\n", bdrv->index);
-		kfree(para);
-		return -1;
+	bl_header = (struct aml_lcd_unifykey_header_s *)para;
+	BLPR("[%d]: unifykey version: 0x%04x\n", bdrv->index, bl_header->version);
+	if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL) {
+		BLPR("unifykey header:\n");
+		BLPR("crc32             = 0x%08x\n", bl_header->crc32);
+		BLPR("data_len          = %d\n", bl_header->data_len);
 	}
 
-	lcd_unifykey_header_check(para, &bl_header);
-	BLPR("[%d]: unifykey version: 0x%04x\n", bdrv->index, bl_header.version);
-	switch (bl_header.version) {
+	/* step 2: check backlight parameters */
+	switch (bl_header->version) {
 	case 2:
 		len = 10 + 30 + 12 + 8 + 32 + 10;
 		break;
@@ -1384,13 +1400,6 @@ static int bl_config_load_from_unifykey(struct aml_bl_drv_s *bdrv, char *key_nam
 		len = 10 + 30 + 12 + 8 + 32;
 		break;
 	}
-	if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL) {
-		BLPR("unifykey header:\n");
-		BLPR("crc32             = 0x%08x\n", bl_header.crc32);
-		BLPR("data_len          = %d\n", bl_header.data_len);
-	}
-
-	/* step 2: check backlight parameters */
 	ret = lcd_unifykey_len_check(key_len, len);
 	if (ret < 0) {
 		BLERR("[%d]: unifykey length is incorrect\n", bdrv->index);
@@ -1450,7 +1459,7 @@ static int bl_config_load_from_unifykey(struct aml_bl_drv_s *bdrv, char *key_nam
 	bconf->power_off_delay = (*(p + LCD_UKEY_BL_OFF_DELAY) |
 		((*(p + LCD_UKEY_BL_OFF_DELAY + 1)) << 8));
 
-	if (bl_header.version == 2) {
+	if (bl_header->version == 2) {
 		bconf->en_sequence_reverse = (*(p + LCD_UKEY_BL_CUST_VAL_0) |
 				((*(p + LCD_UKEY_BL_CUST_VAL_0 + 1)) << 8));
 	} else {
@@ -1608,6 +1617,54 @@ static int bl_config_load_from_unifykey(struct aml_bl_drv_s *bdrv, char *key_nam
 	}
 #endif
 
+	/* load switch info */
+	bconf->bl_pwm_switch_port = *(p + LCD_UKEY_BL_CUST_VAL_1);
+	bconf->bl_pwm_switch_freq = (*(p + LCD_UKEY_BL_CUST_VAL_2) |
+		((*(p + LCD_UKEY_BL_CUST_VAL_2 + 1)) << 8) |
+		((*(p + LCD_UKEY_BL_CUST_VAL_2 + 2)) << 8) |
+		((*(p + LCD_UKEY_BL_CUST_VAL_2 + 3)) << 8));
+
+	/* switch and default channel init */
+	if (bconf->bl_pwm_switch_port < BL_PWM_MAX && bconf->bl_pwm_switch_freq > 0) {
+		bconf->bl_pwm_switch = kzalloc(sizeof(*bconf->bl_pwm_switch), GFP_KERNEL);
+		if (!bconf->bl_pwm_switch) {
+			kfree(para);
+			return -1;
+		}
+
+		switch (bconf->method) {
+		case BL_CTRL_PWM:
+			bconf->bl_pwm_switch = memcpy(bconf->bl_pwm_switch,
+				bconf->bl_pwm, sizeof(*bconf->bl_pwm));
+			bconf->bl_pwm_default = bconf->bl_pwm;
+			break;
+		case BL_CTRL_PWM_COMBO:
+			bconf->bl_pwm_switch = memcpy(bconf->bl_pwm_switch,
+				bconf->bl_pwm_combo0, sizeof(*bconf->bl_pwm_combo0));
+			bconf->bl_pwm_default = bconf->bl_pwm_combo0;
+			break;
+		default:
+			break;
+		}
+
+		bconf->bl_pwm_switch->pwm_port = bconf->bl_pwm_switch_port;
+		bconf->bl_pwm_switch->pwm_freq = bconf->bl_pwm_switch_freq;
+		bl_pwm_config_init(bconf->bl_pwm_switch);
+
+		if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL) {
+			BLPR("bl_pwm_default_port: %d\n", bconf->bl_pwm_default->pwm_port);
+			BLPR("bl_pwm_default_freq: %d\n", bconf->bl_pwm_default->pwm_freq);
+			BLPR("[%d]: bl_pwm_switch_port: %s(0x%x)\n",
+					bdrv->index, bl_pwm_num_to_str(bconf->bl_pwm_switch_port),
+					bconf->bl_pwm_switch_port);
+			BLPR("[%d]: bl_pwm_switch_freq: %d\n",
+				bdrv->index, bconf->bl_pwm_switch_freq);
+		}
+	} else {
+		bconf->bl_pwm_switch = NULL;
+		BLPR("no switch pwm port\n");
+	}
+
 	kfree(para);
 	return 0;
 }
@@ -1693,6 +1750,24 @@ static int bl_config_load(struct aml_bl_drv_s *bdrv, struct platform_device *pde
 		break;
 	default:
 		break;
+	}
+
+	/* switch channel register */
+	if (bdrv->bconf.bl_pwm_switch && bdrv->bconf.bl_pwm_switch->pwm_port < BL_PWM_MAX) {
+		BLPR("[%d]: bl_pwm_switch_port channel register: %d\n",
+				bdrv->index, bdrv->bconf.bl_pwm_switch_port);
+		ret = of_property_read_u32(bdrv->dev->of_node, "bl_pwm_config", &pwm_phandle);
+		if (ret) {
+			BLERR("%s: not match bl_pwm_config node\n", __func__);
+			return -1;
+		}
+		ret = bl_pwm_channel_register(bdrv->dev, pwm_phandle,
+					      bdrv->bconf.bl_pwm_switch);
+		if (ret)
+			return -1;
+
+		bdrv->bconf.bl_pwm_switch_flag = 0;
+		bdrv->state &= ~BL_STATE_PWM_SWITCH;
 	}
 
 	return 0;
@@ -1962,7 +2037,6 @@ static int bl_lcd_update_notifier(struct notifier_block *nb,
 {
 	struct aml_lcd_drv_s *pdrv = (struct aml_lcd_drv_s *)data;
 	struct aml_bl_drv_s *bdrv;
-	struct bl_metrics_config_s *bl_metrics_conf;
 	struct bl_pwm_config_s *bl_pwm = NULL;
 	unsigned int frame_rate;
 	unsigned short hactive, vactive;
@@ -1982,12 +2056,13 @@ static int bl_lcd_update_notifier(struct notifier_block *nb,
 	if (bdrv->probe_done == 0)
 		return NOTIFY_DONE;
 
-	bl_metrics_conf = &bdrv->bl_metrics_conf;
 	frame_rate = pdrv->config.timing.act_timing.frame_rate;
 	hactive = pdrv->config.timing.act_timing.h_active;
 	vactive = pdrv->config.timing.act_timing.v_active;
 
-	bl_metrics_conf->frame_rate = frame_rate;
+#ifdef BL_BRIGHTNESS_METER
+	bdrv->bl_metrics_conf.frame_rate = frame_rate;
+#endif
 	if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL)
 		BLPR("[%d]: %s for pwm_vs\n", bdrv->index, __func__);
 	switch (bdrv->bconf.method) {
@@ -2092,7 +2167,8 @@ static int bl_gd_diming_func(struct aml_bl_drv_s *bdrv, unsigned int level)
 	if (((bdrv->state & BL_STATE_LCD_ON) == 0) ||
 	    (bdrv->state & BL_STATE_BL_INIT_ON) ||
 	    ((bdrv->state & BL_STATE_BL_POWER_ON) == 0) ||
-	    ((bdrv->state & BL_STATE_BL_ON) == 0))
+	    ((bdrv->state & BL_STATE_BL_ON) == 0) ||
+	    (bdrv->level_brightness == 0))
 		return 0;
 
 	/* atomic notifier, can't schedule or sleep */
@@ -2264,6 +2340,83 @@ static struct notifier_block bl_bri_dimming_nb = {
 	.notifier_call = bl_brightness_dimming_notifier,
 };
 
+/* bl_pwm_port_switch
+ * state 1: switch pwm port
+ * state 0: default pwm psort
+ */
+static int bl_pwm_switch_notifier(struct notifier_block *nb,
+				  unsigned long event, void *data)
+{
+	struct aml_bl_drv_s *bdrv = aml_bl_get_driver(0);
+	struct bl_config_s *bconf = &bdrv->bconf;
+	unsigned int state = *(unsigned int *)data;
+
+	/* If we aren't interested in this event, skip it immediately */
+	if (event != LCD_EVENT_BACKLIGHT_PWM_SWITCH)
+		return NOTIFY_DONE;
+
+	if (bdrv->brightness_bypass)
+		return NOTIFY_DONE;
+
+	if (state > 1) {
+		state = 1;
+		BLWARN("state value is neither 1 nor 0\n");
+	}
+
+	if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL)
+		BLPR("%s: %d\n", __func__, state);
+
+	if (bconf->bl_pwm_switch_flag == state) {
+		BLWARN("pwm port is already in state %d\n", state);
+		return NOTIFY_DONE;
+	}
+
+	if (state) {
+		if (!bconf->bl_pwm_switch) {
+			BLWARN("no switch pwm port\n");
+			return NOTIFY_DONE;
+		}
+	}
+
+	bconf->bl_pwm_switch_flag = state;
+	/* choose default pwm or switch pwm*/
+	switch (bdrv->bconf.method) {
+	case BL_CTRL_PWM:
+		bconf->bl_pwm_switch->bl_level = bconf->bl_pwm->bl_level;
+		bconf->bl_pwm_default->bl_level = bconf->bl_pwm->bl_level;
+		break;
+	case BL_CTRL_PWM_COMBO:
+		bconf->bl_pwm_switch->bl_level = bconf->bl_pwm_combo0->bl_level;
+		bconf->bl_pwm_default->bl_level = bconf->bl_pwm_combo0->bl_level;
+		break;
+	default:
+		BLWARN("wrong bl control method\n");
+		break;
+	}
+
+	if (bconf->bl_pwm_switch_flag) {
+		if (!bconf->bl_pwm_switch)
+			return NOTIFY_DONE;
+		bconf->bl_pwm = bconf->bl_pwm_switch;
+		bconf->bl_pwm_combo0 = bconf->bl_pwm_switch;
+	} else {
+		if (!bconf->bl_pwm_default)
+			return NOTIFY_DONE;
+		bconf->bl_pwm = bconf->bl_pwm_default;
+		bconf->bl_pwm_combo0 = bconf->bl_pwm_default;
+	}
+
+	bdrv->state |= BL_STATE_PWM_SWITCH;
+	if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL)
+		BLPR("%s, pwm port switch to state %d\n", __func__, bconf->bl_pwm_switch_flag);
+
+	return NOTIFY_OK;
+}
+
+static struct notifier_block bl_pwm_switch_nb = {
+	.notifier_call = bl_pwm_switch_notifier,
+};
+
 static void bl_notifier_init(void)
 {
 	int ret;
@@ -2283,6 +2436,9 @@ static void bl_notifier_init(void)
 	ret = aml_lcd_notifier_register(&bl_lcd_test_nb);
 	if (ret)
 		BLERR("register bl_lcd_test_nb failed\n");
+	ret = aml_lcd_atomic_notifier_register(&bl_pwm_switch_nb);
+	if (ret)
+		BLERR("register bl_pwm_switch_nb failed\n");
 	ret = aml_lcd_atomic_notifier_register(&bl_gd_dimming_nb);
 	if (ret)
 		BLERR("register bl_gd_dimming_nb failed\n");
@@ -2299,6 +2455,7 @@ static void bl_notifier_remove(void)
 	aml_lcd_atomic_notifier_unregister(&bl_gd_sel_nb);
 	aml_lcd_atomic_notifier_unregister(&bl_gd_dimming_nb);
 	aml_lcd_atomic_notifier_unregister(&bl_bri_dimming_nb);
+	aml_lcd_atomic_notifier_unregister(&bl_pwm_switch_nb);
 	aml_lcd_notifier_unregister(&bl_lcd_test_nb);
 	aml_lcd_notifier_unregister(&bl_lcd_update_nb);
 	aml_lcd_notifier_unregister(&bl_power_ctrl_nb);
@@ -2306,40 +2463,99 @@ static void bl_notifier_remove(void)
 	aml_lcd_notifier_unregister(&bl_lcd_off_nb);
 }
 
+static void bl_pwm_port_update(struct aml_bl_drv_s *bdrv)
+{
+	struct aml_lcd_drv_s *pdrv;
+
+	pdrv = aml_lcd_get_driver(bdrv->index);
+	if (!pdrv)
+		return;
+
+	/* default disable lcd & backlight */
+	if ((pdrv->status & LCD_STATUS_IF_ON) == 0)
+		return;
+
+	switch (bdrv->bconf.method) {
+	case BL_CTRL_PWM:
+		bl_pwm_set_level(bdrv, bdrv->bconf.bl_pwm,
+							bdrv->bconf.bl_pwm->bl_level);
+		bl_pwm_pinmux_set(bdrv, 1);
+		break;
+	case BL_CTRL_PWM_COMBO:
+		bl_pwm_set_level(bdrv, bdrv->bconf.bl_pwm_combo0,
+							bdrv->bconf.bl_pwm_combo0->bl_level);
+		bl_pwm_pinmux_set(bdrv, 1);
+		break;
+	default:
+		break;
+	}
+}
+
 static inline void bl_vsync_handler(struct aml_bl_drv_s *bdrv)
 {
-	struct bl_metrics_config_s *bl_metrics_conf;
+	struct bl_pwm_config_s *bl_pwm;
+	struct bl_config_s *bconf = &bdrv->bconf;
+#ifdef BL_BRIGHTNESS_METER
+	struct bl_metrics_config_s *meter_conf;
+#endif
 	unsigned int level = 0;
+	static int backlight_toggled;
 
 	if ((bdrv->state & BL_STATE_BL_ON) == 0)
 		return;
 	if (bdrv->brightness_bypass)
 		return;
+	if (bdrv->level_brightness == 0)
+		return;
 
-	bl_metrics_conf = &bdrv->bl_metrics_conf;
-	if (bl_metrics_conf && bl_metrics_conf->level_buf) {
-		if (bl_metrics_conf->sum_cnt < bl_metrics_conf->frame_rate) {
-			bl_metrics_conf->level_count += bdrv->level;
-			bl_metrics_conf->brightness_count +=
-					bdrv->level_brightness;
-			bl_metrics_conf->sum_cnt++;
+	if (bdrv->state & BL_STATE_PWM_SWITCH) {
+		if (!backlight_toggled) {
+			/* backlight off */
+			bl_gpio_set(bdrv, bconf->en_gpio, bconf->en_gpio_off);
+			/* switch pwm */
+			switch (bdrv->bconf.method) {
+			case BL_CTRL_PWM:
+				bl_pwm = bdrv->bconf.bl_pwm;
+				break;
+			case BL_CTRL_PWM_COMBO:
+				bl_pwm = bdrv->bconf.bl_pwm_combo0;
+				break;
+			default:
+				return;
+			}
+			bl_pwm_config_init(bl_pwm);
+			bl_pwm_port_update(bdrv);
 		} else {
-			bl_metrics_conf->level_buf[bl_metrics_conf->cnt] =
-			bl_metrics_conf->level_count /
-			bl_metrics_conf->frame_rate;
-			bl_metrics_conf->brightness_buf[bl_metrics_conf->cnt] =
-			bl_metrics_conf->brightness_count /
-			bl_metrics_conf->frame_rate;
-			bl_metrics_conf->cnt++;
-			bl_metrics_conf->sum_cnt = 0;
-			bl_metrics_conf->level_count = 0;
-			bl_metrics_conf->brightness_count = 0;
+			/* backlight on */
+			bl_gpio_set(bdrv, bconf->en_gpio, bconf->en_gpio_on);
+			bdrv->state &= ~BL_STATE_PWM_SWITCH;
 		}
-		if (bl_metrics_conf->cnt == BL_LEVEL_CNT_MAX) {
-			bl_metrics_conf->sum_cnt = 0;
-			bl_metrics_conf->cnt = 0;
+		backlight_toggled = !backlight_toggled;
+	}
+
+#ifdef BL_BRIGHTNESS_METER
+	meter_conf = &bdrv->bl_metrics_conf;
+	if (meter_conf->level_buf) {
+		if (meter_conf->sum_cnt < meter_conf->frame_rate) {
+			meter_conf->level_count += bdrv->level;
+			meter_conf->brightness_count += bdrv->level_brightness;
+			meter_conf->sum_cnt++;
+		} else {
+			meter_conf->level_buf[meter_conf->cnt] =
+				meter_conf->level_count / meter_conf->frame_rate;
+			meter_conf->brightness_buf[meter_conf->cnt] =
+				meter_conf->brightness_count / meter_conf->frame_rate;
+			meter_conf->cnt++;
+			meter_conf->sum_cnt = 0;
+			meter_conf->level_count = 0;
+			meter_conf->brightness_count = 0;
+		}
+		if (meter_conf->cnt == BL_LEVEL_CNT_MAX) {
+			meter_conf->sum_cnt = 0;
+			meter_conf->cnt = 0;
 		}
 	}
+#endif
 
 	if ((bdrv->state & BL_STATE_GD_EN) == 0) {
 		if (bdrv->level_brightness == bdrv->level)
@@ -2466,6 +2682,7 @@ static ssize_t bl_status_show(struct device *dev,
 		      bconf->bl_gpio[bconf->en_gpio].name,
 		      bconf->en_gpio, bconf->en_gpio_on, bconf->en_gpio_off,
 		      bconf->power_on_delay, bconf->power_off_delay);
+
 	switch (bconf->method) {
 	case BL_CTRL_GPIO:
 		len += sprintf(buf + len, "to do\n");
@@ -2568,6 +2785,21 @@ static ssize_t bl_status_show(struct device *dev,
 	return len;
 }
 
+int print_pwm_vs_registers(char *buf, int len,
+				struct bl_pwm_init_config_s *pwm_cfg)
+{
+	len += sprintf(buf + len,
+				   "pwm_1_reg0:         0x%08x\n"
+				   "pwm_1_reg1:         0x%08x\n"
+				   "pwm_1_reg2:         0x%08x\n"
+				   "pwm_1_reg3:         0x%08x\n",
+				   lcd_vcbus_read(pwm_cfg->pwm_vs_reg[0]),
+				   lcd_vcbus_read(pwm_cfg->pwm_vs_reg[1]),
+				   lcd_vcbus_read(pwm_cfg->pwm_vs_reg[2]),
+				   lcd_vcbus_read(pwm_cfg->pwm_vs_reg[3]));
+	return len;
+}
+
 static ssize_t bl_debug_pwm_info_show(struct device *dev,
 				      struct device_attribute *attr, char *buf)
 {
@@ -2576,7 +2808,14 @@ static ssize_t bl_debug_pwm_info_show(struct device *dev,
 	struct pwm_state pstate;
 	ssize_t len = 0;
 
+	struct bl_pwm_init_config_s *pwm_cfg = get_pwm_init_cfg();
 	len = sprintf(buf, "read backlight pwm info:\n");
+
+	if (!bdrv->bconf.bl_pwm && !bdrv->bconf.bl_pwm_combo0) {
+		len += sprintf(buf + len, "bl_pwm is null\n");
+		return len;
+	}
+
 	switch (bdrv->bconf.method) {
 	case BL_CTRL_PWM:
 		len += sprintf(buf + len,
@@ -2590,16 +2829,18 @@ static ssize_t bl_debug_pwm_info_show(struct device *dev,
 				       "pwm_port:           %s(0x%x)\n"
 				       "pwm_method:         %d\n"
 				       "pwm_freq:           %d\n"
-				       "pwm_phase:           %d\n"
+				       "pwm_phase:          %d\n"
 				       "pwm_duty_max:       %d\n"
 				       "pwm_duty_min:       %d\n"
-				       "pwm_level_max:		%d\n"
-				       "pwm_level_min:		%d\n"
+				       "pwm_level_max:      %d\n"
+				       "pwm_level_min:      %d\n"
 				       "pwm_cnt:            %d\n"
 				       "pwm_max:            %d\n"
 				       "pwm_min:            %d\n"
 				       "pwm_level:          %d\n"
-				       "pwm_mapping:		%d_%d_%d_%d_%d %d_%d\n",
+				       "pwm_mapping:        %d_%d_%d_%d_%d %d_%d_%d\n"
+				       "pwm_switch_port:    %s(0x%x)\n"
+				       "pwm_switch_freq:    %d\n",
 				       bl_pwm->index,
 				       bl_pwm_num_to_str(bl_pwm->pwm_port),
 				       bl_pwm->pwm_port,
@@ -2617,7 +2858,11 @@ static ssize_t bl_debug_pwm_info_show(struct device *dev,
 				       bl_pwm->pwm_mapping[3],
 				       bl_pwm->pwm_mapping[4],
 				       bl_pwm->pwm_mapping[5],
-				       bl_pwm->pwm_mapping[6]);
+				       bl_pwm->pwm_mapping[6],
+				       bl_pwm->pwm_mapping[7],
+				       bl_pwm_num_to_str(bdrv->bconf.bl_pwm_switch_port),
+				       bdrv->bconf.bl_pwm_switch_port,
+				       bdrv->bconf.bl_pwm_switch_freq);
 			if (bl_pwm->pwm_duty_max > 100) {
 				len += sprintf(buf + len,
 					       "pwm_duty:           %d(%d%%)\n",
@@ -2667,15 +2912,7 @@ static ssize_t bl_debug_pwm_info_show(struct device *dev,
 					       pstate.polarity, pstate.enabled);
 				break;
 			case BL_PWM_VS:
-				len += sprintf(buf + len,
-					       "pwm_reg0:            0x%08x\n"
-					       "pwm_reg1:            0x%08x\n"
-					       "pwm_reg2:            0x%08x\n"
-					       "pwm_reg3:            0x%08x\n",
-					       lcd_vcbus_read(VPU_VPU_PWM_V0),
-					       lcd_vcbus_read(VPU_VPU_PWM_V1),
-					       lcd_vcbus_read(VPU_VPU_PWM_V2),
-					       lcd_vcbus_read(VPU_VPU_PWM_V3));
+				len = print_pwm_vs_registers(buf, len, pwm_cfg);
 				break;
 			default:
 				len += sprintf(buf + len,
@@ -2700,13 +2937,15 @@ static ssize_t bl_debug_pwm_info_show(struct device *dev,
 				       "pwm_0_phase:         %d\n"
 				       "pwm_0_duty_max:     %d\n"
 				       "pwm_0_duty_min:     %d\n"
-				       "pwm_0_level_max:	%d\n"
-				       "pwm_0_level_min:	%d\n"
+				       "pwm_0_level_max:    %d\n"
+				       "pwm_0_level_min:    %d\n"
 				       "pwm_0_cnt:          %d\n"
 				       "pwm_0_max:          %d\n"
 				       "pwm_0_min:          %d\n"
 				       "pwm_0_level:        %d\n"
-				       "pwm_0_mapping:		%d_%d_%d_%d_%d %d_%d\n",
+				       "pwm_0_mapping:      %d_%d_%d_%d_%d %d_%d_%d\n"
+				       "pwm_switch_port:    %s(0x%x)\n"
+				       "pwm_switch_freq:    %d\n",
 				       bl_pwm->index,
 				       bl_pwm_num_to_str(bl_pwm->pwm_port),
 				       bl_pwm->pwm_port,
@@ -2724,7 +2963,11 @@ static ssize_t bl_debug_pwm_info_show(struct device *dev,
 				       bl_pwm->pwm_mapping[3],
 				       bl_pwm->pwm_mapping[4],
 				       bl_pwm->pwm_mapping[5],
-				       bl_pwm->pwm_mapping[6]);
+				       bl_pwm->pwm_mapping[6],
+				       bl_pwm->pwm_mapping[7],
+				       bl_pwm_num_to_str(bdrv->bconf.bl_pwm_switch_port),
+				       bdrv->bconf.bl_pwm_switch_port,
+				       bdrv->bconf.bl_pwm_switch_freq);
 			if (bl_pwm->pwm_duty_max > 100) {
 				len += sprintf(buf + len,
 					       "pwm_0_duty:         %d(%d%%)\n",
@@ -2774,15 +3017,7 @@ static ssize_t bl_debug_pwm_info_show(struct device *dev,
 					       pstate.polarity, pstate.enabled);
 				break;
 			case BL_PWM_VS:
-				len += sprintf(buf + len,
-					       "pwm_0_reg0:         0x%08x\n"
-					       "pwm_0_reg1:         0x%08x\n"
-					       "pwm_0_reg2:         0x%08x\n"
-					       "pwm_0_reg3:         0x%08x\n",
-					       lcd_vcbus_read(VPU_VPU_PWM_V0),
-					       lcd_vcbus_read(VPU_VPU_PWM_V1),
-					       lcd_vcbus_read(VPU_VPU_PWM_V2),
-					       lcd_vcbus_read(VPU_VPU_PWM_V3));
+				len = print_pwm_vs_registers(buf, len, pwm_cfg);
 				break;
 			default:
 				len += sprintf(buf + len,
@@ -2808,7 +3043,9 @@ static ssize_t bl_debug_pwm_info_show(struct device *dev,
 				       "pwm_1_max:          %d\n"
 				       "pwm_1_min:          %d\n"
 				       "pwm_1_level:        %d\n"
-				       "pwm_1_mapping:		%d_%d_%d_%d_%d %d_%d\n",
+				       "pwm_1_mapping:      %d_%d_%d_%d_%d %d_%d_%d\n"
+				       "pwm_switch_port:    %s(0x%x)\n"
+				       "pwm_switch_freq:    %d\n",
 				       bl_pwm->index,
 				       bl_pwm_num_to_str(bl_pwm->pwm_port),
 				       bl_pwm->pwm_port,
@@ -2826,7 +3063,11 @@ static ssize_t bl_debug_pwm_info_show(struct device *dev,
 				       bl_pwm->pwm_mapping[3],
 				       bl_pwm->pwm_mapping[4],
 				       bl_pwm->pwm_mapping[5],
-				       bl_pwm->pwm_mapping[6]);
+				       bl_pwm->pwm_mapping[6],
+				       bl_pwm->pwm_mapping[7],
+				       bl_pwm_num_to_str(bdrv->bconf.bl_pwm_switch_port),
+				       bdrv->bconf.bl_pwm_switch_port,
+				       bdrv->bconf.bl_pwm_switch_freq);
 			if (bl_pwm->pwm_duty_max > 100) {
 				len += sprintf(buf + len,
 					       "pwm_1_duty:         %d(%d%%)\n",
@@ -2876,15 +3117,7 @@ static ssize_t bl_debug_pwm_info_show(struct device *dev,
 					       pstate.polarity, pstate.enabled);
 				break;
 			case BL_PWM_VS:
-				len += sprintf(buf + len,
-					       "pwm_1_reg0:         0x%08x\n"
-					       "pwm_1_reg1:         0x%08x\n"
-					       "pwm_1_reg2:         0x%08x\n"
-					       "pwm_1_reg3:         0x%08x\n",
-					       lcd_vcbus_read(VPU_VPU_PWM_V0),
-					       lcd_vcbus_read(VPU_VPU_PWM_V1),
-					       lcd_vcbus_read(VPU_VPU_PWM_V2),
-					       lcd_vcbus_read(VPU_VPU_PWM_V3));
+				len = print_pwm_vs_registers(buf, len, pwm_cfg);
 				break;
 			default:
 				len += sprintf(buf + len,
@@ -3121,7 +3354,7 @@ static ssize_t bl_debug_pwm_store(struct device *dev,
 	struct aml_bl_drv_s *bdrv = dev_get_drvdata(dev);
 	unsigned int ret;
 	unsigned int index = 0, val = 0;
-	unsigned int val1 = 0, val2 = 0, val3 = 0, val4 = 0, val5 = 0, val6 = 0;
+	unsigned int val1 = 0, val2 = 0, val3 = 0, val4 = 0, val5 = 0, val6 = 0, val7 = 0;
 	struct bl_config_s *bconf = &bdrv->bconf;
 	struct bl_pwm_config_s *bl_pwm = NULL;
 
@@ -3199,9 +3432,9 @@ static ssize_t bl_debug_pwm_store(struct device *dev,
 		}
 		break;
 	case 'c': /* curve */
-		ret = sscanf(buf, "curve %d %d %d %d %d %d %d %d",
-			&index, &val, &val1, &val2, &val3, &val4, &val5, &val6);
-		if (ret == 8) {
+		ret = sscanf(buf, "curve %d %d %d %d %d %d %d %d %d",
+			&index, &val, &val1, &val2, &val3, &val4, &val5, &val6, &val7);
+		if (ret == 9) {
 			switch (bconf->method) {
 			case BL_CTRL_PWM:
 				bl_pwm = bconf->bl_pwm;
@@ -3224,6 +3457,7 @@ static ssize_t bl_debug_pwm_store(struct device *dev,
 				bl_pwm->pwm_mapping[4] = val4;
 				bl_pwm->pwm_mapping[5] = val5;
 				bl_pwm->pwm_mapping[6] = val6;
+				bl_pwm->pwm_mapping[7] = val7;
 			}
 		} else {
 			BLERR("invalid parameters\n");
@@ -3369,9 +3603,10 @@ static ssize_t bl_debug_brightness_bypass_store(struct device *dev,
 	return count;
 }
 
+#ifdef BL_BRIGHTNESS_METER
 static void bl_brightness_metrics_calc(struct aml_bl_drv_s *bdrv)
 {
-	struct bl_metrics_config_s *bl_metrics_conf = &bdrv->bl_metrics_conf;
+	struct bl_metrics_config_s *meter_conf = &bdrv->bl_metrics_conf;
 	unsigned int j = BL_LEVEL_CNT_MAX;
 	unsigned int i = 0;
 	unsigned int level_sum = 0;
@@ -3379,29 +3614,26 @@ static void bl_brightness_metrics_calc(struct aml_bl_drv_s *bdrv)
 	unsigned int cnt = 0;
 	unsigned int temp;
 
-	cnt = bl_metrics_conf->cnt;
-	temp = bl_metrics_conf->times;
-	memcpy(&bl_metrics_conf->level_buf[j],
-	       bl_metrics_conf->level_buf,
+	cnt = meter_conf->cnt;
+	temp = meter_conf->times;
+	memcpy(&meter_conf->level_buf[j], meter_conf->level_buf,
 	       (sizeof(unsigned int) * BL_LEVEL_CNT_MAX));
-
-	memcpy(&bl_metrics_conf->brightness_buf[j],
-	       bl_metrics_conf->brightness_buf,
+	memcpy(&meter_conf->brightness_buf[j], meter_conf->brightness_buf,
 	       (sizeof(unsigned int) * BL_LEVEL_CNT_MAX));
 
 	for (i = cnt + j; i > (cnt + j - temp); i--) {
 		if (lcd_debug_print_flag & LCD_DBG_PR_BL_ADV) {
 			BLPR("cnt: %d, %d: brightness_buf: %d, level_buf: %d\n",
 			     cnt, i,
-			     bl_metrics_conf->brightness_buf[i],
-			     bl_metrics_conf->level_buf[i]);
+			     meter_conf->brightness_buf[i],
+			     meter_conf->level_buf[i]);
 		}
-		level_sum +=  bl_metrics_conf->level_buf[i];
-		brightness_sum +=  bl_metrics_conf->brightness_buf[i];
+		level_sum +=  meter_conf->level_buf[i];
+		brightness_sum +=  meter_conf->brightness_buf[i];
 	}
 
-	bl_metrics_conf->level_metrics = level_sum / temp;
-	bl_metrics_conf->brightness_metrics = brightness_sum / temp;
+	meter_conf->level_metrics = level_sum / temp;
+	meter_conf->brightness_metrics = brightness_sum / temp;
 }
 
 static ssize_t bl_brightness_metrics_show(struct device *dev,
@@ -3409,16 +3641,16 @@ static ssize_t bl_brightness_metrics_show(struct device *dev,
 					  char *buf)
 {
 	struct aml_bl_drv_s *bdrv = dev_get_drvdata(dev);
-	struct bl_metrics_config_s *bl_metrics_conf = &bdrv->bl_metrics_conf;
+	struct bl_metrics_config_s *meter_conf = &bdrv->bl_metrics_conf;
 
-	if (!bl_metrics_conf->level_buf)
+	if (!meter_conf->level_buf)
 		return sprintf(buf, "bl_metrics_conf have no level_buf\n");
 
 	bl_brightness_metrics_calc(bdrv);
 
 	return sprintf(buf, "brightness_metrics: %d, level_metrics: %d\n",
-		       bl_metrics_conf->brightness_metrics,
-		       bl_metrics_conf->level_metrics);
+		       meter_conf->brightness_metrics,
+		       meter_conf->level_metrics);
 }
 
 static ssize_t bl_brightness_metrics_store(struct device *dev,
@@ -3426,7 +3658,7 @@ static ssize_t bl_brightness_metrics_store(struct device *dev,
 					   const char *buf, size_t count)
 {
 	struct aml_bl_drv_s *bdrv = dev_get_drvdata(dev);
-	struct bl_metrics_config_s *bl_metrics_conf = &bdrv->bl_metrics_conf;
+	struct bl_metrics_config_s *meter_conf = &bdrv->bl_metrics_conf;
 	unsigned int temp;
 	int ret;
 
@@ -3436,27 +3668,28 @@ static ssize_t bl_brightness_metrics_store(struct device *dev,
 		return -EINVAL;
 	}
 
-	if (!bl_metrics_conf->level_buf) {
+	if (!meter_conf->level_buf) {
 		BLERR("get no brightness value\n");
 		return  -EINVAL;
 	}
 
 	if (temp > (BL_LEVEL_CNT_MAX / 60)) {
 		BLPR("max support 60min\n");
-		bl_metrics_conf->times = BL_LEVEL_CNT_MAX;
+		meter_conf->times = BL_LEVEL_CNT_MAX;
 	} else {
-		bl_metrics_conf->times = temp * 60;
+		meter_conf->times = temp * 60;
 	}
 
 	bl_brightness_metrics_calc(bdrv);
 
 	BLPR("time: %d, brightness_metrics: %d, level_metrics: %d\n",
-	     bl_metrics_conf->times,
-	     bl_metrics_conf->brightness_metrics,
-	     bl_metrics_conf->level_metrics);
+	     meter_conf->times,
+	     meter_conf->brightness_metrics,
+	     meter_conf->level_metrics);
 
 	return count;
 }
+#endif
 
 static ssize_t bl_debug_level_show(struct device *dev,
 					struct device_attribute *attr,
@@ -3590,6 +3823,48 @@ static ssize_t bl_debug_store(struct device *dev,
 	return count;
 }
 
+static ssize_t bl_pwm_prot_show(struct device *dev,
+					struct device_attribute *attr,
+					char *buf)
+{
+	struct aml_bl_drv_s *bdrv = dev_get_drvdata(dev);
+	struct bl_pwm_config_s *bl_pwm = NULL;
+
+	switch (bdrv->bconf.method) {
+	case BL_CTRL_PWM:
+		bl_pwm = bdrv->bconf.bl_pwm;
+		break;
+	case BL_CTRL_PWM_COMBO:
+		bl_pwm = bdrv->bconf.bl_pwm_combo0;
+		break;
+	default:
+		break;
+	}
+
+	if (!bl_pwm) {
+		BLERR("%s, bl_pwm is NULL\n", __func__);
+		return -EINVAL;
+	}
+
+	return sprintf(buf, "current pwm port: %d, pwm freq: %d\n",
+				bl_pwm->pwm_port, bl_pwm->pwm_freq);
+}
+
+static ssize_t bl_pwm_port_switch_store(struct device *dev,
+					struct device_attribute *attr,
+					const char *buf, size_t count)
+{
+	unsigned int ret, switch_state;
+
+	ret = sscanf(buf, "switch_state %d", &switch_state);
+	if (ret == 1)
+		aml_lcd_atomic_notifier_call_chain(LCD_EVENT_BACKLIGHT_PWM_SWITCH, &switch_state);
+	else
+		BLERR("invalid parameters\n");
+
+	return count;
+}
+
 static struct device_attribute bl_debug_attrs[] = {
 	__ATTR(help, 0444, bl_debug_help, NULL),
 	__ATTR(status, 0444, bl_status_show, NULL),
@@ -3600,10 +3875,13 @@ static struct device_attribute bl_debug_attrs[] = {
 	__ATTR(delay, 0644, bl_debug_delay_show, bl_debug_delay_store),
 	__ATTR(brightness_bypass, 0644, bl_debug_brightness_bypass_show,
 	       bl_debug_brightness_bypass_store),
+#ifdef BL_BRIGHTNESS_METER
 	__ATTR(brightness_metrics, 0644, bl_brightness_metrics_show,
 	       bl_brightness_metrics_store),
+#endif
 	__ATTR(debug_level, 0644, bl_debug_level_show, bl_debug_level_store),
 	__ATTR(debug, 0644, bl_debug_help, bl_debug_store),
+	__ATTR(switch_pwm_port, 0644, bl_pwm_prot_show, bl_pwm_port_switch_store),
 };
 
 static int bl_debug_file_creat(struct aml_bl_drv_s *bdrv)
@@ -4046,7 +4324,9 @@ static void aml_bl_config_probe_work(struct work_struct *p_work)
 {
 	struct delayed_work *d_work;
 	struct aml_bl_drv_s *bdrv;
-	struct bl_metrics_config_s *bl_metrics_conf = NULL;
+#ifdef BL_BRIGHTNESS_METER
+	struct bl_metrics_config_s *meter_conf = NULL;
+#endif
 	struct backlight_properties props;
 	struct backlight_device *bldev;
 	bool is_init;
@@ -4100,27 +4380,28 @@ static void aml_bl_config_probe_work(struct work_struct *p_work)
 	}
 	bdrv->bldev = bldev;
 
-	bl_metrics_conf = &bdrv->bl_metrics_conf;
-	bl_metrics_conf->times = 60;
-	bl_metrics_conf->cnt = 0;
-	bl_metrics_conf->sum_cnt = 0;
-	bl_metrics_conf->level_count = 0;
-	bl_metrics_conf->brightness_count = 0;
-	bl_metrics_conf->frame_rate = 60;
-	bl_metrics_conf->level_buf = kcalloc(BL_LEVEL_CNT_MAX * 2,
-					     sizeof(unsigned int), GFP_KERNEL);
-	if (!bl_metrics_conf->level_buf)
+#ifdef BL_BRIGHTNESS_METER
+	meter_conf = &bdrv->bl_metrics_conf;
+	meter_conf->times = 60;
+	meter_conf->cnt = 0;
+	meter_conf->sum_cnt = 0;
+	meter_conf->level_count = 0;
+	meter_conf->brightness_count = 0;
+	meter_conf->frame_rate = 60;
+	meter_conf->level_buf =
+		kcalloc(BL_LEVEL_CNT_MAX * 2, sizeof(unsigned int), GFP_KERNEL);
+	if (!meter_conf->level_buf)
 		goto err;
 
-	bl_metrics_conf->brightness_buf = kcalloc(BL_LEVEL_CNT_MAX * 2,
-					     sizeof(unsigned int), GFP_KERNEL);
-	if (!bl_metrics_conf->brightness_buf) {
-		kfree(bl_metrics_conf->level_buf);
-		bl_metrics_conf->level_buf = NULL;
+	meter_conf->brightness_buf =
+		kcalloc(BL_LEVEL_CNT_MAX * 2, sizeof(unsigned int), GFP_KERNEL);
+	if (!meter_conf->brightness_buf) {
+		kfree(meter_conf->level_buf);
+		meter_conf->level_buf = NULL;
 		goto err;
 	}
+#endif
 
-	memset(bl_metrics_conf->level_buf, 0, (sizeof(unsigned int)) * BL_LEVEL_CNT_MAX * 2);
 	bdrv->probe_done = 1;
 
 	/* init workqueue */
@@ -4263,8 +4544,10 @@ static int __exit aml_bl_remove(struct platform_device *pdev)
 
 	index = bdrv->index;
 
+#ifdef BL_BRIGHTNESS_METER
 	kfree(bdrv->bl_metrics_conf.level_buf);
 	kfree(bdrv->bl_metrics_conf.brightness_buf);
+#endif
 	cancel_delayed_work_sync(&bdrv->delayed_on_work);
 	cancel_delayed_work(&bdrv->config_probe_dly_work);
 	backlight_device_unregister(bdrv->bldev);

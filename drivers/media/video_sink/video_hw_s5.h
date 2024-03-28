@@ -103,6 +103,7 @@ struct vd_proc_sr_s {
 	u32 sr_support;
 	u32 core_v_enable_width_max;
 	u32 core_v_disable_width_max;
+	bool sr_force_disable;
 };
 
 struct vd_proc_hwin_s {
@@ -434,4 +435,5 @@ void update_frc_in_size_s5(struct video_layer_s *layer);
 
 void vd1_set_go_field_s5(void);
 u32 get_vd1s1_vd2_prebld_en(u32 layer_id);
+void vd_3mux3_set(u8 vpp_index);
 #endif

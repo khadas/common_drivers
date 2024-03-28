@@ -32,7 +32,7 @@ struct dolby5_top1_type {
 	int py_stride[7];
 	unsigned int wdma_baddr;
 
-	int vsync_sel;//1:reg_frm_rst 2:vsync 0/3:hold
+	u32 vsync_sel;//1:reg_frm_rst 2:vsync 0/3:hold
 	int reg_frm_rst;
 
 	int bit_mode;//0:8bit 1:10bit

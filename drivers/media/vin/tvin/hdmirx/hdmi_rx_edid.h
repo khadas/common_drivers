@@ -763,7 +763,9 @@ enum hdmi_vic_e {
 	HDMI_360x576i = 117,
 	HDMI_360x480p = 118,
 	HDMI_360x576p = 119,
-	HDMI_RESERVED = 120,
+	HDMI_1440x480i60 = 120,
+	HDMI_1440x576i50 = 121,
+	HDMI_RESERVED = 122,
 	/* VIC 111~255: Reserved for the Future */
 
 	/* the following VICs are for y420 mode,
@@ -915,8 +917,8 @@ void rpt_edid_colorimetry_db_extraction(unsigned char *p_edid);
 void rpt_edid_420_vdb_extraction(unsigned char *p_edid);
 void rpt_edid_hdr_static_db_extraction(unsigned char *p_edid);
 void rpt_edid_extraction(unsigned char *p_edid);
+#endif
 void rx_get_edid_support(u8 port);
 void rx_print_edid_support(void);
 bool is_valid_edid_data(unsigned char *p_edid);
-#endif
 #endif

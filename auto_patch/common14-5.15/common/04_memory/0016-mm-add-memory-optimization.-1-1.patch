@@ -1,4 +1,4 @@
-From 7cb3b2d6d36599371ea1bcfad6ae52f693b5d99f Mon Sep 17 00:00:00 2001
+From 9a44e6ff7c7a086a2b72609854f6d914b548c6e5 Mon Sep 17 00:00:00 2001
 From: Jianxiong Pan <jianxiong.pan@amlogic.com>
 Date: Tue, 20 Jun 2023 19:32:11 +0800
 Subject: [PATCH] mm: add memory optimization. [1/1]
@@ -17,6 +17,7 @@ local.
 Change-Id: I28b07555f88ce0c395edd384d7664217f6ddc329
 Signed-off-by: Jianxiong Pan <jianxiong.pan@amlogic.com>
 ---
+ drivers/of/base.c              |  5 ++++-
  include/linux/android_kabi.h   |  5 ++++-
  include/linux/android_vendor.h | 10 ++++++++++
  include/linux/printk.h         |  4 ++++
@@ -26,8 +27,37 @@ Signed-off-by: Jianxiong Pan <jianxiong.pan@amlogic.com>
  kernel/fork.c                  |  2 ++
  kernel/scs.c                   | 17 +++++++++++++++++
  mm/slab_common.c               |  4 ++++
- 9 files changed, 49 insertions(+), 1 deletion(-)
+ 10 files changed, 53 insertions(+), 2 deletions(-)
 
+diff --git a/drivers/of/base.c b/drivers/of/base.c
+index 7c617b497356..14b584f6f32c 100644
+--- a/drivers/of/base.c
++++ b/drivers/of/base.c
+@@ -166,8 +166,9 @@ void __of_phandle_cache_inv_entry(phandle handle)
+ 
+ void __init of_core_init(void)
+ {
++#ifndef CONFIG_AMLOGIC_MEMORY_OPT
+ 	struct device_node *np;
+-
++#endif
+ 
+ 	/* Create the kset, and register existing nodes */
+ 	mutex_lock(&of_mutex);
+@@ -177,11 +178,13 @@ void __init of_core_init(void)
+ 		pr_err("failed to register existing nodes\n");
+ 		return;
+ 	}
++#ifndef CONFIG_AMLOGIC_MEMORY_OPT
+ 	for_each_of_allnodes(np) {
+ 		__of_attach_node_sysfs(np);
+ 		if (np->phandle && !phandle_cache[of_phandle_cache_hash(np->phandle)])
+ 			phandle_cache[of_phandle_cache_hash(np->phandle)] = np;
+ 	}
++#endif
+ 	mutex_unlock(&of_mutex);
+ 
+ 	/* Symlink in /proc as required by userspace ABI */
 diff --git a/include/linux/android_kabi.h b/include/linux/android_kabi.h
 index f6dd7f00b386..ee6b29e8d796 100644
 --- a/include/linux/android_kabi.h
@@ -92,7 +122,7 @@ index 9497f6b98339..83e8cfd192e8 100644
  #define pr_fmt(fmt) fmt
  #endif
 diff --git a/include/linux/scs.h b/include/linux/scs.h
-index 4ab5bdc898cf..fb908446abbc 100644
+index 4ab5bdc898cf..3bd8f1c3019c 100644
 --- a/include/linux/scs.h
 +++ b/include/linux/scs.h
 @@ -16,7 +16,11 @@
@@ -125,7 +155,7 @@ index 559eff84a620..dfe427268949 100644
  EXPORT_SYMBOL(init_task);
  
 diff --git a/kernel/Makefile b/kernel/Makefile
-index c058819ecdcf..864a118e14b3 100644
+index 2e0dac3da346..821d003cd236 100644
 --- a/kernel/Makefile
 +++ b/kernel/Makefile
 @@ -81,7 +81,9 @@ obj-$(CONFIG_UTS_NS) += utsname.o
@@ -139,10 +169,10 @@ index c058819ecdcf..864a118e14b3 100644
  obj-$(CONFIG_KPROBES_SANITY_TEST) += test_kprobes.o
  obj-$(CONFIG_AUDIT) += audit.o auditfilter.o
 diff --git a/kernel/fork.c b/kernel/fork.c
-index a6b881efb1df..d7d0677a3847 100644
+index d8b26077824c..993e24f06f1d 100644
 --- a/kernel/fork.c
 +++ b/kernel/fork.c
-@@ -1037,9 +1037,11 @@ static struct task_struct *dup_task_struct(struct task_struct *orig, int node)
+@@ -1045,9 +1045,11 @@ static struct task_struct *dup_task_struct(struct task_struct *orig, int node)
  #ifdef CONFIG_MEMCG
  	tsk->active_memcg = NULL;
  #endif

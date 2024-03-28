@@ -129,6 +129,9 @@ static int lowlatency_vsync(u8 instance_id)
 	u32 next_afbc_request = atomic_read(&gafbc_request);
 	struct path_id_s path_id;
 	int i;
+#if defined(CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_VECM)
+	u16 line = glayer_info[0].layer_top;
+#endif
 
 	vinfo = get_current_vinfo();
 #ifdef CONFIG_AMLOGIC_MEDIA_VSYNC_RDMA
@@ -288,12 +291,12 @@ static int lowlatency_vsync(u8 instance_id)
 			/*need call every vsync*/
 			if (path3_new_frame)
 				frame_lock_process(path3_new_frame,
-					cur_frame_par[0]);
+					cur_frame_par[0], line);
 			else if (vd_layer[0].dispbuf)
 				frame_lock_process(vd_layer[0].dispbuf,
-					cur_frame_par[0]);
+					cur_frame_par[0], line);
 			else
-				frame_lock_process(NULL, cur_frame_par[0]);
+				frame_lock_process(NULL, cur_frame_par[0], line);
 		}
 
 		if (vd1_path_id == gvideo_recv[0]->path_id) {

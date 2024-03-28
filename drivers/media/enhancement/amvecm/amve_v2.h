@@ -89,7 +89,7 @@ void ve_dnlp_sat_set(unsigned int value, int vpp_index);
 void ve_lc_stts_blk_cfg(unsigned int height,
 	unsigned int width, int h_num, int v_num, int rdma_mode,
 	int vpp_index);
-void ve_lc_stts_en(int enable,
+void ve_lc_stts_en(int enable, int h_num,
 	unsigned int height, unsigned int width,
 	int pix_drop_mode, int eol_en, int hist_mode,
 	int lpf_en, int din_sel, int bitdepth,
@@ -117,8 +117,11 @@ void ve_lc_base_init(void);
 void ve_lc_region_read(int blk_vnum, int blk_hnum,
 	int slice, int *black_count,
 	int *curve_data, int *hist_data);
+void ve_lc_total_en_ctrl(int enable, int rdma_mode, int vpp_index);
 void dump_lc_mapping_reg(void);
 void dump_lc_reg(void);
+void monitor_lc_stts_overflow(void);
+void clean_lc_stts_overflow(void);
 void dump_dnlp_reg(void);
 
 void post_lut3d_ctl(enum wr_md_e mode, int en, int vpp_index);

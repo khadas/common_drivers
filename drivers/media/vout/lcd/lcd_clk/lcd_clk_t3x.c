@@ -536,11 +536,13 @@ static void lcd_set_tcon_clk_t3x(struct aml_lcd_drv_s *pdrv)
 	if (!cconf || pdrv->index) /* tcon_clk only valid or lcd0 */
 		return;
 
+	if (pdrv->status & LCD_STATUS_IF_ON)
+		return;
 	if (pdrv->config.basic.lcd_type != LCD_P2P)
 		return;
 
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
-		LCDPR("lcd clk: set_tcon_clk_t3\n");
+		LCDPR("lcd clk: set_tcon_clk\n");
 
 	if (!IS_ERR_OR_NULL(cconf->clktree.tcon_clk)) {
 		clk_set_rate(cconf->clktree.tcon_clk, 50000000);

@@ -47,7 +47,14 @@ static DEFINE_PER_CPU(int, en);
  * bit3: skip amvecm isr read/write
  * bit4: skip usb isr read/write
  */
-static int ramoops_io_blacklist = 0x1f;
+
+#define IO_BLACKLIST_VDEC	0x1
+#define IO_BLACKLIST_FRC	0x2
+#define IO_BLACKLIST_VSYNC	0x4
+#define IO_BLACKLIST_AMVECM	0x8
+#define IO_BLACKLIST_USB	0x10
+
+static int ramoops_io_blacklist = IO_BLACKLIST_AMVECM;
 
 static int ramoops_io_blacklist_setup(char *buf)
 {
@@ -102,11 +109,11 @@ static void find_vdec_pid(struct work_struct *work)
 
 	if (!vdec_core_pid || !vdec_irqthread_pid0 || !vdec_irqthread_pid1) {
 		if (retry_times++ > 3)
-			cancel_delayed_work(&find_vdec_pid_work);
+			//cancel_delayed_work(&find_vdec_pid_work);
 		else
 			queue_delayed_work(system_wq, &find_vdec_pid_work, retry_times * 10 * HZ);
 	} else {
-		cancel_delayed_work(&find_vdec_pid_work);
+		//cancel_delayed_work(&find_vdec_pid_work);
 	}
 }
 
@@ -337,28 +344,37 @@ EXPORT_SYMBOL(get_prev_lr_val);
 void __nocfi pstore_io_save(unsigned long reg, unsigned long val, unsigned int flag,
 									unsigned long *irq_flags)
 {
-	struct io_trace_data data;
+	struct iotrace_record rec = {
+		.type = flag,
+	};
+
 #ifdef CONFIG_SHADOW_CALL_STACK
 	unsigned long lr;
 #endif
 	int cpu = raw_smp_processor_id();
 
-	if (!ramoops_ftrace_en || !(ramoops_trace_mask & 0x1))
+	if (!ramoops_ftrace_en || !(ramoops_trace_mask & TRACE_MASK_IO))
 		return;
 
 #if 0
-	if (((is_vdec_pid() && in_task() && ramoops_io_blacklist & 0x1) ||
-		(is_in_frc_tasklet() && !in_irq() && ramoops_io_blacklist & 0x2) ||
-		(is_in_vsync_isr() && ramoops_io_blacklist & 0x4)) ||
-		(is_in_amvecm_isr() && ramoops_io_blacklist & 0x8) ||
-		(is_in_usb_isr() && ramoops_io_blacklist & 0x10))
-		return;
+	if (ramoops_io_blacklist) {
+		if ((ramoops_io_blacklist & IO_BLACKLIST_VDEC && is_vdec_pid() && in_task()) ||
+			(ramoops_io_blacklist & IO_BLACKLIST_FRC && (is_in_frc_tasklet() &&
+				!in_irq())) ||
+			(ramoops_io_blacklist & IO_BLACKLIST_VSYNC && is_in_vsync_isr()) ||
+			(ramoops_io_blacklist & IO_BLACKLIST_AMVECM && is_in_amvecm_isr()) ||
+			(ramoops_io_blacklist & IO_BLACKLIST_USB && is_in_usb_isr()))
+			return;
+	}
 #else
-	if ((is_in_frc_tasklet() && !in_irq() && ramoops_io_blacklist & 0x2) ||
-		(is_in_vsync_isr() && ramoops_io_blacklist & 0x4) ||
-		(is_in_amvecm_isr() && ramoops_io_blacklist & 0x8) ||
-		(is_in_usb_isr() && ramoops_io_blacklist & 0x10))
-		return;
+	if (ramoops_io_blacklist) {
+		if ((ramoops_io_blacklist & IO_BLACKLIST_FRC && (is_in_frc_tasklet() &&
+				!in_irq())) ||
+			(ramoops_io_blacklist & IO_BLACKLIST_VSYNC && is_in_vsync_isr()) ||
+			(ramoops_io_blacklist & IO_BLACKLIST_AMVECM && is_in_amvecm_isr()) ||
+			(ramoops_io_blacklist & IO_BLACKLIST_USB && is_in_usb_isr()))
+			return;
+	}
 #endif
 
 #ifdef CONFIG_SHADOW_CALL_STACK
@@ -367,66 +383,66 @@ void __nocfi pstore_io_save(unsigned long reg, unsigned long val, unsigned int f
 		: "=&r" (lr));
 #endif
 
-	if ((flag == PSTORE_FLAG_IO_R || flag == PSTORE_FLAG_IO_W) && IRQ_D)
+	if ((flag == RECORD_TYPE_IO_R || flag == RECORD_TYPE_IO_W) && IRQ_D)
 		local_irq_save(*irq_flags);
 
-	data.reg = (unsigned int)page_to_phys(vmalloc_to_page((const void *)reg)) +
+	rec.reg = (unsigned int)page_to_phys(vmalloc_to_page((const void *)reg)) +
 				offset_in_page(reg);
-	data.val = (unsigned int)val;
+	rec.reg_val = (unsigned int)val;
 
-	if (reg_check_flag && flag == PSTORE_FLAG_IO_W_END)
+	if (reg_check_flag && flag == RECORD_TYPE_IO_W_END)
 		reg_check_func();
 
 #ifdef CONFIG_SHADOW_CALL_STACK
-	if (flag == PSTORE_FLAG_IO_W || flag == PSTORE_FLAG_IO_R) {
-		data.ip = get_prev_lr_val(lr, (ramoops_io_skip + 4) * sizeof(unsigned long));
-		data.parent_ip = get_prev_lr_val(lr, (ramoops_io_skip + 5) * sizeof(unsigned long));
+	if (flag == RECORD_TYPE_IO_W || flag == RECORD_TYPE_IO_R) {
+		rec.ip = get_prev_lr_val(lr, (ramoops_io_skip + 4) * sizeof(unsigned long));
+		rec.parent_ip = get_prev_lr_val(lr, (ramoops_io_skip + 5) * sizeof(unsigned long));
 	} else {
-		data.ip = get_prev_lr_val(lr, (ramoops_io_skip + 8) * sizeof(unsigned long));
-		data.parent_ip = get_prev_lr_val(lr, (ramoops_io_skip + 9) * sizeof(unsigned long));
+		rec.ip = get_prev_lr_val(lr, (ramoops_io_skip + 8) * sizeof(unsigned long));
+		rec.parent_ip = get_prev_lr_val(lr, (ramoops_io_skip + 9) * sizeof(unsigned long));
 	}
 #else
-	if (flag == PSTORE_FLAG_IO_W || flag == PSTORE_FLAG_IO_R) {
+	if (flag == RECORD_TYPE_IO_W || flag == RECORD_TYPE_IO_R) {
 		switch (ramoops_io_skip) {
 		case 0:
-			data.ip = CALLER_ADDR2;
-			data.parent_ip = CALLER_ADDR3;
+			rec.ip = CALLER_ADDR2;
+			rec.parent_ip = CALLER_ADDR3;
 			break;
 		case 1:
-			data.ip = CALLER_ADDR3;
-			data.parent_ip = CALLER_ADDR4;
+			rec.ip = CALLER_ADDR3;
+			rec.parent_ip = CALLER_ADDR4;
 			break;
 		case 2:
-			data.ip = CALLER_ADDR4;
-			data.parent_ip = CALLER_ADDR5;
+			rec.ip = CALLER_ADDR4;
+			rec.parent_ip = CALLER_ADDR5;
 			break;
 		default:
-			data.ip = CALLER_ADDR0;
-			data.parent_ip = CALLER_ADDR1;
+			rec.ip = CALLER_ADDR0;
+			rec.parent_ip = CALLER_ADDR1;
 			break;
 		}
 	} else {
-		data.ip = 0;
-		data.parent_ip = 0;
+		rec.ip = 0;
+		rec.parent_ip = 0;
 	}
 #endif
 
 	cpu = raw_smp_processor_id();
 	if (unlikely(oops_in_progress) || unlikely(per_cpu(en, cpu))) {
-		if ((flag == PSTORE_FLAG_IO_R || flag == PSTORE_FLAG_IO_W) && IRQ_D)
+		if ((flag == RECORD_TYPE_IO_R || flag == RECORD_TYPE_IO_W) && IRQ_D)
 			local_irq_restore(*irq_flags);
 		return;
 	}
 
 	per_cpu(en, cpu) = 1;
 
-	if (!is_filter_reg(data.reg))
-		aml_pstore_write(AML_PSTORE_TYPE_IO, (void *)&data, sizeof(struct io_trace_data),
-				  irqs_disabled_flags(*irq_flags), flag);
+	if (!is_filter_reg(rec.reg))
+		aml_pstore_write(AML_PSTORE_TYPE_IO, (void *)&rec, irqs_disabled_flags(*irq_flags),
+					flag);
 
 	per_cpu(en, cpu) = 0;
 
-	if ((flag == PSTORE_FLAG_IO_R_END || flag == PSTORE_FLAG_IO_W_END) &&
+	if ((flag == RECORD_TYPE_IO_R_END || flag == RECORD_TYPE_IO_W_END) &&
 	    IRQ_D)
 		local_irq_restore(*irq_flags);
 
@@ -437,14 +453,19 @@ EXPORT_SYMBOL(pstore_io_save);
 static void schedule_hook(void *data, struct task_struct *prev, struct task_struct *next,
 							struct rq *rq)
 {
-	char buf[BUF_SIZE];
+	struct iotrace_record rec = {
+		.type = RECORD_TYPE_SCHED_SWITCH,
+		.curr_pid = prev->pid,
+		.next_pid = next->pid,
+	};
 
-	if (!(ramoops_trace_mask & 0x2))
+	if (!ramoops_ftrace_en || !(ramoops_trace_mask & TRACE_MASK_SCHED))
 		return;
 
-	sprintf(buf, "next_task:%s,pid:%d", next->comm, next->pid);
+	strscpy(rec.curr_comm, prev->comm, sizeof(rec.curr_comm));
+	strscpy(rec.next_comm, next->comm, sizeof(rec.next_comm));
 
-	aml_pstore_write(AML_PSTORE_TYPE_SCHED, buf, 0, irqs_disabled(), 0);
+	aml_pstore_write(AML_PSTORE_TYPE_SCHED, &rec, irqs_disabled(), 0);
 }
 
 static DEFINE_PER_CPU(unsigned long, irqflag);

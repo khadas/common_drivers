@@ -112,9 +112,13 @@
 // frc_20231031 frc compress mc memory usage size
 // frc_20240111 n2m and vpu slice workaround
 // frc_20240104 open clk when sys resume
+// frc_20240116 frc rdma process optimisation
+// frc_20240306 high-priority task and timestamp debug
+// frc_20240312 frc protect badedit effect
+// frc20240319 frc sync alg macro
 
-#define FRC_FW_VER			"2024-0116 frc rdma process optimisation"
-#define FRC_KERDRV_VER                  3205
+#define FRC_FW_VER			"2024-0315 buf num configure"
+#define FRC_KERDRV_VER		3205
 
 #define FRC_DEVNO	1
 #define FRC_NAME	"frc"
@@ -137,26 +141,31 @@ extern int frc_dbg_en;
 #define FRC_COMPRESS_RATE_50_SIZE       (180 * 1024 * 1024)    // Need 176.4MB  4MB Align
 #define FRC_COMPRESS_RATE_55_SIZE       (196 * 1024 * 1024)    // Need 192.7MB  4MB Align
 // mc-y 48%  mc-c 39%  me 60%
-#define FRC_COMPRESS_RATE_MC_Y		46
-#define FRC_COMPRESS_RATE_MC_C		36
+#define FRC_COMPRESS_RATE_MC_Y		45
+#define FRC_COMPRESS_RATE_MC_C		35
 #define FRC_COMPRESS_RATE_MC_Y_T3X	78 // 48 // 100
 #define FRC_COMPRESS_RATE_MC_C_T3X	36 // 80 // 0
 
 #define FRC_COMPRESS_RATE_ME_T3		60
 #define FRC_COMPRESS_RATE_ME_T5M	100
 
-#define FRC_COMPRESS_RATE_MCDW_Y	80 // 48
-#define FRC_COMPRESS_RATE_MCDW_C	39 // 80 // 39
+#define FRC_COMPRESS_RATE_MCDW_Y	78 // 48
+#define FRC_COMPRESS_RATE_MCDW_C	36 // 80 // 39
 
 #define FRC_INFO_BUF_FACTOR_T3		2
 #define FRC_INFO_BUF_FACTOR_T5M		2
 #define FRC_INFO_BUF_FACTOR_T3X		32
 
+#define FRC_COMPRESS_RATE_MARGIN    2
+
 #define FRC_TOTAL_BUF_NUM		16
+#define FRC_BUF_NUM_T3		FRC_TOTAL_BUF_NUM
+#define FRC_BUF_NUM_T5M		FRC_TOTAL_BUF_NUM //  / 2
+#define FRC_BUF_NUM_T3X		FRC_TOTAL_BUF_NUM
+
 #define FRC_MEMV_BUF_NUM		6
 #define FRC_MEMV2_BUF_NUM		7
 #define FRC_MEVP_BUF_NUM		2
-#define FRC_MC_MARGIN			102 //(1+0.02)*100
 
 #define FRC_SLICER_NUM			4
 
@@ -234,7 +243,7 @@ extern int frc_dbg_en;
 #define FRC_FLAG_PC_MODE		0x02
 #define FRC_FLAG_PIC_MODE		0x04
 #define FRC_FLAG_HIGH_BW		0x08
-#define FRC_FLAG_LIMIT_SIZE		0x10
+#define FRC_FLAG_LIMIT_SIZE		0x10 // out of use
 #define FRC_FLAG_VLOCK_ST		0x20
 #define FRC_FLAG_INSIZE_ERR		0x40
 #define FRC_FLAG_HIGH_FREQ		0x80
@@ -308,6 +317,9 @@ struct st_frc_buf {
 	phys_addr_t cma_mem_paddr_start;
 	u8  cma_mem_alloced;
 	u8  secured;
+	u8  frm_buf_num;
+	u8  logo_buf_num;
+	u8  rate_margin;
 	u8  addr_shft_bits;
 	u8  mcdw_size_rate;
 
@@ -489,6 +501,9 @@ struct st_frc_in_sts {
 	u8 auto_ctrl_reserved;
 	u8 enable_mute_flag;
 	u8 mute_vsync_cnt;
+	u8 hi_en;
+	u8 frm_en;
+	u8 t3x_proc_size_chg;
 };
 
 struct st_frc_out_sts {
@@ -500,6 +515,7 @@ struct st_frc_out_sts {
 	u32 vs_tsk_cnt;
 	u32 vs_duration;
 	u64 vs_timestamp;
+	u8 hi_en;
 };
 
 struct tool_debug_s {
@@ -646,6 +662,12 @@ struct frc_pat_dbg_s {
 	u8 pat_reserved;
 };
 
+struct frc_timer_dbg {
+	u8 timer_en;
+	u8 time_interval;
+	u16 timer_level; // dbg level
+};
+
 struct frc_dev_s {
 	dev_t devt;
 	struct cdev cdev;
@@ -720,6 +742,8 @@ struct frc_dev_s {
 	u32 auto_n2m;
 	u32 out_line;/*ctl mc out line for user*/
 
+	u32 vpu_byp_frc_reg_addr;
+
 	struct tasklet_struct input_tasklet;
 	struct tasklet_struct output_tasklet;
 
@@ -744,7 +768,10 @@ struct frc_dev_s {
 	struct frc_dmc_cfg_s  dmc_cfg[3];
 	struct frc_csc_set_s init_csc[2];
 	struct frc_pat_dbg_s pat_dbg;
+	struct frc_timer_dbg timer_dbg;
 };
+
+extern struct hrtimer frc_hi_timer;
 
 struct frc_dev_s *get_frc_devp(void);
 void get_vout_info(struct frc_dev_s *frc_devp);

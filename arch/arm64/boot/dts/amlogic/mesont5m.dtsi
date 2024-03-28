@@ -347,6 +347,8 @@
 		mbox-nums = <T5M_MBOX_NUMS>;
 		mboxids = <T5M_MBOX_AO2REE>,
 			  <T5M_MBOX_REE2AO>;
+		aocpu_sts_mboxid = <T5M_MBOX_AO2TEE>;
+		ree2aocpu_mboxid = <T5M_MBOX_REE2AO>;
 		#mbox-cells = <1>;
 		mbox-wr-same;
 	};

@@ -1162,8 +1162,8 @@ static void hdmitx_parsing_hdrpkt(struct seq_file *s)
 	seq_printf(s, "hdr_transfer_feature: 0x%x\n",
 		   hdev->hdr_transfer_feature);
 	seq_printf(s, "hdmi_current_hdr_mode: 0x%x\n",
-		   hdev->hdmi_current_hdr_mode);
-	seq_printf(s, "hdmi_last_hdr_mode: 0x%x\n", hdev->hdmi_last_hdr_mode);
+		   hdev->tx_comm.hdmi_current_hdr_mode);
+	seq_printf(s, "hdmi_last_hdr_mode: 0x%x\n", hdev->tx_comm.hdmi_last_hdr_mode);
 
 	if (hdmitx_get_bit(HDMITX_DWC_FC_DATAUTO3, 6) &&
 	    hdmitx_get_bit(HDMITX_DWC_FC_PACKET_TX_EN, 7))

@@ -1954,7 +1954,7 @@ static void vd_proc_sr1_set(u32 vpp_index,
 		sr_core1_max_width = vd_sr->core_v_enable_width_max;
 	/* top config */
 	tmp_data = rdma_rd(vd_sr_slice_reg->vd_proc_sr1_ctrl);
-
+	vd_sr->sr_force_disable = false;
 	if (vd_sr->din_hsize > sr_core1_max_width) {
 		if (((tmp_data >> 1) & 0x1) != 0)
 			rdma_wr_bits(vd_sr_slice_reg->vd_proc_sr1_ctrl,
@@ -1966,6 +1966,7 @@ static void vd_proc_sr1_set(u32 vpp_index,
 			pr_info("%s:disable sr1 core tmp_data: %x\n",
 				__func__,
 				tmp_data);
+		vd_sr->sr_force_disable = true;
 		vpu_module_clk_disable_s5(vpp_index, SR1, 0);
 	} else {
 		if (debug_flag_s5 & DEBUG_SR)
@@ -2544,7 +2545,7 @@ static void vd1_proc_set(struct video_layer_s *layer,
 	vd_proc_pi_path_set(vpp_index, vd_proc);
 }
 
-static void vd_3mux3_set(u8 vpp_index)
+void vd_3mux3_set(u8 vpp_index)
 {
 	u32 vppx_go_field = VPP0;
 
@@ -3762,18 +3763,20 @@ static void set_vd_src_info(struct video_layer_s *layer)
 				}
 				if (glayer_info[0].reverse) {
 					/* swap slice 0 and slice 1 x, y */
-					temp_start_x_lines =
-						layer->slice_mif_setting[1].start_x_lines;
-					temp_end_x_lines =
-						layer->slice_mif_setting[1].end_x_lines;
-					layer->slice_mif_setting[1].start_x_lines =
-						layer->slice_mif_setting[0].start_x_lines;
-					layer->slice_mif_setting[1].end_x_lines =
-						layer->slice_mif_setting[0].end_x_lines;
 					layer->slice_mif_setting[0].start_x_lines =
-						temp_start_x_lines;
+						vd_proc_slice_info->vd1_slice_x_end[1] -
+						(vd_proc_slice_info->vd1_slice_x_end[0] -
+						vd_proc_slice_info->vd1_slice_x_st[0]);
 					layer->slice_mif_setting[0].end_x_lines =
-						temp_end_x_lines;
+						vd_proc_slice_info->vd1_slice_x_end[1];
+
+					layer->slice_mif_setting[1].start_x_lines =
+						vd_proc_slice_info->vd1_slice_x_st[0];
+					layer->slice_mif_setting[1].end_x_lines =
+						layer->slice_mif_setting[1].start_x_lines +
+						vd_proc_slice_info->vd1_slice_x_end[1] -
+						vd_proc_slice_info->vd1_slice_x_st[1];
+
 					temp_start_y_lines =
 						layer->slice_mif_setting[1].start_y_lines;
 					temp_end_y_lines =
@@ -3788,18 +3791,19 @@ static void set_vd_src_info(struct video_layer_s *layer)
 						temp_end_y_lines;
 				} else if (glayer_info[0].mirror == H_MIRROR) {
 					/* swap slice 0 and slice 1 x */
-					temp_start_x_lines =
-						layer->slice_mif_setting[1].start_x_lines;
-					temp_end_x_lines =
-						layer->slice_mif_setting[1].end_x_lines;
-					layer->slice_mif_setting[1].start_x_lines =
-						layer->slice_mif_setting[0].start_x_lines;
-					layer->slice_mif_setting[1].end_x_lines =
-						layer->slice_mif_setting[0].end_x_lines;
 					layer->slice_mif_setting[0].start_x_lines =
-						temp_start_x_lines;
+						vd_proc_slice_info->vd1_slice_x_end[1] -
+						(vd_proc_slice_info->vd1_slice_x_end[0] -
+						vd_proc_slice_info->vd1_slice_x_st[0]);
 					layer->slice_mif_setting[0].end_x_lines =
-						temp_end_x_lines;
+						vd_proc_slice_info->vd1_slice_x_end[1];
+
+					layer->slice_mif_setting[1].start_x_lines =
+						vd_proc_slice_info->vd1_slice_x_st[0];
+					layer->slice_mif_setting[1].end_x_lines =
+						layer->slice_mif_setting[1].start_x_lines +
+						vd_proc_slice_info->vd1_slice_x_end[1] -
+						vd_proc_slice_info->vd1_slice_x_st[1];
 				} else if (glayer_info[0].mirror == V_MIRROR) {
 					/* swap slice 0 and slice 1 y */
 					temp_start_y_lines =
@@ -7752,6 +7756,7 @@ static void vd1_scaler_setting_s5(struct video_layer_s *layer,
 	const u32 *vpp_horz_coeff;
 	struct vd_proc_s *vd_proc = NULL;
 	struct vd_proc_pps_s *vd_proc_pps = NULL;
+	struct vd_proc_sr_s *vd_sr1 = NULL;
 	u32 vd1_work_mode, vd1_slices_dout_dpsel;
 	u32 mosaic_mode, use_frm_horz_phase_step, slice_num;
 	u32 frm_horz_phase_step, slice_x_st;
@@ -7763,8 +7768,13 @@ static void vd1_scaler_setting_s5(struct video_layer_s *layer,
 
 	if (!setting || !setting->frame_par)
 		return;
+	frame_par = setting->frame_par;
+	vpp_filter = &frame_par->vpp_filter;
+	aisr_vpp_filter = &cur_dev->aisr_frame_parms.vpp_filter;
+
 	vd_proc = get_vd_proc_info();
 	vd_proc_pps = &vd_proc->vd_proc_unit[slice].vd_proc_pps;
+	vd_sr1 = &vd_proc->vd_proc_unit[slice].vd_proc_sr1;
 	vd1_work_mode = vd_proc->vd_proc_vd1_info.vd1_work_mode;
 	vd1_slices_dout_dpsel = vd_proc->vd_proc_vd1_info.vd1_slices_dout_dpsel;
 	mosaic_mode = vd1_work_mode == VD1_2_2SLICES_MODE &&
@@ -7774,6 +7784,31 @@ static void vd1_scaler_setting_s5(struct video_layer_s *layer,
 	use_frm_horz_phase_step = ((vd1_work_mode == VD1_4SLICES_MODE &&
 		vd1_slices_dout_dpsel != VD1_SLICES_DOUT_4S4P &&
 		!mosaic_mode) || vd1_work_mode == VD1_1SLICES_MODE) ? 0 : 1;
+	if (vd_sr1->sr_en &&
+		vd_sr1->v_scaleup_en &&
+		frame_par->supsc1_vert_ratio &&
+		vd_sr1->sr_force_disable) {
+		frame_par->supsc1_enable = 0;
+		frame_par->supsc1_vert_ratio = 0;
+		vpp_filter->vpp_vsc_start_phase_step >>= 1;
+		if (debug_flag_s5 & DEBUG_SR)
+			pr_info("%s:disable sr1 core vpp_vsc_start_phase_step adjust 0x%x\n",
+				__func__,
+				vpp_filter->vpp_vsc_start_phase_step);
+	}
+	if (vd_sr1->sr_en &&
+		vd_sr1->h_scaleup_en &&
+		frame_par->supsc1_hori_ratio &&
+		vd_sr1->sr_force_disable) {
+		frame_par->supsc1_enable = 0;
+		frame_par->supsc1_hori_ratio = 0;
+		vpp_filter->vpp_hsc_start_phase_step >>= 1;
+		vd_proc_pps->horz_phase_step >>= 1;
+		if (debug_flag_s5 & DEBUG_SR)
+			pr_info("%s:disable sr1 core vpp_hsc_start_phase_step adjust 0x%x\n",
+				__func__,
+				vpp_filter->vpp_hsc_start_phase_step);
+	}
 	frm_horz_phase_step = vd_proc_pps->horz_phase_step;
 	slice_x_st = vd_proc_pps->slice_x_st;
 	slice_num = get_slice_num(layer->layer_id);
@@ -7789,10 +7824,8 @@ static void vd1_scaler_setting_s5(struct video_layer_s *layer,
 		slice_ini_phase_exp = slice_ini_phase & 0xFF;
 		slice_ini_phase_ori = slice_ini_phase >> 8;
 	}
-	frame_par = setting->frame_par;
 	vpp_index = layer->vpp_index;
 	/* vpp super scaler */
-
 	if (is_amdv_on() &&
 	    is_amdv_stb_mode() &&
 	    !frame_par->supsc0_enable &&
@@ -7801,8 +7834,6 @@ static void vd1_scaler_setting_s5(struct video_layer_s *layer,
 		//cur_dev->rdma_func[vpp_index].rdma_wr(VPP_SRSHARP1_CTRL, 0);
 	}
 
-	vpp_filter = &frame_par->vpp_filter;
-	aisr_vpp_filter = &cur_dev->aisr_frame_parms.vpp_filter;
 	if (setting->sc_top_enable) {
 		u32 sc_misc_val;
 
@@ -11687,13 +11718,18 @@ void vd_set_alpha_s5(struct video_layer_s *layer,
 static void vd1_clip_setting_s5(u8 vpp_index, struct video_layer_s *layer,
 	struct clip_setting_s *setting)
 {
-	int slice = 0;
+	int slice = 0, slice_num;
 	rdma_wr_op rdma_wr = cur_dev->rdma_func[vpp_index].rdma_wr;
 	struct vd_proc_slice_reg_s *vd_proc_slice_reg = NULL;
 
 	if (!setting)
 		return;
-	for (slice = 0; slice < layer->slice_num; slice++) {
+	/* force 2 slice num for t3x vd1 mute */
+	if (video_is_meson_t3x_cpu())
+		slice_num = 2;
+	else
+		slice_num = layer->slice_num;
+	for (slice = 0; slice < slice_num; slice++) {
 		vd_proc_slice_reg = &vd_proc_reg.vd_proc_slice_reg[slice];
 		rdma_wr(vd_proc_slice_reg->vd1_s0_clip_misc0,
 			setting->clip_max);
@@ -11759,6 +11795,8 @@ void vpp_post_blend_update_s5(const struct vinfo_s *vinfo, u8 vpp_index)
 			vpp_input->bld_out_hsize,
 			vpp_input->bld_out_vsize);
 
+	if (vpp_input->slice_num == 0)
+		return;
 	vpp_post_param_set(vpp_input, &g_vpp_post.vpp0_post);
 	vpp_post_set(vpp_index, &g_vpp_post);
 	update_vpp_post_amdv_info(vpp_index, &g_vpp_post);
@@ -11795,7 +11833,7 @@ void set_video_slice_policy(struct video_layer_s *layer,
 {
 	u32 src_width = 0;
 	u32 src_height = 0;
-	u32 slice_num = 1, pi_en = 0;
+	u32 slice_num = layer->slice_num, pi_en = 0;
 	u32 vd1s1_vd2_prebld_en = 0;
 #ifdef CONFIG_AMLOGIC_MEDIA_FRC
 	u32 n2m_setting = 0;
@@ -11826,10 +11864,15 @@ void set_video_slice_policy(struct video_layer_s *layer,
 	frc_switch_flag = frc_ready_to_switch();
 #endif
 	if (layer->layer_id == 0 && vinfo) {
+		if (src_width > 4096 && src_height > 2160) {
+			/* input: (4k-8k] */
+			slice_num = 4;
+			vd1s1_vd2_prebld_en = 0;
+			goto slice_calc_exit;
+		}
 		/* check output */
 		/* output: (4k-8k], input <= 4k */
-		if ((vinfo->width > 4096 && vinfo->height > 2160) &&
-			(src_width <= 4096 && src_height <= 2160)) {
+		if ((vinfo->width > 4096 && vinfo->height > 2160)) {
 			pi_en = 1;
 		/* 4k 120hz */
 		} else if (vinfo->width > 1920 && vinfo->height > 1080 &&
@@ -11837,7 +11880,9 @@ void set_video_slice_policy(struct video_layer_s *layer,
 			vinfo->sync_duration_den > 60)) {
 			if (vf->duration < 1500 ||
 				vinfo->sync_duration_num / vinfo->sync_duration_den == 144 ||
-				vinfo->sync_duration_num / vinfo->sync_duration_den == 288) {
+				vinfo->sync_duration_num / vinfo->sync_duration_den == 288 ||
+				(vf->flag & VFRAME_FLAG_GAME_MODE) ||
+				(vf->flag & VFRAME_FLAG_PC_MODE)) {
 				/* input frame rate > 60(ref vf_rate_table) frc always disable */
 				/* output is 144hz or 288hz frc always disable */
 				slice_num = 2;
@@ -11846,18 +11891,14 @@ void set_video_slice_policy(struct video_layer_s *layer,
 					layer->property_changed = true;
 					layer->aisr_mif_setting.aisr_enable = 0;
 				}
+				/* if vd1 mute internal by frc, unmute it */
+				if (get_video_mute_val(VPP_INTERNAL))
+					set_video_mute_info(VPP_INTERNAL, false);
 			} else {
 #ifdef CONFIG_AMLOGIC_MEDIA_FRC
-				u32 slice_num_save = 0;
-
-				slice_num_save = layer->slice_num;
 				/* 4k120hz and frc_n2m_worked && aisr enable 1 slice */
-				/*frc_switch_flag : 1 or 3 force 1 slice valid*/
-				if (frc_switch_flag == 1 || frc_switch_flag == 3) {
-					slice_num = 1;
-					slice_stable = true;
-					/* unmute func not need update layer->slice_num */
-				} else {
+				/*frc_switch_flag : 0 or 2 force 2 slice valid*/
+				if (frc_switch_flag == 0 || frc_switch_flag == 2) {
 					slice_num = 2;
 					/* temp set for current frame */
 					if (is_aisr_enable(layer)) {
@@ -11869,10 +11910,9 @@ void set_video_slice_policy(struct video_layer_s *layer,
 				}
 				if (frc_muted_frames == frc_mute_frames)
 					set_video_mute_info(VPP_INTERNAL, true);
-
 				if (frc_muted_frames == 0) {
-					/* mute slice_num = 2, unmute must 2 */
-					layer->slice_num = 2;
+					/* move force 2 slice to vd1_clip_setting_s5() */
+					/*layer->slice_num = 2; */
 					set_video_mute_info(VPP_INTERNAL, false);
 				} else {
 					if (debug_common_flag & DEBUG_FLAG_COMMON_FRC)
@@ -11882,7 +11922,6 @@ void set_video_slice_policy(struct video_layer_s *layer,
 				}
 				/* special call for frc mute */
 				check_video_mute();
-				layer->slice_num = slice_num_save;
 #else
 				layer->slice_num = 2;
 #endif
@@ -11911,11 +11950,7 @@ void set_video_slice_policy(struct video_layer_s *layer,
 		} else {
 			slice_num = 1;
 		}
-		if (src_width > 4096 && src_height > 2160) {
-			/* input: (4k-8k] */
-			slice_num = 4;
-			vd1s1_vd2_prebld_en = 0;
-		}
+slice_calc_exit:
 #ifdef CONFIG_AMLOGIC_MEDIA_FRC
 		if (slice_num != layer->slice_num) {
 			if (slice_num)
@@ -11988,6 +12023,8 @@ void adjust_video_slice_policy(u32 layer_id,
 	struct video_layer_s *layer = get_vd_layer(layer_id);
 
 	if (cur_dev->display_module != S5_DISPLAY_MODULE)
+		return;
+	if (video_is_meson_t3x_cpu())
 		return;
 	/* check input */
 	if (!no_compress &&
@@ -12471,6 +12508,17 @@ void update_frc_in_size_s5(struct video_layer_s *layer)
 	switch_flag = frc_ready_to_switch();
 	if (!layer || !layer->next_frame_par)
 		return;
+
+	if (layer->slice_num == 4)
+		layer->next_frame_par->frc_h_size =
+			SIZE_ALIG32(layer->next_frame_par->nnhf_input_w);
+	else if (layer->slice_num == 2)
+		layer->next_frame_par->frc_h_size =
+			SIZE_ALIG32(layer->next_frame_par->nnhf_input_w);
+	else
+		layer->next_frame_par->frc_h_size = layer->next_frame_par->nnhf_input_w;
+	layer->next_frame_par->frc_v_size = layer->next_frame_par->nnhf_input_h;
+
 	if (!layer->frc_h_size_pre || switch_flag == 1) {
 		;
 	} else if (layer->next_frame_par->nnhf_input_w !=
@@ -12495,15 +12543,6 @@ void update_frc_in_size_s5(struct video_layer_s *layer)
 			}
 		}
 	}
-	if (layer->slice_num == 4)
-		layer->next_frame_par->frc_h_size =
-			SIZE_ALIG32(layer->next_frame_par->nnhf_input_w);
-	else if (layer->slice_num == 2)
-		layer->next_frame_par->frc_h_size =
-			SIZE_ALIG32(layer->next_frame_par->nnhf_input_w);
-	else
-		layer->next_frame_par->frc_h_size = layer->next_frame_par->nnhf_input_w;
-	layer->next_frame_par->frc_v_size = layer->next_frame_par->nnhf_input_h;
 	layer->frc_h_size_pre = layer->next_frame_par->nnhf_input_w;
 	layer->frc_v_size_pre = layer->next_frame_par->nnhf_input_h;
 
@@ -12668,7 +12707,10 @@ int video_hw_init_s5(void)
 	/* vpp_arb2:  vd1 slice2-slice3 aisr */
 	WRITE_VCBUS_REG(S5_VPP_RDARB_MODE, 0x9a205000);
 	/* VPU_RDARB_MODE_L2C1 */
-	WRITE_VCBUS_REG(S5_VPU_RDARB_MODE_L2C1, 0x924000);
+	if (video_is_meson_t3x_cpu())
+		WRITE_VCBUS_REG(S5_VPU_RDARB_MODE_L2C1, 0x124000);
+	else
+		WRITE_VCBUS_REG(S5_VPU_RDARB_MODE_L2C1, 0x924000);
 	/* set vpu read super urgent default */
 	WRITE_VCBUS_REG(S5_VPU_RDARB_UGT_L2C1, 0xffff);
 	if (video_is_meson_t3x_cpu()) {

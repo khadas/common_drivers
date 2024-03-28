@@ -80,6 +80,11 @@
 #include <linux/amlogic/media/vout/vdac_dev.h>
 #include <linux/amlogic/aml_dtvdemod.h>
 
+//dtmb
+unsigned char dtmb_new_driver = 1;
+MODULE_PARM_DESC(dtmb_new_driver, "\n\t\t use dtmb new driver to work");
+module_param(dtmb_new_driver, byte, 0644);
+
 //dvb-c
 MODULE_PARM_DESC(dvbc_new_driver, "\n\t\t use dvbc new driver to work");
 static unsigned char dvbc_new_driver;
@@ -2338,7 +2343,10 @@ static int aml_dtvdm_read_status(struct dvb_frontend *fe,
 		break;
 #ifdef AML_DEMOD_SUPPORT_DTMB
 	case SYS_DTMB:
-		ret = gxtv_demod_dtmb_read_status(fe, status);
+		if (dtmb_new_driver)
+			*status = demod->last_status;
+		else
+			ret = gxtv_demod_dtmb_read_status(fe, status);
 		break;
 #endif
 	default:
@@ -2759,7 +2767,10 @@ static int aml_dtvdm_tune(struct dvb_frontend *fe, bool re_tune,
 #endif
 #ifdef AML_DEMOD_SUPPORT_DTMB
 	case SYS_DTMB:
-		ret = gxtv_demod_dtmb_tune(fe, re_tune, mode_flags, delay, status);
+		if (dtmb_new_driver)
+			ret = dtmb_tune(fe, re_tune, mode_flags, delay, status);
+		else
+			ret = gxtv_demod_dtmb_tune(fe, re_tune, mode_flags, delay, status);
 		break;
 #endif
 	default:

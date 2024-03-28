@@ -46,8 +46,8 @@ static u32 vsync_pts_inc_scale_base[MAX_VD_LAYERS];
 #define PATTERN_32_DETECT_RANGE 7
 #define PATTERN_22_DETECT_RANGE 7
 #define PATTERN_22323_DETECT_RANGE 5
-#define PATTERN_44_DETECT_RANGE 14
-#define PATTERN_55_DETECT_RANGE 17
+#define PATTERN_44_DETECT_RANGE 5
+#define PATTERN_55_DETECT_RANGE 5
 
 /*if add new patten, need change dev->patten[X]*/
 enum video_refresh_pattern {
@@ -282,6 +282,13 @@ void video_display_push_ready(struct composer_dev *dev, struct vframe_s *vf)
 {
 	u32 vsync_index = vsync_count[dev->index];
 
+#ifdef CONFIG_AMLOGIC_MEDIA_FRC
+	if (!dev->enable_pulldown && (vd_pulldown_level && frc_get_video_latency())) {
+		dev->enable_pulldown = true;
+		vc_print(dev->index, PRINT_OTHER, "%s: enable pulldown\n", __func__);
+	}
+#endif
+
 	if (vf && vf->vc_private) {
 		vf->vc_private->vsync_index = vsync_index;
 		vc_print(dev->index, PRINT_OTHER,
@@ -467,6 +474,32 @@ static void vd_vsync_video_pattern_13213(struct composer_dev *dev, struct vframe
 	}
 }
 
+static void vd_vsync_video_pattern_53(struct composer_dev *dev, struct vframe_s *vf)
+{
+	int i = 0, sum = 0, ave = 0;
+	int vsync_pts_inc = 16 * 90000 *
+		vsync_pts_inc_scale[dev->index] / vsync_pts_inc_scale_base[dev->index];
+	int vframe_duration = vf->duration * 15;
+
+	if (vsync_pts_inc * 4 != vframe_duration) {
+		vc_print(dev->index, PRINT_PATTERN, "%s: not 53 condition.\n", __func__);
+		return;
+	}
+
+	for (i = 0; i < PATTEN_FACTOR_MAX; i++)
+		sum += dev->patten_factor[i];
+
+	ave = sum / PATTEN_FACTOR_MAX;
+	if (ave == 4) {
+		dev->pattern_detected = PATTERN_44;
+		dev->pattern[PATTERN_44] = PATTERN_44_DETECT_RANGE;
+		dev->pattern_enter_cnt++;
+		vc_print(dev->index, PRINT_PATTERN, "%s: video 53 mode detected\n", __func__);
+	} else {
+		vc_print(dev->index, PRINT_PATTERN, "%s: not 53 mode.\n", __func__);
+	}
+}
+
 static void vsync_video_pattern(struct composer_dev *dev, struct vframe_s *vf)
 {
 	vd_vsync_video_pattern(dev, PATTERN_32, vf);
@@ -478,6 +511,10 @@ static void vsync_video_pattern(struct composer_dev *dev, struct vframe_s *vf)
 		(dev->pattern_detected == PATTERN_22 &&
 			dev->pattern[PATTERN_22] != PATTERN_22_DETECT_RANGE))
 		vd_vsync_video_pattern_13213(dev, vf);
+	if (dev->pattern_detected != PATTERN_44 ||
+		(dev->pattern_detected == PATTERN_44 &&
+			dev->pattern[PATTERN_44] != PATTERN_44_DETECT_RANGE))
+		vd_vsync_video_pattern_53(dev, vf);
 	/*vd_vsync_video_pattern(dev, PTS_41_PATTERN);*/
 }
 
@@ -581,12 +618,33 @@ static inline int vd_perform_pulldown(struct composer_dev *dev,
 	return 0;
 }
 
-static bool pulldown_support_vf(struct composer_dev *dev, u32 duration)
+static int find_nearest_duration(struct composer_dev *dev, int duration_val)
+{
+	int min = INT_MAX;
+	int duration_arr[11] = {800, 801, 960, 1600, 1601, 1920, 3200, 3203, 3840, 4000, 4004};
+	int i = 0, num = 0, diff = 0;
+	int recy_count = sizeof(duration_arr) / sizeof(int);
+
+	for (i = 0; i < recy_count; i++) {
+		diff = abs(duration_val - duration_arr[i]);
+		if (diff < min) {
+			min = diff;
+			num = i;
+		}
+	}
+
+	vc_print(dev->index, PRINT_PATTERN, "The nearest duration is %d.\n", duration_arr[num]);
+	return duration_arr[num];
+}
+
+static bool pulldown_support_vf(struct composer_dev *dev, u32 duration_val)
 {
 	bool support = false;
-
+	int duration = 0;
 	/*duration: 800(120fps) 801(119.88fps) 960(100fps) 1600(60fps) 1920(50fps)*/
 	/*3200(30fps) 3203(29.97) 3840(25fps) 4000(24fps) 4004(23.976fps)*/
+
+	duration = find_nearest_duration(dev, duration_val);
 
 	if (vsync_pts_inc_scale[dev->index] == 1 &&
 		vsync_pts_inc_scale_base[dev->index] == 48) {
@@ -855,7 +913,8 @@ static struct vframe_s *vc_vf_get(void *op_arg)
 			 vf->duration);
 
 		vc_print(dev->index, PRINT_FENCE,
-			"%s: vf: %px, vf_type: 0x%x.\n", __func__, vf, vf->type);
+			"%s: vf: %px, vf_ext: %px, vf_type: 0x%x.\n", __func__,
+			vf, vf->vf_ext, vf->type);
 
 		vc_print(dev->index, PRINT_DEWARP,
 			 "get:vf_w: %d, vf_h: %d\n", vf->width, vf->height);
@@ -908,7 +967,7 @@ static void vc_vf_put(struct vframe_s *vf, void *op_arg)
 	if (!vf)
 		return;
 
-	vc_print(dev->index, PRINT_FENCE, "%s: vf is %px.\n", __func__, vf);
+	vc_print(dev->index, PRINT_FENCE, "%s: vf: %px, vf_ext: %px.\n", __func__, vf, vf->vf_ext);
 
 	if (dev->is_drm_enable) {
 		if (vf->flag & VFRAME_FLAG_FAKE_FRAME) {
@@ -1164,8 +1223,7 @@ int video_display_create_path(struct composer_dev *dev)
 #ifdef CONFIG_AMLOGIC_MEDIA_FRC
 	if (vd_pulldown_level && frc_get_video_latency()) {
 		dev->enable_pulldown = true;
-		vc_print(dev->index, PRINT_OTHER,
-			"enable pulldown\n");
+		vc_print(dev->index, PRINT_OTHER, "%s: enable pulldown\n", __func__);
 	}
 #endif
 	return 0;

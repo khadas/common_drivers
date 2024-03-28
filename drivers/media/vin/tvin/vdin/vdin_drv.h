@@ -320,6 +320,8 @@ struct match_data_s {
 #define VDIN_GAME_MODE_2                (BIT2)
 /*when phase lock, will switch 2 to 1*/
 #define VDIN_GAME_MODE_SWITCH_EN        (BIT3)
+/* game 1 or game 2 */
+#define VDIN_GAME_MODE_1_2        (VDIN_GAME_MODE_1 | VDIN_GAME_MODE_2)
 
 /*flag for flush vdin buff*/
 #define VDIN_FLAG_BLACK_SCREEN_ON	1
@@ -332,7 +334,7 @@ struct match_data_s {
 #define VDIN_V4L2_IOCTL_CHK		BIT(1)
 #define VDIN_ADJUST_VLOCK		BIT(4)
 #define VDIN_GAME_NOT_TANSFER		BIT(6) //control for tx output when game mode
-#define VDIN_FORCE_444_NOT_CONVERT	BIT(7) //commercial display control
+#define VDIN_FORCE_444_NOT_CONVERT      BIT(7) //vdin 444 to 444 by default
 #define VDIN_ONLY_SEND_WSS_VALUE	BIT(8) //vdin send aspect ratio value
 #define VDIN_SET_DISPLAY_RATIO		BIT(9)
 #define VDIN_NOT_DATA_INPUT_DROP	BIT(10)
@@ -443,6 +445,9 @@ enum vdin_vf_put_md {
 #define VDIN_DBG_CNTL_FLUSH	BIT(11)
 
 #define CURRENT_FRAME_GET_PROP	BIT(0)
+
+//pattern 4 used for protect hdcp content,others for debug
+#define VDIN_HDCP_PATTERN	4
 
 /* *********************************************************************** */
 /* *** enum definitions ********************************************* */
@@ -616,6 +621,7 @@ struct vdin_debug_s {
 	unsigned int dbg_dw_h;
 	unsigned int dbg_dw_v;
 	unsigned int dbg_dw_dfmt;
+	unsigned int hconv_mode;
 };
 
 struct vdin_dv_s {
@@ -778,7 +784,7 @@ struct vdin_msct_top_s {
 	unsigned int mmu_4k_number; /* mmu 4k number in full size */
 	unsigned int buffer_size_nub; /* 4k number per frame */
 	unsigned int tail_cnt;
-	bool	 sct_pause_dec; /* pause dec flag on sct mem */
+	bool	sct_stop_flag;
 	/* statistics info*/
 	unsigned int que_work_cnt;
 	unsigned int worker_run_cnt;

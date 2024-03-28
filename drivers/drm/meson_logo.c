@@ -942,7 +942,7 @@ void am_meson_logo_init(struct drm_device *dev)
 		DRM_INFO("current is strmode\n");
 	else
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
-		for (i = 0; i < MESON_MAX_CRTC; i++)
+		for (i = 0; i < private->num_crtcs; i++)
 #endif
 			am_meson_load_logo(dev, fb, i);
 

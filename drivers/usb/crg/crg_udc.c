@@ -366,6 +366,7 @@ struct crg_gadget_dev {
 	u32 num_enabled_eps;
 
 	int connected;
+	bool async_cb_flag;
 
 	unsigned u2_RWE:1;
 	unsigned feature_u1_enable:1;
@@ -3087,6 +3088,15 @@ static int crg_gadget_stop(struct usb_gadget *g)
 	return 0;
 }
 
+/* Prevent race between unbind & setup callback in bind. */
+static void crg_gadget_async_callbacks(struct usb_gadget *gadget, bool enable)
+{
+	struct crg_gadget_dev *crg_udc = &crg_udc_dev;
+
+	CRG_ERROR("%s get state %d\n", __func__, enable);
+	crg_udc->async_cb_flag = enable;
+}
+
 static const struct usb_gadget_ops crg_gadget_ops = {
 	.get_frame		= crg_gadget_get_frame,
 	.wakeup			= crg_gadget_wakeup,
@@ -3094,6 +3104,7 @@ static const struct usb_gadget_ops crg_gadget_ops = {
 	.pullup			= crg_gadget_pullup,
 	.udc_start		= crg_gadget_start,
 	.udc_stop		= crg_gadget_stop,
+	.udc_async_callbacks = crg_gadget_async_callbacks,
 };
 
 static int init_ep_info(struct crg_gadget_dev *crg_udc)
@@ -3745,6 +3756,13 @@ void crg_handle_setup_pkt(struct crg_gadget_dev *crg_udc,
 			DATA_STAGE_XFER :  DATA_STAGE_RECV;
 	}
 	spin_unlock_irqrestore(&crg_udc->udc_lock, flags);
+	if (!crg_udc->async_cb_flag) {
+		CRG_ERROR("crg gadget setup pkt coming too quick!\n");
+		spin_lock_irqsave(&crg_udc->udc_lock, flags);
+		if (list_empty(&crg_udc->udc_ep[0].queue))
+			set_ep0_halt(crg_udc);
+		return;
+	}
 	if (crg_udc->gadget_driver->setup(&crg_udc->gadget, setup_pkt) < 0) {
 		spin_lock_irqsave(&crg_udc->udc_lock, flags);
 		set_ep0_halt(crg_udc);

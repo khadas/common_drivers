@@ -29,8 +29,8 @@ int hdmitx20_event_notifier_unregist(struct notifier_block *nb);
 int get_hdmitx20_init(void);
 int get20_hpd_state(void);
 struct vsdb_phyaddr *get_hdmitx20_phy_addr(void);
-void hdmitx20_audio_mute_op(unsigned int flag);
-void hdmitx20_video_mute_op(unsigned int flag);
+//void hdmitx20_audio_mute_op(unsigned int flag);
+//void hdmitx20_video_mute_op(unsigned int flag);
 #endif
 
 #ifdef CONFIG_AMLOGIC_HDMITX21
@@ -40,8 +40,8 @@ int hdmitx21_event_notifier_unregist(struct notifier_block *nb);
 int get_hdmitx21_init(void);
 int get21_hpd_state(void);
 struct vsdb_phyaddr *get_hdmitx21_phy_addr(void);
-void hdmitx21_video_mute_op(u32 flag, unsigned int path);
-void hdmitx21_audio_mute_op(u32 flag, unsigned int path);
+//void hdmitx21_video_mute_op(u32 flag, unsigned int path);
+//void hdmitx21_audio_mute_op(u32 flag, unsigned int path);
 #endif
 
 #endif

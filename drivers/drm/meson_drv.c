@@ -114,8 +114,12 @@ static const struct drm_ioctl_desc meson_ioctls[] = {
 	#endif
 	DRM_IOCTL_DEF_DRV(MESON_ASYNC_ATOMIC, meson_async_atomic_ioctl,
 			  0),
+#ifndef CONFIG_AMLOGIC_DRM_CUT_HDMI
 	DRM_IOCTL_DEF_DRV(MESON_TESTATTR, am_meson_mode_testattr_ioctl, 0),
+#endif
+#ifndef CONFIG_AMLOGIC_DRM_CUT_HDMI
 	DRM_IOCTL_DEF_DRV(MESON_GET_VRR_RANGE, am_meson_get_vrr_range_ioctl, 0),
+#endif
 	DRM_IOCTL_DEF_DRV(MESON_RMFB, am_meson_mode_rmfb_ioctl, 0),
 	#if IS_ENABLED(CONFIG_SYNC_FILE)
 	DRM_IOCTL_DEF_DRV(MESON_DMABUF_EXPORT_SYNC_FILE, am_meson_dmabuf_export_sync_file_ioctl,

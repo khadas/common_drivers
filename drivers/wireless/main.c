@@ -10,10 +10,8 @@
 
 static int __init wireless_main_init(void)
 {
-	pr_debug("### %s() start\n", __func__);
 	call_sub_init(wifi_dt_init);
 	call_sub_init(bt_init);
-	pr_debug("### %s() end\n", __func__);
 	return 0;
 }
 

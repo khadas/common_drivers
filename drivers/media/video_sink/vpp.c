@@ -937,6 +937,21 @@ static unsigned int aisr_debug_flag;
 MODULE_PARM_DESC(aisr_debug_flag, "aisr_debug_flag");
 module_param(aisr_debug_flag, uint, 0664);
 
+static bool is_video_output_4k120hz(int freq_ratio,
+	const struct vinfo_s *vinfo,
+	u32 slice_num,
+	u32 pi_enable)
+{
+	if (vinfo->width >= 3840 &&
+		vinfo->height >= 2160 &&
+		freq_ratio >= 2 &&
+		slice_num == 1 &&
+		!pi_enable)
+		return true;
+	else
+		return false;
+}
+
 /*
  *test on txlx:
  *Time_out = (V_out/V_screen_total)/FPS_out;
@@ -994,7 +1009,7 @@ static int vpp_process_speed_check
 #ifdef CONFIG_AMLOGIC_MEDIA_FRC
 	frc_enable = frc_n2m_worked();
 #endif
-	if (frc_enable)
+	if (frc_enable && layer_id == 0)
 		sync_duration_num = vinfo->sync_duration_num / 2;
 	else
 		sync_duration_num = vinfo->sync_duration_num;
@@ -1161,7 +1176,9 @@ static int vpp_process_speed_check
 			 *the clac height is 1119;which is bigger than 1080!
 			 */
 			if (height_in > height_out &&
-			    ((height_in - height_out) < height_in / 20))
+			    ((height_in - height_out) < height_in / 20) &&
+			    !is_video_output_4k120hz(freq_ratio,
+			    vinfo, slice_num, pi_enable))
 				return SPEED_CHECK_DONE;
 			if (get_cpu_type() >=
 				MESON_CPU_MAJOR_ID_GXBB) {
@@ -1189,12 +1206,13 @@ static int vpp_process_speed_check
 				    (vpp_flags & VPP_FLAG_FROM_TOGGLE_FRAME))
 					cur_skip_ratio = cur_ratio;
 				if (super_debug)
-					pr_info("%s:line=%d,cur_ratio=%d, min_ratio_1000=%d, type:%x, max_height:%d\n",
+					pr_info("%s:line=%d,cur_ratio=%d, min_ratio_1000=%d, type:%x, max_height:%d, freq_ratio=%d\n",
 						__func__,
 						__LINE__,
 						cur_ratio,
 						min_ratio_1000,
-						vf->type, max_height);
+						vf->type, max_height,
+						freq_ratio);
 				if (cur_ratio > min_ratio_1000 &&
 				    vf->source_type !=
 				    VFRAME_SOURCE_TYPE_TUNER &&
@@ -1281,10 +1299,18 @@ static int vpp_process_speed_check
 			}
 		} else if (next_frame_par->hscale_skip_count == 0) {
 			/*TODO vpu */
-			if (div_u64(VPP_SPEED_FACTOR * width_in *
+			clk_calc = div_u64(VPP_SPEED_FACTOR * width_in *
 				sync_duration_num * height_screen,
-				sync_duration_den * 256)
-				> vpu_clk_get())
+				sync_duration_den * 256);
+			if (super_debug)
+				pr_info("%s:line=%d,sync_duration_num=%d, clk_calc=%d, clk_in_pps=%d, height_in=%d, height_out=%d\n",
+					__func__,
+					__LINE__,
+					sync_duration_num,
+					clk_calc,
+					vpu_clk_get(),
+					height_in, height_out);
+			if (clk_calc > vpu_clk_get())
 				return SPEED_CHECK_HSKIP;
 			else
 				return SPEED_CHECK_DONE;
@@ -1508,6 +1534,13 @@ static bool is_8k_in_1080p120hz_out(u32 width_in,
 }
 #endif
 
+#ifdef CONFIG_AMLOGIC_TXHD2_REMOVE
+bool get_uvm_open_nn(void)
+{
+	return 0;
+}
+#endif
+
 static int vpp_set_filters_internal
 	(struct disp_info_s *input,
 	u32 width_in,
@@ -1685,9 +1718,9 @@ static int vpp_set_filters_internal
 		next_frame_par->vscale_skip_count++;
 #endif
 	if (cur_super_debug)
-		pr_info("layer_id=%d, next_frame_par->vscale_skip_count=%d\n",
+		pr_info("layer_id=%d, next_frame_par->vscale_skip_count=%d, vpp_flags=0x%x\n",
 			input->layer_id,
-			next_frame_par->vscale_skip_count);
+			next_frame_par->vscale_skip_count, vpp_flags);
 
 	if (get_pi_enabled(input->layer_id)) {
 		width_out >>= 1;
@@ -1703,7 +1736,7 @@ static int vpp_set_filters_internal
 	if (video_is_meson_t3x_cpu() &&
 		get_uvm_open_nn() &&
 		(width_in <= 1920 && height_in <= 1080) &&
-		check_aisr_need_disable(&vd_layer[0])) {
+		!check_aisr_need_disable(&vd_layer[0])) {
 		video_layer_width = round_up(video_layer_width, 2);
 		video_layer_height = round_up(video_layer_height, 2);
 	}
@@ -1717,16 +1750,21 @@ RESTART_ALL:
 
 	slice_num = get_slice_num(input->layer_id);
 	vd1s1_vd2_prebld_en = get_vd1s1_vd2_prebld_en(input->layer_id);
-	if (slice_num == 2  && !vd1s1_vd2_prebld_en) {
-		/* crop left must 2 aligned */
-		crop_left = (crop_left + 1) & ~0x01;
-		crop_right = (crop_right + 1) & ~0x01;
-	} else if (slice_num == 4  || vd1s1_vd2_prebld_en) {
-		/* crop left must 4 aligned */
-		crop_left = (crop_left + 3) & ~0x03;
-		crop_right = (crop_right + 3) & ~0x03;
+	#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+	/* for reverse or h mirror must aligned */
+	if ((input->reverse || input->mirror == H_MIRROR) &&
+		video_is_meson_s5_cpu()) {
+		if (slice_num == 2  && !vd1s1_vd2_prebld_en) {
+			/* crop left must 2 aligned */
+			crop_left = (crop_left + 1) & ~0x01;
+			crop_right = (crop_right + 1) & ~0x01;
+		} else if (slice_num == 4  || vd1s1_vd2_prebld_en) {
+			/* crop left must 4 aligned */
+			crop_left = (crop_left + 3) & ~0x03;
+			crop_right = (crop_right + 3) & ~0x03;
+		}
 	}
-
+	#endif
 	if (src_crop_adjust) {
 		w_in = width_in - src_crop_right;
 		h_in = height_in - src_crop_bottom;
@@ -1819,8 +1857,11 @@ RESTART:
 	}
 
 	if (cur_super_debug)
-		pr_info("%s(line:%d): vscale_skip_count=%d\n",
-			__func__, __LINE__, next_frame_par->vscale_skip_count);
+		pr_info("%s(line:%d): vscale_skip_count=%d, hscale_skip_count=%d, hskip_adjust=%d\n",
+			__func__, __LINE__,
+			next_frame_par->vscale_skip_count,
+			next_frame_par->hscale_skip_count,
+			hskip_adjust);
 
 	aspect_factor = (vpp_flags & VPP_FLAG_AR_MASK) >> VPP_FLAG_AR_BITS;
 	/* don't use input->wide_mode */
@@ -2497,9 +2538,15 @@ RESTART:
 				goto RESTART;
 			} else {
 				next_frame_par->hscale_skip_count = 1;
+				/* hskip =1, w_in must aligned */
+				if (w_in & 1)
+					goto RESTART;
 			}
 		} else if (skip == SPEED_CHECK_HSKIP) {
 			next_frame_par->hscale_skip_count = 1;
+			/* hskip =1, w_in must aligned */
+			if (w_in & 1)
+				goto RESTART;
 		}
 	}
 

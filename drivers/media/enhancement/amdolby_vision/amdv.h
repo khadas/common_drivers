@@ -9,7 +9,7 @@
 /*#define V2_4_3*/
 
 /*  driver version */
-#define DRIVER_VER "202301225"
+#define DRIVER_VER "20240205"
 
 #include <linux/types.h>
 #include "amdv_pq_config.h"
@@ -654,6 +654,7 @@ struct core_inst_s {
 	u32 run_mode_count;
 	u32 core_disp_hsize;
 	u32 core_disp_vsize;
+	u32 py_level;
 };
 
 struct tv_input_info_s {
@@ -684,6 +685,12 @@ struct top1_stats_info {
 	bool enable;
 };
 
+struct backlight_info {
+	u32 value;
+	bool set_flag;
+};
+
+#define MAX_BL_COUNT 30
 #define PREFIX_SEI_NUT_NAL 39
 #define SUFFIX_SEI_NUT_NAL 40
 #define SEI_ITU_T_T35 4
@@ -809,13 +816,14 @@ extern u32 dolby_vision_ll_policy;
 extern u32 last_dolby_vision_ll_policy;
 extern bool amdv_setting_video_flag;
 extern u32 bl_delay_cnt;
-extern u32 tv_backlight;
+extern struct backlight_info tv_backlight[MAX_BL_COUNT];
 extern bool tv_backlight_changed;
 extern bool tv_backlight_force_update;
 extern u32 crc_count;
 extern u32 setting_update_count;
 extern void *pq_config_fake;
 extern void *pq_config_dvp_fake;
+extern void *pq_config_dvp_fake_top1;
 extern struct dv_inst_s dv_inst[NUM_INST];
 extern int hdmi_path_id;
 extern u32 dv_cert_graphic_width;
@@ -895,7 +903,6 @@ extern struct video_inst_s top2_v_info;/*video info*/
 extern struct top1_pyramid_addr py_addr[PYRAMID_BUF_CNT];
 extern u8 py_wr_id;
 extern u8 py_rd_id;
-extern u32 py_level;
 extern struct dolby5_top1_md_hist dv5_md_hist;
 extern int force_top1_enable;
 extern u32 fix_data;
@@ -908,7 +915,7 @@ extern u32 num_downsamplers;
 extern u32 force_sdr10;
 extern u32 need_pps;
 extern u32 trace_amdv_isr;
-extern u32 output_4k240hz;
+extern u32 force_top1_vskip;
 extern int pyramid_read_urgent;
 extern bool py_enabled;
 extern bool l1l4_enabled;
@@ -927,6 +934,12 @@ extern bool top1_enable_changed;
 extern bool force_bypass_precision;
 extern bool force_bypass_precision_once;
 extern bool miss_top1_and_bypass_pr_once;
+extern bool update_top2_control_path_flag;
+extern u32 top1_scale;
+extern bool enable_top1_scale;
+extern bool wait_first_frame_top1;
+extern const char level_str[4][10];
+extern bool update_top2_cfg;
 /************/
 
 #define pr_dv_dbg(fmt, args...)\
@@ -1316,4 +1329,7 @@ bool get_top1_onoff(void);
 void fixed_buf_config(void);
 bool is_dv_unique_drm(struct vframe_s *vf);
 void dump_top1_frame(int force_w, int force_h);
+#ifdef CONFIG_AMLOGIC_MEDIA_FRC
+int frc_get_video_latency_for_gd1(void);
+#endif
 #endif

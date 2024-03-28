@@ -1870,9 +1870,9 @@ void osd_rdma_interrupt_done_clear(u32 vpp_index)
 
 #ifdef CONFIG_AMLOGIC_MEDIA_RDMA
 	if (osd_rdma_done[vpp_index])
-		rdma_watchdog_setting(0);
+		rdma_watchdog_setting(0, handle);
 	else
-		rdma_watchdog_setting(1);
+		rdma_watchdog_setting(1, handle);
 #endif
 	osd_rdma_done[vpp_index] = false;
 

@@ -116,15 +116,15 @@
 
 		lcd_tcon_reserved:linux,lcd_tcon {
 			compatible = "amlogic, lcd_tcon";
-			reg = <0x0 0x5e800000 0x0 0x00c00000>;
-			no-map;
+			reg = <0x0 0x5e800000 0x0 0x00a02840>;
+			//no-map;
 		};
 
 		codec_mm_cma:linux,codec_mm_cma {
 			compatible = "shared-dma-pool";
 			reusable;
-			/*codec_mm_cma 8K + 1080P max can alloc size M*/
-			size = <0x0 0x54400000>;
+			/*Primary + Secondary + PIP based on TV/ASOP: max scenario need 712MB*/
+			size = <0x0 0x2c800000>;
 			alignment = <0x0 0x400000>;
 			alloc-ranges = <0x0 0x0 0x0 0xe0000000>;
 			linux,contiguous-region;
@@ -235,11 +235,23 @@
 		vdin1_cma_reserved:linux,vdin1_cma {
 			compatible = "shared-dma-pool";
 			reusable;
-			/* up to 1920x1080 yuv422 8bit and 5 buffers
-			 * 1920x1080x2x5 = 20 M
+			/* up to 3840x2160 yuv420 8bit and 4 buffers
+			 * 3840x2160x4 = 48 M
 			 */
 			//size = <0x0 0x0>;
-			size = <0x0 0x01400000>;
+			size = <0x0 0x03000000>;
+			alignment = <0x0 0x400000>;
+			alloc-ranges = <0x0 0x0 0x0 0xe0000000>;
+		};
+
+		/*  amlvideo2_1 CMA pool */
+		amlvideo2_1_cma_reserved:linux,amlvideo2_1_cma {
+			compatible = "shared-dma-pool";
+			reusable;
+			/* 3840x2160 yuv420 8bit and 4 buffers
+			 * 3840x2160x1.5x4 = 48 M
+			 */
+			size = <0x0 0x3000000>;
 			alignment = <0x0 0x400000>;
 			alloc-ranges = <0x0 0x0 0x0 0xe0000000>;
 		};
@@ -628,7 +640,7 @@
 			0x0 0x0 0x0 0x0
 			0x0 0x0 0x0 0x0
 			0x0 0xfe390000 0x0 0x20000
-			0x0 0xfe000000 0x0 0x1fff
+			0x0 0xfe000000 0x0 0x15000
 			0x0 0xfe008000 0x280 0x334>;
 	};
 
@@ -1064,9 +1076,11 @@
 	amlvideo2_1 {
 		compatible = "amlogic, amlvideo2";
 		dev_name = "amlvideo2";
+		memory-region = <&amlvideo2_1_cma_reserved>;
 		status = "okay";
 		amlvideo2_id = <1>;
-		cma_mode = <1>;
+		cma_mode = <0>;
+		support_4k = <1>;
 	};
 
 	adc_keypad {
@@ -1674,6 +1688,41 @@
 	};
 };
 
+&CPU0 {
+	operating-points-v2 = <&a55_single_opp_table0>,
+				<&a55_single_opp_table1>,
+				<&a55_single_opp_table2>,
+				<&a55_single_opp_table3>;
+};
+
+&CPU1 {
+	operating-points-v2 = <&a55_single_opp_table0>,
+				<&a55_single_opp_table1>,
+				<&a55_single_opp_table2>,
+				<&a55_single_opp_table3>;
+};
+
+&CPU2 {
+	operating-points-v2 = <&a55_single_opp_table0>,
+				<&a55_single_opp_table1>,
+				<&a55_single_opp_table2>,
+				<&a55_single_opp_table3>;
+};
+
+&CPU3 {
+	operating-points-v2 = <&a76_single_opp_table0>,
+				<&a76_single_opp_table1>,
+				<&a76_single_opp_table2>,
+				<&a76_single_opp_table3>;
+};
+
+&CPU4 {
+	operating-points-v2 = <&a76_single_opp_table0>,
+				<&a76_single_opp_table1>,
+				<&a76_single_opp_table2>,
+				<&a76_single_opp_table3>;
+};
+
 &vdac {
 	cdac_disable = <1>;
 };
@@ -2134,6 +2183,7 @@
 	wb_sel = <0>;/*1:mtx ;0:gainoff*/
 	vlock_en = <1>;/*1:enable;0:disable*/
 	vlock_mode = <0x8>;
+	vrr_priority = <1>;/*1:game mode vrr always on;0:vrr on depend on vrr signal*/
 	/*vlock work mode:
 	 *bit0:auto ENC
 	 *bit1:auto PLL

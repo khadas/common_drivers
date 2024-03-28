@@ -123,11 +123,10 @@
 		/*};*/
 
 		logo_reserved:linux,meson-fb {
-			compatible = "shared-dma-pool";
-			reusable;
+			compatible = "amlogic, meson-fb";
 			size = <0x0 0x800000>;
 			alignment = <0x0 0x400000>;
-			alloc-ranges = <0x0 0x3e800000 0x0 0x800000>;
+			reg = <0x0 0x3e800000 0x0 0x800000>;
 		};
 
 		codec_mm_cma:linux,codec_mm_cma {
@@ -212,15 +211,15 @@
 		dmaheap_cma_reserved:heap-gfx {
 			compatible = "shared-dma-pool";
 			reusable;
-			/* 4k STB androidT size 4M */
-			size = <0x0 0x400000>;
+			/* 1080p STB androidU size 88M for direct render*/
+			size = <0x0 0x5800000>;
 			alignment = <0x0 0x400000>;
 		};
 		dmaheap_fb_reserved:heap-fb {
 			compatible = "shared-dma-pool";
 			reusable;
-			/* 4k STB androidT size 212M */
-			size = <0x0 0xd400000>;
+			/* 1080P 1920x1080x4x6 androidU size 56M */
+			size = <0x0 0x3800000>;
 			alignment = <0x0 0x400000>;
 		};
 
@@ -1012,14 +1011,16 @@
 	adc_keypad {
 		compatible = "amlogic, adc_keypad";
 		status = "okay";
-		key_name = "key_a", "key_b", "key_c";
+		key_name = "vol-", "vol+", "power";
 		key_num = <3>;
-		io-channels = <&saradc 0>;
+		io-channels = <&saradc SARADC_CH0>;
 		io-channel-names = "key-chan-0";
-		key_chan = <0 0 0>;
-		key_code = <141 114 115>;
-		key_val = <900 511 0>; //val=voltage/1800mV*1023
+		key_chan = <SARADC_CH0 SARADC_CH0 SARADC_CH0>;
+		key_code = <KEY_VOLUMEDOWN KEY_VOLUMEUP KEY_POWER>;
+		/* val = voltage / 1800mV * 1023 */
+		key_val = <630 910 20>;
 		key_tolerance = <40 40 40>;
+		mboxes = <&mbox_fifo S5_REE2AO_KEYPAD>;
 	};
 
 	vddnpu_dvo_dos_vpu: pwm_ef-regulator {

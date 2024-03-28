@@ -607,6 +607,8 @@ static long __nocfi get_user_pfn(struct mm_struct *mm, unsigned long addr)
 		mm = aml_init_mm;
 	if (!mm)
 		return pfn;
+#elif IS_MODULE(CONFIG_AMLOGIC_USER_FAULT) && !IS_ENABLED(CONFIG_KALLSYMS_ALL)
+	return pfn;
 #else
 	if (!mm || addr >= VMALLOC_START)
 		mm = &init_mm;
@@ -1003,5 +1005,5 @@ static void __exit user_fault_module_exit(void)
 
 module_init(user_fault_module_init);
 module_exit(user_fault_module_exit);
-MODULE_LICENSE("GPL v2");
 #endif
+MODULE_LICENSE("GPL v2");

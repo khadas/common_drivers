@@ -24,7 +24,6 @@
 #include <linux/printk.h>
 #include <linux/amlogic/user_fault.h>
 #include <linux/amlogic/secmon.h>
-#include <linux/panic.h>
 #if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_TEST)
 #define KERNEL_ATRACE_TAG KERNEL_ATRACE_TAG_ALL
 #include <trace/events/meson_atrace.h>
@@ -40,7 +39,6 @@
 #include <linux/delay.h>
 #include <linux/panic_notifier.h>
 #include <linux/sysrq.h>
-#include <trace/hooks/traps.h>
 #if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_IOTRACE)
 #include <linux/amlogic/aml_iotrace.h>
 #endif
@@ -178,17 +176,18 @@ static void __maybe_unused isr_in_hook(void *data, int irq, struct irqaction *ac
 	int cpu;
 	unsigned long long now;
 #if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_IOTRACE)
-	char buf[BUF_SIZE];
+	struct iotrace_record rec = {
+		.type = RECORD_TYPE_ISR_IN,
+		.irq  = irq,
+	};
 #endif
 
 	if (irq >= IRQ_CNT || !isr_check_en)
 		return;
 
 #if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_IOTRACE)
-	if ((ramoops_ftrace_en) && (ramoops_trace_mask & 0x4)) {
-		snprintf(buf, BUF_SIZE, "isr-in irq:%d", irq);
-		aml_pstore_write(AML_PSTORE_TYPE_IRQ, buf, 0, irqs_disabled(), 0);
-	}
+	if ((ramoops_ftrace_en) && (ramoops_trace_mask & TRACE_MASK_IRQ))
+		aml_pstore_write(AML_PSTORE_TYPE_IRQ, &rec, irqs_disabled(), 0);
 #endif
 
 	cpu = smp_processor_id();
@@ -215,7 +214,10 @@ static void __maybe_unused isr_out_hook(void *data, int irq, struct irqaction *a
 	int cpu;
 	unsigned long long now, delta, this_period_time;
 #if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_IOTRACE)
-	char buf[BUF_SIZE];
+	struct iotrace_record rec = {
+		.type = RECORD_TYPE_ISR_OUT,
+		.irq  = irq,
+	};
 #endif
 
 	if (irq >= IRQ_CNT || !isr_check_en)
@@ -231,10 +233,8 @@ static void __maybe_unused isr_out_hook(void *data, int irq, struct irqaction *a
 		return;
 
 #if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_IOTRACE)
-	if ((ramoops_ftrace_en) && (ramoops_trace_mask & 0x4)) {
-		snprintf(buf, BUF_SIZE, "isr-out irq:%d", irq);
-		aml_pstore_write(AML_PSTORE_TYPE_IRQ, buf, 0, irqs_disabled(), 0);
-	}
+	if ((ramoops_ftrace_en) && (ramoops_trace_mask & TRACE_MASK_IRQ))
+		aml_pstore_write(AML_PSTORE_TYPE_IRQ, &rec, irqs_disabled(), 0);
 #endif
 
 	now = sched_clock();
@@ -345,12 +345,17 @@ static void smc_in_hook(unsigned long smcid, unsigned long val, bool noret)
 	int cpu;
 	struct lockup_info *info;
 #if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_IOTRACE)
-	char buf[BUF_SIZE];
+	struct iotrace_record rec = {
+		.type   = RECORD_TYPE_SMC_IN,
+		.smcid  = smcid,
+		.val    = val,
+	};
 
-	if ((ramoops_ftrace_en) && (ramoops_trace_mask & 0x8)) {
-		snprintf(buf, BUF_SIZE, "smc-in smcid:%lx, arg:%lx, noret:%d", smcid, val, noret);
-		aml_pstore_write(AML_PSTORE_TYPE_SMC, buf, 0, irqs_disabled(), 0);
-	}
+	if (noret)
+		rec.type = RECORD_TYPE_SMC_NORET_IN;
+
+	if ((ramoops_ftrace_en) && (ramoops_trace_mask & TRACE_MASK_SMC))
+		aml_pstore_write(AML_PSTORE_TYPE_SMC, &rec, irqs_disabled(), 0);
 #endif
 
 	if (noret)
@@ -374,12 +379,14 @@ static void smc_out_hook(unsigned long smcid, unsigned long val)
 	int cpu;
 	struct lockup_info *info;
 #if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_IOTRACE)
-	char buf[BUF_SIZE];
+	struct iotrace_record rec = {
+		.type   = RECORD_TYPE_SMC_OUT,
+		.smcid  = smcid,
+		.val    = val,
+	};
 
-	if ((ramoops_ftrace_en) && (ramoops_trace_mask & 0x8)) {
-		snprintf(buf, BUF_SIZE, "smc-out smcid:%lx, retval:%lx", smcid, val);
-		aml_pstore_write(AML_PSTORE_TYPE_SMC, buf, 0, irqs_disabled(), 0);
-	}
+	if ((ramoops_ftrace_en) && (ramoops_trace_mask & TRACE_MASK_SMC))
+		aml_pstore_write(AML_PSTORE_TYPE_SMC, &rec, irqs_disabled(), 0);
 #endif
 
 	if (!initialized || !smc_check_en)
@@ -942,42 +949,6 @@ static void __maybe_unused ftrace_format_check_hook(void *data, bool *ftrace_che
 	*ftrace_check = 0;
 }
 
-#ifdef CONFIG_ARM64
-#ifdef CONFIG_PREEMPT
-#define S_PREEMPT " PREEMPT"
-#elif defined(CONFIG_PREEMPT_RT)
-#define S_PREEMPT " PREEMPT_RT"
-#else
-#define S_PREEMPT ""
-#endif
-#define S_SMP " SMP"
-
-static void __maybe_unused do_undefinstr_hook(void *data, struct pt_regs *regs)
-{
-	static int die_counter;
-	const char *str;
-	int err = 0;
-
-	if (user_mode(regs))
-		return;
-
-	local_irq_disable();
-	str = "Oops - undefined instruction";
-
-	pr_emerg("Internal error: %s: %x [#%d]" S_PREEMPT S_SMP "\n",
-		 str, err, ++die_counter);
-
-	/* Avoid to print call stack again when panic */
-	oops_in_progress = 2;
-	show_regs(regs);
-
-	if (in_interrupt())
-		panic("%s: Fatal exception in interrupt", str);
-	else
-		panic("%s: Fatal exception", str);
-}
-#endif
-
 #if (defined CONFIG_ARM64) || (defined CONFIG_AMLOGIC_ARMV8_AARCH32)
 static void fiq_debug_addr_init(void)
 {
@@ -1071,9 +1042,6 @@ int debug_lockup_init(void)
 
 	register_trace_android_vh_ftrace_format_check(ftrace_format_check_hook, NULL);
 
-#ifdef CONFIG_ARM64
-	register_trace_android_rvh_do_undefinstr(do_undefinstr_hook, NULL);
-#endif
 #endif
 	initialized = 1;
 

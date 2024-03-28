@@ -27,8 +27,8 @@
 
 static int osd_hold_line = VIU1_DEFAULT_HOLD_LINE;
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
-u32 original_swap_t3x;
-u32 original_osd1_fifo_ctrl_stat_t3x;
+u32 original_swap_t3x[HW_OSD_MIF_NUM];
+u32 original_osd1_fifo_ctrl_stat_t3x[HW_OSD_MIF_NUM];
 #endif
 module_param(osd_hold_line, int, 0664);
 MODULE_PARM_DESC(osd_hold_line, "osd_hold_line");
@@ -1018,14 +1018,19 @@ static void osd_color_config(struct meson_vpu_block *vblk,
 
 	if (is_meson_t3x_cpu()) {
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+		/*
+		 * color_expand_mode is 1 for 16-bit pixel format, expand each color component
+		 * to 8bits by padding right-most bits with left-most bits
+		 */
+		reg_ops->rdma_write_reg_bits(reg->viu_osd_ctrl_stat2, 1, 0, 1);
 		blk_mode = meson_drm_format_hw_blkmode_t3x(pixel_format, afbc_en);
 		color = meson_drm_format_hw_colormat_t3x(pixel_format, afbc_en);
 		alpha_replace = (pixel_blend == DRM_MODE_BLEND_PIXEL_NONE) ||
-			meson_drm_format_alpha_replace_t3x(pixel_format, afbc_en);
+		meson_drm_format_alpha_replace_t3x(pixel_format, afbc_en);
 		/* t3x pixel format workaround */
-		reg_ops->rdma_write_reg(reg->viu_osd_normal_swap, original_swap_t3x);
+		reg_ops->rdma_write_reg(reg->viu_osd_normal_swap, original_swap_t3x[vblk->index]);
 		reg_ops->rdma_write_reg(reg->viu_osd_fifo_ctrl_stat,
-							original_osd1_fifo_ctrl_stat_t3x);
+						original_osd1_fifo_ctrl_stat_t3x[vblk->index]);
 		if (pixel_format == DRM_FORMAT_ARGB4444) {
 			reg_ops->rdma_write_reg(reg->viu_osd_normal_swap, 0x1230);
 		} else if (pixel_format == DRM_FORMAT_BGRA4444) {
@@ -1113,7 +1118,7 @@ static void osd_set_dimm_ctrl(struct meson_vpu_block *vblk,
 }
 
 /* set osd, video two port */
-void osd_set_two_ports(u32 set)
+void osd_set_two_ports(u32 set, struct rdma_reg_ops *reg_ops)
 {
 	static u32 data32[2];
 
@@ -1123,11 +1128,11 @@ void osd_set_two_ports(u32 set)
 			if (set == 1) {
 				/*mali afbcd,dolby0, osd1-4 etc->VPU0*/
 				/*aisr reshape, vd1, vd2, tcon p1 read->VPU2*/
-				meson_vpu_write_reg(VPP_RDARB_MODE, 0x10c00000);
-				meson_vpu_write_reg(VPU_RDARB_MODE_L2C1, 0x920000);
+				reg_ops->rdma_write_reg(VPP_RDARB_MODE, 0x10c00000);
+				reg_ops->rdma_write_reg(VPU_RDARB_MODE_L2C1, 0x920000);
 			} else if (set == 0) {
-				meson_vpu_write_reg(VPP_RDARB_MODE, 0xaa0000);
-				meson_vpu_write_reg(VPU_RDARB_MODE_L2C1, 0x900000);
+				reg_ops->rdma_write_reg(VPP_RDARB_MODE, 0xaa0000);
+				reg_ops->rdma_write_reg(VPU_RDARB_MODE_L2C1, 0x900000);
 			}
 		}
 		return;
@@ -1135,16 +1140,16 @@ void osd_set_two_ports(u32 set)
 
 	/* set osd, video two port */
 	if (!data32[0] && !data32[1]) {
-		data32[0] = meson_vpu_read_reg(VPP_RDARB_MODE);
-		data32[1] = meson_vpu_read_reg(VPU_RDARB_MODE_L2C1);
+		data32[0] = reg_ops->rdma_read_reg(VPP_RDARB_MODE);
+		data32[1] = reg_ops->rdma_read_reg(VPU_RDARB_MODE_L2C1);
 	}
 
 	if (set == 1) {
-		meson_vpu_write_reg_bits(VPP_RDARB_MODE, 2, 20, 8);
-		meson_vpu_write_reg_bits(VPU_RDARB_MODE_L2C1, 2, 16, 8);
+		reg_ops->rdma_write_reg_bits(VPP_RDARB_MODE, 2, 20, 8);
+		reg_ops->rdma_write_reg_bits(VPU_RDARB_MODE_L2C1, 2, 16, 8);
 	} else if (set == 0) {
-		meson_vpu_write_reg(VPP_RDARB_MODE, data32[0]);
-		meson_vpu_write_reg(VPU_RDARB_MODE_L2C1, data32[1]);
+		reg_ops->rdma_write_reg(VPP_RDARB_MODE, data32[0]);
+		reg_ops->rdma_write_reg(VPU_RDARB_MODE_L2C1, data32[1]);
 	}
 }
 
@@ -1326,13 +1331,13 @@ static u32 line_stride_calc(u32 drm_format,
 	return line_stride;
 }
 
-static void osd_set_palette(struct osd_mif_reg_s *reg, u32 *palette)
+static void osd_set_palette(struct osd_mif_reg_s *reg, struct rdma_reg_ops *reg_ops, u32 *palette)
 {
 	int regno;
 
 	for (regno = 0; regno < 256; regno++) {
-		meson_vpu_write_reg(reg->viu_osd_color_addr, regno);
-		meson_vpu_write_reg(reg->viu_osd_color, palette[regno]);
+		reg_ops->rdma_write_reg(reg->viu_osd_color_addr, regno);
+		reg_ops->rdma_write_reg(reg->viu_osd_color, palette[regno]);
 	}
 }
 
@@ -1397,7 +1402,7 @@ static void osd_set_state(struct meson_vpu_block *vblk,
 
 	if (mvos->crtc_index == 1)
 		/*for multi-vpp, the vpp1 default is 4*/
-		hold_line = VIU2_DEFAULT_HOLD_LINE;
+		hold_line = osd->viu2_hold_line;
 	else
 		hold_line = osd_hold_line;
 
@@ -1484,9 +1489,9 @@ static void osd_set_state(struct meson_vpu_block *vblk,
 				 DRM_MODE_FLAG_INTERLACE);
 	osd_set_dimm_ctrl(vblk, reg_ops, reg, 0);
 	ods_hold_line_config(vblk, reg_ops, reg, hold_line);
-	osd_set_two_ports(mvos->read_ports);
+	osd_set_two_ports(mvos->read_ports, reg_ops);
 	if (mvos->palette_arry)
-		osd_set_palette(reg, mvos->palette_arry);
+		osd_set_palette(reg, reg_ops, mvos->palette_arry);
 
 	MESON_DRM_BLOCK("plane_index=%d,HW-OSD=%d\n",
 		  mvos->plane_index, vblk->index);
@@ -1643,6 +1648,7 @@ static void osd_hw_init(struct meson_vpu_block *vblk)
 	osd->reg = &osd_mif_reg[vblk->index];
 	//osd_ctrl_init(vblk, pipeline->subs[0].reg_ops, osd->reg);
 	osd->mif_acc_mode = CANVAS_MODE;
+	osd->viu2_hold_line = VIU2_DEFAULT_HOLD_LINE;
 
 #ifdef CONFIG_AMLOGIC_MEDIA_SECURITY
 	secure_register(OSD_MODULE, 0, osd_secure_op, osd_secure_cb);
@@ -1717,6 +1723,7 @@ static void g12b_osd_hw_init(struct meson_vpu_block *vblk)
 	osd->reg = &g12b_osd_mif_reg[vblk->index];
 	//osd_ctrl_init(vblk, pipeline->subs[0].reg_ops, osd->reg);
 	osd->mif_acc_mode = CANVAS_MODE;
+	osd->viu2_hold_line = VIU2_DEFAULT_HOLD_LINE;
 
 	if (vblk->index == MESON_VIU2_OSD1) {
 		DRM_INFO("%s hw_init for %s, index:%d.\n", __func__,
@@ -1789,6 +1796,7 @@ static void t7_osd_hw_init(struct meson_vpu_block *vblk)
 	osd->reg = &osd_mif_reg[vblk->index];
 	//osd_ctrl_init(vblk, pipeline->subs[0].reg_ops, osd->reg);
 	osd->mif_acc_mode = LINEAR_MIF;
+	osd->viu2_hold_line = VIU2_DEFAULT_HOLD_LINE;
 
     /* osd secure function init */
 #ifdef CONFIG_AMLOGIC_MEDIA_SECURITY
@@ -1815,13 +1823,13 @@ static void s5_osd_hw_init(struct meson_vpu_block *vblk)
 	}
 
 	osd->reg = &s5_osd_mif_reg[vblk->index];
-	osd_ctrl_init(vblk, pipeline->subs[0].reg_ops, osd->reg);
 	osd->mif_acc_mode = LINEAR_MIF;
+	// t3x has viu2, viu1 and viu2 has same hold line
+	osd->viu2_hold_line = VIU1_DEFAULT_HOLD_LINE;
 
-	original_swap_t3x =
-		pipeline->subs[0].reg_ops->rdma_read_reg(osd->reg->viu_osd_normal_swap);
-	original_osd1_fifo_ctrl_stat_t3x =
-		pipeline->subs[0].reg_ops->rdma_read_reg(osd->reg->viu_osd_fifo_ctrl_stat);
+	original_swap_t3x[vblk->index] = meson_drm_read_reg(osd->reg->viu_osd_normal_swap);
+	original_osd1_fifo_ctrl_stat_t3x[vblk->index] =
+		meson_drm_read_reg(osd->reg->viu_osd_fifo_ctrl_stat);
 
 #ifdef CONFIG_AMLOGIC_MEDIA_SECURITY
 	secure_register(OSD_MODULE, 0, osd_secure_op, osd_secure_cb);

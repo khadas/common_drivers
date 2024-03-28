@@ -318,6 +318,17 @@ struct nand_flash_dev aml_nand_flash_ids[] = {
 		{0, 0},
 		NAND_TIMING_MODE5},
 
+	{"skyhight Slc NAND 8Gib S34ML04G300BHI00",
+		{ .id = {NAND_MFR_AMD, 0xdc, 0x00, 0x05, 0x04}},
+		2048,
+		512,
+		0x20000,
+		0,
+		5,
+		128,
+		{0, 0},
+		NAND_TIMING_MODE5},
+
 	{"A revision NAND 1Gib W29N01HV ",
 		{ .id = {NAND_MFR_WINBOND, 0xf1, 0x00, 0x95, 0x00, 0x00}},
 		2048,

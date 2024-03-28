@@ -594,6 +594,7 @@ static int meson_of_sensor_conf(struct platform_device *pdev,
 			 "Missing cal_coeff using default %d\n",
 			 0x0);
 	}
+
 	if (of_property_read_u32(pdev->dev.of_node, "rtemp",
 				 &pdata->reboot_temp)) {
 		dev_warn(&pdev->dev,
@@ -714,6 +715,14 @@ static int meson_map_dt_data(struct platform_device *pdev)
 			return -EINVAL;
 		}
 		pr_info("trim info = %x\n", data->trim_info);
+	}
+	/*if we config cal_coeff2 and trim_info bit28~bit30 is not set, then we should use
+	 *cal_coeff2
+	 */
+	if (of_property_read_bool(pdev->dev.of_node, "cal_coeff2")) {
+		if (!(data->trim_info & 0x70000000))
+			of_property_read_u32_array(pdev->dev.of_node, "cal_coeff2",
+				       &pdata->cal_coeff[0], R1P1_CAL_NUM);
 	}
 
 	data->pdata = pdata;

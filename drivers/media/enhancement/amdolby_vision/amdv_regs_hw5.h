@@ -256,7 +256,7 @@
 //Bit 13:12     cntl_burst_len1                 //unsigned, RW, default=2
 //Bit 11:10     cntl_dbg_mode                   //unsigned, RW, default=0
 //Bit 9:8       cntl_bits_mode                  //unsigned, RW, default=0
-//Bit 7         reserved
+//Bit 7         cntl_bit16_mode                 //1:420 p010, default=0
 //Bit 6:4       cntl_blk_len                    //unsigned, RW, default=3
 //Bit 3         reserved
 //Bit 2:1       cntl_burst_len0                 //unsigned, RW, default=2

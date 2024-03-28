@@ -12,7 +12,7 @@
 /* ver:20220816: support fps policy */
 /* ver:20220927: support multi drv for t7 */
 /* ver:20230410: vrr bringup for t3x */
-#define VRR_DRV_VERSION  "20230410"
+#define VRR_DRV_VERSION  "20231218 fix vrr line delay issue"
 
 #define VRRPR(fmt, args...)      pr_info("vrr: " fmt "", ## args)
 #define VRRERR(fmt, args...)     pr_err("vrr error: " fmt "", ## args)
@@ -98,6 +98,7 @@ struct aml_vrr_drv_s {
 #define VRR_ENC_INDEX                              0
 
 extern unsigned int vrr_debug_print;
+extern unsigned int vrr_dly_new;
 
 void vrr_drv_trace(struct aml_vrr_drv_s *vdrv, char *str);
 struct aml_vrr_drv_s *vrr_drv_get(int index);

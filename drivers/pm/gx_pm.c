@@ -28,6 +28,7 @@
 #include <../kernel/power/power.h>
 #include <linux/amlogic/power_domain.h>
 #include <linux/syscore_ops.h>
+#include <linux/init.h>
 #include <linux/amlogic/gki_module.h>
 
 bool is_clr_resume_reason;
@@ -47,6 +48,7 @@ static LIST_HEAD(early_suspend_handlers);
  */
 unsigned int sysfs_trigger;
 unsigned int early_suspend_state;
+unsigned int suspend_debug_flag;
 /*
  * Avoid run early_suspend/late_resume repeatedly.
  */
@@ -182,6 +184,142 @@ static ssize_t early_suspend_trigger_store(struct class *class,
 }
 
 static CLASS_ATTR_RW(early_suspend_trigger);
+
+#define SUSPEND_DEBUG_LOGLEVEL (0xf << (0))
+#define SUSPEND_DEBUG_INITCALL_DEBUG (1U << (4))
+static unsigned long __invoke_psci_fn_smc(unsigned long function_id,
+					  unsigned long arg0,
+					  unsigned long arg1,
+					  unsigned long arg2);
+
+static const char *suspend_debug_help_str = {
+	"Usage:\n"
+	"echo 0xXXXXXXXX > /sys/class/meson_pm/suspend_debug  //enable suspend debug mode\n\n"
+	"Suspend Debug State List:\n\n"
+	"--------------------------------------------------------------------------------------------------\n"
+};
+
+#define MAX_ENTRIES 32
+
+struct Suspend_Debug_Mode {
+	const char *description;
+	int end_bit;
+	int start_bit;
+	int state;
+};
+
+struct Suspend_Debug_Mode suspend_debug_mode[MAX_ENTRIES] = {
+	{"[BL30] clk/pll status check and show clk gate setting", 31, 31, 0},
+	{"[BL30] mask RTC Wakeup source", 30, 30, 0},
+	{"[BL30] mask SARADC Wakeup source", 29, 29, 0},
+	{"[BL30] mask IR Wakeup source", 28, 28, 0},
+	{"[BL30] show pwm state and voltage", 27, 27, 0},
+	{"[BL30] function call log", 26, 26, 0},
+	{"[BL30] open dmc monitor log", 25, 25, 0},
+	{"[BL30] bl30 dump boot cpu's fsm and dsu's fsm", 24, 24, 0},
+	{"[BL30] aocpu do ddr access(reserved)", 23, 23, 0},
+	{"[BL30] skip power switch(vddee vddcpu vcc5v vcc3.3V etc)", 22, 22, 0},
+	{"[BL30] skip ddr suspend in bl30", 21, 21, 0},
+	{"[BL30] start debug task", 20, 20, 0},
+
+	{"[BL31] reserved", 19, 17, 0},
+	{"[BL31] skip clk gate switch", 16, 16, 0},
+	{"[BL31] dump nonboot cpu's fsm state", 15, 15, 0},
+	{"[BL31] skip ddr suspend in tlpm", 14, 14, 0},
+	{"[BL31] power domain clk/pll status check and show clk gate setting", 13, 13, 0},
+	{"[BL31] do clk reg check and rate check", 12, 12, 0},
+	{"[BL31] do bl31 ddr checksum in tlpm", 11, 11, 0},
+	{"[BL31] open dmc monitor log", 10, 10, 0},
+	{"[BL31] bl31 debug loglevel(0:without log;1: normal;2: function call log)", 9, 8, 0},
+
+	{"[KERNEL] reserved for dmc monitor", 7, 4, 0},
+	{"[KERNEL] set kernel printk loglevel to 0~9", 3, 0, 0},
+};
+
+static void check_suspend_debug_mode(void)
+{
+	int i;
+
+	for (i = 0; i < MAX_ENTRIES; i++) {
+		int mask = (1 << (suspend_debug_mode[i].end_bit + 1 -
+				  suspend_debug_mode[i].start_bit)) - 1;
+		int value = (suspend_debug_flag >> suspend_debug_mode[i].start_bit) & mask;
+
+		suspend_debug_mode[i].state = value;
+	}
+}
+
+void set_suspend_debug_flag(int suspend_flag)
+{
+	__invoke_psci_fn_smc(0x820000F3, 0, suspend_debug_flag &
+		(~(SUSPEND_DEBUG_LOGLEVEL | SUSPEND_DEBUG_INITCALL_DEBUG)),
+		  0);
+}
+
+static ssize_t suspend_debug_show(struct class *class,
+					  struct class_attribute *attr,
+					  char *buf)
+{
+	unsigned int len;
+	int i;
+
+	len = sprintf(&buf[0], "suspend_debug_flag = 0x%x\n\n", suspend_debug_flag);
+
+	len += sprintf(&buf[len], "%s\n", suspend_debug_help_str);
+
+	check_suspend_debug_mode();
+
+	for (i = 0; i < MAX_ENTRIES; i++) {
+		if (suspend_debug_mode[i].description) {
+			if (suspend_debug_mode[i].start_bit == suspend_debug_mode[i].end_bit)
+				len += sprintf(&buf[len], "%-80s bit[%d] \t%d\n",
+					  suspend_debug_mode[i].description,
+					  suspend_debug_mode[i].start_bit,
+					  suspend_debug_mode[i].state);
+			else
+				len += sprintf(&buf[len], "%-80s bit[%d:%d] \t%d\n",
+					  suspend_debug_mode[i].description,
+					  suspend_debug_mode[i].end_bit,
+					  suspend_debug_mode[i].start_bit,
+					  suspend_debug_mode[i].state);
+		}
+	}
+
+	return len;
+}
+
+static ssize_t suspend_debug_store(struct class *class,
+					   struct class_attribute *attr,
+					   const char *buf, size_t count)
+{
+	int ret;
+
+	ret = kstrtouint(buf, 0, &suspend_debug_flag);
+	pr_info("suspend_debug_flag = 0x%x\n", suspend_debug_flag);
+
+	if (ret)
+		return -EINVAL;
+
+	set_suspend_debug_flag(suspend_debug_flag);
+
+	return count;
+}
+
+static CLASS_ATTR_RW(suspend_debug);
+static int suspend_get_debug_env(char *buf)
+{
+	if (!buf)
+		return -EINVAL;
+
+	if (kstrtoint(buf, 0, &suspend_debug_flag)) {
+		pr_err("suspend_debug_flag error: %s\n", buf);
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
+__setup("suspend_debug=", suspend_get_debug_env);
 
 void lgcy_early_suspend(void)
 {
@@ -428,6 +566,7 @@ static struct attribute *meson_pm_attrs[] = {
 #if IS_ENABLED(CONFIG_AMLOGIC_LEGACY_EARLY_SUSPEND)
 	&class_attr_early_suspend_trigger.attr,
 #endif
+	&class_attr_suspend_debug.attr,
 	NULL,
 };
 
@@ -504,6 +643,9 @@ static int meson_pm_probe(struct platform_device *pdev)
 	err = register_pm_notifier(&clr_suspend_notifier);
 	if (unlikely(err))
 		return err;
+
+	if (suspend_debug_flag)
+		set_suspend_debug_flag(suspend_debug_flag);
 
 	return 0;
 }

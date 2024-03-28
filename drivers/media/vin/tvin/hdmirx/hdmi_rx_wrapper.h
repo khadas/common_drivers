@@ -151,7 +151,7 @@ void hdmirx_close_port(u8 port);
 bool is_clk_stable(u8 port);
 unsigned int rx_get_pll_lock_sts(void);
 unsigned int rx_get_scdc_clkrate_sts(u8 port);
-void set_scdc_cfg(int hpdlow, int pwr_provided, u8 port);
+void hdmirx_clr_scdc(bool en, u8 port);
 void fsm_restart(u8 port);
 void rx_5v_monitor(void);
 void rx_audio_pll_sw_update(void);

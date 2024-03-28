@@ -449,11 +449,50 @@ static int arc_set_enable(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
+static const char *const arc_src_texts[] = {
+	"earctx_spdif", "spdif_a", "spdif_b", "hdmirx_spdif"
+};
+
+const struct soc_enum arc_src_enum =
+	SOC_ENUM_SINGLE(SND_SOC_NOPM, 0, ARRAY_SIZE(arc_src_texts),
+	arc_src_texts);
+
+int arc_source_get_enum(struct snd_kcontrol *kcontrol,
+	struct snd_ctl_elem_value *ucontrol)
+{
+	struct extn *p_extn = snd_kcontrol_chip(kcontrol);
+
+	ucontrol->value.enumerated.item[0] = p_extn->arc_src;
+
+	return 0;
+}
+
+int arc_source_set_enum(struct snd_kcontrol *kcontrol,
+	struct snd_ctl_elem_value *ucontrol)
+{
+	struct extn *p_extn = snd_kcontrol_chip(kcontrol);
+	int src = ucontrol->value.enumerated.item[0];
+
+	if (src > 3) {
+		pr_err("bad parameter for arc src set\n");
+		return -1;
+	}
+	arc_earc_source_select(src);
+	p_extn->arc_src = src;
+
+	return 0;
+}
+
 static const struct snd_kcontrol_new extn_arc_controls[] = {
 	SOC_SINGLE_BOOL_EXT("HDMI ARC Switch",
 			    0,
 			    arc_get_enable,
 			    arc_set_enable),
+	SOC_ENUM_EXT("Audio spdif_arc source",
+				arc_src_enum,
+				arc_source_get_enum,
+				arc_source_set_enum),
+
 };
 
 static int extn_create_controls(struct snd_card *card,

@@ -22,7 +22,6 @@
 #include "meson_gem.h"
 #include "meson_logo.h"
 
-
 static u64 afbc_modifier[] = {
 	/*
 	 * - TOFIX Support AFBC modifiers for YUV formats (16x16 + TILED)
@@ -1211,6 +1210,7 @@ static int meson_plane_atomic_check(struct drm_plane *plane,
 	struct meson_drm *drv = osd_plane->drv;
 	struct drm_plane_state *state;
 	struct am_meson_plane_state *plane_state;
+	u16 blend_mask_val;
 	int ret;
 
 	state = drm_atomic_get_new_plane_state(atomic_state, plane);
@@ -1242,7 +1242,13 @@ static int meson_plane_atomic_check(struct drm_plane *plane,
 	plane_info->plane_index = osd_plane->plane_index;
 	/*get plane prop value*/
 	plane_info->zorder = state->zpos;
+
+	blend_mask_val = osd_plane->pixel_blend_debug;
+	if ((blend_mask_val & 0xf0) == 0x10) /* forced pixel blend */
+		state->pixel_blend_mode = blend_mask_val & 0x0f;
+
 	plane_info->pixel_blend = state->pixel_blend_mode;
+
 	plane_info->global_alpha = state->alpha;
 	plane_info->scaling_filter = (u32)state->scaling_filter;
 	if (osd_plane->receive_palette)

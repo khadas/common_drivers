@@ -67,16 +67,14 @@
 		lcd_tcon_reserved:linux,lcd_tcon {
 			compatible = "amlogic, lcd_tcon";
 			reg = <0x3f000000 0x00502840>;
-			no-map;
+			//no-map;
 		};
 
 		codec_mm_cma:linux,codec_mm_cma {
 			compatible = "shared-dma-pool";
 			reusable;
-			/* yuv420(32x3)96M + di(7x4,11x5)84M + workbuf(12M)
-			 * the sum with align 4M then is equal to 192M
-			 */
-			size = <0x9000000>;
+			/* testAV1Decode60fps1920x1080: 116MB is required at least */
+			size = <0x7400000>;
 			alignment = <0x400000>;
 			alloc-ranges = <0x30000000 0x10000000>;
 			linux,contiguous-region;
@@ -88,7 +86,7 @@
 			size = <0x0>;
 			/*alignment = <0x100000>;*/
 			//no-map;
-			alloc-ranges = <0x0 0x3f400000>;
+			alloc-ranges = <0x0 0x30000000>;
 		};
 
 		ion_cma_reserved:linux,ion-dev {
@@ -96,14 +94,14 @@
 			reusable;
 			size = <0x0>;
 			alignment = <0x400000>;
-			alloc-ranges = <0x0 0x3f400000>;
+			alloc-ranges = <0x0 0x30000000>;
 		};
 		ion_fb_reserved:linux,ion-fb {
 			compatible = "shared-dma-pool";
 			reusable;
 			size = <0x0>;
 			alignment = <0x400000>;
-			alloc-ranges = <0x0 0x3f400000>;
+			alloc-ranges = <0x0 0x30000000>;
 		};
 		/* secure ion for gpu, advice size is 80M */
 		ion_secure_reserved:linux,ion-secure {
@@ -143,9 +141,9 @@
 			reusable;
 			/* 420 mode:1280x720x2x4=8MB */
 			/* 444 mode:1280x720x3x4=12MB */
-			size = <0x800000>;
+			size = <0x000000>;
 			alignment = <0x400000>;
-			alloc-ranges = <0x0 0x3f400000>;
+			alloc-ranges = <0x0 0x30000000>;
 		};
 
 		/* demod_reserved:linux,demod {
@@ -163,7 +161,7 @@
 		 *		//8M
 		 *		size = <0x0800000>;
 		 *		alignment = <0x400000>;
-		 *	alloc-ranges = <0x0 0x3f400000>;
+		 *	alloc-ranges = <0x0 0x30000000>;
 		 *};
 		 */
 
@@ -260,7 +258,7 @@
 	aml_dtv_demod {
 		compatible = "amlogic, ddemod-t5d-revB";
 		dev_name = "aml_dtv_demod";
-		status = "okay";
+		status = "disable";
 		diseqc_name = "sgm_41286";
 		pinctrl-names="if_agc_pins", "diseqc_out", "rf_agc_pins";
 		pinctrl-0=<&dtvdemod_if_agc_pins>;
@@ -283,7 +281,7 @@
 			>;
 
 		spectrum = <1>;
-		cma_mem_size = <16>; // MB
+		cma_mem_size = <0>; // MB
 		//memory-region = <&demod_cma_reserved>;//<&demod_reserved>;
 	};
 

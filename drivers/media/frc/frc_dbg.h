@@ -56,5 +56,7 @@ ssize_t frc_debug_param_if_help(struct frc_dev_s *devp, char *buf);
 void frc_debug_param_if(struct frc_dev_s *devp, const char *buf, size_t count);
 ssize_t frc_debug_other_if_help(struct frc_dev_s *devp, char *buf);
 void frc_debug_other_if(struct frc_dev_s *devp, const char *buf, size_t count);
+void frc_timer_proc(struct frc_dev_s *devp);
+void frc_dbg_frame_show(struct frc_dev_s *devp);
 
 #endif

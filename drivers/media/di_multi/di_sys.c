@@ -4002,10 +4002,19 @@ static int dim_probe(struct platform_device *pdev)
 
 	//di_pr_info("%s allocate rdma channel %d.\n", __func__,
 	//	   di_devp->rdma_handle);
+	if (DIM_IS_IC(S7D))
+		dimp_set(edi_mp_clock_low_ratio, 18000000);
+
 	if (cpu_after_eq(MESON_CPU_MAJOR_ID_TXL)) {
 		dim_get_vpu_clkb(&pdev->dev, di_devp);
 		#ifdef CLK_TREE_SUPPORT
 		clk_prepare_enable(di_devp->vpu_clkb);
+		if (DIM_IS_IC(S7D)) {
+			if (dimp_get(edi_mp_clock_low_ratio)) {
+				clk_set_rate(di_devp->vpu_clkb,
+					dimp_get(edi_mp_clock_low_ratio));
+			}
+		}
 		dbg_mem("vpu clkb =%ld.\n", clk_get_rate(di_devp->vpu_clkb));
 		#else
 		aml_write_hiubus(HHI_VPU_CLKB_CNTL, 0x1000100);
@@ -4065,6 +4074,8 @@ static int dim_probe(struct platform_device *pdev)
 	dil_set_cpuver_flag(get_datal()->mdata->ic_id);
 	if (DIM_IS_IC(SC2) || DIM_IS_IC(S4) || DIM_IS_IC_EF(T7) || DIM_IS_IC_EF(S7D))
 		di_devp->is_crc_ic = true;
+	if (DIM_IS_IC(T5DB) && cfgg(SUB_V))
+		di_devp->sub_v = cfgg(SUB_V);
 	dip_init_pq_ops();
 
 	if (dim_get_canvas()) {
@@ -4124,6 +4135,8 @@ static int dim_probe(struct platform_device *pdev)
 	dim_debugfs_init();	/*2018-07-18 add debugfs*/
 
 	dimh_patch_post_update_mc_sw(DI_MC_SW_IC, true);
+	if (DIM_IS_IC(T7))
+		init_di_arb_urgent();
 #ifdef CONFIG_AMLOGIC_MEDIA_THERMAL
 	register_media_cooling();
 #endif
@@ -4285,7 +4298,8 @@ static int di_suspend(struct device *dev)
 		   DIM_IS_IC(T5DB)	||
 		   DIM_IS_IC(T5D)	||
 		   DIM_IS_IC(T3)	||
-		   DIM_IS_IC(T3X)) {
+		   DIM_IS_IC(T3X)	||
+		   DIM_IS_IC(S7D)) {
 	#ifdef CLK_TREE_SUPPORT
 			if (dimp_get(edi_mp_clock_low_ratio)) {
 				clk_set_rate(di_devp->vpu_clkb,

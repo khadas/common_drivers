@@ -1,30 +1,35 @@
-From 890cfc08bf4ac870bd55c1afa4030ff69adea770 Mon Sep 17 00:00:00 2001
+From f8fb15308f1fe54db5fdb17b0c7235b117f5fcf1 Mon Sep 17 00:00:00 2001
 From: Feng Chen <feng.chen@amlogic.com>
 Date: Tue, 21 Mar 2023 10:59:15 +0800
 Subject: [PATCH] mtdblock: modify for squashfs mount [1/2]
 
 PD#SWPL-116004
+PD#SWPL-157951
 
 Problem:
 1.squashfs don't handle bad block
 2.partition size returned from mtdblock
 is incorrect
+3.mtdblock io performance
 
 Solution:
 1.mtdblock handle bad block
 2.fix mtdblock size
+3.mtd disk block size set to mtd writesize
 
 Verify:
 s4_aq2432
+AT301_962D4-K35(1.5G) #256
 
 Change-Id: Icbaec2b6679727ebe0d12fd92bf4d21cc4d5f3fe
 Signed-off-by: Feng Chen <feng.chen@amlogic.com>
+Signed-off-by: zhikui.cui <zhikui.cui@amlogic.com>
 ---
- drivers/mtd/mtdblock.c | 107 ++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 106 insertions(+), 1 deletion(-)
+ drivers/mtd/mtdblock.c | 128 ++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 127 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/mtd/mtdblock.c b/drivers/mtd/mtdblock.c
-index a0a1194dc1d9..1c57b9eccad7 100644
+index a0a1194dc1d9..9424a56a44ba 100644
 --- a/drivers/mtd/mtdblock.c
 +++ b/drivers/mtd/mtdblock.c
 @@ -31,6 +31,14 @@ struct mtdblk_dev {
@@ -106,7 +111,35 @@ index a0a1194dc1d9..1c57b9eccad7 100644
  	if (!sect_size) {
  		ret = mtd_read(mtd, pos, len, &retlen, buf);
  		if (ret && !mtd_is_bitflip(ret))
-@@ -253,6 +297,10 @@ static int mtdblock_writesect(struct mtd_blktrans_dev *dev,
+@@ -231,7 +275,14 @@ static int mtdblock_readsect(struct mtd_blktrans_dev *dev,
+ 			      unsigned long block, char *buf)
+ {
+ 	struct mtdblk_dev *mtdblk = container_of(dev, struct mtdblk_dev, mbd);
++
++#if (IS_ENABLED(CONFIG_AMLOGIC_MTD_NAND) || \
++			IS_ENABLED(CONFIG_AMLOGIC_MTD_SPI_NAND))
++	return do_cached_read(mtdblk, block << dev->tr->blkshift,
++							dev->tr->blksize, buf);
++#else
+ 	return do_cached_read(mtdblk, block<<9, 512, buf);
++#endif
+ }
+
+ static int mtdblock_writesect(struct mtd_blktrans_dev *dev,
+@@ -247,12 +298,23 @@ static int mtdblock_writesect(struct mtd_blktrans_dev *dev,
+ 		 * return -EAGAIN sometimes, but why bother?
+ 		 */
+ 	}
++
++#if (IS_ENABLED(CONFIG_AMLOGIC_MTD_NAND) || \
++			IS_ENABLED(CONFIG_AMLOGIC_MTD_SPI_NAND))
++	return do_cached_write(mtdblk, block << dev->tr->blkshift,
++							dev->tr->blksize, buf);
++#else
+ 	return do_cached_write(mtdblk, block<<9, 512, buf);
++#endif
+ }
+
  static int mtdblock_open(struct mtd_blktrans_dev *mbd)
  {
  	struct mtdblk_dev *mtdblk = container_of(mbd, struct mtdblk_dev, mbd);
@@ -117,7 +150,7 @@ index a0a1194dc1d9..1c57b9eccad7 100644
  
  	pr_debug("mtdblock_open\n");
  
-@@ -274,6 +322,35 @@ static int mtdblock_open(struct mtd_blktrans_dev *mbd)
+@@ -274,6 +336,35 @@ static int mtdblock_open(struct mtd_blktrans_dev *mbd)
  		mtdblk->cache_data = NULL;
  	}
  
@@ -153,7 +186,7 @@ index a0a1194dc1d9..1c57b9eccad7 100644
  	pr_debug("ok\n");
  
  	return 0;
-@@ -311,27 +388,55 @@ static int mtdblock_flush(struct mtd_blktrans_dev *dev)
+@@ -311,27 +402,62 @@ static int mtdblock_flush(struct mtd_blktrans_dev *dev)
  	ret = write_cached_data(mtdblk);
  	mutex_unlock(&mtdblk->cache_mutex);
  	mtd_sync(dev->mtd);
@@ -180,7 +213,14 @@ index a0a1194dc1d9..1c57b9eccad7 100644
  	dev->mbd.mtd = mtd;
  	dev->mbd.devnum = mtd->index;
  
++#if (IS_ENABLED(CONFIG_AMLOGIC_MTD_NAND) || \
++			IS_ENABLED(CONFIG_AMLOGIC_MTD_SPI_NAND))
++	tr->blksize = mtd->writesize;
++	tr->blkshift = ffs(tr->blksize) - 1;
++	dev->mbd.size = mtd->size >> tr->blkshift;
++#else
  	dev->mbd.size = mtd->size >> 9;
++#endif
 +
 +#ifdef CONFIG_AMLOGIC_NAND
 +	if (!mtd_can_have_bb(mtd))
@@ -210,5 +250,5 @@ index a0a1194dc1d9..1c57b9eccad7 100644
  
  static void mtdblock_remove_dev(struct mtd_blktrans_dev *dev)
 -- 
-2.25.1
+2.43.0
 

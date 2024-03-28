@@ -192,6 +192,7 @@ const struct di_mm_cfg_s *di_get_mm_tab(unsigned int is_4k,
 bool dip_plink_check_ponly_dct(struct di_ch_s *pch, struct vframe_s *vframe);
 
 bool dim_config_crc_icl(void);
+unsigned int dim_is_ic_sub(void);
 
 /************************************************
  * sct
@@ -591,6 +592,7 @@ int new_destroy_instance(int index);
 enum DI_ERRORTYPE new_empty_input_buffer(int index, struct di_buffer *buffer);
 enum DI_ERRORTYPE new_fill_output_buffer(int index, struct di_buffer *buffer);
 int new_release_keep_buf(struct di_buffer *buffer);
+int set_buffer_num(unsigned int post, unsigned int pre);
 int new_get_output_buffer_num(int index);
 int new_get_input_buffer_num(int index);
 bool dim_get_overturn(void);

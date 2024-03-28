@@ -3,7 +3,6 @@
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
 
-//#define DEBUG
 #include <linux/module.h>
 #include <linux/init.h>
 #include <linux/input.h>
@@ -12,9 +11,7 @@
 #include <linux/gpio/consumer.h>
 #include <linux/interrupt.h>
 #include <linux/slab.h>
-#ifdef CONFIG_AMLOGIC_GX_SUSPEND
 #include <linux/amlogic/pm.h>
-#endif
 #include <linux/irq.h>
 #include <linux/amlogic/power_domain.h>
 #include <linux/amlogic/gpiolib.h>
@@ -321,35 +318,33 @@ static int meson_gpio_kp_remove(struct platform_device *pdev)
 }
 
 static const struct of_device_id key_dt_match[] = {
-	{	.compatible = "amlogic, gpio_keypad", },
-	{},
+	{ .compatible = "amlogic, gpio_keypad", },
+	{}
 };
 
-#ifdef CONFIG_AMLOGIC_GX_SUSPEND
-static int meson_gpio_kp_suspend(struct platform_device *dev,
-				 pm_message_t state)
+static int meson_gpio_kp_suspend(struct device *dev)
 {
 	struct gpio_keypad *pdata;
 
-	pdata = (struct gpio_keypad *)platform_get_drvdata(dev);
+	pdata = (struct gpio_keypad *)dev_get_drvdata(dev);
 	if (!pdata->use_irq)
 		del_timer(&pdata->polling_timer);
 	return 0;
 }
 
-static int meson_gpio_kp_resume(struct platform_device *dev)
+static int meson_gpio_kp_resume(struct device *dev)
 {
 	int i;
 	struct gpio_keypad *pdata;
 
-	pdata = (struct gpio_keypad *)platform_get_drvdata(dev);
+	pdata = (struct gpio_keypad *)dev_get_drvdata(dev);
 	if (!pdata->use_irq)
 		mod_timer(&pdata->polling_timer,
 			  jiffies + msecs_to_jiffies(5));
 	if (get_resume_method() == POWER_KEY_WAKEUP) {
 		for (i = 0; i < pdata->key_size; i++) {
 			if (pdata->key[i].code == KEY_POWER) {
-				dev_dbg(&dev->dev, "gpio keypad wakeup\n");
+				dev_dbg(dev, "gpio keypad wakeup\n");
 				input_report_key(pdata->input_dev,
 						 KEY_POWER,  1);
 				input_sync(pdata->input_dev);
@@ -362,17 +357,58 @@ static int meson_gpio_kp_resume(struct platform_device *dev)
 	}
 	return 0;
 }
-#endif
+
+static int meson_gpio_kp_restore(struct device *dev)
+{
+	struct gpio_keypad *keypad = dev_get_drvdata(dev);
+	struct gpio_desc *desc;
+	int index;
+
+	for (index = 0; index < keypad->key_size; index++) {
+		desc = devm_gpiod_get_index(dev, "key", index, GPIOD_IN);
+		if (IS_ERR_OR_NULL(desc)) {
+			dev_err(dev, "failed to request to gpio while restore\n");
+			return -EINVAL;
+		}
+		gpiod_direction_input(desc);
+		gpiod_set_pull(desc, GPIOD_PULL_UP);
+		keypad->key[index].desc = desc;
+	}
+
+	return meson_gpio_kp_resume(dev);
+}
+
+static int meson_gpio_kp_freeze(struct device *dev)
+{
+	struct gpio_keypad *keypad = dev_get_drvdata(dev);
+	int index;
+	int ret;
+
+	ret = meson_gpio_kp_suspend(dev);
+	if (ret)
+		return ret;
+
+	for (index = 0; index < keypad->key_size; index++)
+		devm_gpiod_put(dev, keypad->key[index].desc);
+
+	return 0;
+}
+
+static const struct dev_pm_ops meson_gpio_kp_pm_ops = {
+	.suspend = meson_gpio_kp_suspend,
+	.resume = meson_gpio_kp_resume,
+	.freeze = meson_gpio_kp_freeze,
+	.thaw = meson_gpio_kp_resume,
+	.poweroff = meson_gpio_kp_suspend,
+	.restore = meson_gpio_kp_restore,
+};
 
 static struct platform_driver meson_gpio_kp_driver = {
 	.probe = meson_gpio_kp_probe,
 	.remove = meson_gpio_kp_remove,
-#ifdef CONFIG_AMLOGIC_GX_SUSPEND
-	.suspend = meson_gpio_kp_suspend,
-	.resume = meson_gpio_kp_resume,
-#endif
 	.driver = {
 		.name = "gpio-keypad",
+		.pm = &meson_gpio_kp_pm_ops,
 		.of_match_table = key_dt_match,
 	},
 };

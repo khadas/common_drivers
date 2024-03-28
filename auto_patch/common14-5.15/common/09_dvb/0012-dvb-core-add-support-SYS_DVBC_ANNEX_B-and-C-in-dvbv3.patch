@@ -1,31 +1,32 @@
-From b168c28453b962819abff7c82584e6b0b66f7365 Mon Sep 17 00:00:00 2001
-From: "qinglin.li" <qinglin.li@amlogic.com>
-Date: Mon, 16 Jan 2023 19:11:30 +0800
-Subject: [PATCH] gki_20: fix break gki_20 modify [1/1]
+From ea0059cf3f186901dea771e6e993db1eecbaeedb Mon Sep 17 00:00:00 2001
+From: "nengwen.chen" <nengwen.chen@amlogic.com>
+Date: Sun, 18 Feb 2024 16:15:05 +0800
+Subject: [PATCH] dvb-core: add support SYS_DVBC_ANNEX_B and C in dvbv3 [1/1]
 
-PD#SWPL-111114
+PD#SWPL-156400
+PD#TV-109289
 
 Problem:
-fix break gki_20 modify
+SET_FRONTEND fail when use SYS_DVBC_ANNEX_B.
 
 Solution:
-fix break gki_20 modify
+add support SYS_DVBC_ANNEX_B and C in dvbv3.
 
 Verify:
-local
+T5D.
 
-Change-Id: I239758e356ccaf5eed2027fe10cbeeba6b0143b9
-Signed-off-by: qinglin.li <qinglin.li@amlogic.com>
+Change-Id: I48f5901d37c05b1cc9eaa43e63af7e49361e93b5
+Signed-off-by: nengwen.chen <nengwen.chen@amlogic.com>
 ---
- drivers/media/dvb-core/dvb_frontend.c | 12 +++++-------
- 1 files changed, 5 insertions(+), 7 deletions(-)
+ drivers/media/dvb-core/dvb_frontend.c | 9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/media/dvb-core/dvb_frontend.c b/drivers/media/dvb-core/dvb_frontend.c
-index 7a8e194919f5..a03b9d587df7 100644
+index 59b4a92cc537e..144a1f27282b4 100644
 --- a/drivers/media/dvb-core/dvb_frontend.c
 +++ b/drivers/media/dvb-core/dvb_frontend.c
-@@ -1675,20 +1675,18 @@ static int dtv_set_frontend(struct dvb_frontend *fe);
- 
+@@ -1683,20 +1683,17 @@ static int dtv_set_frontend(struct dvb_frontend *fe);
+
  static bool is_dvbv3_delsys(u32 delsys)
  {
 -	bool status = false;
@@ -33,23 +34,21 @@ index 7a8e194919f5..a03b9d587df7 100644
  #ifdef CONFIG_AMLOGIC_DVB_COMPAT
 -	status = (delsys == SYS_DVBT) || (delsys == SYS_DVBC_ANNEX_A) ||
 +	return (delsys == SYS_DVBT) || (delsys == SYS_DVBC_ANNEX_A) ||
++		 (delsys == SYS_DVBC_ANNEX_B) || (delsys == SYS_DVBC_ANNEX_C) ||
  		 (delsys == SYS_DVBS) || (delsys == SYS_ATSC) ||
  		 (delsys == SYS_DTMB) || (delsys == SYS_DVBS2) ||
  		 (delsys == SYS_DVBT2) || (delsys == SYS_ISDBC) ||
  		 (delsys == SYS_ISDBT) || (delsys == SYS_ISDBS);
-+
  #else
 -	status = (delsys == SYS_DVBT) || (delsys == SYS_DVBC_ANNEX_A) ||
--		 (delsys == SYS_DVBS) || (delsys == SYS_ATSC);
--#endif
 +	return (delsys == SYS_DVBT) || (delsys == SYS_DVBC_ANNEX_A) ||
-+	       (delsys == SYS_DVBS) || (delsys == SYS_ATSC);
- 
+ 		 (delsys == SYS_DVBS) || (delsys == SYS_ATSC);
+ #endif
+-
 -	return status;
-+#endif
  }
- 
+
  /**
--- 
-2.25.1
+--
+2.42.0
 

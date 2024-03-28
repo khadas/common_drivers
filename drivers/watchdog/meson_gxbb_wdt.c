@@ -64,6 +64,8 @@ struct meson_gxbb_wdt {
 #if IS_ENABLED(CONFIG_DEBUG_FS)
 	struct dentry *debugfs_dir;
 #endif
+	u32 *shadow;
+	int shadow_size;
 #endif
 };
 
@@ -268,8 +270,61 @@ static int __maybe_unused meson_gxbb_wdt_suspend(struct device *dev)
 	return 0;
 }
 
+#if defined(CONFIG_AMLOGIC_MODIFY)
+static int meson_gxbb_wdt_restore(struct device *dev)
+{
+	struct meson_gxbb_wdt *data = dev_get_drvdata(dev);
+	int index;
+	int ret;
+
+	ret = clk_prepare_enable(data->clk);
+	if (ret)
+		return ret;
+
+	for (index = 0; index < data->shadow_size; index += 4)
+		writel(data->shadow[index >> 2], data->reg_base + index);
+
+	dev_dbg(dev, "restore register completed\n");
+
+	ret = meson_gxbb_wdt_resume(dev);
+	if (ret)
+		return ret;
+
+	return 0;
+}
+
+static int meson_gxbb_wdt_freeze(struct device *dev)
+{
+	struct meson_gxbb_wdt *data = dev_get_drvdata(dev);
+	int index;
+	int ret;
+
+	ret = meson_gxbb_wdt_suspend(dev);
+	if (ret)
+		return ret;
+
+	for (index = 0; index < data->shadow_size; index += 4)
+		data->shadow[index >> 2] = readl(data->reg_base + index);
+
+	dev_dbg(dev, "save register completed\n");
+
+	clk_disable_unprepare(data->clk);
+
+	return 0;
+}
+#endif /* CONFIG_AMLOGIC_MODIFY */
+
 static const struct dev_pm_ops meson_gxbb_wdt_pm_ops = {
+#if defined(CONFIG_AMLOGIC_MODIFY)
+	.suspend = meson_gxbb_wdt_suspend,
+	.resume = meson_gxbb_wdt_resume,
+	.freeze = meson_gxbb_wdt_freeze,
+	.thaw = meson_gxbb_wdt_resume,
+	.poweroff = meson_gxbb_wdt_suspend,
+	.restore = meson_gxbb_wdt_restore,
+#else
 	SET_SYSTEM_SLEEP_PM_OPS(meson_gxbb_wdt_suspend, meson_gxbb_wdt_resume)
+#endif /* CONFIG_AMLOGIC_MODIFY */
 };
 
 #ifdef CONFIG_AMLOGIC_MODIFY
@@ -390,13 +445,19 @@ static int meson_gxbb_wdt_probe(struct platform_device *pdev)
 	int reset_by_soc;
 	struct watchdog_device *wdt_dev;
 	int irq;
+	struct resource *res;
+	resource_size_t res_size;
 #endif
 
 	data = devm_kzalloc(dev, sizeof(*data), GFP_KERNEL);
 	if (!data)
 		return -ENOMEM;
 
+#ifdef CONFIG_AMLOGIC_MODIFY
+	data->reg_base = devm_platform_get_and_ioremap_resource(pdev, 0, &res);
+#else
 	data->reg_base = devm_platform_ioremap_resource(pdev, 0);
+#endif
 	if (IS_ERR(data->reg_base))
 		return PTR_ERR(data->reg_base);
 
@@ -459,6 +520,17 @@ static int meson_gxbb_wdt_probe(struct platform_device *pdev)
 		GXBB_WDT_CTRL_CLKDIV_EN,
 		data->reg_base + GXBB_WDT_CTRL_REG);
 #else
+
+	res_size = resource_size(res);
+	dev_dbg(&pdev->dev, "resource size: %d\n", (int)res_size);
+	if (res_size & 0x3)
+		dev_warn(&pdev->dev, "resource size is not a multiple of 4byte\n");
+
+	data->shadow = devm_kmalloc(&pdev->dev, res_size, GFP_KERNEL);
+	if (!data->shadow)
+		return -ENOMEM;
+	data->shadow_size = (int)res_size;
+
 	wdt_params = (struct wdt_params *)of_device_get_match_data(dev);
 
 	reset_by_soc = !(readl(data->reg_base + GXBB_WDT_CTRL1_REG) &

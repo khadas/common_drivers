@@ -305,10 +305,10 @@ static void postblend_set_state(struct meson_vpu_block *vblk,
 	MESON_DRM_BLOCK("%s set_state called.\n", postblend->base.name);
 	mvps = priv_to_pipeline_state(pipeline->obj.state);
 
-	scope.h_start = 0;
-	scope.h_end = mvps->scaler_param[0].output_width - 1;
-	scope.v_start = 0;
-	scope.v_end = mvps->scaler_param[0].output_height - 1;
+	scope.h_start = mvps->vpp_scope_x;
+	scope.v_start = mvps->vpp_scope_y;
+	scope.h_end = scope.h_start + mvps->scaler_param[0].output_width - 1;
+	scope.v_end = scope.v_start + mvps->scaler_param[0].output_height - 1;
 
 #ifdef CONFIG_AMLOGIC_MEDIA_SECURITY
 	secure_config(OSD_MODULE, mvps->sec_src, crtc_index);
@@ -357,6 +357,8 @@ static void txhd2_postblend_set_state(struct meson_vpu_block *vblk,
 	struct osd_scope_s scope_default = {0};
 	struct osd_scope_s scope[MESON_MAX_OSDS] = {0};
 	struct osd_zorder_s din[MESON_MAX_OSDS] = {0};
+	int src_sel1 = VPP_NULL;
+	int src_sel2 = VPP_NULL;
 	int osd_num = 0;
 
 	crtc_index = vblk->index;
@@ -421,13 +423,14 @@ static void txhd2_postblend_set_state(struct meson_vpu_block *vblk,
 							VPP_POSTBLEND);
 
 					if (i == 0)
-						vpp_osd1_postblend_mux_set(vblk, reg_ops,
-							postblend->reg, hardware_layer[i]);
+						src_sel1 = hardware_layer[i];
 					else
-						vpp_osd2_postblend_mux_set(vblk, reg_ops,
-							postblend->reg, hardware_layer[i]);
+						src_sel2 = hardware_layer[i];
 				}
 			}
+
+			vpp_osd1_postblend_mux_set(vblk, reg_ops, postblend->reg, src_sel1);
+			vpp_osd2_postblend_mux_set(vblk, reg_ops, postblend->reg, src_sel2);
 		}
 
 	}
@@ -455,10 +458,10 @@ static void t7_postblend_set_state(struct meson_vpu_block *vblk,
 
 	MESON_DRM_BLOCK("%s set_state called.\n", postblend->base.name);
 	mvps = priv_to_pipeline_state(pipeline->obj.state);
-	scope.h_start = 0;
-	scope.h_end = mvps->scaler_param[0].output_width - 1;
-	scope.v_start = 0;
-	scope.v_end = mvps->scaler_param[0].output_height - 1;
+	scope.h_start = mvps->vpp_scope_x;
+	scope.v_start = mvps->vpp_scope_y;
+	scope.h_end = scope.h_start + mvps->scaler_param[0].output_width - 1;
+	scope.v_end = scope.v_start + mvps->scaler_param[0].output_height - 1;
 
 #ifdef CONFIG_AMLOGIC_MEDIA_SECURITY
 	secure_config(OSD_MODULE, mvps->sec_src, crtc_index);
@@ -597,6 +600,13 @@ static void s5_postblend_set_state(struct meson_vpu_block *vblk,
 		secure_config(OSD_MODULE, mvps->sec_src, crtc_index);
 #endif
 
+	if (!vblk->init_done) {
+		reg_ops->rdma_write_reg_bits(VPP_INTF_OSD3_CTRL, 0, 1, 1);
+		reg_ops->rdma_write_reg(VPP_MISC_T3X, 0);
+
+		vblk->init_done = 1;
+	}
+
 	vpp_osd1_blend_scope_set(vblk, reg_ops, reg, scope);
 
 	if (amc->blank_enable) {
@@ -640,6 +650,13 @@ static void t3x_postblend_set_state(struct meson_vpu_block *vblk,
 #ifdef CONFIG_AMLOGIC_MEDIA_SECURITY
 	secure_config(OSD_MODULE, mvps->sec_src, crtc_index);
 #endif
+
+	if (!vblk->init_done) {
+		reg_ops->rdma_write_reg_bits(VPP_INTF_OSD3_CTRL, 0, 1, 1);
+		reg_ops->rdma_write_reg(VPP_MISC_T3X, 0);
+
+		vblk->init_done = 1;
+	}
 
 	if (crtc_index == 0) {
 		scope.h_start = 0;
@@ -1191,12 +1208,8 @@ static void t3_postblend_hw_init(struct meson_vpu_block *vblk)
 static void s5_postblend_hw_init(struct meson_vpu_block *vblk)
 {
 	struct meson_vpu_postblend *postblend = to_postblend_block(vblk);
-	struct rdma_reg_ops *reg_ops = vblk->pipeline->subs[0].reg_ops;
 
 	postblend->reg = &s5_postblend_reg;
-
-	reg_ops->rdma_write_reg_bits(VPP_INTF_OSD3_CTRL, 0, 1, 1);
-	reg_ops->rdma_write_reg(VPP_MISC_T3X, 0);
 }
 
 static void t3x_postblend_hw_init(struct meson_vpu_block *vblk)

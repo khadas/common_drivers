@@ -1,0 +1,57 @@
+From 48d41302aed4a6733cb7e35b142eb2a3d0e8eb88 Mon Sep 17 00:00:00 2001
+From: "shufei.zhao" <shufei.zhao@amlogic.com>
+Date: Fri, 15 Mar 2024 09:34:10 +0000
+Subject: [PATCH] binder: fix binder build error because print format [1/1]
+
+PD#SWPL-161179
+
+Problem:
+binder build error because print format
+
+Solution:
+fix binder build error because print format
+
+Verify:
+autosh
+
+Change-Id: If7a222b6f3cdade5cdabdb0a1a4fe65cfd5f3e86
+---
+ drivers/android/binder.c       | 4 ++++
+ drivers/android/binder_alloc.c | 4 ++++
+ 2 files changed, 8 insertions(+)
+
+diff --git a/drivers/android/binder.c b/drivers/android/binder.c
+index 57295e600607..2b002cb053d4 100644
+--- a/drivers/android/binder.c
++++ b/drivers/android/binder.c
+@@ -6204,7 +6204,11 @@ static void print_binder_transaction_ilocked(struct seq_file *m,
+ 	}
+ 	if (buffer->target_node)
+ 		seq_printf(m, " node %d", buffer->target_node->debug_id);
++#if IS_ENABLED(CONFIG_AMLOGIC_BREAK_GKI) && IS_ENABLED(CONFIG_ARM)
++	seq_printf(m, " size %zd:%zd offset %x\n",
++#else
+ 	seq_printf(m, " size %zd:%zd offset %lx\n",
++#endif
+ 		   buffer->data_size, buffer->offsets_size,
+ 		   proc->alloc.buffer - buffer->user_data);
+ }
+diff --git a/drivers/android/binder_alloc.c b/drivers/android/binder_alloc.c
+index e5d76d387a4a..b5a24d18c008 100644
+--- a/drivers/android/binder_alloc.c
++++ b/drivers/android/binder_alloc.c
+@@ -977,7 +977,11 @@ void binder_alloc_print_allocated(struct seq_file *m,
+ 	binder_alloc_lock(alloc);
+ 	for (n = rb_first(&alloc->allocated_buffers); n; n = rb_next(n)) {
+ 		buffer = rb_entry(n, struct binder_buffer, rb_node);
++	#if IS_ENABLED(CONFIG_AMLOGIC_BREAK_GKI) && IS_ENABLED(CONFIG_ARM)
++		seq_printf(m, "  buffer %d: %x size %zd:%zd:%zd %s\n",
++	#else
+ 		seq_printf(m, "  buffer %d: %lx size %zd:%zd:%zd %s\n",
++	#endif
+ 			   buffer->debug_id,
+ 			   buffer->user_data - alloc->buffer,
+ 			   buffer->data_size, buffer->offsets_size,
+-- 
+2.42.0
+

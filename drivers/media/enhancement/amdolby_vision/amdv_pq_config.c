@@ -800,8 +800,8 @@ struct dynamic_cfg_s dynamic_test_cfg_4[AMBIENT_CFG_FRAMES_2] = {
 
 struct ambient_cfg_s lightsense_test_cfg[2] = {
 	/* update_flag, ambient, rear, front, whitex, whitey,dark_detail */
-	{ 9, 65536, 0, 242, 0, 0, 0},
-	{ 9, 65536, 0, 62768, 0, 0, 0},
+	{ 9, 65536, 0, 0, 0, 0, 0},
+	{ 9, 65536, 0, 65535, 0, 0, 0},
 };
 
 struct target_config def_tgt_display_cfg_bestpq = {
@@ -1249,7 +1249,7 @@ void calculate_user_pq_config(void)
 		user_cfg_info[cur_pic_mode].tgamma * 16384 / 10;
 	for (i = 0; i < 8; i++) {
 		user_target_config[cur_pic_mode].t_primaries[i] =
-			user_cfg_info[cur_pic_mode].tprimaries[i] * (1 << 26) / 10000;
+			((1 << 26) / 10000) * user_cfg_info[cur_pic_mode].tprimaries[i];
 	}
 	dv_user_cfg_flag = true;
 }
@@ -1289,7 +1289,7 @@ u32 check_dynamic_cfg_enabled_top1(void)
 	return 0;
 }
 
-void update_cp_cfg_hw5(bool update_pyramid, bool enable)
+void update_cp_cfg_hw5(bool update_pyramid, bool is_top1, bool enable)
 {
 	struct target_config_dvp *tdc;
 
@@ -1299,11 +1299,18 @@ void update_cp_cfg_hw5(bool update_pyramid, bool enable)
 			__func__, cur_pic_mode, num_picture_mode, bin_to_cfg_dvp);
 		return;
 	}
-
-	memcpy(pq_config_dvp_fake,
+	if (is_top1) {
+		memcpy(pq_config_dvp_fake_top1,
+			   &bin_to_cfg_dvp[cur_pic_mode],
+			   sizeof(struct pq_config_dvp));
+		tdc = &(((struct pq_config_dvp *)pq_config_dvp_fake_top1)->tdc);
+	} else {
+		memcpy(pq_config_dvp_fake,
 		   &bin_to_cfg_dvp[cur_pic_mode],
 		   sizeof(struct pq_config_dvp));
-	tdc = &(((struct pq_config_dvp *)pq_config_dvp_fake)->tdc);
+		tdc = &(((struct pq_config_dvp *)pq_config_dvp_fake)->tdc);
+	}
+
 	tdc->d_brightness = cfg_info[cur_pic_mode].brightness;
 	tdc->d_contrast = cfg_info[cur_pic_mode].contrast;
 	tdc->d_color_shift = cfg_info[cur_pic_mode].colorshift;
@@ -1317,7 +1324,6 @@ void update_cp_cfg_hw5(bool update_pyramid, bool enable)
 		tdc->t_primaries[4] = cur_debug_tprimary[2][0]; /*bx*/
 		tdc->t_primaries[5] = cur_debug_tprimary[2][1]; /*by*/
 	}
-
 	if (update_pyramid && !enable &&
 		(tdc->pr_config.supports_precision_rendering || tdc->ana_config.enalbe_l1l4_gen)) {
 		tdc->pr_config.supports_precision_rendering = 0;
@@ -1333,7 +1339,8 @@ void update_cp_cfg(void)
 	int i = 0;
 
 	if (is_aml_hw5()) {
-		update_cp_cfg_hw5(false, false);
+		update_cp_cfg_hw5(false, true, false);/*update for top1*/
+		update_top2_cfg = true;/*delay update top2 cfg in parse_metadata*/
 		return;
 	}
 	if (cur_pic_mode >= num_picture_mode || num_picture_mode == 0 ||
@@ -2813,7 +2820,7 @@ int get_dv_pq_info(char *buf)
 					user_cfg_info[cur_pic_mode].tmin);
 		pos += sprintf(buf + pos,
 					"user cfg TPrimaries:       ");
-		pos += sprintf(buf + pos, "[0.%d][0.%d][0.%d][0.%d][0.%d][0.%d][0.%d][0.%d]\n\n",
+		pos += sprintf(buf + pos, "[%d][%d][%d][%d][%d][%d][%d][%d]\n\n",
 					user_cfg_info[cur_pic_mode].tprimaries[0],
 					user_cfg_info[cur_pic_mode].tprimaries[1],
 					user_cfg_info[cur_pic_mode].tprimaries[2],

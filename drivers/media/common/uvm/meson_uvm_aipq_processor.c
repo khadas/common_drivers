@@ -75,6 +75,8 @@ int aipq_vf_set_value(struct uvm_aipq_info *aipq_info, bool enable_aipq)
 	struct file_private_data *file_private_data = NULL;
 	int shared_fd = aipq_info->shared_fd;
 	int i = 0, di_flag = 0;
+	struct vframe_s *dma_di_vf = NULL;
+	bool dma_has_di_vf = false;
 
 	dmabuf = dma_buf_get(shared_fd);
 
@@ -126,6 +128,27 @@ int aipq_vf_set_value(struct uvm_aipq_info *aipq_info, bool enable_aipq)
 		vf->ai_pq_enable = enable_aipq;
 		di_flag = vf->flag & VFRAME_FLAG_CONTAIN_POST_FRAME;
 
+		/*check attach vf == vf_ext for di*/
+		uhmod = uvm_get_hook_mod(dmabuf, VF_PROCESS_DI);
+		if (!IS_ERR_OR_NULL(uhmod) && uhmod->arg) {
+			dma_has_di_vf = true;
+			dma_di_vf = (struct vframe_s *)uhmod->arg;
+		}
+
+		aipq_print(PRINT_OTHER,
+			"dmabuf=%px, vf=%px, vf->vf_ext=%px, dma_di_vf=%px, flag=%x, has_di=%d\n",
+			dmabuf, vf, vf->vf_ext, dma_di_vf, vf->flag, dma_has_di_vf);
+
+		if (vf->vf_ext && di_flag) {
+			if (!(dma_has_di_vf && vf->vf_ext == dma_di_vf)) {
+				aipq_print(PRINT_ERROR,
+					"di vf err:dmabuf=%px,uhmod=%px,vf=%px,vf_ext=%px,dma_di_vf=%px,index=%d\n",
+					dmabuf, uhmod, vf, vf->vf_ext, dma_di_vf, vf->omx_index);
+				di_flag = 0;
+			}
+		}
+		/*check end, next need put uvm*/
+
 		if (vf->vf_ext) {
 			if (!is_dec_vf || (is_dec_vf && di_flag)) {
 				aipq_print(PRINT_OTHER, "set di vf\n");
@@ -141,6 +164,10 @@ int aipq_vf_set_value(struct uvm_aipq_info *aipq_info, bool enable_aipq)
 		} else {
 			aipq_print(PRINT_OTHER, "not find di vf\n");
 		}
+
+		if (!IS_ERR_OR_NULL(uhmod))
+			uvm_put_hook_mod(dmabuf, VF_PROCESS_DI);
+
 	} else {
 		aipq_print(PRINT_ERROR, "not find vf\n");
 		dma_buf_put(dmabuf);
@@ -160,6 +187,8 @@ struct vframe_s *aipq_get_dw_vf(struct uvm_aipq_info *aipq_info)
 	struct file_private_data *file_private_data = NULL;
 	int shared_fd = aipq_info->shared_fd;
 	int interlace_mode = 0;
+	struct vframe_s *dma_di_vf = NULL;
+	bool dma_has_di_vf = false;
 
 	dmabuf = dma_buf_get(shared_fd);
 
@@ -197,6 +226,25 @@ struct vframe_s *aipq_get_dw_vf(struct uvm_aipq_info *aipq_info)
 
 		di_vf = vf->vf_ext;
 		interlace_mode = vf->type & VIDTYPE_TYPEMASK;
+
+		uhmod = uvm_get_hook_mod(dmabuf, VF_PROCESS_DI);
+		if (!IS_ERR_OR_NULL(uhmod)) {
+			dma_has_di_vf = true;
+			dma_di_vf = (struct vframe_s *)uhmod->arg;
+		}
+
+		if (di_vf && (vf->flag & VFRAME_FLAG_CONTAIN_POST_FRAME)) {
+			aipq_print(PRINT_OTHER,
+				"%s: dma_has_di_vf=%d, dma_di_vf=%px\n",
+				__func__, dma_has_di_vf, dma_di_vf);
+			if (!(dma_has_di_vf && di_vf == dma_di_vf)) {
+				aipq_print(PRINT_ERROR,
+					"di vf err: dmabuf=%px, uhmod=%px, vf=%px, di_vf=%px, dma_di_vf=%px, omx_index=%d\n",
+					dmabuf, uhmod, vf, di_vf, dma_di_vf, vf->omx_index);
+				di_vf = NULL;
+			}
+		}
+
 		if (di_vf && (vf->flag & VFRAME_FLAG_CONTAIN_POST_FRAME)) {
 			if (interlace_mode != VIDTYPE_PROGRESSIVE) {
 				/*for interlace*/
@@ -209,6 +257,9 @@ struct vframe_s *aipq_get_dw_vf(struct uvm_aipq_info *aipq_info)
 				vf = di_vf;
 			}
 		}
+
+		if (dma_has_di_vf)
+			uvm_put_hook_mod(dmabuf, VF_PROCESS_DI);
 		dmabuf_put_vframe(dmabuf);
 	} else {
 		uhmod = uvm_get_hook_mod(dmabuf, VF_PROCESS_V4LVIDEO);
@@ -265,7 +316,7 @@ int ge2d_vf_process(struct vframe_s *vf, struct ge2d_output_t *output)
 	if (!context) {
 		context = create_ge2d_work_queue();
 		if (IS_ERR_OR_NULL(context)) {
-			aipq_print(PRINT_ERROR, "creat ge2d work failed\n");
+			aipq_print(PRINT_ERROR, "%s: creat ge2d work failed\n", __func__);
 			return -1;
 		}
 	}
@@ -399,6 +450,84 @@ int ge2d_vf_process(struct vframe_s *vf, struct ge2d_output_t *output)
 	return 0;
 }
 
+static int convert_rgb24_to_y8_process(struct ge2d_output_t *output)
+{
+	struct config_para_ex_s ge2d_config_s;
+	struct config_para_ex_s *ge2d_config = &ge2d_config_s;
+	struct canvas_s cs, cd;
+	int input_width, input_height;
+	u32 input_canvas = get_canvas(3);
+	u32 output_canvas = get_canvas(0);
+
+	if (!context) {
+		context = create_ge2d_work_queue();
+		if (IS_ERR_OR_NULL(context)) {
+			aipq_print(PRINT_ERROR, "%s: creat ge2d work failed\n", __func__);
+			return -1;
+		}
+	}
+
+	canvas_read(input_canvas & 0xff, &cs);
+	memset(ge2d_config, 0, sizeof(struct config_para_ex_s));
+	ge2d_config->src_planes[0].addr = cs.addr;
+	ge2d_config->src_planes[0].w = cs.width;
+	ge2d_config->src_planes[0].h = cs.height;
+	ge2d_config->src_para.canvas_index = input_canvas;
+	ge2d_config->src_para.format = GE2D_FORMAT_S24_BGR | GE2D_LITTLE_ENDIAN;
+
+	input_width = output->width;
+	input_height = output->height;
+	canvas_config(output_canvas, output->addr, output->width,
+			  output->height, CANVAS_ADDR_NOWRAP,
+			  CANVAS_BLKMODE_LINEAR);
+	canvas_read(output_canvas & 0xff, &cd);
+
+	ge2d_config->dst_planes[0].addr = cd.addr;
+	ge2d_config->dst_planes[0].w = cd.width;
+	ge2d_config->dst_planes[0].h = cd.height;
+	ge2d_config->src_key.key_enable = 0;
+	ge2d_config->src_key.key_mask = 0;
+	ge2d_config->src_key.key_mode = 0;
+	ge2d_config->src_para.mem_type = CANVAS_TYPE_INVALID;
+	ge2d_config->src_para.fill_color_en = 0;
+	ge2d_config->src_para.fill_mode = 0;
+	ge2d_config->src_para.x_rev = 0;
+	ge2d_config->src_para.y_rev = 0;
+	ge2d_config->src_para.color = 0xffffffff;
+	ge2d_config->src_para.top = 0;
+	ge2d_config->src_para.left = 0;
+	ge2d_config->src_para.width = input_width;
+	ge2d_config->src_para.height = input_height;
+	ge2d_config->alu_const_color = 0;
+	ge2d_config->bitmask_en = 0;
+	ge2d_config->src1_gb_alpha = 0;/* 0xff; */
+	ge2d_config->src2_para.mem_type = CANVAS_TYPE_INVALID;
+	ge2d_config->dst_para.canvas_index = output_canvas;
+
+	ge2d_config->dst_para.mem_type = CANVAS_TYPE_INVALID;
+	ge2d_config->dst_para.format = output->format | GE2D_LITTLE_ENDIAN;
+	ge2d_config->dst_para.fill_color_en = 0;
+	ge2d_config->dst_para.fill_mode = 0;
+	ge2d_config->dst_para.x_rev = 0;
+	ge2d_config->dst_para.y_rev = 0;
+	ge2d_config->dst_para.color = 0;
+	ge2d_config->dst_para.top = 0;
+	ge2d_config->dst_para.left = 0;
+	ge2d_config->dst_para.width = output->width;
+	ge2d_config->dst_para.height = output->height;
+	ge2d_config->dst_xy_swap = 0;
+
+	if (ge2d_context_config_ex(context, ge2d_config) < 0) {
+		aipq_print(PRINT_ERROR,
+				  "++ge2d configing error.\n");
+		return -1;
+	}
+
+	stretchblt_noalpha(context, 0, 0, input_width, input_height,
+			   0, 0, output->width, output->height);
+
+	return 0;
+}
 void free_aipq_data(void *arg)
 {
 	if (arg) {
@@ -453,11 +582,14 @@ int attach_aipq_hook_mod_info(int shared_fd,
 			aipq_print(PRINT_OTHER, "get no vf\n");
 			return -EINVAL;
 		}
+
 		aipq_info->dw_height = vf->height;
 		aipq_info->dw_width = vf->width;
 		if (vf->width > 3840 ||
 		    vf->height > 2160 ||
 		    vf->flag & VFRAME_FLAG_VIDEO_SECURE ||
+		    vf->flag & VFRAME_FLAG_GAME_MODE ||
+		    vf->flag & VFRAME_FLAG_PC_MODE ||
 		    vf->canvas0_config[0].bit_depth & P010_MODE) {
 			aipq_print(PRINT_OTHER, "bypass %d %d\n",
 				vf->width, vf->height);
@@ -680,7 +812,7 @@ int aipq_getinfo(void *arg, char *buf)
 		do_gettimeofday(&begin_time);
 		ret = ge2d_vf_process(vf, &output);
 		if (ret < 0) {
-			aipq_print(PRINT_ERROR, "ge2d err\n");
+			aipq_print(PRINT_ERROR, "ge2d output RGB24 err\n");
 			return -EINVAL;
 		}
 		aipq_info->omx_index = vf->omx_index;
@@ -697,6 +829,16 @@ int aipq_getinfo(void *arg, char *buf)
 					uvm_aipq_dump);
 				uvm_aipq_dump = 0;
 				dump_count = 0;
+			}
+		}
+		if (aipq_info->nn_do_aipq_type == NN_USE_GPU) {
+			output.format = GE2D_FORMAT_S8_Y;
+			output.addr = ((ulong)phy_addr + aipq_info->nn_input_frame_width *
+				aipq_info->nn_input_frame_height * 3);
+			ret = convert_rgb24_to_y8_process(&output);
+			if (ret < 0) {
+				aipq_print(PRINT_ERROR, "ge2d output Y8 err\n");
+				return -EINVAL;
 			}
 		}
 	}

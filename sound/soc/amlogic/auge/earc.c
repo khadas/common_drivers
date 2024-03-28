@@ -3191,7 +3191,9 @@ static int earc_platform_probe(struct platform_device *pdev)
 	}
 
 	if (!IS_ERR(p_earc->rx_top_map)) {
+#ifdef CONFIG_AMLOGIC_HDMITX21
 		register_earcrx_callback(earc_hdmitx_hpdst);
+#endif
 		for (i = 0; i < sizeof(default_rx_cds) / sizeof(u8); i++)
 			p_earc->rx_cds_data[i] = default_rx_cds[i];
 		if (earcrx_cmdc_get_attended_type(p_earc->rx_cmdc_map) == ATNDTYP_EARC)
@@ -3204,8 +3206,10 @@ static int earc_platform_probe(struct platform_device *pdev)
 
 int earc_platform_remove(struct platform_device *pdev)
 {
+#ifdef CONFIG_AMLOGIC_HDMITX21
 	if (!IS_ERR(s_earc->rx_top_map))
 		unregister_earcrx_callback();
+#endif
 #ifdef CONFIG_AMLOGIC_MEDIA_TVIN_HDMI
 	if (!IS_ERR(s_earc->tx_top_map))
 		unregister_earctx_callback();

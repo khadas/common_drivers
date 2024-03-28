@@ -22,4 +22,10 @@ config AMLOGIC_PWM_32K
 		By default,32K of SOC input is enabled,
 		if not, you can disable it by selecting n.
 
+config AMLOGIC_RFKILL_INIT_SW_UNBLOCK
+	bool "init rfkill sw unblock"
+	default n
+	help
+		Enable init rfkill sw unblock.
+ 		By default,rfkill sw is blocked and not inited.
 endif

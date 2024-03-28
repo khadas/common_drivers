@@ -90,6 +90,10 @@
  * note : bit[3] default 1, other 0. bit[12:15] not need sw control
  */
 #define HDMITX_TOP_CLK_GATE				(TOP_OFFSET_MASK + (0x030 << 2)) // 0x0C0
+	#define BIT_HDMITX_TOP_CLK_GATE_HDCP1X BIT(17)
+	#define BIT_HDMITX_TOP_CLK_GATE_HDCP2X BIT(16)
+	#define BIT_HDMITX_TOP_CLK_GATE_FDET BIT(1)
+	#define BIT_HDMITX_TOP_CLK_GATE_PBIST BIT(0)
 
 //==================== AON_DDC_REG ====================
 

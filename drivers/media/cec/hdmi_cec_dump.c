@@ -199,7 +199,9 @@ static int dump_cec_status_show(struct seq_file *s, void *p)
 	seq_printf(s, "output:0x%x\n", cec_dev->output);
 	seq_printf(s, "arc_port:0x%x\n", cec_dev->arc_port);
 	seq_printf(s, "hal_flag:0x%x\n", cec_dev->hal_flag);
+#if (defined(CONFIG_AMLOGIC_HDMITX) || defined(CONFIG_AMLOGIC_HDMITX21))
 	seq_printf(s, "hpd_state:0x%x\n", get_hpd_state());
+#endif
 	seq_printf(s, "cec_config:0x%x\n", cec_config(0, 0));
 	seq_printf(s, "log_addr:0x%x\n", cec_dev->cec_info.log_addr);
 

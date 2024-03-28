@@ -66,7 +66,8 @@
 #include <linux/cma.h>
 #include <linux/genalloc.h>
 #include <linux/dma-mapping.h>
-// #include <linux/delay.h>
+#include <linux/timer.h>
+#include <linux/hrtimer.h>
 
 #include "frc_drv.h"
 #include "frc_proc.h"
@@ -97,6 +98,8 @@ const struct frm_dly_dat_s chip_frc_frame_dly[3][4] = {
 		{220, 20},  // {240, 15},
 	},
 };
+
+struct hrtimer frc_hi_timer;  // timer
 
 // static struct frc_dev_s *frc_dev; // for SWPL-53056:KASAN: use-after-free
 static struct frc_dev_s frc_dev;
@@ -140,8 +143,7 @@ static struct class_attribute frc_class_attrs[] = {
 	__ATTR(rdma, 0644, frc_rdma_show, frc_rdma_store),
 	__ATTR(param, 0644, frc_param_show, frc_param_store),
 	__ATTR(other, 0644, frc_other_show, frc_other_store),
-	__ATTR(final_line_param, 0644, frc_bbd_final_line_param_show,
-		frc_bbd_final_line_param_store),
+	__ATTR(bbd_ctrl_param, 0644, frc_bbd_ctrl_param_show, frc_bbd_ctrl_param_store),
 	__ATTR(vp_ctrl_param, 0644, frc_vp_ctrl_param_show, frc_vp_ctrl_param_store),
 	__ATTR(logo_ctrl_param, 0644, frc_logo_ctrl_param_show, frc_logo_ctrl_param_store),
 	__ATTR(iplogo_ctrl_param, 0644, frc_iplogo_ctrl_param_show, frc_iplogo_ctrl_param_store),
@@ -151,10 +153,14 @@ static struct class_attribute frc_class_attrs[] = {
 	__ATTR(fb_ctrl_param, 0644, frc_fb_ctrl_param_show, frc_fb_ctrl_param_store),
 	__ATTR(me_ctrl_param, 0644, frc_me_ctrl_param_show, frc_me_ctrl_param_store),
 	__ATTR(search_rang_param, 0644, frc_search_rang_param_show, frc_search_rang_param_store),
-	__ATTR(pixel_lpf_param, 0644, frc_pixel_lpf_param_show, frc_pixel_lpf_param_store),
+	__ATTR(mc_ctrl_param, 0644, frc_mc_ctrl_param_show, frc_mc_ctrl_param_store),
 	__ATTR(me_rule_param, 0644, frc_me_rule_param_show, frc_me_rule_param_store),
 	__ATTR(film_ctrl_param, 0644, frc_film_ctrl_param_show, frc_film_ctrl_param_store),
 	__ATTR(glb_ctrl_param, 0644, frc_glb_ctrl_param_show, frc_glb_ctrl_param_store),
+	__ATTR(bad_edit_ctrl_param, 0644, frc_bad_edit_ctrl_param_show,
+			frc_bad_edit_ctrl_param_store),
+	__ATTR(region_fb_ctrl_param, 0644, frc_region_fb_ctrl_param_show,
+			frc_region_fb_ctrl_param_store),
 	__ATTR(trace_enable, 0664,
 	       frc_rdma_trace_enable_show, frc_rdma_trace_enable_stroe),
 	__ATTR(trace_reg, 0664,
@@ -234,12 +240,12 @@ static long frc_ioctl(struct file *file,
 			ret = -EFAULT;
 		break;
 
-	case FRC_IOC_SET_INPUT_VS_RATE:
+	case FRC_IOC_SET_DEBLUR_LEVEL:
 		if (copy_from_user(&data, argp, sizeof(u32))) {
 			ret = -EFAULT;
 			break;
 		}
-		pr_frc(1, "SET_INPUT_VS_RATE:%d\n", data);
+		frc_memc_set_deblur(data);
 		break;
 
 	case FRC_IOC_SET_MEMC_ON_OFF:
@@ -458,7 +464,7 @@ void frc_power_domain_ctrl(struct frc_dev_s *devp, u32 onoff)
 #define K_MEMC_CLK_DIS
 
 	if (devp->power_on_flag == onoff) {
-		pr_frc(0, "warning: same pw state\n");
+		// pr_frc(0, "warning: same pw state\n");
 		return;
 	}
 	if (!onoff) {
@@ -585,11 +591,11 @@ static int frc_dts_parse(struct frc_dev_s *frc_devp)
 	of_node = pdev->dev.of_node;
 	of_id = of_match_device(frc_dts_match, &pdev->dev);
 	if (of_id) {
-		PR_FRC("%s\n", of_id->compatible);
+		// PR_FRC("%s\n", of_id->compatible);
 		frc_data = frc_devp->data;
 		pfw_data = (struct frc_fw_data_s *)frc_devp->fw_data;
 		frc_data->match_data = of_id->data;
-		PR_FRC("chip id:%d\n", frc_data->match_data->chip);
+		PR_FRC("%s\tchip id:%d\n", of_id->compatible, frc_data->match_data->chip);
 		pfw_data->frc_top_type.chip = (u8)frc_data->match_data->chip;
 	}
 
@@ -611,7 +617,7 @@ static int frc_dts_parse(struct frc_dev_s *frc_devp)
 	/*get irq number from dts*/
 	frc_devp->in_irq = of_irq_get_byname(of_node, "irq_frc_in");
 	snprintf(frc_devp->in_irq_name, sizeof(frc_devp->in_irq_name), "frc_input_irq");
-	PR_FRC("%s=%d\n", frc_devp->in_irq_name, frc_devp->in_irq);
+//	PR_FRC("%s=%d\n", frc_devp->in_irq_name, frc_devp->in_irq);
 	if (frc_devp->in_irq > 0) {
 		ret = request_irq(frc_devp->in_irq, frc_input_isr, IRQF_SHARED,
 				  frc_devp->in_irq_name, (void *)frc_devp);
@@ -623,7 +629,7 @@ static int frc_dts_parse(struct frc_dev_s *frc_devp)
 
 	frc_devp->out_irq = of_irq_get_byname(of_node, "irq_frc_out");
 	snprintf(frc_devp->out_irq_name, sizeof(frc_devp->out_irq_name), "frc_out_irq");
-	PR_FRC("%s=%d\n", frc_devp->out_irq_name, frc_devp->out_irq);
+	//	PR_FRC("%s=%d\n", frc_devp->out_irq_name, frc_devp->out_irq);
 	if (frc_devp->out_irq > 0) {
 		ret = request_irq(frc_devp->out_irq, frc_output_isr, IRQF_SHARED,
 				  frc_devp->out_irq_name, (void *)frc_devp);
@@ -636,7 +642,7 @@ static int frc_dts_parse(struct frc_dev_s *frc_devp)
 	frc_devp->axi_crash_irq = of_irq_get_byname(of_node, "irq_axi_crash");
 	snprintf(frc_devp->axi_crash_irq_name,
 			sizeof(frc_devp->axi_crash_irq_name), "axi_crash_irq");
-	PR_FRC("%s=%d\n", frc_devp->axi_crash_irq_name, frc_devp->axi_crash_irq);
+	//	PR_FRC("%s=%d\n", frc_devp->axi_crash_irq_name, frc_devp->axi_crash_irq);
 	if (frc_devp->axi_crash_irq > 0) {
 		ret = request_irq(frc_devp->axi_crash_irq, frc_axi_crash_isr, IRQF_SHARED,
 				  frc_devp->axi_crash_irq_name, (void *)frc_devp);
@@ -647,20 +653,22 @@ static int frc_dts_parse(struct frc_dev_s *frc_devp)
 	} else {
 		PR_ERR("axi_crash irq is not enabled\n");
 	}
-
 	frc_devp->rdma_irq = of_irq_get_byname(of_node, "irq_frc_rdma");
 	snprintf(frc_devp->rdma_irq_name, sizeof(frc_devp->rdma_irq_name), "frc_rdma_irq");
-	PR_FRC("%s=%d\n", frc_devp->rdma_irq_name, frc_devp->rdma_irq);
-// #ifdef CONFIG_AMLOGIC_MEDIA_FRC_RDMA
+	PR_FRC("%s=%d\t%s=%d\t%s=%d\t%s=%d\n", frc_devp->in_irq_name, frc_devp->in_irq,
+			frc_devp->out_irq_name, frc_devp->out_irq,
+			frc_devp->axi_crash_irq_name, frc_devp->axi_crash_irq,
+			frc_devp->rdma_irq_name, frc_devp->rdma_irq);
+	// #ifdef CONFIG_AMLOGIC_MEDIA_FRC_RDMA
 	if (frc_devp->rdma_irq > 0) {
 		ret = request_irq(frc_devp->rdma_irq, frc_rdma_isr, IRQF_SHARED,
-				  frc_devp->rdma_irq_name, (void *)frc_devp);
+				frc_devp->rdma_irq_name, (void *)frc_devp);
 		if (ret)
 			PR_ERR("request rdma irq fail\n");
 		else
 			disable_irq(frc_devp->rdma_irq);
 	}
-// #endif
+	// #endif
 	/*register map*/
 	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "frc_reg");
 	if (res) {
@@ -672,14 +680,11 @@ static int frc_dts_parse(struct frc_dev_s *frc_devp)
 		} else {
 			frc_devp->reg = (void *)base;
 			frc_base = frc_devp->reg;
-			pr_frc(0, "frc reg base 0x%lx -> 0x%lx, map size:0x%lx\n",
-			       (ulong)res->start, (ulong)frc_base, (ulong)(res->end - res->start));
 		}
 	} else {
 		frc_devp->reg = NULL;
 		frc_base = NULL;
 	}
-
 	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "frc_clk_reg");
 	if (res) {
 		base = devm_ioremap(&pdev->dev, res->start, res->end - res->start);
@@ -690,9 +695,6 @@ static int frc_dts_parse(struct frc_dev_s *frc_devp)
 		} else {
 			frc_devp->clk_reg = (void *)base;
 			frc_clk_base = frc_devp->clk_reg;
-			pr_frc(0, "clk reg base 0x%lx -> 0x%lx, map size:0x%lx\n",
-			       (ulong)res->start, (ulong)frc_clk_base,
-			       (ulong)(res->end - res->start));
 		}
 	} else {
 		frc_devp->clk_reg = NULL;
@@ -709,8 +711,6 @@ static int frc_dts_parse(struct frc_dev_s *frc_devp)
 		} else {
 			frc_devp->vpu_reg = (void *)base;
 			vpu_base = frc_devp->vpu_reg;
-			pr_frc(0, "vpu reg base 0x%lx -> 0x%lx, map size:0x%lx\n",
-			       (ulong)res->start, (ulong)vpu_base, (ulong)(res->end - res->start));
 		}
 	} else {
 		frc_devp->vpu_reg = NULL;
@@ -724,7 +724,6 @@ static int frc_dts_parse(struct frc_dev_s *frc_devp)
 		frc_devp->buf.cma_mem_size = 0;
 	}
 	frc_devp->buf.cma_mem_size = dma_get_cma_size_int_byte(&pdev->dev);
-	pr_frc(0, "cma_mem_size=0x%x\n", frc_devp->buf.cma_mem_size);
 
 	frc_devp->clk_frc = clk_get(&pdev->dev, "clk_frc");
 	frc_devp->clk_me = clk_get(&pdev->dev, "clk_me");
@@ -1044,7 +1043,6 @@ static void frc_drv_initial(struct frc_dev_s *devp)
 	struct frc_fw_data_s *fw_data;
 	u32 i;
 
-	pr_frc(0, "%s\n", __func__);
 	if (!devp)
 		return;
 
@@ -1100,14 +1098,16 @@ static void frc_drv_initial(struct frc_dev_s *devp)
 
 	devp->pat_dbg.pat_en = 1;
 
+	// ctrl high-priority tasklet
+	devp->in_sts.hi_en = 0;
+	devp->out_sts.hi_en = 0;
+
 	fw_data = (struct frc_fw_data_s *)devp->fw_data;
 	fw_data->holdline_parm.me_hold_line = 4;
 	fw_data->holdline_parm.mc_hold_line = 1;
 	fw_data->holdline_parm.inp_hold_line = 4;
 	fw_data->holdline_parm.reg_post_dly_vofst = 0;/*fixed*/
 	fw_data->holdline_parm.reg_mc_dly_vofst0 = 1;/*fixed*/
-
-	fw_data->frc_top_type.frc_fb_num = FRC_TOTAL_BUF_NUM;
 
 	if (fw_data->frc_top_type.chip != 0)
 		memcpy(&devp->frm_dly_set[0],
@@ -1133,8 +1133,16 @@ static void frc_drv_initial(struct frc_dev_s *devp)
 	memset(&devp->force_size, 0, sizeof(struct frc_force_size_s));
 	devp->ud_dbg.res2_dbg_en = 3;  // t3x_revB test
 	devp->ud_dbg.align_dbg_en = 0;  // t3x_revB test
-	if (get_chip_type() == ID_T3X)
+	if (get_chip_type() == ID_T3X) {
 		devp->in_sts.boot_timestamp_en = 1;
+		devp->vpu_byp_frc_reg_addr = VIU_FRC_MISC;
+	} else if (get_chip_type() == ID_T5M) {
+		devp->vpu_byp_frc_reg_addr = VPU_FRC_TOP_CTRL;
+	} else if (get_chip_type() == ID_T3) {
+		devp->vpu_byp_frc_reg_addr = VPU_FRC_TOP_CTRL;
+	} else {
+		devp->vpu_byp_frc_reg_addr = VPU_FRC_TOP_CTRL;
+	}
 }
 
 void get_vout_info(struct frc_dev_s *frc_devp)
@@ -1588,11 +1596,13 @@ int __init frc_init(void)
 		PR_ERR("failed to register frc driver module\n");
 		return -ENODEV;
 	}
+	hrtimer_init(&frc_hi_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 	return 0;
 }
 
 void __exit frc_exit(void)
 {
 	platform_driver_unregister(&frc_driver);
+	hrtimer_cancel(&frc_hi_timer);
 	PR_FRC("%s:module exit\n", __func__);
 }

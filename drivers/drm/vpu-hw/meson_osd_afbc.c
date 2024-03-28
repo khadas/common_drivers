@@ -678,10 +678,10 @@ static void t7_osd_afbc_set_state(struct meson_vpu_block *vblk,
 				  struct meson_vpu_block_state *state,
 				  struct meson_vpu_block_state *old_state)
 {
-	int i, start, end, core_enable;
+	int i, core_enable;
 	u32 pixel_format, line_stride, output_stride;
 	u32 frame_width, frame_height;
-	u32 osd_index, afbc_index;
+	u32 osd_index;
 	u64 header_addr, out_addr;
 	u32 aligned_32, afbc_color_reorder;
 	unsigned int depth;
@@ -702,28 +702,13 @@ static void t7_osd_afbc_set_state(struct meson_vpu_block *vblk,
 	afbc = to_afbc_block(vblk);
 	afbc_state = to_afbc_state(state);
 	pipeline = vblk->pipeline;
-	afbc_index = vblk->index;
 	mvps = priv_to_pipeline_state(pipeline->obj.state);
 	reg_ops = state->sub->reg_ops;
 	core_enable = 0;
 
-	if (afbc_index == 0) {
-		start = 0;
-		end = 1;
-	} else if (afbc_index == 1) {
-		start = 2;
-		end = 2;
-	} else if (afbc_index == 2) {
-		start = 3;
-		end = 3;
-	} else {
-		start = 0;
-		end = 0;
-	}
-
 	afbc_stat_reg = afbc->status_regs;
 
-	for (i = start; i <= end; i++) {
+	for (i = afbc->start_surface; i <= afbc->end_surface; i++) {
 		if (mvps->plane_info[i].enable && mvps->plane_info[i].afbc_en) {
 			core_enable = 1;
 			osd_index = i;
@@ -874,10 +859,10 @@ static void t3_osd_afbc_set_state(struct meson_vpu_block *vblk,
 				  struct meson_vpu_block_state *state,
 				  struct meson_vpu_block_state *old_state)
 {
-	int i, start, end, core_enable;
+	int i, core_enable;
 	u32 pixel_format, line_stride, output_stride;
 	u32 frame_width, frame_height;
-	u32 osd_index, afbc_index;
+	u32 osd_index;
 	u64 header_addr, out_addr;
 	u32 aligned_32, afbc_color_reorder;
 	unsigned int depth;
@@ -899,29 +884,14 @@ static void t3_osd_afbc_set_state(struct meson_vpu_block *vblk,
 	afbc = to_afbc_block(vblk);
 	afbc_state = to_afbc_state(state);
 	pipeline = vblk->pipeline;
-	afbc_index = vblk->index;
 	mvps = priv_to_pipeline_state(pipeline->obj.state);
 	mvsps = &mvps->sub_states[0];
 	reg_ops = state->sub->reg_ops;
 
-	if (afbc_index == 0) {
-		start = 0;
-		end = 1;
-	} else if (afbc_index == 1) {
-		start = 2;
-		end = 2;
-	} else if (afbc_index == 2) {
-		start = 3;
-		end = 3;
-	} else {
-		start = 0;
-		end = 0;
-	}
-
 	afbc_stat_reg = afbc->status_regs;
 	core_enable = 0;
 
-	for (i = start; i <= end; i++) {
+	for (i = afbc->start_surface; i <= afbc->end_surface; i++) {
 		if (mvps->plane_info[i].enable && mvps->plane_info[i].afbc_en) {
 			core_enable = 1;
 			osd_index = i;
@@ -1038,11 +1008,11 @@ static void t3_osd_afbc_set_state(struct meson_vpu_block *vblk,
 				MESON_DRM_BLOCK("%s, invalid afbc top ctrl index\n", __func__);
 		} else {
 			if (i == 0)
-				meson_vpu_write_reg_bits(VIU_OSD1_PATH_CTRL, 0, 31, 1);
+				reg_ops->rdma_write_reg_bits(VIU_OSD1_PATH_CTRL, 0, 31, 1);
 			else if (i == 1)
-				meson_vpu_write_reg_bits(VIU_OSD2_PATH_CTRL, 0, 31, 1);
+				reg_ops->rdma_write_reg_bits(VIU_OSD2_PATH_CTRL, 0, 31, 1);
 			else if (i == 2)
-				meson_vpu_write_reg_bits(VIU_OSD3_PATH_CTRL, 0, 31, 1);
+				reg_ops->rdma_write_reg_bits(VIU_OSD3_PATH_CTRL, 0, 31, 1);
 			else
 				MESON_DRM_BLOCK("%s, invalid afbc top ctrl index\n", __func__);
 
@@ -1065,10 +1035,10 @@ static void s5_osd_afbc_set_state(struct meson_vpu_block *vblk,
 				  struct meson_vpu_block_state *state,
 				  struct meson_vpu_block_state *old_state)
 {
-	int i, start, end, core_enable;
+	int i, core_enable;
 	u32 pixel_format, line_stride, output_stride;
 	u32 frame_width, frame_height;
-	u32 osd_index, afbc_index;
+	u32 osd_index;
 	u64 header_addr, out_addr;
 	u32 aligned_32, afbc_color_reorder;
 	unsigned int depth;
@@ -1090,29 +1060,14 @@ static void s5_osd_afbc_set_state(struct meson_vpu_block *vblk,
 	afbc = to_afbc_block(vblk);
 	afbc_state = to_afbc_state(state);
 	pipeline = vblk->pipeline;
-	afbc_index = vblk->index;
 	mvps = priv_to_pipeline_state(pipeline->obj.state);
 	mvsps = &mvps->sub_states[0];
 	reg_ops = state->sub->reg_ops;
 
-	if (afbc_index == 0) {
-		start = 0;
-		end = 1;
-	} else if (afbc_index == 1) {
-		start = 2;
-		end = 2;
-	} else if (afbc_index == 2) {
-		start = 3;
-		end = 3;
-	} else {
-		start = 0;
-		end = 0;
-	}
-
 	afbc_stat_reg = afbc->status_regs;
 	core_enable = 0;
 
-	for (i = start; i <= end; i++) {
+	for (i = afbc->start_surface; i <= afbc->end_surface; i++) {
 		if (mvps->plane_info[i].enable && mvps->plane_info[i].afbc_en) {
 			core_enable = 1;
 			osd_index = i;
@@ -1220,18 +1175,18 @@ static void s5_osd_afbc_set_state(struct meson_vpu_block *vblk,
 			reg_ops->rdma_write_reg_bits(afbc_reg->vpu_mafbc_prefetch_cfg_s,
 						reverse_y, 1, 1);
 			if (osd_index == 0)
-				meson_vpu_write_reg_bits(VPP_INTF_OSD1_CTRL, 1, 0, 1);
+				reg_ops->rdma_write_reg_bits(VPP_INTF_OSD1_CTRL, 1, 0, 1);
 			else if (osd_index == 1)
-				meson_vpu_write_reg_bits(VPP_INTF_OSD2_CTRL, 1, 0, 1);
+				reg_ops->rdma_write_reg_bits(VPP_INTF_OSD2_CTRL, 1, 0, 1);
 			else if (osd_index == 2)
-				meson_vpu_write_reg_bits(VPP_INTF_OSD3_CTRL, 1, 0, 1);
+				reg_ops->rdma_write_reg_bits(VPP_INTF_OSD3_CTRL, 1, 0, 1);
 			else
 				MESON_DRM_BLOCK("%s, invalid afbc top ctrl index\n", __func__);
 		} else {
 			if (i == 0)
-				meson_vpu_write_reg_bits(VPP_INTF_OSD1_CTRL, 0, 0, 1);
+				reg_ops->rdma_write_reg_bits(VPP_INTF_OSD1_CTRL, 0, 0, 1);
 			else if (i == 2)
-				meson_vpu_write_reg_bits(VPP_INTF_OSD3_CTRL, 0, 0, 1);
+				reg_ops->rdma_write_reg_bits(VPP_INTF_OSD3_CTRL, 0, 0, 1);
 			else
 				MESON_DRM_BLOCK("%s, invalid afbc top ctrl index\n", __func__);
 
@@ -1254,10 +1209,10 @@ static void t3x_osd_afbc_set_state(struct meson_vpu_block *vblk,
 				  struct meson_vpu_block_state *state,
 				  struct meson_vpu_block_state *old_state)
 {
-	int i, start, end, core_enable;
+	int i, core_enable;
 	u32 pixel_format, line_stride, output_stride;
 	u32 frame_width, frame_height;
-	u32 osd_index, afbc_index;
+	u32 osd_index;
 	u64 header_addr, out_addr;
 	u32 aligned_32, afbc_color_reorder;
 	unsigned int depth;
@@ -1279,29 +1234,14 @@ static void t3x_osd_afbc_set_state(struct meson_vpu_block *vblk,
 	afbc = to_afbc_block(vblk);
 	afbc_state = to_afbc_state(state);
 	pipeline = vblk->pipeline;
-	afbc_index = vblk->index;
 	mvps = priv_to_pipeline_state(pipeline->obj.state);
 	mvsps = &mvps->sub_states[0];
 	reg_ops = state->sub->reg_ops;
 
-	if (afbc_index == 0) {
-		start = 0;
-		end = 0;
-	} else if (afbc_index == 1) {
-		start = 1;
-		end = 1;
-	} else if (afbc_index == 2) {
-		start = 2;
-		end = 2;
-	} else {
-		start = 1;
-		end = 0;
-	}
-
 	afbc_stat_reg = afbc->status_regs;
 	core_enable = 0;
 
-	for (i = start; i <= end; i++) {
+	for (i = afbc->start_surface; i <= afbc->end_surface; i++) {
 		if (mvps->plane_info[i].enable && mvps->plane_info[i].afbc_en) {
 			core_enable = 1;
 			osd_index = i;
@@ -1409,20 +1349,20 @@ static void t3x_osd_afbc_set_state(struct meson_vpu_block *vblk,
 			reg_ops->rdma_write_reg_bits(afbc_reg->vpu_mafbc_prefetch_cfg_s,
 						reverse_y, 1, 1);
 			if (osd_index == 0)
-				meson_vpu_write_reg_bits(VPP_INTF_OSD1_CTRL, 1, 0, 1);
+				reg_ops->rdma_write_reg_bits(VPP_INTF_OSD1_CTRL, 1, 0, 1);
 			else if (osd_index == 1)
-				meson_vpu_write_reg_bits(VPP_INTF_OSD2_CTRL, 1, 0, 1);
+				reg_ops->rdma_write_reg_bits(VPP_INTF_OSD2_CTRL, 1, 0, 1);
 			else if (osd_index == 2)
-				meson_vpu_write_reg_bits(VPP_INTF_OSD3_CTRL, 1, 0, 1);
+				reg_ops->rdma_write_reg_bits(VPP_INTF_OSD3_CTRL, 1, 0, 1);
 			else
 				MESON_DRM_BLOCK("%s, invalid afbc top ctrl index\n", __func__);
 		} else {
 			if (i == 0)
-				meson_vpu_write_reg_bits(VPP_INTF_OSD1_CTRL, 0, 0, 1);
+				reg_ops->rdma_write_reg_bits(VPP_INTF_OSD1_CTRL, 0, 0, 1);
 			else if (i == 1)
-				meson_vpu_write_reg_bits(VPP_INTF_OSD2_CTRL, 0, 0, 1);
+				reg_ops->rdma_write_reg_bits(VPP_INTF_OSD2_CTRL, 0, 0, 1);
 			else if (i == 2)
-				meson_vpu_write_reg_bits(VPP_INTF_OSD3_CTRL, 0, 0, 1);
+				reg_ops->rdma_write_reg_bits(VPP_INTF_OSD3_CTRL, 0, 0, 1);
 			else
 				MESON_DRM_BLOCK("%s, invalid afbc top ctrl index\n", __func__);
 
@@ -1450,18 +1390,15 @@ static void osd_afbc_dump_register(struct drm_printer *p,
 	char buff[8];
 	struct meson_vpu_afbc *afbc;
 	struct afbc_osd_reg_s *reg;
+	struct afbc_status_reg_s *afbc_stat_reg;
 
 	osd_index = vblk->index;
 	afbc = to_afbc_block(vblk);
 	reg = afbc->afbc_regs;
+	afbc_stat_reg = afbc->status_regs;
 
 	snprintf(buff, 8, "OSD%d", osd_index + 1);
 	drm_printf(p, "afbc error [%d]\n", afbc_err_cnt);
-
-	reg_addr = VPU_MAFBC_SURFACE_CFG;
-	value = meson_drm_read_reg(VPU_MAFBC_SURFACE_CFG);
-	drm_printf(p, "%s_%-35s\taddr: 0x%04X\tvalue: 0x%08X\n", buff, "VPU_MAFBC_SURFACE_CFG",
-		   reg_addr, value);
 
 	reg_addr = reg->vpu_mafbc_header_buf_addr_low_s;
 	value = meson_drm_read_reg(reg->vpu_mafbc_header_buf_addr_low_s);
@@ -1527,7 +1464,181 @@ static void osd_afbc_dump_register(struct drm_printer *p,
 	value = meson_drm_read_reg(reg->vpu_mafbc_prefetch_cfg_s);
 	drm_printf(p, "%s_%-35s\taddr: 0x%04X\tvalue: 0x%08X\n", buff, "AFBC_PREFETCH_CFG",
 		   reg_addr, value);
+
+	reg_addr = afbc_stat_reg->vpu_mafbc_surface_cfg;
+	value = meson_drm_read_reg(afbc_stat_reg->vpu_mafbc_surface_cfg);
+	drm_printf(p, "%s_%-35s\taddr: 0x%04X\tvalue: 0x%08X\n", buff, "VPU_MAFBC_SURFACE_CFG",
+		   reg_addr, value);
+
+	reg_addr = afbc_stat_reg->vpu_mafbc_block_id;
+	value = meson_drm_read_reg(afbc_stat_reg->vpu_mafbc_block_id);
+	drm_printf(p, "%s_%-35s\taddr: 0x%04X\tvalue: 0x%08X\n", buff, "VPU_MAFBC_BLOCK_ID",
+		   reg_addr, value);
+
+	reg_addr = afbc_stat_reg->vpu_mafbc_command;
+	value = meson_drm_read_reg(afbc_stat_reg->vpu_mafbc_command);
+	drm_printf(p, "%s_%-35s\taddr: 0x%04X\tvalue: 0x%08X\n", buff, "VPU_MAFBC_CMD",
+		   reg_addr, value);
+
+	reg_addr = afbc_stat_reg->vpu_mafbc_irq_clear;
+	value = meson_drm_read_reg(afbc_stat_reg->vpu_mafbc_irq_clear);
+	drm_printf(p, "%s_%-35s\taddr: 0x%04X\tvalue: 0x%08X\n", buff, "VPU_MAFBC_IRQ_CLEAR",
+		   reg_addr, value);
+
+	reg_addr = afbc_stat_reg->vpu_mafbc_irq_mask;
+	value = meson_drm_read_reg(afbc_stat_reg->vpu_mafbc_irq_mask);
+	drm_printf(p, "%s_%-35s\taddr: 0x%04X\tvalue: 0x%08X\n", buff, "VPU_MAFBC_IRQ_MASK",
+		   reg_addr, value);
+
+	reg_addr = afbc_stat_reg->vpu_mafbc_irq_raw_status;
+	value = meson_drm_read_reg(afbc_stat_reg->vpu_mafbc_irq_raw_status);
+	drm_printf(p, "%s_%-35s\taddr: 0x%04X\tvalue: 0x%08X\n", buff, "VPU_MAFBC_IRQ_RAW_STATUS",
+		   reg_addr, value);
+
+	reg_addr = afbc_stat_reg->vpu_mafbc_irq_status;
+	value = meson_drm_read_reg(afbc_stat_reg->vpu_mafbc_irq_status);
+	drm_printf(p, "%s_%-35s\taddr: 0x%04X\tvalue: 0x%08X\n", buff, "VPU_MAFBC_IRQ_STATUS",
+		   reg_addr, value);
+
+	reg_addr = afbc_stat_reg->vpu_mafbc_status;
+	value = meson_drm_read_reg(afbc_stat_reg->vpu_mafbc_status);
+	drm_printf(p, "%s_%-35s\taddr: 0x%04X\tvalue: 0x%08X\n", buff, "VPU_MAFBC_STATUS",
+		   reg_addr, value);
 }
+
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+static void t7_osd_afbc_dump_register(struct drm_printer *p,
+						struct meson_vpu_block *vblk)
+{
+	int i;
+	int osd_index;
+	u32 value, reg_addr;
+	char buff[8];
+	struct meson_vpu_afbc *afbc;
+	struct afbc_osd_reg_s *reg;
+	struct afbc_status_reg_s *afbc_stat_reg;
+
+	afbc = to_afbc_block(vblk);
+	afbc_stat_reg = afbc->status_regs;
+
+	for (i = afbc->start_surface; i <= afbc->end_surface; i++) {
+		osd_index = i;
+		reg = &afbc->afbc_regs[osd_index];
+
+		snprintf(buff, 8, "OSD%d", osd_index + 1);
+		drm_printf(p, "afbc error [%d]\n", afbc_err_cnt);
+
+		reg_addr = reg->vpu_mafbc_header_buf_addr_low_s;
+		value = meson_drm_read_reg(reg->vpu_mafbc_header_buf_addr_low_s);
+		drm_printf(p, "%s_%-35s\taddr: 0x%04X\tvalue: 0x%08X\n", buff,
+			   "AFBC_HEADER_BUF_ADDR_LOW", reg_addr, value);
+
+		reg_addr = reg->vpu_mafbc_header_buf_addr_high_s;
+		value = meson_drm_read_reg(reg->vpu_mafbc_header_buf_addr_high_s);
+		drm_printf(p, "%s_%-35s\taddr: 0x%04X\tvalue: 0x%08X\n", buff,
+			   "AFBC_HEADER_BUF_ADDR_HIGH", reg_addr, value);
+
+		reg_addr = reg->vpu_mafbc_format_specifier_s;
+		value = meson_drm_read_reg(reg->vpu_mafbc_format_specifier_s);
+		drm_printf(p, "%s_%-35s\taddr: 0x%04X\tvalue: 0x%08X\n", buff,
+			   "AFBC_FORMAT_SPECIFIER", reg_addr, value);
+
+		reg_addr = reg->vpu_mafbc_buffer_width_s;
+		value = meson_drm_read_reg(reg->vpu_mafbc_buffer_width_s);
+		drm_printf(p, "%s_%-35s\taddr: 0x%04X\tvalue: 0x%08X\n", buff, "AFBC_BUFFER_WIDTH",
+			   reg_addr, value);
+
+		reg_addr = reg->vpu_mafbc_buffer_height_s;
+		value = meson_drm_read_reg(reg->vpu_mafbc_buffer_height_s);
+		drm_printf(p, "%s_%-35s\taddr: 0x%04X\tvalue: 0x%08X\n", buff, "AFBC_BUFFER_HEIGHT",
+			   reg_addr, value);
+
+		reg_addr = reg->vpu_mafbc_bounding_box_x_start_s;
+		value = meson_drm_read_reg(reg->vpu_mafbc_bounding_box_x_start_s);
+		drm_printf(p, "%s_%-35s\taddr: 0x%04X\tvalue: 0x%08X\n", buff,
+			   "AFBC_BOUNDING_BOX_X_START", reg_addr, value);
+
+		reg_addr = reg->vpu_mafbc_bounding_box_x_end_s;
+		value = meson_drm_read_reg(reg->vpu_mafbc_bounding_box_x_end_s);
+		drm_printf(p, "%s_%-35s\taddr: 0x%04X\tvalue: 0x%08X\n", buff,
+			   "AFBC_BOUNDING_BOX_X_END", reg_addr, value);
+
+		reg_addr = reg->vpu_mafbc_bounding_box_y_start_s;
+		value = meson_drm_read_reg(reg->vpu_mafbc_bounding_box_y_start_s);
+		drm_printf(p, "%s_%-35s\taddr: 0x%04X\tvalue: 0x%08X\n", buff,
+			   "AFBC_BOUNDING_BOX_Y_START", reg_addr, value);
+
+		reg_addr = reg->vpu_mafbc_bounding_box_y_end_s;
+		value = meson_drm_read_reg(reg->vpu_mafbc_bounding_box_y_end_s);
+		drm_printf(p, "%s_%-35s\taddr: 0x%04X\tvalue: 0x%08X\n", buff,
+			   "AFBC_BOUNDING_BOX_Y_END", reg_addr, value);
+
+		reg_addr = reg->vpu_mafbc_output_buf_addr_low_s;
+		value = meson_drm_read_reg(reg->vpu_mafbc_output_buf_addr_low_s);
+		drm_printf(p, "%s_%-35s\taddr: 0x%04X\tvalue: 0x%08X\n", buff,
+			   "AFBC_OUTPUT_BUF_ADDR_LOW", reg_addr, value);
+
+		reg_addr = reg->vpu_mafbc_output_buf_addr_high_s;
+		value = meson_drm_read_reg(reg->vpu_mafbc_output_buf_addr_high_s);
+		drm_printf(p, "%s_%-35s\taddr: 0x%04X\tvalue: 0x%08X\n", buff,
+			   "AFBC_OUTPUT_BUF_ADDR_HIGH", reg_addr, value);
+
+		reg_addr = reg->vpu_mafbc_output_buf_stride_s;
+		value = meson_drm_read_reg(reg->vpu_mafbc_output_buf_stride_s);
+		drm_printf(p, "%s_%-35s\taddr: 0x%04X\tvalue: 0x%08X\n", buff,
+			   "AFBC_OUTPUT_BUF_STRIDE", reg_addr, value);
+
+		reg_addr = reg->vpu_mafbc_prefetch_cfg_s;
+		value = meson_drm_read_reg(reg->vpu_mafbc_prefetch_cfg_s);
+		drm_printf(p, "%s_%-35s\taddr: 0x%04X\tvalue: 0x%08X\n", buff, "AFBC_PREFETCH_CFG",
+			   reg_addr, value);
+	}
+	reg_addr = afbc_stat_reg->vpu_mafbc_surface_cfg;
+	value = meson_drm_read_reg(afbc_stat_reg->vpu_mafbc_surface_cfg);
+	drm_printf(p, "%s_%-35s\taddr: 0x%04X\tvalue: 0x%08X\n", buff,
+		   "VPU_MAFBC_SURFACE_CFG", reg_addr, value);
+
+	reg_addr = afbc_stat_reg->mali_afbcd_top_ctrl;
+	value = meson_drm_read_reg(afbc_stat_reg->mali_afbcd_top_ctrl);
+	drm_printf(p, "%s_%-35s\taddr: 0x%04X\tvalue: 0x%08X\n", buff,
+		   "MALI_AFBCD_TOP_CTRL", reg_addr, value);
+
+	reg_addr = afbc_stat_reg->vpu_mafbc_block_id;
+	value = meson_drm_read_reg(afbc_stat_reg->vpu_mafbc_block_id);
+	drm_printf(p, "%s_%-35s\taddr: 0x%04X\tvalue: 0x%08X\n", buff, "VPU_MAFBC_BLOCK_ID",
+		   reg_addr, value);
+
+	reg_addr = afbc_stat_reg->vpu_mafbc_command;
+	value = meson_drm_read_reg(afbc_stat_reg->vpu_mafbc_command);
+	drm_printf(p, "%s_%-35s\taddr: 0x%04X\tvalue: 0x%08X\n", buff, "VPU_MAFBC_CMD",
+		   reg_addr, value);
+
+	reg_addr = afbc_stat_reg->vpu_mafbc_irq_clear;
+	value = meson_drm_read_reg(afbc_stat_reg->vpu_mafbc_irq_clear);
+	drm_printf(p, "%s_%-35s\taddr: 0x%04X\tvalue: 0x%08X\n", buff,
+		   "VPU_MAFBC_IRQ_CLEAR", reg_addr, value);
+
+	reg_addr = afbc_stat_reg->vpu_mafbc_irq_mask;
+	value = meson_drm_read_reg(afbc_stat_reg->vpu_mafbc_irq_mask);
+	drm_printf(p, "%s_%-35s\taddr: 0x%04X\tvalue: 0x%08X\n", buff, "VPU_MAFBC_IRQ_MASK",
+		   reg_addr, value);
+
+	reg_addr = afbc_stat_reg->vpu_mafbc_irq_raw_status;
+	value = meson_drm_read_reg(afbc_stat_reg->vpu_mafbc_irq_raw_status);
+	drm_printf(p, "%s_%-35s\taddr: 0x%04X\tvalue: 0x%08X\n", buff,
+		   "VPU_MAFBC_IRQ_RAW_STATUS", reg_addr, value);
+
+	reg_addr = afbc_stat_reg->vpu_mafbc_irq_status;
+	value = meson_drm_read_reg(afbc_stat_reg->vpu_mafbc_irq_status);
+	drm_printf(p, "%s_%-35s\taddr: 0x%04X\tvalue: 0x%08X\n", buff,
+		   "VPU_MAFBC_IRQ_STATUS", reg_addr, value);
+
+	reg_addr = afbc_stat_reg->vpu_mafbc_status;
+	value = meson_drm_read_reg(afbc_stat_reg->vpu_mafbc_status);
+	drm_printf(p, "%s_%-35s\taddr: 0x%04X\tvalue: 0x%08X\n", buff, "VPU_MAFBC_STATUS",
+		   reg_addr, value);
+}
+#endif
 
 static void osd_afbc_hw_enable(struct meson_vpu_block *vblk,
 			       struct meson_vpu_block_state *state)
@@ -1602,6 +1713,26 @@ static void t7_osd_afbc_hw_init(struct meson_vpu_block *vblk)
 	afbc->status_regs = &afbc_status_t7_regs[vblk->index];
 	afbc->num_of_4k_osd = 1;
 
+	switch (vblk->index) {
+	case AFBC_CORE1:
+		afbc->start_surface = 0;
+		afbc->end_surface = 1;
+		break;
+	case AFBC_CORE2:
+		afbc->start_surface = 2;
+		afbc->end_surface = 2;
+		break;
+
+	case AFBC_CORE3:
+		afbc->start_surface = 3;
+		afbc->end_surface = 3;
+		break;
+	default:
+		afbc->start_surface = 0;
+		afbc->end_surface = 0;
+		break;
+	};
+
 	MESON_DRM_BLOCK("%s hw_init called.\n", afbc->base.name);
 }
 
@@ -1613,6 +1744,25 @@ static void t3_osd_afbc_hw_init(struct meson_vpu_block *vblk)
 	afbc->afbc_regs = &afbc_osd_t7_regs[0];
 	afbc->status_regs = &afbc_status_t3_regs[vblk->index];
 	afbc->num_of_4k_osd = 1;
+
+	switch (vblk->index) {
+	case AFBC_CORE1:
+		afbc->start_surface = 0;
+		afbc->end_surface = 1;
+		break;
+	case AFBC_CORE2:
+		afbc->start_surface = 2;
+		afbc->end_surface = 2;
+		break;
+	case AFBC_CORE3:
+		afbc->start_surface = 3;
+		afbc->end_surface = 3;
+		break;
+	default:
+		afbc->start_surface = 0;
+		afbc->end_surface = 0;
+		break;
+	};
 
 	/* disable osd1 afbc */
 	t7_osd_afbc_enable(vblk, pipeline->subs[0].reg_ops,
@@ -1630,6 +1780,25 @@ static void s5_osd_afbc_hw_init(struct meson_vpu_block *vblk)
 	afbc->status_regs = &afbc_status_s5_regs[vblk->index];
 	afbc->num_of_4k_osd = 2;
 
+	switch (vblk->index) {
+	case AFBC_CORE1:
+		afbc->start_surface = 0;
+		afbc->end_surface = 1;
+		break;
+	case AFBC_CORE2:
+		afbc->start_surface = 2;
+		afbc->end_surface = 2;
+	break;
+	case AFBC_CORE3:
+		afbc->start_surface = 3;
+		afbc->end_surface = 3;
+		break;
+	default:
+		afbc->start_surface = 0;
+		afbc->end_surface = 0;
+		break;
+	};
+
 	/* disable osd1 afbc */
 	t7_osd_afbc_enable(vblk, pipeline->subs[0].reg_ops, afbc->status_regs, vblk->index, 0);
 
@@ -1638,26 +1807,41 @@ static void s5_osd_afbc_hw_init(struct meson_vpu_block *vblk)
 
 static void t3x_osd_afbc_hw_init(struct meson_vpu_block *vblk)
 {
-	struct meson_vpu_pipeline *pipeline = vblk->pipeline;
 	struct meson_vpu_afbc *afbc = to_afbc_block(vblk);
 
 	afbc->afbc_regs = &afbc_osd_t3x_regs[0];
 	afbc->status_regs = &afbc_status_t3x_regs[vblk->index];
 	afbc->num_of_4k_osd = 2;
 
-	/* disable osd1 afbc */
-	t7_osd_afbc_enable(vblk, pipeline->subs[0].reg_ops, afbc->status_regs, vblk->index, 0);
+	switch (vblk->index) {
+	case AFBC_CORE1:
+		afbc->start_surface = 0;
+		afbc->end_surface = 0;
+		break;
+	case AFBC_CORE2:
+		afbc->start_surface = 1;
+		afbc->end_surface = 1;
+		break;
+	case AFBC_CORE3:
+		afbc->start_surface = 2;
+		afbc->end_surface = 2;
+		break;
+	default:
+		afbc->start_surface = 0;
+		afbc->end_surface = 0;
+		break;
+	};
 
 	MESON_DRM_BLOCK("%s hw_init called.\n", afbc->base.name);
 }
 #endif
 
-void arm_fbc_start(struct meson_vpu_pipeline_state *pipeline_state)
+void arm_fbc_start(struct meson_vpu_pipeline_state *pipeline_state, struct rdma_reg_ops *reg_ops)
 {
 	if (!pipeline_state->global_afbc && global_afbc_mask) {
-		meson_vpu_write_reg(VPU_MAFBC_IRQ_MASK, 0xf);
-		meson_vpu_write_reg(VPU_MAFBC_IRQ_CLEAR, 0x3f);
-		meson_vpu_write_reg(VPU_MAFBC_COMMAND, 1);
+		reg_ops->rdma_write_reg(VPU_MAFBC_IRQ_MASK, 0xf);
+		reg_ops->rdma_write_reg(VPU_MAFBC_IRQ_CLEAR, 0x3f);
+		reg_ops->rdma_write_reg(VPU_MAFBC_COMMAND, 1);
 		pipeline_state->global_afbc = 1;
 		afbc_err_irq_clear = 1;
 	}
@@ -1714,7 +1898,7 @@ struct meson_vpu_block_ops t7_afbc_ops = {
 	.update_state = t7_osd_afbc_set_state,
 	.enable = osd_afbc_hw_enable,
 	.disable = t7_osd_afbc_hw_disable,
-	.dump_register = osd_afbc_dump_register,
+	.dump_register = t7_osd_afbc_dump_register,
 	.init = t7_osd_afbc_hw_init,
 };
 
@@ -1723,7 +1907,7 @@ struct meson_vpu_block_ops t3_afbc_ops = {
 	.update_state = t3_osd_afbc_set_state,
 	.enable = osd_afbc_hw_enable,
 	.disable = t7_osd_afbc_hw_disable,
-	.dump_register = osd_afbc_dump_register,
+	.dump_register = t7_osd_afbc_dump_register,
 	.init = t3_osd_afbc_hw_init,
 };
 
@@ -1732,7 +1916,7 @@ struct meson_vpu_block_ops s5_afbc_ops = {
 	.update_state = s5_osd_afbc_set_state,
 	.enable = osd_afbc_hw_enable,
 	.disable = t7_osd_afbc_hw_disable,
-	.dump_register = osd_afbc_dump_register,
+	.dump_register = t7_osd_afbc_dump_register,
 	.init = s5_osd_afbc_hw_init,
 };
 
@@ -1741,7 +1925,7 @@ struct meson_vpu_block_ops t3x_afbc_ops = {
 	.update_state = t3x_osd_afbc_set_state,
 	.enable = osd_afbc_hw_enable,
 	.disable = t7_osd_afbc_hw_disable,
-	.dump_register = osd_afbc_dump_register,
+	.dump_register = t7_osd_afbc_dump_register,
 	.init = t3x_osd_afbc_hw_init,
 };
 #endif

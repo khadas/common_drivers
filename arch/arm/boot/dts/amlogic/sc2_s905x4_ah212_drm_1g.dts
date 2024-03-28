@@ -159,8 +159,8 @@
 		codec_mm_cma:linux,codec_mm_cma {
 			compatible = "shared-dma-pool";
 			reusable;
-			/* ion_codec_mm max can alloc size 80M*/
-			size = <0xD000000>;
+			/* ion_codec_mm max can alloc size 168M*/
+			size = <0xa800000>;
 			alignment = <0x400000>;
 			alloc-ranges = <0x30000000 0x10000000>;
 			linux,contiguous-region;
@@ -1753,7 +1753,7 @@
 
 &drm_vpu {
 	status = "okay";
-	logo_addr = "0x1f800000";
+	logo_addr = "0x1fc00000";
 };
 
 &drm_amhdmitx {

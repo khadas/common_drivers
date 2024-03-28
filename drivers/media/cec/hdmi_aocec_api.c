@@ -1980,8 +1980,11 @@ void init_cec_port_info(struct hdmi_port_info *port,
 {
 	unsigned int a, b, c = 0, d, e = 0;
 	unsigned int phy_head = 0xf000, phy_app = 0x1000, phy_addr;
+#if (defined(CONFIG_AMLOGIC_HDMITX) || defined(CONFIG_AMLOGIC_HDMITX21))
 	struct vsdb_phyaddr *tx_phy_addr = get_hdmitx_phy_addr();
-
+#else
+	struct vsdb_phyaddr *tx_phy_addr = NULL;
+#endif
 	/* physical address for TV or repeator */
 	if (!tx_phy_addr || cec_dev->dev_type == CEC_TV_ADDR) {
 		phy_addr = 0;
@@ -2076,7 +2079,9 @@ void cec_status(void)
 	CEC_ERR("output:0x%x\n", cec_dev->output);
 	CEC_ERR("arc_port:0x%x\n", cec_dev->arc_port);
 	CEC_ERR("hal_flag:0x%x\n", cec_dev->hal_flag);
+#if (defined(CONFIG_AMLOGIC_HDMITX) || defined(CONFIG_AMLOGIC_HDMITX21))
 	CEC_ERR("hpd_state:0x%x\n", get_hpd_state());
+#endif
 	CEC_ERR("cec_config:0x%x\n", cec_config(0, 0));
 	CEC_ERR("log_addr:0x%x\n", cec_dev->cec_info.log_addr);
 
@@ -2181,7 +2186,9 @@ int dump_cec_status(char *buf)
 	pos += snprintf(buf + pos, PAGE_SIZE, "output:0x%x\n", cec_dev->output);
 	pos += snprintf(buf + pos, PAGE_SIZE, "arc_port:0x%x\n", cec_dev->arc_port);
 	pos += snprintf(buf + pos, PAGE_SIZE, "hal_flag:0x%x\n", cec_dev->hal_flag);
+#if (defined(CONFIG_AMLOGIC_HDMITX) || defined(CONFIG_AMLOGIC_HDMITX21))
 	pos += snprintf(buf + pos, PAGE_SIZE, "hpd_state:0x%x\n", get_hpd_state());
+#endif
 	pos += snprintf(buf + pos, PAGE_SIZE, "cec_config:0x%x\n", cec_config(0, 0));
 	pos += snprintf(buf + pos, PAGE_SIZE, "log_addr:0x%x\n", cec_dev->cec_info.log_addr);
 
@@ -2273,8 +2280,11 @@ unsigned int cec_get_cur_phy_addr(void)
 {
 		unsigned int a, b, c, d;
 		unsigned int tmp = 0;
+#if (defined(CONFIG_AMLOGIC_HDMITX) || defined(CONFIG_AMLOGIC_HDMITX21))
 		struct vsdb_phyaddr *tx_phy_addr = get_hdmitx_phy_addr();
-
+#else
+		struct vsdb_phyaddr *tx_phy_addr = NULL;
+#endif
 		if (!tx_phy_addr || cec_dev->dev_type == CEC_TV_ADDR) {
 			tmp = 0;
 		} else {

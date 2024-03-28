@@ -28,9 +28,16 @@ config AMLOGIC_DVB_COMPAT
 		if define Amlogic define demod or dmx
 		it should define AMLOGIC_DVB_COMPAT
 
+config AMLOGIC_DVB_EXTERN_TUNER
+	tristate "Amlogic DVB Extern Tuner Support"
+	default m
+	help
+		Amlogic dvb extern tuner drivers
+
 source "$(COMMON_DRIVERS_DIR)/drivers/dvb/aucpu/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/dvb/smartcard_sc2/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/dvb/smartcard/Kconfig"
+#source "$(COMMON_DRIVERS_DIR)/drivers/dvb/tuner/Kconfig"
 
 endif
 

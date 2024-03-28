@@ -212,6 +212,7 @@ struct meson_vpu_osd {
 	struct meson_vpu_block base;
 	struct osd_mif_reg_s *reg;
 	int mif_acc_mode;
+	int viu2_hold_line;
 };
 
 struct osd_zorder_s {
@@ -351,6 +352,8 @@ struct meson_vpu_afbc {
 	struct afbc_status_reg_s *status_regs;
 	u32 num_of_4k_osd;
 	int shift_bits;
+	int start_surface;
+	int end_surface;
 };
 
 struct meson_vpu_afbc_state {
@@ -416,6 +419,7 @@ struct meson_vpu_scaler_param {
 	u32 plane_mask;
 	u32 enable;
 	u32 before_osdblend;
+	u32 global;
 };
 
 struct meson_vpu_osdblend {
@@ -594,6 +598,8 @@ struct meson_vpu_pipeline_state {
 	struct meson_vpu_scaler_param scaler_param[MESON_MAX_SCALERS];
 	/*pre_osd_scope is before DIN*/
 	struct osd_scope_s osd_scope_pre[MAX_DIN_NUM];
+	int vpp_scope_x;
+	int vpp_scope_y;
 
 	/*some traverse help structure*/
 	struct meson_vpu_stack osd_stack[MESON_MAX_OSDS];
@@ -742,11 +748,11 @@ extern struct meson_plane_supported_formats osd_formats_t5m;
 extern struct meson_plane_supported_formats osd_formats_s1a;
 extern struct meson_plane_supported_formats video_formats;
 
-#ifdef CONFIG_DEBUG_FS
 extern u32 overwrite_reg[256];
 extern u32 overwrite_val[256];
 extern int overwrite_enable;
 extern int reg_num;
+#ifdef CONFIG_DEBUG_FS
 void meson_crtc_debugfs_late_init(struct drm_crtc *crtc);
 #endif
 

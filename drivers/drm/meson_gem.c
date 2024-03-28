@@ -447,7 +447,7 @@ static struct dma_buf *meson_gem_prime_export(struct drm_gem_object *obj,
 			if (meson_gem_obj->is_afbc ||
 			    meson_gem_obj->is_secure) {
 				sg_free_table(info.sgt);
-				kfree(info.sgt);
+				vfree(info.sgt);
 			}
 		}
 

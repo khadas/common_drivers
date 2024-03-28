@@ -148,6 +148,7 @@ u8 *codec_mm_vmap_noncache(ulong addr, u32 size);
 void codec_mm_unmap_phyaddr(u8 *vaddr);
 
 void codec_mm_dma_flush(void *vaddr, int size, enum dma_data_direction dir);
+void codec_mm_prealloc_tvp_pool(void);
 
 int codec_mm_get_total_size(void);
 int codec_mm_get_free_size(void);

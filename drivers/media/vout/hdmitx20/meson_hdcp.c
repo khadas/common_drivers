@@ -416,6 +416,7 @@ static void am_hdmitx_set_hdmi_mode(void)
 		return;
 	}
 
+	/* TODO: sync meson_hdmi.c meson_hdmitx_encoder_atomic_enable() */
 	set_vout_mode_pre_process(vmode);
 	set_vout_vmode(vmode);
 	set_vout_mode_post_process(vmode);
@@ -441,6 +442,7 @@ static void am_hdmitx_set_out_mode(void)
 		last_hdcp_mode = meson_hdcp.hdcp_execute_type;
 		meson_hdcp_disable();
 	}
+	/* TODO: sync meson_hdmi.c meson_hdmitx_encoder_atomic_enable() */
 	set_vout_mode_pre_process(vmode);
 	set_vout_vmode(vmode);
 	set_vout_mode_post_process(vmode);
@@ -610,7 +612,8 @@ unsigned int meson_hdcp_get_rx_cap(void)
 	 * read hdcp version of sink during hdcp1.4 authentication.
 	 * if hdcp1.4 authentication currently, force return hdcp1.4
 	 */
-
+	if (hdev->tx_comm.hdcp_mode == 1)
+		return 0x1;
 	/* if TX don't have HDCP22 key, skip RX hdcp22 ver */
 	if (hdmitx_hw_cntl_ddc(&hdev->tx_hw.base,
 		DDC_HDCP_22_LSTORE, 0) == 0)

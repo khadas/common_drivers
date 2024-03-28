@@ -1,7 +1,7 @@
 . ${ROOT_DIR}/${KERNEL_DIR}/build.config.gki.aarch64
 . ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/amlogic_utils.sh
 
-if [[ -n ${ANDROID_PROJECT} && -z ${UPGRADE_PROJECT} ]]; then
+if [[ -n ${ANDROID_PROJECT} && -z ${UPGRADE_PROJECT} && -z ${CHECK_GKI_20} ]]; then
 	KCONFIG_EXT_MODULES_PREFIX=$(realpath ${MAIN_FOLDER} --relative-to ${KERNEL_DIR})/
 	KCONFIG_EXT_PREFIX=${COMMON_DRIVERS_DIR}/
 fi

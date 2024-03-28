@@ -64,7 +64,10 @@
 //2023.12.12 t3x no open port limit when reboot
 //2024.01.04 fix soundless issue for 2.0 ip
 //2024.01.10 optimize eq setting for 75m~115m frequency
-#define RX_VER0 "ver.2024/01/10"
+//2024.02.21 fix t3x hbr audio clk not correct issue
+//2024.03.04 fix repeat issue
+#define RX_VER0 "ver.2024/03/04"
+
 
 /*print type*/
 #define COR1_LOG	0x10000
@@ -159,7 +162,8 @@
 /* 2024.01.11 fix EMP DDR write out of bounds */
 /* 2023.1.11 fix timing lost */
 /* 2024.2.22 fix hdr flash */
-#define RX_VER2 "ver.2024/2/22"
+/* 2024.3.15 fix arc port hpd changed frequently */
+#define RX_VER2 "ver.2024/3/15"
 
 #define PFIFO_SIZE 256
 #define HDCP14_KEY_SIZE 368
@@ -459,7 +463,6 @@ struct rx_aml_phy {
 	int cdr_fr_en_auto;
 	int hyper_gain_en;
 	int eye_height_min;
-	bool phy_power_off_en;
 	int buf_gain;
 };
 
@@ -768,6 +771,11 @@ struct emp_info_s {
 	u8 data_ver;
 };
 
+struct i2c_info_s {
+	phys_addr_t phy_addr;
+	struct page *pg_addr;
+};
+
 struct spkts_rcvd_sts {
 	u32 pkt_vsi_rcvd:1;
 	u32 pkt_drm_rcvd:1;
@@ -838,6 +846,7 @@ struct rx_info_s {
 	struct rx_aml_phy aml_phy_21;
 	struct emp_info_s emp_buff_a; //for vid0
 	struct emp_info_s emp_buff_b; //for vid1
+	struct i2c_info_s i2c_buff;
 	struct edid_capacity edid_cap;
 	bool suspend_flag;
 };
@@ -914,6 +923,8 @@ struct rx_s {
 	struct rx_edid_auto_mode edid_type;
 	bool resume_flag;
 	bool spec_vendor_id;
+	u32 irq_err_cnt;
+	u32 de_err_cnt;
 };
 
 struct reg_map {

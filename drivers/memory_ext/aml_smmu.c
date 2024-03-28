@@ -496,9 +496,11 @@ not_found:
 	tmp_io_tlb_used = io_tlb_used;
 
 	spin_unlock_irqrestore(&io_tlb_lock, flags);
+#ifdef CONFIG_PRINTK
 	if (!(attrs & DMA_ATTR_NO_WARN) && __printk_ratelimit(__func__))
 		dev_warn(hwdev, "swiotlb buffer is full (sz: %zd bytes), total %lu (slots), used %lu (slots)\n",
 			 alloc_size, io_tlb_nslabs, tmp_io_tlb_used);
+#endif
 	return (phys_addr_t)DMA_MAPPING_ERROR;
 found:
 	io_tlb_used += nslots;

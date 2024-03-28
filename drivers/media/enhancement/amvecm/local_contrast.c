@@ -28,7 +28,10 @@
 #include "reg_helper.h"
 #include "local_contrast.h"
 #include "amve_v2.h"
-
+#include "am_dma_ctrl.h"
+#ifdef CONFIG_AMLOGIC_MEDIA_FRC
+#include <linux/amlogic/media/frc/frc_common.h>
+#endif
 /*may define in other module*/
 #define CURV_NODES 6
 /*curve_node_total*/
@@ -36,7 +39,7 @@
 /*curve_node_total*/
 #define LC_CURV_SIZE 585
 /*history message delay*/
-#define N 4
+#define N_DELAY 4
 /*hist bin num*/
 #define HIST_BIN 16
 #define LC_BLK_H_NUM 12
@@ -62,7 +65,7 @@ int use_lc_curve_isr = 1;
 module_param(use_lc_curve_isr, int, 0664);
 MODULE_PARM_DESC(use_lc_curve_isr, "\n use_lc_curve_isr\n");
 
-int lc_rdma_mode;
+int lc_rdma_mode = 1;
 module_param(lc_rdma_mode, int, 0664);
 MODULE_PARM_DESC(lc_rdma_mode, "\n lc_rdma_mode\n");
 
@@ -74,6 +77,25 @@ int lc_demo_mode;
 module_param(lc_demo_mode, int, 0664);
 MODULE_PARM_DESC(lc_demo_mode, "\n lc_demo_mode\n");
 
+int lc_force_ctrl;
+module_param(lc_force_ctrl, int, 0664);
+MODULE_PARM_DESC(lc_force_ctrl, "\n lc_demo_mode\n");
+
+int dbg_monitor_ctrl;
+module_param(dbg_monitor_ctrl, int, 0664);
+MODULE_PARM_DESC(dbg_monitor_ctrl, "\n dbg_monitor_ctrl\n");
+
+int skip_num = 1;
+module_param(skip_num, int, 0664);
+MODULE_PARM_DESC(skip_num, "\n skip_num\n");
+
+int delay_num = 4;
+module_param(delay_num, int, 0664);
+MODULE_PARM_DESC(delay_num, "\n delay_num\n");
+
+int width_limit = 1900;
+int height_limit = 1050;
+int lc_reset_done;
 int lc_en_chflg = 0xff;
 static int lc_flag = 0xff;
 static int lc_bypass_flag = 0xff;
@@ -169,7 +191,7 @@ int detect_signal_range_threshold_black = 1600;
 int detect_signal_range_threshold_white = 3200;
 
 /*local contrast begin*/
-static void lc_curve_get_blk_num(int *h_num, int *v_num)
+void lc_curve_get_blk_num(int *h_num, int *v_num)
 {
 	int dwtemp;
 
@@ -807,6 +829,7 @@ void lc_disable(int rdma_mode, int vpp_index)
 		WRITE_VPP_REG_BITS(LC_STTS_HIST_REGION_IDX, 0, 31, 1);
 	} else {
 		ve_lc_disable(rdma_mode, vpp_index);
+		lc_reset_done = 0;
 	}
 
 	if (!lc_malloc_ok) {
@@ -851,7 +874,7 @@ static int signal_detect(unsigned short *hist)
 	return 0;
 }
 
-static void lc_config(int enable,
+void lc_config(int enable,
 	struct vframe_s *vf,
 	unsigned int sps_h_en,
 	unsigned int sps_v_en,
@@ -865,6 +888,8 @@ static void lc_config(int enable,
 	static unsigned int vf_height, vf_width, flag_full_pre;
 	static unsigned int sps_w_in_pre, sps_h_in_pre;
 	unsigned int flag, flag_full;
+	int lc_en_ctrl = enable;
+	int in_sel;
 
 	h_num = LC_BLK_H_NUM;
 	v_num = LC_BLK_V_NUM;
@@ -872,7 +897,6 @@ static void lc_config(int enable,
 	if (!vf) {
 		vf_height = 0;
 		vf_width = 0;
-		pr_amlc_dbg("%s: vf is NULL!\n", __func__);
 		return;
 	}
 
@@ -886,7 +910,8 @@ static void lc_config(int enable,
 
 	/* try to detect out of spec signal level */
 	flag_full = 0;
-	if (detect_signal_range_en == 2) {
+	if (detect_signal_range_en == 2 &&
+		chip_type_id != chip_t3x) {
 		flag_full = signal_detect(vf->prop.hist.vpp_gamma);
 		if (vf->type & VIDTYPE_RGB_444)
 			flag_full = 1;
@@ -913,18 +938,12 @@ static void lc_config(int enable,
 		sps_w_in_pre == sps_w_in &&
 		sps_h_in_pre == sps_h_in &&
 		lc_en_chflg && !lc_slice_num_changed) {
-		pr_amlc_dbg("%s: lc_en_chflg = %d\n",
-			__func__, lc_en_chflg);
+		/*pr_amlc_dbg("%s: lc_en_chflg = %d\n",*/
+		/*	__func__, lc_en_chflg);*/
+		/*pr_amlc_dbg("%s: lc_slice_num_changed = %d\n",*/
+		/*	__func__, lc_slice_num_changed);*/
 		return;
 	}
-
-	pr_amlc_dbg("sps_h_en/v_en/h_in/w_in: %d/%d/%d/%d\n",
-		sps_h_en,
-		sps_v_en,
-		sps_h_in,
-		sps_w_in);
-	pr_amlc_dbg("vf->height/width: %d/%d\n",
-		vf->height, vf->width);
 
 	flag_full_pre = flag_full;
 	height = sps_h_in << sps_h_en;
@@ -960,26 +979,31 @@ static void lc_config(int enable,
 		/* use default value bt709 */
 		flag = 0x1;
 
-	lc_top_config(enable, h_num, v_num, height,
+	lc_top_config(lc_en_ctrl, h_num, v_num, height,
 		width, bitdepth, flag, flag_full,
 		lc_rdma_mode, vpp_index);
 
 	width = sps_w_in;
 	height = sps_h_in;
 
+	if (chip_type_id == chip_txhd2)
+		in_sel = 5;
+	else
+		in_sel = 4;
+
 	if (chip_type_id != chip_t3x) {
-		lc_curve_ctrl_config(enable, height, width);
-		lc_stts_blk_config(enable, height, width);
-		lc_stts_en(enable, height, width,
-			0, 0, 1, 1, 4,
+		lc_curve_ctrl_config(lc_en_ctrl, height, width);
+		lc_stts_blk_config(lc_en_ctrl, height, width);
+		lc_stts_en(lc_en_ctrl, height, width,
+			0, 0, 1, 1, in_sel,
 			bitdepth, flag, flag_full);
 	} else {
-		ve_lc_curve_ctrl_cfg(enable,
+		ve_lc_curve_ctrl_cfg(lc_en_ctrl,
 			height, width, h_num, v_num,
 			lc_rdma_mode, vpp_index);
 		ve_lc_stts_blk_cfg(height, width,
 			h_num, v_num, lc_rdma_mode, vpp_index);
-		ve_lc_stts_en(enable, height, width,
+		ve_lc_stts_en(lc_en_ctrl, h_num, height, width,
 			0, 0, 1, 1, 0,
 			bitdepth, flag, flag_full,
 			lc_tune_curve.lc_reg_thd_black,
@@ -1426,17 +1450,17 @@ int global_scene_change(int *curve_nodes_cur,
 	int *osd_flag_cnt_below)
 {
 	int scene_change_flag;
-	static int scene_dif[N];
-	static int frm_dif[N];
+	static int scene_dif[N_DELAY];
+	static int frm_dif[N_DELAY];
 	/*store frame valid block for frm diff calc*/
-	static int valid_blk_num[N];
+	static int valid_blk_num[N_DELAY];
 	int frm_dif_osd, vnum_osd;
 	int addr_curv1;
 	int apl_cur, apl_pre;
 	int i, j;
 
 	/*history message delay*/
-	for (i = 0; i < N - 1; i++) {
+	for (i = 0; i < N_DELAY - 1; i++) {
 		scene_dif[i] = scene_dif[i + 1];
 		frm_dif[i] = frm_dif[i + 1];
 		valid_blk_num[i] = valid_blk_num[i + 1];
@@ -1449,9 +1473,9 @@ int global_scene_change(int *curve_nodes_cur,
 		/* 2.2.1 use block APL to calculate frame dif:
 		 * omap[5]: (yminV), minBV, pkBV, maxBV, (ymaxV),ypkBV
 		 */
-		frm_dif[N - 1] = 0;/*update current result*/
-		scene_dif[N - 1] = 0;
-		valid_blk_num[N - 1] = 0;
+		frm_dif[N_DELAY - 1] = 0;/*update current result*/
+		scene_dif[N_DELAY - 1] = 0;
+		valid_blk_num[N_DELAY - 1] = 0;
 		frm_dif_osd = 0;
 		vnum_osd = 0;
 		for (i = 0; i < blk_vnum; i++) {
@@ -1461,7 +1485,7 @@ int global_scene_change(int *curve_nodes_cur,
 					CURV_NODES + 2];/*apl value*/
 				apl_pre = curve_nodes_pre[addr_curv1 *
 					CURV_NODES + 2];
-				frm_dif[N - 1] +=
+				frm_dif[N_DELAY - 1] +=
 					abs(apl_cur - apl_pre);/*frame motion*/
 
 				/*when have osd,
@@ -1487,39 +1511,39 @@ int global_scene_change(int *curve_nodes_cur,
 			}
 		}
 		/*remove osd to calc frame motion */
-		frm_dif[N - 1] = frm_dif[N - 1] - frm_dif_osd;
-		valid_blk_num[N - 1] = (blk_vnum - vnum_osd) * blk_hnum;
+		frm_dif[N_DELAY - 1] = frm_dif[N_DELAY - 1] - frm_dif_osd;
+		valid_blk_num[N_DELAY - 1] = (blk_vnum - vnum_osd) * blk_hnum;
 		/*debug*/
 		if (amlc_debug == 0x4) {
 			pr_info("#vnum_osd = %d;\n", vnum_osd);
 			pr_info("#valid_blk_num[%d] =  %d\n",
-				N - 1, valid_blk_num[N - 1]);
+				N_DELAY - 1, valid_blk_num[N_DELAY - 1]);
 			pr_info("#valid_blk_num[%d] =  %d\n",
-				N - 2, valid_blk_num[N - 2]);
+				N_DELAY - 2, valid_blk_num[N_DELAY - 2]);
 		}
 
 		/*2.2.2motion dif.if motion dif too large,
 		 *	we think scene changed
 		 */
-		scene_dif[N - 1] =
-			abs((frm_dif[N - 1] / (valid_blk_num[N - 1] + 1)) -
-			(frm_dif[N - 2] / (valid_blk_num[N - 2] + 1)));
+		scene_dif[N_DELAY - 1] =
+			abs((frm_dif[N_DELAY - 1] / (valid_blk_num[N_DELAY - 1] + 1)) -
+			(frm_dif[N_DELAY - 2] / (valid_blk_num[N_DELAY - 2] + 1)));
 
-		if (scene_dif[N - 1] > scene_change_th)
+		if (scene_dif[N_DELAY - 1] > scene_change_th)
 			scene_change_flag = 1;
 		else
 			scene_change_flag = 0;
 
 		/*debug*/
-		if (scene_dif[N - 1] > scene_change_th && amlc_iir_debug_en) {
-			for (i = 0; i < N; i++)
+		if (scene_dif[N_DELAY - 1] > scene_change_th && amlc_iir_debug_en) {
+			for (i = 0; i < N_DELAY; i++)
 				pr_info("valid_blk_num[%d] = %d,\n",
 					i, valid_blk_num[i]);
-			for (i = 0; i < N; i++)
+			for (i = 0; i < N_DELAY; i++)
 				pr_info("frm_dif[%d] = %d,\n",
 					i, frm_dif[i]);
 			pr_info("\n\n");
-			for (i = 0; i < N; i++)
+			for (i = 0; i < N_DELAY; i++)
 				pr_info("scene_dif[%d] = %d,\n",
 					i, scene_dif[i]);
 			pr_info("scene_change_flag =%d\n\n",
@@ -1552,7 +1576,7 @@ int cal_iir_alpha(int *refresh_alpha,
 			for (j = 0; j < blk_hnum; j++) {
 				for (k = 0; k < CURV_NODES; k++) {
 					addr_curv1 = (i * blk_hnum + j);
-					refresh_alpha[addr_curv1] = alpha1;
+					refresh_alpha[addr_curv1] = refresh;/*alpha1;*/
 				}
 			}
 		}
@@ -1845,6 +1869,7 @@ void lc_read_region(int blk_vnum, int blk_hnum,
 {
 	int i;
 	int j;
+	int k;
 	unsigned int cur_block;
 	int *data_curve;
 	int *data_hist;
@@ -1890,8 +1915,14 @@ void lc_read_region(int blk_vnum, int blk_hnum,
 
 	if (amlc_debug == 0x8 && lc_hist_prcnt) {/*print all hist data*/
 		pr_info("slice = %d\n", slice);
-		for (i = 0; i < 8 * 12 * 17; i++)
-			pr_info("[%d] %x\n", i, data_hist[i]);
+		for (i = 0; i < blk_vnum; i++) {
+			for (j = 0; j < blk_hnum; j++) {
+				cur_block = i * blk_hnum + j;
+				for (k = 0; k < 17; k++)
+					pr_info("[%d,%d,%d] %x\n", i, j, k,
+						data_hist[cur_block * 17 + k]);
+			}
+		}
 	}
 
 	if (lc_hist_prcnt > 0)
@@ -2127,6 +2158,73 @@ bool lc_curve_ctrl_reg_set_flag(unsigned int addr)
 	return lc_config_set_flag;
 }
 
+int dbg_vf_h;
+int dbg_vf_w;
+int dbg_sps_h_en;
+int dbg_sps_v_en;
+int dbg_sps_w_in;
+int dbg_sps_h_in;
+int dbg_slice_flag;
+int dbg_hwin_begin;
+int dbg_hwin_end;
+int dbg_hsize_out;
+
+void dbg_monitor(struct vframe_s *vf,
+	unsigned int sps_h_en,
+	unsigned int sps_v_en,
+	unsigned int sps_w_in,
+	unsigned int sps_h_in)
+{
+	int multi_slice_flag;
+	unsigned int value;
+	unsigned int hsize_out, hwin_begin, hwin_end;
+
+	multi_slice_flag = ve_multi_slice_case_get();
+	if (multi_slice_flag != dbg_slice_flag) {
+		pr_info("[lc_monitor] multi_slice_flag: %d-->%d\n",
+			dbg_slice_flag, multi_slice_flag);
+		dbg_slice_flag = multi_slice_flag;
+	}
+
+	if (vf) {
+		if (vf->height != dbg_vf_h ||
+			vf->width != dbg_vf_w) {
+			pr_info("[lc_monitor] vf->height/width: %d/%d\n",
+				vf->height, vf->width);
+			dbg_vf_h = vf->height;
+			dbg_vf_w = vf->width;
+		}
+	}
+
+	if (sps_h_en != dbg_sps_h_en ||
+		sps_v_en != dbg_sps_v_en ||
+		sps_w_in != dbg_sps_w_in ||
+		sps_h_in != dbg_sps_h_in) {
+		pr_info("[lc_monitor] h_en/v_en/w_in/h_in: %d/%d/%d/%d\n",
+			sps_h_en, sps_v_en, sps_w_in, sps_h_in);
+		dbg_sps_h_en = sps_h_en;
+		dbg_sps_v_en = sps_v_en;
+		dbg_sps_w_in = sps_w_in;
+		dbg_sps_h_in = sps_h_in;
+	}
+
+	value = READ_VPP_REG_S5(0x2813);
+	hwin_begin = (value >> 16) & 0x1fff;
+	hwin_end = value & 0x1fff;
+	hsize_out = READ_VPP_REG_S5(0x2808);
+	hsize_out = (hsize_out >> 16) & 0x1fff;
+
+	if (hwin_begin != dbg_hwin_begin ||
+		hwin_end != dbg_hwin_end ||
+		hsize_out != dbg_hsize_out) {
+		pr_info("[lc_monitor] hwin_begin/end/hsize_out: %d/%d/%d\n",
+			hwin_begin, hwin_end, hsize_out);
+		dbg_hwin_begin = hwin_begin;
+		dbg_hwin_end = hwin_end;
+		dbg_hsize_out = hsize_out;
+	}
+}
+
 void lc_process(struct vframe_s *vf,
 		unsigned int sps_h_en,
 	unsigned int sps_v_en,
@@ -2136,42 +2234,54 @@ void lc_process(struct vframe_s *vf,
 {
 	int blk_hnum, blk_vnum;
 	int multi_pic_flag;
-	int multi_slice_flag;
+	int multi_slice_flag = 0;
+	int lc_bypass_th = 0;
+	static int frc_change_delay_cnt;
+	/*static int frc_status_changed;*/
+	static int frc_status_pre;
+	/*int frc_status_cur;*/
+	unsigned int height, width;
 
-	if (get_cpu_type() < MESON_CPU_MAJOR_ID_TL1)
-		return;
-
-	pr_amlc_dbg("%s: chip_type_id = %d",
-		__func__, chip_type_id);
-
-	if (chip_type_id == chip_s5 ||
-		chip_type_id == chip_s7)
+	if (get_cpu_type() < MESON_CPU_MAJOR_ID_TL1 ||
+		chip_type_id == chip_s5 ||
+		chip_type_id == chip_s7 ||
+		lc_force_ctrl)
 		return;
 
 	if (!lc_malloc_ok) {
-		pr_amlc_dbg("%s: lc malloc fail\n", __func__);
+		pr_amlc_dbg("[%s] lc malloc fail\n", __func__);
 		return;
 	}
 
-	if (!lc_en) {
+	if (chip_type_id == chip_t3x) {
+		multi_pic_flag = ve_multi_picture_case_get();
+		multi_slice_flag = ve_multi_slice_case_get();
+
+		if (dbg_monitor_ctrl)
+			dbg_monitor(vf, sps_h_en, sps_v_en, sps_w_in, sps_h_in);
+	}
+
+	height = sps_h_in << sps_v_en;
+	width = sps_w_in << sps_h_en;
+
+	if (!lc_en ||
+		(vf && width < width_limit && height < height_limit)) {
 		lc_disable(lc_rdma_mode, vpp_index);
-		pr_amlc_dbg("%s: lc_en = %d\n", __func__, lc_en);
+		pr_amlc_dbg("[%s] lc_en = %d\n", __func__, lc_en);
+		frc_status_pre = 0;
+		frc_change_delay_cnt = 0;
 		return;
 	}
 
 	if (!vf) {
 		if (lc_flag == 0xff) {
 			lc_disable(lc_rdma_mode, vpp_index);
-			lc_flag = 0x0;
 			lc_bypass_flag = 0x0;
+			lc_flag = 0x0;
+			frc_status_pre = 0;
+			frc_change_delay_cnt = 0;
 		}
-		pr_amlc_dbg("%s: vf is NULL\n", __func__);
-		return;
-	}
-
-	if (lc_flag <= 1) {
-		lc_flag++;
-		pr_amlc_dbg("%s: lc_flag = %d\n", __func__, lc_flag);
+		/*pr_amlc_dbg("[%s] vf is NULL\n", __func__);*/
 		return;
 	}
 
@@ -2180,9 +2290,15 @@ void lc_process(struct vframe_s *vf,
 		return;
 	}
 
-	if (chip_type_id == chip_t3x) {
-		multi_pic_flag = ve_multi_picture_case_get();
-		multi_slice_flag = ve_multi_slice_case_get();
+	if (chip_type_id != chip_t3x)
+		lc_bypass_th = 1;
+	else
+		lc_bypass_th = skip_num;
+
+	if (lc_flag <= lc_bypass_th) {
+		lc_flag++;
+		pr_amlc_dbg("[%s] lc_flag = %d\n", __func__, lc_flag);
+		return;
 	}
 
 	lc_config(lc_en, vf, sps_h_en, sps_v_en,
@@ -2219,19 +2335,20 @@ void lc_process(struct vframe_s *vf,
 		}
 
 		if (set_lc_curve(0, 0, vpp_index))
-			pr_amlc_dbg("%s: set lc curve fail\n", __func__);
+			pr_amlc_dbg("[%s] set lc curve fail\n", __func__);
 	} else {
 		ve_lc_blk_num_get(&blk_hnum, &blk_vnum, 0);
 
 		/*get hist & curve node*/
-		if (!use_lc_curve_isr || !lc_curve_isr_defined) {
-			lc_read_region(blk_vnum, blk_hnum, 0);
-			if (multi_pic_flag)
-				lc_read_region(blk_vnum, blk_hnum, 1);
-		} else {
-			pr_amlc_dbg("%s: use_lc_curve_isr/defined: %d/%d\n",
-				__func__, use_lc_curve_isr, lc_curve_isr_defined);
-		}
+		/*if (!use_lc_curve_isr || !lc_curve_isr_defined) {*/
+		/*	lc_read_region(blk_vnum, blk_hnum, 0);*/
+		/*	if (multi_pic_flag)*/
+		/*		lc_read_region(blk_vnum, blk_hnum, 1);*/
+		/*} else {*/
+		/*	pr_amlc_dbg("%s: use_lc_curve_isr/defined: %d/%d\n",*/
+		/*		__func__, use_lc_curve_isr, lc_curve_isr_defined);*/
+		/*}*/
+		lc_read_region(blk_vnum, blk_hnum, 0);
 
 		/*do time domain iir*/
 		lc_fw_curve_iir(vf, lc_hist,
@@ -2253,6 +2370,9 @@ void lc_process(struct vframe_s *vf,
 			ve_lc_curve_set(0, 0, lc_szcurve, 0, vpp_index);
 			ve_lc_curve_set(0, 0, lc_szcurve_slice1, 1, vpp_index);
 		}
+
+		if (amlc_debug == 0xf0)
+			monitor_lc_stts_overflow();
 	}
 
 	if (amlc_debug == 0xc &&

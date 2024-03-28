@@ -62,6 +62,9 @@ struct am_osd_plane {
 	bool bflg;
 	u32 *receive_palette;
 	int osd_permanent_blank;
+
+	/* sysfs debug*/
+	u16 pixel_blend_debug;
 };
 
 struct am_video_plane {

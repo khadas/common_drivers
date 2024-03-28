@@ -42,14 +42,18 @@ struct lcd_debug_info_s {
 	unsigned int *reg_encl_table;
 	unsigned int *reg_pinmux_table;
 
+#ifdef CONFIG_AMLOGIC_LCD_TABLET
 	struct lcd_debug_info_if_s *debug_if_rgb;
 	struct lcd_debug_info_if_s *debug_if_bt;
+#endif
 	struct lcd_debug_info_if_s *debug_if_lvds;
 	struct lcd_debug_info_if_s *debug_if_vbyone;
 	struct lcd_debug_info_if_s *debug_if_mlvds;
 	struct lcd_debug_info_if_s *debug_if_p2p;
+#ifdef CONFIG_AMLOGIC_LCD_TABLET
 	struct lcd_debug_info_if_s *debug_if_mipi;
 	struct lcd_debug_info_if_s *debug_if_edp;
+#endif
 	struct lcd_debug_info_if_s *debug_if;
 };
 

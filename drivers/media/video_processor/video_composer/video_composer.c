@@ -30,6 +30,8 @@
 #include <linux/amlogic/aml_sync_api.h>
 #include <linux/amlogic/media/canvas/canvas.h>
 #include <linux/amlogic/media/canvas/canvas_mgr.h>
+#include <../../video_sink/video_priv.h>
+
 #ifdef CONFIG_AMLOGIC_MEDIA_CODEC_MM
 #include <linux/amlogic/media/codec_mm/codec_mm.h>
 #endif
@@ -43,9 +45,12 @@
 #include <linux/ctype.h>
 #include <linux/amlogic/media/registers/cpu_version.h>
 #include <linux/amlogic/media/vfm/amlogic_fbc_hook_v1.h>
+#include <linux/amlogic/media/resource_mgr/resourcemanage.h>
 #include "../../gdc/inc/api/gdc_api.h"
+#include "../common/video_pp_common.h"
 #ifdef CONFIG_AMLOGIC_MEDIA_DEINTERLACE
 #include <linux/amlogic/media/di/di_interface.h>
+#include <linux/amlogic/media/di/di.h>
 #endif
 
 #include "videodisplay.h"
@@ -444,6 +449,31 @@ int ge2d_context_config_ex(struct ge2d_context_s *context,
 	return -1;
 }
 #endif
+
+void debug_vc_print_flag(const char *module, int debug_flags)
+{
+	print_flag = debug_flags;
+}
+EXPORT_SYMBOL(debug_vc_print_flag);
+
+void debug_vc_transform(const char *module, int debug_flags)
+{
+	transform = debug_flags;
+}
+EXPORT_SYMBOL(debug_vc_transform);
+
+void debug_vc_force_composer(const char *module, int debug_flags)
+{
+	force_composer = debug_flags;
+}
+EXPORT_SYMBOL(debug_vc_force_composer);
+
+void debug_vc_get_count(const char *module, int debug_flags)
+{
+	if (debug_flags)
+		pr_info("total_get_count: %d\n", total_get_count);
+}
+EXPORT_SYMBOL(debug_vc_get_count);
 
 static void *video_timeline_create(struct composer_dev *dev)
 {
@@ -1719,6 +1749,12 @@ static struct vframe_s *get_vf_from_file(struct composer_dev *dev,
 	struct vframe_s *di_vf = NULL;
 	bool is_dec_vf = false;
 	struct file_private_data *file_private_data = NULL;
+	bool enable_prelink = false;
+	bool dec_is_i = false;
+	struct uvm_hook_mod *uhmod = NULL;
+	struct dma_buf *dmabuf = NULL;
+	struct vframe_s *dma_di_vf = NULL;
+	bool dma_has_di_vf = false;
 
 	if (IS_ERR_OR_NULL(dev) || IS_ERR_OR_NULL(file_vf)) {
 		vc_print(dev->index, PRINT_ERROR,
@@ -1743,15 +1779,43 @@ static struct vframe_s *get_vf_from_file(struct composer_dev *dev,
 			"vframe_type = 0x%x, vframe_flag = 0x%x.\n",
 			vf->type,
 			vf->flag);
+		dec_is_i = vf->type & VIDTYPE_INTERLACE;
+
+		dmabuf = (struct dma_buf *)(file_vf->private_data);
+		uhmod = uvm_get_hook_mod(dmabuf, VF_PROCESS_DI);
+		if (!IS_ERR_OR_NULL(uhmod)) {
+			dma_has_di_vf = true;
+			dma_di_vf = (struct vframe_s *)uhmod->arg;
+		}
+
 		if (di_vf && (vf->flag & VFRAME_FLAG_CONTAIN_POST_FRAME)) {
 			vc_print(dev->index, PRINT_OTHER,
-				"di_vf->type = 0x%x, di_vf->org = 0x%x.\n",
+				"dma_has_di_vf=%d, dma_di_vf=%px\n",
+				dma_has_di_vf, dma_di_vf);
+			if (!(dma_has_di_vf && di_vf == dma_di_vf)) {
+				vc_print(dev->index, PRINT_ERROR,
+					"di vf err: file_vf=%px, dmabuf=%px, uhmod=%px, vf=%px\n",
+					file_vf, dmabuf, uhmod, vf);
+				vc_print(dev->index, PRINT_ERROR,
+					"di_vf=%px, dma_di_vf=%px, omx_index=%d\n",
+					di_vf, dma_di_vf, vf->omx_index);
+				di_vf = NULL;
+			}
+		}
+
+		if (di_vf && (vf->flag & VFRAME_FLAG_CONTAIN_POST_FRAME)) {
+#ifdef CONFIG_AMLOGIC_MEDIA_DEINTERLACE
+			enable_prelink = dim_get_pre_link();
+#endif
+			vc_print(dev->index, PRINT_OTHER,
+				"di_vf->type = 0x%x, di_vf->org = 0x%x, enable_prelink = %d\n",
 				di_vf->type,
-				di_vf->type_original);
+				di_vf->type_original,
+				enable_prelink);
 			if (!need_dw ||
 			    (need_dw && di_vf->width != 0 &&
 				di_vf->canvas0_config[0].phy_addr != 0 &&
-				!vf_is_pre_link(di_vf))) {
+				((!dec_is_i && !enable_prelink) || dec_is_i))) {
 				vc_print(dev->index, PRINT_OTHER,
 					"use di vf\n");
 				/* link uvm vf into di_vf->vf_ext */
@@ -1762,9 +1826,13 @@ static struct vframe_s *get_vf_from_file(struct composer_dev *dev,
 				vf = di_vf;
 			}
 		}
-		dmabuf_put_vframe((struct dma_buf *)(file_vf->private_data));
 		if (vf->omx_index == 0 && vf->index_disp != 0)
 			vf->omx_index = vf->index_disp;
+
+		if (dma_has_di_vf)
+			uvm_put_hook_mod(dmabuf, VF_PROCESS_DI);
+		dmabuf_put_vframe((struct dma_buf *)(file_vf->private_data));
+
 	} else {
 		vc_print(dev->index, PRINT_OTHER, "vf is from v4lvideo\n");
 		file_private_data = vc_get_file_private(dev, file_vf);
@@ -1895,6 +1963,11 @@ static bool check_dewarp_support_status(struct composer_dev *dev,
 
 	if (IS_ERR_OR_NULL(dev) || IS_ERR_OR_NULL(received_frames)) {
 		vc_print(dev->index, PRINT_ERROR, "%s: invalid param.\n", __func__);
+		return false;
+	}
+
+	if (received_frames->frames_info.frame_count > 1) {
+		vc_print(dev->index, PRINT_OTHER, "%s: dewarp not support composer.\n", __func__);
 		return false;
 	}
 
@@ -3151,6 +3224,74 @@ bool get_lowlatency_mode(void)
 }
 EXPORT_SYMBOL(get_lowlatency_mode);
 
+static unsigned int get_vf_ds_ratio(struct composer_dev *dev, struct vframe_s *vf)
+{
+	unsigned int ds_ratio = 0;
+	unsigned int hdctds_ratio = 0;
+	unsigned int src_fmt = 2;
+	unsigned int skip = 0;
+	bool need_ds = false;
+
+	if ((vf->type & VIDTYPE_VIU_422) && !(vf->type & 0x10000000)) {
+		src_fmt = 0;
+		need_ds = true;
+		/*422 is one plane, post not support, need pre out nv21*/
+	} else if ((vf->type & VIDTYPE_VIU_NV21) || (vf->type & 0x10000000)) {
+		/*hdmi in dw is nv21 VIDTYPE_DW_NV21*/
+		src_fmt = 2;
+	}
+
+	if (vf->type & VIDTYPE_INTERLACE) {
+		if (src_fmt == 2) {
+			skip = 1;
+		} else if (src_fmt == 0) {
+			need_ds = true;
+		/*hdmiin output, In the first half of the line*/
+			if (vf->width > 960 || (vf->height >> 1) > 540)
+				hdctds_ratio = 1;
+		}
+	} else {
+		if (vf->width > 1920 || vf->height > 1080) {
+			hdctds_ratio = 1;
+			skip = 1;
+		} else if (vf->width > 960 || vf->height > 540) {
+			if (src_fmt == 0) {
+				/*hdmi in always use ds*/
+				hdctds_ratio = 1;
+			} else {
+				/*decoder use mif skip for save ddr*/
+				hdctds_ratio = 0;
+				skip = 1;
+				vc_print(dev->index, PRINT_OTHER, "1080p use mif skip\n");
+			}
+		}
+	}
+
+	if (hdctds_ratio || skip || need_ds) {
+		ds_ratio = hdctds_ratio;
+		if (skip)
+			ds_ratio = ds_ratio + 1;
+
+		if (need_ds && (vf->type & VIDTYPE_COMPRESS))
+			ds_ratio = (vf->compWidth / vf->width) >> 1;
+	} else {
+		if (vf->type & VIDTYPE_COMPRESS) {
+			if (vf->width == vf->compWidth)
+				ds_ratio = 0;
+			else if (vf->width >= (vf->compWidth >> 1))
+				ds_ratio = 1;
+			else if (vf->width >= (vf->compWidth >> 2))
+				ds_ratio = 2;
+			else
+				ds_ratio = 3;
+		}
+	}
+	vc_print(dev->index, PRINT_OTHER, "skip=%d, need_ds=%d, src_fmt=%d.\n",
+		skip, need_ds, src_fmt);
+
+	return ds_ratio;
+}
+
 static bool check_mosaic_22(struct composer_dev *dev, struct received_frames_t *received_frames)
 {
 	struct vinfo_s *video_composer_vinfo;
@@ -3277,6 +3418,8 @@ static void video_composer_task(struct composer_dev *dev)
 	bool do_mosaic_22 = false;
 	struct vf_aiface_t *aiface_info = NULL;
 	struct vf_aicolor_t *aicolor_info = NULL;
+	bool enable_prelink = false;
+	unsigned int ds_ratio = 0;
 
 	if (!kfifo_peek(&dev->receive_q, &received_frames)) {
 		vc_print(dev->index, PRINT_ERROR, "task: peek failed\n");
@@ -3498,6 +3641,22 @@ static void video_composer_task(struct composer_dev *dev)
 
 		vf->pts_us64 = time_us64;
 		vf->disp_pts = 0;
+
+#ifdef CONFIG_AMLOGIC_MEDIA_DEINTERLACE
+		enable_prelink = dim_get_pre_link();
+#endif
+		if (enable_prelink &&
+			!IS_DI_PRELINK(vf->di_flag) &&
+			!IS_DI_PRELINK_BYPASS(vf->di_flag) &&
+			!(vf->type & VIDTYPE_INTERLACE)) {
+			vc_print(dev->index, PRINT_OTHER, "need set ds_ratio.\n");
+			ds_ratio = get_vf_ds_ratio(dev, vf);
+			ds_ratio = ds_ratio << DI_FLAG_DCT_DS_RATIO_BIT;
+			ds_ratio &= DI_FLAG_DCT_DS_RATIO_MASK;
+			vf->di_flag |= DI_FLAG_DI_PVPPLINK_BYPASS | DI_FLAG_DI_BYPASS;
+			vf->di_flag &= ~DI_FLAG_DCT_DS_RATIO_MASK;
+			vf->di_flag |= ds_ratio;
+		}
 
 		if (frame_info->type == 1 && !(is_dec_vf || is_v4l_vf)) {
 			if (frame_info->source_type == SOURCE_HWC_CREAT_ION)
@@ -4266,7 +4425,7 @@ static void set_frames_info(struct composer_dev *dev,
 				vf->source_type == VFRAME_SOURCE_TYPE_CVBS)
 				tv_fence_creat_count++;
 			vc_print(dev->index, PRINT_FENCE | PRINT_PATTERN,
-				 "received_cnt=%lld,new_cnt=%lld,i=%d,z=%d,omx_index=%d, fence_fd=%d, fc_no=%d, index_disp=%d,pts=%lld,vf=%p\n",
+				 "received_cnt=%lld,new_cnt=%lld,i=%d,z=%d,omx_index=%d, fence_fd=%d, fc_no=%d, index_disp=%d,pts=%lld,vf=%px\n",
 				 dev->received_count + 1,
 				 dev->received_new_count,
 				 i,
@@ -4368,6 +4527,9 @@ static int video_composer_init(struct composer_dev *dev)
 	sprintf(render_layer, "video_render.%d", dev->video_render_index);
 	set_video_path_select(render_layer, dev->index);
 	dev_get_vinfo(dev);
+#ifdef CONFIG_AMLOGIC_MEDIA_RESMANAGE
+	resman_register_debug_callback("Display_VC", set_vc_config);
+#endif
 	return ret;
 }
 

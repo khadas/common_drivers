@@ -224,7 +224,7 @@ irqreturn_t vsync_isr_viux(u8 vpp_index, const struct vinfo_s *info)
 	s32 vd_path_id = 0;
 	struct path_id_s path_id;
 
-	path_id.vd1_path_id = vd_path_id;
+	path_id.vd1_path_id = 0xffff;
 	path_id.vd2_path_id = 0xffff;
 	path_id.vd3_path_id = 0xffff;
 
@@ -243,6 +243,20 @@ irqreturn_t vsync_isr_viux(u8 vpp_index, const struct vinfo_s *info)
 	layer_id = vd_layer_vpp[vpp_id].layer_id;
 	vd_path_id = glayer_info[layer_id].display_path_id;
 
+	switch (layer_id) {
+	case 0:
+		path_id.vd1_path_id = vd_path_id;
+		break;
+	case 1:
+		path_id.vd2_path_id = vd_path_id;
+		break;
+	case 2:
+		path_id.vd3_path_id = vd_path_id;
+		break;
+	default:
+		pr_info("wrong layer_id:%d, vd_path_id:%d\n",
+			layer_id, vd_path_id);
+	}
 	if (cur_vd_path_id == 0xff)
 		cur_vd_path_id = vd_path_id;
 

@@ -110,6 +110,7 @@ static int lcd_set_current_vmode(enum vmode_e mode, void *data)
 		lcd_if_enable_retry(pdrv);
 	}
 
+	pdrv->vmode_switch = 0;
 	pdrv->status |= LCD_STATUS_VMODE_ACTIVE;
 	mutex_unlock(&lcd_power_mutex);
 
@@ -275,10 +276,14 @@ static int lcd_set_vframe_rate_hint(int duration, void *data)
 		}
 
 		/* update frame rate */
-		pdrv->config.timing.act_timing.frame_rate = pdrv->cur_duration.frame_rate;
-		pdrv->config.timing.act_timing.sync_duration_num = pdrv->cur_duration.duration_num;
-		pdrv->config.timing.act_timing.sync_duration_den = pdrv->cur_duration.duration_den;
-		pdrv->config.timing.act_timing.frac = pdrv->cur_duration.frac;
+		pdrv->config.timing.act_timing.frame_rate =
+			pdrv->config.timing.base_timing.frame_rate;
+		pdrv->config.timing.act_timing.sync_duration_num =
+			pdrv->config.timing.base_timing.sync_duration_num;
+		pdrv->config.timing.act_timing.sync_duration_den =
+			pdrv->config.timing.base_timing.sync_duration_den;
+		pdrv->config.timing.act_timing.frac =
+			pdrv->config.timing.base_timing.frac;
 		pdrv->fr_mode = 0;
 	} else {
 		for (i = 0; i < n; i++) {
@@ -417,12 +422,6 @@ static void lcd_tablet_vinfo_update(struct aml_lcd_drv_s *pdrv)
 		return;
 
 	ptiming = &pdrv->config.timing.act_timing;
-
-	/* store current duration */
-	pdrv->cur_duration.frame_rate = ptiming->frame_rate;
-	pdrv->cur_duration.duration_num = ptiming->sync_duration_num;
-	pdrv->cur_duration.duration_den = ptiming->sync_duration_den;
-	pdrv->cur_duration.frac = ptiming->frac;
 
 	pdrv->vinfo.width = ptiming->h_active;
 	pdrv->vinfo.height = ptiming->v_active;
@@ -573,6 +572,7 @@ static void lcd_config_init(struct aml_lcd_drv_s *pdrv)
 
 	lcd_clk_config_parameter_init(pdrv);
 	lcd_clk_generate_parameter(pdrv);
+	pdrv->config.timing.clk_change = 0; /* clear clk_change flag */
 
 	lcd_tablet_config_post_update(pdrv);
 

@@ -48,7 +48,7 @@ struct v4l2_ext_memc_motion_comp_info {
 #define FRC_IOC_SET_FRC_CANDENCE    _IOW(FRC_IOC_MAGIC, 0x02, unsigned int)
 #define FRC_IOC_GET_VIDEO_LATENCY   _IOR(FRC_IOC_MAGIC, 0x03, unsigned int)
 #define FRC_IOC_GET_IS_ON       _IOR(FRC_IOC_MAGIC, 0x04, unsigned int)
-#define FRC_IOC_SET_INPUT_VS_RATE   _IOW(FRC_IOC_MAGIC, 0x05, unsigned int)
+#define FRC_IOC_SET_DEBLUR_LEVEL   _IOW(FRC_IOC_MAGIC, 0x05, unsigned int)
 #define FRC_IOC_SET_MEMC_ON_OFF     _IOW(FRC_IOC_MAGIC, 0x06, unsigned int)
 #define FRC_IOC_SET_MEMC_LEVEL      _IOW(FRC_IOC_MAGIC, 0x07, unsigned int)
 #define FRC_IOC_SET_MEMC_DMEO_MODE  _IOW(FRC_IOC_MAGIC, 0x08, unsigned int)

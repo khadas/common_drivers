@@ -16,6 +16,7 @@
 #define S1A_REE2AO3       (S1A_AO2REE + 4)
 #define S1A_REE2AO4       (S1A_AO2REE + 5)
 #define S1A_REE2AO5       (S1A_AO2REE + 6)
+#define S1A_REE2AO6       (S1A_AO2REE + 7)
 
 // MBOX CHANNEL ID
 #define S1A_MBOX_AO2REE    2
@@ -33,5 +34,6 @@
 #define S1A_REE2AO_AOCEC  S1A_REE2AO3
 #define S1A_REE2AO_ETH    S1A_REE2AO4
 #define S1A_REE2AO_LED    S1A_REE2AO5
+#define S1A_REE2AO_FD650    S1A_REE2AO6
 #define S1A_REE2SCPU_DEV  S1A_MBOX_REE2SCPU
 #endif /* __S1A_MBOX_H__ */

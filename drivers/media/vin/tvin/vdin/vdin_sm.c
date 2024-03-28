@@ -209,12 +209,17 @@ void vdin_update_prop(struct vdin_dev_s *devp)
 
 static inline void vdin_update_parm(struct vdin_dev_s *devp)
 {
-	devp->parm.info.trans_fmt =
-		devp->prop.trans_fmt;
-	devp->parm.info.is_dvi =
-		devp->prop.dvi_info;
-	devp->parm.info.fps =
-		devp->prop.fps;
+	/* 3D interlaced signals are not supported default to 2D */
+	if (devp->fmt_info_p &&
+	    devp->fmt_info_p->scan_mode == TVIN_SCAN_MODE_INTERLACED)
+		devp->parm.info.trans_fmt = TVIN_TFMT_2D;
+	else
+		devp->parm.info.trans_fmt = devp->prop.trans_fmt;
+
+	devp->parm.info.is_dvi = devp->prop.dvi_info;
+	devp->parm.info.fps = devp->prop.fps;
+	devp->parm.info.cfmt =
+		devp->prop.color_format;
 }
 
 /*
@@ -319,8 +324,8 @@ static enum tvin_sg_chg_flg vdin_hdmirx_fmt_chg_detect(struct vdin_dev_s *devp)
 			}
 		}
 
-		if (devp->pre_prop.latency.allm_mode !=
-		    devp->prop.latency.allm_mode) {
+		if (!!devp->prop.latency.allm_mode !=
+			!!devp->pre_prop.latency.allm_mode) {
 			if (devp->dv.allm_chg_cnt > vdin_dv_chg_cnt) {
 				devp->dv.allm_chg_cnt = 0;
 				signal_chg |= TVIN_SIG_CHG_DV_ALLM;
@@ -464,12 +469,15 @@ static enum tvin_sg_chg_flg vdin_hdmirx_fmt_chg_detect(struct vdin_dev_s *devp)
 					pre_color_fmt, cur_color_fmt,
 					pre_vdin_fmt_range, vdin_fmt_range,
 					devp->csc_cfg);
-			vdin_get_format_convert(devp);
-			devp->csc_cfg = 1;
-			if (!devp->game_mode && color_range_force == COLOR_RANGE_AUTO) {
-				vdin_vf_skip_all_disp(devp->vfp);
-				devp->chg_drop_frame_cnt = vdin_re_cfg_drop_cnt;
+
+			if (cur_color_fmt != pre_color_fmt) {
+				if (!devp->game_mode) {
+					vdin_vf_skip_all_disp(devp->vfp);
+					devp->chg_drop_frame_cnt = vdin_re_cfg_drop_cnt;
+				}
+				vdin_get_format_convert(devp);
 			}
+			devp->csc_cfg = 1;
 		}
 	}
 

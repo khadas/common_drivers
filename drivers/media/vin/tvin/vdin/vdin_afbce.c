@@ -691,8 +691,7 @@ void vdin_afbce_set_next_frame(struct vdin_dev_s *devp,
 		rdma_write_reg_bits(devp->rdma_handle, AFBCE_ENABLE, 1,
 				AFBCE_START_PULSE_BIT, AFBCE_START_PULSE_WID);
 
-		if (devp->pause_dec || devp->msct_top.sct_pause_dec ||
-		    devp->debug.pause_afbce_dec)
+		if (devp->pause_dec || devp->debug.pause_afbce_dec)
 			rdma_write_reg_bits(devp->rdma_handle, AFBCE_ENABLE, 0,
 				AFBCE_EN_BIT, AFBCE_EN_WID);
 		else
@@ -801,7 +800,7 @@ void vdin_afbce_mode_init(struct vdin_dev_s *devp)
 	/* afbce_valid means can switch into afbce mode */
 	devp->afbce_valid = 0;
 	if (devp->afbce_flag & VDIN_AFBCE_EN) {
-		if (devp->h_active > 1920 && devp->v_active > 1080) {
+		if (devp->h_active > 1920 && devp->v_active >= 1080) {
 			if (devp->afbce_flag & VDIN_AFBCE_EN_4K)
 				devp->afbce_valid = 1;
 		} else if (devp->h_active > 1280 && devp->v_active > 720) {

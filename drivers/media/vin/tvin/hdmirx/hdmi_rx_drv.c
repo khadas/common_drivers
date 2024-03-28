@@ -515,6 +515,8 @@ int hdmirx_dec_open(struct tvin_frontend_s *fe, enum tvin_port_e port,
 	enum tvin_port_type_e port_type)
 {
 	struct hdmirx_dev_s *devp;
+	u8 main_port = rx_info.main_port;
+	u8 sub_port = rx_info.sub_port;
 
 	devp = container_of(fe, struct hdmirx_dev_s, frontend);
 	devp->param[port_type].port = port;
@@ -522,17 +524,15 @@ int hdmirx_dec_open(struct tvin_frontend_s *fe, enum tvin_port_e port,
 	/* should enable the adc ref signal for audio pll */
 	/* vdac_enable(1, VDAC_MODULE_AUDIO_OUT); */
 	if (port_type == TVIN_PORT_MAIN) {
-		rx_info.main_port = (port - TVIN_PORT_HDMI0) & 0xff;
-		if (!rx_info.sub_port_open)
-			rx_info.sub_port = 0xff;
+		main_port = (port - TVIN_PORT_HDMI0) & 0xff;
 	} else if (port_type == TVIN_PORT_SUB) {
 		rx_info.pip_on = true;
-		rx_info.sub_port = (port - TVIN_PORT_HDMI0) & 0xff;
+		sub_port = (port - TVIN_PORT_HDMI0) & 0xff;
 	} else {
 		return -1;
 	}
-	hdmirx_open_port(rx_info.main_port, rx_info.sub_port);
-	rx_pr("%s main_port:%x, sub_port:%x\n", __func__, rx_info.main_port, rx_info.sub_port);
+	hdmirx_open_port(main_port, sub_port);
+	rx_pr("%s main_port:%x, sub_port:%x\n", __func__, main_port, sub_port);
 	return 0;
 }
 
@@ -1394,7 +1394,7 @@ void hdmirx_get_repetition_info(struct tvin_sig_property_s *prop, u8 port)
 void hdmirx_get_latency_info(struct tvin_sig_property_s *prop, u8 port)
 {
 	prop->latency.allm_mode =
-		rx[port].vs_info_details.hdmi_allm || rx[port].vs_info_details.dv_allm;
+		rx[port].vs_info_details.hdmi_allm | (rx[port].vs_info_details.dv_allm << 1);
 	prop->latency.it_content = rx[port].cur.it_content;
 	prop->latency.cn_type = rx[port].cur.cn_type;
 #ifdef CONFIG_AMLOGIC_HDMITX
@@ -1704,6 +1704,8 @@ void hdmirx_de_hactive(bool en, struct tvin_frontend_s *fe, enum tvin_port_type_
 {
 	u8 port = rx_get_port_from_type(port_type);
 
+	if (rx_info.chip_id != CHIP_ID_TXHD2)
+		return;
 	hdmirx_wr_bits_top(TOP_VID_CNTL, _BIT(30), en, port);
 }
 
@@ -2380,7 +2382,10 @@ static ssize_t hdcp14_onoff_store(struct device *dev,
 				const char *buf,
 				size_t count)
 {
-	hdcp14_on = 1;
+	if (strncmp(buf, "1", 1) == 0)
+		hdcp14_on = 1;
+	else
+		hdcp14_on = 0;
 	return count;
 }
 
@@ -2401,13 +2406,16 @@ static ssize_t hdcp22_onoff_store(struct device *dev,
 {
 	int i;
 
-	hdcp22_on = 1;
+	if (strncmp(buf, "1", 1) == 0)
+		hdcp22_on = 1;
+	else
+		hdcp22_on = 0;
 	if (rx_info.chip_id >= CHIP_ID_T7) {
 		if (rx_info.chip_id == CHIP_ID_T3X) {
 			for (i = 0; i < rx_info.port_num; i++)
-				hdmirx_wr_cor(RX_HDCP2x_CTRL_PWD_IVCRX, 0x1, i);
+				hdmirx_wr_cor(RX_HDCP2x_CTRL_PWD_IVCRX, hdcp22_on, i);
 		} else {
-			hdmirx_wr_cor(RX_HDCP2x_CTRL_PWD_IVCRX, 0x1, 0);
+			hdmirx_wr_cor(RX_HDCP2x_CTRL_PWD_IVCRX, hdcp22_on, 0);
 		}
 	}
 	return count;
@@ -3039,7 +3047,7 @@ static void rx_phy_suspend(void)
 		rx_pr("don't set phy pddq down\n");
 	} else {
 		/* there's no SDA low issue on MTK box when hpd low */
-		if (hdmi_cec_en && tv_auto_power_on) {
+		if (hdmi_cec_en == 1 && tv_auto_power_on) {
 			if (suspend_pddq_sel == 2) {
 				/* set rxsense pulse */
 				rx_phy_rxsense_pulse(10, 10, 0);
@@ -3061,7 +3069,7 @@ static void rx_phy_resume(void)
 	/* set below rxsense pulse only if hpd = high,
 	 * there's no SDA low issue on MTK box when hpd low
 	 */
-	if (hdmi_cec_en && tv_auto_power_on) {
+	if (hdmi_cec_en == 1 && tv_auto_power_on) {
 		if (suspend_pddq_sel == 1) {
 			/* set rxsense pulse, if delay time between
 			 * rxsense pulse and phy_int shottern than
@@ -4356,7 +4364,12 @@ static struct platform_driver hdmirx_driver = {
 
 u8 rx_get_port_type(u8 port)
 {
-	return (port == rx_info.sub_port) ? TVIN_PORT_SUB : TVIN_PORT_MAIN;
+	if (port == rx_info.main_port)
+		return TVIN_PORT_MAIN;
+	else if (port == rx_info.sub_port)
+		return TVIN_PORT_SUB;
+	else
+		return TVIN_PORT_UNKNOWN;
 }
 
 bool rx_is_pip_on(void)

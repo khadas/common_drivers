@@ -2108,6 +2108,8 @@ void rx_set_irq_t7(bool en, u8 port)
 		//hdmirx_wr_cor(CP2PAX_INTR1_MASK_HDCP2X_IVCRX, 0, port);
 		// HDCP 2X_RX_ECC
 		hdmirx_wr_cor(HDCP2X_RX_ECC_INTR_MASK, 0, port);
+		rx[port].irq_err_cnt = 0;
+		rx[port].de_err_cnt = 0;
 	}
 
 }

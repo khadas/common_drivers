@@ -674,6 +674,7 @@ int config_ge2d_data(struct vframe_s *src_vf, unsigned long addr, int buf_w, int
 				data->canvas0_config[0].width = data_w;
 		}
 		VIDEOCOM_INFO("buffer_h(%d), data_h(%d)\n", buf_h, data_h);
+
 		if (buf_h > data_h)
 			data->canvas0_config[0].height = buf_h;
 		else
@@ -706,9 +707,14 @@ int config_ge2d_data(struct vframe_s *src_vf, unsigned long addr, int buf_w, int
 		VIDEOCOM_INFO("crop %d %d %d %d\n", crop_x, crop_y, crop_w, crop_h);
 		data->position_x = crop_x;
 		data->position_y = crop_y;
-		data->width = crop_w;
-		data->height = crop_h;
 		data->is_vframe = false;
+		if (crop_w <= 0 || crop_h <= 0) {
+			data->width = buf_w;
+			data->height = buf_h;
+		} else {
+			data->width = crop_w;
+			data->height = crop_h;
+		}
 	}
 
 	return 0;

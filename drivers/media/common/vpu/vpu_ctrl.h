@@ -49,7 +49,7 @@ static struct fclk_div_s fclk_div_table_g12a[] = {
 
 static struct vpu_clk_s vpu_clk_suspend = {
 	/* frequency   clk_mux       div */
-	24000000,    FCLK_DIV5,      17
+	25000000,    FCLK_DIV5,      16
 };
 
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
@@ -76,7 +76,7 @@ __maybe_unused static struct fclk_div_s fclk_div_table_t3x[] = {
 
 static struct vpu_clk_s vpu_clk_table[] = {
 	/* frequency   clk_mux       div */
-	{24000000,     FCLK_DIV5,    17}, /* 0 */
+	{25000000,     FCLK_DIV5,    16}, /* 0 */
 	{100000000,    FCLK_DIV5,    3}, /* 1 */
 	{166666667,    FCLK_DIV3,    3}, /* 2 */
 	{200000000,    FCLK_DIV5,    1}, /* 3 */

@@ -81,6 +81,8 @@ void dim_post_keep_cmd_release2(struct vframe_s *vframe);
 int is_v4lvideo_buf_file(struct file *file);
 struct file *v4lvideo_alloc_file(void);
 void v4lvideo_keep_vf(struct file *file);
+void v4lvideo_free_vf(struct file *file);
+
 struct file_private_data *v4lvideo_get_file_private_data(struct file *file_vf,
 							 bool alloc_if_null);
 void init_file_private_data(struct file_private_data *file_private_data);

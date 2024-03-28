@@ -116,7 +116,7 @@ function read_ext_module_config() {
 	echo "${ALL_LINE}"
 }
 
-function autotest(){
+function copy_pre_commit(){
 	if [[ -d ${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/.git/hooks/ ]]; then
 		if [[ ! -f ${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/.git/hooks/pre-commit ]]; then
 			cp ${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/scripts/amlogic/pre-commit ${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/.git/hooks/pre-commit
@@ -519,13 +519,20 @@ function adjust_sequence_modules_loading() {
 		rm -r temp_dir
 	fi
 
-	black_modules=()
 	mkdir service_module
 	echo  MODULES_SERVICE_LOAD_LIST=${MODULES_SERVICE_LOAD_LIST[@]}
-	BLACK_AND_SERVICE_LIST=(${MODULES_LOAD_BLACK_LIST[@]} ${MODULES_SERVICE_LOAD_LIST[@]})
-	echo ${BLACK_AND_SERVICE_LIST[@]}
-	for module in ${BLACK_AND_SERVICE_LIST[@]}; do
-		modules=`ls ${module}*`
+	mkdir extra_closed_source_modules
+	echo  EXTRA_CLOSED_SOURCE_MODULE_LIST=${EXTRA_CLOSED_SOURCE_MODULE_LIST[@]}
+
+	BLACK_LIST=(${MODULES_LOAD_BLACK_LIST[@]} ${MODULES_SERVICE_LOAD_LIST[@]} ${EXTRA_CLOSED_SOURCE_MODULE_LIST[@]})
+	echo BLACK_LIST=${BLACK_LIST[@]}
+	black_modules=()
+	for module in ${BLACK_LIST[@]}; do
+		if [[ `ls ${module}* 2>/dev/null` ]]; then
+			modules=`ls ${module}*`
+		else
+			continue
+		fi
 		black_modules=(${black_modules[@]} ${modules[@]})
 	done
 	if [[ ${#black_modules[@]} == 0 ]]; then
@@ -586,11 +593,16 @@ function adjust_sequence_modules_loading() {
 		fi
 		if [[ -n ${ANDROID_PROJECT} ]]; then
 			for service_module_temp in ${MODULES_SERVICE_LOAD_LIST[@]}; do
-				if [[ ${module} = ${service_module_temp} ]]; then
+				if [[ ${module} =~ ${service_module_temp} ]]; then
 					mv ${module} service_module
 				fi
 			done
 		fi
+		for extra_closed_source_module in ${EXTRA_CLOSED_SOURCE_MODULE_LIST[@]}; do
+			if [[ ${module} =~ ${extra_closed_source_module} ]]; then
+				mv ${module} extra_closed_source_modules
+			fi
+		done
 		rm -f ${module}
 	done
 	rm -f modules.dep.temp1
@@ -746,6 +758,11 @@ function modules_install() {
 		MODULES_SEQUENCE_LIST=${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/scripts/amlogic/modules_sequence_list
 	fi
 	source ${MODULES_SEQUENCE_LIST}
+
+	if [[ ! -f ${EXTRA_MODULES_LIST} ]]; then
+		EXTRA_MODULES_LIST=${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/scripts/amlogic/ext_modules_list
+	fi
+	source ${EXTRA_MODULES_LIST}
 
 	export OUT_AMLOGIC_DIR=${OUT_AMLOGIC_DIR:-$(readlink -m ${COMMON_OUT_DIR}/amlogic)}
 	echo $OUT_AMLOGIC_DIR
@@ -1575,38 +1592,6 @@ function auto_patch_to_common_dir () {
 	fi
 }
 export -f auto_patch_to_common_dir
-
-function build_kernel_for_different_cpu_architecture () {
-	set -x
-	if [[ $ARCH == arm64 ]]; then
-		make ARCH=arm64 -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} ${DEFCONFIG}
-		make ARCH=arm64 -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} headers_install &&
-		make ARCH=arm64 -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} Image -j12 &&
-		make ARCH=arm64 -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} modules -j12 &&
-		make ARCH=arm64 -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} INSTALL_MOD_PATH=${MODULES_STAGING_DIR} INSTALL_MOD_STRIP=1 modules_install -j12 &&
-		make ARCH=arm64 -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} dtbs -j12 || exit
-	elif [[ $ARCH == arm ]]; then
-		make ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} ${DEFCONFIG}
-		make ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} headers_install &&
-		make ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} uImage -j12 &&
-		make ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} modules -j12 &&
-		make ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} INSTALL_MOD_PATH=${MODULES_STAGING_DIR} INSTALL_MOD_STRIP=1 modules_install -j12 &&
-		make ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} dtbs -j12 || exit
-	elif [[ $ARCH == riscv ]]; then
-		make ARCH=riscv -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} ${DEFCONFIG}
-		make ARCH=riscv -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} headers_install &&
-		make ARCH=riscv -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} Image -j12 &&
-		make ARCH=riscv -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} modules -j12 &&
-		make ARCH=riscv -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} INSTALL_MOD_PATH=${MODULES_STAGING_DIR} modules_install -j12 &&
-		make ARCH=riscv -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} dtbs -j12 || exit
-	fi
-	cp ${OUT_DIR}/arch/${ARCH}/boot/Image* ${DIST_DIR}
-	cp ${OUT_DIR}/arch/${ARCH}/boot/uImage* ${DIST_DIR}
-	cp ${OUT_DIR}/${COMMON_DRIVERS_DIR}/arch/${ARCH}/boot/dts/amlogic/*.dtb ${DIST_DIR}
-	cp ${OUT_DIR}/vmlinux ${DIST_DIR}
-	set +x
-}
-export -f build_kernel_for_different_cpu_architecture
 
 function build_ext_modules() {
 	for EXT_MOD in ${EXT_MODULES}; do

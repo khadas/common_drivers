@@ -30,10 +30,15 @@
 //#include "di_pqa.h"
 #include "di_dd.h"
 
+#ifdef CONFIG_AMLOGIC_LOWMEM
+#define DI_CHANNEL_NUB	(2)
+#define DI_CHANNEL_MAX  (2)
+#define DI_PLINK_CN_NUB	(2)
+#else
 #define DI_CHANNEL_NUB	(4)
 #define DI_CHANNEL_MAX  (4)
-
 #define DI_PLINK_CN_NUB	(4)
+#endif
 
 /* for vfm mode limit input vf */
 #define DIM_K_VFM_IN_LIMIT		(2)
@@ -176,6 +181,7 @@ enum EDI_CFG_TOP_IDX {
 #ifdef CONFIG_AMLOGIC_MEDIA_THERMAL
 	EDI_CFG_TEMP_CONTROL,
 #endif
+	EDI_CFG_PRE_NUB,
 	EDI_CFG_END,
 };
 
@@ -1998,6 +2004,7 @@ struct di_ch_s {
 	unsigned int sum_ext_buf_in2;
 	unsigned int sum_pre;
 	unsigned int sum_pst;
+	unsigned int sum_in_get;
 	unsigned int in_cnt;
 	unsigned int crc_cnt;
 	/*@ary_note:*/
@@ -2092,6 +2099,8 @@ struct di_ch_s {
 	unsigned int cur_index;
 	unsigned int switch_index;
 #endif
+	unsigned int sts_keep	: 1,
+			rev	: 31;
 };
 
 struct dim_policy_s {

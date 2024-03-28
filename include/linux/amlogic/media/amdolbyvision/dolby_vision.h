@@ -52,7 +52,8 @@ struct vframe_s;
 enum py_level {
 	PY_SIX_LEVEL = 0,
 	PY_SEVEN_LEVEL = 1,
-	PY_NO_LEVEL  = 2
+	PY_NO_LEVEL  = 2,
+	PY_LEVEL_INVALID = 3
 };
 
 extern unsigned int debug_dolby;
@@ -215,6 +216,7 @@ void update_graphic_width_height(unsigned int width,
 	unsigned int height, enum OSD_INDEX index);
 int get_amdv_policy(void);
 void set_amdv_policy(int policy);
+int get_amdv_ll_policy(void);
 int get_amdv_src_format(enum vd_path_e vd_path);
 bool is_amdv_el_disable(void);
 bool is_dovi_dual_layer_frame(struct vframe_s *vf);

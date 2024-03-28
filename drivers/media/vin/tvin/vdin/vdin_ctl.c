@@ -530,8 +530,8 @@ static struct vdin_matrix_lup_s vdin_matrix_lup[] = {
 	/* 0	 0.224732	0.580008  0.050729	 16 */
 	/* 0	-0.122176 -0.315324  0.437500	128 */
 	/* 0	 0.437500 -0.402312 -0.035188	128 */
-	{0x00000000, 0x00000000, 0x00e60252, 0x00341f84, 0x1ebe01c0, 0x01c01e65,
-		0x00001fdd, 0x00400200, 0x00000200,},
+	{0x00000000, 0x00000000, 0x00e60252, 0x00341f83, 0x1ebd01c0, 0x01c01e63,
+		0x00001fdc, 0x00400200, 0x00000200,},
 	/* VDIN_MATRIX_YUV2020F_YUV2020 */
 	/* 0 0.859 0 0 16 */
 	/* -128 0 0.878 0 128 */
@@ -687,11 +687,9 @@ void vdin_get_format_convert(struct vdin_dev_s *devp)
 			    scan_mod == TVIN_SCAN_MODE_PROGRESSIVE && !manual_md) {
 				if (devp->vdin_pc_mode ||
 				    devp->vdin_function_sel & VDIN_FORCE_444_NOT_CONVERT)
-					format_convert =
-						VDIN_FORMAT_CONVERT_YUV_YUV444;
+					format_convert = VDIN_FORMAT_CONVERT_YUV_YUV444;
 				else
-					format_convert =
-						VDIN_FORMAT_CONVERT_YUV_YUV422;
+					format_convert = VDIN_FORMAT_CONVERT_YUV_YUV422;
 			} else if (devp->prop.dest_cfmt == TVIN_NV21) {
 				format_convert = VDIN_FORMAT_CONVERT_YUV_NV21;
 			} else if (devp->prop.dest_cfmt == TVIN_NV12) {
@@ -719,11 +717,9 @@ void vdin_get_format_convert(struct vdin_dev_s *devp)
 			    scan_mod == TVIN_SCAN_MODE_PROGRESSIVE && !manual_md) {
 				if (devp->vdin_pc_mode ||
 				    devp->vdin_function_sel & VDIN_FORCE_444_NOT_CONVERT)
-					format_convert =
-						VDIN_FORMAT_CONVERT_RGB_RGB;
+					format_convert = VDIN_FORMAT_CONVERT_RGB_YUV444;
 				else
-					format_convert =
-						VDIN_FORMAT_CONVERT_RGB_YUV422;
+					format_convert = VDIN_FORMAT_CONVERT_RGB_YUV422;
 			} else if (devp->prop.dest_cfmt == TVIN_NV21) {
 				format_convert = VDIN_FORMAT_CONVERT_RGB_NV21;
 			} else if (devp->prop.dest_cfmt == TVIN_NV12) {
@@ -2350,6 +2346,8 @@ static inline void vdin_set_wr_ctrl(struct vdin_dev_s *devp,
 	/* win_ve */
 	wr_bits(offset, VDIN_WR_V_START_END, (v - 1), WR_VEND_BIT, WR_VEND_WID);
 	/* hconv_mode */
+	if (devp->debug.hconv_mode)
+		hconv_mode = devp->debug.hconv_mode - 1;
 	wr_bits(offset, VDIN_WR_CTRL, hconv_mode, HCONV_MODE_BIT, HCONV_MODE_WID);
 	/* vconv_mode */
 	wr_bits(offset, VDIN_WR_CTRL, 0, VCONV_MODE_BIT, VCONV_MODE_WID);
@@ -2515,6 +2513,8 @@ void vdin_set_wr_ctrl_vsync(struct vdin_dev_s *devp,
 	else
 		swap_cbcr = 0;
 
+	if (devp->debug.hconv_mode)
+		hconv_mode = devp->debug.hconv_mode - 1;
 #ifdef CONFIG_AMLOGIC_MEDIA_RDMA
 	if (rdma_enable) {
 		rdma_write_reg_bits(devp->rdma_handle,
@@ -2814,7 +2814,7 @@ void vdin_set_canvas_id(struct vdin_dev_s *devp, unsigned int rdma_enable,
 				    VDIN_WR_CTRL + devp->addr_offset,
 				    canvas_id, WR_CANVAS_BIT, WR_CANVAS_WID);
 
-		if (devp->pause_dec || devp->msct_top.sct_pause_dec || devp->debug.pause_mif_dec)
+		if (devp->pause_dec || devp->debug.pause_mif_dec)
 			rdma_write_reg_bits(devp->rdma_handle, VDIN_WR_CTRL + devp->addr_offset,
 					    0, WR_REQ_EN_BIT, WR_REQ_EN_WID);
 		else
@@ -2825,7 +2825,7 @@ void vdin_set_canvas_id(struct vdin_dev_s *devp, unsigned int rdma_enable,
 		wr_bits(devp->addr_offset, VDIN_WR_CTRL, canvas_id,
 			WR_CANVAS_BIT, WR_CANVAS_WID);
 
-		if (devp->pause_dec || devp->msct_top.sct_pause_dec || devp->debug.pause_mif_dec)
+		if (devp->pause_dec || devp->debug.pause_mif_dec)
 			wr_bits(devp->addr_offset, VDIN_WR_CTRL, 0,
 				WR_REQ_EN_BIT, WR_REQ_EN_WID);
 		else
@@ -4288,7 +4288,7 @@ bool vdin_write_done_check(unsigned int offset, struct vdin_dev_s *devp)
 
 	/* If write ddr paused,donot checking write done */
 	if (devp->debug.pause_mif_dec || devp->debug.pause_afbce_dec ||
-		devp->pause_dec || devp->msct_top.sct_pause_dec)
+		devp->pause_dec)
 		return true;
 
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
@@ -4855,7 +4855,7 @@ void vdin_set_hv_scale(struct vdin_dev_s *devp)
 set_hv_shrink:
 
 	if ((devp->double_wr || K_FORCE_HV_SHRINK) &&
-	    devp->h_active > 1920 && devp->v_active > 1080) {
+	    devp->h_active > 1920 && devp->v_active >= 1080) {
 		devp->h_shrink_times = H_SHRINK_TIMES_4k;
 		devp->v_shrink_times = V_SHRINK_TIMES_4k;
 	} else if (devp->double_wr && devp->h_active > 1280 &&
@@ -5270,9 +5270,10 @@ static bool vdin_is_rgb_input(enum tvin_color_fmt_e color_format)
 		return false;
 }
 
+/* Whether 8-bit output is needed to save bandwidth */
 bool vdin_is_4k(struct vdin_dev_s *devp)
 {
-	if (devp->h_active >= 2500 && devp->v_active >= 1400)
+	if (devp->h_active >= 2500 && devp->v_active >= 1080)
 		return true;
 	else
 		return false;
@@ -6208,14 +6209,13 @@ int vdin_event_cb(int type, void *data, void *op_arg)
 					__func__, index_disp);
 			return -1;
 		}
-		if (devp->game_mode || devp->skip_disp_md_check) {
-			if (devp->frame_drop_num)
-				req->disp_mode = VFRAME_DISP_MODE_SKIP;
-			else
-				req->disp_mode = VFRAME_DISP_MODE_NULL;
-		} else {
+		if (devp->frame_drop_num)
+			req->disp_mode = VFRAME_DISP_MODE_SKIP;
+		else if ((devp->game_mode & VDIN_GAME_MODE_1_2) || devp->skip_disp_md_check)
+			req->disp_mode = VFRAME_DISP_MODE_NULL;
+		else
 			req->disp_mode = p->disp_mode[index_disp];
-		}
+
 		if (req->req_mode == 1 && p->skip_vf_num)
 			p->disp_mode[index_disp] = VFRAME_DISP_MODE_UNKNOWN;
 		if (vdin_ctl_dbg & CTL_DEBUG_EVENT_DISP_MODE)
@@ -6587,7 +6587,7 @@ bool vdin_package_done_check_state(struct vdin_dev_s *devp)
 {
 	if (devp->dv.dv_flag != devp->prop.dolby_vision ||
 	    devp->prop.vdin_hdr_flag != devp->pre_prop.vdin_hdr_flag ||
-	    devp->prop.latency.allm_mode != devp->pre_prop.latency.allm_mode ||
+	    !!devp->prop.latency.allm_mode != !!devp->pre_prop.latency.allm_mode ||
 	    vdin_is_vrr_state_chg(devp) ||
 	    devp->prop.color_format != devp->pre_prop.color_format ||
 	    devp->parm.info.status != TVIN_SIG_STATUS_STABLE)
@@ -6611,7 +6611,7 @@ void vdin_vs_proc_monitor(struct vdin_dev_s *devp)
 		else
 			devp->prop.hdr_info.hdr_check_cnt = 0;
 
-		if (devp->prop.latency.allm_mode != devp->pre_prop.latency.allm_mode ||
+		if (!!devp->prop.latency.allm_mode != !!devp->pre_prop.latency.allm_mode ||
 		    devp->prop.latency.it_content != devp->pre_prop.latency.it_content ||
 		    devp->prop.latency.cn_type != devp->pre_prop.latency.cn_type ||
 		    devp->prop.filmmaker.fmm_flag != devp->pre_prop.filmmaker.fmm_flag ||
@@ -7474,6 +7474,10 @@ bool vdin_is_auto_game_mode(struct vdin_dev_s *devp)
 		return false;
 
 	if (devp->parm.info.status != TVIN_SIG_STATUS_STABLE)
+		return false;
+
+	/* sink-led not support game mode */
+	if (vdin_dv_is_sink_led(devp))
 		return false;
 
 	if (devp->prop.latency.allm_mode || vdin_is_vrr_state(devp) ||

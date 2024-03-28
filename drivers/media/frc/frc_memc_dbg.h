@@ -17,9 +17,9 @@
 #ifndef __FRC_MEMC_DBG_H__
 #define __FRC_MEMC_DBG_H__
 
-ssize_t frc_bbd_final_line_param_show(struct class *class,
+ssize_t frc_bbd_ctrl_param_show(struct class *class,
 				struct class_attribute *attr, char *buf);
-ssize_t frc_bbd_final_line_param_store(struct class *class,
+ssize_t frc_bbd_ctrl_param_store(struct class *class,
 				struct class_attribute *attr, const char *buf, size_t count);
 ssize_t frc_vp_ctrl_param_show(struct class *class, struct class_attribute *attr, char *buf);
 ssize_t frc_vp_ctrl_param_store(struct class *class, struct class_attribute *attr,
@@ -52,8 +52,8 @@ ssize_t frc_search_rang_param_show(struct class *class, struct class_attribute *
 ssize_t frc_search_rang_param_store(struct class *class, struct class_attribute *attr,
 					const char *buf, size_t count);
 
-ssize_t frc_pixel_lpf_param_show(struct class *class, struct class_attribute *attr, char *buf);
-ssize_t frc_pixel_lpf_param_store(struct class *class, struct class_attribute *attr,
+ssize_t frc_mc_ctrl_param_show(struct class *class, struct class_attribute *attr, char *buf);
+ssize_t frc_mc_ctrl_param_store(struct class *class, struct class_attribute *attr,
 					const char *buf, size_t count);
 
 ssize_t frc_me_rule_param_show(struct class *class, struct class_attribute *attr, char *buf);
@@ -67,5 +67,14 @@ ssize_t frc_film_ctrl_param_store(struct class *class, struct class_attribute *a
 ssize_t frc_glb_ctrl_param_show(struct class *class, struct class_attribute *attr, char *buf);
 ssize_t frc_glb_ctrl_param_store(struct class *class, struct class_attribute *attr,
 					const char *buf, size_t count);
+
+ssize_t frc_bad_edit_ctrl_param_show(struct class *class, struct class_attribute *attr, char *buf);
+ssize_t frc_bad_edit_ctrl_param_store(struct class *class, struct class_attribute *attr,
+					const char *buf, size_t count);
+
+ssize_t frc_region_fb_ctrl_param_show(struct class *class, struct class_attribute *attr, char *buf);
+ssize_t frc_region_fb_ctrl_param_store(struct class *class, struct class_attribute *attr,
+					const char *buf, size_t count);
+
 #endif
 

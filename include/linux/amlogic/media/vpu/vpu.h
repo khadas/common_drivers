@@ -100,6 +100,55 @@ enum vpu_mod_e {
 	VPU_MAX,
 };
 
+enum vpu_arb_mod_e {
+	VPU_ARB_OSD1 = 1,
+	VPU_ARB_OSD2,
+	VPU_ARB_VD1,
+	VPU_ARB_VD1_RDMIF,
+	VPU_ARB_VD1_AFBCD,
+	VPU_ARB_VD2,
+	VPU_ARB_OSD3,
+	VPU_ARB_OSD4,
+	VPU_ARB_AMDOLBY0,
+	VPU_ARB_MALI_AFBCD,
+	VPU_ARB_VD3,
+	VPU_ARB_VPP_ARB0,
+	VPU_ARB_VPP_ARB1,
+	VPU_ARB_RDMA_READ,
+	VPU_ARB_VIU2,
+	VPU_ARB_TCON_P1,
+	VPU_ARB_TVFE_READ,
+	VPU_ARB_TCON_P2,
+	VPU_ARB_LDIM_RD,
+	VPU_ARB_VDIN_AFBCE_RD,
+	VPU_ARB_VPU_DMA,
+
+	VPU_ARB_DI_IF1,
+	VPU_ARB_DI_MEM,
+	VPU_ARB_DI_INP,
+	VPU_ARB_DI_CHAN2,
+	VPU_ARB_DI_SUBAXI,
+	VPU_ARB_DI_IF2,
+	VPU_ARB_DI_IF0,
+	VPU_ARB_DI_AFBCD,
+
+	VPU_ARB_VDIN_WR,
+	VPU_ARB_RDMA_WR,
+	VPU_ARB_TVFE_WR,
+	VPU_ARB_TCON1_WR,
+	VPU_ARB_DI_AXI1_WR,
+	VPU_ARB_TCON2_WR,
+	VPU_ARB_TCON3_WR,
+	VPU_ARB_VPU_DMA_WR,
+
+	VPU_ARB_NR_WR,
+	VPU_ARB_DI_WR,
+	VPU_ARB_DI_SUBAXI_WR,
+	VPU_ARB_DI_AFBCE0,
+	VPU_ARB_DI_AFBCE1,
+	ARB_MODULE_MAX,
+};
+
 struct vpu_dev_s {
 	unsigned int index;
 	char owner_name[30];
@@ -139,5 +188,8 @@ void vpu_vcbus_clr_mask(unsigned int _reg, unsigned int _mask);
 
 void vpu_cbus_set_mask(unsigned int _reg, unsigned int _mask);
 void vpu_cbus_clr_mask(unsigned int _reg, unsigned int _mask);
-
+int vpu_arb_register(enum vpu_arb_mod_e module, void *cb);
+int vpu_arb_unregister(enum vpu_arb_mod_e module);
+int vpu_arb_config(enum vpu_arb_mod_e module, u32 urgent_value);
+void init_di_arb_urgent(void);
 #endif

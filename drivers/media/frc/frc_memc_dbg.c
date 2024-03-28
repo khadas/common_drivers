@@ -51,7 +51,7 @@
 #include "frc_proc.h"
 #include "frc_memc_dbg.h"
 
-ssize_t frc_bbd_final_line_param_show(struct class *class,
+ssize_t frc_bbd_ctrl_param_show(struct class *class,
 	struct class_attribute *attr,
 	char *buf)
 {
@@ -64,7 +64,7 @@ ssize_t frc_bbd_final_line_param_show(struct class *class,
 	return len;
 }
 
-ssize_t frc_bbd_final_line_param_store(struct class *class,
+ssize_t frc_bbd_ctrl_param_store(struct class *class,
 	struct class_attribute *attr,
 	const char *buf,
 	size_t count)
@@ -295,7 +295,7 @@ ssize_t frc_search_rang_param_store(struct class *class,
 	return count;
 }
 
-ssize_t frc_pixel_lpf_param_show(struct class *class,
+ssize_t frc_mc_ctrl_param_show(struct class *class,
 	struct class_attribute *attr,
 	char *buf)
 {
@@ -307,7 +307,7 @@ ssize_t frc_pixel_lpf_param_show(struct class *class,
 	return len;
 }
 
-ssize_t frc_pixel_lpf_param_store(struct class *class,
+ssize_t frc_mc_ctrl_param_store(struct class *class,
 	struct class_attribute *attr,
 	const char *buf,
 	size_t count)
@@ -399,6 +399,60 @@ ssize_t frc_glb_ctrl_param_store(struct class *class,
 
 	buf_orig = kstrdup(buf, GFP_KERNEL);
 	count = fw_data->frc_alg_dbg_stor(fw_data, MEMC_DBG_GLB_CTRL, buf_orig, count);
+	kfree(buf_orig);
+	return count;
+}
+
+ssize_t frc_bad_edit_ctrl_param_show(struct class *class,
+	struct class_attribute *attr,
+	char *buf)
+{
+	struct frc_dev_s *devp = get_frc_devp();
+	struct frc_fw_data_s *fw_data = (struct frc_fw_data_s *)devp->fw_data;
+	ssize_t len = 0;
+
+	len = fw_data->frc_alg_dbg_show(fw_data, MEMC_DBG_BAD_EDIT_CTRL, buf);
+	return len;
+}
+
+ssize_t frc_bad_edit_ctrl_param_store(struct class *class,
+	struct class_attribute *attr,
+	const char *buf,
+	size_t count)
+{
+	char *buf_orig;
+	struct frc_dev_s *devp = get_frc_devp();
+	struct frc_fw_data_s *fw_data = (struct frc_fw_data_s *)devp->fw_data;
+
+	buf_orig = kstrdup(buf, GFP_KERNEL);
+	count = fw_data->frc_alg_dbg_stor(fw_data, MEMC_DBG_BAD_EDIT_CTRL, buf_orig, count);
+	kfree(buf_orig);
+	return count;
+}
+
+ssize_t frc_region_fb_ctrl_param_show(struct class *class,
+	struct class_attribute *attr,
+	char *buf)
+{
+	struct frc_dev_s *devp = get_frc_devp();
+	struct frc_fw_data_s *fw_data = (struct frc_fw_data_s *)devp->fw_data;
+	ssize_t len = 0;
+
+	len = fw_data->frc_alg_dbg_show(fw_data, MEMC_DBG_REGION_FB_CTRL, buf);
+	return len;
+}
+
+ssize_t frc_region_fb_ctrl_param_store(struct class *class,
+	struct class_attribute *attr,
+	const char *buf,
+	size_t count)
+{
+	char *buf_orig;
+	struct frc_dev_s *devp = get_frc_devp();
+	struct frc_fw_data_s *fw_data = (struct frc_fw_data_s *)devp->fw_data;
+
+	buf_orig = kstrdup(buf, GFP_KERNEL);
+	count = fw_data->frc_alg_dbg_stor(fw_data, MEMC_DBG_REGION_FB_CTRL, buf_orig, count);
 	kfree(buf_orig);
 	return count;
 }

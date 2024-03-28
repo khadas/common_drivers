@@ -27,12 +27,16 @@ int meson_connector_dev_bind(struct drm_device *drm,
 	}
 
 	switch (type) {
+#ifndef CONFIG_AMLOGIC_DRM_CUT_HDMI
 	case DRM_MODE_CONNECTOR_HDMIA:
 	case DRM_MODE_CONNECTOR_HDMIB:
 		return meson_hdmitx_dev_bind(drm, type, intf);
+#endif
 
+#ifndef CONFIG_AMLOGIC_DRM_CUT_CVBS
 	case DRM_MODE_CONNECTOR_TV:
 		return meson_cvbs_dev_bind(drm, type, intf);
+#endif
 
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	case DRM_MODE_CONNECTOR_LVDS:
@@ -71,12 +75,16 @@ int meson_connector_dev_unbind(struct drm_device *drm,
 	}
 
 	switch (type) {
+#ifndef CONFIG_AMLOGIC_DRM_CUT_HDMI
 	case DRM_MODE_CONNECTOR_HDMIA:
 	case DRM_MODE_CONNECTOR_HDMIB:
 		return meson_hdmitx_dev_unbind(drm, type, connector_id);
+#endif
 
+#ifndef CONFIG_AMLOGIC_DRM_CUT_CVBS
 	case DRM_MODE_CONNECTOR_TV:
 		return meson_cvbs_dev_unbind(drm, type, connector_id);
+#endif
 
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	case DRM_MODE_CONNECTOR_LVDS:

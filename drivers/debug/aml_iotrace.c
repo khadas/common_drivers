@@ -36,8 +36,7 @@ EXPORT_SYMBOL(ramoops_ftrace_en);
  * bit1: sched_trace
  * bit2: irq_trace
  * bit3: smc_trace
- * bit4: misc_trace: use for record module_base information
- *       do not disable this bit
+ * bit4: misc_trace: use for record usb/frc/sync and other trace
  * disable bits will forbid record this type log
  * record all type log as default
  */
@@ -127,22 +126,38 @@ __setup("ramoops_io_dump_delay_secs=", ramoops_io_dump_delay_secs_setup);
 
 struct prz_record_iter {
 	void *ptr;
-	unsigned long size;
-	unsigned long total_size;
+	void *ptr_end;
 	int cpu;
 	enum aml_pstore_type_id type;
 	bool over;
 };
 
 const char *record_name[] = {
-	"IO-R",
-	"IO-W",
-	"IO-R-E",
-	"IO-W-E",
+	[RECORD_TYPE_IO_R]	= "IO-R",
+	[RECORD_TYPE_IO_W]	= "IO-W",
+	[RECORD_TYPE_IO_R_END]	= "IO-R-E",
+	[RECORD_TYPE_IO_W_END]	= "IO-W-E",
+	[RECORD_TYPE_SCHED_SWITCH]	= "SCHED_SWITCH",
+	[RECORD_TYPE_ISR_IN]	= "ISR_IN",
+	[RECORD_TYPE_ISR_OUT]	= "ISR_OUT",
+	[RECORD_TYPE_SMC_IN]	= "SMC_IN",
+	[RECORD_TYPE_SMC_OUT]	= "SMC_OUT",
+	[RECORD_TYPE_SMC_NORET_IN]	= "SMC_NORET_IN",
+	[RECORD_TYPE_USB_IN]	= "USB_IN",
+	[RECORD_TYPE_USB_OUT]	= "USB_OUT",
+	[RECORD_TYPE_FRC_INPUT_IN]	= "FRC_INPUT_IN",
+	[RECORD_TYPE_FRC_INPUT_OUT]	= "FRC_INPUT_OUT",
+	[RECORD_TYPE_FRC_OUTPUT_IN]	= "FRC_OUTPUT_IN",
+	[RECORD_TYPE_FRC_OUTPUT_OUT]	= "FRC_OUTPUT_OUT",
+	[RECORD_TYPE_VSYNC_IN]	= "VSYNC_IN",
+	[RECORD_TYPE_VSYNC_OUT]	= "VSYNC_OUT",
+	[RECORD_TYPE_AMVECM_IN]	= "AMVECM_IN",
+	[RECORD_TYPE_AMVECM_OUT]	= "AMVECM_OUT",
 };
 
 struct percpu_trace_data {
 	void *ptr;
+	void *ptr_end;
 	unsigned long total_size;
 };
 
@@ -168,29 +183,6 @@ static char get_irq_flag(bool irq, bool softirq)
 			return '.';
 	}
 }
-
-struct record_head {
-	u32 magic;		/* 0xabcdef */
-	unsigned short pid;
-	struct {
-		unsigned short irq:1;
-		unsigned short softirq:1;
-		unsigned short dis_irq:1;
-		unsigned short io_flag:2;
-		unsigned short :11;
-	} flag;
-	u64 time;
-	char comm[12];
-	unsigned int size;
-};
-
-/* integrated record_head and io_trace_data,
- * write this struct into pstore memory directly
- */
-struct iotrace_data {
-	struct record_head head;
-	struct io_trace_data io_data;
-};
 
 struct aml_persistent_ram_buffer {
 	u32			sig;
@@ -233,43 +225,6 @@ struct aml_ramoops_context {
 };
 
 static struct aml_ramoops_context aml_oops_cxt;
-
-static struct rb_root pc_lockup_symbol_root;
-
-struct pc_lockup_symbol {
-	struct rb_node node;
-	unsigned int mod_name_hash;
-	unsigned int mod_size;
-	unsigned long last_mod_base;
-	unsigned long curr_mod_base;
-};
-
-#ifdef CONFIG_ANDROID_VENDOR_HOOKS
-static unsigned long convert_pc_val(unsigned long val)
-{
-	struct rb_node *node;
-
-	for (node = rb_first(&pc_lockup_symbol_root); node; node = rb_next(node)) {
-		struct pc_lockup_symbol *this;
-
-		this = container_of(node, struct pc_lockup_symbol, node);
-
-		if (val >= this->last_mod_base && val < this->last_mod_base + this->mod_size) {
-			if (!this->curr_mod_base) // module is not load
-				return val;
-			else
-				return (val - this->last_mod_base + this->curr_mod_base);
-		}
-	}
-
-	return val; // not module region
-}
-#else
-static inline unsigned long convert_pc_val(unsigned long val)
-{
-	return val;
-}
-#endif
 
 static int aml_ramoops_parse_dt(void)
 {
@@ -616,7 +571,7 @@ static int notrace aml_persistent_ram_write(struct aml_persistent_ram_zone *prz,
 }
 
 static void notrace aml_ramoops_pstore_write(int cpu, enum aml_pstore_type_id type,
-				char *buf, ssize_t size)
+				struct iotrace_record *buf, ssize_t size)
 {
 	switch (type) {
 	case AML_PSTORE_TYPE_IO:
@@ -640,60 +595,76 @@ static void notrace aml_ramoops_pstore_write(int cpu, enum aml_pstore_type_id ty
 	}
 }
 
-/* Defined as global variable, in order to save memset time
- * Local variables, the compiler will automatically memset
- * 8 means max cpu number
- */
-static char *buf_tmp[8];
-
-void __nocfi aml_pstore_write(enum aml_pstore_type_id type, char *buf, unsigned long size,
-				unsigned int dis_irq, unsigned int io_flag)
+void __nocfi aml_pstore_write(enum aml_pstore_type_id type, struct iotrace_record *rec,
+			unsigned int dis_irq, unsigned int io_flag)
 {
 	int cpu = raw_smp_processor_id();
+	unsigned long flags = 0;
 
 	if (!ramoops_ftrace_en)
 		return;
 
-	if (!size)
-		size = strlen(buf) + 1;
-
-	if (type == AML_PSTORE_TYPE_IO) {
-		struct iotrace_data data;
-
-		/* IO TYPE no need to disable irq, because pstore_io_save has disabled */
-		data.head.magic = 0xabcdef;
-		data.head.time = sched_clock();
-		strscpy(data.head.comm, current->comm, sizeof(data.head.comm));
-		data.head.pid = current->pid;
-		data.head.flag.irq = in_hardirq() ? 1 : 0;
-		data.head.flag.softirq = in_serving_softirq() ? 1 : 0;
-		data.head.flag.dis_irq = dis_irq ? 1 : 0;
-		data.head.size = roundup(size, 8); // round up to 8
-		data.head.flag.io_flag = io_flag;
-		data.io_data = *(struct io_trace_data *)buf;
-		aml_ramoops_pstore_write(cpu, type, (void *)&data, sizeof(struct iotrace_data));
-	} else {
-		unsigned long flags = 0;
-		struct record_head *head = (struct record_head *)buf_tmp[cpu];
-
+	if (type != AML_PSTORE_TYPE_IO)
 		raw_local_irq_save(flags);
-		head->magic = 0xabcdef;
-		head->time = sched_clock();
-		strscpy(head->comm, current->comm, sizeof(head->comm));
-		head->pid = current->pid;
-		head->flag.irq = in_hardirq() ? 1 : 0;
-		head->flag.softirq = in_serving_softirq() ? 1 : 0;
-		head->flag.dis_irq = dis_irq ? 1 : 0;
-		head->size = roundup(size, 8); // round up to 8
-		if (sizeof(struct record_head) + size >= BUF_SIZE)
-			size = BUF_SIZE - sizeof(struct record_head);
-		memcpy(buf_tmp[cpu] + sizeof(struct record_head), buf, size);
-		aml_ramoops_pstore_write(cpu, type, buf_tmp[cpu],
-			head->size + sizeof(struct record_head));
+
+	rec->magic = 0xabcd;
+	rec->cpu = cpu;
+	rec->time = sched_clock();
+	rec->pid = current->pid;
+	rec->flag.in_irq = in_hardirq() ? 1 : 0;
+	rec->flag.in_softirq = in_serving_softirq() ? 1 : 0;
+	rec->flag.irq_disabled = dis_irq ? 1 : 0;
+	aml_ramoops_pstore_write(cpu, type, rec, sizeof(struct iotrace_record));
+
+	if (type != AML_PSTORE_TYPE_IO)
 		raw_local_irq_restore(flags);
-	}
 }
 EXPORT_SYMBOL(aml_pstore_write);
+
+void iotrace_misc_record_write(enum iotrace_record_type_id type, unsigned long misc_data_1,
+				unsigned long misc_data_2, unsigned long misc_data_3)
+{
+	struct iotrace_record rec = {
+		.type = type,
+	};
+
+	if (!ramoops_ftrace_en || !(ramoops_trace_mask & TRACE_MASK_MISC))
+		return;
+
+	switch (type) {
+	case RECORD_TYPE_USB_IN:
+		__this_cpu_write(usb_iotrace_cut, 1);
+		break;
+	case RECORD_TYPE_USB_OUT:
+		__this_cpu_write(usb_iotrace_cut, 0);
+		break;
+	case RECORD_TYPE_FRC_INPUT_IN:
+	case RECORD_TYPE_FRC_OUTPUT_IN:
+		__this_cpu_write(frc_iotrace_cut, 1);
+		break;
+	case RECORD_TYPE_FRC_INPUT_OUT:
+	case RECORD_TYPE_FRC_OUTPUT_OUT:
+		__this_cpu_write(frc_iotrace_cut, 0);
+		break;
+	case RECORD_TYPE_VSYNC_IN:
+		__this_cpu_write(vsync_iotrace_cut, 1);
+		break;
+	case RECORD_TYPE_VSYNC_OUT:
+		__this_cpu_write(vsync_iotrace_cut, 0);
+		break;
+	case RECORD_TYPE_AMVECM_IN:
+		__this_cpu_write(amvecm_iotrace_cut, 1);
+		break;
+	case RECORD_TYPE_AMVECM_OUT:
+		 __this_cpu_write(amvecm_iotrace_cut, 0);
+		break;
+	default:
+		return;
+	}
+
+	aml_pstore_write(AML_PSTORE_TYPE_MISC, &rec, irqs_disabled(), 0);
+}
+EXPORT_SYMBOL(iotrace_misc_record_write);
 
 static int aml_ramoops_init(void)
 {
@@ -726,6 +697,54 @@ static int aml_ramoops_init(void)
 	return ret;
 }
 
+static void record_print_buf(struct iotrace_record *rec, enum aml_pstore_type_id type, char *buf)
+{
+	unsigned long sec = 0, us = 0;
+	unsigned long long time = rec->time;
+
+	do_div(time, 1000);
+	us = (unsigned long)do_div(time, 1000000);
+	sec = (unsigned long)time;
+
+	switch (type) {
+	case AML_PSTORE_TYPE_IO:
+		sprintf(buf, "[%04ld.%06ld@%d %c%c] <%d> <%6s %08x-%8x>  <%pS <- %pS>\n",
+			sec, us, rec->cpu, get_disirq_flag(rec->flag.irq_disabled),
+			get_irq_flag(rec->flag.in_irq, rec->flag.in_softirq),
+			rec->pid, record_name[rec->type], rec->reg,
+			rec->reg_val, (void *)rec->ip, (void *)rec->parent_ip);
+		break;
+	case AML_PSTORE_TYPE_SCHED:
+		sprintf(buf, "[%04ld.%06ld@%d %c%c] <%d> <%s prev:%s/%d next:%s/%d>\n",
+			sec, us, rec->cpu, get_disirq_flag(rec->flag.irq_disabled),
+			get_irq_flag(rec->flag.in_irq, rec->flag.in_softirq), rec->pid,
+			record_name[rec->type], rec->curr_comm, rec->curr_pid, rec->next_comm,
+			rec->next_pid);
+		break;
+	case AML_PSTORE_TYPE_IRQ:
+		sprintf(buf, "[%04ld.%06ld@%d %c%c] <%d> <%s %d>\n",
+			sec, us, rec->cpu, get_disirq_flag(rec->flag.irq_disabled),
+			get_irq_flag(rec->flag.in_irq, rec->flag.in_softirq),
+			rec->pid, record_name[rec->type], rec->irq);
+		break;
+	case AML_PSTORE_TYPE_SMC:
+		sprintf(buf, "[%04ld.%06ld@%d %c%c] <%d> <%s 0x%lx 0x%lx>\n",
+			sec, us, rec->cpu, get_disirq_flag(rec->flag.irq_disabled),
+			get_irq_flag(rec->flag.in_irq, rec->flag.in_softirq),
+			rec->pid, record_name[rec->type], rec->smcid, rec->val);
+		break;
+	case AML_PSTORE_TYPE_MISC:
+		sprintf(buf, "[%04ld.%06ld@%d %c%c] <%d> <%s>\n",
+			sec, us, rec->cpu, get_disirq_flag(rec->flag.irq_disabled),
+			get_irq_flag(rec->flag.in_irq, rec->flag.in_softirq),
+			rec->pid, record_name[rec->type]);
+		break;
+	default:
+		sprintf(buf, "Unknown Type:%d", type);
+		break;
+	}
+}
+
 static void *percpu_trace_start(struct seq_file *s, loff_t *pos)
 {
 	struct aml_persistent_ram_zone *prz = (struct aml_persistent_ram_zone *)s->private;
@@ -736,27 +755,21 @@ static void *percpu_trace_start(struct seq_file *s, loff_t *pos)
 		return NULL;
 
 	data->ptr = (void *)prz->old_log + *pos;
-	data->total_size = prz->old_log_size;
+	data->ptr_end = (void *)prz->old_log + prz->old_log_size;
 
-	if (*pos + sizeof(struct record_head) > data->total_size) {
+	if (data->ptr + sizeof(struct iotrace_record) > data->ptr_end) {
 		kfree(data);
 		return NULL;
 	}
 
-	while (*(u32 *)data->ptr != 0xabcdef) {
-		(data->ptr)++;
-		(*pos)++;
+	if (!(*pos)) {
+		data->ptr += prz->old_log_size % sizeof(struct iotrace_record);
+		(*pos) += prz->old_log_size % sizeof(struct iotrace_record);
 
-		if (*pos + sizeof(struct record_head) > data->total_size) {
+		if (data->ptr + sizeof(struct iotrace_record) > data->ptr_end) {
 			kfree(data);
 			return NULL;
 		}
-	}
-
-	if (*pos + sizeof(struct record_head) +
-			((struct record_head *)data->ptr)->size > data->total_size) {
-		kfree(data);
-		return NULL;
 	}
 
 	return data;
@@ -770,16 +783,11 @@ static void percpu_trace_stop(struct seq_file *s, void *v)
 static void *percpu_trace_next(struct seq_file *s, void *v, loff_t *pos)
 {
 	struct percpu_trace_data *data = v;
-	struct record_head *head = (struct record_head *)data->ptr;
 
-	data->ptr += sizeof(struct record_head) + head->size;
-	*pos += sizeof(struct record_head) + head->size;
+	data->ptr += sizeof(struct iotrace_record);
+	*pos += sizeof(struct iotrace_record);
 
-	if (*pos + sizeof(struct record_head) > data->total_size)
-		return NULL;
-
-	if (*pos + sizeof(struct record_head) +
-			((struct record_head *)data->ptr)->size > data->total_size)
+	if (data->ptr + sizeof(struct iotrace_record) > data->ptr_end)
 		return NULL;
 
 	return data;
@@ -787,40 +795,20 @@ static void *percpu_trace_next(struct seq_file *s, void *v, loff_t *pos)
 
 static int percpu_trace_show(struct seq_file *s, void *v)
 {
-	unsigned long sec = 0, us = 0;
-	unsigned long long time;
+	char buf[1024];
 	struct aml_persistent_ram_zone *prz;
-	struct record_head *head;
+	struct iotrace_record *rec;
 	struct percpu_trace_data *data = v;
 
 	if (!data)
 		return 0;
 
 	prz = (struct aml_persistent_ram_zone *)s->private;
-	head = (struct record_head *)data->ptr;
+	rec = (struct iotrace_record *)data->ptr;
 
-	time = head->time;
-	do_div(time, 1000);
-	us = (unsigned long)do_div(time, 1000000);
-	sec = (unsigned long)time;
+	record_print_buf(rec, prz->type, buf);
 
-	if (prz->type == AML_PSTORE_TYPE_IO) {
-		struct io_trace_data *io_data =
-		(struct io_trace_data *)(data->ptr + sizeof(struct record_head));
-		seq_printf(s, "[%04ld.%06ld@%d %c%c] <%s-%d> <%6s %08x-%8x>  <%pS <- %pS>\n",
-			sec, us, prz->cpu, get_disirq_flag(head->flag.dis_irq),
-			get_irq_flag(head->flag.irq, head->flag.softirq), head->comm,
-			head->pid, record_name[head->flag.io_flag], io_data->reg,
-			io_data->val, (void *)convert_pc_val(io_data->ip),
-			(void *)convert_pc_val(io_data->parent_ip));
-	} else {
-		if (sizeof(struct record_head) + head->size >= BUF_SIZE)
-			head->size = BUF_SIZE - sizeof(struct record_head);
-		seq_printf(s, "[%04ld.%06ld@%d %c%c] <%s-%d> <%s>\n",
-			sec, us, prz->cpu, get_disirq_flag(head->flag.dis_irq),
-			get_irq_flag(head->flag.irq, head->flag.softirq), head->comm,
-			head->pid, (char *)((void *)head + sizeof(struct record_head)));
-	}
+	seq_printf(s, buf);
 
 	return 0;
 }
@@ -859,27 +847,44 @@ static void get_first_record_type(struct prz_record_iter **iter, int cpu,
 {
 	switch (type) {
 	case AML_PSTORE_TYPE_IO:
-		aml_oops_cxt.record_iter[type][cpu].ptr = aml_oops_cxt.io_przs[cpu]->old_log;
-		aml_oops_cxt.record_iter[type][cpu].total_size =
-					aml_oops_cxt.io_przs[cpu]->old_log_size;
+		aml_oops_cxt.record_iter[type][cpu].ptr = aml_oops_cxt.io_przs[cpu]->old_log +
+			aml_oops_cxt.io_przs[cpu]->old_log_size % sizeof(struct iotrace_record);
+
+		aml_oops_cxt.record_iter[type][cpu].ptr_end = aml_oops_cxt.io_przs[cpu]->old_log +
+			aml_oops_cxt.io_przs[cpu]->old_log_size;
 		break;
 
 	case AML_PSTORE_TYPE_SCHED:
-		aml_oops_cxt.record_iter[type][cpu].ptr = aml_oops_cxt.sched_przs[cpu]->old_log;
-		aml_oops_cxt.record_iter[type][cpu].total_size =
-					aml_oops_cxt.sched_przs[cpu]->old_log_size;
+		aml_oops_cxt.record_iter[type][cpu].ptr = aml_oops_cxt.sched_przs[cpu]->old_log +
+			aml_oops_cxt.sched_przs[cpu]->old_log_size % sizeof(struct iotrace_record);
+
+		aml_oops_cxt.record_iter[type][cpu].ptr_end =
+			aml_oops_cxt.sched_przs[cpu]->old_log +
+			aml_oops_cxt.sched_przs[cpu]->old_log_size;
 		break;
 
 	case AML_PSTORE_TYPE_IRQ:
-		aml_oops_cxt.record_iter[type][cpu].ptr = aml_oops_cxt.irq_przs[cpu]->old_log;
-		aml_oops_cxt.record_iter[type][cpu].total_size =
-					aml_oops_cxt.irq_przs[cpu]->old_log_size;
+		aml_oops_cxt.record_iter[type][cpu].ptr = aml_oops_cxt.irq_przs[cpu]->old_log +
+			aml_oops_cxt.irq_przs[cpu]->old_log_size % sizeof(struct iotrace_record);
+
+		aml_oops_cxt.record_iter[type][cpu].ptr_end = aml_oops_cxt.irq_przs[cpu]->old_log +
+			aml_oops_cxt.irq_przs[cpu]->old_log_size;
 		break;
 
 	case AML_PSTORE_TYPE_SMC:
-		aml_oops_cxt.record_iter[type][cpu].ptr = aml_oops_cxt.smc_przs[cpu]->old_log;
-		aml_oops_cxt.record_iter[type][cpu].total_size =
-					aml_oops_cxt.smc_przs[cpu]->old_log_size;
+		aml_oops_cxt.record_iter[type][cpu].ptr = aml_oops_cxt.smc_przs[cpu]->old_log +
+			aml_oops_cxt.smc_przs[cpu]->old_log_size % sizeof(struct iotrace_record);
+
+		aml_oops_cxt.record_iter[type][cpu].ptr_end = aml_oops_cxt.smc_przs[cpu]->old_log +
+			aml_oops_cxt.smc_przs[cpu]->old_log_size;
+		break;
+
+	case AML_PSTORE_TYPE_MISC:
+		aml_oops_cxt.record_iter[type][cpu].ptr = aml_oops_cxt.misc_przs[cpu]->old_log +
+			aml_oops_cxt.misc_przs[cpu]->old_log_size % sizeof(struct iotrace_record);
+
+		aml_oops_cxt.record_iter[type][cpu].ptr_end = aml_oops_cxt.misc_przs[cpu]->old_log +
+			aml_oops_cxt.misc_przs[cpu]->old_log_size;
 		break;
 
 	default:
@@ -891,26 +896,16 @@ static void get_first_record_type(struct prz_record_iter **iter, int cpu,
 	aml_oops_cxt.record_iter[type][cpu].over = 0;
 	aml_oops_cxt.record_iter[type][cpu].cpu = cpu;
 
-	while (*(u32 *)aml_oops_cxt.record_iter[type][cpu].ptr != 0xabcdef) {
-		aml_oops_cxt.record_iter[type][cpu].ptr++;
-		aml_oops_cxt.record_iter[type][cpu].size++;
-		if (aml_oops_cxt.record_iter[type][cpu].size + sizeof(struct record_head)
-				> aml_oops_cxt.record_iter[type][cpu].total_size) {
-			aml_oops_cxt.record_iter[type][cpu].over = 1;
-			break;
-		}
-	}
-
-	if (aml_oops_cxt.record_iter[type][cpu].size + sizeof(struct record_head)
-		+ ((struct record_head *)aml_oops_cxt.record_iter[type][cpu].ptr)->size
-		> aml_oops_cxt.record_iter[type][cpu].total_size) {
+	if (aml_oops_cxt.record_iter[type][cpu].ptr + sizeof(struct iotrace_record) >
+		aml_oops_cxt.record_iter[type][cpu].ptr_end) {
 		aml_oops_cxt.record_iter[type][cpu].over = 1;
 		return;
 	}
 
 	if (!aml_oops_cxt.record_iter[type][cpu].over &&
-		((struct record_head *)aml_oops_cxt.record_iter[type][cpu].ptr)->time < *min_time) {
-		*min_time = ((struct record_head *)aml_oops_cxt.record_iter[type][cpu].ptr)->time;
+	((struct iotrace_record *)aml_oops_cxt.record_iter[type][cpu].ptr)->time < *min_time) {
+		*min_time =
+		((struct iotrace_record *)aml_oops_cxt.record_iter[type][cpu].ptr)->time;
 		*iter = &aml_oops_cxt.record_iter[type][cpu];
 	}
 }
@@ -945,6 +940,11 @@ static struct prz_record_iter *prz_record_iter_init(void)
 			get_first_record_type(&iter, cpu, AML_PSTORE_TYPE_SMC, &min_time);
 		else
 			aml_oops_cxt.record_iter[AML_PSTORE_TYPE_SMC][cpu].over = 1;
+
+		if (aml_oops_cxt.misc_przs[cpu]->old_log)
+			get_first_record_type(&iter, cpu, AML_PSTORE_TYPE_MISC, &min_time);
+		else
+			aml_oops_cxt.record_iter[AML_PSTORE_TYPE_MISC][cpu].over = 1;
 	}
 		return iter;
 }
@@ -953,36 +953,16 @@ static void get_next_record_type(struct prz_record_iter **iter, int cpu,
 		enum aml_pstore_type_id type, unsigned long long *min_time)
 {
 	if (!aml_oops_cxt.record_iter[type][cpu].over) {
-		if (aml_oops_cxt.record_iter[type][cpu].size +
-			sizeof(struct record_head) >
-			aml_oops_cxt.record_iter[type][cpu].total_size) {
+		if (aml_oops_cxt.record_iter[type][cpu].ptr + sizeof(struct iotrace_record) >
+			aml_oops_cxt.record_iter[type][cpu].ptr_end) {
 			aml_oops_cxt.record_iter[type][cpu].over = 1;
 			return;
-		}
-
-		while (*(u32 *)aml_oops_cxt.record_iter[type][cpu].ptr != 0xabcdef) {
-			aml_oops_cxt.record_iter[type][cpu].ptr++;
-			aml_oops_cxt.record_iter[type][cpu].size++;
-			if (aml_oops_cxt.record_iter[type][cpu].size +
-				sizeof(struct record_head) >
-				aml_oops_cxt.record_iter[type][cpu].total_size) {
-				aml_oops_cxt.record_iter[type][cpu].over = 1;
-				break;
 			}
-		}
 
-		if (aml_oops_cxt.record_iter[type][cpu].size + sizeof(struct record_head)
-			+ ((struct record_head *)aml_oops_cxt.record_iter[type][cpu].ptr)->size
-			> aml_oops_cxt.record_iter[type][cpu].total_size) {
-			aml_oops_cxt.record_iter[type][cpu].over = 1;
-			return;
-		}
-
-		if (!aml_oops_cxt.record_iter[type][cpu].over &&
-		((struct record_head *)aml_oops_cxt.record_iter[type][cpu].ptr)->time <
+		if (((struct iotrace_record *)aml_oops_cxt.record_iter[type][cpu].ptr)->time <
 		*min_time) {
 			*min_time =
-		((struct record_head *)aml_oops_cxt.record_iter[type][cpu].ptr)->time;
+			((struct iotrace_record *)aml_oops_cxt.record_iter[type][cpu].ptr)->time;
 			*iter = &aml_oops_cxt.record_iter[type][cpu];
 		}
 	}
@@ -1002,38 +982,20 @@ static struct prz_record_iter *get_next_record(void)
 		get_next_record_type(&iter, cpu, AML_PSTORE_TYPE_SCHED, &min_time);
 		get_next_record_type(&iter, cpu, AML_PSTORE_TYPE_IRQ, &min_time);
 		get_next_record_type(&iter, cpu, AML_PSTORE_TYPE_SMC, &min_time);
+		get_next_record_type(&iter, cpu, AML_PSTORE_TYPE_MISC, &min_time);
 	}
 		return iter;
 }
 
 static void trace_show_iter(struct seq_file *s, struct prz_record_iter *iter)
 {
-	unsigned long sec = 0, us = 0;
-	unsigned long long time;
-	struct record_head *head = (struct record_head *)iter->ptr;
+	char buf[1024];
 
-	time = head->time;
-	do_div(time, 1000);
-	us = (unsigned long)do_div(time, 1000000);
-	sec = (unsigned long)time;
+	struct iotrace_record *rec = (struct iotrace_record *)iter->ptr;
 
-	if (iter->type == AML_PSTORE_TYPE_IO) {
-		struct io_trace_data *io_data =
-		(struct io_trace_data *)(iter->ptr + sizeof(struct record_head));
-		seq_printf(s, "[%04ld.%06ld@%d %c%c] <%s-%d> <%6s %08x-%8x>  <%pS <- %pS>\n",
-			sec, us, iter->cpu, get_disirq_flag(head->flag.dis_irq),
-			get_irq_flag(head->flag.irq, head->flag.softirq), head->comm,
-			head->pid, record_name[head->flag.io_flag], io_data->reg,
-			io_data->val, (void *)convert_pc_val(io_data->ip),
-			(void *)convert_pc_val(io_data->parent_ip));
-	} else {
-		if (sizeof(struct record_head) + head->size >= BUF_SIZE)
-			head->size = BUF_SIZE - sizeof(struct record_head);
-		seq_printf(s, "[%04ld.%06ld@%d %c%c] <%s-%d> <%s>\n",
-			sec, us, iter->cpu, get_disirq_flag(head->flag.dis_irq),
-			get_irq_flag(head->flag.irq, head->flag.softirq), head->comm,
-			head->pid, (char *)((void *)head + sizeof(struct record_head)));
-	}
+	record_print_buf(rec, iter->type, buf);
+
+	seq_printf(s, buf);
 }
 
 static void *trace_start(struct seq_file *seq, loff_t *pos)
@@ -1054,11 +1016,9 @@ static void *trace_start(struct seq_file *seq, loff_t *pos)
 static void *trace_next(struct seq_file *seq, void *v, loff_t *pos)
 {
 	struct prz_record_iter *iter = (struct prz_record_iter *)v;
-	struct record_head *head = iter->ptr;
 
 	(*pos)++;
-	iter->size += sizeof(struct record_head) + head->size;
-	iter->ptr += sizeof(struct record_head) + head->size;
+	iter->ptr += sizeof(struct iotrace_record);
 
 	aml_oops_cxt.curr_record_iter = get_next_record();
 
@@ -1148,40 +1108,24 @@ static void proc_init(void)
 		if (aml_oops_cxt.smc_przs[cpu]->old_log_size)
 			proc_create_data("smc_trace", S_IFREG | 0440, dir_cpu_ar[cpu],
 				&percpu_trace_file_ops, aml_oops_cxt.smc_przs[cpu]);
+
+		if (aml_oops_cxt.misc_przs[cpu]->old_log_size)
+			proc_create_data("misc_trace", S_IFREG | 0440, dir_cpu_ar[cpu],
+				&percpu_trace_file_ops, aml_oops_cxt.misc_przs[cpu]);
 	}
 }
 
 static void trace_auto_show_iter(struct prz_record_iter *iter)
 {
+	char buf[1024];
 	static unsigned int autodump_rec_num;
-	unsigned long sec = 0, us = 0;
-	unsigned long long time;
-	struct record_head *head = (struct record_head *)iter->ptr;
+	struct iotrace_record *rec = (struct iotrace_record *)iter->ptr;
 
-	time = head->time;
-	do_div(time, 1000);
-	us = (unsigned long)do_div(time, 1000000);
-	sec = (unsigned long)time;
+	record_print_buf(rec, iter->type, buf);
 
-	if (iter->type == AML_PSTORE_TYPE_IO) {
-		struct io_trace_data *io_data =
-		(struct io_trace_data *)(iter->ptr + sizeof(struct record_head));
-		pr_info("[%04ld.%06ld@%d %c%c] <%s-%d> <%6s %08x-%8x>  <%pS <- %pS>\n",
-			sec, us, iter->cpu, get_disirq_flag(head->flag.dis_irq),
-			get_irq_flag(head->flag.irq, head->flag.softirq), head->comm,
-			head->pid, record_name[head->flag.io_flag], io_data->reg,
-			io_data->val, (void *)convert_pc_val(io_data->ip),
-			(void *)convert_pc_val(io_data->parent_ip));
-	} else {
-		if (sizeof(struct record_head) + head->size >= BUF_SIZE)
-			head->size = BUF_SIZE - sizeof(struct record_head);
-		pr_info("[%04ld.%06ld@%d %c%c] <%s-%d> <%s>\n",
-			sec, us, iter->cpu, get_disirq_flag(head->flag.dis_irq),
-			get_irq_flag(head->flag.irq, head->flag.softirq), head->comm,
-			head->pid, (char *)((void *)head + sizeof(struct record_head)));
-	}
-	iter->size += sizeof(struct record_head) + head->size;
-	iter->ptr += sizeof(struct record_head) + head->size;
+	pr_info("%s", buf);
+
+	iter->ptr += sizeof(struct iotrace_record);
 
 	if (!(autodump_rec_num++ % 100))
 		msleep(50);
@@ -1205,136 +1149,16 @@ void iotrace_auto_dump(void)
 	pr_info("iotrace log auto dump finished\n");
 }
 
-static int pc_lockup_symbol_insert(struct rb_root *root, struct pc_lockup_symbol *new)
-{
-	struct rb_node **link = &root->rb_node, *parent = NULL;
-
-	/* Figure out where to put new node */
-	while (*link) {
-		struct pc_lockup_symbol *this = container_of(*link, struct pc_lockup_symbol, node);
-		long result = new->last_mod_base - this->last_mod_base;
-
-		parent = *link;
-		if (result < 0)
-			link = &((*link)->rb_left);
-		else if (result > 0)
-			link = &((*link)->rb_right);
-		else
-			return 0;
-	}
-
-	/* Add new node and rebalance tree */
-	rb_link_node(&new->node, parent, link);
-	rb_insert_color(&new->node, root);
-
-	return 1;
-}
-
-static void parse_module_base(void)
-{
-	int cpu;
-	void *ptr, *end;
-
-	for_each_possible_cpu(cpu) {
-		if (aml_oops_cxt.misc_przs[cpu]->old_log_size) {
-			ptr = aml_oops_cxt.misc_przs[cpu]->old_log;
-			end = ptr + aml_oops_cxt.misc_przs[cpu]->old_log_size;
-
-			while (*(u32 *)ptr != 0xabcdef) {
-				ptr++;
-
-				if (ptr + sizeof(struct record_head) > end)
-					goto next;
-			}
-
-			if (ptr + sizeof(struct record_head) +
-				((struct record_head *)ptr)->size > end)
-				goto next;
-
-			// parse module base information from pstore buffer
-			pc_lockup_symbol_insert(&pc_lockup_symbol_root,
-			((struct pc_lockup_symbol *)((void *)ptr + sizeof(struct record_head))));
-
-			while (1) {
-				ptr += sizeof(struct record_head) +
-					((struct record_head *)ptr)->size;
-
-				if (ptr + sizeof(struct record_head) > end)
-					goto next;
-
-				if (ptr + sizeof(struct record_head) +
-					((struct record_head *)ptr)->size > end)
-					goto next;
-
-				pc_lockup_symbol_insert(&pc_lockup_symbol_root,
-				((struct pc_lockup_symbol *)
-				((void *)ptr + sizeof(struct record_head))));
-			}
-
-next:
-				nop();
-		}
-	}
-}
-
 static void iotrace_work_func(struct work_struct *work)
 {
 	pr_info("ramoops_io_en:%d, ramoops_io_dump=%d, ramoops_io_skip=%d\n",
 		ramoops_io_en, ramoops_io_dump, ramoops_io_skip);
 	iotrace_auto_dump();
-	cancel_delayed_work(&iotrace_work);
 }
-
-#ifdef CONFIG_ANDROID_VENDOR_HOOKS
-static unsigned int BKDRHash(char *str)
-{
-	unsigned int seed = 131;
-	unsigned int hash = 0;
-
-	while (*str)
-		hash = hash * seed + (*str++);
-
-	return (hash & 0x7FFFFFFF);
-}
-
-static void module_base_hook(void *data, const struct module *mod)
-{
-	struct pc_lockup_symbol mod_data;
-	struct rb_node *node;
-
-	mod_data.mod_name_hash = BKDRHash((char *)mod->name);
-	mod_data.mod_size = (unsigned long)mod->core_layout.size;
-	mod_data.last_mod_base = (unsigned long)mod->core_layout.base;
-	mod_data.curr_mod_base = 0x0;
-
-	aml_pstore_write(AML_PSTORE_TYPE_MISC, (void *)&mod_data, sizeof(struct pc_lockup_symbol),
-				irqs_disabled(), 0);
-
-	/* update module curr core_layout base */
-
-	for (node = rb_last(&pc_lockup_symbol_root); node; node = rb_prev(node)) {
-		struct pc_lockup_symbol *this;
-
-		this = container_of(node, struct pc_lockup_symbol, node);
-
-		if (mod_data.mod_name_hash == this->mod_name_hash) {
-			this->curr_mod_base = (unsigned long)mod->core_layout.base;
-			break;
-		}
-	}
-
-	if (ramoops_io_dump)
-		pr_info("module:%s core_base:%lx, size=%lx, init_base:%lx, size=%lx\n",
-			mod->name, (unsigned long)mod->core_layout.base,
-			(unsigned long)mod->core_layout.size, (unsigned long)mod->init_layout.base,
-			(unsigned long)mod->init_layout.size);
-}
-#endif
 
 int __init aml_iotrace_init(void)
 {
 	int ret = 0;
-	int cpu;
 
 	if (!ramoops_io_en)
 		return 0;
@@ -1348,20 +1172,10 @@ int __init aml_iotrace_init(void)
 	proc_init();
 	ftrace_ramoops_init();
 
-	parse_module_base();
-#ifdef CONFIG_ANDROID_VENDOR_HOOKS
-	register_trace_android_vh_set_module_permit_after_init(module_base_hook, NULL);
-#endif
 	if (ramoops_io_dump) {
 		INIT_DELAYED_WORK(&iotrace_work, iotrace_work_func);
 		queue_delayed_work(system_unbound_wq, &iotrace_work,
 				   ramoops_io_dump_delay_secs * HZ);
-	}
-
-	for (cpu = 0; cpu < num_possible_cpus(); cpu++) {
-		buf_tmp[cpu] = kmalloc(BUF_SIZE, GFP_KERNEL);
-		if (!buf_tmp[cpu])
-			return 0;
 	}
 
 	ramoops_ftrace_en = 1;
@@ -1373,8 +1187,9 @@ int __init aml_iotrace_init(void)
 	 *	   use offset to record pc_symbol
 	 * V4: iotrace read/write use vendor hooks
 	 *	   depends on 13-5.15-16 or 14-5.15-9
+	 * V5: modify iotrace data, delay free module init_layout memory
 	 */
-	pr_info("Amlogic debug-iotrace driver version V4\n");
+	pr_info("iotrace V5\n");
 
 	return 0;
 }

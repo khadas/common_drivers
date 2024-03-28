@@ -60,6 +60,8 @@ void frc_test_mm_secure_set_off(struct frc_dev_s *devp);
 void frc_test_mm_secure_set_on(struct frc_dev_s *devp, u32 start, u32 size);
 int frc_memc_set_level(u8 level);
 int frc_memc_set_demo(u8 setdemo);
+int frc_memc_set_deblur(u8 level);
+
 int frc_init_out_line(void);
 u32 get_video_enabled(u8 layer_id);
 void frc_vpp_vs_ir_chk_film(struct frc_dev_s *frc_devp);

@@ -33,13 +33,35 @@ struct hdmitx_ctrl_ops {
 	int (*post_enable_mode)(struct hdmitx_common *tx_comm, struct hdmi_format_para *para);
 	int (*disable_mode)(struct hdmitx_common *tx_comm, struct hdmi_format_para *para);
 	int (*init_uboot_mode)(enum vmode_e mode);
-	void (*reset_hdcp)(struct hdmitx_common *tx_comm);
+	void (*disable_hdcp)(struct hdmitx_common *tx_comm);
 	void (*clear_pkt)(struct hdmitx_hw_common *tx_hw_base);
 	void (*disable_21_work)(void);
 };
 
 struct st_debug_param {
 	unsigned int avmute_frame;
+};
+
+/* 0: VESA DSC 1.2a is not supported
+ * 1: up to 1 slice and up to (340 MHz/K SliceAdjust) pixel clock per slice
+ * 2: up to 2 slices and up to (340 MHz/K SliceAdjust) pixel clock per slice
+ * 3: up to 4 slices and up to (340 MHz/K SliceAdjust) pixel clock per slice
+ * 4: up to 8 slices and up to (340 MHz/K SliceAdjust) pixel clock per slice
+ * 5: up to 8 slices and up to (400 MHz/K SliceAdjust) pixel clock per slice
+ * 6: up to 12 slices and up to (400 MHz/K SliceAdjust) pixel clock per slice
+ * 7: up to 16 slices and up to (400 MHz/K SliceAdjust) pixel clock per slice
+ * 8-15: Reserved
+ */
+
+static const u8 dsc_max_slices_num[] = {
+	0,
+	1,
+	2,
+	4,
+	8,
+	8,
+	12,
+	16
 };
 
 struct hdmitx_common {
@@ -90,13 +112,18 @@ struct hdmitx_common {
 	u32 allm_mode;
 	/* contenttype:0/off 1/game, 2/graphics, 3/photo, 4/cinema */
 	u32 ct_mode;
+	bool it_content;
 	/* When hdr_priority is 1, then dv_info will be all 0;
 	 * when hdr_priority is 2, then dv_info/hdr_info will be all 0
 	 * App won't get real dv_cap/hdr_cap, but can get real dv_cap2/hdr_cap2
 	 */
 	u32 hdr_priority;
+	u32 hdr_8bit_en;
 	/*current format para.*/
 	struct hdmi_format_para fmt_para;
+	/* HDR format state */
+	u32 hdmi_last_hdr_mode;
+	u32 hdmi_current_hdr_mode;
 
 	/* 0.1% clock shift, 1080p60hz->59.94hz */
 	u32 frac_rate_policy;
@@ -181,7 +208,7 @@ int hdmitx_common_check_valid_para_of_vic(struct hdmitx_common *tx_comm, enum hd
 int hdmitx_common_validate_format_para(struct hdmitx_common *tx_comm,
 	struct hdmi_format_para *para);
 
-/* create hdmi_format_para from config and also calc setting from hw;*/
+/* create hdmi_format_para from config and also calc setting from hw; */
 int hdmitx_common_build_format_para(struct hdmitx_common *tx_comm,
 		struct hdmi_format_para *para, enum hdmi_vic vic, u32 frac_rate_policy,
 		enum hdmi_colorspace cs, enum hdmi_color_depth cd, enum hdmi_quantization_range cr);
@@ -189,6 +216,15 @@ int hdmitx_common_build_format_para(struct hdmitx_common *tx_comm,
 /* For bootup init: init hdmi_format_para from hw configs.*/
 int hdmitx_common_init_bootup_format_para(struct hdmitx_common *tx_comm,
 		struct hdmi_format_para *para);
+
+/*edid valid api*/
+int hdmitx_edid_validate_format_para(struct tx_cap *hdmi_tx_cap,
+		struct rx_cap *prxcap, struct hdmi_format_para *para);
+bool hdmitx_edid_check_y420_support(struct rx_cap *prxcap,
+	enum hdmi_vic vic);
+
+bool hdmitx_edid_validate_mode(struct rx_cap *rxcap, u32 vic);
+bool hdmitx_edid_only_support_sd(struct rx_cap *prxcap);
 
 /* Attach platform related functions to hdmitx_common;
  * Currently hdmitx_tracer, hdmitx_uevent_mgr is platform related;
@@ -231,6 +267,9 @@ int hdmitx_common_get_edid(struct hdmitx_common *tx_comm);
 int hdmitx_common_do_mode_setting(struct hdmitx_common *tx_comm,
 				  struct hdmitx_common_state *new,
 				  struct hdmitx_common_state *old);
+int hdmitx_common_validate_mode_locked(struct hdmitx_common *tx_comm,
+				       struct hdmitx_common_state *new_state,
+				       char *mode, char *attr, bool do_validate);
 int hdmitx_common_disable_mode(struct hdmitx_common *tx_comm,
 			       struct hdmitx_common_state *new_state);
 int set_disp_mode(struct hdmitx_common *tx_comm, const char *mode);
@@ -239,6 +278,7 @@ int set_disp_mode(struct hdmitx_common *tx_comm, const char *mode);
 int hdmitx_common_setup_vsif_packet(struct hdmitx_common *tx_comm,
 	enum vsif_type type, int on, void *param);
 
+unsigned int hdmitx_get_frame_duration(void);
 /*******************************hdmitx common api end*******************************/
 
 int hdmitx_register_hpd_cb(struct hdmitx_common *tx_comm, struct connector_hpd_cb *hpd_cb);
@@ -256,6 +296,18 @@ int hdmitx_get_hdrinfo(struct hdmitx_common *tx_comm, struct hdr_info *hdrinfo);
 
 int hdmitx_set_hdr_priority(struct hdmitx_common *tx_comm, u32 hdr_priority);
 int hdmitx_get_hdr_priority(struct hdmitx_common *tx_comm, u32 *hdr_priority);
+void hdmitx_hdr_state_init(struct hdmitx_common *tx_comm);
+bool hdmitx_hdr_en(struct hdmitx_hw_common *tx_hw);
+bool hdmitx_dv_en(struct hdmitx_hw_common *tx_hw);
+bool hdmitx_hdr10p_en(struct hdmitx_hw_common *tx_hw);
+
+u32 hdmitx_get_frl_bandwidth(const enum frl_rate_enum rate);
+u32 hdmitx_calc_frl_bandwidth(u32 pixel_freq, enum hdmi_colorspace cs,
+	enum hdmi_color_depth cd);
+u32 hdmitx_calc_tmds_clk(u32 pixel_freq,
+	enum hdmi_colorspace cs, enum hdmi_color_depth cd);
+enum frl_rate_enum hdmitx_select_frl_rate(u8 *dsc_en, u8 dsc_policy, enum hdmi_vic vic,
+	enum hdmi_colorspace cs, enum hdmi_color_depth cd);
 
 /*edid related function.*/
 bool is_tv_changed(char *cur_edid_chksum, char *boot_param_edid_chksum);
@@ -301,5 +353,8 @@ void hdmitx_audio_notify_callback(struct hdmitx_common *tx_comm,
 	struct notifier_block *block,
 	unsigned long cmd, void *para);
 void get_hdmi_efuse(struct hdmitx_common *tx_comm);
+enum hdmi_color_depth get_hdmi_colordepth(const struct vinfo_s *vinfo);
+bool is_cur_hdmi_mode(void);
+enum hdmi_vic hdmitx_get_prefer_vic(struct hdmitx_common *tx_comm, enum hdmi_vic vic);
 
 #endif

@@ -7,5 +7,6 @@
 #define __GKI_TOOL_AMLOGIC_H
 
 void gki_module_init(void);
+int module_debug_init(void);
 
 #endif //__GKI_TOOL_AMLOGIC_H

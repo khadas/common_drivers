@@ -1,4 +1,4 @@
-From 839c896cb29a497206e830870d37d538303dee81 Mon Sep 17 00:00:00 2001
+From 4b3262711d1136e5f73cf04b3305a9b9ee54a4a8 Mon Sep 17 00:00:00 2001
 From: Tao Zeng <tao.zeng@amlogic.com>
 Date: Wed, 26 Jan 2022 16:04:08 +0800
 Subject: [PATCH] mm: porting CMA optimization from 5.4 [1/2]
@@ -42,8 +42,8 @@ Change-Id: Ib82b898a596eba62e1aa1cb13719eab41f03ae58
  mm/readahead.c            |   5 ++
  mm/shmem.c                |  13 +++++
  mm/swap_state.c           |   4 ++
- mm/vmscan.c               |  21 ++++++++
- 15 files changed, 408 insertions(+)
+ mm/vmscan.c               |  18 +++++++
+ 15 files changed, 405 insertions(+)
 
 diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
 index 4b61541853ea..f028deeec940 100644
@@ -937,7 +937,7 @@ index 122a37cbc081..816b746cb0d8 100644
  			return NULL;
  
 diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 08aadc1f03eb..1dd7e4365f73 100644
+index 08aadc1f03eb..3f2523533e88 100644
 --- a/mm/vmscan.c
 +++ b/mm/vmscan.c
 @@ -74,6 +74,10 @@
@@ -992,16 +992,6 @@ index 08aadc1f03eb..1dd7e4365f73 100644
 +#endif
  	return isolated > inactive;
  }
- 
-@@ -7375,6 +7393,9 @@ int kswapd(void *p)
- 
- 	WRITE_ONCE(pgdat->kswapd_order, 0);
- 	WRITE_ONCE(pgdat->kswapd_highest_zoneidx, MAX_NR_ZONES);
-+#ifdef CONFIG_AMLOGIC_CMA
-+	set_user_nice(current, -5);
-+#endif /* CONFIG_AMLOGIC_CMA */
- 	for ( ; ; ) {
- 		bool ret;
  
 -- 
 2.42.0

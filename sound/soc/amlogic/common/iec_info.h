@@ -285,7 +285,7 @@ void spdif_notify_to_hdmitx(struct snd_pcm_substream *substream,
 			    enum aud_codec_types codec_type);
 void notify_hdmitx_to_prepare(void);
 
-#ifdef CONFIG_AMLOGIC_HDMITX
+#if defined(CONFIG_AMLOGIC_HDMITX) || defined(CONFIG_AMLOGIC_HDMITX21)
 int aml_get_hdmi_out_audio(struct snd_kcontrol *kcontrol,
 			   struct snd_ctl_elem_value *ucontrol);
 int aml_set_hdmi_out_audio(struct snd_kcontrol *kcontrol,

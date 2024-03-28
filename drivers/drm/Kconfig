@@ -22,22 +22,18 @@ config AMLOGIC_DRM_VPU
 		This driver provides KMS.
 		This driver also provides crtcs and planes management.
 
-config AMLOGIC_DRM_HDMI
+config AMLOGIC_DRM_CUT_HDMI
 	bool "support drm hdmi function for meson drm display."
-	default n
-	depends on AMLOGIC_DRM
-	depends on AMLOGIC_HDMITX
+	depends on !(AMLOGIC_HDMITX || AMLOGIC_HDMITX21)
 	help
 		add drm hdmi support.
 		use internal amlogic media vout hdmi driver.
 		We should confirm AMLOGIC_HDMITX is configured if
 		AMLOGIC_DRM_HDMI is selected.
 
-config AMLOGIC_DRM_CVBS
+config AMLOGIC_DRM_CUT_CVBS
 	bool "support drm cvbs function for meson drm display."
-	default n
-	depends on AMLOGIC_DRM
-	depends on AMLOGIC_CVBS_OUTPUT
+	depends on !AMLOGIC_CVBS_OUTPUT
 	help
 		add drm cvbs support.
 		use internal amlogic media vout cvbs driver.

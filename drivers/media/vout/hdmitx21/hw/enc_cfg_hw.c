@@ -31,11 +31,15 @@
  * and send data to ENCP_DVI/DE_H/V* via a fifo (pixel delay)
  * The input timing of HDMITx is from ENCP_DVI/DE_H/V*
  */
+/* note, venc setting will be override on dsc encoder side
+ * so this function is optional when dsc_en = 1
+ */
 static void config_tv_enc_calc(struct hdmitx_dev *hdev, enum hdmi_vic vic)
 {
 	const struct hdmi_timing *tp = NULL;
 	struct hdmi_timing timing = {0};
-	u32 hsync_st = 4; // hsync start pixel count
+	/* adjust to align upsample and video enable */
+	u32 hsync_st = 5; // hsync start pixel count
 	u32 vsync_st = 1; // vsync start line count
 	// Latency in pixel clock from ENCP_VFIFO2VD request to data ready to HDMI
 	const u32 vfifo2vd_to_hdmi_latency = 2;
@@ -45,6 +49,9 @@ static void config_tv_enc_calc(struct hdmitx_dev *hdev, enum hdmi_vic vic)
 	u32 de_v_end = 0;
 	bool y420_mode = 0;
 	int hpara_div = 1;
+
+	if (!hdev)
+		return;
 
 	if (hdev->tx_comm.fmt_para.cs == HDMI_COLORSPACE_YUV420)
 		y420_mode = 1;
@@ -63,19 +70,21 @@ static void config_tv_enc_calc(struct hdmitx_dev *hdev, enum hdmi_vic vic)
 		hpara_div = 4;
 	if (hdev->frl_rate && y420_mode == 0)
 		hpara_div = 2;
+	/* force 4 slices input to dsc encoder when dsc enabled */
+	if (hdev->dsc_en)
+		hpara_div = 4;
 	timing.h_total /= hpara_div;
 	timing.h_blank /= hpara_div;
 	timing.h_front /= hpara_div;
-	if (hdev->frl_rate)
-		timing.h_front |= 3; /* For ENCP, there needs OR 3 */
 	timing.h_sync /= hpara_div;
 	timing.h_back /= hpara_div;
 	timing.h_active /= hpara_div;
 
-	if (hdev->dsc_en) {
-		hsync_st = tp->h_front - 1;
-		vsync_st = tp->v_front - 1;
-	}
+	/* it will flash screen under 8k50/60hz if with this sync_st */
+	/* if (hdev->dsc_en) { */
+	/* hsync_st = tp->h_front - 1; */
+	/* vsync_st = tp->v_front - 1; */
+	/* } */
 
 	de_h_end = tp->h_total - (tp->h_front - hsync_st);
 	de_h_begin = de_h_end - tp->h_active;
@@ -397,6 +406,9 @@ void set_tv_encp_new(struct hdmitx_dev *hdev, u32 enc_index, enum hdmi_vic vic,
 	// VENC2A 0x23
 	reg_offset = enc_index == 0 ? 0 : enc_index == 1 ? 0x600 : 0x800;
 
+	if (!hdev)
+		return;
+
 	switch (vic) {
 	case HDMI_5_1920x1080i60_16x9:
 	case HDMI_46_1920x1080i120_16x9:
@@ -408,8 +420,17 @@ void set_tv_encp_new(struct hdmitx_dev *hdev, u32 enc_index, enum hdmi_vic vic,
 		config_tv_enc_calc(hdev, vic);
 		break;
 	}
-
-	if (hdev->frl_rate && hdev->tx_comm.fmt_para.cs != HDMI_COLORSPACE_YUV420)
+	if (hdev->bist_lock)
+		hd21_set_reg_bits(ENCP_VIDEO_MODE_ADV, 0, 3, 1);
+	/* for dsc mode enable, vpp post 4 slice->4ppc to hdmi, no up_sample
+	 * for frl mode enable & non_y420 mode, vpp post 4 slice into VENC
+	 * with vpp horizontal size divide 4(7680 / 4), VENC get sample from
+	 * vpp every two clk(upsample = 1) with 4ppc, and then split to 2ppc
+	 * to hdmi module
+	 */
+	if (hdev->dsc_en)
+		hd21_set_reg_bits(ENCP_VIDEO_MODE_ADV, 0, 0, 3);
+	else if (hdev->frl_rate && hdev->tx_comm.fmt_para.cs != HDMI_COLORSPACE_YUV420)
 		hd21_set_reg_bits(ENCP_VIDEO_MODE_ADV, 1, 0, 3);
 	else
 		hd21_set_reg_bits(ENCP_VIDEO_MODE_ADV, 0, 0, 3);
@@ -734,8 +755,10 @@ void set_tv_enci_new(struct hdmitx_dev *hdev, u32 enc_index, enum hdmi_vic vic,
 void hdmitx21_venc_en(bool en, bool pi_mode)
 {
 	if (en == 0) {
-		hd21_write_reg(ENCP_VIDEO_EN, en);
-		hd21_write_reg(ENCI_VIDEO_EN, en);
+		if (pi_mode == 1)
+			hd21_write_reg(ENCP_VIDEO_EN, en);
+		else
+			hd21_write_reg(ENCI_VIDEO_EN, en);
 		return;
 	}
 	if (pi_mode == 1) {

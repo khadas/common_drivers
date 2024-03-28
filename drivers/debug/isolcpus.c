@@ -12,12 +12,15 @@
 #include <linux/cpuset.h>
 #include <linux/sched/isolation.h>
 #include <linux/amlogic/gki_module.h>
+#include <linux/sched.h>
+#include <trace/hooks/sched.h>
 
 static int have_isolcpus;
 static int have_aml_isolcpus;
 static int have_isolcpus_speedup_boot;
 static struct cpumask aml_house_keeping_mask;
 static int isolcpus_speedup_boot;
+static struct cpumask isolcpus_mask;
 
 #ifdef CONFIG_ARM64
 #define REG_0 regs->regs[0]
@@ -66,7 +69,6 @@ __setup("isolcpus=", isolcpus_setup);
 
 static int aml_isolcpus_setup(char *str)
 {
-	struct cpumask isolcpus_mask;
 
 	have_aml_isolcpus = 1;
 	if (cpulist_parse(str, &isolcpus_mask) < 0) {
@@ -80,6 +82,8 @@ static int aml_isolcpus_setup(char *str)
 	return 0;
 }
 __setup("aml_isolcpus=", aml_isolcpus_setup);
+
+extern void rebuild_sched_flag(void);
 
 static int isolcpus_speedup_boot_set(const char *val, const struct kernel_param *kp)
 {
@@ -95,6 +99,7 @@ static int isolcpus_speedup_boot_set(const char *val, const struct kernel_param 
 	//pr_info("isolcpus_speedup_boot=%d\n", isolcpus_speedup_boot);
 
 	rebuild_sched_domains();
+	rebuild_sched_flag();
 
 	return 0;
 }
@@ -117,6 +122,17 @@ static int isolcpus_speedup_boot_setup(char *str)
 	return 0;
 }
 __setup("isolcpus_speedup_boot=", isolcpus_speedup_boot_setup);
+
+#ifdef CONFIG_ANDROID_VENDOR_HOOKS
+static void select_task_rq_hook(void *data, struct task_struct *p, int prev_cpu, int sd_flag,
+		int wake_flags, int *new_cpu)
+{
+	if (!isolcpus_speedup_boot && cpumask_test_cpu(prev_cpu, &isolcpus_mask) &&
+	    !cpumask_equal((const struct cpumask *)&isolcpus_mask,
+			(const struct cpumask *)&p->cpus_mask))
+		*new_cpu = cpumask_last(&aml_house_keeping_mask);
+}
+#endif
 
 int aml_isolcpus_init(void)
 {
@@ -144,8 +160,15 @@ int aml_isolcpus_init(void)
 	}
 
 	//if need do really isolcpus, so rebuild domains
-	if (!isolcpus_speedup_boot)
+	if (!isolcpus_speedup_boot) {
 		rebuild_sched_domains();
+		rebuild_sched_flag();
+	}
+
+#ifdef CONFIG_ANDROID_VENDOR_HOOKS
+	register_trace_android_rvh_select_task_rq_fair(select_task_rq_hook, NULL);
+	register_trace_android_rvh_select_task_rq_rt(select_task_rq_hook, NULL);
+#endif
 
 	return 0;
 }

@@ -270,7 +270,8 @@ static enum tvin_sg_chg_flg vdin_hdmirx_fmt_chg_detect(struct vdin_dev_s *devp)
 
 		vdin_hdr_flag = prop->vdin_hdr_flag;
 		pre_vdin_hdr_flag = pre_prop->vdin_hdr_flag;
-		if (vdin_hdr_flag != pre_vdin_hdr_flag) {
+		if (vdin_hdr_flag != pre_vdin_hdr_flag ||
+			prop->hdr_info.hdr_data.eotf != pre_prop->hdr_info.hdr_data.eotf) {
 			if (!(devp->flags & VDIN_FLAG_DEC_STARTED))
 				prop->hdr_info.hdr_check_cnt++;
 			if (prop->hdr_info.hdr_check_cnt >=
@@ -281,10 +282,11 @@ static enum tvin_sg_chg_flg vdin_hdmirx_fmt_chg_detect(struct vdin_dev_s *devp)
 					TVIN_SIG_CHG_HDR2SDR;
 				if (signal_chg &&
 				    (sm_debug_enable & VDIN_SM_LOG_L_1))
-					pr_info("%s hdr chg 0x%x:(0x%x->0x%x)\n",
+					pr_info("%s hdr chg 0x%x:(0x%x->0x%x), eotf:%d\n",
 						__func__,
 						signal_chg, pre_vdin_hdr_flag,
-						vdin_hdr_flag);
+						vdin_hdr_flag,
+						devp->prop.hdr_info.hdr_data.eotf);
 				pre_prop->vdin_hdr_flag = prop->vdin_hdr_flag;
 			}
 		} else {

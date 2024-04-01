@@ -6619,7 +6619,8 @@ void vdin_vs_proc_monitor(struct vdin_dev_s *devp)
 		else
 			devp->dv.chg_cnt = 0;
 
-		if (devp->prop.vdin_hdr_flag != devp->pre_prop.vdin_hdr_flag)
+		if (devp->prop.vdin_hdr_flag != devp->pre_prop.vdin_hdr_flag ||
+			devp->prop.hdr_info.hdr_data.eotf != devp->pre_prop.hdr_info.hdr_data.eotf)
 			devp->prop.hdr_info.hdr_check_cnt++;
 		else
 			devp->prop.hdr_info.hdr_check_cnt = 0;

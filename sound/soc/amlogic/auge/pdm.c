@@ -119,7 +119,7 @@ static int aml_pdm_filter_mode_get_enum(struct snd_kcontrol *kcontrol,
 	if (!p_pdm)
 		return 0;
 
-	ucontrol->value.enumerated.item[0] = p_pdm->filter_mode;
+	ucontrol->value.enumerated.item[0] = p_pdm->lpf_filter_mode;
 
 	return 0;
 }
@@ -133,7 +133,7 @@ static int aml_pdm_filter_mode_set_enum(struct snd_kcontrol *kcontrol,
 	if (!p_pdm)
 		return 0;
 
-	p_pdm->filter_mode = ucontrol->value.enumerated.item[0];
+	p_pdm->lpf_filter_mode = ucontrol->value.enumerated.item[0];
 
 	return 0;
 }
@@ -691,7 +691,7 @@ static int aml_pdm_dai_prepare(struct snd_pcm_substream *substream,
 	unsigned int bitwidth;
 	unsigned int toddr_type, lsb;
 	struct toddr_fmt fmt;
-	unsigned int osr = 192, filter_mode, dclk_idx;
+	unsigned int osr = 192, lpf_filter_mode, hpf_filter_mode, dclk_idx;
 	struct pdm_info info;
 	int pdm_id;
 	struct toddr *to;
@@ -752,14 +752,14 @@ static int aml_pdm_dai_prepare(struct snd_pcm_substream *substream,
 	if (p_pdm->islowpower) {
 		/* dclk for 768k */
 		dclk_idx = 2;
-		filter_mode = 4;
+		lpf_filter_mode = 4;
 		pdm_force_sysclk_to_oscin(true, pdm_id, p_pdm->chipinfo->vad_top);
 		if (vad_pdm_is_running())
 			vad_set_lowerpower_mode(true);
 
 	} else {
 		dclk_idx = p_pdm->dclk_idx;
-		filter_mode = p_pdm->filter_mode;
+		lpf_filter_mode = p_pdm->lpf_filter_mode;
 	}
 
 	/* filter for pdm */
@@ -773,12 +773,15 @@ static int aml_pdm_dai_prepare(struct snd_pcm_substream *substream,
 		return -EINVAL;
 	}
 
-	pr_info("%s, pdm_dclk:%d, osr:%d, rate:%d filter mode:%d\n",
+	hpf_filter_mode = p_pdm->hpf_filter_mode;
+
+	pr_info("%s, pdm_dclk:%d, osr:%d, rate:%d, LPF filter mode:%d, HPF filter mode:%d\n",
 		__func__,
 		pdm_dclkidx2rate(dclk_idx),
 		osr,
 		runtime->rate,
-		p_pdm->filter_mode);
+		p_pdm->lpf_filter_mode,
+		p_pdm->hpf_filter_mode);
 
 	info.bitdepth   = bitwidth;
 	info.channels   = runtime->channels;
@@ -788,7 +791,7 @@ static int aml_pdm_dai_prepare(struct snd_pcm_substream *substream,
 	info.sample_count = pdm_get_sample_count(p_pdm->islowpower, dclk_idx);
 
 	aml_pdm_ctrl(&info, pdm_id);
-	aml_pdm_filter_ctrl(p_pdm->pdm_gain_index, osr, filter_mode, pdm_id);
+	aml_pdm_filter_ctrl(p_pdm->pdm_gain_index, osr, lpf_filter_mode, hpf_filter_mode, pdm_id);
 
 	if (p_pdm->chipinfo && p_pdm->chipinfo->truncate_data)
 		pdm_init_truncate_data(runtime->rate, pdm_id);
@@ -1302,13 +1305,18 @@ static int aml_pdm_platform_probe(struct platform_device *pdev)
 		p_pdm->lane_mask_in = 0xf;
 	}
 
-	ret = of_property_read_u32(node, "filter_mode", &p_pdm->filter_mode);
+	ret = of_property_read_u32(node, "filter_mode", &p_pdm->lpf_filter_mode);
 	if (ret < 0) {
-		/* default set 1 */
-		p_pdm->filter_mode = 1;
+		/* default set 4 */
+		p_pdm->lpf_filter_mode = 4;
 	}
-	pr_debug("%s pdm filter mode from dts:%d\n",
-		__func__, p_pdm->filter_mode);
+	ret = of_property_read_u32(node, "hpf_filter_mode", &p_pdm->hpf_filter_mode);
+	if (ret < 0 || p_pdm->hpf_filter_mode < 0) {
+		/* default set 6: 120Hz for 48K */
+		p_pdm->hpf_filter_mode = 6;
+	}
+	pr_debug("%s pdm LPF filter mode: %d, HPF filter mode: %d\n",
+			__func__, p_pdm->lpf_filter_mode, p_pdm->hpf_filter_mode);
 
 	ret = of_property_read_u32(node, "train_sample_count",
 			&p_pdm->train_sample_count);

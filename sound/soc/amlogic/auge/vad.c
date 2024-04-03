@@ -871,11 +871,13 @@ void vad_enable(bool enable)
 		int gain_index = 0;
 		int osr = 0;
 
-		if (pdm)
+		if (pdm) {
 			gain_index = pdm->pdm_gain_index;
-		osr = pdm_get_ors(0, p_vad->wakeup_sample_rate);
-		/*only used pdm 0*/
-		aml_pdm_filter_ctrl(gain_index, osr, 1, 0);
+			osr = pdm_get_ors(0, p_vad->wakeup_sample_rate);
+			/*only used pdm 0*/
+			aml_pdm_filter_ctrl(gain_index, osr, pdm->lpf_filter_mode,
+					pdm->hpf_filter_mode, 0);
+		}
 		p_vad->tddr->fmt.rate = p_vad->wakeup_sample_rate;
 		pr_info("%s, gain_index = %d, osr = %d, vad_sample_rate = %d\n",
 			__func__, gain_index, osr, p_vad->tddr->fmt.rate);

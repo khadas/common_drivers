@@ -26,7 +26,7 @@ void pdm_force_dclk_to_oscin(int id, bool vad_top);
 void pdm_set_channel_ctrl(int sample_count, int id);
 void aml_pdm_arb_config(struct aml_audio_controller *actrl, bool use_arb);
 int aml_pmd_set_HPF_filter_parameters(void *array);
-void aml_pdm_filter_ctrl(int pdm_gain_index, int osr, int set, int id);
+void aml_pdm_filter_ctrl(int pdm_gain_index, int osr, int lpf_mode, int hpf_mode, int id);
 void pdm_enable(int is_enable, int id);
 void pdm_fifo_reset(int id);
 int pdm_get_mute_value(int id);

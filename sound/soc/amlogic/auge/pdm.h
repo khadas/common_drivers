@@ -75,11 +75,14 @@ struct aml_pdm {
 	/* sample rate */
 	int rate;
 	/*
-	 * filter mode:0~4,
-	 * from mode 0 to 4, the performance is from high to low,
-	 * the group delay (latency) is from high to low.
+	 * LPF filter mode: 1 ~ 5,
+	 * from mode 1 to 5, the group delay (latency) is from high to low.
 	 */
-	int filter_mode;
+	int lpf_filter_mode;
+	/*
+	 * HPF filter mode: 1 ~ 13,
+	 */
+	int hpf_filter_mode;
 	/* dclk index */
 	int dclk_idx;
 	/* PCM or Raw Data */

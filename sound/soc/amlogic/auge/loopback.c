@@ -650,12 +650,14 @@ static void datatin_pdm_cfg(struct snd_pcm_runtime *runtime,
 	info.dclk_idx = p_loopback->dclk_idx;
 	info.bypass = 0;
 	info.sample_count = pdm_get_sample_count(0, p_loopback->dclk_idx);
-	aml_pdm_ctrl(&info, pdm_id);
 
-	/* filter for pdm */
-	osr = pdm_get_ors(p_loopback->dclk_idx, runtime->rate);
-
-	aml_pdm_filter_ctrl(gain_index, osr, 1, pdm_id);
+	if (pdm) {
+		aml_pdm_ctrl(&info, pdm_id);
+		/* filter for pdm */
+		osr = pdm_get_ors(p_loopback->dclk_idx, runtime->rate);
+		aml_pdm_filter_ctrl(gain_index, osr, pdm->lpf_filter_mode,
+				pdm->hpf_filter_mode, pdm_id);
+	}
 }
 
 static int loopback_dai_prepare(struct snd_pcm_substream *ss,

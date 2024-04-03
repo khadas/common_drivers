@@ -182,8 +182,8 @@ void aml_pdm_arb_config(struct aml_audio_controller *actrl, bool use_arb)
 }
 
 /* config for hcic, lpf1,2,3, hpf */
-static void aml_pdm_filters_config(int pdm_gain_index, int osr,
-	int lpf1_len, int lpf2_len, int lpf3_len, int id)
+static void aml_pdm_HPF_coeff(int pdm_gain_index, int osr,
+	int lpf1_len, int lpf2_len, int lpf3_len, int id, int hpf_mode)
 {
 	s32 hcic_dn_rate;
 	s32 hcic_tap_num;
@@ -250,7 +250,7 @@ static void aml_pdm_filters_config(int pdm_gain_index, int osr,
 	f1_tap_num	 = lpf1_len;
 	f2_tap_num	 = lpf2_len;
 	f3_tap_num	 = lpf3_len;
-	hpf_shift_step = 0xd;
+	hpf_shift_step = (s32)hpf_mode;
 	hpf_en		 = 1;
 	pdm_out_mode	 = 0;
 	hpf_out_factor = 0x8000;
@@ -352,7 +352,7 @@ static void aml_pdm_LPF_coeff(int lpf1_len, const int *lpf1_coeff,
 
 }
 
-void aml_pdm_filter_ctrl(int pdm_gain_index, int osr, int mode, int id)
+void aml_pdm_filter_ctrl(int pdm_gain_index, int osr, int lpf_mode, int hpf_mode, int id)
 {
 	int lpf1_len, lpf2_len, lpf3_len;
 	const int *lpf1_coeff, *lpf2_coeff, *lpf3_coeff;
@@ -400,7 +400,7 @@ void aml_pdm_filter_ctrl(int pdm_gain_index, int osr, int mode, int id)
 		break;
 	}
 
-	switch (mode) {
+	switch (lpf_mode) {
 	case 0:
 		lpf1_len = 110;
 		lpf2_len = 33;
@@ -436,6 +436,13 @@ void aml_pdm_filter_ctrl(int pdm_gain_index, int osr, int mode, int id)
 		lpf1_coeff = lpf1_mode4;
 		lpf3_coeff = lpf3_mode4;
 		break;
+	case 5:
+		lpf1_len = 65;
+		lpf2_len = 33;
+		lpf3_len = 76;
+		lpf1_coeff = lpf1_mode3;
+		lpf3_coeff = lpf3_mode5;
+		break;
 	default:
 		pr_info("default mode 1, osr 64\n");
 		lpf1_len = 87;
@@ -447,11 +454,11 @@ void aml_pdm_filter_ctrl(int pdm_gain_index, int osr, int mode, int id)
 	}
 
 	/* config filter */
-	aml_pdm_filters_config(pdm_gain_index,
+	aml_pdm_HPF_coeff(pdm_gain_index,
 		osr,
 		lpf1_len,
 		lpf2_len,
-		lpf3_len, id);
+		lpf3_len, id, hpf_mode);
 
 	aml_pdm_LPF_coeff(lpf1_len, lpf1_coeff,
 		lpf2_len, lpf2_coeff,

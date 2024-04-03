@@ -88,8 +88,8 @@ static int __init media_main_init(void)
 	call_sub_init(vpu_security_init);
 	call_sub_init(osd_init_module);
 	call_sub_init(ion_device_create_init);
-	call_sub_init(ion_system_heap_create_init);
 	call_sub_init(ion_system_contig_heap_create_init);
+	call_sub_init(ion_system_heap_create_init);
 	call_sub_init(ion_init);
 	call_sub_init(add_meson_cma_heap);
 	call_sub_init(amlogic_heap_secure_dma_buf_init);

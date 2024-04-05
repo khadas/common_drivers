@@ -4,10 +4,12 @@
  */
 #include <linux/amlogic/media/frc/frc_reg.h>
 
-#define FRC_RDMA_VER			"2024-0110 frc rdma version 1.1.1.011024_beta"
+// 2024-0110 frc rdma version 1.1.1.011024_beta
+
+#define FRC_RDMA_VER			"add rdma read version 1.1.2.040124"
 
 #define RDMA_NUM        8
-#define RDMA_CHANNEL    4
+#define RDMA_CHANNEL    5
 #define RDMA_NUM_T3X    16
 #define REG_TEST_NUM    16
 
@@ -127,5 +129,5 @@ int FRC_RDMA_VSYNC_WR_BITS(u32 addr, u32 val, u32 start, u32 len);
 int FRC_RDMA_VSYNC_REG_UPDATE(u32 addr, u32 val, u32 mask);
 int _frc_rdma_wr_reg_in(u32 addr, u32 val);
 int _frc_rdma_wr_reg_out(u32 addr, u32 val);
-int _frc_rdma_rd_reg_man(u32 addr);
-
+int _frc_rdma_rd_reg(u32 addr);
+void frc_rdma_rd_table_init(struct frc_dev_s *devp);

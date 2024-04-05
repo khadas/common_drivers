@@ -263,7 +263,7 @@ int READ_FRC_RDMA_REG(unsigned int reg)
 	// return 0;
 	// return readl(frc_base + (reg << 2));
 
-	return _frc_rdma_rd_reg_man(reg);
+	return _frc_rdma_rd_reg(reg);
 #endif
 }
 EXPORT_SYMBOL(READ_FRC_RDMA_REG);

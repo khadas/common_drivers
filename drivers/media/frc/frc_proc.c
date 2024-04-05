@@ -73,6 +73,8 @@ MODULE_PARM_DESC(sec_flag, "frc debug flag");
 
 u32 secure_tee_handle;
 
+static int char_flash_check;
+
 void frc_fw_initial(struct frc_dev_s *devp)
 {
 	if (!devp)
@@ -126,6 +128,7 @@ void frc_hw_initial(struct frc_dev_s *devp)
 {
 	frc_fw_initial(devp);
 	frc_mtx_set(devp);
+	frc_rdma_rd_table_init(devp);
 	frc_top_init(devp);
 	t3x_verB_set_cfg(0, devp);
 	frc_input_size_align_check(devp);
@@ -263,10 +266,15 @@ void frc_isr_print_zero(struct frc_dev_s *devp)
 
 void frc_rd_reg_by_drv(struct frc_dev_s *devp)
 {
-	int i;
+	u8 i, en;
+	u16 log = 7;
 	struct frc_fw_data_s *fw_data;
 
+	en = devp->timer_dbg.timer_en;
 	fw_data = (struct frc_fw_data_s *)devp->fw_data;
+
+	if (!en && devp->timer_dbg.timer_level)
+		log = devp->timer_dbg.timer_level;
 
 	for (i = 0; i < RD_REG_MAX; i++) {
 		if (!fw_data->reg_val[i].addr || fw_data->reg_val[i].addr > 0x3fff)
@@ -2271,7 +2279,7 @@ void frc_char_flash_check(void)
 	struct frc_dev_s *devp = get_frc_devp();
 	struct frc_fw_data_s *pfw_data;
 	static u16 match_count;
-	int char_flash_check;
+	// int char_flash_check;
 	int temp, temp2;
 
 	if (!devp || !devp->probe_ok || !devp->fw_data)
@@ -2341,6 +2349,13 @@ void frc_chk_vd_sts_chg(struct frc_dev_s *devp, struct vframe_s *vf)
 			WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL27, 0);
 		}
 		pr_frc(1, "input change %d. (1:tvin)\n", frc_is_tvin_s);
+	}
+
+	// close pps optimize in tvin
+	if (devp->in_sts.frc_is_tvin && char_flash_check) {
+		char_flash_check = 0;
+		devp->in_sts.high_freq_flash = char_flash_check;
+		notify_frc_signal_to_amvideo(&char_flash_check);
 	}
 
 	if (vf->vc_private) {

@@ -119,8 +119,9 @@
 // frc_2024-0315 buf num configure
 // frc_2024-0325 frc sync motion from drv
 // frc_2024-0407 frc modify urgent control
+// frc_2024-0417 frc add debug setting for T5M user
 
-#define FRC_FW_VER			"2024-0417 frc add debug setting for T5M user"
+#define FRC_FW_VER			"2024-0405 fix pps adapt abnormal"
 #define FRC_KERDRV_VER                  3500
 
 #define FRC_DEVNO	1

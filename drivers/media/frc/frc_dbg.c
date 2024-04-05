@@ -949,6 +949,7 @@ exit:
 
 ssize_t frc_debug_other_if_help(struct frc_dev_s *devp, char *buf)
 {
+	int i;
 	ssize_t len = 0;
 	struct frc_fw_data_s *fw_data;
 
@@ -977,6 +978,12 @@ ssize_t frc_debug_other_if_help(struct frc_dev_s *devp, char *buf)
 	len += sprintf(buf + len, "frm_seg_en\t=%d\n", devp->in_sts.frm_en);
 	len += sprintf(buf + len, "motion_ctrl\t=%d\n",
 			fw_data->frc_top_type.motion_ctrl);
+	for (i = 0; i < RD_REG_MAX; i++) {
+		if (fw_data->reg_val[i].addr == 0x0)
+			break;
+		len += sprintf(buf + len, "trace reg addr[%d]:%04x\n",
+			i, fw_data->reg_val[i].addr);
+	}
 	return len;
 }
 

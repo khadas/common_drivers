@@ -1255,6 +1255,20 @@ u32 rx_pkt_chk_busy_drm(u8 port)
 		return 0;
 }
 
+bool rx_chk_avi_valid(u8 port)
+{
+	u32 chk = 0;
+	u32 i;
+
+	for (i = AVIRX_TYPE_DP2_IVCRX; i <= AVIRX_DBYTE15_DP2_IVCRX; i++)
+		chk += hdmirx_rd_cor(i, port);
+
+	if (chk & 0xff)
+		return false;
+	else
+		return true;
+}
+
 /*  version2.86 ieee-0x00d046, length 0x1B
  *	pb4 bit[0]: Low_latency
  *	pb4 bit[1]: Dolby_vision_signal

@@ -16,7 +16,6 @@
 #include <linux/platform_device.h>
 #include <linux/mutex.h>
 #include <linux/cdev.h>
-
 /* Local include */
 #include "hdmi_rx_repeater.h"
 #include "hdmi_rx_drv.h"
@@ -648,10 +647,10 @@ void rx_edid_update_vrr_info(unsigned char *p_edid)
 	hf_vsdb_start = rx_get_cea_tag_offset(p_edid, HF_VENDOR_DB_TAG);
 	if (!hf_vsdb_start)
 		return;
-	tag_len = (p_edid[hf_vsdb_start] & 0xf);
+	tag_len = (p_edid[hf_vsdb_start] & 0xf) + 1;
 	if (log_level & EDID_LOG)
 		rx_pr("tag_len = %d", tag_len);
-	if (tag_len < 9)
+	if (tag_len <= 9)
 		return;
 
 	if (vrr_func_en) {
@@ -666,10 +665,6 @@ void rx_edid_update_vrr_info(unsigned char *p_edid)
 	} else {
 		edid_rm_db_by_tag(p_edid, VSDB_FREESYNC_TAG);
 		rx_pr("hf_vsdb_start = %d", hf_vsdb_start);
-		tag_len = (p_edid[hf_vsdb_start] & 0xf) + 1;
-		rx_pr("tag_len = %d", tag_len);
-		if (tag_len < 9)
-			return;
 		p_edid[hf_vsdb_start] = 0x68;
 		p_edid[hf_vsdb_start + 8] &= 0x02;
 		for (i = hf_vsdb_start + 9; i < 254 - tag_len + 9; i++)

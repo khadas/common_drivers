@@ -246,7 +246,6 @@ void aml_phy_cfg_tl1(void)
 	data32 = phy_misci[idx][0];
 	data32 = (data32 & (~0x7));
 	data32 |= term_value;
-	data32 &= ~(disable_port_num & 0x07);
 	/* terminal en */
 	wr_reg_hhi(TL1_HHI_HDMIRX_PHY_MISC_CNTL0, data32);
 	usleep_range(2, 4);

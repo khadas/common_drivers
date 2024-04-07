@@ -87,6 +87,9 @@
 #define IRQ_LOG		0x2000
 #define COR_LOG		0x4000
 #define DBG1_LOG    0x8000
+#define HDCP_IRQ_LOG 0x40000000
+#define PKT_IRQ_LOG 0x20000000
+
 
 #define EDID_DATA_LOG	0x20000
 #define RP_LOG		0x40000
@@ -333,14 +336,13 @@ struct rx_var_param {
 	int dwc_rst_wait_cnt_max;
 	int sig_stable_cnt;
 	int sig_stable_max;
-	int sig_stable_err_cnt;
+	int sig_stable_err_cnt;//todo
 	int sig_stable_err_max;
 	int err_cnt_sum_max;
 	int fpll_ready_cnt;
 	int frl_lock_det_cnt;
 	//bool clk_debug_en;
 	int hpd_wait_cnt;
-	int special_wait_max;
 	/* increase time of hpd low, to avoid some source like */
 	/* MTK box/KaiboerH9 i2c communicate error */
 	int hpd_wait_max;
@@ -402,9 +404,7 @@ struct rx_var_param {
 	u8 dbg_ve;
 	/* after DE stable, start DE count */
 	bool de_stable;
-	u32 de_cnt;
 	u32 check_dsc_de_cnt;
-	u8 avi_chk_frames;
 	u32 avi_rcv_cnt;
 	bool force_pattern;
 	int frl_rate;
@@ -904,12 +904,12 @@ struct rx_info_s {
 	u8 vp_cor1_port;
 	bool boot_flag;
 	bool main_port_open;
-	bool sub_port_open;
 	bool pip_on;
 	u8 vrr_min;
 	u8 vrr_max;
 	u32 arc_port;
 	bool arc_5vsts;
+	unsigned long timestamp;
 	struct rx_aml_phy aml_phy;
 	struct rx_aml_phy aml_phy_21;
 	struct emp_info_s emp_buff_a; //for vid0
@@ -943,7 +943,8 @@ struct rx_s {
 	u16 wait_no_sig_cnt;
 	int aud_sr_stable_cnt;
 	int aud_sr_unstable_cnt;
-	unsigned long timestamp;
+	u32 last_sw_vic;
+	bool min_time_en;
 	unsigned long stable_timestamp;
 	unsigned long unready_timestamp;
 	/* info */
@@ -1113,7 +1114,7 @@ void hotplug_wait_query(void);
 void rx_send_hpd_pulse(u8 port);
 
 /* irq */
-void rx_irq_en(bool enable, u8 port);
+void rx_irq_en(u8 enable, u8 port);
 irqreturn_t irq_handler(int irq, void *params);
 irqreturn_t irq0_handler(int irq, void *params);
 irqreturn_t irq1_handler(int irq, void *params);
@@ -1143,8 +1144,6 @@ extern bool hdcp_enable;
 extern int log_level;
 extern int sm_pause;
 extern int suspend_pddq_sel;
-extern int disable_port_num;
-extern int disable_port_en;
 extern bool video_stable_to_esm;
 extern u32 pwr_sts_to_esm;
 extern bool enable_hdcp22_esm_log;

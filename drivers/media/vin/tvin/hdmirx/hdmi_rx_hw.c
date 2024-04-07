@@ -1403,10 +1403,10 @@ void hdmirx_top_sw_reset(void)
  * rx_irq_en - hdmirx controller irq config
  * @enable - irq set or clear
  */
-void rx_set_irq_t5(bool enable)
+void rx_set_irq_20(u8 enable)
 {
 	u32 data32 = 0;
-	if (enable) {
+	if (enable == IRQ_EN_ALL) {
 		if (rx_info.chip_id >= CHIP_ID_TL1) {
 			data32 |= 1 << 31; /* DRC_CKS_CHG */
 			data32 |= 1 << 30; /* DRC_RCV */
@@ -1520,24 +1520,143 @@ void rx_set_irq_t5(bool enable)
 			data32 |= 0 << 0; /* PD_FIFO_TH_MIN_PASS */
 			data32 |= pdec_ists_en;
 		}
+		hdmirx_wr_dwc(DWC_PDEC_IEN_SET, data32);
+		hdmirx_wr_dwc(DWC_AUD_FIFO_IEN_SET, OVERFL | UNDERFL);
+		if (hdcp22_on)
+			hdmirx_wr_dwc(DWC_HDMI2_IEN_SET, 0x1f);
+		/* hdcp1.4 */
+		hdmirx_wr_dwc(DWC_HDMI_IEN_SET, AKSV_RCV);
 		/* clear status */
 		hdmirx_wr_dwc(DWC_PDEC_ICLR, ~0);
 		hdmirx_wr_dwc(DWC_AUD_CEC_ICLR, ~0);
 		hdmirx_wr_dwc(DWC_AUD_FIFO_ICLR, ~0);
 		hdmirx_wr_dwc(DWC_MD_ICLR, ~0);
-		hdmirx_wr_dwc(DWC_PDEC_IEN_SET, data32);
-		hdmirx_wr_dwc(DWC_AUD_FIFO_IEN_SET, OVERFL | UNDERFL);
+	} else if (enable == IRQ_EN_HDCP) {
+		if (hdcp22_on)
+			hdmirx_wr_dwc(DWC_HDMI2_IEN_SET, 0x1f);
+		/* hdcp1.4 */
+		hdmirx_wr_dwc(DWC_HDMI_IEN_SET, AKSV_RCV);
 	} else {
 		/* clear enable */
+		hdmirx_wr_dwc(DWC_HDMI2_IEN_CLR, ~0);
+		hdmirx_wr_dwc(DWC_HDMI_IEN_CLR, ~0);
 		hdmirx_wr_dwc(DWC_PDEC_IEN_CLR, ~0);
 		hdmirx_wr_dwc(DWC_AUD_CEC_IEN_CLR, ~0);
 		hdmirx_wr_dwc(DWC_AUD_FIFO_IEN_CLR, ~0);
 		hdmirx_wr_dwc(DWC_MD_IEN_CLR, ~0);
 		/* clear status */
+		hdmirx_wr_dwc(DWC_HDMI2_ICLR, ~0);
+		hdmirx_wr_dwc(DWC_HDMI_ICLR, ~0);
 		hdmirx_wr_dwc(DWC_PDEC_ICLR, ~0);
 		hdmirx_wr_dwc(DWC_AUD_CEC_ICLR, ~0);
 		hdmirx_wr_dwc(DWC_AUD_FIFO_ICLR, ~0);
 		hdmirx_wr_dwc(DWC_MD_ICLR, ~0);
+	}
+}
+
+//enable = 0 off
+//enable = 1 all en
+//enable = 2 hdcp en only
+void rx_set_irq_21(u8 enable, u8 port)
+{
+	u8 data8;
+	u8 val_hdcp;
+	u8 val_all;
+
+	val_hdcp = enable ? 1 : 0;
+	val_all = (enable == IRQ_EN_ALL) ? 1 : 0;
+	//HDCP
+	data8 = 0; //HDCP2.X
+	data8 |= val_hdcp << 2; //ake init rcvd
+	data8 |= val_all << 1; //stream_manage_rcvd for repeater
+	//hdmirx_wr_cor(CP2PAX_INTR1_MASK_HDCP2X_IVCRX, 0x6, port);
+	hdmirx_wr_cor(CP2PAX_INTR1_MASK_HDCP2X_IVCRX, data8, port);
+
+	data8 = 0;//HDCP1.4
+	data8 |= val_all << 1; //auth done
+	data8 |= val_hdcp << 0; //auth start
+	//hdmirx_wr_cor(RX_INTR1_MASK_PWD_IVCRX, 0x03, port);
+	hdmirx_wr_cor(RX_INTR1_MASK_PWD_IVCRX, data8, port);
+
+	data8 = 0;
+	data8 |= val_all << 0; /* 1.4 encrypted sts changed en */
+	hdmirx_wr_cor(RX_HDCP1X_INTR0_MASK_HDCP1X_IVCRX, data8, port);
+
+	data8 = 0;//HDCP2.x
+	data8 |= val_all << 3; //hash fail
+	data8 |= val_all << 1; //auth fail
+	data8 |= val_all << 0; //auth done
+	hdmirx_wr_cor(CP2PAX_INTR0_MASK_HDCP2X_IVCRX, data8, port);
+
+	data8 = 0;
+	data8 |= val_all << 7; /* 2.3 encrypted sts changed en */
+	hdmirx_wr_cor(RX_INTR13_MASK_PWD_IVCRX, data8, port);
+
+	//HDCP 2X_RX_ECC
+	data8 |= 0 << 0;//ecc
+	hdmirx_wr_cor(HDCP2X_RX_ECC_INTR_MASK, data8, port);
+
+	data8 = 0;
+	data8 |= 0 << 4; /* intr_new_unrec en */
+	data8 |= 0 << 2; /* intr_new_aud */
+	data8 |= val_all << 1; /* intr_spd */
+	data8 |= val_all << 0; /* intr_avi */
+	hdmirx_wr_cor(RX_DEPACK_INTR2_MASK_DP2_IVCRX, data8, port);
+
+	data8 = 0;
+	data8 |= 0 << 4; /* intr_cea_repeat_hf_vsi en */
+	data8 |= 0 << 3; /* intr_cea_new_hf_vsi en */
+	data8 |= 0 << 2; /* intr_cea_new_vsi */
+	hdmirx_wr_cor(RX_DEPACK_INTR3_MASK_DP2_IVCRX, data8, port);
+
+	data8 = 0;
+	data8 |= 0 << 4; /* end of VSIF EMP data received */
+	data8 |= 0 << 3;
+	data8 |= 0 << 2;
+	hdmirx_wr_cor(RX_DEPACK2_INTR2_MASK_DP0B_IVCRX, data8, port);
+
+	data8 = 0;
+	data8 |= 0 << 2; /* gcp did not arrived 4 frames */
+	hdmirx_wr_cor(RX_DEPACK_INTR6_MASK_DP2_IVCRX, data8, port);
+
+	data8 = 0;
+	hdmirx_wr_cor(RX_DEPACK2_INTR0_MASK_DP0B_IVCRX, data8, port);//emp
+
+	data8 = 0;
+	data8 |= val_all << 6; //hdcp1.x group en
+	data8 |= val_all << 2; //hdcp2.x group en
+	data8 |= val_all << 0; //depac group en
+	hdmirx_wr_cor(RX_GRP_INTR1_MASK_PWD_IVCRX, data8, port);
+
+	hdmirx_wr_cor(RX_INTR2_MASK_PWD_IVCRX, 0x00, port);
+	hdmirx_wr_cor(RX_INTR3_MASK_PWD_IVCRX, 0x00, port);
+	hdmirx_wr_cor(RX_INTR4_MASK_PWD_IVCRX, 0x00, port);
+	hdmirx_wr_cor(RX_INTR5_MASK_PWD_IVCRX, 0x00, port);
+	hdmirx_wr_cor(RX_INTR6_MASK_PWD_IVCRX, 0x00, port);
+	hdmirx_wr_cor(RX_INTR7_MASK_PWD_IVCRX, 0x00, port);
+	hdmirx_wr_cor(RX_INTR8_MASK_PWD_IVCRX, 0x00, port);
+	hdmirx_wr_cor(RX_INTR9_MASK_PWD_IVCRX, 0x00, port);
+	hdmirx_wr_cor(RX_DEPACK_INTR4_MASK_DP2_IVCRX, 0x00, port);//3d audio
+
+	if (!enable) {
+		/* clear status */
+		hdmirx_wr_cor(RX_HDCP1X_INTR0_HDCP1X_IVCRX, 0xff, port);
+		hdmirx_wr_cor(CP2PAX_INTR1_HDCP2X_IVCRX, 0xff, port);
+		hdmirx_wr_cor(RX_DEPACK_INTR2_DP2_IVCRX, 0xff, port);
+		hdmirx_wr_cor(RX_DEPACK_INTR3_DP2_IVCRX, 0xff, port);
+		hdmirx_wr_cor(RX_GRP_INTR1_STAT_PWD_IVCRX, 0xff, port);
+		hdmirx_wr_cor(RX_INTR1_PWD_IVCRX, 0xff, port);
+		hdmirx_wr_cor(RX_INTR2_PWD_IVCRX, 0xff, port);
+		hdmirx_wr_cor(RX_INTR3_PWD_IVCRX, 0xff, port);
+		hdmirx_wr_cor(RX_INTR4_PWD_IVCRX, 0xff, port);
+		hdmirx_wr_cor(RX_INTR5_PWD_IVCRX, 0xff, port);
+		hdmirx_wr_cor(RX_INTR6_PWD_IVCRX, 0xff, port);
+		hdmirx_wr_cor(RX_INTR7_PWD_IVCRX, 0xff, port);
+		hdmirx_wr_cor(RX_INTR8_PWD_IVCRX, 0xff, port);
+		hdmirx_wr_cor(RX_INTR9_PWD_IVCRX, 0xff, port);
+		hdmirx_wr_cor(RX_DEPACK2_INTR2_DP0B_IVCRX, 0xff, port);
+		hdmirx_wr_cor(RX_DEPACK_INTR6_DP2_IVCRX, 0xff, port);
+		hdmirx_wr_cor(HDCP2X_RX_ECC_INTR, 0xff, port);
 	}
 }
 
@@ -1545,60 +1664,33 @@ void rx_set_irq_t5(bool enable)
  * rx_irq_en - hdmirx controller irq config
  * @enable - irq set or clear
  */
-void rx_irq_en(bool enable, u8 port)
+void rx_irq_en(u8 enable, u8 port)
 {
-	if (rx_info.chip_id >= CHIP_ID_T7)
-		rx_set_irq_t7(enable, port);
-	else
-		rx_set_irq_t5(enable);
+	switch (rx_info.chip_id) {
+	case CHIP_ID_T3X:
+	case CHIP_ID_T5M:
+	case CHIP_ID_TXHD2:
+	case CHIP_ID_T3:
+	case CHIP_ID_T7:
+	case CHIP_ID_T5W:
+		hdmirx_top_irq_en(enable, port);
+		rx_set_irq_21(enable, port);
+	break;
+	case CHIP_ID_T5:
+	case CHIP_ID_T5D:
+	case CHIP_ID_TM2:
+	case CHIP_ID_TL1:
+	default:
+		hdmirx_top_irq_en(enable, port);
+		rx_set_irq_20(enable);
+	break;
+	}
 }
 
 /*
  * hdmirx_irq_hdcp_enable - hdcp irq enable
  */
-void hdmirx_irq_hdcp_enable(bool enable, u8 port)
-{
-	if (rx_info.chip_id >= CHIP_ID_T7) {
-		if (enable) {
-			/* encrypted sts changed en */
-			//hdmirx_wr_cor(RX_HDCP1X_INTR0_MASK_HDCP1X_IVCRX, 1);
-			/* AKE init received en */
-			hdmirx_wr_cor(CP2PAX_INTR1_MASK_HDCP2X_IVCRX, 0x6, port);
-		} else {
-			/* clear enable */
-			hdmirx_wr_cor(RX_HDCP1X_INTR0_MASK_HDCP1X_IVCRX, 0, port);
-			/* clear status */
-			hdmirx_wr_cor(RX_HDCP1X_INTR0_HDCP1X_IVCRX, 0xff, port);
-			/* clear enable */
-			hdmirx_wr_cor(CP2PAX_INTR1_MASK_HDCP2X_IVCRX, 0, port);
-			/* clear status */
-			hdmirx_wr_cor(CP2PAX_INTR1_HDCP2X_IVCRX, 0xff, port);
-		}
-	} else {
-		if (enable) {
-			/* hdcp2.2 */
-			if (hdcp22_on)
-				hdmirx_wr_dwc(DWC_HDMI2_IEN_SET, 0x1f);
-			/* hdcp1.4 */
-			hdmirx_wr_dwc(DWC_HDMI_IEN_SET, AKSV_RCV);
-		} else {
-			/* hdcp2.2 */
-			if (hdcp22_on) {
-				/* clear enable */
-				hdmirx_wr_dwc(DWC_HDMI2_IEN_CLR, ~0);
-				/* clear status */
-				hdmirx_wr_dwc(DWC_HDMI2_ICLR, ~0);
-			}
-			/* hdcp1.4 */
-			/* clear enable */
-			hdmirx_wr_dwc(DWC_HDMI_IEN_CLR, ~0);
-			/* clear status */
-			hdmirx_wr_dwc(DWC_HDMI_ICLR, ~0);
-		}
-	}
-}
-
-void hdmirx_top_irq_en(int en, int lvl, u8 port)
+void hdmirx_top_irq_en(u8 en, u8 port)
 {
 	u32 data32;
 
@@ -1607,9 +1699,9 @@ void hdmirx_top_irq_en(int en, int lvl, u8 port)
 		data32 |= (0    << 30); // [   30] aud_chg;
 		data32 |= (1    << 29); // [   29] hdmirx_sqofclk_fall;
 		data32 |= (0    << 28); // [   28] hdmirx_sqofclk_rise;
-		data32 |= (0    << 26); // [   26] last_emp_done;
-		data32 |= (((lvl == 2) ? 1 : 0) << 23); // [   23] de_rise_del_irq;
-		data32 |= (((lvl == 2) ? 1 : 0) << 21); // [   21] emp_field_done;
+		data32 |= (0	<< 26); // [   26] last_emp_done;
+		data32 |= (1	<< 23); // [   23] de_rise_del_irq;
+		data32 |= (1	<< 21); // [   21] emp_field_done;
 		data32 |= (1    << 20); // [   23] hdmirx_sqofclk_fall;
 		data32 |= (0    << 19); // [   19] edid_addr2_intr
 		data32 |= (0    << 18); // [   18] edid_addr1_intr
@@ -1637,9 +1729,9 @@ void hdmirx_top_irq_en(int en, int lvl, u8 port)
 		data32 |= (0    << 30); // [   30] aud_chg;
 		data32 |= (1    << 29); // [   29] hdmirx_sqofclk_fall;
 		data32 |= (0    << 28); // [   28] hdmirx_sqofclk_rise;
-		data32 |= (((lvl == 2) ? 1 : 0) << 27); // [   27] de_rise_del_irq;
+		data32 |= (1	<< 27); // [   27] de_rise_del_irq;
 		data32 |= (0    << 26); // [   26] last_emp_done;
-		data32 |= (((lvl == 2) ? 1 : 0) << 25); // [   25] emp_field_done;
+		data32 |= (1	<< 25); // [   25] emp_field_done;
 		data32 |= (0    << 23); // [   23] meter_stable_chg_cable;
 		data32 |= (0    << 19); // [   19] edid_addr2_intr
 		data32 |= (0    << 18); // [   18] edid_addr1_intr
@@ -1663,24 +1755,24 @@ void hdmirx_top_irq_en(int en, int lvl, u8 port)
 	} else {
 		data32 = 0;
 		//hdmirx_sqofclk_fall
-		data32 |= (((lvl == 2) ? 1 : 0) << 29);
+		data32 |= (1 << 29);
 		//de_rise_irq: DE rise edge.
-		data32 |= (((lvl == 2) ? 1 : 0) << 27);
+		data32 |= (1 << 27);
 		//RX Controller IP interrupt.
 		data32 |= (1 << 0);
 		top_intr_maskn_value = data32;
 	}
-	if (en) {
-		/* for TXLX, cec phy address error issues */
+	if (en == IRQ_EN_ALL) {
 		if (rx_info.chip_id <= CHIP_ID_TL1)
 			top_intr_maskn_value |= 0x1e0000;
 
-		hdmirx_wr_top(TOP_INTR_MASKN, top_intr_maskn_value, port);
+		//hdmirx_wr_top(TOP_INTR_MASKN, top_intr_maskn_value, port);
+	} else if (en == IRQ_EN_HDCP) {
+		top_intr_maskn_value = 1 << 1;
 	} else {
-		rx[port].irq_err_cnt = 0;
-		rx[port].de_err_cnt = 0;
-		hdmirx_wr_top(TOP_INTR_MASKN, 0, port);
+		top_intr_maskn_value = 0;
 	}
+	hdmirx_wr_top(TOP_INTR_MASKN, top_intr_maskn_value, port);
 }
 
 /*
@@ -2732,7 +2824,7 @@ bool rx_clr_tmds_valid(u8 port)
 			rx_pr("vpp mute\n");
 		}
 		hdmirx_output_en(false);
-		hdmirx_top_irq_en(0, 0, port);
+		rx_irq_en(0, port);
 		rx_aud_pll_ctl(0, port);
 		if (log_level & VIDEO_LOG)
 			rx_pr("%s!\n", __func__);
@@ -2948,11 +3040,7 @@ void rx_force_hpd_cfg(u8 hpd_level)
 	u32 hpd_value;
 
 	if (hpd_level) {
-		if (disable_port_en)
-			hpd_value = (~(1 << disable_port_num)) & 0xF;
-		else
-			hpd_value = 0xF;
-
+		hpd_value = 0xF;
 		rx_set_port_hpd(ALL_PORTS, hpd_value);
 	} else {
 		rx_set_port_hpd(ALL_PORTS, 0);
@@ -2973,11 +3061,7 @@ void rx_force_rxsense_cfg_pre(u8 level)
 		/* enable terminal connect */
 		data32 = rd_reg_hhi(HHI_HDMIRX_PHY_MISC_CNTL0);
 		if (level) {
-			if (disable_port_en)
-				term_ovr_value =
-					(~(1 << disable_port_num)) & 0x7;
-			else
-				term_ovr_value = 0x7;
+			term_ovr_value = 0x7;
 			data32 |= term_ovr_value;
 		} else {
 			data32 &= 0xfffffff8;
@@ -2985,12 +3069,7 @@ void rx_force_rxsense_cfg_pre(u8 level)
 		wr_reg_hhi(HHI_HDMIRX_PHY_MISC_CNTL0, data32);
 	} else {
 		if (level) {
-			if (disable_port_en)
-				term_ovr_value =
-					(~(1 << disable_port_num)) & 0xF;
-			else
-				term_ovr_value = 0xF;
-
+			term_ovr_value = 0xF;
 			hdmirx_wr_bits_phy(PHY_MAIN_FSM_OVERRIDE1,
 					   PHY_TERM_OV_VALUE, term_ovr_value);
 		} else {
@@ -3008,11 +3087,7 @@ void rx_force_rxsense_cfg_t5(u8 level)
 	/* enable terminal connect */
 	data32 = hdmirx_rd_amlphy(T5_HHI_RX_PHY_MISC_CNTL0);
 	if (level) {
-		if (disable_port_en)
-			term_ovr_value =
-				(~(1 << disable_port_num)) & 0x7;
-		else
-			term_ovr_value = 0x7;
+		term_ovr_value = 0x7;
 		data32 |= term_ovr_value;
 	} else {
 		data32 &= 0xfffffff8;
@@ -4391,7 +4466,6 @@ void hdmirx_hw_config(u8 port)
 			hdmirx_20_init();
 		DWC_init();
 	}
-	hdmirx_irq_hdcp_enable(false, port);
 	if (rx_info.chip_id >= CHIP_ID_T7)
 		hdcp_init_t7(port);
 	packet_init(port);
@@ -4418,14 +4492,18 @@ void hdmirx_hw_probe(void)
 		rx_cor_reset_t3x(E_PORT2);
 		rx_cor_reset_t3x(E_PORT3);
 	}
-	hdmirx_top_irq_en(0, 0, 0);
-	hdmirx_top_irq_en(0, 0, 1);
-	hdmirx_top_irq_en(0, 0, 2);
-	hdmirx_top_irq_en(0, 0, 3);
+	hdmirx_top_irq_en(0, 0);
+	if (rx_info.chip_id == CHIP_ID_T3X) {
+		hdmirx_top_irq_en(0, 1);
+		hdmirx_top_irq_en(0, 2);
+		hdmirx_top_irq_en(0, 3);
+	}
 	hdmirx_wr_top(TOP_SW_RESET, 0, 0);
-	hdmirx_wr_top(TOP_SW_RESET, 0, 1);
-	hdmirx_wr_top(TOP_SW_RESET, 0, 2);
-	hdmirx_wr_top(TOP_SW_RESET, 0, 3);
+	if (rx_info.chip_id == CHIP_ID_T3X) {
+		hdmirx_wr_top(TOP_SW_RESET, 0, 1);
+		hdmirx_wr_top(TOP_SW_RESET, 0, 2);
+		hdmirx_wr_top(TOP_SW_RESET, 0, 3);
+	}
 	clk_init();
 	top_common_init();
 	hdmirx_top_sw_reset();
@@ -4474,8 +4552,6 @@ void hdmirx_hw_probe(void)
 	else
 		hdmirx_wr_top_common(TOP_PORT_SEL, 0x10);
 	hdmirx_wr_top(TOP_INTR_STAT_CLR, ~0, port);//to do
-	//if (rx_info.chip_id < CHIP_ID_T7)
-		//hdmirx_top_irq_en(1, 2);
 }
 
 /*
@@ -5384,10 +5460,7 @@ void hdmirx_config_video(u8 port)
 	hdmirx_set_video_mute(0, port);
 	set_dv_ll_mode(false, port);
 	hdmirx_output_en(true);
-	rx_irq_en(true, port);
-	//if (rx[port].var.frl_rate)
-		//cor_debug_t3x(port);
-	hdmirx_top_irq_en(1, 2, port);
+	rx_irq_en(IRQ_EN_ALL, port);//pcs rst needed
 
 	if (rx_info.chip_id < CHIP_ID_T7)
 		return;

@@ -190,8 +190,6 @@ int vdin_reset_pcs_en;
 int suspend_pddq_sel = 1;
 /* as cvt required, set hpd low if cec off when boot */
 int hpd_low_cec_off = 1;
-int disable_port_num;
-int disable_port_en;
 int rx_5v_wake_up_en;
 int vpp_mute_cnt = 6;
 int gcp_mute_cnt = 25;
@@ -524,24 +522,25 @@ int hdmirx_dec_open(struct tvin_frontend_s *fe, enum tvin_port_e port,
 	enum tvin_port_type_e port_type)
 {
 	struct hdmirx_dev_s *devp;
-	u8 main_port = rx_info.main_port;
-	u8 sub_port = rx_info.sub_port;
+	u8 port_idx = (port - TVIN_PORT_HDMI0) & 0xff;
 
 	devp = container_of(fe, struct hdmirx_dev_s, frontend);
 	devp->param[port_type].port = port;
 
-	/* should enable the adc ref signal for audio pll */
-	/* vdac_enable(1, VDAC_MODULE_AUDIO_OUT); */
-	if (port_type == TVIN_PORT_MAIN) {
-		main_port = (port - TVIN_PORT_HDMI0) & 0xff;
+	if (port_type == TVIN_PORT_MAIN &&
+		port_idx < rx_info.port_num) {
+		if (rx_info.chip_id == CHIP_ID_T3X)
+			hdmirx_open_main_port_t3x(port_idx);
+		else
+			hdmirx_open_main_port(port_idx);
 	} else if (port_type == TVIN_PORT_SUB) {
 		rx_info.pip_on = true;
-		sub_port = (port - TVIN_PORT_HDMI0) & 0xff;
+		if (port_idx == E_PORT0 || port_idx == E_PORT1)
+			hdmirx_open_sub_port(port_idx);
 	} else {
 		return -1;
 	}
-	hdmirx_open_port(main_port, sub_port);
-	rx_pr("%s main_port:%x, sub_port:%x\n", __func__, main_port, sub_port);
+	rx_pr("%s port_idx:%d, port type:%d\n", __func__, port_idx, port_type);
 	return 0;
 }
 
@@ -593,54 +592,22 @@ void hdmirx_dec_close(struct tvin_frontend_s *fe, enum tvin_port_type_e port_typ
 	struct tvin_parm_s *parm;
 	u32 port;
 
-	/*
-	 * txl:should disable the adc ref signal for audio pll
-	 * txlx:don't disable the adc ref signal for audio pll(not
-	 *	reset the vdac) to avoid noise issue
-	 */
-	/* For txl,also need to keep bandgap always on:SWPL-1224 */
-	/* if (rx_info.chip_id == CHIP_ID_TXL) */
-		/* vdac_enable(0, VDAC_MODULE_AUDIO_OUT); */
-	/* open_flage = 0; */
 	devp = container_of(fe, struct hdmirx_dev_s, frontend);
 	parm = &devp->param[port_type];
 	port = parm->port - TVIN_PORT_HDMI0;
-	if (port_type) {
-		rx_info.sub_port_open = false;
-		if (rx[port].cur_5v_sts)
-			rx[port].state = FSM_SIG_HOLD;
-		else
-			rx[port].state = FSM_5V_LOST;
-		rx_info.pip_on = false;
-	} else {
-		rx_info.main_port_open = false;
-	}
-	port_hpd_rst_flag |= (1 << port);
-	rx[port].vs_info_details.hdmi_allm = 0;
-	rx[port].cur.cn_type = 0;
-	rx[port].cur.it_content = 0;
-	rx[port].vsif_fmm_flag = false;
-	latency_info.allm_mode = 0;
-	latency_info.it_content = 0;
-	latency_info.cn_type = 0;
-#ifdef CONFIG_AMLOGIC_HDMITX
-	if (rx_info.chip_id == CHIP_ID_T7)
-		hdmitx_update_latency_info(&latency_info);
-#endif
-	/*del_timer_sync(&devp->timer);*/
-	hdmirx_close_port(port);
 	parm->info.fmt = TVIN_SIG_FMT_NULL;
 	parm->info.status = TVIN_SIG_STATUS_NULL;
-	/* clear vpp mute, such as after unplug */
-	if (vpp_mute_enable) {
-		if (get_video_mute_val(HDMI_RX_MUTE_SET) &&
-			port != rx_info.sub_port)// && rx[port].vpp_mute)
-			set_video_mute(HDMI_RX_MUTE_SET, false);
-		//rx[port].vpp_mute = false;
+
+	if (port_type == TVIN_PORT_SUB) {
+		hdmirx_close_port(rx_info.sub_port);//todo
+		rx_info.pip_on = false;
+	} else if (port_type == TVIN_PORT_MAIN) {
+		hdmirx_close_port(rx_info.main_port);
+		rx_info.main_port_open = false;
+	} else {
+		rx_pr("!!!Wrong.");
 	}
-	if (!rx_info.pip_on)
-		rx_info.sub_port = 0xff;
-	rx_pr("%s port_type:%d, ok\n", __func__, port_type);
+	rx_pr("%s port:%d, ok\n", __func__, port_type);
 }
 
 /*
@@ -1894,13 +1861,13 @@ static long hdmirx_ioctl(struct file *file, unsigned int cmd,
 	}
 	case HDMI_IOC_HDCP_ON:
 		hdcp_enable = 1;
-		rx_irq_en(false, rx_info.main_port);
+		rx_irq_en(0, rx_info.main_port);
 		rx_set_cur_hpd(0, 4, rx_info.main_port);
 		/*fsm_restart();*/
 		break;
 	case HDMI_IOC_HDCP_OFF:
 		hdcp_enable = 0;
-		rx_irq_en(false, rx_info.main_port);
+		rx_irq_en(0, rx_info.main_port);
 		rx_set_cur_hpd(0, 4, rx_info.main_port);
 		hdmirx_hw_config(rx_info.main_port);
 		/*fsm_restart();*/
@@ -1908,7 +1875,7 @@ static long hdmirx_ioctl(struct file *file, unsigned int cmd,
 	case HDMI_IOC_EDID_UPDATE:
 		/* ref board ui can only be set in current hdmi port */
 		if (edid_delivery_mothed == EDID_DELIVERY_ALL_PORT) {
-			rx_irq_en(false, rx_info.main_port);
+			rx_irq_en(0, rx_info.main_port);
 			if (rx_info.main_port_open) {
 				rx_set_cur_hpd(0, 4, rx_info.main_port);
 				rx[rx_info.main_port].var.edid_update_flag = 1;
@@ -1953,7 +1920,7 @@ static long hdmirx_ioctl(struct file *file, unsigned int cmd,
 				hdmi_rx_top_edid_update();
 			} else {
 				rx[rx_info.main_port].var.edid_update_flag = 1;
-				rx_irq_en(false, port_idx);
+				rx_irq_en(0, port_idx);
 				//rx_set_cur_hpd(0, 4);
 				fsm_restart(port_idx);
 			}
@@ -3144,11 +3111,11 @@ static void rx_phy_suspend(void)
 		/* phy powerdown */
 		rx_phy_power_on(0);
 	}
-	hdmirx_top_irq_en(0, 0, E_PORT0); //todo
+	rx_irq_en(0, E_PORT0); //todo
 	if (rx_info.chip_id == CHIP_ID_T3X) {
-		hdmirx_top_irq_en(0, 0, E_PORT1); //todo
-		hdmirx_top_irq_en(0, 0, E_PORT2); //todo
-		hdmirx_top_irq_en(0, 0, E_PORT3); //todo
+		rx_irq_en(0, E_PORT1); //todo
+		rx_irq_en(0, E_PORT2); //todo
+		rx_irq_en(0, E_PORT3); //todo
 	}
 }
 
@@ -3476,11 +3443,11 @@ static void hdmirx_early_suspend(struct early_suspend *h)
 		return;
 
 	early_suspend_flag = true;
-	rx_irq_en(false, E_PORT0);
+	rx_irq_en(0, E_PORT0);
 	if (rx_info.chip_id == CHIP_ID_T3X) {
-		rx_irq_en(false, E_PORT1);
-		rx_irq_en(false, E_PORT2);
-		rx_irq_en(false, E_PORT3);
+		rx_irq_en(0, E_PORT1);
+		rx_irq_en(0, E_PORT2);
+		rx_irq_en(0, E_PORT3);
 		rx[rx_info.main_port].state = FSM_HPD_LOW;
 		sm_pause = 1;
 	}
@@ -3535,7 +3502,6 @@ static int hdmirx_probe(struct platform_device *pdev)
 	struct clk *fclk_div7_clk;
 	int clk_rate;
 	const struct of_device_id *of_id;
-	int disable_port;
 	struct input_dev *input_dev;
 	struct sched_param param;
 
@@ -4009,16 +3975,6 @@ static int hdmirx_probe(struct platform_device *pdev)
 	if (ret)
 		hpd_low_cec_off = 1;
 	ret = of_property_read_u32(pdev->dev.of_node,
-				   "disable_port", &disable_port);
-	if (ret) {
-		/* don't disable port if dts not indicate */
-		disable_port_en = 0;
-	} else {
-		/* bit4: enable feature, bit3~0: port_num */
-		disable_port_en = (disable_port >> 4) & 0x1;
-		disable_port_num = disable_port & 0xF;
-	}
-	ret = of_property_read_u32(pdev->dev.of_node,
 		"arc_port", &rx_info.arc_port);
 	if (ret) {
 		/* default arc port is port B */
@@ -4329,11 +4285,11 @@ static int hdmirx_suspend(struct platform_device *pdev, pm_message_t state)
 
 	hdevp = platform_get_drvdata(pdev);
 	del_timer_sync(&hdevp->timer);
-	hdmirx_top_irq_en(0, 0, E_PORT0);
+	rx_irq_en(0, E_PORT0);
 	if (rx_info.chip_id >= CHIP_ID_T3X) {
-		hdmirx_top_irq_en(0, 0, E_PORT1);
-		hdmirx_top_irq_en(0, 0, E_PORT2);
-		hdmirx_top_irq_en(0, 0, E_PORT3);
+		rx_irq_en(0, E_PORT1);
+		rx_irq_en(0, E_PORT2);
+		rx_irq_en(0, E_PORT3);
 	}
 	hdmirx_output_en(false);
 #ifdef CONFIG_AMLOGIC_LEGACY_EARLY_SUSPEND
@@ -4400,11 +4356,11 @@ static void hdmirx_shutdown(struct platform_device *pdev)
 	rx_phy_power_on(0);
 	if (hdcp22_on)
 		hdcp_22_off();
-	hdmirx_top_irq_en(0, 0, E_PORT0);
+	rx_irq_en(0, E_PORT0);
 	if (rx_info.chip_id >= CHIP_ID_T3X) {
-		hdmirx_top_irq_en(0, 0, E_PORT1);
-		hdmirx_top_irq_en(0, 0, E_PORT2);
-		hdmirx_top_irq_en(0, 0, E_PORT3);
+		rx_irq_en(0, E_PORT1);
+		rx_irq_en(0, E_PORT2);
+		rx_irq_en(0, E_PORT3);
 	}
 	hdmirx_output_en(false);
 	rx_dig_clk_en(0);

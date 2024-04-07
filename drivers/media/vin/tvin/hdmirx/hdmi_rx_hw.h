@@ -22,6 +22,9 @@
 #define MHz	1000000
 #define KHz	1000
 
+#define IRQ_EN_ALL	3
+#define IRQ_EN_HDCP 1
+
 #define HHI_GCLK_MPEG0			(0x50  <<  2) /* (0xC883C000 + 0x140) */
 #define HHI_HDMIRX_CLK_CNTL		0x200 /* (0xC883C000 + 0x200)  */
 #define MODET_CLK_EN			_BIT(24)
@@ -3382,7 +3385,7 @@ void rx_get_audio_N_CTS(u32 *N, u32 *CTS, u8 port);
 void rx_run_eq(u8 port);
 bool rx_eq_done(u8 port);
 bool is_tmds_valid(u8 port);
-void hdmirx_top_irq_en(int en, int lvl, u8 port);
+void hdmirx_top_irq_en(u8 en, u8 port);
 void rx_phy_rt_cal(void);
 bool is_ft_trim_done(void);
 void aml_phy_get_trim_val(void);
@@ -3428,7 +3431,6 @@ u32 rd_reg_clk_ctl(u32 offset);
 
 unsigned int hdmirx_rd_amlphy(unsigned int addr);
 unsigned int hdmirx_rd_amlphy_t3x(unsigned int addr, u8 port);
-void hdmirx_irq_hdcp_enable(bool enable, u8 port);
 u8 rx_get_avmute_sts(u8 port);
 void wr_reg_ana_ctl(u32 offset, u32 val);
 u8 hdmirx_rd_cor(u32 addr, u8 port);

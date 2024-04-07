@@ -56,8 +56,9 @@ enum fsm_states_e {
 	FSM_PCS_RESET,
 	FSM_SIG_UNSTABLE,
 	FSM_SIG_WAIT_STABLE,
-	FSM_SIG_STABLE,
 	FSM_SIG_HOLD,
+	FSM_SIG_STABLE,
+	FSM_SIG_STABLE_TO_READY,
 	FSM_SIG_READY,
 	FSM_NULL,
 };
@@ -147,7 +148,9 @@ void dump_audio_status(u8 port);
 void rx_nosig_monitor(u8 port);
 bool rx_is_nosig(u8 port);
 bool rx_is_sig_ready(u8 port);
-void hdmirx_open_port(u8 main_port, u8 sub_port);
+void hdmirx_open_main_port_t3x(u8 port);
+void hdmirx_open_main_port(u8 port);
+void hdmirx_open_sub_port(u8 port);
 void hdmirx_close_port(u8 port);
 bool is_clk_stable(u8 port);
 unsigned int rx_get_pll_lock_sts(void);
@@ -166,7 +169,7 @@ void rx_emp_data_capture(u8 port);
 void rx_tmds_data_capture(u8 port);
 void dump_state(int enable, u8 port);
 void hdmirx_init_params(u8 port);
-void rx_dwc_reset(u8 port);
+void rx_cor_reset(u8 port);
 void set_video_mute(u32 owner, bool on);
 u8 get_frame_interval_cnt(u8 cnt, u8 port);
 void rx_edid_update_handler(struct work_struct *dwork);

@@ -85,7 +85,6 @@ void aml_phy_switch_port_t5m(void);
 void aml_phy_iq_skew_monitor_t5m(void);
 void dump_vsi_reg_t5m(u8 port);
 unsigned int rx_sec_hdcp_cfg_t5m(void);
-void rx_set_irq_t5m(bool en, u8 port);
 void rx_set_aud_output_t5m(u32 param);
 void rx_sw_reset_t5m(int level);
 void hdcp_init_t5m(void);

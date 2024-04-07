@@ -588,7 +588,6 @@ void aml_phy_cfg_tm2(void)
 	data32 &= (~(1 << 10));
 	data32 &= (~(0x7 << 7));
 	data32 |= term_value;
-	data32 &= ~(disable_port_num & 0x07);
 	/* terminal en */
 	wr_reg_hhi(TM2_HHI_HDMIRX_PHY_MISC_CNTL0, data32);
 	usleep_range(5, 10);

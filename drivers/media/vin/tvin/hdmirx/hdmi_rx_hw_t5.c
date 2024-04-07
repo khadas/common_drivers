@@ -945,7 +945,6 @@ void aml_phy_cfg_t5(void)
 	data32 &= (~(1 << 10));
 	data32 &= (~(0x7 << 7));
 	data32 |= term_value;
-	data32 &= ~(disable_port_num & 0x07);
 	/* terminal en */
 	hdmirx_wr_amlphy(T5_HHI_RX_PHY_MISC_CNTL0, data32);
 	usleep_range(5, 10);

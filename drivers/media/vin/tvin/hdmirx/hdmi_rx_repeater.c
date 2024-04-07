@@ -129,7 +129,7 @@ int rx_hdmi_tx_notify_handler(struct notifier_block *nb,
 			rx_pr("update EDID from HDMITX\n");
 			rx_update_tx_edid_with_audio_block(p, rx_audio_block);
 		}
-		rx_irq_en(false, rx_info.main_port);
+		rx_irq_en(0, rx_info.main_port);
 		rx_set_cur_hpd(0, 4, rx_info.main_port);
 		if (!rx_info.main_port_open)
 			port_hpd_rst_flag = 7;
@@ -150,7 +150,7 @@ int rx_hdmi_tx_notify_handler(struct notifier_block *nb,
 			hdmi_rx_top_edid_update();
 			hdcp_init_t7(rx_info.main_port);
 		}
-		//rx_irq_en(false, rx_info.main_port);
+		//rx_irq_en(0, rx_info.main_port);
 		//rx_set_cur_hpd(0, 4);
 		//fsm_restart();
 		ret = NOTIFY_OK;
@@ -159,7 +159,7 @@ int rx_hdmi_tx_notify_handler(struct notifier_block *nb,
 		tx_hdr_priority = *((u32 *)p);
 		if (log_level & EDID_LOG)
 			rx_pr("tx_hdr_priority = %d\n", tx_hdr_priority);
-		rx_irq_en(false, rx_info.main_port);
+		rx_irq_en(0, rx_info.main_port);
 		rx_set_cur_hpd(0, 4, rx_info.main_port);
 		if (!rx_info.main_port_open)
 			port_hpd_rst_flag = 7;

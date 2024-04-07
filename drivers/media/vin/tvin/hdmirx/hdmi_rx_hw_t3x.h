@@ -231,7 +231,6 @@ void aml_phy_switch_port_t3x(u8 port);
 void aml_phy_iq_skew_monitor_t3x(void);
 void get_val_t3x(char *temp, unsigned int val, int len);
 unsigned int rx_sec_hdcp_cfg_t3x(void);
-void rx_set_irq_t3x(bool en, u8 port);
 void rx_set_aud_output_t3x(u32 param, u8 port);
 void rx_sw_reset_t3x(int level, u8 port);
 void hdcp_init_t3x(u8 port);

@@ -1045,6 +1045,7 @@ extern u32 rx_vsif_type[4];
 extern u32 rx_emp_type[4];
 extern u32 rx_spd_type[4];
 /*extern bool hdr_enable;*/
+bool rx_chk_avi_valid(u8 port);
 void rx_pkt_status(u8 port);
 void rx_pkt_debug(void);
 void rx_debug_pktinfo(char input[][20], u8 port);

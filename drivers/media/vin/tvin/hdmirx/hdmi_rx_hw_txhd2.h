@@ -85,7 +85,6 @@ void aml_phy_switch_port_txhd2(void);
 void aml_phy_iq_skew_monitor_txhd2(void);
 void dump_vsi_reg_txhd2(u8 port);
 unsigned int rx_sec_hdcp_cfg_txhd2(void);
-void rx_set_irq_txhd2(bool en, u8 port);
 void rx_set_aud_output_txhd2(u32 param);
 void rx_sw_reset_txhd2(int level);
 void hdcp_init_txhd2(void);

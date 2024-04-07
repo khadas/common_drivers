@@ -85,7 +85,6 @@ void aml_phy_power_off_t7(void);
 void aml_phy_switch_port_t7(void);
 unsigned int rx_sec_hdcp_cfg_t7(void);
 void dump_vsi_reg_t7(u8 port);
-void rx_set_irq_t7(bool en, u8 port);
 void rx_set_aud_output_t7(u32 param);
 void rx_sw_reset_t7(int level, u8 port);
 void aml_phy_get_trim_val_t7(void);

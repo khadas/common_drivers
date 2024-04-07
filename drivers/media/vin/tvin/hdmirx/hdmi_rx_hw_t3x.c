@@ -3868,65 +3868,30 @@ void aml_phy_switch_port_t3x(u8 port)
 	u32 data32;
 
 	/* reset and select data port */
-	data32 = hdmirx_rd_amlphy_t3x(T3X_HDMIRX20PHY_DCHA_MISC2, port);
-	data32 &= (~(0xf << 24));
-	data32 |= ((1 << port) << 24);
-	hdmirx_wr_amlphy_t3x(T3X_HDMIRX20PHY_DCHA_MISC2, data32, port);
-	hdmirx_wr_bits_top_common(TOP_PORT_SEL, MSK(4, 0), (1 << port));
-
-	switch (vpcore_debug) {
-	case 0:
-		if (port < 2) {
-			data32 = 0;
-			data32 |= (1 << (8 + port * 2));
-			data32 |= (1 << port);
-			hdmirx_wr_top_common(HDMIRX_TOP_FSW_CNTL, data32);
-			hdmirx_wr_top_common(HDMIRX_TOP_FSW_CLK_CNTL, 0x11);
-			hdmirx_wr_top_common(HDMIRX_TOP_SW_RESET_COMMON, 0);
-		} else {
-			data32 = 0;
-			data32 |= (1 << (9 + port * 2));
-			data32 |= (1 << (port + 4));
-			hdmirx_wr_top_common(HDMIRX_TOP_FSW_CNTL, data32);
-			hdmirx_wr_top_common(HDMIRX_TOP_FSW_CLK_CNTL, 0x12);
-			hdmirx_wr_top_common(HDMIRX_TOP_SW_RESET_COMMON, 0);
-		}
-		break;
-	case 1:
-		data32 = 0;
-		data32 |= (1 << (8 + port * 2));
-		data32 |= (1 << port);
-		hdmirx_wr_top_common(HDMIRX_TOP_FSW_CNTL, data32);
-		hdmirx_wr_top_common(HDMIRX_TOP_FSW_CLK_CNTL, 0x11);
-		hdmirx_wr_top_common(HDMIRX_TOP_SW_RESET_COMMON, 0);
-		break;
-	case 2:
-		data32 = 0;
-		data32 |= (1 << (9 + port * 2));
-		data32 |= (1 << (port + 4));
-		hdmirx_wr_top_common(HDMIRX_TOP_FSW_CNTL, data32);
-		hdmirx_wr_top_common(HDMIRX_TOP_FSW_CLK_CNTL, 0x12);
-		hdmirx_wr_top_common(HDMIRX_TOP_SW_RESET_COMMON, 0);
-		break;
-	case 3:
-		data32 = 0;
-		if (rx_is_pip_on() && rx_info.sub_port_open) {
-			data32 |= (1 << (8 + rx_info.sub_port * 2));
-			data32 |= (1 << rx_info.sub_port);
-		}
-		data32 |= (2 << (8 + rx_info.main_port * 2));
-		data32 |= (1 << (rx_info.main_port + 4));
-		hdmirx_wr_top_common(HDMIRX_TOP_FSW_CNTL, data32);
-		data32 = 0;
-		if (rx_is_pip_on() && rx_info.sub_port_open)
-			data32 |= (1 << (4 + rx_info.sub_port));
-		data32 |= (1 << (4 + rx_info.main_port));
-		data32 |= 3;
-		hdmirx_wr_top_common(HDMIRX_TOP_FSW_CLK_CNTL, data32);
-		hdmirx_wr_top_common(HDMIRX_TOP_SW_RESET_COMMON, 410);
-		hdmirx_wr_top_common(HDMIRX_TOP_SW_RESET_COMMON, 0);
-		break;
+	//data32 = hdmirx_rd_amlphy_t3x(T3X_HDMIRX20PHY_DCHA_MISC2, port);
+	//data32 &= (~(0xf << 24));
+	//data32 |= ((1 << port) << 24);
+	//hdmirx_wr_amlphy_t3x(T3X_HDMIRX20PHY_DCHA_MISC2, data32, port);
+	//hdmirx_wr_bits_top_common(TOP_PORT_SEL, MSK(4, 0), (1 << port));
+	data32 = 0;
+	if (rx_is_pip_on() && port == rx_info.sub_port) {
+		data32 |= (1 << (8 + rx_info.sub_port * 2));
+		data32 |= (1 << rx_info.sub_port);
 	}
+	data32 |= (2 << (8 + rx_info.main_port * 2));
+	data32 |= (1 << (rx_info.main_port + 4));
+	hdmirx_wr_top_common(HDMIRX_TOP_FSW_CNTL, data32);
+
+	data32 = 0;
+	data32 |= (1 << (4 + rx_info.main_port));
+	if (rx_is_pip_on() && port == rx_info.sub_port)
+		data32 |= (1 << (4 + rx_info.sub_port));
+	data32 |= 3;
+	hdmirx_wr_top_common(HDMIRX_TOP_FSW_CLK_CNTL, data32);
+
+	hdmirx_wr_top_common(HDMIRX_TOP_SW_RESET_COMMON, 0x19a);//todo
+	hdmirx_wr_top_common(HDMIRX_TOP_SW_RESET_COMMON, 0);
+
 }
 
 unsigned int rx_sec_hdcp_cfg_t3x(void)
@@ -3936,137 +3901,6 @@ unsigned int rx_sec_hdcp_cfg_t3x(void)
 	arm_smccc_smc(HDMI_RX_HDCP_CFG, 0, 0, 0, 0, 0, 0, 0, &res);
 
 	return (unsigned int)((res.a0) & 0xffffffff);
-}
-
-void rx_set_irq_t3x(bool en, u8 port)
-{
-	u8 data8;
-
-	if (en) {
-		data8 = 0;
-		data8 |= 1 << 4; /* intr_new_unrec en */
-		data8 |= 0 << 2; /* intr_new_aud */
-		data8 |= 1 << 1; /* intr_spd */
-		data8 |= 1 << 0; /* intr_avi */
-		hdmirx_wr_cor(RX_DEPACK_INTR2_MASK_DP2_IVCRX, data8, port);
-
-		data8 = 0;
-		data8 |= 0 << 4; /* intr_cea_repeat_hf_vsi en */
-		data8 |= 0 << 3; /* intr_cea_new_hf_vsi en */
-		data8 |= 0 << 2; /* intr_cea_new_vsi */
-		hdmirx_wr_cor(RX_DEPACK_INTR3_MASK_DP2_IVCRX, data8, port);
-
-		hdmirx_wr_cor(RX_GRP_INTR1_MASK_PWD_IVCRX, 0x25, port);
-		hdmirx_wr_cor(RX_INTR1_MASK_PWD_IVCRX, 0x03, port);//register_address: 0x1050
-		hdmirx_wr_cor(RX_INTR2_MASK_PWD_IVCRX, 0x00, port);//register_address: 0x1051
-		hdmirx_wr_cor(RX_INTR3_MASK_PWD_IVCRX, 0x00, port);//register_address: 0x1052
-		//must set 0.
-		hdmirx_wr_cor(RX_INTR4_MASK_PWD_IVCRX, 0, port);//0x03);//register_address: 0x1053
-		hdmirx_wr_cor(RX_INTR5_MASK_PWD_IVCRX, 0x00, port);//register_address: 0x1054
-		hdmirx_wr_cor(RX_INTR6_MASK_PWD_IVCRX, 0x00, port);//register_address: 0x1055
-		hdmirx_wr_cor(RX_INTR7_MASK_PWD_IVCRX, 0x00, port);//register_address: 0x1056
-		hdmirx_wr_cor(RX_INTR8_MASK_PWD_IVCRX, 0x00, port);//register_address: 0x1057
-		hdmirx_wr_cor(RX_INTR9_MASK_PWD_IVCRX, 0x00, port);//register_address: 0x1058
-
-		data8 = 0;
-		data8 |= 0 << 4; /* end of VSIF EMP data received */
-		data8 |= 0 << 3;
-		data8 |= 0 << 2;
-		hdmirx_wr_cor(RX_DEPACK2_INTR2_MASK_DP0B_IVCRX, data8, port);
-
-		//===for depack interrupt ====
-		//hdmirx_wr_cor(CP2PAX_INTR0_MASK_HDCP2X_IVCRX, 0x3, port);
-		hdmirx_wr_cor(RX_INTR13_MASK_PWD_IVCRX, 0x02, port);// int
-		//hdmirx_wr_cor(RX_PWD_INT_CTRL, 0x00, port);//[1] reg_intr_polarity, default = 1
-		//hdmirx_wr_cor(RX_DEPACK_INTR4_MASK_DP2_IVCRX, 0x00, port);//interrupt mask
-		//hdmirx_wr_cor(RX_DEPACK2_INTR0_MASK_DP0B_IVCRX, 0x0c, port);//interrupt mask
-		//hdmirx_wr_cor(RX_DEPACK_INTR3_MASK_DP2_IVCRX, 0x20, port);//interrupt mask
-		data8 = 0;
-		data8 |= 0 << 2; /* gcp did not arrived 4 frames */
-		hdmirx_wr_cor(RX_DEPACK_INTR6_MASK_DP2_IVCRX, data8, port);
-
-		//HDCP irq
-		// encrypted sts changed
-		//hdmirx_wr_cor(RX_HDCP1X_INTR0_MASK_HDCP1X_IVCRX, 1, port);
-		// AKE init received
-		//hdmirx_wr_cor(CP2PAX_INTR1_MASK_HDCP2X_IVCRX, 4, port);
-		// HDCP 2X_RX_ECC
-		hdmirx_wr_cor(HDCP2X_RX_ECC_INTR_MASK, 1, port);
-	} else {
-		/* clear enable */
-		hdmirx_wr_cor(RX_DEPACK_INTR2_MASK_DP2_IVCRX, 0, port);
-		/* clear status */
-		hdmirx_wr_cor(RX_DEPACK_INTR2_DP2_IVCRX, 0xff, port);
-		/* clear enable */
-		hdmirx_wr_cor(RX_DEPACK_INTR3_MASK_DP2_IVCRX, 0, port);
-		/* clear status */
-		hdmirx_wr_cor(RX_DEPACK_INTR3_DP2_IVCRX, 0xff, port);
-		/* clear en */
-		hdmirx_wr_cor(RX_GRP_INTR1_MASK_PWD_IVCRX, 0, port);
-		/* clear status */
-		hdmirx_wr_cor(RX_GRP_INTR1_STAT_PWD_IVCRX, 0xff, port);
-		/* clear enable */
-		hdmirx_wr_cor(RX_INTR1_MASK_PWD_IVCRX, 0, port);//register_address: 0x1050
-		/* clear status */
-		hdmirx_wr_cor(RX_INTR1_PWD_IVCRX, 0xff, port);
-		/* clear enable */
-		hdmirx_wr_cor(RX_INTR2_MASK_PWD_IVCRX, 0, port);//register_address: 0x1051
-		/* clear status */
-		hdmirx_wr_cor(RX_INTR2_PWD_IVCRX, 0xff, port);
-		/* clear enable */
-		hdmirx_wr_cor(RX_INTR3_MASK_PWD_IVCRX, 0, port);//register_address: 0x1052
-		/* clear status */
-		hdmirx_wr_cor(RX_INTR3_PWD_IVCRX, 0xff, port);
-		/* clear enable */
-		hdmirx_wr_cor(RX_INTR4_MASK_PWD_IVCRX, 0, port);//register_address: 0x1053
-		/* clear status */
-		hdmirx_wr_cor(RX_INTR4_PWD_IVCRX, 0xff, port);
-		/* clear enable */
-		hdmirx_wr_cor(RX_INTR5_MASK_PWD_IVCRX, 0, port);//register_address: 0x1054
-		/* clear status */
-		hdmirx_wr_cor(RX_INTR5_PWD_IVCRX, 0xff, port);
-		/* clear enable */
-		hdmirx_wr_cor(RX_INTR6_MASK_PWD_IVCRX, 0, port);//register_address: 0x1055
-		/* clear status */
-		hdmirx_wr_cor(RX_INTR6_PWD_IVCRX, 0xff, port);
-		/* clear enable */
-		hdmirx_wr_cor(RX_INTR7_MASK_PWD_IVCRX, 0, port);//register_address: 0x1056
-		/* clear status */
-		hdmirx_wr_cor(RX_INTR7_PWD_IVCRX, 0xff, port);
-		/* clear enable */
-		hdmirx_wr_cor(RX_INTR8_MASK_PWD_IVCRX, 0, port);//register_address: 0x1057
-		/* clear status */
-		hdmirx_wr_cor(RX_INTR8_PWD_IVCRX, 0xff, port);
-		/* clear enable */
-		hdmirx_wr_cor(RX_INTR9_MASK_PWD_IVCRX, 0, port);//register_address: 0x1058
-		/* clear status */
-		hdmirx_wr_cor(RX_INTR9_PWD_IVCRX, 0xff, port);
-		/* clear enable */
-		hdmirx_wr_cor(RX_DEPACK2_INTR2_MASK_DP0B_IVCRX, 0, port);
-		/* clear status */
-		hdmirx_wr_cor(RX_DEPACK2_INTR2_DP0B_IVCRX, 0xff, port);
-		//===for depack interrupt ====
-		//hdmirx_wr_cor(CP2PAX_INTR0_MASK_HDCP2X_IVCRX, 0x3, port);
-		//hdmirx_wr_cor(RX_INTR13_MASK_PWD_IVCRX, 0x02, port);// int
-		//hdmirx_wr_cor(RX_PWD_INT_CTRL, 0x00, port);//[1] reg_intr_polarity, default = 1
-		/* clear status */
-		hdmirx_wr_cor(RX_DEPACK_INTR2_DP2_IVCRX, 0xff, port);
-		//hdmirx_wr_cor(RX_DEPACK_INTR4_MASK_DP2_IVCRX, 0x00, port);//interrupt mask
-		//hdmirx_wr_cor(RX_DEPACK2_INTR0_MASK_DP0B_IVCRX, 0x0c, port);//interrupt mask
-		//hdmirx_wr_cor(RX_DEPACK_INTR3_MASK_DP2_IVCRX, 0x20, port);
-		//gcp
-		hdmirx_wr_cor(RX_DEPACK_INTR6_DP2_IVCRX, 0xff, port);
-		hdmirx_wr_cor(RX_DEPACK_INTR6_MASK_DP2_IVCRX, 0, port);
-		//interrupt mask [5] acr
-
-		//HDCP irq
-		// encrypted sts changed
-		//hdmirx_wr_cor(RX_HDCP1X_INTR0_MASK_HDCP1X_IVCRX, 0, port);
-		// AKE init received
-		//hdmirx_wr_cor(CP2PAX_INTR1_MASK_HDCP2X_IVCRX, 0, port);
-		// HDCP 2X_RX_ECC
-		hdmirx_wr_cor(HDCP2X_RX_ECC_INTR_MASK, 0, port);
-	}
 }
 
 /*

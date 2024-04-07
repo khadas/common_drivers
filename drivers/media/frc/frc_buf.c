@@ -654,18 +654,11 @@ void frc_dump_buf_reg(void)
  */
 int frc_buf_alloc(struct frc_dev_s *devp)
 {
-	int ret;
 	u32 frc_buf_size;
-	struct device_node *np = devp->pdev->dev.of_node;
 
-	ret = of_reserved_mem_device_init_by_idx(&devp->pdev->dev, np, 0);
-	if (ret) {
-		pr_frc(0, "%s cma resource undefined!\n", __func__);
-		devp->buf.cma_mem_size = 0;
+	if (devp->buf.cma_mem_size == 0)
 		return -1;
-	}
 
-	devp->buf.cma_mem_size = dma_get_cma_size_int_byte(&devp->pdev->dev);
 	frc_buf_size = devp->buf.cma_mem_size - FRC_RDMA_SIZE; // reserved 1M for RDMA
 	devp->buf.cma_mem_paddr_pages = dma_alloc_from_contiguous(&devp->pdev->dev,
 		frc_buf_size >> PAGE_SHIFT, 0, 0);
@@ -678,13 +671,13 @@ int frc_buf_alloc(struct frc_dev_s *devp)
 	devp->buf.cma_mem_alloced = 1;
 	if (devp->buf.cma_mem_paddr_start > 0x300000000) {
 		WRITE_FRC_REG(FRC_AXI_ADDR_EXT_CTRL, 0x3333);
-		pr_frc(0, "frc run on 16G-dram board\n");
+		pr_frc(1, "frc run on 16G-dram board\n");
 	} else if (devp->buf.cma_mem_paddr_start > 0x200000000) {
 		WRITE_FRC_REG(FRC_AXI_ADDR_EXT_CTRL, 0x2222);
-		pr_frc(0, "frc run on 12G-dram board\n");
+		pr_frc(1, "frc run on 12G-dram board\n");
 	} else if (devp->buf.cma_mem_paddr_start > 0x100000000) {
 		WRITE_FRC_REG(FRC_AXI_ADDR_EXT_CTRL, 0x1111);
-		pr_frc(0, "frc run on 8G-dram board\n");
+		pr_frc(1, "frc run on 8G-dram board\n");
 	}
 
 	pr_frc(0, "cma paddr_start=0x%lx size:0x%x\n",
@@ -758,33 +751,37 @@ int frc_buf_calculate(struct frc_dev_s *devp)
 			devp->buf.mc_c_comprate = FRC_COMPRESS_RATE_MC_C;
 			devp->buf.addr_shft_bits = DDR_SHFT_0_BITS;
 			devp->buf.info_factor = FRC_INFO_BUF_FACTOR_T3;
-
+			devp->buf.mcdw_en = NONE_MCDW;
 		} else if (chip == ID_T5M) {
 			devp->buf.me_comprate = FRC_COMPRESS_RATE_ME_T5M;
 			devp->buf.mc_y_comprate = FRC_COMPRESS_RATE_MC_Y;
 			devp->buf.mc_c_comprate = FRC_COMPRESS_RATE_MC_C;
 			devp->buf.addr_shft_bits = DDR_SHFT_0_BITS;
 			devp->buf.info_factor = FRC_INFO_BUF_FACTOR_T5M;
-
+			devp->buf.mcdw_en = NONE_MCDW;
 		} else if (chip == ID_T3X) {
 			devp->buf.me_comprate = FRC_COMPRESS_RATE_ME_T3;
 			devp->buf.mc_y_comprate = FRC_COMPRESS_RATE_MC_Y_T3X;
 			devp->buf.mc_c_comprate = FRC_COMPRESS_RATE_MC_C_T3X;
 			devp->buf.addr_shft_bits = DDR_SHFT_4_BITS;
 			devp->buf.info_factor = FRC_INFO_BUF_FACTOR_T3X;
+			devp->buf.mcdw_en = HAVE_MCDW;
 		} else {
 			devp->buf.me_comprate = FRC_COMPRESS_RATE_ME_T3;
 			devp->buf.mc_y_comprate = FRC_COMPRESS_RATE_MC_Y;
 			devp->buf.mc_c_comprate = FRC_COMPRESS_RATE_MC_C;
 			devp->buf.addr_shft_bits = DDR_SHFT_0_BITS;
 			devp->buf.info_factor = FRC_INFO_BUF_FACTOR_T3;
+			devp->buf.mcdw_en = NONE_MCDW;
 		}
 		if (devp->buf.rate_margin == 0)
 			devp->buf.rate_margin = FRC_COMPRESS_RATE_MARGIN;
-		devp->buf.mcdw_c_comprate = FRC_COMPRESS_RATE_MCDW_C;
-		devp->buf.mcdw_y_comprate = FRC_COMPRESS_RATE_MCDW_Y;
-		devp->buf.mcdw_size_rate = FRC_MCDW_H_SIZE_RATE << 4;
-		devp->buf.mcdw_size_rate += FRC_MCDW_V_SIZE_RATE;
+		if (devp->buf.mcdw_en) {
+			devp->buf.mcdw_c_comprate = FRC_COMPRESS_RATE_MCDW_C;
+			devp->buf.mcdw_y_comprate = FRC_COMPRESS_RATE_MCDW_Y;
+			devp->buf.mcdw_size_rate = FRC_MCDW_H_SIZE_RATE << 4;
+			devp->buf.mcdw_size_rate += FRC_MCDW_V_SIZE_RATE;
+		}
 	}
 
 	pr_frc(log, "buf addr shfit :%d", devp->buf.addr_shft_bits);
@@ -852,9 +849,10 @@ int frc_buf_calculate(struct frc_dev_s *devp)
 		devp->buf.me_comprate, devp->buf.mc_y_comprate,
 		devp->buf.mc_c_comprate, devp->buf.mcdw_y_comprate,
 		devp->buf.mcdw_c_comprate);
-	pr_frc(0, "mcdw_rate(h:%d,v:%d) mcdw_size(h:%d,v:%d)\n",
-		mcdw_h_ratio, mcdw_v_ratio, align_hsize / mcdw_h_ratio,
-		align_vsize / mcdw_v_ratio);
+	if (devp->buf.mcdw_en)
+		pr_frc(0, "mcdw_rate(h:%d,v:%d) mcdw_size(h:%d,v:%d)\n",
+			mcdw_h_ratio, mcdw_v_ratio, align_hsize / mcdw_h_ratio,
+			align_vsize / mcdw_v_ratio);
 	devp->buf.total_size = 0;
 	/*mc y/c/v info buffer, address 64 bytes align*/
 	devp->buf.lossy_mc_y_info_buf_size =

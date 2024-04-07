@@ -302,6 +302,12 @@ irqreturn_t frc_input_isr(int irq, void *dev_id)
 	if (fw_data->frc_top_type.motion_ctrl == RD_MOTION_BY_INP_ISR)
 		frc_rd_reg_by_drv(devp);
 
+//	if (devp->in_sts.vs_cnt < 20)
+//		pr_frc(1, "in_frm:%d,reg_0x102:0x%2X,0x113:0x%3X\n",
+//			devp->in_sts.vs_cnt,
+//			READ_FRC_REG(FRC_REG_PAT_POINTER) >> 4 & 0xFF,
+//			READ_FRC_REG(FRC_REG_OUT_FID) >> 8 & 0xFFF);
+
 	// t3x_verB_set_cfg(1);
 	inp_undone_read(devp);
 	if (devp->dbg_reg_monitor_i)
@@ -382,7 +388,6 @@ irqreturn_t frc_output_isr(int irq, void *dev_id)
 				READ_FRC_REG(FRC_REG_TOP_CTRL7));
 		}
 	}
-
 	me_undone_read(devp);
 	mc_undone_read(devp);
 	vp_undone_read(devp);
@@ -544,46 +549,34 @@ static bool frc_osd_window_en(struct st_frc_in_sts *cur_in_sts)
 static void frc_fast_disable_process(void)
 {
 	struct frc_dev_s *devp;
-//	u32 tmp_frm_size;
 
 	devp = get_frc_devp();
 	devp->in_sts.vf_sts = 0;
 	devp->in_sts.no_vf_cnt = 0;
+	devp->in_sts.have_vf_cnt = 0;
 	devp->frc_sts.out_put_mode_changed = FRC_EVENT_VF_CHG_IN_SIZE;
 
 	set_frc_enable(false);
-//	frc_change_to_state(FRC_STATE_DISABLE);
 	frc_change_to_state(FRC_STATE_BYPASS);
 	devp->st_change = 0;
 	devp->next_frame = 1;
-	devp->need_bypass = 1;
+	set_frc_bypass(true);
 	frc_clr_badedit_effect_before_enable();
 	frc_state_change_finish(devp);
 	pr_frc(2, "0x3217 = %x  0x35 = %x\n", vpu_reg_read(0x3217),
 		READ_FRC_REG(FRC_REG_OUT_INT_FLAG));
 }
 
-static void frc_disable_deal_diff_win(bool window)
+static void frc_disable_deal_diff_win(void)
 {
 	struct frc_dev_s *devp = get_frc_devp();
 
-	if (window) {
-		if (devp->st_change == 1 || devp->st_change == 2) {
-			return;
-		} else if (devp->frc_sts.state == FRC_STATE_ENABLE ||
-			devp->frc_sts.new_state == FRC_STATE_ENABLE) {
-			pr_frc(2, "start disable frc : %d", window);
-			frc_fast_disable_process();
-		}
-		devp->in_sts.have_vf_cnt = 0;
-	} else {
-		if (devp->st_change == 1 || devp->st_change == 2) {
-			return;
-		} else if (devp->frc_sts.state == FRC_STATE_ENABLE ||
-			devp->frc_sts.new_state == FRC_STATE_ENABLE) {
-			pr_frc(2, "start disable frc : %d", window);
-			frc_fast_disable_process();
-		}
+	if (devp->st_change == 1 || devp->st_change == 2) {
+		return;
+	} else if (devp->frc_sts.state == FRC_STATE_ENABLE ||
+		devp->frc_sts.new_state == FRC_STATE_ENABLE) {
+		pr_frc(2, "start disable frc\n");
+		frc_fast_disable_process();
 	}
 }
 
@@ -715,9 +708,9 @@ enum efrc_event frc_input_sts_check(struct frc_dev_s *devp,
 			devp->in_sts.in_hsize, cur_in_sts->in_hsize);
 		devp->in_sts.in_hsize = cur_in_sts->in_hsize;
 		devp->in_sts.t3x_proc_size_chg = 1;
-		if (get_chip_type() == ID_T3X) {
-			frc_disable_deal_diff_win(is_osd_window);
-		} else if (devp->frc_sts.state == FRC_STATE_ENABLE && get_chip_type() >= ID_T5M) {
+		if (get_chip_type() == ID_T3X && cur_in_sts->vf_sts) {
+			frc_disable_deal_diff_win();
+		} else if (devp->frc_sts.state == FRC_STATE_ENABLE && get_chip_type() == ID_T5M) {
 			pr_frc(2, "%s start disable frc", __func__);
 			set_frc_enable(false);
 			set_frc_bypass(true);
@@ -745,9 +738,9 @@ enum efrc_event frc_input_sts_check(struct frc_dev_s *devp,
 			devp->in_sts.in_vsize, cur_in_sts->in_vsize);
 		devp->in_sts.in_vsize = cur_in_sts->in_vsize;
 		devp->in_sts.t3x_proc_size_chg = 1;
-		if (get_chip_type() == ID_T3X) {
-			frc_disable_deal_diff_win(is_osd_window);
-		} else if (devp->frc_sts.state == FRC_STATE_ENABLE && get_chip_type() >= ID_T5M) {
+		if (get_chip_type() == ID_T3X && cur_in_sts->vf_sts) {
+			frc_disable_deal_diff_win();
+		} else if (devp->frc_sts.state == FRC_STATE_ENABLE && get_chip_type() == ID_T5M) {
 			pr_frc(2, "%s start disable frc", __func__);
 			set_frc_enable(false);
 			set_frc_bypass(true);
@@ -1318,7 +1311,7 @@ void frc_state_handle(struct frc_dev_s *devp)
 				} else if (devp->clk_state == FRC_CLOCK_NOR &&
 					devp->buf.cma_mem_alloced) {
 					// frc_mm_secure_set(devp);
-					frc_clr_badedit_effect_before_enable();
+//					frc_clr_badedit_effect_before_enable();
 					schedule_work(&devp->frc_secure_work);
 					get_vout_info(devp);
 					frc_hw_initial(devp);
@@ -1414,6 +1407,7 @@ void frc_state_handle(struct frc_dev_s *devp)
 				frc_frame_forcebuf_enable(0);
 				devp->frc_fw_pause = 1;
 				set_frc_enable(OFF);
+				frc_clr_badedit_effect_before_enable();
 				devp->frc_sts.frame_cnt++;
 			} else {
 				devp->frc_sts.frame_cnt = 0;
@@ -1429,6 +1423,7 @@ void frc_state_handle(struct frc_dev_s *devp)
 				frc_frame_forcebuf_enable(0);
 				devp->frc_fw_pause = 1;
 				set_frc_enable(OFF);
+				frc_clr_badedit_effect_before_enable();
 				devp->frc_sts.frame_cnt++;
 			} else {
 				//second frame set bypass on
@@ -1474,7 +1469,7 @@ void frc_state_handle(struct frc_dev_s *devp)
 				} else if (devp->clk_state == FRC_CLOCK_NOR &&
 					devp->buf.cma_mem_alloced) {
 					//first frame set bypass off
-					frc_clr_badedit_effect_before_enable();
+//					frc_clr_badedit_effect_before_enable();
 					schedule_work(&devp->frc_secure_work);
 					frc_memc_clr_vbuffer(devp, 1);
 					get_vout_info(devp);
@@ -1618,7 +1613,7 @@ void frc_state_handle_new(struct frc_dev_s *devp)
 				READ_FRC_REG(FRC_REG_OUT_FID),
 				READ_FRC_REG(FRC_REG_FWD_PHS),
 				READ_FRC_REG(FRC_REG_FWD_FID));
-			pr_frc(log, "0x3217 = %x  0x1d21 = %x  0x3218 = %x  0x35 = %x\n",
+			pr_frc(2, "0x3217 = %x  0x1d21 = %x  0x3218 = %x  0x35 = %x\n",
 				vpu_reg_read(0x3217), vpu_reg_read(0x1d21),
 				vpu_reg_read(0x3218), READ_FRC_REG(FRC_REG_OUT_INT_FLAG));
 			pr_frc(2, "0x3f05 = %x\n", READ_FRC_REG(FRC_FRAME_SIZE));
@@ -1658,7 +1653,7 @@ void frc_state_handle_new(struct frc_dev_s *devp)
 					devp->buf.cma_mem_alloced) {
 					devp->frc_sts.frame_cnt++;
 					devp->need_bypass = 2;
-					frc_clr_badedit_effect_before_enable();
+//					frc_clr_badedit_effect_before_enable();
 				}
 				off2on_cnt++;
 			} else if (devp->frc_sts.frame_cnt == 1) {
@@ -1773,10 +1768,10 @@ void frc_state_handle_new(struct frc_dev_s *devp)
 				frc_frame_forcebuf_enable(0);
 				//devp->frc_fw_pause = 1;
 				set_frc_enable(OFF);
+				frc_clr_badedit_effect_before_enable();
 				devp->st_change = 2;
 				devp->frc_sts.frame_cnt++;
 			} else {
-				frc_clr_badedit_effect_before_enable();
 				devp->frc_sts.frame_cnt = 0;
 				devp->st_change = 0;
 				pr_frc(log, "stat_chg %s -> %s done\n",
@@ -1791,16 +1786,12 @@ void frc_state_handle_new(struct frc_dev_s *devp)
 				frc_frame_forcebuf_enable(0);
 				//devp->frc_fw_pause = 1;
 				set_frc_enable(OFF);
+				devp->need_bypass = 1;
+				frc_clr_badedit_effect_before_enable();
 				devp->st_change = 2;
 				devp->frc_sts.frame_cnt++;
 			} else if (devp->frc_sts.frame_cnt == 1) {
-				frc_clr_badedit_effect_before_enable();
 				devp->st_change = 0;
-				devp->need_bypass = 1;
-				devp->frc_sts.frame_cnt++;
-			} else if (devp->frc_sts.frame_cnt == 2) {
-				//second frame set bypass on
-				//set_frc_bypass(ON);
 				devp->need_bypass = 0;
 				devp->frc_sts.frame_cnt++;
 			} else {
@@ -1847,7 +1838,7 @@ void frc_state_handle_new(struct frc_dev_s *devp)
 					//first frame set bypass off
 					devp->need_bypass = 2;
 					devp->frc_sts.frame_cnt++;
-					frc_clr_badedit_effect_before_enable();
+//					frc_clr_badedit_effect_before_enable();
 				}
 				off2on_cnt++;
 			} else if (devp->frc_sts.frame_cnt == 1) {
@@ -2751,8 +2742,8 @@ void set_frc_demo_window(u8 demo_num)
 			WRITE_FRC_BITS(FRC_REG_MC_DEBUG1, 0xf, 17, 4);
 			WRITE_FRC_BITS(FRC_MC_DEMO_WINDOW, 0xf, 0, 5);
 		}
-		pr_frc(0, "FRC_REG_MC_DEBUG1 value = 0x%x\n", READ_FRC_REG(FRC_REG_MC_DEBUG1));
-		pr_frc(0, "FRC_MC_DEMO_WINDOW value = 0x%x\n", READ_FRC_REG(FRC_MC_DEMO_WINDOW));
+		pr_frc(2, "FRC_REG_MC_DEBUG1 value = 0x%x\n", READ_FRC_REG(FRC_REG_MC_DEBUG1));
+		pr_frc(2, "FRC_MC_DEMO_WINDOW value = 0x%x\n", READ_FRC_REG(FRC_MC_DEMO_WINDOW));
 	}
 }
 

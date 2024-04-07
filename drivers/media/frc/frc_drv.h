@@ -142,6 +142,10 @@ extern int frc_dbg_en;
 #define FRC_COMPRESS_RATE_80_SIZE       (276 * 1024 * 1024)    // Need 274.7MB  4MB Align
 #define FRC_COMPRESS_RATE_50_SIZE       (180 * 1024 * 1024)    // Need 176.4MB  4MB Align
 #define FRC_COMPRESS_RATE_55_SIZE       (196 * 1024 * 1024)    // Need 192.7MB  4MB Align
+
+#define HAVE_MCDW                 1
+#define NONE_MCDW                 0
+
 // mc-y 48%  mc-c 39%  me 60%
 #define FRC_COMPRESS_RATE_MC_Y		45
 #define FRC_COMPRESS_RATE_MC_C		35
@@ -332,6 +336,7 @@ struct st_frc_buf {
 	u8  mcdw_y_comprate;
 	u8  mcdw_c_comprate;
 	u8  info_factor;
+	u8  mcdw_en;
 
 	/*frame size*/
 	u32 in_hsize;

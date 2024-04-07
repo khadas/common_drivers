@@ -722,8 +722,9 @@ static int frc_dts_parse(struct frc_dev_s *frc_devp)
 	if (ret) {
 		pr_frc(0, "cma resource undefined !\n");
 		frc_devp->buf.cma_mem_size = 0;
+	} else {
+		frc_devp->buf.cma_mem_size = dma_get_cma_size_int_byte(&pdev->dev);
 	}
-	frc_devp->buf.cma_mem_size = dma_get_cma_size_int_byte(&pdev->dev);
 
 	frc_devp->clk_frc = clk_get(&pdev->dev, "clk_frc");
 	frc_devp->clk_me = clk_get(&pdev->dev, "clk_me");
@@ -1293,7 +1294,11 @@ static int frc_probe(struct platform_device *pdev)
 
 	frc_data = (struct frc_data_s *)frc_devp->data;
 	// fw_data = (struct frc_fw_data_s *)frc_devp->fw_data;
-	frc_dts_parse(frc_devp);
+	if (frc_dts_parse(frc_devp)) {
+		PR_ERR("dts parse error\n");
+		goto fail_dev_create;
+	}
+
 	// if (ret < 0)  // fixed CID 139501
 	//	goto fail_dev_create;
 	tasklet_init(&frc_devp->input_tasklet, frc_input_tasklet_pro, (unsigned long)frc_devp);

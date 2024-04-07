@@ -2741,9 +2741,6 @@ void frc_internal_initial(struct frc_dev_s *frc_devp)
 	frc_top = &fw_data->frc_top_type;
 	chip = get_chip_type();
 
-	frc_load_reg_table(frc_devp, 0);
-	frc_set_val_from_reg();
-
 	me_hold_line = fw_data->holdline_parm.me_hold_line;
 	mc_hold_line = fw_data->holdline_parm.mc_hold_line;
 	inp_hold_line = fw_data->holdline_parm.inp_hold_line;

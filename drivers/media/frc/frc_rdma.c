@@ -1103,11 +1103,6 @@ int frc_rdma_init(void)
 			frc_rdma->rdma_en = 0;              // drv rdma off
 		else if (chip == ID_T3X)
 			frc_rdma->rdma_en = 1;              // drv rdma en
-
-		if (is_rdma_enable())
-			pr_frc(0, "frc rdma ready.\n");
-		else
-			pr_frc(0, "frc rdma disable.\n");
 	} else {
 		PR_ERR("alloc frc rdma buffer failed\n");
 		return 0;

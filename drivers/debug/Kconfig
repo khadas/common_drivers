@@ -26,7 +26,7 @@ config AMLOGIC_DEBUG_ATRACE
 	  Support Tags
 
 config AMLOGIC_BOOT_TIME
-	bool "AMLOGIC boot time optimi zation"
+	bool "AMLOGIC boot time optimization"
 	depends on AMLOGIC_BREAK_GKI
 	default n
 	help
@@ -179,4 +179,12 @@ config AMLOGIC_DEBUG_ISOLCPUS
 	depends on AMLOGIC_DEBUG
 	help
 	  this option is provided for AMLOGIC isolate CPU5 modifications.
+
+config AMLOGIC_F2FS_OPTIMIZATION
+	bool "AMLOGIC f2fs optimization"
+	depends on AMLOGIC_BREAK_GKI_20
+	default y
+	help
+	  This option is set up for Amlogic f2fs optimization,
+	  if you want to optimize f2fs, please set this config to y.
 

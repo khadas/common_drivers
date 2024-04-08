@@ -1,0 +1,74 @@
+From d41ad73e9408731f430b381585ad88c8fbdd4440 Mon Sep 17 00:00:00 2001
+From: yao zhang1 <yao.zhang1@amlogic.com>
+Date: Tue, 7 May 2024 10:19:26 +0800
+Subject: [PATCH] Revert "f2fs: preserve direct write semantics when buffering
+ is forced"
+
+This reverts commit 82ab408329a9ad987f3bba843e7581e3235966e4.
+
+Change-Id: Ia0ad2463619b391a6589ba637edca394ff7b71eb
+Signed-off-by: yao zhang1 <yao.zhang1@amlogic.com>
+---
+ fs/f2fs/file.c | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
+
+diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
+index 9ead0ddc0536..d5caf7b75e5a 100644
+--- a/fs/f2fs/file.c
++++ b/fs/f2fs/file.c
+@@ -4534,6 +4534,7 @@ static const struct iomap_dio_ops f2fs_iomap_dio_write_ops = {
+ 	.end_io = f2fs_dio_write_end_io,
+ };
+
++#if !IS_ENABLED(CONFIG_AMLOGIC_F2FS_OPTIMIZATION)
+ static void f2fs_flush_buffered_write(struct address_space *mapping,
+ 				      loff_t start_pos, loff_t end_pos)
+ {
+@@ -4546,6 +4547,7 @@ static void f2fs_flush_buffered_write(struct address_space *mapping,
+ 				 start_pos >> PAGE_SHIFT,
+ 				 end_pos >> PAGE_SHIFT);
+ }
++#endif
+
+ static ssize_t f2fs_dio_write_iter(struct kiocb *iocb, struct iov_iter *from,
+ 				   bool *may_need_sync)
+@@ -4645,9 +4647,20 @@ static ssize_t f2fs_dio_write_iter(struct kiocb *iocb, struct iov_iter *from,
+
+ 			ret += ret2;
+
++#if IS_ENABLED(CONFIG_AMLOGIC_F2FS_OPTIMIZATION)
++			ret2 = filemap_write_and_wait_range(file->f_mapping,
++							    bufio_start_pos,
++							    bufio_end_pos);
++			if (ret2 < 0)
++				goto out;
++			invalidate_mapping_pages(file->f_mapping,
++						 bufio_start_pos >> PAGE_SHIFT,
++						 bufio_end_pos >> PAGE_SHIFT);
++#else
+ 			f2fs_flush_buffered_write(file->f_mapping,
+ 						  bufio_start_pos,
+ 						  bufio_end_pos);
++#endif
+ 		}
+ 	} else {
+ 		/* iomap_dio_rw() already handled the generic_write_sync(). */
+@@ -4734,6 +4747,7 @@ static ssize_t f2fs_file_write_iter(struct kiocb *iocb, struct iov_iter *from)
+ 	if (ret > 0 && may_need_sync)
+ 		ret = generic_write_sync(iocb, ret);
+
++#if !IS_ENABLED(CONFIG_AMLOGIC_F2FS_OPTIMIZATION)
+ 	/* If buffered IO was forced, flush and drop the data from
+ 	 * the page cache to preserve O_DIRECT semantics
+ 	 */
+@@ -4741,6 +4755,7 @@ static ssize_t f2fs_file_write_iter(struct kiocb *iocb, struct iov_iter *from)
+ 		f2fs_flush_buffered_write(iocb->ki_filp->f_mapping,
+ 					  orig_pos,
+ 					  orig_pos + ret - 1);
++#endif
+
+ 	return ret;
+ }
+--
+2.43.2
+

@@ -1009,6 +1009,19 @@ void osd_ctrl_init(struct meson_vpu_block *vblk, struct rdma_reg_ops *reg_ops,
 			    (0 << 0)/*OSD_BLK_ENABLE*/);
 	reg_ops->rdma_write_reg(reg->viu_osd_tcolor_ag3, 0);
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+	/*The fifo_crtl bits need to be configured with a maximum value of 0x2, otherwise it
+	 *will affect bandwidth. The original values should to be obtained after mif init
+	 */
+	if (is_meson_t3x_cpu()) {
+		original_swap_t3x[vblk->index] = reg_ops->rdma_read_reg(reg->viu_osd_normal_swap);
+		original_osd1_fifo_ctrl_stat_t3x[vblk->index] =
+			reg_ops->rdma_read_reg(reg->viu_osd_fifo_ctrl_stat);
+	}
+#endif
+
+	MESON_DRM_BLOCK("init osd mif [%d].\n", vblk->index);
+
 	vblk->init_done = 1;
 }
 
@@ -1833,10 +1846,6 @@ static void s5_osd_hw_init(struct meson_vpu_block *vblk)
 	osd->mif_acc_mode = LINEAR_MIF;
 	// t3x has viu2, viu1 and viu2 has same hold line
 	osd->viu2_hold_line = VIU1_DEFAULT_HOLD_LINE;
-
-	original_swap_t3x[vblk->index] = meson_drm_read_reg(osd->reg->viu_osd_normal_swap);
-	original_osd1_fifo_ctrl_stat_t3x[vblk->index] =
-		meson_drm_read_reg(osd->reg->viu_osd_fifo_ctrl_stat);
 
 #ifdef CONFIG_AMLOGIC_MEDIA_SECURITY
 	secure_register(OSD_MODULE, 0, osd_secure_op, osd_secure_cb);

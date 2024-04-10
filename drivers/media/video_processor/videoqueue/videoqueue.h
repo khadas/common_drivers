@@ -93,7 +93,7 @@ struct video_queue_dev {
 	bool is_special_fps;
 	int wakeup;
 	u64 pcr_time;
-	int vq_wq_flag;
+	int vq_reg_flag;
 	u32 vsync_no;
 	struct mutex mutex_file;/*for file_q*/
 	int di_backend_en;

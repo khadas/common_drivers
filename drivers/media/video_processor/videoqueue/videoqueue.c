@@ -491,11 +491,11 @@ void videoqueue_recycle_vf(void *caller_data, struct file *file, int instance_id
 
 	mutex_lock(&dev->mutex_reg);
 	vq_print(dev->inst, P_FENCE, "recycle instance_id %d\n", instance_id);
-	if (instance_id != dev->dp_buf_mgr_index) {
-		v4lvideo_keep_vf(file);
-	} else {
+	if (dev->vq_reg_flag) {
 		file_pop_out2vt_q(dev, file);
 		videoqueue_put_vf(dev, file);
+	} else {
+		vq_print(dev->inst, P_FENCE, "vq already unreg.\n");
 	}
 	mutex_unlock(&dev->mutex_reg);
 }
@@ -1106,7 +1106,9 @@ static int videoqueue_reg_provider(struct video_queue_dev *dev)
 
 	init_waitqueue_head(&dev->file_wq);
 	init_waitqueue_head(&dev->fence_wq);
-	dev->vq_wq_flag = 1;
+	mutex_lock(&dev->mutex_reg);
+	dev->vq_reg_flag = 1;
+	mutex_unlock(&dev->mutex_reg);
 	if (dev->inst == VIDEO_QUEUE_MAIN) {
 		dev->tunnel_id = 0;
 		dev->game_mode = false;
@@ -1133,7 +1135,6 @@ static int videoqueue_reg_provider(struct video_queue_dev *dev)
 		dev->dq_info[i].fence_file = NULL;
 	}
 
-	mutex_lock(&dev->mutex_reg);
 	dev->di_backend_en = get_di_proc_enable();
 	if (dev->di_backend_en) {
 		vq_print(dev->inst, P_ERROR, "di backend enabled.\n");
@@ -1146,7 +1147,6 @@ static int videoqueue_reg_provider(struct video_queue_dev *dev)
 		if (!dev->dp_buf_mgr)
 			vq_print(dev->inst, P_ERROR, "buf mgr creat fail.\n");
 	}
-	mutex_unlock(&dev->mutex_reg);
 
 	ret = init_vt_config(dev);
 	if (ret < 0) {
@@ -1188,11 +1188,13 @@ static int videoqueue_unreg_provider(struct video_queue_dev *dev)
 	vq_print(dev->inst, P_ERROR, "unreg: in\n");
 
 	dev->thread_need_stop = true;
-	if (!dev->vq_wq_flag) {
+	mutex_lock(&dev->mutex_reg);
+	if (!dev->vq_reg_flag) {
 		vq_print(dev->inst, P_ERROR, "unreg: vq is not reg.\n");
 		return 0;
 	}
-	dev->vq_wq_flag  = 0;
+	dev->vq_reg_flag  = 0;
+	mutex_unlock(&dev->mutex_reg);
 	wake_up_interruptible(&dev->fence_wq);
 	dev->wakeup = 1;
 	wake_up_interruptible(&dev->file_wq);
@@ -1234,7 +1236,6 @@ static int videoqueue_unreg_provider(struct video_queue_dev *dev)
 		return ret;
 	}
 
-	mutex_lock(&dev->mutex_reg);
 	if (dev->di_backend_en) {
 		while (kfifo_len(&dev->out2vt_q) > 0) {
 			if (kfifo_get(&dev->out2vt_q, &disp_file)) {
@@ -1272,7 +1273,6 @@ static int videoqueue_unreg_provider(struct video_queue_dev *dev)
 			}
 		}
 	}
-	mutex_unlock(&dev->mutex_reg);
 
 	for (i = 0; i < FILE_CNT; i++) {
 		if (dev->dmabuf[i])

@@ -2744,7 +2744,7 @@ int vdin_vs_duration_check(struct vdin_dev_s *devp)
 		ret = -1;
 	}
 
-	if (!(is_meson_t7_cpu() || is_meson_t3_cpu() ||
+	if (!(is_meson_t7_cpu() || is_meson_t3_cpu() || is_meson_t3x_cpu() ||
 	     is_meson_t5w_cpu() || is_meson_t5m_cpu()))
 		ret = 0;
 

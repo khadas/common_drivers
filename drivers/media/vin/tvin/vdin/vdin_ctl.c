@@ -1394,7 +1394,6 @@ void vdin_fix_nonstd_vsync(struct vdin_dev_s *devp)
 		//vdin_fix_nonstd_vsync_s5(devp);
 		return;
 	} else if (is_meson_t3x_cpu()) {
-		//vdin_fix_nonstd_vsync_t3x(devp);
 		return;
 	}
 #endif
@@ -4396,7 +4395,7 @@ bool vdin_check_cycle(struct vdin_dev_s *devp)
 	}
 
 	/* TODO:whether T5/TL1/TXHD2/T3X support cycle check */
-	if (!(is_meson_t7_cpu() || is_meson_t3_cpu() ||
+	if (!(is_meson_t7_cpu() || is_meson_t3_cpu() || is_meson_t3x_cpu() ||
 	     is_meson_t5w_cpu() || is_meson_t5m_cpu()) &&
 	    interval_value > VDIN_INPUT_MAX_FPS) {
 		devp->stats.cycle_err_cnt_con = 0;

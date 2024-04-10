@@ -765,12 +765,6 @@ void vdin_set_decimation_t3x(struct vdin_dev_s *devp)
 			__func__, devp->h_active, devp->v_active);
 }
 
-void vdin_fix_nonstd_vsync_t3x(struct vdin_dev_s *devp)
-{
-	wr_bits(devp->addr_offset, VDIN0_WRMIF_URGENT_CTRL, 1,
-		0, 16);
-}
-
 /* this function will set the bellow parameters of devp:
  * 1.h_active
  * 2.v_active
@@ -2491,6 +2485,7 @@ static void filter_unstable_vsync_t3x(struct vdin_dev_s *devp)
 	wr_bits(offset, VDIN0_WRMIF_CTRL3, 1, VDIN0_WRMIF_CTRL3_31_BIT, VDIN0_WRMIF_CTRL3_31_WID);
 	wr_bits(offset, VDIN0_WRMIF_CTRL3, 1, VDIN0_WRMIF_CTRL3_1_BIT, VDIN0_WRMIF_CTRL3_1_WID);
 	wr_bits(offset, VDIN0_WRMIF_CTRL3, 0, VDIN0_WRMIF_CTRL3_3_BIT, VDIN0_WRMIF_CTRL3_3_WID);
+	wr_bits(offset, VDIN0_WRMIF_URGENT_CTRL, 1, 9, 1);/* reg_last_sel */
 	wr_bits(offset, VDIN0_WRMIF_CTRL, 0, T3X_EOL_SEL_BIT, T3X_EOL_SEL_WID);
 }
 

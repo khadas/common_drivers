@@ -34,6 +34,63 @@
 #include "hdmi_rx_hw_t5m.h"
 
 /* for T5m */
+
+u32 top_irq_mask_t5m[IRQ_TYPE_CNT] = {
+	_BIT(0),	//IRQ_AON_CTL,
+	0,		//IRQ_EDID_SLT,
+	_BIT(1),	//IRQ_PWD_CTL,
+	_BIT(2),	//IRQ_PHY,
+	_BIT(3),	//IRQ_5V_RISE0,
+	_BIT(4),	//IRQ_5V_RISE1,
+	_BIT(5),	//IRQ_5V_RISE2,
+	0,		//IRQ_5V_RISE3,
+	_BIT(6),	//IRQ_5V_FALL0,
+	_BIT(7),	//IRQ_5V_FALL1,
+	_BIT(8),	//IRQ_5V_FALL2,
+	_BIT(9),	//IRQ_5V_FALL3,
+	_BIT(10),	//IRQ_FMT_CHG,
+	_BIT(11),	//IRQ_COL_DEP,
+	_BIT(12),	//IRQ_TMDS_STB,
+	_BIT(13),	//IRQ_HDCP_ST_RISE,
+	_BIT(14),	//IRQ_HDCP_ST_FALL,
+	_BIT(15),	//IRQ_HDCP_EN_RISE,
+	_BIT(16),	//IRQ_HDCP_EN_FALL,
+	_BIT(17),	//IRQ_EDID_AD0,
+	_BIT(18),	//IRQ_EDID_AD1,
+	_BIT(19),	//IRQ_EDID_AD2,
+	_BIT(31),	//IRQ_EDID_AD3,
+	_BIT(20),	//IRQ_EDID_CFT0,
+	_BIT(21),	//IRQ_EDID_CFT1,
+	_BIT(22),	//IRQ_EDID_CFT2,
+	_BIT(23),	//IRQ_EDID_CFT3,
+	0,		//IRQ_HDCP_SKP,
+	0,		//IRQ_HDCP_RND_ERR,
+	_BIT(24),	//IRQ_CAB_STB,
+	0,		//IRQ_TMDS_ALG,
+	_BIT(25),	//IRQ_EMP_DONE,
+	_BIT(26),	//IRQ_LAST_EMP,
+	_BIT(27),	//IRQ_DE_RISE,
+	_BIT(28),	//IRQ_SQOF_RISE,
+	_BIT(29),	//IRQ_SQOF_FALL,
+	_BIT(30),	//IRQ_AUD_CHG,
+	0,		//IRQ_CDR_STB,
+	/* T3X */
+	0,		//IRQ_T3X_5V_RISE,
+	0,		//IRQ_T3X_5V_FALL,
+	0,		//IRQ_T3X_EDID_AD,
+	0,		//IRQ_T3X_20_STB,
+	0,		//IRQ_T3X_21_STB,
+	0,		//IRQ_PHY_STB,
+	0,		//IRQ_PXL_STB,
+	0,		//IRQ_1618_STB,
+	0,		//IRQ_PLL_CHG0,
+	0,		//IRQ_PLL_CHG1,
+	0,		//IRQ_VS_RISE,
+	0,		//IRQ_VALID_M_RISE,
+	0,		//IRQ_VALID_M_FALL,
+	0		//IRQ_T3X_EDID_CFT,
+};
+
 static const u32 phy_misc_t5m[][2] = {
 		/*  0x18	0x1c	*/
 	{	 /* 24~35M */

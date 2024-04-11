@@ -156,6 +156,7 @@ bool rx_is_sig_ready(u8 port);
 void hdmirx_open_main_port_t3x(u8 port);
 void hdmirx_open_main_port(u8 port);
 void hdmirx_open_sub_port(u8 port);
+void hdmirx_close_port_t3x(u8 port);
 void hdmirx_close_port(u8 port);
 bool is_clk_stable(u8 port);
 unsigned int rx_get_pll_lock_sts(void);

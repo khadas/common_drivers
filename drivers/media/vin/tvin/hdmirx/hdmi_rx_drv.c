@@ -147,6 +147,7 @@ struct tvin_latency_s latency_info;
 struct tasklet_struct rx_tasklet;
 u32 *pd_fifo_buf_a;
 u32 *pd_fifo_buf_b;
+u32 top_irq_tab[IRQ_TYPE_CNT];
 static DEFINE_SPINLOCK(rx_pr_lock);
 DECLARE_WAIT_QUEUE_HEAD(query_wait);
 
@@ -564,7 +565,8 @@ void hdmirx_dec_start(struct tvin_frontend_s *fe, enum tvin_sig_fmt_e fmt,
 	parm = &devp->param[port_type];
 	parm->info.fmt = fmt;
 	parm->info.status = TVIN_SIG_STATUS_STABLE;
-	rx_pr("%s port_type:%d, fmt:%d ok\n", __func__, port_type, fmt);
+	rx_pr("%s port:%d, port_type:%d, fmt:%d ok\n",
+		__func__, parm->port - TVIN_PORT_HDMI0, port_type, fmt);
 }
 
 /*
@@ -583,7 +585,7 @@ void hdmirx_dec_stop(struct tvin_frontend_s *fe, enum tvin_port_e port,
 	parm = &devp->param[port_type];
 	/* parm->info.fmt = TVIN_SIG_FMT_NULL; */
 	/* parm->info.status = TVIN_SIG_STATUS_NULL; */
-	rx_pr("%s port_type:%d, ok\n", __func__, port_type);
+	rx_pr("%s port:%d, port_type:%d ok\n", __func__, port - TVIN_PORT_HDMI0, port_type);
 }
 
 /*
@@ -602,16 +604,11 @@ void hdmirx_dec_close(struct tvin_frontend_s *fe, enum tvin_port_type_e port_typ
 	parm->info.fmt = TVIN_SIG_FMT_NULL;
 	parm->info.status = TVIN_SIG_STATUS_NULL;
 
-	if (port_type == TVIN_PORT_SUB) {
-		hdmirx_close_port(rx_info.sub_port);//todo
-		rx_info.pip_on = false;
-	} else if (port_type == TVIN_PORT_MAIN) {
-		hdmirx_close_port(rx_info.main_port);
-		rx_info.main_port_open = false;
-	} else {
-		rx_pr("!!!Wrong.");
-	}
-	rx_pr("%s port:%d, ok\n", __func__, port_type);
+	if (rx_info.chip_id == CHIP_ID_T3X)
+		hdmirx_close_port_t3x(port);
+	else
+		hdmirx_close_port(port);
+	rx_pr("%s port:%d, port_type:%d ok\n", __func__, port, port_type);
 }
 
 /*
@@ -3516,6 +3513,37 @@ static void cec_update_edid(int port_id, int dev_type)
 }
 #endif
 
+static int rx_get_top_irq_table(enum chip_id_e chip)
+{
+	bool flag = true;
+
+	switch (chip) {
+	case CHIP_ID_TL1:
+	case CHIP_ID_TM2:
+	case CHIP_ID_T5:
+	case CHIP_ID_T5D:
+		memcpy(top_irq_tab, top_irq_mask_tl1, IRQ_TYPE_CNT * sizeof(u32));
+		break;
+	case CHIP_ID_T7:
+	case CHIP_ID_T3:
+	case CHIP_ID_T5W:
+		memcpy(top_irq_tab, top_irq_mask_t7, IRQ_TYPE_CNT * sizeof(u32));
+		break;
+	case CHIP_ID_T5M:
+	case CHIP_ID_TXHD2:
+		memcpy(top_irq_tab, top_irq_mask_t5m, IRQ_TYPE_CNT * sizeof(u32));
+		break;
+	case CHIP_ID_T3X:
+		memcpy(top_irq_tab, top_irq_mask_t3x, IRQ_TYPE_CNT * sizeof(u32));
+		break;
+	default:
+		memcpy(top_irq_tab, top_irq_mask_t7, IRQ_TYPE_CNT * sizeof(u32));
+		flag = false;
+		break;
+	}
+
+	return flag ? 0 : -1;
+}
 static int hdmirx_probe(struct platform_device *pdev)
 {
 	int ret = 0;
@@ -3565,7 +3593,9 @@ static int hdmirx_probe(struct platform_device *pdev)
 		rx_info.chip_id = CHIP_ID_T3;
 		rx_pr("err: hdevp->data null\n");
 	}
-
+	ret = rx_get_top_irq_table(rx_info.chip_id);
+	if (ret < 0)
+		rx_pr("failed to get top irq for chip:%d, default t7\n", rx_info.chip_id);
 	ret = rx_init_reg_map(pdev);
 	if (ret < 0) {
 		rx_pr("failed to ioremap\n");

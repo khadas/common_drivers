@@ -64,6 +64,63 @@ enum frl_train_sts_e frl_train_sts1 = E_FRL_TRAIN_START;
 
 /* i2c monitor */
 #define I2C_BUFF_SIZE 0x1000
+
+u32 top_irq_mask_t3x[IRQ_TYPE_CNT] = {
+	_BIT(0),	//IRQ_AON_CTL = 0,
+	0,		//IRQ_EDID_SLT,
+	_BIT(1),	//IRQ_PWD_CTL,
+	_BIT(2),	//IRQ_PHY,
+	0,		//IRQ_5V_RISE0,
+	0,		//IRQ_5V_RISE1,
+	0,		//IRQ_5V_RISE2,
+	0,		//IRQ_5V_RISE3,
+	0,		//IRQ_5V_FALL0,
+	0,		//IRQ_5V_FALL1,
+	0,		//IRQ_5V_FALL2,
+	0,		//IRQ_5V_FALL3,
+	_BIT(6),	//IRQ_FMT_CHG,
+	_BIT(7),	//IRQ_COL_DEP,
+	0,		//IRQ_TMDS_STB,
+	_BIT(15),	//IRQ_HDCP_ST_RISE,
+	_BIT(16),	//IRQ_HDCP_ST_FALL,
+	_BIT(17),	//IRQ_HDCP_EN_RISE,
+	_BIT(18),	//IRQ_HDCP_EN_FALL,
+	0,		//IRQ_EDID_AD0,
+	0,		//IRQ_EDID_AD1,
+	0,		//IRQ_EDID_AD2,
+	0,		//IRQ_EDID_AD3,
+	0,		//IRQ_EDID_CFT0,
+	0,		//IRQ_EDID_CFT1,
+	0,		//IRQ_EDID_CFT2,
+	0,		//IRQ_EDID_CFT3,
+	0,		//IRQ_HDCP_SKP,
+	0,		//IRQ_HDCP_RND_ERR,
+	_BIT(10),	//IRQ_CAB_STB,
+	0,		//IRQ_TMDS_ALG,
+	_BIT(21),	//IRQ_EMP_DONE,
+	_BIT(22),	//IRQ_LAST_EMP,
+	_BIT(23),	//IRQ_DE_RISE,
+	_BIT(19),	//IRQ_SQOF_RISE,
+	_BIT(20),	//IRQ_SQOF_FALL,
+	_BIT(24),	//IRQ_AUD_CHG,
+	_BIT(25),	//IRQ_CDR_STB,
+	/* T3X */
+	_BIT(3),	//IRQ_T3X_5V_RISE,
+	_BIT(4),	//IRQ_T3X_5V_FALL,
+	_BIT(5),	//IRQ_T3X_EDID_AD,
+	_BIT(8),	//IRQ_T3X_20_STB,
+	_BIT(9),	//IRQ_T3X_21_STB,
+	_BIT(10),	//IRQ_PHY_STB,
+	_BIT(11),	//IRQ_PXL_STB,
+	_BIT(13),	//IRQ_1618_STB,
+	_BIT(25),	//IRQ_PLL_CHG0,
+	_BIT(26),	//IRQ_PLL_CHG1,
+	_BIT(27),	//IRQ_VS_RISE,
+	_BIT(28),	//IRQ_VALID_M_RISE,
+	_BIT(29),	//IRQ_VALID_M_FALL,
+	_BIT(30)	//IRQ_T3X_EDID_CFT,
+};
+
 /* for T3X 2.0 */
 static const u32 phy_misc_t3x_20[][2] = {
 		/*  0x18	0x1c	*/

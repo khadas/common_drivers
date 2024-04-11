@@ -136,7 +136,7 @@ int rx_hdmi_tx_notify_handler(struct notifier_block *nb,
 		rx_irq_en(0, rx_info.main_port);
 		rx_set_cur_hpd(0, 4, rx_info.main_port);
 		if (!rx_info.main_port_open)
-			port_hpd_rst_flag = 7;
+			port_hpd_rst_flag = 0xf;
 		//if (hdmirx_repeat_support())
 		if (rx_info.chip_id == CHIP_ID_T7)
 			rx[rx_info.main_port].hdcp.repeat = true;
@@ -169,7 +169,7 @@ int rx_hdmi_tx_notify_handler(struct notifier_block *nb,
 		rx_irq_en(0, rx_info.main_port);
 		rx_set_cur_hpd(0, 4, rx_info.main_port);
 		if (!rx_info.main_port_open)
-			port_hpd_rst_flag = 7;
+			port_hpd_rst_flag = 0xf;
 		fsm_restart(rx_info.main_port);
 		ret = NOTIFY_OK;
 		break;

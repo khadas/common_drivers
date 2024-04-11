@@ -536,8 +536,8 @@ static void rx_pktdump_emp(u8 port)
 		return;
 	for (i = 0; i < pkt_cnt; i++) {
 		memset(str, '\0', 256);
-		for (j = 0; j < 32; j++)
-			sprintf(str + strlen(str), "0x%x ", pkt[j]);
+		for (j = 0; j < 31; j++)
+			sprintf(str + strlen(str), "0x%x ", pkt[i * 31 + j]);
 		rx_pr("raw_data:%s\n", str);
 		if (!(log_level & PACKET_LOG) || pkt[0] != 0x7f)
 			continue;
@@ -742,9 +742,7 @@ void rx_pkt_initial(u8 port)
 	rx[i].vtem_info.vrr_en = false;
 	rx[i].emp_dv_info.flag = false;
 	rx[i].emp_cuva_info.flag = false;
-	rx[i].sbtm_info.flag = false;
-	rx[i].emp_dv_info.flag = false;
-	rx[i].emp_cuva_info.flag = false;
+	rx[i].vsif_fmm_flag = false;
 	rx_pkt_clr_attach_drm(port);
 
 	if (!emp_info_p) {

@@ -3182,6 +3182,64 @@ enum frl_rate_e {
 	FRL_12G_4LANE,
 };
 
+enum top_irq_type_e {
+	IRQ_AON_CTL = 0,	//RX Controller always on interrupt
+	IRQ_EDID_SLT = 1,	//edid_addr_intr for the selected port
+	IRQ_PWD_CTL,		//RX Controller power down interrupt
+	IRQ_PHY,		//RX PHY digital interrupt
+	IRQ_5V_RISE0,		//Port A 5v rise
+	IRQ_5V_RISE1,		//Port B 5v rise
+	IRQ_5V_RISE2,		//Port C 5v rise
+	IRQ_5V_RISE3,		//Port D 5v rise
+	IRQ_5V_FALL0,		//Port A 5v fall
+	IRQ_5V_FALL1,		//Port B 5v fall
+	IRQ_5V_FALL2,		//Port C 5v fall
+	IRQ_5V_FALL3,		//Port D 5v fall
+	IRQ_FMT_CHG,		//video data format change
+	IRQ_COL_DEP = 13,	//video data color_depth change
+	IRQ_TMDS_STB,		//tmds_clk measure stable/unstable status change
+	IRQ_HDCP_ST_RISE,	//hdcp auth start rise
+	IRQ_HDCP_ST_FALL,	//hdcp auth start fall
+	IRQ_HDCP_EN_RISE,	//hdcp_enc_state_rise
+	IRQ_HDCP_EN_FALL,	//hdcp_enc_state_fall
+	IRQ_EDID_AD0,		//edid_addr_intr for the port A
+	IRQ_EDID_AD1,		//edid_addr_intr for the port B
+	IRQ_EDID_AD2,		//edid_addr_intr for the port C
+	IRQ_EDID_AD3,		//edid_addr_intr for the port D
+	IRQ_EDID_CFT0,		//edid_bus_conflict for port A
+	IRQ_EDID_CFT1,		//edid_bus_conflict for port B
+	IRQ_EDID_CFT2,		//edid_bus_conflict for port C
+	IRQ_EDID_CFT3,		//edid_bus_conflict for port D
+	IRQ_HDCP_SKP = 27,	//HRX_HDCP22 SKP port signal nonce_rfrsh rise
+	IRQ_HDCP_RND_ERR,	//Error generating random number to HRX_HDCP22
+	IRQ_CAB_STB,		//cable clk measure stable/unstable status change
+	IRQ_TMDS_ALG,		//tmds alignment stable/unstable status change
+	IRQ_EMP_DONE,		//EMP field end at DE rise
+	IRQ_LAST_EMP,		//last EMP packet received
+	IRQ_DE_RISE,		//DE rise edge
+	IRQ_SQOF_RISE,		//hdmirx sqofclk rise
+	IRQ_SQOF_FALL,		//hdmirx sqofclk fall
+	IRQ_AUD_CHG,		//audio pll clk chg
+	IRQ_CDR_STB,		//cdr clk measure stable/unstable status change
+	/* ----T3X---- */
+	IRQ_T3X_5V_RISE,
+	IRQ_T3X_5V_FALL,
+	IRQ_T3X_EDID_AD,	//edid address interrupt
+	IRQ_T3X_20_STB,		//hrx_tmds20_clk measure stable/unstable status change
+	IRQ_T3X_21_STB,		//hrx_tmds21_clk measure stable/unstable status change
+	IRQ_PHY_STB,		//cts_phy_clk measure stable/unstable status change
+	IRQ_PXL_STB,		//cts_pixel_clk measure stable/unstable status change
+	IRQ_1618_STB,		//cts_cdr_1618_clk measure stable/unstable status change
+	IRQ_PLL_CHG0,		//hrx_pll_lock_flog edge
+	IRQ_PLL_CHG1,
+	IRQ_VS_RISE,		//vsync rise edge
+	IRQ_VALID_M_RISE,	//hdmirx_21_valid_m_rise
+	IRQ_VALID_M_FALL,	//hdmirx_21_valid_m_fall
+	IRQ_T3X_EDID_CFT,	//edid bus conflict rise edge
+	/* ----T3X---- */
+	IRQ_TYPE_CNT = 52
+};
+
 struct apll_param {
 	unsigned int bw;
 	unsigned int M;
@@ -3192,6 +3250,12 @@ struct apll_param {
 	unsigned int od2_div;
 	unsigned int aud_div;
 };
+
+extern u32 top_irq_tab[];
+extern u32 top_irq_mask_tl1[];
+extern u32 top_irq_mask_t7[];
+extern u32 top_irq_mask_t5m[];
+extern u32 top_irq_mask_t3x[];
 
 extern u32 t5_t7_rlevel[];
 extern u32 tl1_tm2_reg360[];

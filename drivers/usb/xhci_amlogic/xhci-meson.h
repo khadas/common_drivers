@@ -1961,6 +1961,8 @@ struct aml_xhci_hcd {
 #define XHCI_CRG_HOST_011	BIT_ULL(11)
 #define XHCI_CRG_HOST_014	BIT_ULL(14)
 #define XHCI_CRG_HOST_016	BIT_ULL(16)
+#define XHCI_CRG_HOST		BIT_ULL(19)
+
 	int xhci_trans_err_cnt;
 #endif
 

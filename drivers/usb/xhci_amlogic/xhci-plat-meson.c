@@ -325,8 +325,10 @@ static int xhci_plat_probe(struct platform_device *pdev)
 		if (device_property_read_bool(tmpdev, "quirk-broken-port-ped"))
 			xhci->quirks |= XHCI_BROKEN_PORT_PED;
 #if IS_ENABLED(CONFIG_AMLOGIC_COMMON_USB)
-		if (device_property_read_bool(tmpdev, "xhci-crg-host"))
+		if (device_property_read_bool(tmpdev, "xhci-crg-host")) {
 			xhci->quirks |= XHCI_DISABLE_IDT;
+			xhci->meson_quirks |= XHCI_CRG_HOST;
+		}
 		if (device_property_read_bool(tmpdev, "super_speed_support"))
 			xhci->quirks |= XHCI_AML_SUPER_SPEED_SUPPORT;
 		if (device_property_read_bool(tmpdev, "xhci-crg-host-003"))

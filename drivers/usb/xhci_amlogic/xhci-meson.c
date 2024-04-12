@@ -4465,6 +4465,59 @@ command_cleanup:
 	return ret;
 }
 
+#if IS_ENABLED(CONFIG_AMLOGIC_COMMON_USB)
+static void aml_xhci_disable_port(struct aml_xhci_hcd *xhci, struct usb_device *udev)
+{
+	struct usb_device		*parent_hdev = udev->parent;
+	struct usb_hub			*parent_hub;
+	struct usb_device *hdev;
+	int port1;
+
+	if (!parent_hdev)
+		return;
+
+	parent_hub = aml_xhci_usb_hub_to_struct_hub(parent_hdev);
+	if (!parent_hub)
+		return;
+	hdev = parent_hub->hdev;
+	if (udev->speed >= USB_SPEED_SUPER) {
+		port1 = udev->portnum | (USB_SS_PORT_LS_SS_DISABLED << 3);
+
+		usb_control_msg(hdev, usb_sndctrlpipe(hdev, 0),
+			USB_REQ_SET_FEATURE, USB_RT_PORT, USB_PORT_FEAT_LINK_STATE, port1,
+			NULL, 0, 1000);
+		usleep_range(4000, 8000);
+		port1 = udev->portnum | (USB_SS_PORT_LS_RX_DETECT << 3);
+		usb_control_msg(hdev, usb_sndctrlpipe(hdev, 0),
+			USB_REQ_SET_FEATURE, USB_RT_PORT, USB_PORT_FEAT_LINK_STATE, port1,
+			NULL, 0, 1000);
+		usleep_range(4000, 8000);
+		port1 = udev->portnum | (USB_SS_PORT_LS_U3 << 3);
+		usb_control_msg(hdev, usb_sndctrlpipe(hdev, 0),
+			USB_REQ_SET_FEATURE, USB_RT_PORT, USB_PORT_FEAT_LINK_STATE, port1,
+			NULL, 0, 1000);
+	} else {
+		port1 = udev->portnum;
+		usb_control_msg(hdev, usb_sndctrlpipe(hdev, 0),
+		USB_REQ_CLEAR_FEATURE, USB_RT_PORT, USB_PORT_FEAT_ENABLE, port1,
+		NULL, 0, 1000);
+		usleep_range(4000, 8000);
+		port1 = udev->portnum | (USB_SS_PORT_LS_SS_DISABLED << 3);
+
+		usb_control_msg(hdev, usb_sndctrlpipe(hdev, 0),
+			USB_REQ_SET_FEATURE, USB_RT_PORT, USB_PORT_FEAT_LINK_STATE, port1,
+			NULL, 0, 1000);
+		usleep_range(4000, 8000);
+
+		port1 = udev->portnum | (USB_SS_PORT_LS_RX_DETECT << 3);
+		usb_control_msg(hdev, usb_sndctrlpipe(hdev, 0),
+			USB_REQ_SET_FEATURE, USB_RT_PORT, USB_PORT_FEAT_LINK_STATE, port1,
+			NULL, 0, 1000);
+		usleep_range(4000, 8000);
+	}
+}
+#endif
+
 /*
  * At this point, the struct usb_device is about to go away, the device has
  * disconnected, and all traffic has been stopped and the endpoints have been
@@ -4492,6 +4545,11 @@ static void xhci_free_dev(struct usb_hcd *hcd, struct usb_device *udev)
 	 */
 	if (ret <= 0 && ret != -ENODEV)
 		return;
+
+#if IS_ENABLED(CONFIG_AMLOGIC_COMMON_USB)
+	if (xhci->meson_quirks & XHCI_CRG_HOST)
+		aml_xhci_disable_port(xhci, udev);
+#endif
 
 	virt_dev = xhci->devs[udev->slot_id];
 	slot_ctx = aml_xhci_get_slot_ctx(xhci, virt_dev->out_ctx);

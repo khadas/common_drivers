@@ -2336,6 +2336,47 @@ static int lcd_config_load_from_dts(struct aml_lcd_drv_s *pdrv)
 		break;
 	}
 
+	ret = of_property_read_u32_array(child, "phy_adv_attr", &para[0], 5);
+	if (!ret) {
+		phy_cfg->flag     = para[0];
+		phy_cfg->vswing   = para[1];
+		phy_cfg->vcm      = para[2];
+		phy_cfg->ref_bias = para[3];
+		phy_cfg->odt      = para[4];
+		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
+			LCDPR("%s: ctrl_flag=0x%x vsw=0x%08x vcm=0x%x, ref_bias=0x%x, odt=0x%x\n",
+				__func__, phy_cfg->flag, phy_cfg->vswing, phy_cfg->vcm,
+				phy_cfg->ref_bias, phy_cfg->odt);
+		}
+		ret = of_property_read_variable_u32_array(child, "phy_lane_ctrl", &para[0], 1, 32);
+		if (phy_cfg->flag & (0x3 << 12) && ret > 0) {
+			for (i = 0; i < phy_cfg->lane_num; i++) {
+				if (i >= ret)
+					break;
+
+				if (phy_cfg->flag & (1 << 12))
+					phy_cfg->lane[i].preem = para[i] & 0xffff;
+
+				if (phy_cfg->flag & (1 << 13))
+					phy_cfg->lane[i].amp   = para[i] >> 16;
+
+				if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
+					if ((phy_cfg->flag >> 12 & 0x3) == 0x3) {
+						LCDPR("%s: lane[%d]: preem=0x%x amp=0x%x\n",
+							__func__, i,
+							phy_cfg->lane[i].preem,
+							phy_cfg->lane[i].amp);
+					} else if ((phy_cfg->flag >> 12 & 0x3) == 0x1) {
+						LCDPR("%s: lane[%d]: preem=0x%x\n",
+							__func__, i, phy_cfg->lane[i].preem);
+					} else if ((phy_cfg->flag >> 12 & 0x3) == 0x2) {
+						LCDPR("%s: lane[%d]: amp=0x%x\n",
+							__func__, i, phy_cfg->lane[i].amp);
+					}
+				}
+			}
+		}
+	}
 	lcd_config_timing_check(pdrv, &pdrv->config.timing.dft_timing);
 
 	lcd_vlock_param_load_from_dts(pdrv, child);

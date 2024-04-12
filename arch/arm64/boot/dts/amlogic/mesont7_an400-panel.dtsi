@@ -77,6 +77,11 @@
 				0>; /*lane_reverse*/
 			phy_attr=<0x8 0xf>; /*vswing_level, preem_level*/
 
+			phy_adv_attr=<0x100a 0 0x2f 0 0x2>; /*flag, vswing, vcm, bias, odt*/
+			/*vswing_level, preem_level, flag, vswing, vcm, bias, odt*/
+			phy_lane_ctrl = </*bit[31:16]amp, bit[15:0]preem*/
+				0x000000e7 0x000000e7 0x000000e7 0x000000e7
+				0x000000e7 0x000000e7 0x000000e7 0x000000e7>;
 			/* power step: type, index, value, delay(ms) */
 			power_on_step = <
 				0 0 1 50  /*panel power on*/
@@ -286,8 +291,13 @@
 			vbyone_intr_enable = <
 				1 /*vbyone_intr_enable */
 				3>; /*vbyone_vsync_intr_enable*/
-			phy_attr=<0x8 0xf>; /* vswing_level, preem_level */
 			hw_filter=<0 0>;  /* filter_time, filter_cnt*/
+			phy_attr=<0x8 0xf>; /* vswing_level, preem_level */
+
+			phy_adv_attr=<0x100a 0 0x2f 0 0x2>; /*flag, vswing, vcm, bias, odt*/
+			phy_lane_ctrl = </*bit[31:16]amp, bit[15:0]preem*/
+				0x000000e7 0x000000e7 0x000000e7 0x000000e7
+				0x000000e7 0x000000e7 0x000000e7 0x000000e7>;
 
 			/* power step: type, index, value, delay(ms) */
 			power_on_step = <

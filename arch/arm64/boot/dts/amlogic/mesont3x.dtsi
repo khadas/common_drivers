@@ -2990,7 +2990,7 @@
 		status = "okay";
 		index = <0>;
 		line_delay = <600>;
-		interrupts = <0 197 1>;
+		interrupts = <0 115 1>;
 		interrupt-names = "vsync";
 	};
 

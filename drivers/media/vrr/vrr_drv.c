@@ -244,10 +244,17 @@ static void vrr_lcd_enable(struct aml_vrr_drv_s *vdrv, unsigned int mode)
 	spin_unlock_irqrestore(&vdrv->vrr_isr_lock, flags);
 
 	if (vrr_debug_print & VRR_DBG_PR_NORMAL) {
-		VRRPR("VENC_VRR_CTRL = 0x%x\n",
-		      vrr_reg_read(VENC_VRR_CTRL + offset));
-		VRRPR("VENC_VRR_ADJ_LMT = 0x%x\n",
-		      vrr_reg_read(VENC_VRR_ADJ_LMT + offset));
+		if (vdrv->data->chip_type == VRR_CHIP_T3X) {
+			VRRPR("VENC_VRR_CTRL = 0x%x\n",
+				vrr_reg_read(VENC_VRR_CTRL_T3X + offset));
+			VRRPR("VENC_VRR_ADJ_LMT = 0x%x\n",
+				vrr_reg_read(VENC_VRR_ADJ_LMT_T3X + offset));
+		} else {
+			VRRPR("VENC_VRR_CTRL = 0x%x\n",
+				vrr_reg_read(VENC_VRR_CTRL + offset));
+			VRRPR("VENC_VRR_ADJ_LMT = 0x%x\n",
+				vrr_reg_read(VENC_VRR_ADJ_LMT + offset));
+		}
 	}
 	VRRPR("[%d]: %s: state = 0x%x chip_type:%d\n",
 			vdrv->index, __func__, vdrv->state, vdrv->data->chip_type);
@@ -437,8 +444,12 @@ static void vrr_drv_disable(struct aml_vrr_drv_s *vdrv)
 	else
 		val = 0xf0;
 
-	if (vdrv->state & VRR_STATE_ENCL)
-		vrr_reg_setb((VENC_VRR_CTRL + offset), val, 0, 8);
+	if (vdrv->state & VRR_STATE_ENCL) {
+		if (vdrv->data->chip_type == VRR_CHIP_T3X)
+			vrr_reg_setb((VENC_VRR_CTRL_T3X + offset), val, 0, 8);
+		else
+			vrr_reg_setb((VENC_VRR_CTRL + offset), val, 0, 8);
+	}
 	if (vdrv->state & VRR_STATE_ENCP)
 		vrr_reg_setb((VENP_VRR_CTRL + offset), val, 0, 8);
 

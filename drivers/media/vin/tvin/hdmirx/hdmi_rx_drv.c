@@ -1878,6 +1878,8 @@ static long hdmirx_ioctl(struct file *file, unsigned int cmd,
 		if (edid_delivery_mothed == EDID_DELIVERY_ALL_PORT) {
 			rx_irq_en(0, rx_info.main_port);
 			if (rx_info.main_port_open) {
+				skip_frame(4, port_idx, "edid skip");
+				msleep(20);
 				rx_set_cur_hpd(0, 4, rx_info.main_port);
 				rx[rx_info.main_port].var.edid_update_flag = 1;
 			}
@@ -1901,28 +1903,30 @@ static long hdmirx_ioctl(struct file *file, unsigned int cmd,
 		}
 		port_idx = hdmi_idx - 1;
 		if (port_idx > 3) {
-			rx_pr("port_idx error\n");
+			rx_pr("port_idx illegal\n");
 			ret = -EFAULT;
 			mutex_unlock(&devp->rx_lock);
 			break;
 		}
-
-		rx_set_port_hpd(port_idx, 0);
 		rx_pr("port%d_hpd_low\n", port_idx);
 		if (rx_info.main_port == port_idx)
 			pre_port = 0xff;
-
 		if (!rx_info.main_port_open) {
+			rx_set_port_hpd(port_idx, 0);
 			port_hpd_rst_flag |= (1 << port_idx);
 			hdmi_rx_top_edid_update();
 		} else {
 			if (port_idx != rx_info.main_port) {
+				rx_set_port_hpd(port_idx, 0);
 				port_hpd_rst_flag |= (1 << port_idx);
 				hdmi_rx_top_edid_update();
 			} else {
 				rx[rx_info.main_port].var.edid_update_flag = 1;
-				rx_irq_en(0, port_idx);
-				//rx_set_cur_hpd(0, 4);
+				pre_port = 0xff;
+				rx_irq_en(false, port_idx);
+				skip_frame(4, port_idx, "edid skip");
+				msleep(20);
+				rx_set_cur_hpd(0, 4, port_idx);
 				fsm_restart(port_idx);
 			}
 		}

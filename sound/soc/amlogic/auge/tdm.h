@@ -16,5 +16,5 @@ int aml_tdm_hw_setting_init(struct aml_tdm *p_tdm,
 void aml_tdm_hw_setting_free(struct aml_tdm *p_tdm, int stream);
 void aml_tdm_trigger(struct aml_tdm *p_tdm, int stream, bool enable);
 void tdm_mute_capture(struct aml_tdm *p_tdm, bool mute);
-
+int aml_tdm_set_fmt(struct aml_tdm *p_tdm, unsigned int fmt, bool capture_active);
 #endif

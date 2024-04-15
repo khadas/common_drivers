@@ -196,9 +196,12 @@
 		};
 #endif
 		aml-audio-card,dai-link@4 {
+			format = "i2s";
 			mclk-fs = <256>;
 			continuous-clock;
 			suffix-name = "alsaPORT-loopback";
+			bitclock-master = <&loopback>;
+			frame-master = <&loopback>;
 			cpu {
 				sound-dai = <&loopback>;
 				system-clock-frequency = <12288000>;
@@ -524,7 +527,6 @@
 
 		original-src = <&tdmb>;
 		//tdmin_lb-src = <&tdmin_lb>;
-
 		clocks = <&clkaudio CLKID_AUDIO2_GATE_PDM
 			&clkc CLKID_FCLK_DIV2
 			&clkc CLKID_FCLK_DIV2

@@ -582,7 +582,7 @@ static int aml_set_tdm_mclk(struct aml_tdm *p_tdm, unsigned int freq, bool tune)
 	return ret;
 }
 
-static int aml_tdm_set_fmt(struct aml_tdm *p_tdm, unsigned int fmt, bool capture_active)
+int aml_tdm_set_fmt(struct aml_tdm *p_tdm, unsigned int fmt, bool capture_active)
 {
 	bool tdmin_src_hdmirx = false;
 	bool tdmin_src_hdmirxb = false;

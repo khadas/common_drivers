@@ -1030,7 +1030,6 @@ static int loopback_dai_hw_params(struct snd_pcm_substream *ss,
 	unsigned int rate, channels;
 	snd_pcm_format_t format;
 	int ret = 0;
-
 	rate = params_rate(params);
 	channels = params_channels(params);
 	format = params_format(params);
@@ -1129,7 +1128,25 @@ static int loopback_dai_set_fmt(struct snd_soc_dai *dai,
 	struct loopback *p_loopback = snd_soc_dai_get_drvdata(dai);
 
 	pr_info("asoc %s, %#x, %p\n", __func__, fmt, p_loopback);
-
+	if (p_loopback->datain_chnum > 0) {
+		switch (p_loopback->datain_src) {
+		case DATAIN_TDMA:
+		case DATAIN_TDMB:
+		case DATAIN_TDMC:
+		case DATAIN_TDMD:
+			if (p_loopback->mic_src)
+				aml_tdm_set_fmt(p_loopback->mic_src, fmt, 1);
+		break;
+		case DATAIN_SPDIF:
+		break;
+		case DATAIN_PDM:
+		break;
+		case DATAIN_LOOPBACK:
+		break;
+		default:
+		break;
+		}
+	}
 	return 0;
 }
 

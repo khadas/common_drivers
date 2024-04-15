@@ -272,7 +272,10 @@
 #endif
 		aml-audio-card,dai-link@4 {
 			mclk-fs = <256>;
+			format = "i2s";
 			continuous-clock;
+			bitclock-master = <&loopback>;
+			frame-master = <&loopback>;
 			suffix-name = "alsaPORT-loopback";
 			cpu {
 				sound-dai = <&loopback>;

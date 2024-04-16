@@ -781,7 +781,7 @@ static void s5_osdblend_set_state(struct meson_vpu_block *vblk,
 	if (mvps->plane_info[0].enable) {
 		reg_ops->rdma_write_reg(OSD1_PROC_IN_SIZE,
 				    (mvsps->scaler_din_vsize[0] << 16) |
-				    mvsps->scaler_din_hsize[0]);
+				    mvsps->scaler_din_hsize[0] * 2);
 		reg_ops->rdma_write_reg(OSD1_PROC_OUT_SIZE,
 				    (mvsps->scaler_dout_vsize[0] << 16) |
 				    mvsps->scaler_dout_hsize[0]);
@@ -790,7 +790,7 @@ static void s5_osdblend_set_state(struct meson_vpu_block *vblk,
 	if (mvps->plane_info[2].enable) {
 		reg_ops->rdma_write_reg(OSD3_PROC_IN_SIZE,
 				    (mvsps->scaler_din_vsize[2] << 16) |
-				    mvsps->scaler_din_hsize[2]);
+				    mvsps->scaler_din_hsize[2] * 2);
 		reg_ops->rdma_write_reg(OSD3_PROC_OUT_SIZE,
 				    (mvsps->scaler_dout_vsize[2] << 16) |
 				    mvsps->scaler_dout_hsize[2]);
@@ -977,7 +977,7 @@ static void t3x_osdblend_set_state(struct meson_vpu_block *vblk,
 	if (mvps->plane_info[0].enable) {
 		reg_ops->rdma_write_reg(OSD1_PROC_IN_SIZE,
 				    (mvsps->scaler_din_vsize[0] << 16) |
-				    mvsps->scaler_din_hsize[0]);
+				    mvsps->scaler_din_hsize[0] * 2);
 		reg_ops->rdma_write_reg(OSD1_PROC_OUT_SIZE,
 				    (mvsps->scaler_dout_vsize[0] << 16) |
 				    mvsps->scaler_dout_hsize[0]);
@@ -986,7 +986,7 @@ static void t3x_osdblend_set_state(struct meson_vpu_block *vblk,
 	if (mvps->plane_info[1].enable) {
 		reg_ops->rdma_write_reg(OSD2_PROC_IN_SIZE,
 				    (mvsps->scaler_din_vsize[1] << 16) |
-				    mvsps->scaler_din_hsize[1]);
+				    mvsps->scaler_din_hsize[1] * 2);
 		reg_ops->rdma_write_reg(OSD2_PROC_OUT_SIZE,
 				    (mvsps->scaler_dout_vsize[1] << 16) |
 				    mvsps->scaler_dout_hsize[1]);
@@ -996,7 +996,7 @@ static void t3x_osdblend_set_state(struct meson_vpu_block *vblk,
 	    mvps->plane_info[2].crtc_index == 0) {
 		reg_ops->rdma_write_reg(OSD3_PROC_IN_SIZE,
 				    (mvsps->scaler_din_vsize[2] << 16) |
-				    mvsps->scaler_din_hsize[2]);
+				    mvsps->scaler_din_hsize[2] * 2);
 		reg_ops->rdma_write_reg(OSD3_PROC_OUT_SIZE,
 				    (mvsps->scaler_dout_vsize[2] << 16) |
 				    mvsps->scaler_dout_hsize[2]);

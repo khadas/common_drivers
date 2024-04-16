@@ -197,7 +197,7 @@ struct earc {
 	int tx_heartbeat_state;
 	int tx_stream_state;
 	u8 tx_latency;
-	struct work_struct send_uevent;
+	struct delayed_work send_uevent;
 	bool tx_mute;
 	int same_src_on;
 	/* ui earc/arc switch */
@@ -393,7 +393,7 @@ static void earctx_init(int earc_port, bool st)
 		earc_clock_enable();
 	st = st && p_earc->tx_ui_flag;
 	if (!st) {
-		schedule_work(&p_earc->send_uevent);
+		schedule_delayed_work(&p_earc->send_uevent, 0);
 		/* set disconnect when cable plugout */
 		p_earc->earctx_connected_device_type = ATNDTYP_DISCNCT;
 		/* release earctx same source when cable plug out */
@@ -421,7 +421,7 @@ static void earctx_init(int earc_port, bool st)
 		schedule_work(&p_earc->work);
 	}
 	if (st && !p_earc->tx_earc_mode)
-		schedule_work(&p_earc->send_uevent);
+		schedule_delayed_work(&p_earc->send_uevent, msecs_to_jiffies(700));
 }
 
 static void earcrx_init(bool st)
@@ -746,6 +746,7 @@ static irqreturn_t earc_tx_isr(int irq, void *data)
 	}
 
 	if (status0 & INT_EARCTX_CMDC_EARC) {
+		schedule_delayed_work(&p_earc->send_uevent, msecs_to_jiffies(200));
 		p_earc->tx_reset_hpd = false;
 		dev_info(p_earc->dev, "EARCTX_CMDC_EARC\n");
 	}
@@ -2150,7 +2151,7 @@ int earctx_earc_mode_put(struct snd_kcontrol *kcontrol,
 	p_earc->tx_earc_mode = earc_mode;
 	earctx_set_earc_mode(p_earc, earc_mode);
 	if (!earc_mode && earctx_cmdc_get_attended_type(p_earc->tx_cmdc_map) == ATNDTYP_ARC)
-		schedule_work(&p_earc->send_uevent);
+		schedule_delayed_work(&p_earc->send_uevent, msecs_to_jiffies(700));
 
 	return 0;
 }
@@ -2874,18 +2875,19 @@ static int earcrx_cmdc_setup(struct earc *p_earc)
 
 static void send_uevent_work_func(struct work_struct *p_work)
 {
-	struct earc *p_earc = container_of(p_work, struct earc, send_uevent);
+	struct earc *p_earc = container_of(p_work, struct earc, send_uevent.work);
 	enum attend_type type = earctx_cmdc_get_attended_type(p_earc->tx_cmdc_map);
 
 	mutex_lock(&earc_mutex);
 	if (!p_earc->resumed)
 		earc_clock_enable();
 	if (type == ATNDTYP_ARC) {
-		msleep(700);
 		earctx_enable_d2a(p_earc->tx_top_map, true);
 		earctx_update_attend_event(p_earc, false, true);
 	} else if (type == ATNDTYP_DISCNCT) {
 		earctx_update_attend_event(p_earc, false, false);
+	} else {
+		earctx_update_attend_event(p_earc, true, true);
 	}
 	mutex_unlock(&earc_mutex);
 }
@@ -3159,7 +3161,7 @@ static int earc_platform_probe(struct platform_device *pdev)
 		earctx_ss_ops.private = p_earc;
 		register_samesrc_ops(SHAREBUFFER_EARCTX, &earctx_ss_ops);
 		INIT_DELAYED_WORK(&p_earc->tx_resume_work, tx_resume_work_func);
-		INIT_WORK(&p_earc->send_uevent, send_uevent_work_func);
+		INIT_DELAYED_WORK(&p_earc->send_uevent, send_uevent_work_func);
 		INIT_WORK(&p_earc->tx_hold_bus_work, tx_hold_bus_work_func);
 		INIT_DELAYED_WORK(&p_earc->gain_disable, gain_disable_work_func);
 	}

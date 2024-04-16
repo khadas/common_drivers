@@ -880,8 +880,10 @@ static const enum f2v_vphase_type_e vpp_phase_table[4][3] = {
 static const u8 skip_tab[6] = { 0x24, 0x04, 0x68, 0x48, 0x28, 0x08 };
 
 static bool video_mute_on;
+static bool videopip_mute_on;
 /* 0: off, 1: vpp mute 2:dv mute */
 static int video_mute_status;
+static int videopip_mute_status;
 static bool output_mute_on;
 /* 0: off, 1: on */
 static int output_mute_status;
@@ -4943,13 +4945,6 @@ static void vdx_clip_setting(u8 layer_id, struct clip_setting_s *setting)
 		cur_dev->rdma_func[vpp_index].rdma_wr
 			(VPP_VD2_CLIP_MISC1 + misc_off,
 			setting->clip_min);
-		if (!(setting->clip_max == 0x3fffffff &&
-			setting->clip_min == 0x0)) {
-			WRITE_VCBUS_REG(VPP_VD2_CLIP_MISC0 + misc_off,
-				setting->clip_max);
-			WRITE_VCBUS_REG(VPP_VD2_CLIP_MISC1 + misc_off,
-				setting->clip_min);
-		}
 		break;
 	case 2:
 		misc_off = setting->misc_reg_offt;
@@ -4959,13 +4954,6 @@ static void vdx_clip_setting(u8 layer_id, struct clip_setting_s *setting)
 		cur_dev->rdma_func[vpp_index].rdma_wr
 			(VPP_VD3_CLIP_MISC1 + misc_off,
 			setting->clip_min);
-		if (!(setting->clip_max == 0x3fffffff &&
-			setting->clip_min == 0x0)) {
-			WRITE_VCBUS_REG(VPP_VD3_CLIP_MISC0 + misc_off,
-				setting->clip_max);
-			WRITE_VCBUS_REG(VPP_VD3_CLIP_MISC1 + misc_off,
-				setting->clip_min);
-		}
 		break;
 	default:
 		break;
@@ -6530,6 +6518,24 @@ void rx_mute_vpp(u8 port_type)
 }
 EXPORT_SYMBOL(rx_mute_vpp);
 
+void rx_mute_videopip(void)
+{
+	u32 black_val;
+
+	black_val = (0x0 << 20) | (0x200 << 10) | 0x200; /* YUV */
+
+	pr_info("call %s to mute videopip\n", __func__);
+	if (cur_dev->display_module == S5_DISPLAY_MODULE) {
+		rx_mute_videopip_s5(black_val);
+	} else {
+		WRITE_VCBUS_REG(VPP_VD2_CLIP_MISC0, black_val);
+		WRITE_VCBUS_REG(VPP_VD2_CLIP_MISC1, black_val);
+	}
+	videopip_mute_on = true;
+	videopip_mute_status = VIDEO_MUTE_ON_VPP;
+}
+EXPORT_SYMBOL(rx_mute_videopip);
+
 int set_video_mute_info(u32 owner, bool on)
 {
 	if (on) {
@@ -6570,7 +6576,7 @@ static void check_video_mute_state(void)
 	video_mute_on = false;
 }
 
-static inline void mute_vpp(void)
+static inline void mute_vpp(u8 layer_id)
 {
 	u32 black_val;
 	u8 vpp_index = vd_layer[0].vpp_index;
@@ -6591,13 +6597,13 @@ static inline void mute_vpp(void)
 					setting.clip_min = black_val;
 				}
 		}
-		vd_clip_setting(vpp_index, 0, &setting);
+		vd_clip_setting(vpp_index, layer_id, &setting);
 	} else {
 		vpp_clip_setting(vpp_index, &setting);
 	}
 }
 
-static inline void unmute_vpp(void)
+static inline void unmute_vpp(u8 layer_id)
 {
 	u8 vpp_index = vd_layer[0].vpp_index;
 	struct clip_setting_s setting;
@@ -6606,7 +6612,7 @@ static inline void unmute_vpp(void)
 	setting.clip_max = 0x3fffffff;
 	setting.clip_min = 0x0;
 	if (is_tv_panel())
-		vd_clip_setting(vpp_index, 0, &setting);
+		vd_clip_setting(vpp_index, layer_id, &setting);
 	else
 		vpp_clip_setting(vpp_index, &setting);
 }
@@ -6620,7 +6626,7 @@ void check_video_mute(void)
 				/*tv mode, mute vpp*/
 				if (video_mute_status != VIDEO_MUTE_ON_VPP) {
 					/* vpp black */
-					mute_vpp();
+					mute_vpp(0);
 					if (is_aisr_enable(&vd_layer[0]))
 						aisr_sr1_nn_enable_sync(false);
 					if (vd_layer[0].global_debug & DEBUG_FLAG_BASIC_INFO)
@@ -6638,7 +6644,7 @@ void check_video_mute(void)
 			}
 		} else {
 			if (video_mute_status != VIDEO_MUTE_ON_VPP) {
-				mute_vpp();
+				mute_vpp(0);
 				if (is_aisr_enable(&vd_layer[0]))
 					aisr_sr1_nn_enable_sync(false);
 				pr_info("%s: VIDEO_MUTE_ON_VPP\n", __func__);
@@ -6650,7 +6656,7 @@ void check_video_mute(void)
 			if (is_tv_panel()) {
 				/*tv mode, unmute vpp*/
 				if (video_mute_status != VIDEO_MUTE_OFF) {
-					unmute_vpp();
+					unmute_vpp(0);
 					if (is_aisr_enable(&vd_layer[0]))
 						aisr_sr1_nn_enable_sync(true);
 					if (vd_layer[0].global_debug & DEBUG_FLAG_BASIC_INFO)
@@ -6667,7 +6673,7 @@ void check_video_mute(void)
 			}
 		} else {
 			if (video_mute_status != VIDEO_MUTE_OFF) {
-				unmute_vpp();
+				unmute_vpp(0);
 				if (is_aisr_enable(&vd_layer[0]))
 					aisr_sr1_nn_enable_sync(true);
 				pr_info("%s: VIDEO_MUTE_OFF vpp\n", __func__);
@@ -6676,6 +6682,97 @@ void check_video_mute(void)
 		}
 	}
 }
+
+void check_videopip_mute(void)
+{
+	if (videopip_mute_on) {
+		if (videopip_mute_status != VIDEO_MUTE_ON_VPP) {
+			mute_vpp(1);
+			pr_info("%s: VIDEOPIP_MUTE_ON_VPP\n", __func__);
+		}
+		videopip_mute_status = VIDEO_MUTE_ON_VPP;
+	} else {
+		if (videopip_mute_status != VIDEO_MUTE_OFF) {
+			unmute_vpp(1);
+			pr_info("%s: VIDEOPIP_MUTE_OFF vpp\n", __func__);
+		}
+		videopip_mute_status = VIDEO_MUTE_OFF;
+	}
+}
+
+void rx_mute_dual_video_rdma(int vdin0_mute, int vdin1_mute)
+{
+	struct vframe_s *dispbuf0 = NULL;
+	struct vframe_s *dispbuf1 = NULL;
+
+	dispbuf0 = get_dispbuf(0);
+	dispbuf1 = get_dispbuf(1);
+	if (vdin0_mute == E_RX_MUTE) {
+		if (dispbuf0 && dispbuf0->vdin_channel_id == CHANNEL_VDIN0 &&
+			vf_source_from_vdin(dispbuf0))
+			video_mute_array[HDMI_RX_MUTE_SET] = true;
+		else if (dispbuf1 && dispbuf1->vdin_channel_id == CHANNEL_VDIN0 &&
+			vf_source_from_vdin(dispbuf1))
+			videopip_mute_on = true;
+	} else if (vdin0_mute == E_RX_UNMUTE) {
+		if (dispbuf0 && dispbuf0->vdin_channel_id == CHANNEL_VDIN0)
+			video_mute_array[HDMI_RX_MUTE_SET] = false;
+		else if (dispbuf1 && dispbuf1->vdin_channel_id == CHANNEL_VDIN0)
+			videopip_mute_on = false;
+	}
+
+	if (vdin1_mute == E_RX_MUTE) {
+		if (dispbuf0 && dispbuf0->vdin_channel_id == CHANNEL_VDIN1 &&
+			vf_source_from_vdin(dispbuf0))
+			video_mute_array[HDMI_RX_MUTE_SET] = true;
+		else if (dispbuf1 && dispbuf1->vdin_channel_id == CHANNEL_VDIN1 &&
+			vf_source_from_vdin(dispbuf1))
+			videopip_mute_on = true;
+	} else if (vdin1_mute == E_RX_UNMUTE) {
+		if (dispbuf0 && dispbuf0->vdin_channel_id == CHANNEL_VDIN1)
+			video_mute_array[HDMI_RX_MUTE_SET] = false;
+		else if (dispbuf1 && dispbuf1->vdin_channel_id == CHANNEL_VDIN1)
+			videopip_mute_on = false;
+	}
+}
+EXPORT_SYMBOL(rx_mute_dual_video_rdma);
+
+void rx_mute_dual_video_vcbus(int vdin0_mute, int vdin1_mute)
+{
+	struct vframe_s *dispbuf0 = NULL;
+	struct vframe_s *dispbuf1 = NULL;
+
+	dispbuf0 = get_dispbuf(0);
+	dispbuf1 = get_dispbuf(1);
+	if (vdin0_mute == E_RX_MUTE) {
+		if (dispbuf0 && dispbuf0->vdin_channel_id == CHANNEL_VDIN0 &&
+			vf_source_from_vdin(dispbuf0))
+			rx_mute_vpp(0);
+		else if (dispbuf1 && dispbuf1->vdin_channel_id == CHANNEL_VDIN0 &&
+			vf_source_from_vdin(dispbuf1))
+			rx_mute_videopip();
+	} else if (vdin0_mute == E_RX_UNMUTE) {
+		if (dispbuf0 && dispbuf0->vdin_channel_id == CHANNEL_VDIN0)
+			video_mute_array[HDMI_RX_MUTE_SET] = false;
+		else if (dispbuf1 && dispbuf1->vdin_channel_id == CHANNEL_VDIN0)
+			videopip_mute_on = false;
+	}
+
+	if (vdin1_mute == E_RX_MUTE) {
+		if (dispbuf0 && dispbuf0->vdin_channel_id == CHANNEL_VDIN1 &&
+			vf_source_from_vdin(dispbuf0))
+			rx_mute_vpp(0);
+		else if (dispbuf1 && dispbuf1->vdin_channel_id == CHANNEL_VDIN1 &&
+			vf_source_from_vdin(dispbuf1))
+			rx_mute_videopip();
+	} else if (vdin1_mute == E_RX_UNMUTE) {
+		if (dispbuf0 && dispbuf0->vdin_channel_id == CHANNEL_VDIN1)
+			video_mute_array[HDMI_RX_MUTE_SET] = false;
+		else if (dispbuf1 && dispbuf1->vdin_channel_id == CHANNEL_VDIN1)
+			videopip_mute_on = false;
+	}
+}
+EXPORT_SYMBOL(rx_mute_dual_video_vcbus);
 
 static inline void mute_output(void)
 {
@@ -7959,6 +8056,7 @@ void vpp_blend_update(const struct vinfo_s *vinfo, u8 vpp_index)
 	check_video_pattern_output();
 	check_postblend_pattern_output();
 	check_video_mute();
+	check_videopip_mute();
 	check_output_mute();
 
 #ifndef CONFIG_AMLOGIC_C3_REMOVE

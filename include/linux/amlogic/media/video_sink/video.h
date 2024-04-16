@@ -345,6 +345,12 @@ enum mediasync_parameter_e {
 #define DRM_MUTE_SET           4
 #define VPP_INTERNAL           5
 
+enum rx_mute_type_e {
+	E_RX_MUTE,
+	E_RX_UNMUTE,
+	E_RX_NA
+};
+
 struct mediasync_parameter {
 	u32 vsync_period;
 	s64 vsync_timestamp;
@@ -448,6 +454,8 @@ struct vpp_postblend_scope_s {
 };
 
 void set_video_mute(u32 owner, bool on);
+void rx_mute_dual_video_rdma(int vdin0_mute, int vdin1_mute);
+void rx_mute_dual_video_vcbus(int vdin0_mute, int vdin1_mute);
 int get_video_mute(void);
 void set_output_mute(bool on);
 int get_output_mute(void);

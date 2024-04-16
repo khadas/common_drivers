@@ -884,8 +884,11 @@ void aisr_scaler_setting_s5(struct video_layer_s *layer,
 			     struct scaler_setting_s *setting);
 void vd_blend_setting_s5(struct video_layer_s *layer, struct blend_setting_s *setting);
 void rx_mute_vpp_s5(u32 black_val);
+void rx_mute_videopip_s5(u32 black_val);
 void vd_clip_setting_s5(u8 vpp_index, u8 layer_id,
 	struct clip_setting_s *setting);
+struct vframe_s *get_dispbuf(u8 layer_id);
+bool vf_source_from_vdin(struct vframe_s *vf);
 void vpp_post_blend_update_s5(const struct vinfo_s *vinfo, u8 vpp_index);
 void vpp1_post_blend_update_s5(const struct vinfo_s *vinfo);
 void adjust_vpp_filter_parm(struct vpp_frame_par_s *frame_par,

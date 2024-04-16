@@ -11836,6 +11836,17 @@ void rx_mute_vpp_s5(u32 black_val)
 	}
 }
 
+void rx_mute_videopip_s5(u32 black_val)
+{
+	struct vd2_proc_misc_reg_s *vd2_proc_misc_reg = NULL;
+
+	vd2_proc_misc_reg = &vd_proc_reg.vd2_proc_misc_reg;
+	WRITE_VCBUS_REG(vd2_proc_misc_reg->vd2_clip_misc0,
+		black_val);
+	WRITE_VCBUS_REG(vd2_proc_misc_reg->vd2_clip_misc1,
+		black_val);
+}
+
 void vd_clip_setting_s5(u8 vpp_index, u8 layer_id,
 	struct clip_setting_s *setting)
 {

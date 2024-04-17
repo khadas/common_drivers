@@ -2671,32 +2671,33 @@ RESTART:
 			reverse, vf);
 #endif
 
-	w_out = next_frame_par->VPP_hsc_endp -
-		next_frame_par->VPP_hsc_startp + 1;
-	h_out = next_frame_par->VPP_vsc_endp -
-		next_frame_par->VPP_vsc_startp + 1;
-	w_in = w_in / (next_frame_par->hscale_skip_count + 1);
-	h_in = h_in / (next_frame_par->vscale_skip_count + 1);
-	if ((w_in << 18) / w_out << 6 != filter->vpp_hsc_start_phase_step) {
-		if (cur_super_debug)
-			pr_info("recalc hf phase_step: 0x%x->0x%x, w_in=%d, w_out=%d\n",
-				filter->vpp_hsc_start_phase_step,
-				(w_in  << 18) / w_out << 6,
-				w_in,
-				w_out);
-		filter->vpp_hsc_start_phase_step = (w_in  << 18) / w_out << 6;
-		filter->vpp_hf_start_phase_step = filter->vpp_hsc_start_phase_step;
+	if (cur_dev->aisr_enable) {
+		w_out = next_frame_par->VPP_hsc_endp -
+			next_frame_par->VPP_hsc_startp + 1;
+		h_out = next_frame_par->VPP_vsc_endp -
+			next_frame_par->VPP_vsc_startp + 1;
+		w_in = w_in / (next_frame_par->hscale_skip_count + 1);
+		h_in = h_in / (next_frame_par->vscale_skip_count + 1);
+		if ((w_in << 18) / w_out << 6 != filter->vpp_hsc_start_phase_step) {
+			if (cur_super_debug)
+				pr_info("recalc hf phase_step: 0x%x->0x%x, w_in=%d, w_out=%d\n",
+					filter->vpp_hsc_start_phase_step,
+					(w_in  << 18) / w_out << 6,
+					w_in,
+					w_out);
+			filter->vpp_hsc_start_phase_step = (w_in  << 18) / w_out << 6;
+			filter->vpp_hf_start_phase_step = filter->vpp_hsc_start_phase_step;
+		}
+		if ((h_in << 18) / h_out << 6 != filter->vpp_vsc_start_phase_step) {
+			if (cur_super_debug)
+				pr_info("recalc vsc phase_step: 0x%x->0x%x, h_in=%d, h_out=%d\n",
+					filter->vpp_vsc_start_phase_step,
+					(h_in  << 18) / h_out << 6,
+					h_in,
+					h_out);
+			filter->vpp_vsc_start_phase_step = (h_in  << 18) / h_out << 6;
+		}
 	}
-	if ((h_in << 18) / h_out << 6 != filter->vpp_vsc_start_phase_step) {
-		if (cur_super_debug)
-			pr_info("recalc vsc phase_step: 0x%x->0x%x, h_in=%d, h_out=%d\n",
-				filter->vpp_vsc_start_phase_step,
-				(h_in  << 18) / h_out << 6,
-				h_in,
-				h_out);
-		filter->vpp_vsc_start_phase_step = (h_in  << 18) / h_out << 6;
-	}
-
 	next_frame_par->video_input_h = next_frame_par->VPP_vd_end_lines_ -
 		next_frame_par->VPP_vd_start_lines_ + 1;
 	next_frame_par->video_input_h = next_frame_par->video_input_h /

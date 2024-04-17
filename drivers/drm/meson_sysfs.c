@@ -1429,10 +1429,16 @@ int meson_drm_sysfs_register(struct drm_device *drm_dev)
 	rc = sysfs_create_bin_file(&dev->kobj, &state_attr);
 	rc = sysfs_create_bin_file(&dev->kobj, &reg_dump_attr);
 
-	for (i = 0; i < priv->pipeline->num_osds; i++)
+	for (i = 0; i < MESON_MAX_OSDS; i++) {
+		if (!priv->pipeline->osds[i])
+			continue;
 		rc = sysfs_create_group(&dev->kobj, &osd_attr_group[i]);
-	for (i = 0; i < priv->pipeline->num_postblend; i++)
+	}
+	for (i = 0; i < MESON_MAX_POSTBLEND; i++) {
+		if (!priv->pipeline->postblends[i])
+			continue;
 		rc = sysfs_create_group(&dev->kobj, &crtc_attr_group[i]);
+	}
 
 	return rc;
 }
@@ -1447,9 +1453,15 @@ void meson_drm_sysfs_unregister(struct drm_device *drm_dev)
 	sysfs_remove_bin_file(&dev->kobj, &state_attr);
 	sysfs_remove_bin_file(&dev->kobj, &reg_dump_attr);
 
-	for (i = 0; i < priv->pipeline->num_osds; i++)
+	for (i = 0; i < MESON_MAX_OSDS; i++) {
+		if (!priv->pipeline->osds[i])
+			continue;
 		sysfs_remove_group(&dev->kobj, &osd_attr_group[i]);
-	for (i = 0; i < priv->pipeline->num_postblend; i++)
+	}
+	for (i = 0; i < MESON_MAX_POSTBLEND; i++) {
+		if (!priv->pipeline->postblends[i])
+			continue;
 		sysfs_remove_group(&dev->kobj, &crtc_attr_group[i]);
+	}
 }
 

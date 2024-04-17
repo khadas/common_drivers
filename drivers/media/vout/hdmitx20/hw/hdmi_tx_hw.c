@@ -154,7 +154,11 @@ static pf_callback earc_hdmitx_hpdst;
 
 void hdmitx_earc_hpdst(pf_callback cb)
 {
+	struct hdmitx_dev *hdev = get_hdmitx_device();
+
 	earc_hdmitx_hpdst = cb;
+	if (!hdev || !hdev->hdmi_init)
+		return;
 	if (cb && hdmitx_hpd_hw_op(HPD_READ_HPD_GPIO))
 		cb(true);
 }

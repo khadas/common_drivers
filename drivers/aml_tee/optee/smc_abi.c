@@ -1185,6 +1185,17 @@ static bool optee_msg_api_revision_is_compatible(optee_invoke_fn *invoke_fn)
 	return false;
 }
 
+static bool optee_get_dynamic_shm_stats(optee_invoke_fn *invoke_fn)
+{
+	struct arm_smccc_res res;
+
+	invoke_fn(OPTEE_SMC_GET_DYN_SHM_STATS, 0, 0, 0, 0, 0, 0, 0, &res);
+	if (res.a0 == OPTEE_SMC_RETURN_OK && res.a1 == 1)
+		return true;
+
+	return false;
+}
+
 static bool optee_msg_exchange_capabilities(optee_invoke_fn *invoke_fn,
 					    u32 *sec_caps, u32 *max_notif_value,
 					    unsigned int *rpc_param_count)
@@ -1410,8 +1421,11 @@ static int optee_probe(struct platform_device *pdev)
 		return -EINVAL;
 	}
 
-	// disable dynamic share memory
-	sec_caps &= ~(OPTEE_SMC_SEC_CAP_DYNAMIC_SHM);
+	/*
+	 * If stats is false, Dynamic Shared Memory will be disabled
+	 */
+	if (!optee_get_dynamic_shm_stats(invoke_fn))
+		sec_caps &= ~(OPTEE_SMC_SEC_CAP_DYNAMIC_SHM);
 
 	/*
 	 * Try to use dynamic shared memory if possible

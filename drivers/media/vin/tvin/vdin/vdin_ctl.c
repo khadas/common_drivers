@@ -3731,7 +3731,7 @@ void vdin_set_default_regmap(struct vdin_dev_s *devp)
 	/* [ 5: 4]     clkgate.bbar             = 0/(auto, off, on, on) */
 	/* [ 3: 2]     clkgate.bbar             = 0/(auto, off, on, on) */
 	/* [    0]     clkgate.bbar             = 0/(auto, off!!!!!!!!) */
-	wr(offset, VDIN_COM_GCLK_CTRL, 0x00000000);
+	//wr(offset, VDIN_COM_GCLK_CTRL, 0x00000000);
 
 	/* [12: 0]  decimation.output_width_m1  = 0 */
 	wr(offset, VDIN_INTF_WIDTHM1, 0x00000000);
@@ -3982,13 +3982,13 @@ void vdin_hw_disable(struct vdin_dev_s *devp)
 	/*switch_vpu_clk_gate_vmod(offset == 0 ? VPU_VIU_VDIN0:VPU_VIU_VDIN1,
 	 *VPU_CLK_GATE_OFF);
 	 */
-	vdin_clk_on_off(devp, false);
 	/* wr(offset, VDIN_COM_GCLK_CTRL, 0x5554); */
 
 	/*if (devp->dtdata->de_tunnel_tunnel) */{
 		vdin_dv_desc_to_4448bit(devp, 0);
 		vdin_dv_de_tunnel_to_44410bit(devp, 0);
 	}
+	vdin_clk_on_off(devp, false);
 }
 
 /* vdin1 hist function can be used on the boot
@@ -4015,7 +4015,7 @@ void vdin1_hw_hist_on_off(struct vdin_dev_s *devp, bool on_off)
 		devp->v_active = vinfo->height;
 		devp->prop.scaling4w = 1280;
 		devp->prop.scaling4h = 720;
-		wr(offset, VDIN_COM_GCLK_CTRL, 0); //open vdin1 clk 0x131b
+		vdin_clk_on_off(devp, true);
 
 		/* Getting luma values requires reading yuv images more accurately
 		 * Converting rgb to yuv requires csc(matrix) and hv_scaling to be turned on
@@ -4059,8 +4059,8 @@ void vdin1_hw_hist_on_off(struct vdin_dev_s *devp, bool on_off)
 			HIST_VEND_BIT, HIST_VEND_WID);
 		usleep_range(40000, 50000);
 	} else {
-		wr_bits(offset, VDIN_COM_GCLK_CTRL, 1, 12, 2); //close vdin1 hist clk 0x131b
-			}
+		vdin_clk_on_off(devp, false);
+	}
 }
 
 void vdin_hw_close(struct vdin_dev_s *devp)
@@ -4113,14 +4113,14 @@ void vdin_hw_close(struct vdin_dev_s *devp)
 	/*switch_vpu_clk_gate_vmod(offset == 0 ? VPU_VIU_VDIN0:VPU_VIU_VDIN1,
 	 *VPU_CLK_GATE_OFF);
 	 */
-	if (!devp->index || devp->dtdata->hw_ver < VDIN_HW_T7)
-		vdin_clk_on_off(devp, false);
 	/* wr(offset, VDIN_COM_GCLK_CTRL, 0x5554); */
 
 	/*if (devp->dtdata->de_tunnel_tunnel) */{
 		vdin_dv_desc_to_4448bit(devp, 0);
 		vdin_dv_de_tunnel_to_44410bit(devp, 0);
 	}
+	//if (!devp->index || devp->dtdata->hw_ver < VDIN_HW_T7)
+		vdin_clk_on_off(devp, false);
 }
 
 bool vdin_check_vdi6_afifo_overflow(unsigned int offset)
@@ -6161,11 +6161,11 @@ int vdin_event_cb(int type, void *data, void *op_arg)
 			(struct provider_aux_req_s *)data;
 		unsigned char index;
 
-		if (!req->vf || !(devp->flags & VDIN_FLAG_ISR_EN)) {
+		if (!req->vf) {
 			req->aux_size = 0;
 			req->low_latency = 0;
 			if (vdin_ctl_dbg & CTL_DEBUG_EVENT_DISP_MODE)
-				pr_err("%s:req->vf is NULL! or isr disable\n", __func__);
+				pr_err("%s:req->vf is NULL!\n", __func__);
 			return -1;
 		}
 		spin_lock_irqsave(&p->dv_lock, flags);
@@ -6570,6 +6570,19 @@ void vdin_set_freesync_data(struct vdin_dev_s *devp, struct vframe_s *vf)
 bool vdin_is_vrr_state_chg(struct vdin_dev_s *devp)
 {
 	if (devp->vrr_data.vdin_vrr_en_flag != devp->prop.vtem_data.vrr_en)
+		return true;
+	else
+		return false;
+}
+
+/*
+ * check qms state change
+ */
+bool vdin_is_qms_state_chg(struct vdin_dev_s *devp)
+{
+	if (devp->pre_prop.vtem_data.qms_en != devp->prop.vtem_data.qms_en ||
+		(devp->prop.vtem_data.qms_en && devp->pre_prop.vtem_data.next_tfr !=
+		devp->prop.vtem_data.next_tfr))
 		return true;
 	else
 		return false;
@@ -7146,13 +7159,29 @@ inline void vdin_set_source_bitdepth(struct vdin_dev_s *devp,
 		vf->bitdepth = BITDEPTH_Y8 | BITDEPTH_U8 | BITDEPTH_V8;
 		break;
 	}
+	switch (devp->source_bitdepth_dw) {
+	case VDIN_COLOR_DEEPS_10BIT:
+		vf->bitdepth_dw = BITDEPTH_Y10 | BITDEPTH_U10 | BITDEPTH_V10;
+		break;
+	case VDIN_COLOR_DEEPS_9BIT:
+		vf->bitdepth_dw = BITDEPTH_Y9 | BITDEPTH_U9 | BITDEPTH_V9;
+		break;
+	case VDIN_COLOR_DEEPS_8BIT:
+		vf->bitdepth_dw = BITDEPTH_Y8 | BITDEPTH_U8 | BITDEPTH_V8;
+		break;
+	default:
+		vf->bitdepth_dw = BITDEPTH_Y8 | BITDEPTH_U8 | BITDEPTH_V8;
+		break;
+	}
 	if (devp->full_pack == VDIN_422_FULL_PK_EN &&
 	    devp->source_bitdepth > 8 &&
 	    (devp->format_convert == VDIN_FORMAT_CONVERT_YUV_YUV422 ||
 	     devp->format_convert == VDIN_FORMAT_CONVERT_RGB_YUV422 ||
 	     devp->format_convert == VDIN_FORMAT_CONVERT_GBR_YUV422 ||
-	     devp->format_convert == VDIN_FORMAT_CONVERT_BRG_YUV422))
+	     devp->format_convert == VDIN_FORMAT_CONVERT_BRG_YUV422)) {
 		vf->bitdepth |= FULL_PACK_422_MODE;
+		vf->bitdepth_dw |= FULL_PACK_422_MODE;
+	}
 }
 
 void vdin_set_lossy_param(struct vdin_dev_s *devp, struct vframe_s *vf)

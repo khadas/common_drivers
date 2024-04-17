@@ -43,15 +43,15 @@
 #define DTMB_TIME_CHECK_SIGNAL 150
 
 static unsigned int dtmb_check_signal_time = DTMB_TIME_CHECK_SIGNAL;
-MODULE_PARM_DESC(dtmb_check_signal_time, "\n\t\t dtmb check signal time");
+MODULE_PARM_DESC(dtmb_check_signal_time, "");
 module_param(dtmb_check_signal_time, int, 0644);
 
 static unsigned int dtmb_lock_continuous_cnt = 1;
-MODULE_PARM_DESC(dtmb_lock_continuous_cnt, "\n\t\t dtmb lock signal continuous counting");
+MODULE_PARM_DESC(dtmb_lock_continuous_cnt, "");
 module_param(dtmb_lock_continuous_cnt, int, 0644);
 
 static unsigned int dtmb_lost_continuous_cnt = 15;
-MODULE_PARM_DESC(dtmb_lost_continuous_cnt, "\n\t\t dtmb lost signal continuous counting");
+MODULE_PARM_DESC(dtmb_lost_continuous_cnt, "");
 module_param(dtmb_lost_continuous_cnt, int, 0644);
 
 void gxtv_demod_dtmb_release(struct dvb_frontend *fe)
@@ -145,7 +145,7 @@ void dtmb_poll_v3(struct aml_dtvdemod *demod)
 		}
 	} else {
 		if (pollm->flg_stop) {
-			PR_DBG("dtmb poll stop !\n");
+			PR_DBG("dtmb poll stop!\n");
 			dtmb_poll_clear(demod);
 			dtmb_set_delay(demod, 3 * HZ);
 
@@ -177,7 +177,7 @@ void dtmb_poll_v3(struct aml_dtvdemod *demod)
 				dtmb_save_status(demod, s);
 			}
 		} else {
-			PR_DBG("can't lock after reset!\n");
+			PR_DBG("can't lock after reset\n");
 			pollm->state = DTMBM_NO_SIGNEL_CHECK;
 			pollm->crrcnt = 0;
 			/* to no signal*/
@@ -207,7 +207,7 @@ void dtmb_poll_v3(struct aml_dtvdemod *demod)
 		if (bch_tmp > (pollm->bch + 50)) {
 			pollm->state = DTMBM_BCH_OVER_CHEK;
 
-			PR_DBG("bch add ,need reset,wait not to reset\n");
+			PR_DBG("bch add,need reset,wait not to reset\n");
 			dtmb_reset();
 
 			pollm->crrcnt = 0;
@@ -394,7 +394,7 @@ int gxtv_demod_dtmb_set_frontend(struct dvb_frontend *fe)
 	/*[0]: spectrum inverse(1),normal(0); [1]:if_frequency*/
 	unsigned int tuner_freq[2] = {0};
 
-	PR_INFO("%s [id %d]: delsys:%d, freq:%d, symbol_rate:%d, bw:%d, modul:%d, invert:%d.\n",
+	PR_INFO("%s [id %d]: delsys:%d, freq:%d, symbol_rate:%d, bw:%d, modul:%d, invert:%d\n",
 			__func__, demod->id, c->delivery_system, c->frequency, c->symbol_rate,
 			c->bandwidth_hz, c->modulation, c->inversion);
 
@@ -432,7 +432,7 @@ int gxtv_demod_dtmb_set_frontend(struct dvb_frontend *fe)
 		else if (tuner_freq[0] == 1)
 			demod->demod_status.spectrum = 1;
 		else
-			pr_err("wrong spectrum val get from tuner\n");
+			pr_err("wrong spectrum\n");
 	}
 
 	demod->demod_status.ch_bw = c->bandwidth_hz / 1000;
@@ -475,7 +475,6 @@ int gxtv_demod_dtmb_tune(struct dvb_frontend *fe, bool re_tune,
 			dtmb_poll_start_tune(demod, DTMBM_HV_SIGNEL_CHECK);
 
 		} else if (firstdetect == 0) {
-			PR_DTMB("[id %d] use read_status\n", demod->id);
 			gxtv_demod_dtmb_read_status_old(fe, status);
 			if (*status == (0x1f))
 				dtmb_poll_start_tune(demod, DTMBM_HV_SIGNEL_CHECK);
@@ -483,13 +482,11 @@ int gxtv_demod_dtmb_tune(struct dvb_frontend *fe, bool re_tune,
 				dtmb_poll_start_tune(demod, DTMBM_NO_SIGNEL_CHECK);
 		}
 
-		PR_DTMB("[id %d] tune finish!\n", demod->id);
-
 		return ret;
 	}
 
 	if (!demod->en_detect) {
-		PR_DBGL("%s: [id %d] not enable.\n", __func__, demod->id);
+		PR_DBGL("[id %d] dtmb not enable\n", demod->id);
 		return ret;
 	}
 
@@ -538,8 +535,8 @@ static void dtmb_read_status(struct dvb_frontend *fe, enum fe_status *status, un
 	gxtv_demod_dtmb_read_signal_strength(fe, &strength);
 	if (strength < tuner_strength_threshold && demod->time_passed < check_signal_time) {
 		*status = FE_TIMEDOUT;
-		PR_DTMB("%s: tuner strength [%d] no signal(%d).\n",
-				__func__, strength, tuner_strength_threshold);
+		PR_DTMB("strength [%d] no signal(%d)\n",
+				strength, tuner_strength_threshold);
 
 		goto finish;
 	}
@@ -700,4 +697,3 @@ int amdemod_stat_dtmb_islock(struct aml_dtvdemod *demod,
 	ret = dtmb_reg_r_fec_lock();
 	return ret;
 }
-

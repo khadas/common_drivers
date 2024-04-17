@@ -10,7 +10,7 @@
 #include <linux/kernel.h>
 #include <linux/mutex.h>
 
-MODULE_PARM_DESC(atsc_j83b_agc_target, "\n\t\t atsc_j83b_agc_target");
+MODULE_PARM_DESC(atsc_j83b_agc_target, "");
 static unsigned char atsc_j83b_agc_target = 0xe;
 module_param(atsc_j83b_agc_target, byte, 0644);
 
@@ -136,13 +136,6 @@ static int atsc_j83b_get_freq_off(struct aml_dtvdemod *demod)
 int atsc_j83b_status(struct aml_dtvdemod *demod,
 	struct aml_demod_sts *demod_sts, struct seq_file *seq)
 {
-	struct amldtvdemod_device_s *devp = (struct amldtvdemod_device_s *)demod->priv;
-
-	if (unlikely(!devp)) {
-		PR_ERR("devp is NULL, return\n");
-		return -1;
-	}
-
 	demod_sts->ch_sts = qam_read_reg(demod, 0x6);
 	demod_sts->ch_pow = atsc_j83b_get_ch_power(demod);
 	demod_sts->ch_snr = atsc_j83b_get_snr(demod);
@@ -188,7 +181,7 @@ unsigned int atsc_j83b_read_iqr_reg(void)
 
 	demod_mutex_unlock();
 
-	PR_DBG("[atsc irq] j83b is %x\n", tmp);
+	PR_DBG("[atsc irq] j83b %x\n", tmp);
 	return tmp & 0xffffffff;
 }
 
@@ -199,7 +192,7 @@ void demod_j83b_fsm_reset(struct aml_dtvdemod *demod)
 	qam_write_reg(demod, 0x3a, 0x0);
 	qam_write_reg(demod, 0x7, qam_read_reg(demod, 0x7) | (1 << 4));
 	qam_write_reg(demod, 0x3a, 0x4);
-	PR_DVBC("dvbc reset fsm\n");
+	PR_DVBC("j83b reset fsm\n");
 }
 
 static unsigned int atsc_j83b_get_adc_freq(void)
@@ -263,7 +256,7 @@ void demod_atsc_j83b_restore_qam_cfg(struct aml_dtvdemod *demod)
 
 void demod_atsc_j83b_set_qam(struct aml_dtvdemod *demod, enum qam_md_e qam, bool auto_sr)
 {
-	PR_DVBC("%s last_qam_mode %d, qam %d.\n",
+	PR_DVBC("%s last_qam_mode %d, qam %d\n",
 			__func__, demod->last_qam_mode, qam);
 
 	demod_atsc_j83b_restore_qam_cfg(demod);
@@ -460,7 +453,7 @@ void atsc_j83b_reg_initial(struct aml_dtvdemod *demod, struct dvb_frontend *fe)
 	ch_if = demod->demod_status.ch_if;	/* kHz */
 	ch_bw = demod->demod_status.ch_bw;	/* kHz */
 	symb_rate = demod->demod_status.symb_rate;	/* k/sec */
-	PR_DVBC("ch_if is %d,  %d,	%d,  %d, %d %d\n",
+	PR_DVBC("ch_if %d,  %d,	%d,  %d, %d %d\n",
 		ch_if, ch_mode, ch_freq, ch_bw, symb_rate, adc_freq);
 	/* disable irq */
 	qam_write_reg(demod, 0x34, 0);
@@ -548,7 +541,7 @@ void atsc_j83b_reg_initial(struct aml_dtvdemod *demod, struct dvb_frontend *fe)
 		tmp = 40000000 / adc_freq;
 		max_frq_off = tmp * max_frq_off;
 	}
-	PR_DVBC("max_frq_off is %x,\n", max_frq_off);
+	PR_DVBC("max_frq_off %x\n", max_frq_off);
 
 	if (cpu_after_eq(MESON_CPU_MAJOR_ID_TL1)) {
 		/* j83b */
@@ -698,7 +691,7 @@ void atsc_j83b_reg_initial_old(struct aml_dtvdemod *demod)
 	ch_if = demod->demod_status.ch_if;	/* kHz */
 	ch_bw = demod->demod_status.ch_bw;	/* kHz */
 	symb_rate = demod->demod_status.symb_rate;	/* k/sec */
-	PR_DVBC("ch_if is %d,  %d,	%d,  %d, %d\n",
+	PR_DVBC("ch_if %d, %d, %d, %d, %d\n",
 		ch_if, ch_mode, ch_freq, ch_bw, symb_rate);
 /*	  ch_mode=4;*/
 /*		dvbc_write_reg(DEMOD_CFG_BASE,0x00000007);*/
@@ -958,7 +951,7 @@ void atsc_j83b_reg_initial_old(struct aml_dtvdemod *demod)
 		tmp = 40000000 / adc_freq;
 		max_frq_off = tmp * max_frq_off;
 	}
-	PR_DVBC("max_frq_off is %x,\n", max_frq_off);
+	PR_DVBC("max_frq_off %x\n", max_frq_off);
 	dvbc_write_reg(0x02c, max_frq_off & 0x3fffffff);
 	/* max frequency offset, by raymond 20121208 */
 
@@ -1081,7 +1074,7 @@ void demod_atsc_j83b_qam_reset(struct aml_dtvdemod *demod)
 	qam_write_reg(demod, 0x1, qam_read_reg(demod, 0x1) | (1 << 0));
 	qam_write_reg(demod, 0x1, qam_read_reg(demod, 0x1) & ~(1 << 0));
 
-	PR_DVBC("dvbc reset qam\n");
+	PR_DVBC("j83b reset qam\n");
 }
 
 int atsc_j83b_set_ch(struct aml_dtvdemod *demod, struct aml_demod_dvbc *demod_dvbc,
@@ -1101,7 +1094,7 @@ int atsc_j83b_set_ch(struct aml_dtvdemod *demod, struct aml_demod_dvbc *demod_dv
 	if (mode == QAM_MODE_AUTO) {
 		/* auto QAM mode, force to QAM256 */
 		mode = QAM_MODE_256;
-		PR_DVBC("[id %d] auto QAM, set mode %d.\n", demod->id, mode);
+		PR_DVBC("[id %d] auto QAM, set mode %d\n", demod->id, mode);
 	}
 
 	if (ch_freq < 1000 || ch_freq > 900000) {
@@ -1132,4 +1125,3 @@ int atsc_j83b_set_ch(struct aml_dtvdemod *demod, struct aml_demod_dvbc *demod_dv
 
 	return ret;
 }
-

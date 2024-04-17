@@ -881,7 +881,8 @@ void lc_config(int enable,
 	unsigned int sps_w_in,
 	unsigned int sps_h_in,
 	int bitdepth,
-	int vpp_index)
+	int vpp_index,
+	struct vpp_hist_param_s *vp)
 {
 	int h_num, v_num;
 	unsigned int height, width;
@@ -912,7 +913,7 @@ void lc_config(int enable,
 	flag_full = 0;
 	if (detect_signal_range_en == 2 &&
 		chip_type_id != chip_t3x) {
-		flag_full = signal_detect(vf->prop.hist.vpp_gamma);
+		flag_full = signal_detect(vp->vpp_gamma);
 		if (vf->type & VIDTYPE_RGB_444)
 			flag_full = 1;
 	} else {
@@ -1454,6 +1455,7 @@ int global_scene_change(int *curve_nodes_cur,
 	static int frm_dif[N_DELAY];
 	/*store frame valid block for frm diff calc*/
 	static int valid_blk_num[N_DELAY];
+
 	int frm_dif_osd, vnum_osd;
 	int addr_curv1;
 	int apl_cur, apl_pre;
@@ -2230,7 +2232,8 @@ void lc_process(struct vframe_s *vf,
 	unsigned int sps_v_en,
 	unsigned int sps_w_in,
 	unsigned int sps_h_in,
-	int vpp_index)
+	int vpp_index,
+	struct vpp_hist_param_s *vp)
 {
 	int blk_hnum, blk_vnum;
 	int multi_pic_flag;
@@ -2302,7 +2305,7 @@ void lc_process(struct vframe_s *vf,
 	}
 
 	lc_config(lc_en, vf, sps_h_en, sps_v_en,
-		sps_w_in, sps_h_in, lc_bitdepth, vpp_index);
+		sps_w_in, sps_h_in, lc_bitdepth, vpp_index, vp);
 
 	if (lc_bypass_flag <= 0) {
 		if (chip_type_id != chip_t3x) {

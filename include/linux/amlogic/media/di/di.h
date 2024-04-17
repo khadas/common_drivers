@@ -29,7 +29,16 @@ void dil_set_diff_ver_flag(unsigned int para);
 
 unsigned int dim_get_vpuclkb_ext(void);
 
+struct afbcd_info {
+	unsigned long head_addr;
+	unsigned long body_addr;
+	unsigned int  hsize_out;
+	unsigned int  vsize_out;
+};
+
 bool dim_get_pre_link(void);
+
+bool di_vfm_info(struct afbcd_info *vfm_info);
 
 struct reg_acc {
 	void (*wr)(unsigned int adr, unsigned int val);

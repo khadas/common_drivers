@@ -1755,7 +1755,7 @@ static void set_di_mem_mif(struct DI_MIF_S *mif, int urgent, int hold_line)
 	unsigned int chroma0_rpt_loop_end;
 	unsigned int chroma0_rpt_loop_pat;
 	unsigned int reset_on_gofield;
-#ifdef CONFIG_AMLOGIC_MEDIA_THERMAL
+#ifdef CONFIG_AMLOGIC_MEDIA_THERMAL1
 	unsigned int bit_mode_val;
 #endif
 
@@ -1793,7 +1793,7 @@ static void set_di_mem_mif(struct DI_MIF_S *mif, int urgent, int hold_line)
 		chroma0_rpt_loop_pat = 0x00;
 	}
 
-#ifdef CONFIG_AMLOGIC_MEDIA_THERMAL
+#ifdef CONFIG_AMLOGIC_MEDIA_THERMAL1
 	bit_mode_val = mif->bit_mode;
 	if (mif->bit8_flag == 1)
 		mif->bit_mode = 0;
@@ -2251,7 +2251,7 @@ static void set_di_chan2_mif(struct DI_MIF_S *mif, int urgent, int hold_line)
 	unsigned int chroma0_rpt_loop_end;
 	unsigned int chroma0_rpt_loop_pat;
 	unsigned int reset_on_gofield;
-#ifdef CONFIG_AMLOGIC_MEDIA_THERMAL
+#ifdef CONFIG_AMLOGIC_MEDIA_THERMAL1
 	unsigned int bit_mode_val;
 #endif
 
@@ -2301,7 +2301,7 @@ static void set_di_chan2_mif(struct DI_MIF_S *mif, int urgent, int hold_line)
 	}
 	#endif
 	demux_mode = mif->video_mode;
-#ifdef CONFIG_AMLOGIC_MEDIA_THERMAL
+#ifdef CONFIG_AMLOGIC_MEDIA_THERMAL1
 	bit_mode_val = mif->video_mode;
 	dim_print("mif->bit8_flag:%d %d\n", mif->bit8_flag, mif->video_mode);
 	if (mif->bit8_flag == 1)
@@ -2890,7 +2890,7 @@ void dimh_post_switch_buffer(struct DI_MIF_S *di_buf0_mif,
 			     bool mc_enable, int vskip_cnt)
 {
 	int ei_only, buf1_en;
-#ifdef CONFIG_AMLOGIC_MEDIA_THERMAL
+#ifdef CONFIG_AMLOGIC_MEDIA_THERMAL1
 	unsigned int bit_val[3] = {3, 3, 3};
 #endif
 
@@ -2935,7 +2935,7 @@ void dimh_post_switch_buffer(struct DI_MIF_S *di_buf0_mif,
 						  di_mtnprd_mif->canvas_num, 16, 8);
 			/* current field mtn canvas index.*/
 		}
-#ifdef CONFIG_AMLOGIC_MEDIA_THERMAL
+#ifdef CONFIG_AMLOGIC_MEDIA_THERMAL1
 		if (DIM_IS_IC_TXHD2) {
 			/**
 			 ** post mif bitdepth follow nr mif change frame by frame
@@ -3257,7 +3257,7 @@ void dimh_enable_di_post_2(struct DI_MIF_S		   *di_buf0_mif,
 						 di_diwr_mif->bit_mode);
 		} else {
 			dimh_pst_mif_set(di_diwr_mif, urgent, di_ddr_en);
-#ifdef CONFIG_AMLOGIC_MEDIA_THERMAL
+#ifdef CONFIG_AMLOGIC_MEDIA_THERMAL1
 			if (di_buf2_mif->bit8_flag == 1 || di_buf2_mif->bit8_flag == 2) {
 				di_buf2_mif->bit_mode = 0;
 				di_diwr_mif->bit_mode = 0;
@@ -3287,7 +3287,7 @@ void dimh_enable_di_post_2(struct DI_MIF_S		   *di_buf0_mif,
 				      (urgent << 16)		|
 				      (2 << 26)			|
 				      (di_ddr_en << 30));
-#ifdef CONFIG_AMLOGIC_MEDIA_THERMAL
+#ifdef CONFIG_AMLOGIC_MEDIA_THERMAL1
 		if (di_buf2_mif->bit8_flag == 1 || di_buf2_mif->bit8_flag == 2) {
 			di_buf2_mif->bit_mode = 0;
 			di_diwr_mif->bit_mode = 0;
@@ -5206,7 +5206,7 @@ static void dimh_wrmif_set(struct DI_SIM_MIF_S *cfg_mif,
 {
 	const unsigned int *reg;
 	unsigned int ctr;
-#ifdef CONFIG_AMLOGIC_MEDIA_THERMAL
+#ifdef CONFIG_AMLOGIC_MEDIA_THERMAL1
 	unsigned int bit_mode_val;
 #endif
 
@@ -5218,7 +5218,7 @@ static void dimh_wrmif_set(struct DI_SIM_MIF_S *cfg_mif,
 	if (!cfg_mif->ddr_en)
 		return;
 
-#ifdef CONFIG_AMLOGIC_MEDIA_THERMAL
+#ifdef CONFIG_AMLOGIC_MEDIA_THERMAL1
 	if (DIM_IS_IC_TXHD2) {
 		bit_mode_val = cfg_mif->bit_mode;
 		if (cfg_mif->nr_wr_mif_8bit == 1 ||

@@ -393,12 +393,18 @@
 		reg-names = "adla_reg\0adla_sram";
 		interrupt-names = "adla";
 		interrupts = <0 185 4>;
-		clocks = <&clkc CLKID_ANAKIN_CLK>;
-		clock-names = "adla_core_clk";
+		clocks = <&clkc CLKID_ANAKIN_CLK>,
+			<&clkc CLKID_ANAKIN>,
+			<&clkc CLKID_ANAKIN_0>,
+			<&clkc CLKID_ANAKIN_1>;
+		clock-names = "adla_core_clk",
+			"adla_clk",
+			"adla_clk_parent0",
+			"adla_clk_parent1";
 		assigned-clocks =<&clkc CLKID_ANAKIN_0_MUX>,
 		      <&clkc CLKID_ANAKIN>,
 		      <&clkc CLKID_ANAKIN_CLK>;
-		assigned-clock-parentsd = <&clkc CLKID_FCLK_DIV2P5>,
+		assigned-clock-parents = <&clkc CLKID_FCLK_DIV2P5>,
 		      <&clkc CLKID_ANAKIN_0>,
 		      <0>;
 		assigned-clock-rates = <0>,

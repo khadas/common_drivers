@@ -1635,6 +1635,39 @@
 		interrupts = <0 62 IRQ_TYPE_LEVEL_HIGH>;
 	};
 
+	cvbsout {
+		compatible = "amlogic, cvbsout-sc2";
+		status = "okay";
+
+		/* clk path */
+		/* 0:vid_pll vid2_clk */
+		/* 1:gp0_pll vid2_clk */
+		/* 2:vid_pll vid1_clk */
+		/* 3:gp0_pll vid1_clk */
+		clk_path = <0>;
+
+		/* performance: reg_address, reg_value */
+		/* sc2 */
+		performance_pal = <0x1bf0  0x3 /* default Matrx625 CTCC value */
+			0x1b12  0x8060
+			0x1b05  0xf9
+			0x1b56  0x333
+			0x1c59  0xf15e
+			0xffff  0x0>; /* ending flag */
+		performance = <0x1bf0  0x3 /* ccitt033 SVA value */
+			0x1b12  0x8080
+			0x1b05  0xfc
+			0x1b56  0x333
+			0x1c59  0xf458
+			0xffff  0x0>; /* ending flag */
+		performance_ntsc = <0x1bf0  0x3 /* Matrx525 TTC value */
+			0x1b12  0x8180
+			0x1b05  0xf0
+			0x1b56  0x333
+			0x1c59  0xed66
+			0xffff  0x0>; /* ending flag */
+	};
+
 	amhdmitx: amhdmitx{
 		compatible = "amlogic, amhdmitx-sc2";
 		dev_name = "amhdmitx";

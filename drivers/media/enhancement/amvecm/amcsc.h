@@ -312,6 +312,7 @@ extern int customer_hdr_clipping;
 /* api to get sink capability */
 uint32_t sink_dv_support(const struct vinfo_s *vinfo);
 uint32_t sink_hdr_support(const struct vinfo_s *vinfo);
+uint32_t sink_hdr_support_ori_cap(const struct vinfo_s *vinfo);
 
 extern uint gamut_conv_enable;
 void force_toggle(void);

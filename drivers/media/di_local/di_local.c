@@ -45,6 +45,8 @@
 #include <linux/amlogic/media/vpu/vpu.h>	//VPU_MEM_POWER_ON
 #include "../deinterlace/di_pqa.h"
 #include <linux/amlogic/media/di/di_interface.h>
+#include <linux/amlogic/media/di/di.h>
+
 
 /*for di_ext_ops*/
 /*#include <linux/amlogic/media/video_sink/video.h> */
@@ -360,6 +362,15 @@ bool dim_get_pre_link(void)
 	return 0;
 }
 EXPORT_SYMBOL(dim_get_pre_link);
+
+bool di_vfm_info(struct afbcd_info *vfm_info)
+{
+	if (dil_api && dil_api->get_vfm_info)
+		return dil_api->get_vfm_info(vfm_info);
+	else
+		return false;
+}
+EXPORT_SYMBOL(di_vfm_info);
 
 int di_s_bypass_ch(int index, bool on)
 {

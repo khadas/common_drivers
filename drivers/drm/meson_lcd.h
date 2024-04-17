@@ -18,6 +18,10 @@ struct meson_panel {
 	struct meson_panel_dev *panel_dev;
 	struct drm_property *panel_type_prop;
 	int panel_type;
+
+	/* vrr related */
+	int num_vrr_group;
+	struct drm_vrr_mode_group groups[MAX_VRR_MODE_GROUP];
 };
 
 #define connector_to_meson_panel(x) \

@@ -283,6 +283,8 @@ struct register_table {
 #define EE_AUDIO_LB_A_LB_CH_ID2            0xba
 #define EE_AUDIO_LB_A_LB_CH_ID3            0xbb
 #define EE_AUDIO_LB_A_STS                  0xbc
+#define EE_AUDIO_LB_A_CHSYNC_CTRL_INSERT   0xbd
+#define EE_AUDIO_LB_A_CHSYNC_CTRL_ORIG     0xbe
 
 #define EE_AUDIO_LB_B_CTRL0                0x230
 #define EE_AUDIO_LB_B_CTRL1                0x231
@@ -297,6 +299,8 @@ struct register_table {
 #define EE_AUDIO_LB_B_LB_CH_ID2            0x23a
 #define EE_AUDIO_LB_B_LB_CH_ID3            0x23b
 #define EE_AUDIO_LB_B_STS                  0x23c
+#define EE_AUDIO_LB_B_CHSYNC_CTRL_INSERT   0x23d
+#define EE_AUDIO_LB_B_CHSYNC_CTRL_ORIG     0x23e
 
 /*
  *	AUDIO TDM

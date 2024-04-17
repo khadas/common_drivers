@@ -288,6 +288,7 @@ struct dv_cfg_info_s {
 	int dark_detail;        /*dark detail, on or off*/
 	int light_sense;        /*light sense, on or off*/
 	int t_front_lux;
+	bool bypass_pd_from_user;
 };
 
 struct dv_pq_center_value_s {
@@ -374,6 +375,5 @@ void update_ambient_lightsense(struct ambient_cfg_s *p_ambient);
 void calculate_user_pq_config(void);
 void get_dv_bin_config_hw5(void);
 u32 check_cfg_enabled_top1(void);
-u32 check_dynamic_cfg_enabled_top1(void);
 
 #endif

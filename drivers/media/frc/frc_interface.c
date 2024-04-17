@@ -74,9 +74,10 @@ int frc_input_handle(struct vframe_s *vf, struct vpp_frame_par_s *cur_video_sts)
 	// frc_vpp_vs_ir_chk_film(devp);
 	/*vframe change detect and video state detects*/
 //	frc_boot_timestamp_check(devp);
+	frc_isr_print_zero(devp);
 	frc_input_vframe_handle(devp, vf, cur_video_sts);
 
-	frc_isr_print_zero(devp);
+//	frc_isr_print_zero(devp);
 
 	/*frc work mode handle*/
 	// frc_state_handle_old(devp);

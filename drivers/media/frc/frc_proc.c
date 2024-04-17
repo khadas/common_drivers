@@ -261,11 +261,31 @@ void frc_isr_print_zero(struct frc_dev_s *devp)
 	devp->ud_dbg.align_dbg_en = 0;
 }
 
+void frc_rd_reg_by_drv(struct frc_dev_s *devp)
+{
+	int i;
+	struct frc_fw_data_s *fw_data;
+
+	fw_data = (struct frc_fw_data_s *)devp->fw_data;
+
+	for (i = 0; i < RD_REG_MAX; i++) {
+		if (!fw_data->reg_val[i].addr || fw_data->reg_val[i].addr > 0x3fff)
+			break;
+		fw_data->reg_val[i].val = READ_FRC_REG(fw_data->reg_val[i].addr);
+//		pr_frc(600, "reg:%04x val0x%08x %10d\n",
+//			fw_data->reg_val[i].addr,
+//			fw_data->reg_val[i].val,
+//			fw_data->reg_val[i].val);
+	}
+}
+
 irqreturn_t frc_input_isr(int irq, void *dev_id)
 {
+	struct frc_fw_data_s *fw_data;
 	struct frc_dev_s *devp = (struct frc_dev_s *)dev_id;
 
 	u64 timestamp = sched_clock();
+	fw_data = (struct frc_fw_data_s *)devp->fw_data;
 
 	if (!devp->probe_ok || !devp->power_on_flag)
 		return IRQ_HANDLED;
@@ -278,6 +298,9 @@ irqreturn_t frc_input_isr(int irq, void *dev_id)
 	timestamp = div64_u64(timestamp, 1000);
 	devp->in_sts.vs_duration = timestamp - devp->in_sts.vs_timestamp;
 	devp->in_sts.vs_timestamp = timestamp;
+
+	if (fw_data->frc_top_type.motion_ctrl == RD_MOTION_BY_INP_ISR)
+		frc_rd_reg_by_drv(devp);
 
 	// t3x_verB_set_cfg(1);
 	inp_undone_read(devp);
@@ -335,6 +358,7 @@ void frc_input_tasklet_pro(unsigned long arg)
 irqreturn_t frc_output_isr(int irq, void *dev_id)
 {
 	struct frc_dev_s *devp = (struct frc_dev_s *)dev_id;
+	u32 tmpreg_value;
 	if (!devp->probe_ok || !devp->power_on_flag)
 		return IRQ_HANDLED;
 	if (devp->clk_state == FRC_CLOCK_OFF)
@@ -348,6 +372,16 @@ irqreturn_t frc_output_isr(int irq, void *dev_id)
 	timestamp = div64_u64(timestamp, 1000);
 	devp->out_sts.vs_duration = timestamp - devp->out_sts.vs_timestamp;
 	devp->out_sts.vs_timestamp = timestamp;
+
+	if (devp->in_sts.vs_cnt == 1) {
+		tmpreg_value = READ_FRC_REG(FRC_REG_OUT_FID);
+		if ((tmpreg_value  >> 8 & 0xFFF) != 0) {
+			PR_ERR("output buf error! 0x113:0x%8X, 0x102:0x%8X, ctl_7:0x%8X\n",
+				tmpreg_value,
+				READ_FRC_REG(FRC_REG_PAT_POINTER),
+				READ_FRC_REG(FRC_REG_TOP_CTRL7));
+		}
+	}
 
 	me_undone_read(devp);
 	mc_undone_read(devp);
@@ -523,6 +557,7 @@ static void frc_fast_disable_process(void)
 	devp->st_change = 0;
 	devp->next_frame = 1;
 	devp->need_bypass = 1;
+	frc_clr_badedit_effect_before_enable();
 	frc_state_change_finish(devp);
 	pr_frc(2, "0x3217 = %x  0x35 = %x\n", vpu_reg_read(0x3217),
 		READ_FRC_REG(FRC_REG_OUT_INT_FLAG));
@@ -1097,6 +1132,7 @@ void frc_input_vframe_handle(struct frc_dev_s *devp, struct vframe_s *vf,
 
 	if (cur_in_sts.vf_sts) {
 		devp->frc_sts.vs_data_cnt++;
+		frc_rd_reg_by_drv(devp);
 		if (devp->frc_sts.vs_data_cnt < 50)
 			pr_frc(2, "vpp vsync (data) idx =%d, 0x1a1c =0x%x, 0x3f01 =0x%x\n",
 				devp->frc_sts.vs_data_cnt,
@@ -1553,7 +1589,7 @@ void frc_state_handle_new(struct frc_dev_s *devp)
 	u8 frc_input_fid = 0;
 	u32 read0x60 = 0;
 	u8 chg_flag = 0;
-	u32 log = 1;
+	u8 log = 1;
 
 	u32 tmp_frm_size;
 	enum chip_id chip;
@@ -1566,6 +1602,7 @@ void frc_state_handle_new(struct frc_dev_s *devp)
 	frame_cnt = devp->frc_sts.frame_cnt;
 	chg_flag = devp->ud_dbg.res2_time_en;
 	vframe_idx = devp->in_sts.vf_index;
+	// reg_0x113 = READ_FRC_REG(FRC_REG_OUT_FID);
 
 	pfw_data = (struct frc_fw_data_s *)devp->fw_data;
 	frc_top = &pfw_data->frc_top_type;

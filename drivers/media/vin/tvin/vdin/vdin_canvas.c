@@ -348,7 +348,7 @@ void vdin_canvas_auto_config(struct vdin_dev_s *devp)
 	default:
 		break;
 	}
-	if (devp->double_wr && (devp->debug.dbg_dv_hw5 & BIT3)) {
+	if (devp->double_wr && (devp->dv_hw5.hw5_ctl & BIT3)) {
 		devp->canvas_w = h_active * VDIN_YUV444_10BIT_PER_PIXEL_BYTE;
 		pr_info("%s dw_wrmif_444_10bit,%dx%d;canvas_w:%d\n",
 			__func__, h_active, v_active, devp->canvas_w);
@@ -484,7 +484,7 @@ unsigned int vdin_cma_alloc(struct vdin_dev_s *devp)
 		 * up to 4k 444 8bit mode
 		 */
 		if (/*devp->source_bitdepth > VDIN_MIN_SOURCE_BIT_DEPTH &&*/
-		    !vdin_is_4k(devp)) {
+		    !vdin_is_4k(devp) || (devp->dv_hw5.hw5_ctl & BIT3)) {
 			h_size = roundup(h_size * VDIN_YUV444_10BIT_PER_PIXEL_BYTE,
 				devp->canvas_align);
 			devp->canvas_align_w = h_size / VDIN_YUV444_10BIT_PER_PIXEL_BYTE;
@@ -578,7 +578,7 @@ unsigned int vdin_cma_alloc(struct vdin_dev_s *devp)
 				devp->vf_mem_size / devp->v_shrink_times;
 		else
 			devp->vf_mem_size_small = 0;
-		if (devp->debug.dbg_dv_hw5 & BIT3) {
+		if (devp->dv_hw5.hw5_ctl & BIT3) {
 			devp->vf_mem_size_small = devp->h_shrink_out * devp->v_shrink_out *
 				VDIN_YUV444_10BIT_PER_PIXEL_BYTE;
 			pr_info("vdin%d,dw_wrmif_444_10bit,%dx%d",

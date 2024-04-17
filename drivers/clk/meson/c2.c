@@ -439,8 +439,6 @@ static const struct reg_sequence c2_gp_init_regs[] = {
 	{ .reg = ANACTRL_GPPLL_CTRL2,	.def = 0x11002320 },
 	{ .reg = ANACTRL_GPPLL_CTRL3,	.def = 0xd0010000 },
 	{ .reg = ANACTRL_GPPLL_CTRL4,   .def = 0x45004000 },
-	{ .reg = ANACTRL_GPPLL_CTRL5,   .def = 0x001a001a },
-	{ .reg = ANACTRL_GPPLL_CTRL6,   .def = 0x50b, .delay_us = 5 },
 	{ .reg = ANACTRL_GPPLL_CTRL0,	.def = 0x30040863, .delay_us = 10 },
 	{ .reg = ANACTRL_GPPLL_CTRL0,	.def = 0x10040863, .delay_us = 10 },
 	{ .reg = ANACTRL_GPPLL_CTRL4,	.def = 0x45004001, .delay_us = 400 },

@@ -3992,12 +3992,13 @@ start_chk:
 		}
 	} else if (!strcmp(parm[0], "afbce_flag")) {
 		if (parm[1]) {
-			if (kstrtouint(parm[1], 16, &devp->dts_config.afbce_flag_cfg) == 0) {
-				pr_info("set vdin_afbce_flag_cfg: 0x%x\n",
+			if (kstrtouint(parm[1], 16, &temp) == 0) {
+				devp->dts_config.afbce_flag_cfg = temp;
+				pr_info("set afbce_flag: 0x%x\n",
 					devp->dts_config.afbce_flag_cfg);
 			}
 		} else {
-			pr_info("vdin_afbce_flag_cfg: 0x%x\n", devp->dts_config.afbce_flag_cfg);
+			pr_err("err.afbce_flag: 0x%x\n", devp->dts_config.afbce_flag_cfg);
 		}
 	} else if (!strcmp(parm[0], "afbce_mode")) {
 		if (parm[2]) {
@@ -4466,17 +4467,19 @@ start_chk:
 			devp->pip.main_port, tvin_port_str(devp->pip.main_port),
 			devp->pip.sub_port, tvin_port_str(devp->pip.sub_port));
 	} else if (!strcmp(parm[0], "dbg_dv_hw5")) {
-		if (parm[1] && (kstrtouint(parm[1], 0, &temp) == 0))
+		if (parm[1] && (kstrtouint(parm[1], 0, &temp) == 0)) {
 			devp->debug.dbg_dv_hw5 = temp;
+			devp->dv_hw5.hw5_ctl = temp;
+		}
 		if (parm[2] && (kstrtouint(parm[2], 0, &temp) == 0))
-			devp->debug.dbg_dw_h = temp;
+			devp->dv_hw5.dw_out_w = temp;
 		if (parm[3] && (kstrtouint(parm[3], 0, &temp) == 0))
-			devp->debug.dbg_dw_v = temp;
+			devp->dv_hw5.dw_out_h = temp;
 		if (parm[4] && (kstrtouint(parm[4], 0, &temp) == 0))
-			devp->debug.dbg_dw_dfmt = temp;
-		pr_info("vdin%d:dbg_dv_hw5:%#x;%d,%d,%d\n", devp->index,
-			devp->debug.dbg_dv_hw5, devp->debug.dbg_dw_h, devp->debug.dbg_dw_v,
-			devp->debug.dbg_dw_dfmt);
+			devp->dv_hw5.dw_dfmt = temp;
+		pr_info("vdin%d:dv_hw5:%#x;%d,%d,%d\n", devp->index,
+			devp->dv_hw5.hw5_ctl, devp->dv_hw5.dw_out_w, devp->dv_hw5.dw_out_h,
+			devp->dv_hw5.dw_dfmt);
 	} else if (!strcmp(parm[0], "hconv_mode")) {
 		if (!parm[1]) {
 			pr_err("miss parameters .\n");

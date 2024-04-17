@@ -86,7 +86,7 @@
 		logo_reserved:linux,meson-fb {
 			compatible = "amlogic, meson-fb";
 			alignment = <0x400000>;
-			reg = <0x5f800000 0x800000>;
+			reg = <0x3f800000 0x800000>;
 		};
 
 		ion_cma_reserved:linux,ion-dev {
@@ -107,6 +107,7 @@
 			/* 1080p STB androidT size 56M */
 			size = <0x3800000>;
 			alignment = <0x400000>;
+			alloc-ranges = <0x30000000 0x10000000>;
 		};
 		dmaheap_cma_reserved:heap-gfx {
 			compatible = "shared-dma-pool";
@@ -114,6 +115,7 @@
 			/* 1080p STB androidT size 88M */
 			size = <0x5800000>;
 			alignment = <0x400000>;
+			alloc-ranges = <0x0 0x30000000>;
 		 };
 		/*di CMA pool */
 		di_cma_reserved:linux,di_cma {
@@ -140,10 +142,13 @@
 		codec_mm_cma:linux,codec_mm_cma {
 			compatible = "shared-dma-pool";
 			reusable;
-			/* ion_codec_mm max can alloc size 80M*/
-			size = <0xDC00000>;
+			/*
+			 * Two-channel 1080i HEVC secure playback
+			 * requires at least 168MB without DTV enable
+			 */
+			size = <0xa800000>;
 			alignment = <0x400000>;
-			alloc-ranges = <0x30000000 0x50000000>;
+			alloc-ranges = <0x30000000 0x10000000>;
 			linux,contiguous-region;
 		};
 
@@ -160,6 +165,7 @@
 			no-map;
 			size = <0x400000>;
 			alignment = <0x100000>;
+			alloc-ranges = <0x30000000 0x10000000>;
 		};
 
 		/*  vdin0 CMA pool */
@@ -181,6 +187,7 @@
 			 */
 			size = <0x00800000>;
 			alignment = <0x400000>;
+			alloc-ranges = <0x30000000 0x10000000>;
 		};
 
 		/* global autoconfigured region for contiguous allocations */
@@ -190,7 +197,7 @@
 			size = <0x800000>;
 			alignment = <0x400000>;
 			linux,cma-default;
-			alloc-ranges = <0x0 0x30000000>;
+			alloc-ranges = <0x30000000 0x10000000>;
 		};
 	};
 	codec_mm {
@@ -204,41 +211,6 @@
 		dev_name = "aml_amdolby_vision_driver";
 		status = "disabled";
 		tv_mode = <0>;/*1:enable ;0:disable*/
-	};
-	cvbsout {
-		compatible = "amlogic, cvbsout-s4";
-		status = "okay";
-
-		/* clk path */
-		/* 0:vid_pll vid2_clk */
-		/* 1:gp0_pll vid2_clk */
-		/* 2:vid_pll vid1_clk */
-		/* 3:gp0_pll vid1_clk */
-		clk_path = <0>;
-
-		/* performance: reg_address, reg_value */
-		/* s4 */
-		performance_pal = <0x1bf0  0x9 /* default Matrx625 CTCC value*/
-			0x1b12  0x80c0
-			0x1b05  0xf7
-			0x1b56  0x333
-			0x1c59  0xf25c
-			0xffff  0x0>; /* ending flag */
-		performance = <0x1bf0  0x9 /* ccitt033 SVA value */
-			0x1b12  0x8040
-			0x1b05  0xfd
-			0x1b56  0x333
-			0x1c59  0xf654
-			0xffff  0x0>; /* ending flag */
-		performance_ntsc = <0x1bf0  0x9
-			0x1b12  0x8020
-			0x1b03  0x0
-			0x1b04  0x0
-			0x1b05  0x0
-			0x1b06  0x0
-			0x1b56  0x333
-			0x1c59  0xf850
-			0xffff  0x0>; /* ending flag */
 	};
 
 	dvb-extern {
@@ -344,6 +316,8 @@
 		status = "okay";
 		amlvideo2_id = <0>;
 		cma_mode = <1>;
+		/*1:720P_NV21 2:1080P_NV21 3:4K_NV21*/
+		codec_mm_alloc = <1>;
 	};
 
 	amlvideo2_1 {
@@ -352,6 +326,8 @@
 		status = "okay";
 		amlvideo2_id = <1>;
 		cma_mode = <1>;
+		/*1:720P_NV21 2:1080P_NV21 3:4K_NV21*/
+		codec_mm_alloc = <1>;
 	};
 
 	ppmgr {
@@ -1538,14 +1514,14 @@
 	status = "disabled";
 	display_size_default = <1920 1080 1920 2160 32>;
 	mem_size = <0x00800000 0x1980000 0x100000>;
-	logo_addr = "0x5f800000";
+	logo_addr = "0x3f800000";
 	mem_alloc = <0>;
 	pxp_mode = <0>; /** 0:normal mode 1:pxp mode */
 };
 
 &drm_vpu {
 	status = "okay";
-	logo_addr = "0x5f800000";
+	logo_addr = "0x3f800000";
 
 };
 

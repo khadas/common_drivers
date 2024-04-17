@@ -728,9 +728,10 @@ static int spinand_write_page(struct spinand_device *spinand,
 		last_req = *req;
 	}
 	/* information page is in front of BL2 */
-	if (page < SPI_NAND_BOOT_TOTAL_PAGES && version != PAGE_INFO_V1)
+	if (page < SPI_NAND_BOOT_TOTAL_PAGES && version != PAGE_INFO_V1) {
 		nanddev_pos_next_page(nand, &last_req.pos);
-
+		page_info_is_page(nanddev_pos_to_row(nand, &last_req.pos));
+	}
 	return _spinand_write_page(spinand, &last_req);
 }
 
@@ -800,11 +801,11 @@ int spinand_mtd_read_unlock(struct mtd_info *mtd, loff_t from,
 
 		ret = spinand_select_target(spinand, iter.req.pos.target);
 		if (ret)
-			break;
+			return ret;
 
 		ret = spinand_read_page(spinand, &iter.req);
 		if (ret < 0 && ret != -EBADMSG)
-			break;
+			return ret;
 
 		if (ret == -EBADMSG)
 			ecc_failed = true;
@@ -817,9 +818,9 @@ int spinand_mtd_read_unlock(struct mtd_info *mtd, loff_t from,
 	}
 
 	if (ecc_failed && !ret)
-		ret = -EBADMSG;
+		return -EBADMSG;
 
-	return ret ? ret : max_bitflips;
+	return max_bitflips >= mtd->bitflip_threshold ? -EUCLEAN : 0;
 }
 
 static int spinand_mtd_write(struct mtd_info *mtd, loff_t to,
@@ -1442,7 +1443,7 @@ static int spinand_init(struct spinand_device *spinand)
 	/* Propagate ECC information to mtd_info */
 	mtd->ecc_strength = nanddev_get_ecc_conf(nand)->strength;
 	mtd->ecc_step_size = nanddev_get_ecc_conf(nand)->step_size;
-	mtd->bitflip_threshold = mtd->ecc_strength;
+	mtd->bitflip_threshold = DIV_ROUND_UP(mtd->ecc_strength * 3, 4);
 
 	return 0;
 

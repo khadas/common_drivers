@@ -157,6 +157,9 @@
 /*  V3.5.030 fix dvbt overflow when 6M 1/4 and other param */
 /*  V3.5.031 calibrate dvbc signal strength read from R842 */
 /*  V3.5.032 rebuild dtmb driver */
+/*  V3.5.033 remove more print logs */
+/*  V3.5.034 fix incorrect cfo calculation results and add t2 info */
+/*  V3.5.035 fix crash caused by accessing T2 registers on T5D */
 /****************************************************/
 /****************************************************************/
 /*               AMLDTVDEMOD_VER  Description:                  */
@@ -173,8 +176,8 @@
 /*->The last four digits indicate the release time              */
 /****************************************************************/
 #define KERNEL_4_9_EN		1
-#define AMLDTVDEMOD_VER "V3.5.032"
-#define DTVDEMOD_VER	"2024/02/27: rebuild dtmb driver"
+#define AMLDTVDEMOD_VER "V3.5.035"
+#define DTVDEMOD_VER	"2024/04/12: fix crash caused by accessing T2 registers on T5D"
 #define AMLDTVDEMOD_T2_FW_VER "20231019_141000"
 #define DEMOD_DEVICE_NAME  "dtvdemod"
 

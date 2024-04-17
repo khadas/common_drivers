@@ -1,0 +1,154 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+
+# amlogic-uart
+CONFIG_AMLOGIC_SERIAL_MESON=y
+
+# amlogic-memory-debug
+# CONFIG_AMLOGIC_DDR_BANDWIDTH_T5 is not set
+# CONFIG_AMLOGIC_DDR_BANDWIDTH_G12 is not set
+# CONFIG_AMLOGIC_DDR_BANDWIDTH_TXHD2 is not set
+# CONFIG_AMLOGIC_DDR_BANDWIDTH_S7 is not set
+# CONFIG_AMLOGIC_DMC_MONITOR_TM2 is not set
+# CONFIG_AMLOGIC_DMC_MONITOR_G12 is not set
+# CONFIG_AMLOGIC_DMC_MONITOR_TXHD2 is not set
+# CONFIG_AMLOGIC_DMC_MONITOR_S7 is not set
+
+# amlogic-clk-soc-xxxx
+# CONFIG_AMLOGIC_COMMON_CLK_SC2 is not set
+# CONFIG_AMLOGIC_COMMON_CLK_T3 is not set
+# CONFIG_AMLOGIC_COMMON_CLK_T7 is not set
+# CONFIG_AMLOGIC_COMMON_CLK_T5W is not set
+# CONFIG_AMLOGIC_COMMON_CLK_TXHD2 is not set
+# CONFIG_AMLOGIC_COMMON_CLK_S7 is not set
+# CONFIG_AMLOGIC_COMMON_CLK_TM2 is not set
+# CONFIG_AMLOGIC_COMMON_CLK_T5D is not set
+
+# amlogic-aoclk-soc-xxxx
+# CONFIG_AMLOGIC_COMMON_AO_CLK_T5W is not set
+# CONFIG_AMLOGIC_COMMON_AO_CLK_TXHD2 is not set
+# CONFIG_AMLOGIC_COMMON_AO_CLK_TM2 is not set
+# CONFIG_AMLOGIC_COMMON_AO_CLK_T5D is not set
+
+# amlogic-pinctrl-soc-xxxx
+# CONFIG_AMLOGIC_PINCTRL_MESON_SC2 is not set
+# CONFIG_AMLOGIC_PINCTRL_MESON_T3 is not set
+# CONFIG_AMLOGIC_PINCTRL_MESON_T7 is not set
+# CONFIG_AMLOGIC_PINCTRL_MESON_T5W is not set
+# CONFIG_AMLOGIC_PINCTRL_MESON_TXHD2 is not set
+# CONFIG_AMLOGIC_PINCTRL_MESON_T5D is not set
+# CONFIG_AMLOGIC_PINCTRL_MESON_TM2 is not set
+# CONFIG_AMLOGIC_PINCTRL_MESON_S7 is not set
+
+# aml_drm.ko
+CONFIG_AMLOGIC_DRM=y
+
+# aml_media
+# CONFIG_AMLOGIC_MEDIA_TVIN_BT656 is not set
+# CONFIG_AMLOGIC_MEDIA_TVIN_HDMI is not set
+# CONFIG_AMLOGIC_MEDIA_TVIN_AFE is not set
+# CONFIG_AMLOGIC_MEDIA_TVIN_VBI is not set
+# CONFIG_AMLOGIC_MEDIA_TVIN_AVDETECT is not set
+
+# Disabled aml atv/dtv
+# CONFIG_AMLOGIC_ATV_DEMOD is not set
+# CONFIG_AMLOGIC_DTV_DEMOD is not set
+
+# Disabled aml lcd/bl
+# CONFIG_AMLOGIC_LCD_EXTERN_I2C_OLED is not set
+# CONFIG_AMLOGIC_BL_LDIM_IW7027 is not set
+# CONFIG_AMLOGIC_BL_LDIM_BLMCU is not set
+
+# Disabled unuse rd compression tools
+# CONFIG_RD_ZSTD is not set
+
+# HID devices set modules
+# Disable hid may cause vts to fail
+CONFIG_HID_APPLE=m
+CONFIG_HID_PRODIKEYS=m
+CONFIG_HID_ELECOM=m
+CONFIG_HID_UCLOGIC=m
+CONFIG_HID_LOGITECH=m
+CONFIG_HID_MAGICMOUSE=m
+CONFIG_HID_MICROSOFT=m
+CONFIG_HID_MULTITOUCH=m
+CONFIG_HID_NINTENDO=m
+CONFIG_HID_PICOLCD=m
+CONFIG_HID_PLANTRONICS=m
+CONFIG_HID_ROCCAT=m
+CONFIG_HID_SONY=y
+CONFIG_HID_STEAM=m
+CONFIG_HID_WACOM=m
+CONFIG_HID_WIIMOTE=m
+
+# Disabled Multifunction device drivers
+# CONFIG_MFD_CORE is not set
+
+# Disabled usb network
+# CONFIG_WLAN_VENDOR_MICROCHIP is not set
+
+# Disabled network vendor
+# CONFIG_NET_VENDOR_LITEX is not set
+# CONFIG_NET_VENDOR_MICROSOFT is not set
+
+# CONFIG_PTP_1588_CLOCK_KVM is not set
+# CONFIG_POWER_RESET_SYSCON is not set
+
+# Disabled unuse compression tools
+# CONFIG_CRYPTO_ZSTD is not set
+# CONFIG_F2FS_FS_LZO is not set
+# CONFIG_F2FS_FS_ZSTD is not set
+# CONFIG_F2FS_FS_LZ4 is not set
+# CONFIG_F2FS_FS_LZ4HC is not set
+# CONFIG_LZO_COMPRESS is not set
+# CONFIG_LZO_DECOMPRESS is not set
+# CONFIG_ZSTD_COMPRESS is not set
+# CONFIG_XZ_DEC_X86 is not set
+# CONFIG_XZ_DEC_POWERPC is not set
+# CONFIG_XZ_DEC_IA64 is not set
+# CONFIG_XZ_DEC_ARMTHUMB is not set
+# CONFIG_XZ_DEC_SPARC is not set
+# CONFIG_LZ4_COMPRESS is not set
+# CONFIG_LZ4HC_COMPRESS is not set
+# CONFIG_CRYPTO_LZ4 is not set
+# CONFIG_LZ4_DECOMPRESS is not set
+# CONFIG_ZSTD_DECOMPRESS is not set
+# CONFIG_XZ_DEC is not set
+# CONFIG_XZ_DEC_ARM is not set
+# CONFIG_XZ_DEC_BCJ is not set
+# CONFIG_DECOMPRESS_LZ4 is not set
+# CONFIG_DECOMPRESS_ZSTD is not set
+
+CONFIG_CRC8=y
+
+# CONFIG_BUG is not set
+# CONFIG_BUG_ON_DATA_CORRUPTION is not set
+# CONFIG_CMA_DEBUGFS is not set
+# CONFIG_DEBUG_BUGVERBOSE is not set
+# CONFIG_SLUB_DEBUG is not set
+# CONFIG_PM_DEBUG is not set
+# CONFIG_BLK_DEV_BSG is not set
+
+# CONFIG_INPUT_MOUSEDEV is not set
+# CONFIG_INPUT_TOUCHSCREEN is not set
+# CONFIG_PPS is not set
+# CONFIG_PTP_1588_CLOCK is not set
+
+# CONFIG_RESET_SCMI is not set
+
+# Disabled unuse fs
+# CONFIG_F2FS_FS is not set
+# CONFIG_NTFS3_FS is not set
+
+
+
+
+
+
+
+
+
+
+
+
+
+

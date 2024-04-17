@@ -31,7 +31,8 @@ int vpu_power_init_check_dft(void)
 		      __func__, vpu_clk_read(vpu_conf.data->vpu_clk_reg), ret);
 	}
 	if (vpu_conf.data->chip_type == VPU_CHIP_T7 ||
-		vpu_conf.data->chip_type == VPU_CHIP_S7)
+		vpu_conf.data->chip_type == VPU_CHIP_S7 ||
+		vpu_conf.data->chip_type == VPU_CHIP_TXHD2)
 		ret = init_arb_urgent_table();
 	return ret;
 }

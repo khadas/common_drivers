@@ -7,6 +7,8 @@
 #ifndef AMVE_V2_H
 #define AMVE_V2_H
 
+#include "set_hdr2_v0.h"
+
 extern int multi_picture_case;
 extern int multi_slice_case;
 extern int hist_dma_case;
@@ -21,8 +23,7 @@ struct cm_port_s {
 int get_slice_max(void);
 
 struct cm_port_s get_cm_port(void);
-void cm_hist_get(struct vframe_s *vf,
-	unsigned int hue_bin0, unsigned int sat_bin0);
+void cm_hist_get(struct vpp_hist_param_s *vp, unsigned int hue_bin0, unsigned int sat_bin0);
 void cm_hist_by_type_get(enum cm_hist_e hist_sel,
 	unsigned int *data, unsigned int length,
 	unsigned int addr_bin0);
@@ -61,7 +62,7 @@ void post_wb_ctl(enum wr_md_e mode, int en, int vpp_index);
 void post_pre_gamma_ctl(enum wr_md_e mode, int en, int vpp_index);
 void post_pre_gamma_set(int *lut);
 void vpp_luma_hist_init(void);
-void get_luma_hist(struct vframe_s *vf);
+void get_luma_hist(struct vframe_s *vf, struct vpp_hist_param_s *vp);
 void cm_top_ctl(enum wr_md_e mode, int en, int vpp_index);
 
 void ve_multi_picture_case_set(int enable);
@@ -131,6 +132,11 @@ void post_lut3d_section_write(int index, int section_len,
 	unsigned int *lut3d_data_in);
 void post_lut3d_section_read(int index, int section_len,
 	unsigned int *lut3d_data_out);
+void mtx_setting_v2(enum vpp_matrix_e mtx_sel,
+	enum wr_md_e mode,
+	enum mtx_csc_e mtx_csc,
+	int mtx_on,
+	enum vpp_slice_e slice, int vpp_index);
 
 #endif
 #endif

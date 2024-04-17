@@ -62,7 +62,8 @@
 /* 20240226: add tcon init_table pre_proc*/
 /* 20240307: update swpdf support*/
 /* 20240319: add tcon pre_proc_clk_en control*/
-#define LCD_DRV_VERSION    "20240319"
+/* 20240403: update lcd status, notifier event and bypass ufr switch when power off */
+#define LCD_DRV_VERSION    "20240403"
 
 static inline unsigned char __p_to_u8(void *p)
 {
@@ -126,6 +127,7 @@ void *lcd_alloc_dma_buffer(struct aml_lcd_drv_s *pdrv, unsigned int size, dma_ad
 u8 *lcd_vmap(ulong addr, u32 size);
 void lcd_unmap_phyaddr(u8 *vaddr);
 int  lcd_debug_parse_param(char *buf_orig, char **parm, int max_parm);
+void lcd_debug_info_print(char *print_buf);
 
 void lcd_cpu_gpio_probe(struct aml_lcd_drv_s *pdrv, unsigned int index);
 void lcd_cpu_gpio_set(struct aml_lcd_drv_s *pdrv, unsigned int index, int value);
@@ -138,6 +140,7 @@ void lcd_p2p_pinmux_set(struct aml_lcd_drv_s *pdrv, int status);
 void lcd_edp_pinmux_set(struct aml_lcd_drv_s *pdrv, int status);
 void lcd_mipi_pinmux_set(struct aml_lcd_drv_s *pdrv, int status);
 
+void lcd_act_timing_dbg_print(struct aml_lcd_drv_s *pdrv);
 int lcd_config_timing_check(struct aml_lcd_drv_s *pdrv, struct lcd_detail_timing_s *ptiming);
 int lcd_base_config_load_from_dts(struct aml_lcd_drv_s *pdrv);
 void lcd_mlvds_phy_ckdi_config(struct aml_lcd_drv_s *pdrv);
@@ -233,6 +236,7 @@ int lcd_tcon_od_set(struct aml_lcd_drv_s *pdrv, int flag);
 int lcd_tcon_od_get(struct aml_lcd_drv_s *pdrv);
 int lcd_tcon_core_reg_get(struct aml_lcd_drv_s *pdrv,
 			  unsigned char *buf, unsigned int size);
+int lcd_tcon_top_init(struct aml_lcd_drv_s *pdrv);
 int lcd_tcon_enable(struct aml_lcd_drv_s *pdrv);
 int lcd_tcon_reload(struct aml_lcd_drv_s *pdrv);
 int lcd_tcon_reload_pre(struct aml_lcd_drv_s *pdrv);

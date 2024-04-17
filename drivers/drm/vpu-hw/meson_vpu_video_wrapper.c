@@ -301,6 +301,14 @@ static int video_check_state(struct meson_vpu_block *vblk,
 	video->vfm_mode = plane_info->vfm_mode;
 	mvvs->dmabuf = plane_info->dmabuf;
 	mvvs->crtc_index = plane_info->crtc_index;
+	MESON_DRM_BLOCK("video->dmabuf-%px plane_info->dmabuf-%px\n",
+		video->dmabuf, plane_info->dmabuf);
+	if (video->dmabuf != plane_info->dmabuf) {
+		mvvs->repeat_frame = 0;
+		video->dmabuf = plane_info->dmabuf;
+	} else {
+		mvvs->repeat_frame = 1;
+	}
 
 	if (!video->vfm_mode && !video->video_path_reg) {
 		kfifo_reset(&video->ready_q);
@@ -333,7 +341,7 @@ static void video_set_state(struct meson_vpu_block *vblk,
 
 	MESON_DRM_BLOCK("%s", __func__);
 
-	if (!vblk) {
+	if (!vblk || !mvvs->dmabuf) {
 		MESON_DRM_BLOCK("set_state break for NULL.\n");
 		return;
 	}
@@ -411,6 +419,7 @@ static void video_set_state(struct meson_vpu_block *vblk,
 		}
 
 		if (video->vfm_mode) {
+			struct dma_fence *old_fence = NULL;
 			vf_info.release_fence = video->fence;
 			vf_info.dmabuf = mvvs->dmabuf;
 			vf_info.dst_x = mvvs->dst_x;
@@ -427,9 +436,22 @@ static void video_set_state(struct meson_vpu_block *vblk,
 			vf_info.reserved[0] = 0;
 			vf_info.phy_addr[0] = mvvs->phy_addr[0];
 			vf_info.phy_addr[1] = mvvs->phy_addr[1];
-			dma_resv_add_excl_fence(vf_info.dmabuf->resv, vf_info.release_fence);
-			MESON_DRM_FENCE("dmabuf(%px), release_fence(%px)\n",
-				vf_info.dmabuf, vf_info.release_fence);
+			if (vf_info.dmabuf && vf_info.dmabuf->resv)
+				old_fence = dma_resv_get_excl_unlocked(vf_info.dmabuf->resv);
+			MESON_DRM_FENCE("dmabuf(%px), release_fence(%px-%d), old_fence=%px-%d\n",
+				vf_info.dmabuf, vf_info.release_fence,
+				vf_info.release_fence ?
+					kref_read(&vf_info.release_fence->refcount) : -1,
+				old_fence, old_fence ? kref_read(&old_fence->refcount) : -1);
+			if (mvvs->repeat_frame) {
+				MESON_DRM_FENCE("re-frame\n");
+				dma_fence_get(vf_info.release_fence);
+			} else {
+				MESON_DRM_FENCE("no re-frame\n");
+				if (vf_info.dmabuf && vf_info.dmabuf->resv)
+					dma_resv_add_excl_fence(vf_info.dmabuf->resv,
+						vf_info.release_fence);
+			}
 			MESON_DRM_BLOCK("vf-info crop:%u, %u, %u, %u, pic:%u, %u\n",
 				vf_info.crop_x, vf_info.crop_y, vf_info.crop_w, vf_info.crop_h,
 				vf_info.buffer_w, vf_info.buffer_h);
@@ -451,11 +473,15 @@ static void video_set_state(struct meson_vpu_block *vblk,
 			MESON_DRM_BLOCK("vf-crop:%u, %u, %u, %u\n",
 					pic_w, pic_h, vf->crop[2], vf->crop[3]);
 			vf->flag |= VFRAME_FLAG_VIDEO_DRM;
-			if (!kfifo_put(&video->ready_q, vf))
-				DRM_INFO("ready_q is full!\n");
+
+			if (!mvvs->repeat_frame) {
+				if (!kfifo_put(&video->ready_q, vf))
+					DRM_INFO("ready_q is full!\n");
+			}
 		}
 	} else {
 		if (video->vfm_mode) {
+			struct dma_fence *old_fence = NULL;
 			vf_info.release_fence = video->fence;
 			video_vfm_convert_to_vfminfo(mvvs, &vf_info);
 			vf_info.phy_addr[0] = mvvs->phy_addr[0];
@@ -464,7 +490,22 @@ static void video_set_state(struct meson_vpu_block *vblk,
 			else
 				vf_info.phy_addr[1] = mvvs->phy_addr[1];
 			vf_info.reserved[0] = video_type_get(pixel_format);
-			dma_resv_add_excl_fence(vf_info.dmabuf->resv, vf_info.release_fence);
+			if (vf_info.dmabuf && vf_info.dmabuf->resv)
+				old_fence = dma_resv_get_excl_unlocked(vf_info.dmabuf->resv);
+			MESON_DRM_FENCE("dmabuf(%px), release_fence(%px-%d), old_fence=%px-%d\n",
+				vf_info.dmabuf, vf_info.release_fence,
+				vf_info.release_fence ?
+					kref_read(&vf_info.release_fence->refcount) : -1,
+				old_fence, old_fence ? kref_read(&old_fence->refcount) : -1);
+			if (mvvs->repeat_frame) {
+				MESON_DRM_FENCE("re-frame\n");
+				dma_fence_get(vf_info.release_fence);
+			} else {
+				MESON_DRM_FENCE("no re-frame\n");
+				if (vf_info.dmabuf && vf_info.dmabuf->resv)
+					dma_resv_add_excl_fence(vf_info.dmabuf->resv,
+						vf_info.release_fence);
+			}
 #ifdef CONFIG_AMLOGIC_VIDEO_COMPOSER
 			video_display_setframe(vblk->index, &vf_info, 0);
 #endif
@@ -532,13 +573,13 @@ static void video_set_state(struct meson_vpu_block *vblk,
 			}
 		}
 	}
-	if (!video->vfm_mode && video->fence && vf)
+	if (!video->vfm_mode && video->fence && vf && !mvvs->repeat_frame)
 		bind_video_fence_vframe(video, video->fence,
 				mvvs->plane_index, vf);
 	MESON_DRM_BLOCK("plane_index=%d,HW-video=%d, byte_stride=%d\n",
 		  mvvs->plane_index, vblk->index, byte_stride);
-	MESON_DRM_BLOCK("phy_addr=0x%pa,phy_addr2=0x%pa\n",
-		  &phy_addr, &phy_addr2);
+	MESON_DRM_BLOCK("phy_addr=0x%pa,phy_addr2=0x%pa, repeat_frame=%d\n",
+		  &phy_addr, &phy_addr2, mvvs->repeat_frame);
 	MESON_DRM_BLOCK("%s set_state done.\n", video->base.name);
 }
 
@@ -564,24 +605,45 @@ static void video_hw_enable(struct meson_vpu_block *vblk,
 	MESON_DRM_BLOCK("%s enable done.\n", video->base.name);
 }
 
+static void video_disable_work_func(struct work_struct *works)
+{
+	struct meson_vpu_disable_work *worker = container_of(works,
+		struct meson_vpu_disable_work, work);
+#ifdef CONFIG_AMLOGIC_VIDEO_COMPOSER
+	video_display_setenable(worker->idx, 0);
+#endif
+	worker->video->video_enabled = 0;
+}
+
 static void video_hw_disable(struct meson_vpu_block *vblk,
 			     struct meson_vpu_block_state *state)
 {
 	struct meson_vpu_video *video = to_video_block(vblk);
+	struct meson_vpu_disable_work *worker;
+	struct meson_drm *priv;
 
 	if (!video) {
 		MESON_DRM_BLOCK("disable break for NULL.\n");
 		return;
 	}
 
+	worker = &video->worker;
+	priv = video->base.pipeline->priv;
+
 	if (video->vfm_mode) {
-#ifdef CONFIG_AMLOGIC_VIDEO_COMPOSER
-		video_display_setenable(vblk->index, 0);
-		video->video_enabled = 0;
-#endif
+		DRM_INFO("%s dmabuf(%px), release_fence(%px), video_name(%s)\n",
+			__func__, video->dmabuf, video->fence, video->base.name);
+		worker->idx = vblk->index;
+		worker->video = video;
+		if (video->disable_wq)
+			queue_work(video->disable_wq, &worker->work);
+		video->fence = NULL;
+		video->dmabuf = NULL;
+		priv->disable_video_plane = 1;
 	} else {
 		video_disable_fence(video);
 		video->fence = NULL;
+		video->dmabuf = NULL;
 		if (video->video_enabled) {
 			set_video_enabled(0, vblk->index);
 			video->video_enabled = 0;
@@ -641,6 +703,13 @@ static void video_hw_init(struct meson_vpu_block *vblk)
 		vfm_map_add(video->vfm_map_id, video->vfm_map_chain);
 		vf_provider_init(&video->vprov, video->base.name,
 					 &vp_vf_ops, video);
+	}
+
+	DRM_INFO("%s:vfm_mode = %d\n", __func__, video->vfm_mode);
+	if (video->vfm_mode) {
+		video->disable_wq = alloc_workqueue("disable_wq",
+				WQ_HIGHPRI | WQ_CPU_INTENSIVE, 0);
+		INIT_WORK(&video->worker.work, video_disable_work_func);
 	}
 	MESON_DRM_BLOCK("%s:%s done.\n", __func__, video->base.name);
 }

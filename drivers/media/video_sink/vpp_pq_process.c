@@ -7,6 +7,7 @@
 #include <linux/types.h>
 #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_VECM
 #include <linux/amlogic/media/amvecm/amvecm.h>
+#include <uapi/amlogic/amvecm_ext.h>
 #endif
 
 unsigned int vpp_pq_dbg;
@@ -93,9 +94,8 @@ static unsigned int timer_filter_en;
  * 1: use top 3 blend offset, with timer filter which can select as policy
  */
 static unsigned int aipq_set_policy;
-#endif
-
 static unsigned int color_th = 100;
+#endif
 
 /*scene_prob[0]: scene, scene_prob[1]: prob*/
 int scene_prob[2] = {0, 0};
@@ -109,8 +109,9 @@ struct ai_pq_hist_data aipq_hist_data = {
 };
 
 /*scene change th: 1/2 scene diff*/
+#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_VECM
 static u32 sc_th = 512;
-
+#endif
 u32 sc_flg;
 u32 sc_f_cnt;
 
@@ -305,8 +306,8 @@ int aipq_scs_bld_proc(int (*cfg)[SCENES_VALUE], int (*prob)[2],
 	return 0;
 }
 
-void aipq_scs_proc(struct vframe_s *vf,
-		   int (*cfg)[SCENES_VALUE],
+#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_VECM
+void aipq_scs_proc(int (*cfg)[SCENES_VALUE],
 		   int (*prob)[2],
 		   int *out,
 		   int *pq_debug)
@@ -324,6 +325,7 @@ void aipq_scs_proc(struct vframe_s *vf,
 	unsigned int diff_skin_pct, diff_green_pct, diff_blue_pct;
 	int i;
 	static int pre_hist[32];
+	struct vpp_hist_param_s *p = get_vpp_hist();
 
 	memset(out, 0, sizeof(int) * SCENES_VALUE);
 
@@ -335,13 +337,13 @@ void aipq_scs_proc(struct vframe_s *vf,
 	top_three_prob = prob[2][1];
 
 	for (i = 0; i < 3; i++)
-		cur_skin_hist += vf->prop.hist.vpp_hue_gamma[11 + i];
+		cur_skin_hist += p->vpp_hue_gamma[11 + i];
 	for (i = 0; i < 5; i++)
-		cur_green_hist += vf->prop.hist.vpp_hue_gamma[18 + i];
+		cur_green_hist += p->vpp_hue_gamma[18 + i];
 	for (i = 0; i < 5; i++)
-		cur_blue_hist += vf->prop.hist.vpp_hue_gamma[27 + i];
+		cur_blue_hist += p->vpp_hue_gamma[27 + i];
 	for (i = 0; i < 32; i++)
-		cur_total_hist += vf->prop.hist.vpp_hue_gamma[i];
+		cur_total_hist += p->vpp_hue_gamma[i];
 
 	cur_skin_pct = div64_u64(cur_skin_hist * 1000, cur_total_hist);
 	cur_green_pct = div64_u64(cur_green_hist * 1000, cur_total_hist);
@@ -431,14 +433,14 @@ void aipq_scs_proc(struct vframe_s *vf,
 				pre_hist[i * 8 + 7]);
 			for (i = 0; i < 4; i++)
 				pr_info("cur: %d, %d, %d, %d, %d, %d, %d, %d\n",
-				vf->prop.hist.vpp_hue_gamma[i * 8],
-				vf->prop.hist.vpp_hue_gamma[i * 8 + 1],
-				vf->prop.hist.vpp_hue_gamma[i * 8 + 2],
-				vf->prop.hist.vpp_hue_gamma[i * 8 + 3],
-				vf->prop.hist.vpp_hue_gamma[i * 8 + 4],
-				vf->prop.hist.vpp_hue_gamma[i * 8 + 5],
-				vf->prop.hist.vpp_hue_gamma[i * 8 + 6],
-				vf->prop.hist.vpp_hue_gamma[i * 8 + 7]);
+				p->vpp_hue_gamma[i * 8],
+				p->vpp_hue_gamma[i * 8 + 1],
+				p->vpp_hue_gamma[i * 8 + 2],
+				p->vpp_hue_gamma[i * 8 + 3],
+				p->vpp_hue_gamma[i * 8 + 4],
+				p->vpp_hue_gamma[i * 8 + 5],
+				p->vpp_hue_gamma[i * 8 + 6],
+				p->vpp_hue_gamma[i * 8 + 7]);
 		}
 		memcpy(out, cfg[top_one], sizeof(int) * SCENES_VALUE);
 		pre_top_one = top_one;
@@ -448,7 +450,7 @@ void aipq_scs_proc(struct vframe_s *vf,
 	}
 
 	for (i = 0; i < 32; i++)
-		pre_hist[i] = vf->prop.hist.vpp_hue_gamma[i];
+		pre_hist[i] = p->vpp_hue_gamma[i];
 
 	if (pq_debug[2] > 0x10)
 		pr_info("pre_top_one = %d, diff_skin_pct = %d, diff_green_pct = %d, diff_blue_pct = %d\n",
@@ -464,7 +466,7 @@ void aipq_scs_proc(struct vframe_s *vf,
 	aipq_hist_data.pre_blue_pct  = pre_blue_pct;
 }
 
-int sc_det(struct vframe_s *vf, int *pq_debug)
+int sc_det(int *pq_debug)
 {
 	int i;
 	static u32 hist_diff[3];
@@ -476,6 +478,7 @@ int sc_det(struct vframe_s *vf, int *pq_debug)
 	int ret = 0;
 	int luma_hist[64];
 	static int pre_luma_hist[64];
+	struct vpp_hist_param_s *p = get_vpp_hist();
 
 	for (i = 0; i < 2; i++)
 		hist_diff[i] = hist_diff[i + 1];
@@ -483,7 +486,7 @@ int sc_det(struct vframe_s *vf, int *pq_debug)
 	hist_diff[2] = 0;
 
 	for (i = 0; i < 64; i++) {
-		luma_hist[i] = vf->prop.hist.vpp_gamma[i];
+		luma_hist[i] = p->vpp_gamma[i];
 		sum += luma_hist[i];
 		diff = (luma_hist[i] > pre_luma_hist[i]) ?
 			(luma_hist[i] - pre_luma_hist[i]) :
@@ -545,6 +548,7 @@ void sc_flag_proc(u32 cur_flag)
 		sc_f_cnt++;
 	}
 }
+#endif
 
 u32 get_aipq_sc_flag(void)
 {
@@ -559,8 +563,8 @@ void clear_aipq_sc_flag(void)
 	sc_f_cnt = 0;
 }
 
-void aipq_scs_proc_t5m(struct vframe_s *vf,
-		   int (*cfg)[SCENES_VALUE],
+#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_VECM
+void aipq_scs_proc_t5m(int (*cfg)[SCENES_VALUE],
 		   int (*prob)[2],
 		   int *out,
 		   int *pq_debug,
@@ -582,7 +586,7 @@ void aipq_scs_proc_t5m(struct vframe_s *vf,
 	top_three_prob = prob[2][1];
 
 	if (vpp_new_frame) {
-		sc_flag = sc_det(vf, pq_debug);
+		sc_flag = sc_det(pq_debug);
 		sc_flag_proc(sc_flag);
 	}
 
@@ -614,8 +618,7 @@ void aipq_scs_proc_t5m(struct vframe_s *vf,
 	}
 }
 
-void aipq_scs_proc_s5(struct vframe_s *vf,
-		   int (*cfg)[SCENES_VALUE],
+void aipq_scs_proc_s5(int (*cfg)[SCENES_VALUE],
 		   int (*prob)[2],
 		   int *out,
 		   int *pq_debug,
@@ -637,7 +640,7 @@ void aipq_scs_proc_s5(struct vframe_s *vf,
 	top_three_prob = prob[2][1];
 
 	if (vpp_new_frame)
-		sc_flag = sc_det(vf, pq_debug);
+		sc_flag = sc_det(pq_debug);
 
 	if (pre_top_one == top_one) {
 		memcpy(out, cfg[pre_top_one], sizeof(int) * SCENES_VALUE);
@@ -672,6 +675,7 @@ void aipq_scs_proc_s5(struct vframe_s *vf,
 		pr_info("pre_top_one = %d, top_one = %d, sc_flag = %d\n",
 			pre_top_one, top_one, sc_flag);
 }
+#endif
 
 void vf_pq_process(struct vframe_s *vf,
 		   struct ai_scenes_pq *vpp_scenes,
@@ -754,11 +758,13 @@ void vf_pq_process(struct vframe_s *vf,
 	if (aipq_set_policy == 1)
 		aipq_scs_bld_proc(vpp_pq_data, prob, bld_ofst, pq_debug);
 	else if (aipq_set_policy == 2)
-		aipq_scs_proc_s5(vf, vpp_pq_data, prob, bld_ofst, pq_debug, vpp_new_frame);
+		aipq_scs_proc_s5(vpp_pq_data,
+			prob, bld_ofst, pq_debug, vpp_new_frame);
 	else if (aipq_set_policy == 3)
-		aipq_scs_proc_t5m(vf, vpp_pq_data, prob, bld_ofst, pq_debug, vpp_new_frame);
+		aipq_scs_proc_t5m(vpp_pq_data,
+			prob, bld_ofst, pq_debug, vpp_new_frame);
 	else
-		aipq_scs_proc(vf, vpp_pq_data, prob, bld_ofst, pq_debug);
+		aipq_scs_proc(vpp_pq_data, prob, bld_ofst, pq_debug);
 #endif
 
 	if (pq_debug[2] == 0x1)
@@ -784,4 +790,3 @@ void vf_pq_process(struct vframe_s *vf,
 	}
 #endif
 }
-

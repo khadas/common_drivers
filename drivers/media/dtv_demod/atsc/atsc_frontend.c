@@ -45,24 +45,24 @@
 
 //atsc-c
 
-MODULE_PARM_DESC(std_lock_timeout, "\n\t\t atsc-c std lock timeout");
+MODULE_PARM_DESC(std_lock_timeout, "");
 static unsigned int std_lock_timeout = 1000;
 module_param(std_lock_timeout, int, 0644);
 
 //atsc-t
-MODULE_PARM_DESC(atsc_agc_target, "\n\t\t atsc agc target");
+MODULE_PARM_DESC(atsc_agc_target, "");
 static unsigned char atsc_agc_target;
 module_param(atsc_agc_target, byte, 0644);
 
-MODULE_PARM_DESC(atsc_t_lock_continuous_cnt, "\n\t\t atsc-t lock signal continuous counting");
+MODULE_PARM_DESC(atsc_t_lock_continuous_cnt, "");
 static unsigned int atsc_t_lock_continuous_cnt = 1;
 module_param(atsc_t_lock_continuous_cnt, int, 0644);
 
-MODULE_PARM_DESC(atsc_check_signal_time, "\n\t\t atsc check signal time");
+MODULE_PARM_DESC(atsc_check_signal_time, "");
 static unsigned int atsc_check_signal_time = ATSC_TIME_CHECK_SIGNAL;
 module_param(atsc_check_signal_time, int, 0644);
 
-MODULE_PARM_DESC(atsc_t_lost_continuous_cnt, "\n\t\t atsc-t lost signal continuous counting");
+MODULE_PARM_DESC(atsc_t_lost_continuous_cnt, "");
 static unsigned int atsc_t_lost_continuous_cnt = 15;
 module_param(atsc_t_lost_continuous_cnt, int, 0644);
 
@@ -103,7 +103,7 @@ int gxtv_demod_atsc_read_status(struct dvb_frontend *fe,
 		} else {
 			if (s == 0 && demod->last_lock == 1 && atsc_read_reg(0x0980) >= 0x76) {
 				s = 1;
-				PR_ATSC("[rsj] unlock,but fsm >= 0x76\n");
+				PR_ATSC("unlock fsm >= 0x76\n");
 			}
 		}
 	}
@@ -129,7 +129,7 @@ int gxtv_demod_atsc_read_status(struct dvb_frontend *fe,
 	}
 
 	if (demod->last_lock != ilock) {
-		PR_INFO("%s [id %d]: %s.\n", __func__, demod->id,
+		PR_INFO("%s [id %d]: %s\n", __func__, demod->id,
 			ilock ? "!!  >> LOCK << !!" : "!! >> UNLOCK << !!");
 		demod->last_lock = ilock;
 
@@ -145,7 +145,7 @@ int gxtv_demod_atsc_read_status(struct dvb_frontend *fe,
 			strength = tuner_get_ch_power(fe);
 
 			PR_ATSC("s=%d(1 is lock),lock=%d\n", s, ilock);
-			PR_ATSC("[rsj_test]freq[%d] strength[%d]\n",
+			PR_ATSC("freq[%d] strength[%d]\n",
 					demod->freq, strength);
 
 			/*update */
@@ -183,7 +183,7 @@ int gxtv_demod_atsc_read_signal_strength(struct dvb_frontend *fe,
 		*strength += 3;
 	}
 
-	PR_ATSC("demod [id %d] signal strength %d dBm\n", demod->id, *strength);
+	PR_ATSC("[id %d] strength %d dBm\n", demod->id, *strength);
 
 	return 0;
 }
@@ -194,7 +194,7 @@ int gxtv_demod_atsc_read_snr(struct dvb_frontend *fe, u16 *snr)
 
 	*snr = demod->real_para.snr;
 
-	PR_ATSC("demod[%d] snr %d dBx10\n", demod->id, *snr);
+	PR_ATSC("[id %d] snr %d dBx10\n", demod->id, *snr);
 
 	return 0;
 }
@@ -225,7 +225,7 @@ int gxtv_demod_atsc_set_frontend(struct dvb_frontend *fe)
 	enum fe_delivery_system delsys = demod->last_delsys;
 	unsigned char agc_target = ATSC_AGC_TARGET_VALUE;
 
-	PR_INFO("%s [id %d]: delsys:%d, freq:%d, symbol_rate:%d, bw:%d, modul:%d, invert:%d.\n",
+	PR_INFO("%s [id %d]: delsys:%d, freq:%d, symbol_rate:%d, bw:%d, modul:%d, invert:%d\n",
 			__func__, demod->id, c->delivery_system, c->frequency, c->symbol_rate,
 			c->bandwidth_hz, c->modulation, c->inversion);
 
@@ -328,7 +328,7 @@ int gxtv_demod_atsc_set_frontend(struct dvb_frontend *fe)
 		}
 	}
 
-	PR_DBG("atsc_mode is %d\n", demod->atsc_mode);
+	PR_DBG("atsc_mode %d\n", demod->atsc_mode);
 
 	return 0;
 }
@@ -338,7 +338,7 @@ int gxtv_demod_atsc_get_frontend(struct dvb_frontend *fe)
 	/*these content will be written into eeprom .*/
 	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
 
-	PR_ATSC("c->frequency is %d\n", c->frequency);
+	PR_ATSC("frequency %d\n", c->frequency);
 	return 0;
 }
 
@@ -352,11 +352,11 @@ void atsc_polling(struct dvb_frontend *fe, enum fe_status *status)
 		return;
 
 	if (c->modulation == QPSK) {
-		PR_DBG("mode is qpsk, return;\n");
+		PR_DBG("qpsk, return\n");
 		/*return;*/
 	} else if (c->modulation <= QAM_AUTO) {
-	//atsc_j83b_polling(fe, status);
-		PR_DBG("mode is qam, return;\n");
+		//atsc_j83b_polling(fe, status);
+		PR_DBG("qam, return\n");
 	} else {
 		atsc_thread();
 		gxtv_demod_atsc_read_status(fe, status);
@@ -399,7 +399,7 @@ void atsc_optimize_cn(bool reset)
 
 	r_a9 = atsc_read_reg_v4(ATSC_EQ_REG_0XA9);
 	r_9e = atsc_read_reg_v4(ATSC_EQ_REG_0X9E);
-	PR_ATSC("r_a9=0x%x, r_9e=0x%x, ave_c3=0x%x, ave_d8=0x%x\n", r_a9, r_9e, ave_c3, ave_d8);
+	PR_ATSC("r_a9=0x%x,r_9e=0x%x,ave_c3=0x%x,ave_d8=0x%x\n", r_a9, r_9e, ave_c3, ave_d8);
 	if ((r_a9 != 0x77744 || r_9e != 0xd0d0d09) &&
 		ave_d8 < 0x1000 && ave_c3 > 0x240) {
 		PR_ATSC("set cn to 15dB\n");
@@ -464,8 +464,8 @@ void atsc_read_status(struct dvb_frontend *fe, enum fe_status *status, unsigned 
 	gxtv_demod_atsc_read_signal_strength(fe, &strength);
 	if (strength < tuner_strength_threshold) {
 		*status = FE_TIMEDOUT;
-		PR_ATSC("%s: tuner strength [%d] no signal(%d).\n",
-				__func__, strength, tuner_strength_threshold);
+		PR_ATSC("strength [%d] no signal(%d)\n",
+				strength, tuner_strength_threshold);
 
 		goto finish;
 	}
@@ -508,13 +508,13 @@ void atsc_read_status(struct dvb_frontend *fe, enum fe_status *status, unsigned 
 	if (fsm_status == -1) {
 		if (lock_status >= 0) {
 			lock_status = -1;
-			PR_ATSC("==> lost signal first\n");
+			PR_ATSC("lost signal first\n");
 		} else if (lock_status <= -lost_continuous_cnt) {
 			lock_status = -lost_continuous_cnt;
-			PR_ATSC("==> lost signal continue\n");
+			PR_ATSC("lost signal continue\n");
 		} else {
 			lock_status--;
-			PR_ATSC("==> lost signal times%d\n", lock_status);
+			PR_ATSC("lost signal times%d\n", lock_status);
 		}
 
 		if (lock_status <= -lost_continuous_cnt)
@@ -524,13 +524,13 @@ void atsc_read_status(struct dvb_frontend *fe, enum fe_status *status, unsigned 
 	} else if (fsm_status == 1) {
 		if (lock_status <= 0) {
 			lock_status = 1;
-			PR_ATSC("==> lock signal first\n");
+			PR_ATSC("lock signal first\n");
 		} else if (lock_status >= lock_continuous_cnt) {
 			lock_status = lock_continuous_cnt;
-			PR_ATSC("==> lock signal continue\n");
+			PR_ATSC("lock signal continue\n");
 		} else {
 			lock_status++;
-			PR_ATSC("==> lock signal times:%d\n", lock_status);
+			PR_ATSC("lock signal times:%d\n", lock_status);
 		}
 
 		if (lock_status >= lock_continuous_cnt)
@@ -573,15 +573,15 @@ int gxtv_demod_atsc_tune(struct dvb_frontend *fe, bool re_tune,
 			timer_begain(demod, D_TIMER_DETECT);
 
 		if (c->modulation == QPSK) {
-			PR_ATSC("[id %d] modulation is QPSK do nothing!", demod->id);
+			PR_ATSC("[id %d] modulation QPSK do nothing", demod->id);
 		} else if (c->modulation <= QAM_AUTO) {
-			PR_ATSC("[id %d] detect modulation is j83 first.\n", demod->id);
-			PR_ATSC("[%s] do not call this function.\n", __func__);
+			PR_ATSC("[id %d] modulation j83 first\n", demod->id);
+			PR_ATSC("do not call this function\n");
 		} else if (c->modulation > QAM_AUTO) {
-			PR_ATSC("[id %d] modulation is 8VSB.\n", demod->id);
+			PR_ATSC("[id %d] modulation 8VSB.\n", demod->id);
 			atsc_read_status(fe, status, re_tune);
 		} else {
-			PR_ATSC("[id %d] modulation is %d unsupported!\n",
+			PR_ATSC("[id %d] modulation %d unsupported\n",
 					demod->id, c->modulation);
 		}
 
@@ -589,7 +589,7 @@ int gxtv_demod_atsc_tune(struct dvb_frontend *fe, bool re_tune,
 	}
 
 	if (!demod->en_detect) {
-		PR_DBGL("%s: [id %d] not enable.\n", __func__, demod->id);
+		PR_DBGL("[id %d] atsc not enable\n", demod->id);
 		return 0;
 	}
 
@@ -616,7 +616,7 @@ int dtvdemod_atsc_init(struct aml_dtvdemod *demod)
 	demod->demod_status.delsys = SYS_ATSC;
 	sys.adc_clk = ADC_CLK_24M;
 
-	PR_DBG(" %s c->modulation : %d\n", __func__, c->modulation);
+	PR_DBG("atsc modulation: %d\n", c->modulation);
 	if (cpu_after_eq(MESON_CPU_MAJOR_ID_TL1))
 		sys.demod_clk = DEMOD_CLK_250M;
 	else
@@ -677,7 +677,7 @@ int amdemod_stat_atsc_islock(struct aml_dtvdemod *demod,
 				ret = 0;
 		}
 	} else {
-		PR_ERR("%s delsys wrong.\n", __func__);
+		PR_ERR("delsys wrong\n");
 	}
 
 	return ret;
@@ -687,4 +687,3 @@ unsigned int dtvdemod_get_atsc_lock_sts(struct aml_dtvdemod *demod)
 {
 	return amdemod_stat_atsc_islock(demod, SYS_ATSC);
 }
-

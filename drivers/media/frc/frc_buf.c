@@ -309,8 +309,8 @@ void frc_buf_dump_memory_size_info(struct frc_dev_s *devp)
 						frm_buf_num, logo_buf_num,
 						devp->buf.frm_buf_num,
 						devp->buf.logo_buf_num);
-			devp->buf.frm_buf_num = frm_buf_num;
-			devp->buf.logo_buf_num = logo_buf_num;
+		devp->buf.frm_buf_num = frm_buf_num;
+		devp->buf.logo_buf_num = logo_buf_num;
 	}
 	pr_frc(log, "buf num (frm:%d, logo:%d)", frm_buf_num, logo_buf_num);
 

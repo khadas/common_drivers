@@ -156,6 +156,7 @@
 #define CONF_GET_AUDIO_MUTE_ST  (CMD_CONF_OFFSET + 0x1000 + 0x02)
 
 #define CONF_ASPECT_RATIO       (CMD_CONF_OFFSET + 0x101a)
+#define CONF_HW_INIT			(CMD_CONF_OFFSET + 0x101b)
 
 enum avi_component_conf {
 	CONF_AVI_BT2020 = (CMD_CONF_OFFSET + 0X2000 + 0x00),
@@ -297,6 +298,8 @@ struct hdmitx_hw_common {
 	/* phy state */
 	unsigned char tmds_phy_op;
 
+	/* save the lastest plug_in time from interrupt*/
+	u64 hw_sequence_id;
 };
 
 int hdmitx_hw_cntl_config(struct hdmitx_hw_common *tx_hw,

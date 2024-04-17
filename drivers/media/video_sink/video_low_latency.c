@@ -981,6 +981,7 @@ static int lowlatency_vsync(u8 instance_id)
 			atomic_set(&cur_primary_src_fmt, fmt);
 			atomic_set(&primary_src_fmt, fmt);
 			video_prop_status |= VIDEO_PROP_CHANGE_FMT;
+			update_primary_fmt_event();
 		}
 	}
 

@@ -35,7 +35,7 @@ void isdbt_get_tmcc_info(struct isdbt_tmcc_info *tmcc_info)
 	unsigned int B20_25 = 0, B26_57 = 0, B58_89 = 0, B90_121 = 0;
 
 	if (!tmcc_info) {
-		PR_ERR("tmcc_info == NULL pointer.\n");
+		PR_ERR("tmcc_info NULL\n");
 
 		return;
 	}
@@ -45,7 +45,7 @@ void isdbt_get_tmcc_info(struct isdbt_tmcc_info *tmcc_info)
 	reg_0x66 = dvbt_isdbt_rd_reg_new(0x66);
 	reg_0x67 = dvbt_isdbt_rd_reg_new(0x67);
 
-	PR_ISDBT("reg 0x64 0x%x, 0x65 0x%x, 0x66 0x%x, 0x67 0x%x.\n",
+	PR_ISDBT("reg 0x64 0x%x, 0x65 0x%x, 0x66 0x%x, 0x67 0x%x\n",
 			reg_0x64, reg_0x65, reg_0x66, reg_0x67);
 
 	B90_121 = bit32_reverse(reg_0x64);
@@ -53,7 +53,7 @@ void isdbt_get_tmcc_info(struct isdbt_tmcc_info *tmcc_info)
 	B26_57 = bit32_reverse(reg_0x66);
 	B20_25 = bitn_reverse(reg_0x67, 6) & 0x3f;
 
-	PR_ISDBT("after bit_reverse B20_25 0x%x, B26_57 0x%x, B58_89 0x%x, B90_121 0x%x.\n",
+	PR_ISDBT("after bit_reverse B20_25 0x%x, B26_57 0x%x, B58_89 0x%x, B90_121 0x%x\n",
 			B20_25, B26_57, B58_89, B90_121);
 
 	tmcc_info->system_id = B20_25 & 0x3;
@@ -96,68 +96,78 @@ void isdbt_get_tmcc_info(struct isdbt_tmcc_info *tmcc_info)
 	tmcc_info->phase_shift = (B90_121 >> 17) & 0x7;
 	tmcc_info->reserved = (B90_121 >> 20) & 0xfff;
 
-	PR_ISDBT("system_id %d.\n", tmcc_info->system_id);
-	PR_ISDBT("tp_switch %d.\n", tmcc_info->tp_switch);
-	PR_ISDBT("ews_flag  %d.\n", tmcc_info->ews_flag);
+	PR_ISDBT("system_id %d\n", tmcc_info->system_id);
+	PR_ISDBT("tp_switch %d\n", tmcc_info->tp_switch);
+	PR_ISDBT("ews_flag  %d\n", tmcc_info->ews_flag);
 
-	PR_ISDBT("current_info is_partial           %d.\n",
+	PR_ISDBT("Current_info:\n");
+	PR_ISDBT("is_partial %d\n",
 			tmcc_info->current_info.is_partial);
-	PR_ISDBT("current_info layer_a modulation   %d.\n",
+
+	PR_ISDBT("layer A:\n");
+	PR_ISDBT("modulation %d\n",
 			tmcc_info->current_info.layer_a.modulation);
-	PR_ISDBT("current_info layer_a coding_rate  %d.\n",
+	PR_ISDBT("coding_rate %d\n",
 			tmcc_info->current_info.layer_a.coding_rate);
-	PR_ISDBT("current_info layer_a il_length    %d.\n",
+	PR_ISDBT("il_length %d\n",
 			tmcc_info->current_info.layer_a.il_length);
-	PR_ISDBT("current_info layer_a segments_num %d.\n",
+	PR_ISDBT("segments_num %d\n",
 			tmcc_info->current_info.layer_a.segments_num);
 
-	PR_ISDBT("current_info layer_b modulation   %d.\n",
+	PR_ISDBT("layer B:\n");
+	PR_ISDBT("modulation %d\n",
 			tmcc_info->current_info.layer_b.modulation);
-	PR_ISDBT("current_info layer_b coding_rate  %d.\n",
+	PR_ISDBT("coding_rate %d\n",
 			tmcc_info->current_info.layer_b.coding_rate);
-	PR_ISDBT("current_info layer_b il_length    %d.\n",
+	PR_ISDBT("il_length %d\n",
 			tmcc_info->current_info.layer_b.il_length);
-	PR_ISDBT("current_info layer_b segments_num %d.\n",
+	PR_ISDBT("segments_num %d\n",
 			tmcc_info->current_info.layer_b.segments_num);
 
-	PR_ISDBT("current_info layer_c modulation   %d.\n",
+	PR_ISDBT("layer C:\n");
+	PR_ISDBT("modulation %d\n",
 			tmcc_info->current_info.layer_c.modulation);
-	PR_ISDBT("current_info layer_c coding_rate  %d.\n",
+	PR_ISDBT("coding_rate %d\n",
 			tmcc_info->current_info.layer_c.coding_rate);
-	PR_ISDBT("current_info layer_c il_length    %d.\n",
+	PR_ISDBT("il_length %d\n",
 			tmcc_info->current_info.layer_c.il_length);
-	PR_ISDBT("current_info layer_c segments_num %d.\n",
+	PR_ISDBT("segments_num %d\n\n",
 			tmcc_info->current_info.layer_c.segments_num);
 
-	PR_ISDBT("next_info is_partial           %d.\n",
+	PR_ISDBT("Next_info:\n");
+	PR_ISDBT("is_partial %d\n",
 			tmcc_info->next_info.is_partial);
-	PR_ISDBT("next_info layer_a modulation   %d.\n",
+
+	PR_ISDBT("layer A:\n");
+	PR_ISDBT("modulation %d\n",
 			tmcc_info->next_info.layer_a.modulation);
-	PR_ISDBT("next_info layer_a coding_rate  %d.\n",
+	PR_ISDBT("coding_rate %d\n",
 			tmcc_info->next_info.layer_a.coding_rate);
-	PR_ISDBT("next_info layer_a il_length    %d.\n",
+	PR_ISDBT("il_length %d\n",
 			tmcc_info->next_info.layer_a.il_length);
-	PR_ISDBT("next_info layer_a segments_num %d.\n",
+	PR_ISDBT("segments_num %d\n",
 			tmcc_info->next_info.layer_a.segments_num);
 
-	PR_ISDBT("next_info layer_b modulation   %d.\n",
+	PR_ISDBT("layer B:\n");
+	PR_ISDBT("modulation %d\n",
 			tmcc_info->next_info.layer_b.modulation);
-	PR_ISDBT("next_info layer_b coding_rate  %d.\n",
+	PR_ISDBT("coding_rate %d\n",
 			tmcc_info->next_info.layer_b.coding_rate);
-	PR_ISDBT("next_info layer_b il_length    %d.\n",
+	PR_ISDBT("il_length %d\n",
 			tmcc_info->next_info.layer_b.il_length);
-	PR_ISDBT("next_info layer_b segments_num %d.\n",
+	PR_ISDBT("segments_num %d\n",
 			tmcc_info->next_info.layer_b.segments_num);
 
-	PR_ISDBT("next_info layer_c modulation   %d.\n",
+	PR_ISDBT("layer C:\n");
+	PR_ISDBT("modulation %d\n",
 			tmcc_info->next_info.layer_c.modulation);
-	PR_ISDBT("next_info layer_c coding_rate  %d.\n",
+	PR_ISDBT("coding_rate %d\n",
 			tmcc_info->next_info.layer_c.coding_rate);
-	PR_ISDBT("next_info layer_c il_length    %d.\n",
+	PR_ISDBT("il_length %d\n",
 			tmcc_info->next_info.layer_c.il_length);
-	PR_ISDBT("next_info layer_c segments_num %d.\n",
+	PR_ISDBT("segments_num %d\n\n",
 			tmcc_info->next_info.layer_c.segments_num);
 
-	PR_ISDBT("phase_shift %d.\n", tmcc_info->phase_shift);
-	PR_ISDBT("reserved    %d.\n", tmcc_info->reserved);
+	PR_ISDBT("phase_shift %d\n", tmcc_info->phase_shift);
+	PR_ISDBT("reserved %d\n", tmcc_info->reserved);
 }

@@ -1207,8 +1207,8 @@ void hdmirx_get_vsi_info(struct tvin_sig_property_s *prop, u8 port)
 		prop->imax_flag = false;
 		last_vsi_state = rx[port].vs_info_details.vsi_state;
 	}
-	if (rx[port].pre.colorspace != E_COLOR_YUV420)
-		prop->dolby_vision = rx[port].vs_info_details.dolby_vision_flag;
+	//if (rx[port].pre.colorspace != E_COLOR_YUV420)
+	prop->dolby_vision = rx[port].vs_info_details.dolby_vision_flag;
 	if (log_level & PACKET_LOG && rx[port].new_emp_pkt)
 		rx_pr("vsi_state:0x%x\n", rx[port].vs_info_details.vsi_state);
 
@@ -1442,9 +1442,7 @@ void hdmirx_get_emp_dv_info(struct tvin_sig_property_s *prop, u8 port)
 void hdmirx_get_vtem_info(struct tvin_sig_property_s *prop, u8 port)
 {
 	memset(&prop->vtem_data, 0, sizeof(struct tvin_vtem_data_s));
-	if (rx[port].vtem_info.vrr_en)
-		memcpy(&prop->vtem_data,
-			   &rx[port].vtem_info, sizeof(struct vtem_info_s));
+	memcpy(&prop->vtem_data, &rx[port].vtem_info, sizeof(struct vtem_info_s));
 }
 
 void hdmirx_get_sbtm_info(struct tvin_sig_property_s *prop, u8 port)
@@ -1627,6 +1625,9 @@ void hdmirx_get_sig_prop(struct tvin_frontend_s *fe,
 			prop->latency.allm_mode, prop->latency.cn_type,
 			prop->latency.it_content, prop->hw_vic, prop->avi_colorimetry,
 			prop->avi_ext_colorimetry);
+		rx_pr("hdr-eotf:0x%x, gaming-vrr:0x%x, qms-vrr:0x%x\n",
+			prop->hdr_info.hdr_data.eotf, prop->vtem_data.vrr_en,
+			prop->vtem_data.qms_en);
 	}
 }
 
@@ -1715,6 +1716,11 @@ bool hdmirx_clr_pkts(struct tvin_frontend_s *fe, enum tvin_port_type_e port_type
 	return 0;
 }
 
+bool hdmirx_is_xbox_dev(struct tvin_frontend_s *fe, enum tvin_port_type_e port_type)
+{
+	return rx_is_xbox_dev(rx_get_port_from_type(port_type));
+}
+
 static struct tvin_state_machine_ops_s hdmirx_sm_ops = {
 	.nosig            = hdmirx_is_nosig,
 	.fmt_changed      = hdmirx_fmt_chg,
@@ -1732,6 +1738,7 @@ static struct tvin_state_machine_ops_s hdmirx_sm_ops = {
 	.hdmi_reset_pcs = hdmirx_pcs_reset,
 	.hdmi_de_hactive = hdmirx_de_hactive,
 	.hdmi_clr_pkts	= hdmirx_clr_pkts,
+	.hdmi_is_xbox_dev = hdmirx_is_xbox_dev, //TODO: temp patch for xbox game mode
 };
 
 /*

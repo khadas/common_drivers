@@ -122,6 +122,7 @@ struct meson_cvbs_dev {
 struct meson_panel_dev {
 	struct meson_connector_dev base;
 	int (*get_modes)(struct meson_panel_dev *panel, struct drm_display_mode **modes, int *num);
+	int (*get_modes_vrr_range)(struct meson_panel_dev *panel, void *range, int max, int *num);
 };
 
 /*dummy_l specified struct*/

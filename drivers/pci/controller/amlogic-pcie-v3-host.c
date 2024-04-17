@@ -726,6 +726,15 @@ static int amlogic_pcie_rc_remove(struct platform_device *pdev)
 	return 0;
 }
 
+static void amlogic_pcie_shutdown(struct platform_device *pdev)
+{
+	struct amlogic_pcie *amlogic = platform_get_drvdata(pdev);
+
+	amlogic_pcie_deinit_phys(amlogic);
+
+	amlogic_pcie_disable_clocks(amlogic);
+}
+
 static const struct of_device_id amlogic_pcie_of_match[] = {
 	{ .compatible = "amlogic, amlogic-pcie-v3", },
 	{ .compatible = "amlogic,amlogic-pcie-v3", },
@@ -742,6 +751,7 @@ static struct platform_driver amlogic_pcie_driver = {
 	},
 	.probe = amlogic_pcie_rc_probe,
 	.remove = amlogic_pcie_rc_remove,
+	.shutdown = amlogic_pcie_shutdown,
 };
 
 module_platform_driver(amlogic_pcie_driver);

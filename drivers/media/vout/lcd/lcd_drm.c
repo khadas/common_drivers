@@ -265,6 +265,49 @@ static int get_lcd_tablet_modes(struct meson_panel_dev *panel,
 	return 0;
 }
 
+static int get_lcd_tv_modes_vrr_range(struct meson_panel_dev *panel, void *range, int max, int *num)
+{
+	struct drm_vrr_mode_group *group;
+	struct drm_lcd_wrapper *wrapper = to_drm_lcd_wrapper(panel);
+	struct aml_lcd_drv_s *pdrv;
+	struct lcd_detail_timing_s *timing;
+	struct lcd_vmode_list_s *temp_list;
+	int cnt = 0;
+
+	if (!wrapper)
+		return -1;
+
+	pdrv = wrapper->lcd_drv;
+
+	if (!pdrv || !panel || !range || !num)
+		return -1;
+
+	temp_list = pdrv->vmode_mgr.vmode_list_header;
+	while (temp_list && cnt < max) {
+		if (!temp_list->info || !temp_list->info->dft_timing)
+			continue;
+
+		timing = temp_list->info->dft_timing;
+		group = &((struct drm_vrr_mode_group *)range)[cnt];
+		group->width = timing->h_active;
+		group->height = timing->v_active;
+		group->vrr_min = timing->frame_rate_min;
+		group->vrr_max = timing->frame_rate_max;
+		group->brr = timing->frame_rate;
+		sprintf(group->modename, "%s%dhz", temp_list->info->name, temp_list->info->base_fr);
+		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+			LCDPR("update vrr range[%d]:%s: w:%d, h:%d, range:[%d-%d], fr:%d\n",
+				cnt, group->modename, group->width, group->height,
+				group->vrr_min, group->vrr_max, timing->frame_rate);
+
+		temp_list = temp_list->next;
+		cnt++;
+	}
+	*num = cnt;
+
+	return 0;
+}
+
 static int meson_lcd_bind(struct device *dev, struct device *master, void *data)
 {
 	struct meson_drm_bound_data *bound_data = data;
@@ -275,10 +318,13 @@ static int meson_lcd_bind(struct device *dev, struct device *master, void *data)
 	/*init drm instance*/
 	drm_lcd_wrappers[index].lcd_drv = pdrv;
 	drm_lcd_wrappers[index].drm_lcd_instance.base.ver = MESON_DRM_CONNECTOR_V10;
-	if (pdrv->mode == LCD_MODE_TV)
+	if (pdrv->mode == LCD_MODE_TV) {
 		drm_lcd_wrappers[index].drm_lcd_instance.get_modes = get_lcd_tv_modes;
-	else
+		drm_lcd_wrappers[index].drm_lcd_instance.get_modes_vrr_range =
+			get_lcd_tv_modes_vrr_range;
+	} else {
 		drm_lcd_wrappers[index].drm_lcd_instance.get_modes = get_lcd_tablet_modes;
+	}
 
 	/*set lcd type.*/
 	switch (pdrv->config.basic.lcd_type) {

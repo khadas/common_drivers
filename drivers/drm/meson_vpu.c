@@ -162,6 +162,7 @@ static irqreturn_t am_meson_vpu_irq(int irq, void *arg)
 		return IRQ_NONE;
 
 	am_meson_crtc_handle_vsync(amcrtc);
+	amcrtc->priv->pan_async_commit_ran = false;
 
 	return IRQ_HANDLED;
 }
@@ -280,10 +281,6 @@ static int am_meson_vpu_bind(struct device *dev,
 		am_meson_vpu_power_config(1);
 	else
 		osd_vpu_power_on();
-
-	for (i = 0; i < pipeline->num_video; i++)
-		pipeline->video[i]->vfm_mode =
-			private->video_planes[i]->vfm_mode;
 
 	DRM_DEBUG("%s out[%d]\n", __func__, __LINE__);
 	return 0;

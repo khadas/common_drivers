@@ -36,14 +36,19 @@
 
 /* #define LCD_DEBUG_INFO */
 extern unsigned int lcd_debug_print_flag;
-#define LCD_DBG_PR_NORMAL       BIT(0)
+//bit[15:0]
+#define LCD_DBG_PR_NORMAL       BIT(0) //basic info & flow
 #define LCD_DBG_PR_ADV          BIT(1)
-#define LCD_DBG_PR_ADV2         BIT(2) //clk calc, tcon data
+#define LCD_DBG_PR_ADV2         BIT(2)
 #define LCD_DBG_PR_ISR          BIT(3)
-#define LCD_DBG_PR_BL_NORMAL    BIT(4)
-#define LCD_DBG_PR_BL_ADV       BIT(5) //pwm, isr, ext, ldim
-#define LCD_DBG_PR_TEST         BIT(6)
-#define LCD_DBG_PR_REG          BIT(7)
+#define LCD_DBG_PR_BL_NORMAL    BIT(4) //basic info & flow
+#define LCD_DBG_PR_BL_ADV       BIT(5) //ext, ldim
+#define LCD_DBG_PR_BL_PWM       BIT(6)
+#define LCD_DBG_PR_BL_ISR       BIT(7)
+#define LCD_DBG_PR_CLK          BIT(8)
+#define LCD_DBG_PR_TCON         BIT(9)
+#define LCD_DBG_PR_TEST         BIT(14)
+#define LCD_DBG_PR_REG          BIT(15)
 
 #define LCDPR(fmt, args...)     pr_info("lcd: " fmt "", ## args)
 #define LCDERR(fmt, args...)    pr_err("lcd: error: " fmt "", ## args)
@@ -529,9 +534,11 @@ struct cus_ctrl_config_s {
 	unsigned int timing_cnt;
 	unsigned int active_timing_type;
 	unsigned char timing_switch_flag;
+	unsigned char timing_switch_flag_pre;
 	unsigned char timing_ctrl_valid;
 
 	struct lcd_cus_ctrl_attr_config_s *attr_config;
+	struct lcd_cus_ctrl_attr_config_s *cur_timing_attr;
 
 	unsigned long long mute_time;
 	unsigned long long unmute_time;
@@ -614,14 +621,13 @@ struct lcd_boot_ctrl_s {
 
 /*
  *bit[31:30]: lcd mode(0=normal, 1=tv; 2=tablet, 3=TBD)
- *bit[29:28]: lcd debug para source(0=normal, 1=dts, 2=unifykey,
- *                                  3=bsp for uboot)
- *bit[27:16]: reserved
- *bit[15:8]: lcd test pattern
- *bit[7:0]:  lcd debug print flag
+ *bit[29:28]: lcd debug para source(0=normal, 1=dts, 2=unifykey, 3=bsp for uboot)
+ *bit[27:20]: reserved
+ *bit[19:16]: lcd test pattern
+ *bit[15:0]:  lcd debug print flag
  */
 struct lcd_debug_ctrl_s {
-	unsigned char debug_print_flag;
+	unsigned short debug_print_flag;
 	unsigned char debug_test_pattern;
 	unsigned char debug_para_source;
 	unsigned char debug_lcd_mode;
@@ -675,17 +681,15 @@ struct lcd_reg_map_s {
 	char flag;
 };
 
-#define LCD_RESUME_PREPARE       BIT(0)
-#define LCD_RESUME_ENABLE        BIT(1)
-
-#define LCD_STATUS_IF_ON         BIT(0)
-#define LCD_STATUS_ENCL_ON       BIT(1)
-#define LCD_STATUS_VMODE_ACTIVE  BIT(2)
+#define LCD_STATUS_IF_ON         BIT(0) //real status
+#define LCD_STATUS_ENCL_ON       BIT(1) //real status
 #define LCD_STATUS_ON         (LCD_STATUS_IF_ON | LCD_STATUS_ENCL_ON)
+#define LCD_STATUS_POWER         BIT(4) //control status
+#define LCD_STATUS_PREPARE       BIT(5) //control status
+#define LCD_STATUS_VMODE_ACTIVE  BIT(6) //control status
 
 #define LCD_VIU_SEL_NONE         0
-#define EXTERN_MUL_MAX	         10
-#define LCD_VSYNC_COMPLETE	BIT(7)
+
 struct aml_lcd_drv_s {
 	unsigned int index;
 	unsigned int status;
@@ -696,7 +700,6 @@ struct aml_lcd_drv_s {
 	unsigned char clk_path; /* 0=hpll, 1=gp0_pll */
 	unsigned char config_load;
 	unsigned char resume_type; /* 0=directly, 1=workqueue */
-	unsigned char resume_flag;
 	unsigned char init_flag; /* 0=none, 1=power on request */
 	unsigned char auto_test;
 	unsigned char test_state;

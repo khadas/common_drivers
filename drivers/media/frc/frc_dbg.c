@@ -720,6 +720,7 @@ void frc_debug_param_if(struct frc_dev_s *devp, const char *buf, size_t count)
 	char *buf_orig, *parm[47] = {NULL};
 	int val1;
 	int val2;
+	int val3;
 
 	if (!devp)
 		return;
@@ -919,11 +920,12 @@ void frc_debug_param_if(struct frc_dev_s *devp, const char *buf, size_t count)
 		if (kstrtoint(parm[1], 10, &val1) == 0)
 			devp->prot_mode = val1;
 	} else if (!strcmp(parm[0], "set_urgent")) {
-		if (!parm[1] || !parm[2])
+		if (!parm[1] || !parm[2] || !parm[3])
 			goto exit;
 		if (kstrtoint(parm[1], 10, &val1) == 0) {
-			if (kstrtoint(parm[2], 16, &val2) == 0)
-				frc_set_urgent_cfg(val1, val2);
+			if (kstrtoint(parm[2], 10, &val2) == 0)
+				if (kstrtoint(parm[3], 10, &val3) == 0)
+					frc_set_arb_ugt_cfg(val1, val2, val3);
 		}
 	} else if (!strcmp(parm[0], "no_ko_mode")) {
 		if (!parm[1])
@@ -948,6 +950,12 @@ exit:
 ssize_t frc_debug_other_if_help(struct frc_dev_s *devp, char *buf)
 {
 	ssize_t len = 0;
+	struct frc_fw_data_s *fw_data;
+
+	if (!devp)
+		return len;
+
+	fw_data = (struct frc_fw_data_s *)devp->fw_data;
 
 	len += sprintf(buf + len, "crc_read\t=%d\n", devp->frc_crc_data.frc_crc_read);
 	len += sprintf(buf + len, "crc_en\t\t=%d %d %d %d\n",
@@ -967,6 +975,8 @@ ssize_t frc_debug_other_if_help(struct frc_dev_s *devp, char *buf)
 			devp->timer_dbg.timer_en, devp->timer_dbg.timer_level,
 			devp->timer_dbg.time_interval);
 	len += sprintf(buf + len, "frm_seg_en\t=%d\n", devp->in_sts.frm_en);
+	len += sprintf(buf + len, "motion_ctrl\t=%d\n",
+			fw_data->frc_top_type.motion_ctrl);
 	return len;
 }
 
@@ -974,6 +984,7 @@ void frc_debug_other_if(struct frc_dev_s *devp, const char *buf, size_t count)
 {
 	char *buf_orig, *parm[47] = {NULL};
 	int val1;
+	struct frc_fw_data_s *fw_data;
 
 	if (!devp)
 		return;
@@ -981,6 +992,7 @@ void frc_debug_other_if(struct frc_dev_s *devp, const char *buf, size_t count)
 	if (!buf)
 		return;
 
+	fw_data = (struct frc_fw_data_s *)devp->fw_data;
 	buf_orig = kstrdup(buf, GFP_KERNEL);
 	if (!buf_orig)
 		return;
@@ -1115,6 +1127,11 @@ void frc_debug_other_if(struct frc_dev_s *devp, const char *buf, size_t count)
 			goto exit;
 		if (kstrtoint(parm[1], 10, &val1) == 0)
 			devp->in_sts.frm_en = val1;
+	} else if (!strcmp(parm[0], "motion_ctrl")) {
+		if (!parm[1])
+			goto exit;
+		if (kstrtoint(parm[1], 10, &val1) == 0)
+			fw_data->frc_top_type.motion_ctrl = val1;
 	}
 exit:
 	kfree(buf_orig);

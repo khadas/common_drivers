@@ -39,7 +39,7 @@
 #define VPP2_BLOCK 21
 #define HDR3_BLOCK 22
 #define SLICE2PPC_BLOCK 23
-#define BLOCK_ID_MAX 29
+#define BLOCK_ID_MAX 32
 
 #define OSD1_PORT 0
 #define OSD2_PORT 1

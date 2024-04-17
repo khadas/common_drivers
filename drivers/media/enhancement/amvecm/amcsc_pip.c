@@ -861,6 +861,13 @@ int hdr_policy_process(struct vinfo_s *vinfo,
 			hlg_process_mode[vd_path] = PROC_BYPASS;
 			target_format[vd_path] = BT2020_HLG;
 		} else if (vd_path == VD1_PATH &&
+			source_format[vd_path] == HDRTYPE_HLG &&
+			is_amdv_enable() &&
+			(sink_hdr_support_ori_cap(vinfo) & HLG_SUPPORT)) {
+			/* vd1 bypass hlg */
+			hlg_process_mode[vd_path] = PROC_BYPASS;
+			target_format[vd_path] = BT2020_HLG;
+		} else if (vd_path == VD1_PATH &&
 			(!is_video_layer_on(VD2_PATH) || is_vpp1(VD2_PATH)) &&
 			source_format[vd_path] == HDRTYPE_HDR10PLUS &&
 			hdr10_plus_support) {
@@ -2728,6 +2735,31 @@ int get_s5_slice_mode(void)
 	return slice_number;
 }
 
+void output_color_fmt_convert(int vpp_index)
+{
+	if (vinfo_hdmi_out_fmt()) {
+		mtx_setting_v2(POST_MTX, WR_DMA,
+			MATRIX_YUV709_RGB, MTX_ON, SLICE0, vpp_index);
+		mtx_setting_v2(POST_MTX, WR_DMA,
+			MATRIX_YUV709_RGB, MTX_ON, SLICE1, vpp_index);
+		mtx_setting_v2(POST_MTX, WR_DMA,
+			MATRIX_YUV709_RGB, MTX_ON, SLICE2, vpp_index);
+		mtx_setting_v2(POST_MTX, WR_DMA,
+			MATRIX_YUV709_RGB, MTX_ON, SLICE3, vpp_index);
+	} else {
+		mtx_setting_v2(POST_MTX, WR_DMA,
+			MATRIX_NULL, MTX_OFF, SLICE0, vpp_index);
+		mtx_setting_v2(POST_MTX, WR_DMA,
+			MATRIX_NULL, MTX_OFF, SLICE1, vpp_index);
+		mtx_setting_v2(POST_MTX, WR_DMA,
+			MATRIX_NULL, MTX_OFF, SLICE2, vpp_index);
+		mtx_setting_v2(POST_MTX, WR_DMA,
+			MATRIX_NULL, MTX_OFF, SLICE3, vpp_index);
+	}
+	pr_csc(12, "%s: post matrix convert color format for hdmi out. fmt: %d\n",
+		__func__, vinfo_hdmi_out_fmt());
+}
+
 void video_post_process(struct vframe_s *vf,
 			enum vpp_matrix_csc_e csc_type,
 			struct vinfo_s *vinfo,
@@ -3395,7 +3427,6 @@ void video_post_process(struct vframe_s *vf,
 		else
 			mtx_setting(POST2_MTX, MATRIX_YUV709_RGB, MTX_ON);
 	} else if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A &&
-		chip_type_id != chip_s5 &&
 		chip_type_id != chip_t3x) {
 		if (!(vinfo->mode == VMODE_LCD ||
 			vinfo->mode == VMODE_DUMMY_ENCP)) {
@@ -3406,12 +3437,16 @@ void video_post_process(struct vframe_s *vf,
 			    __LINE__);
 			pr_csc(128, "%s: no lcd csc_type = %d\n",
 				__func__, csc_type);
-			if (vpp_index == VPP_TOP1)
-				mtx_setting(VPP1_POST2_MTX, MATRIX_NULL, MTX_OFF);
-			else if (vpp_index == VPP_TOP2)
-				mtx_setting(VPP2_POST2_MTX, MATRIX_NULL, MTX_OFF);
-			else
-				mtx_setting(POST2_MTX, MATRIX_NULL, MTX_OFF);
+			if (chip_type_id == chip_s5) {
+				output_color_fmt_convert(vpp_index);
+			} else {
+				if (vpp_index == VPP_TOP1)
+					mtx_setting(VPP1_POST2_MTX, MATRIX_NULL, MTX_OFF);
+				else if (vpp_index == VPP_TOP2)
+					mtx_setting(VPP2_POST2_MTX, MATRIX_NULL, MTX_OFF);
+				else
+					mtx_setting(POST2_MTX, MATRIX_NULL, MTX_OFF);
+			}
 		} else {
 			pr_csc(12, "%s: vpp_index = %d mode = %d [%d]\n",
 				__func__,

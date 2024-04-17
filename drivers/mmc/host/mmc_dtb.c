@@ -44,7 +44,6 @@ static dev_t amlmmc_dtb_no;
 struct cdev amlmmc_dtb;
 struct device *dtb_dev;
 struct class *amlmmc_dtb_class;
-static char *glb_dtb_buf;
 struct mmc_card *card_dtb;
 struct aml_dtb_info {
 	unsigned int stamp[2];
@@ -93,32 +92,6 @@ int mmc_dtb_open(struct inode *node, struct file *file)
 	return 0;
 }
 
-static int _dtb_write(struct mmc_card *mmc, int blk, unsigned char *buf)
-{
-	int ret = 0;
-	unsigned char *src = NULL;
-	int bit = mmc->csd.read_blkbits;
-	int cnt = CONFIG_DTB_SIZE >> bit;
-
-	src = (unsigned char *)buf;
-
-	mmc_claim_host(mmc->host);
-	do {
-		ret = mmc_write_internal(mmc, blk, MAX_TRANS_BLK, src);
-		if (ret) {
-			pr_err("%s: save dtb error", __func__);
-			ret = -EFAULT;
-			break;
-		}
-		blk += MAX_TRANS_BLK;
-		cnt -= MAX_TRANS_BLK;
-		src = (unsigned char *)buf + MAX_TRANS_SIZE;
-	} while (cnt != 0);
-	mmc_release_host(mmc->host);
-
-	return ret;
-}
-
 static unsigned int _calc_dtb_checksum(struct aml_dtb_rsv *dtb)
 {
 	int i = 0;
@@ -144,6 +117,119 @@ static int _verify_dtb_checksum(struct aml_dtb_rsv *dtb)
 	return !(checksum == dtb->checksum);
 }
 
+static int _amlmmc_read(struct mmc_card *mmc, int blk, unsigned char *buf, int cnt)
+{
+	int ret = 0;
+	unsigned char *dst = NULL;
+	int bit = card_dtb->csd.read_blkbits;
+	void *read_buf;
+	int read_cnt;
+
+	read_buf = kmalloc(DTB_CELL_SIZE, GFP_KERNEL | __GFP_RECLAIM);
+	if (!read_buf)
+		return -ENOMEM;
+
+	dst = (unsigned char *)buf;
+	read_cnt = DTB_CELL_SIZE >> bit;
+
+	mmc_claim_host(mmc->host);
+	aml_disable_mmc_cqe(mmc);
+	do {
+		if (cnt < read_cnt)
+			read_cnt = cnt;
+		ret = mmc_read_internal(mmc, blk, read_cnt, read_buf);
+		if (ret) {
+			ret = -EFAULT;
+			break;
+		}
+		memcpy(dst, read_buf, read_cnt << bit);
+		dst += read_cnt << bit;
+		cnt -= read_cnt;
+		blk += read_cnt;
+	} while (cnt != 0);
+	aml_enable_mmc_cqe(mmc);
+	mmc_release_host(mmc->host);
+
+	kfree(read_buf);
+	return ret;
+}
+
+static int _amlmmc_write(struct mmc_card *mmc, int blk, unsigned char *buf, int cnt)
+{
+	int ret = 0;
+	unsigned char *src = NULL;
+	int bit = mmc->csd.read_blkbits;
+	void *write_buf;
+	int write_cnt;
+
+	write_buf = kmalloc(DTB_CELL_SIZE, GFP_KERNEL | __GFP_RECLAIM);
+	if (!write_buf)
+		return -ENOMEM;
+
+	src = (unsigned char *)buf;
+	write_cnt = DTB_CELL_SIZE >> bit;
+
+	mmc_claim_host(mmc->host);
+	aml_disable_mmc_cqe(mmc);
+	do {
+		if (cnt < write_cnt)
+			write_cnt = cnt;
+		memcpy(write_buf, src, write_cnt << bit);
+		ret = mmc_write_internal(mmc, blk, write_cnt, write_buf);
+		if (ret) {
+			ret = -EFAULT;
+			break;
+		}
+		src += write_cnt << bit;
+		cnt -= write_cnt;
+		blk += write_cnt;
+	} while (cnt != 0);
+	aml_enable_mmc_cqe(mmc);
+	mmc_release_host(mmc->host);
+
+	kfree(write_buf);
+	return ret;
+}
+
+static int _dtb_init(struct mmc_card *mmc)
+{
+	int ret = 0;
+	struct aml_dtb_rsv *dtb;
+	struct aml_dtb_info *info = &dtb_infos;
+	int cpy = 1, valid = 0;
+	int bit = mmc->csd.read_blkbits;
+	int blk;
+	int cnt = CONFIG_DTB_SIZE >> bit;
+
+	dtb = vmalloc(CONFIG_DTB_SIZE);
+	if (!dtb)
+		return -ENOMEM;
+
+	/* read dtb2 1st, for compatibility without checksum. */
+	while (cpy >= 0) {
+		blk = ((get_reserve_partition_off_from_tbl()
+		       + DTB_RESERVE_OFFSET) >> bit)
+		       + cpy * DTB_BLK_CNT;
+		if (_amlmmc_read(mmc, blk, (unsigned char *)dtb, cnt)) {
+			pr_err("%s: block # %#x ERROR!\n", __func__, blk);
+		} else {
+			ret = _verify_dtb_checksum(dtb);
+			if (!ret) {
+				info->stamp[cpy] = dtb->timestamp;
+				info->valid[cpy] = 1;
+			} else {
+				pr_debug("cpy %d is not valid\n", cpy);
+			}
+		}
+		valid += info->valid[cpy];
+		cpy--;
+	}
+	pr_debug("total valid %d\n", valid);
+	vfree(dtb);
+
+	return ret;
+}
+
 int amlmmc_dtb_write(struct mmc_card *mmc, unsigned char *buf, int len)
 {
 	int ret = 0, blk;
@@ -151,6 +237,7 @@ int amlmmc_dtb_write(struct mmc_card *mmc, unsigned char *buf, int len)
 	int cpy, valid;
 	struct aml_dtb_rsv *dtb = (struct aml_dtb_rsv *)buf;
 	struct aml_dtb_info *info = &dtb_infos;
+	int cnt = CONFIG_DTB_SIZE >> bit;
 
 	if (len > CONFIG_DTB_SIZE) {
 		pr_err("%s dtb data len too much", __func__);
@@ -186,7 +273,7 @@ int amlmmc_dtb_write(struct mmc_card *mmc, unsigned char *buf, int len)
 		blk = ((get_reserve_partition_off_from_tbl()
 					+ DTB_RESERVE_OFFSET) >> bit)
 			+ cpy * DTB_BLK_CNT;
-		ret |= _dtb_write(mmc, blk, buf);
+		ret |= _amlmmc_write(mmc, blk, buf, cnt);
 	}
 
 	return ret;
@@ -194,7 +281,7 @@ int amlmmc_dtb_write(struct mmc_card *mmc, unsigned char *buf, int len)
 
 int amlmmc_dtb_read(struct mmc_card *card, unsigned char *buf, int len)
 {
-	int ret = 0, start_blk, size, blk_cnt;
+	int ret = 0, start_blk, blk_cnt;
 	int bit = card->csd.read_blkbits;
 	unsigned char *dst = NULL;
 	unsigned char *buffer = NULL;
@@ -205,29 +292,31 @@ int amlmmc_dtb_read(struct mmc_card *card, unsigned char *buf, int len)
 	}
 	memset(buf, 0x0, len);
 
-	start_blk = MMC_DTB_PART_OFFSET;
 	buffer = kmalloc(DTB_CELL_SIZE, GFP_KERNEL | __GFP_RECLAIM);
 	if (!buffer)
 		return -ENOMEM;
 
-	start_blk >>= bit;
-	size = CONFIG_DTB_SIZE;
-	blk_cnt = size >> bit;
+	start_blk = MMC_DTB_PART_OFFSET >> bit;
+	blk_cnt = CONFIG_DTB_SIZE >> bit;
 	dst = (unsigned char *)buffer;
+
+	mmc_claim_host(card->host);
+	aml_disable_mmc_cqe(card);
 	while (blk_cnt != 0) {
 		memset(buffer, 0x0, DTB_CELL_SIZE);
 		ret = mmc_read_internal(card, start_blk, (DTB_CELL_SIZE >> bit), dst);
 		if (ret) {
 			pr_err("%s read dtb error", __func__);
 			ret = -EFAULT;
-			kfree(buffer);
-			return ret;
+			break;
 		}
 		start_blk += (DTB_CELL_SIZE >> bit);
 		blk_cnt -= (DTB_CELL_SIZE >> bit);
 		memcpy(buf, dst, DTB_CELL_SIZE);
 		buf += DTB_CELL_SIZE;
 	}
+	aml_enable_mmc_cqe(card);
+	mmc_release_host(card->host);
 	kfree(buffer);
 	return ret;
 }
@@ -237,7 +326,9 @@ ssize_t mmc_dtb_read(struct file *file, char __user *buf,
 {
 	unsigned char *dtb_ptr = NULL;
 	ssize_t read_size = 0;
-	int ret = 0;
+	int bit = card_dtb->csd.read_blkbits;
+	int blk = (MMC_DTB_PART_OFFSET + *ppos) >> bit;
+	int ret = 0, cnt = 0;
 
 	if (*ppos == CONFIG_DTB_SIZE)
 		return 0;
@@ -247,28 +338,33 @@ ssize_t mmc_dtb_read(struct file *file, char __user *buf,
 		return -EFAULT;
 	}
 
-	dtb_ptr = glb_dtb_buf;
-	if (!dtb_ptr)
-		return -ENOMEM;
-
-	mmc_claim_host(card_dtb->host);
-	aml_disable_mmc_cqe(card_dtb);
-	ret = amlmmc_dtb_read(card_dtb, (unsigned char *)dtb_ptr, CONFIG_DTB_SIZE);
-	if (ret) {
-		pr_err("%s: read failed:%d", __func__, ret);
-		ret = -EFAULT;
-		goto exit;
-	}
 	if ((*ppos + count) > CONFIG_DTB_SIZE)
 		read_size = CONFIG_DTB_SIZE - *ppos;
 	else
 		read_size = count;
-	ret = copy_to_user(buf, (dtb_ptr + *ppos), read_size);
-	*ppos += read_size;
 
+	cnt = read_size >> bit;
+
+	dtb_ptr = vmalloc(read_size);
+	if (!dtb_ptr)
+		return -ENOMEM;
+
+	ret = _amlmmc_read(card_dtb, blk, dtb_ptr, cnt);
+	if (ret) {
+		pr_err("%s: read dtb failed", __func__);
+		read_size = 0;
+		goto exit;
+	}
+
+	ret = copy_to_user(buf, dtb_ptr, read_size);
+	if (ret) {
+		pr_err("%s: copy to user space failed", __func__);
+		read_size -= ret;
+		goto exit;
+	}
+	*ppos += read_size;
 exit:
-	aml_enable_mmc_cqe(card_dtb);
-	mmc_release_host(card_dtb->host);
+	vfree(dtb_ptr);
 	return read_size;
 }
 
@@ -285,32 +381,39 @@ ssize_t mmc_dtb_write(struct file *file,
 		pr_err("%s: out of space!", __func__);
 		return -EFAULT;
 	}
-	dtb_ptr = glb_dtb_buf;
+
+	dtb_ptr = vmalloc(CONFIG_DTB_SIZE);
 	if (!dtb_ptr)
 		return -ENOMEM;
-
-	mmc_claim_host(card_dtb->host);
-	aml_disable_mmc_cqe(card_dtb);
 
 	if ((*ppos + count) > CONFIG_DTB_SIZE)
 		write_size = CONFIG_DTB_SIZE - *ppos;
 	else
 		write_size = count;
 
-	ret = copy_from_user((dtb_ptr + *ppos), buf, write_size);
-
-	ret = amlmmc_dtb_write(card_dtb,
-			       dtb_ptr, CONFIG_DTB_SIZE);
+	ret = amlmmc_dtb_read(card_dtb, dtb_ptr, CONFIG_DTB_SIZE);
 	if (ret) {
-		pr_err("%s: write dtb failed", __func__);
+		pr_err("%s: read dtb failed", __func__);
 		ret = -EFAULT;
 		goto exit;
 	}
 
+	ret = copy_from_user((dtb_ptr + *ppos), buf, write_size);
+	if (ret) {
+		pr_err("%s: copy from user space failed", __func__);
+		write_size = 0;
+		goto exit;
+	}
+
+	ret = amlmmc_dtb_write(card_dtb, dtb_ptr, CONFIG_DTB_SIZE);
+	if (ret) {
+		pr_err("%s: write dtb failed", __func__);
+		write_size = 0;
+		goto exit;
+	}
 	*ppos += write_size;
 exit:
-	aml_enable_mmc_cqe(card_dtb);
-	mmc_release_host(card_dtb->host);
+	vfree(dtb_ptr);
 	return write_size;
 }
 
@@ -329,72 +432,6 @@ static const struct file_operations dtb_ops = {
 int get_reserve_partition_off_from_tbl(void)
 {
 	return 0x2400000;
-}
-
-static int _dtb_read(struct mmc_card *mmc, int blk, unsigned char *buf)
-{
-	int ret = 0;
-	unsigned char *dst = NULL;
-	int bit = mmc->csd.read_blkbits;
-	int cnt = CONFIG_DTB_SIZE >> bit;
-
-	dst = (unsigned char *)buf;
-	mmc_claim_host(mmc->host);
-	aml_disable_mmc_cqe(mmc);
-	do {
-		ret = mmc_read_internal(mmc, blk, MAX_TRANS_BLK, dst);
-		if (ret) {
-			pr_err("%s: save dtb error", __func__);
-			ret = -EFAULT;
-			break;
-		}
-		blk += MAX_TRANS_BLK;
-		cnt -= MAX_TRANS_BLK;
-		dst = (unsigned char *)buf + MAX_TRANS_SIZE;
-	} while (cnt != 0);
-	aml_enable_mmc_cqe(mmc);
-	mmc_release_host(mmc->host);
-	return ret;
-}
-
-static int _dtb_init(struct mmc_card *mmc)
-{
-	int ret = 0;
-	struct aml_dtb_rsv *dtb;
-	struct aml_dtb_info *info = &dtb_infos;
-	int cpy = 1, valid = 0;
-	int bit = mmc->csd.read_blkbits;
-	int blk;
-
-	if (!glb_dtb_buf) {
-		glb_dtb_buf = kmalloc(CONFIG_DTB_SIZE, GFP_KERNEL);
-		if (!glb_dtb_buf)
-			return -ENOMEM;
-	}
-	dtb = (struct aml_dtb_rsv *)glb_dtb_buf;
-
-	/* read dtb2 1st, for compatibility without checksum. */
-	while (cpy >= 0) {
-		blk = ((get_reserve_partition_off_from_tbl()
-				+ DTB_RESERVE_OFFSET) >> bit)
-				+ cpy * DTB_BLK_CNT;
-		if (_dtb_read(mmc, blk, (unsigned char *)dtb)) {
-			pr_err("%s: block # %#x ERROR!\n", __func__, blk);
-		} else {
-			ret = _verify_dtb_checksum(dtb);
-			if (!ret) {
-				info->stamp[cpy] = dtb->timestamp;
-				info->valid[cpy] = 1;
-			} else {
-				pr_debug("cpy %d is not valid\n", cpy);
-			}
-		}
-		valid += info->valid[cpy];
-		cpy--;
-	}
-	pr_debug("total valid %d\n", valid);
-
-	return ret;
 }
 
 void amlmmc_dtb_init(struct mmc_card *card, int *retp)

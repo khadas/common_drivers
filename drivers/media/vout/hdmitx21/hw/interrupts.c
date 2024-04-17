@@ -36,7 +36,11 @@ static pf_callback earc_hdmitx_hpdst;
 static void ddc_stall_req_handler(struct intr_t *intr);
 void hdmitx21_earc_hpdst(pf_callback cb)
 {
+	struct hdmitx_dev *hdev = get_hdmitx21_device();
+
 	earc_hdmitx_hpdst = cb;
+	if (!hdev || !hdev->hdmi_init)
+		return;
 	if (cb && hdmitx21_hpd_hw_op(HPD_READ_HPD_GPIO))
 		cb(true);
 }
@@ -217,9 +221,11 @@ static void hdmitx_phy_bandgap_en(struct hdmitx_dev *hdev)
 	case MESON_CPU_ID_S1A:
 		hdmitx21_phy_bandgap_en_t7();
 		break;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	case MESON_CPU_ID_S7:
 		hdmitx21_phy_bandgap_en_s7();
 		break;
+#endif
 	default:
 		break;
 	}

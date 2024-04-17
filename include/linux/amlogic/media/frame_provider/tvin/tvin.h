@@ -231,13 +231,13 @@ static inline int adc_get_status(enum adc_sel module_sel)
 	return 0;
 }
 #endif
-#ifdef CONFIG_AMLOGIC_MEDIA_VDIN
+#ifdef CONFIG_AMLOGIC_MEDIA_VIN
 unsigned int get_vdin_buffer_num(void);
-#else
-unsigned int get_vdin_buffer_num(void)
-{
-	return 0;
-}
+//#else
+//unsigned int get_vdin_buffer_num(void)
+//{
+//	return 0;
+//}
 #endif
 void rx_get_audio_status(struct rx_audio_stat_s *aud_sts);
 void rx_set_atmos_flag(bool en);

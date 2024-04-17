@@ -3230,8 +3230,15 @@ irqreturn_t aml_xhci_irq(struct usb_hcd *hcd)
 		goto out;
 	}
 
-	if (!(status & STS_EINT))
+	if (!(status & STS_EINT)) {
+#if IS_ENABLED(CONFIG_AMLOGIC_COMMON_USB)
+		ret = IRQ_HANDLED;
+		aml_xhci_info(xhci, "usb interrupt is coming, but the status register=0x%08x\n",
+						status);
+#else
 		goto out;
+#endif
+	}
 
 	if (status & STS_FATAL) {
 		aml_xhci_warn(xhci, "WARNING: Host System Error\n");

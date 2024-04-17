@@ -506,6 +506,12 @@ struct vdin_vrr_freesync_param_s {
 	__u8 native_color_en;
 };
 
+struct vdin_qms_param_s {
+	__u8 qms_en;
+	unsigned int qms_fr;
+	__u8 qms_base_fr;
+};
+
 struct vdin_hist_s {
 	__kernel_long_t sum;
 	int width;
@@ -569,7 +575,8 @@ enum tvin_sg_chg_flg {
 	TVIN_SIG_CHG_VS_FRQ	= 0x80,
 	TVIN_SIG_CHG_DV_ALLM	= 0x100,
 	TVIN_SIG_CHG_AFD	= 0x200,/*aspect ratio*/
-	TVIN_SIG_CHG_VRR        = 0x1000, /*vrr*/
+	TVIN_SIG_CHG_VRR        = 0x1000, /* gaming-vrr */
+	TVIN_SIG_CHG_QMS        = 0x2000, /* qms-vrr */
 	TVIN_SIG_CHG_CLOSE_FE	= 0x40000000,	/*closed frontend*/
 	TVIN_SIG_CHG_STS	= 0x80000000,	/*sm state change*/
 };
@@ -625,6 +632,7 @@ enum tvin_sg_chg_flg {
 #define TVIN_IOC_G_VDIN_STATUS         _IOR(_TM_T, 0x54, unsigned int)
 #define TVIN_IOC_G_IMAX_STATUS         _IOR(_TM_T, 0x55, bool)
 #define TVIN_IOC_S_PIP			_IOW(_TM_T, 0x56, struct vdin_pip_s)
+#define TVIN_IOC_G_QMS_STATUS		_IOR(_TM_T, 0x57, struct vdin_qms_param_s)
 
 #define TVIN_IOC_S_CANVAS_RECOVERY  _IO(_TM_T, 0x0a)
 /* TVAFE */

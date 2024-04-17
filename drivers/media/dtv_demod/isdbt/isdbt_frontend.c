@@ -44,19 +44,19 @@
 #define ISDBT_FSM_CHECK_SIGNAL 7
 
 //isdb-t
-MODULE_PARM_DESC(isdbt_check_signal_time, "\n\t\t isdbt check signal time");
+MODULE_PARM_DESC(isdbt_check_signal_time, "");
 static unsigned int isdbt_check_signal_time = ISDBT_TIME_CHECK_SIGNAL;
 module_param(isdbt_check_signal_time, int, 0644);
 
-MODULE_PARM_DESC(isdbt_reset_in_unlock_times, "\n\t\t isdbt check signal time");
+MODULE_PARM_DESC(isdbt_reset_in_unlock_times, "");
 static unsigned int isdbt_reset_in_unlock_times = ISDBT_RESET_IN_UNLOCK_TIMES;
 module_param(isdbt_reset_in_unlock_times, int, 0644);
 
-MODULE_PARM_DESC(isdbt_lock_continuous_cnt, "\n\t\t isdbt lock signal continuous counting");
+MODULE_PARM_DESC(isdbt_lock_continuous_cnt, "");
 static unsigned int isdbt_lock_continuous_cnt = 1;
 module_param(isdbt_lock_continuous_cnt, int, 0644);
 
-MODULE_PARM_DESC(isdbt_lost_continuous_cnt, "\n\t\t isdbt lost signal continuous counting");
+MODULE_PARM_DESC(isdbt_lost_continuous_cnt, "");
 static unsigned int isdbt_lost_continuous_cnt = 10;
 module_param(isdbt_lost_continuous_cnt, int, 0644);
 
@@ -151,7 +151,7 @@ int gxtv_demod_dvbt_isdbt_read_snr(struct dvb_frontend *fe, u16 *snr)
 
 	*snr = demod->real_para.snr;
 
-	PR_ISDBT("demod[%d] snr %d dBx10\n", demod->id, *snr);
+	PR_ISDBT("[id %d] snr %d dBx10\n", demod->id, *snr);
 
 	return 0;
 }
@@ -199,8 +199,8 @@ int dvbt_isdbt_read_status(struct dvb_frontend *fe, enum fe_status *status, bool
 	if (strength < THRD_TUNER_STRENGTH_ISDBT) {
 		*status = FE_TIMEDOUT;
 
-		PR_ISDBT("%s: tuner strength [%d] no signal(%d).\n",
-				__func__, strength, THRD_TUNER_STRENGTH_ISDBT);
+		PR_ISDBT("strength [%d] no signal(%d)\n",
+				strength, THRD_TUNER_STRENGTH_ISDBT);
 
 		if (!(no_signal_cnt++ % 20))
 			isdbt_reset_demod();
@@ -248,13 +248,13 @@ int dvbt_isdbt_read_status(struct dvb_frontend *fe, enum fe_status *status, bool
 
 		if (demod->last_lock >= 0) {
 			demod->last_lock = -1;
-			PR_ISDBT("==> lost signal first\n");
+			PR_ISDBT("lost signal first\n");
 		} else if (demod->last_lock <= -lost_continuous_cnt) {
 			demod->last_lock = -lost_continuous_cnt;
-			PR_ISDBT("==> lost signal continue\n");
+			PR_ISDBT("lost signal continue\n");
 		} else {
 			demod->last_lock--;
-			PR_ISDBT("==> lost signal times:%d\n", demod->last_lock);
+			PR_ISDBT("lost signal times:%d\n", demod->last_lock);
 		}
 
 		if (demod->last_lock <= -lost_continuous_cnt)
@@ -266,13 +266,13 @@ int dvbt_isdbt_read_status(struct dvb_frontend *fe, enum fe_status *status, bool
 
 		if (demod->last_lock <= 0) {
 			demod->last_lock = 1;
-			PR_ISDBT("==> lock signal first\n");
+			PR_ISDBT("lock signal first\n");
 		} else if (demod->last_lock >= lock_continuous_cnt) {
 			demod->last_lock = lock_continuous_cnt;
-			PR_ISDBT("==> lock signal continue\n");
+			PR_ISDBT("lock signal continue\n");
 		} else {
 			demod->last_lock++;
-			PR_ISDBT("==> lock signal times:%d\n", demod->last_lock);
+			PR_ISDBT("lock signal times:%d\n", demod->last_lock);
 		}
 
 		if (demod->last_lock >= lock_continuous_cnt)
@@ -309,7 +309,7 @@ int dvbt_isdbt_tune(struct dvb_frontend *fe, bool re_tune,
 	*delay = HZ / 20;
 
 	if (re_tune) {
-		PR_INFO("%s [id %d]: re_tune.\n", __func__, demod->id);
+		PR_INFO("%s [id %d]: re_tune\n", __func__, demod->id);
 		demod->en_detect = 1; /*fist set*/
 		dvbt_isdbt_set_frontend(fe);
 		dvbt_isdbt_read_status(fe, status, re_tune);
@@ -317,7 +317,7 @@ int dvbt_isdbt_tune(struct dvb_frontend *fe, bool re_tune,
 	}
 
 	if (!demod->en_detect) {
-		PR_DBGL("%s: [id %d] not enable.\n", __func__, demod->id);
+		PR_DBGL("[id %d] isdbt not enable\n", demod->id);
 		return 0;
 	}
 
@@ -347,7 +347,7 @@ int gxtv_demod_isdbt_read_signal_strength(struct dvb_frontend *fe,
 	else if (tuner_find_by_name(fe, "mxl661"))
 		*strength += 3;
 
-	PR_ISDBT("demod [id %d] signal strength %d dbm\n", demod->id, *strength);
+	PR_ISDBT("[id %d] strength %d dbm\n", demod->id, *strength);
 
 	return 0;
 }
@@ -362,7 +362,7 @@ int dvbt_isdbt_set_frontend(struct dvb_frontend *fe)
 	struct amldtvdemod_device_s *devp = (struct amldtvdemod_device_s *)demod->priv;
 #endif
 
-	PR_INFO("%s [id %d]: delsys:%d, freq:%d, symbol_rate:%d, bw:%d, modul:%d, invert:%d.\n",
+	PR_INFO("%s [id %d]: delsys:%d, freq:%d, symbol_rate:%d, bw:%d, modul:%d, invert:%d\n",
 			__func__, demod->id, c->delivery_system, c->frequency, c->symbol_rate,
 			c->bandwidth_hz, c->modulation, c->inversion);
 
@@ -421,7 +421,7 @@ int dvbt_isdbt_init(struct aml_dtvdemod *demod)
 	struct amldtvdemod_device_s *devp = (struct amldtvdemod_device_s *)demod->priv;
 	struct ddemod_dig_clk_addr *dig_clk = &devp->data->dig_clk;
 
-	PR_DBG("AML Demod DVB-T/isdbt init\r\n");
+	PR_DBG("DVB-T/isdbt init\n");
 
 	memset(&sys, 0, sizeof(sys));
 	memset(&demod->demod_status, 0, sizeof(demod->demod_status));
@@ -443,4 +443,3 @@ int dvbt_isdbt_init(struct aml_dtvdemod *demod)
 
 	return ret;
 }
-

@@ -17,11 +17,14 @@
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_types.h>
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_tracer.h>
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_event_mgr.h>
+#include <linux/jiffies.h>
 
 struct hdmitx_common_state {
 	struct hdmi_format_para para;
 	enum vmode_e mode;
 	u32 hdr_priority;
+	/* save sequence id for drm connecter state */
+	u64 state_sequence_id;
 };
 
 typedef void (*audio_en_callback)(bool enable);
@@ -269,7 +272,7 @@ int hdmitx_common_do_mode_setting(struct hdmitx_common *tx_comm,
 				  struct hdmitx_common_state *old);
 int hdmitx_common_validate_mode_locked(struct hdmitx_common *tx_comm,
 				       struct hdmitx_common_state *new_state,
-				       char *mode, char *attr, bool do_validate);
+				       char *mode, char *attr, bool brr_valid, bool do_validate);
 int hdmitx_common_disable_mode(struct hdmitx_common *tx_comm,
 			       struct hdmitx_common_state *new_state);
 int set_disp_mode(struct hdmitx_common *tx_comm, const char *mode);
@@ -287,6 +290,7 @@ int hdmitx_audio_register_ctrl_callback(struct hdmitx_tracer *tracer,
 						audio_en_callback cb1, audio_st_callback cb2);
 
 int hdmitx_get_hpd_state(struct hdmitx_common *tx_comm);
+u64 hdmitx_get_hpd_hw_sequence_id(struct hdmitx_common *tx_comm);
 unsigned char *hdmitx_get_raw_edid(struct hdmitx_common *tx_comm);
 bool hdmitx_common_get_ready_state(struct hdmitx_common *tx_comm);
 int hdmitx_setup_attr(struct hdmitx_common *tx_comm, const char *buf);

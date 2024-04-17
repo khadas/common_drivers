@@ -111,6 +111,7 @@ struct loopback_chipinfo {
 	 */
 	bool multi_bits_lbsrcs;
 	bool use_resamplea;
+	int orig_channel_sync;
 };
 
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
@@ -185,6 +186,7 @@ static struct loopback_chipinfo tm2_revb_loopbackb_chipinfo = {
 	.chnum_en = false,
 	.srcs = &lb_srcs_v1[0],
 	.tdmin_lb_srcs = &tdmin_lb_srcs_v1[0],
+	.orig_channel_sync = true,
 };
 #endif
 
@@ -195,6 +197,7 @@ static struct loopback_chipinfo t5_loopbacka_chipinfo = {
 	.srcs = &lb_srcs_v2[0],
 	.tdmin_lb_srcs = &tdmin_lb_srcs_v2[0],
 	.multi_bits_lbsrcs = true,
+	.orig_channel_sync = true,
 };
 
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
@@ -205,6 +208,7 @@ static struct loopback_chipinfo p1_loopbacka_chipinfo = {
 	.srcs = &lb_srcs_v2[0],
 	.tdmin_lb_srcs = &tdmin_lb_srcs_v2[0],
 	.multi_bits_lbsrcs = true,
+	.orig_channel_sync = true,
 };
 
 static struct loopback_chipinfo p1_loopbackb_chipinfo = {
@@ -214,6 +218,7 @@ static struct loopback_chipinfo p1_loopbackb_chipinfo = {
 	.srcs = &lb_srcs_v2[0],
 	.tdmin_lb_srcs = &tdmin_lb_srcs_v2[0],
 	.multi_bits_lbsrcs = true,
+	.orig_channel_sync = true,
 };
 
 static struct loopback_chipinfo a5_loopbacka_chipinfo = {
@@ -224,6 +229,7 @@ static struct loopback_chipinfo a5_loopbacka_chipinfo = {
 	.tdmin_lb_srcs = &tdmin_lb_srcs_v2[0],
 	.multi_bits_lbsrcs = true,
 	.use_resamplea = true,
+	.orig_channel_sync = true,
 };
 
 static struct loopback_chipinfo a1_loopbacka_chipinfo = {

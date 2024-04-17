@@ -1861,6 +1861,11 @@
 #define FRC_NR_MISC                                0x0800
 //Bit 31: 0        reg_nr_misc               // unsigned ,    RW, default = 0  register
 
+#define FRC_ARB_UGT_RD_BASIC                       0x0974
+//Bit 7: 0         module_urg+arb_ugt_basic  // unsigned ,    RW, default = 0x55
+#define FRC_ARB_UGT_WR_BASIC                       0x0994
+//Bit 3: 0         module_urg+arb_ugt_basic  // unsigned ,    RW, default = 5
+
 #define FRC_MEVP_CTRL0                             0x1080
 //Bit 31            reg_mevp_clr_me_undone_flag  //unsigned  , RW, default = 0 ,me_process undone flag clear, write pulse
 //Bit 30:4          reserved
@@ -2941,6 +2946,7 @@ inline void WRITE_FRC_REG(unsigned int reg, unsigned int val);
 inline void WRITE_FRC_REG_BY_CPU(unsigned int reg, unsigned int val);
 inline void FRC_RDMA_WR_REG_IN(unsigned int reg, unsigned int val);
 inline void FRC_RDMA_WR_REG_OUT(unsigned int reg, unsigned int val);
+inline int READ_FRC_RDMA_REG(unsigned int reg);
 
 inline void WRITE_FRC_BITS(unsigned int reg, unsigned int value,
     unsigned int start, unsigned int len);

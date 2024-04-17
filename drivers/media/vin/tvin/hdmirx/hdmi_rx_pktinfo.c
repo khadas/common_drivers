@@ -33,7 +33,8 @@ struct packet_info_s rx_pkt[E_PORT_NUM];
 u32 rx_vsif_type[E_PORT_NUM];
 u32 rx_emp_type[E_PORT_NUM];
 u32 rx_spd_type[E_PORT_NUM];
-
+u32 next_tfr[14] = {0, 23976, 24000, 25000, 29970, 30000, 47952, 48000, 50000, 59940, 60000,
+	100000, 119880, 120000};
 
 static struct pkt_type_reg_map_st pkt_maping[] = {
 	/*infoframe pkt*/
@@ -296,7 +297,8 @@ static void rx_pktdump_raw(void *pdata)
 	rx_pr("HB0:0x%x\n", pktdata->raw_infoframe.pkttype);
 	rx_pr("HB1:0x%x\n", pktdata->raw_infoframe.version);
 	rx_pr("HB2:0x%x\n", pktdata->raw_infoframe.length);
-	rx_pr("RSD:0x%x\n", pktdata->raw_infoframe.rsd);
+	if (pktdata->raw_infoframe.pkttype != 0x7f)
+		rx_pr("RSD:0x%x\n", pktdata->raw_infoframe.rsd);
 
 	for (i = 0; i < 28; i++)
 		rx_pr("PB%d:0x%x\n", i, pktdata->raw_infoframe.PB[i]);
@@ -401,7 +403,7 @@ const struct spec_dev_table_s spd_white_list[SPEC_DEV_CNT] = {
 	 */
 };
 
-void rx_get_dev_type(u8 port)
+enum spec_dev_e rx_get_dev_type(u8 port)
 {
 	struct spd_infoframe_st *spdpkt;
 	int i;
@@ -413,8 +415,20 @@ void rx_get_dev_type(u8 port)
 			if (log_level & 0x1000)
 				rx_pr("white dev=%d\n", i);
 			rx[port].tx_type = spd_white_list[i].dev_type;
+			return i;
 		}
 	}
+	return i;
+}
+
+bool rx_is_xbox_dev(u8 port)
+{
+	u8 dev = rx_get_dev_type(port);
+
+	if (dev == SPEC_DEV_XBOX || dev == SPEC_DEV_XBOX_SERIES)
+		return true;
+	else
+		return false;
 }
 
 static void rx_pktdump_spd(void *pdata)
@@ -503,23 +517,44 @@ static void rx_pktdump_acr(void *pdata)
 	rx_pr(">------------------>end\n");
 }
 
-static void rx_pktdump_emp(void *pdata)
+static void rx_pktdump_emp(u8 port)
 {
-	struct emp_pkt_st *pktdata = pdata;
+	struct emp_info_s *emp_info_p = rx_get_emp_info(port);
+	u8 str[256];
+	u8 pkt_cnt = 0;
+	u8 i, j;
+	u8 *pkt = NULL;
+	u8 temp;
 
-	rx_pr("pkttype=0x%x\n", pktdata->pkttype);
-	rx_pr("first=0x%x\n", pktdata->first);
-	rx_pr("last=0x%x\n", pktdata->last);
-	rx_pr("sequence_idx=0x%x\n", pktdata->sequence_idx);
-	rx_pr("cnt.new=0x%x\n", pktdata->cnt.new);
-	rx_pr("cnt.end=0x%x\n", pktdata->cnt.end);
-	rx_pr("cnt.ds_type=0x%x\n", pktdata->cnt.ds_type);
-	rx_pr("cnt.afr=0x%x\n", pktdata->cnt.afr);
-	rx_pr("cnt.vfr=0x%x\n", pktdata->cnt.vfr);
-	rx_pr("cnt.sync=0x%x\n", pktdata->cnt.sync);
-	rx_pr("cnt.or_id=0x%x\n", pktdata->cnt.organization_id);
-	rx_pr("cnt.tag=0x%x\n", pktdata->cnt.data_set_tag_lo);
-	rx_pr("cnt.length=0x%x\n", pktdata->cnt.data_set_length_lo);
+	if (!emp_info_p)
+		return;
+	pkt_cnt = emp_info_p->emp_pkt_cnt;
+	pkt = emp_buf[rx[port].emp_vid_idx];
+	if (pkt_cnt == 0)
+		return;
+	for (i = 0; i < pkt_cnt; i++) {
+		memset(str, '\0', 256);
+		for (j = 0; j < 32; j++)
+			sprintf(str + strlen(str), "0x%x ", pkt[j]);
+		rx_pr("raw_data:%s\n", str);
+		if (!(log_level & PACKET_LOG) || pkt[0] != 0x7f)
+			continue;
+		rx_pr("\npkttype=0x%x\n", pkt[i * 31]);
+		temp = pkt[i * 31 + 1];
+		rx_pr("first=0x%x\n", (temp & _BIT(7)) >> 7);
+		rx_pr("last=0x%x\n", (temp & _BIT(6)) >> 6);
+		rx_pr("sequence_idx=0x%x\n", pkt[i * 31 + 2]);
+		temp = pkt[i * 31 + 3];
+		rx_pr("new=0x%x\n", (temp & _BIT(7)) >> 7);
+		rx_pr("end=0x%x\n", (temp & _BIT(6)) >> 6);
+		rx_pr("ds_type=0x%x\n", (temp & MSK(2, 4)) >> 4);
+		rx_pr("afr=0x%x\n", (temp & _BIT(3)) >> 3);
+		rx_pr("vfr=0x%x\n", (temp & _BIT(2)) >> 2);
+		rx_pr("sync=0x%x\n", (temp & _BIT(1)) >> 1);
+		rx_pr("or_id=0x%x\n", pkt[i * 31 + 5]);
+		rx_pr("tag=0x%x\n", (pkt[i * 31 + 6] << 8) | pkt[i * 31 + 7]);
+		rx_pr("length=0x%x\n", (pkt[i * 31 + 8] << 8) | pkt[i * 31 + 9]);
+	}
 }
 
 static void rx_dump_aud_sample_pkt(u8 port)
@@ -639,8 +674,7 @@ void rx_pkt_dump(enum pkt_type_e typeid, u8 port)
 		rx_pktdump_raw(&pktdata);
 		break;
 	case PKT_TYPE_EMP:
-		rx_pktdump_emp(&prx->emp_info);
-		rx_pktdump_raw(&prx->emp_info);
+		rx_pktdump_emp(port);
 		break;
 	case PKT_TYPE_AUD_SAMPLE:
 		rx_dump_aud_sample_pkt(port);
@@ -664,7 +698,6 @@ void rx_pkt_dump(enum pkt_type_e typeid, u8 port)
 		rx_pr("emp->0x7f:EMP\n");
 		break;
 	}
-
 	/*mutex_unlock(&pktbuff_lock);*/
 }
 
@@ -686,8 +719,8 @@ void rx_pkt_initial(u8 port)
 {
 	int i = port;
 	int j = 0;
+	struct emp_info_s *emp_info_p = rx_get_emp_info(port);
 
-	memset(&rxpktsts[i], 0, sizeof(struct rxpkt_st));
 	rx[i].vs_info_details.vsi_state = E_VSI_NULL;
 	//vsi info
 	rx[i].vs_info_details._3d_structure = 0;
@@ -709,6 +742,12 @@ void rx_pkt_initial(u8 port)
 	rx[i].emp_cuva_info.flag = false;
 	rx_pkt_clr_attach_drm(port);
 
+	if (!emp_info_p) {
+		rx_pr("%s emp info null\n", __func__);
+		return;
+	}
+	emp_info_p->emp_pkt_cnt = 0;
+	memset(&rxpktsts[i], 0, sizeof(struct rxpkt_st));
 	while (j < VSI_TYPE_MAX)
 		memset(&rx_pkt[i].multi_vs_info[j++], 0, sizeof(struct pd_infoframe_s));
 	memset(&rx_pkt[i].avi_info, 0, sizeof(struct pd_infoframe_s));
@@ -1238,7 +1277,6 @@ void rx_get_vsi_info(u8 port)
 		return;
 	}
 	rx[port].vs_info_details.emp_pkt_cnt = emp_info_p->emp_pkt_cnt;
-	emp_info_p->emp_pkt_cnt = 0;
 
 	int i  = 0;
 
@@ -2049,6 +2087,8 @@ bool is_emp_buf_change(u8 port)
 		rx_pr("%s emp info NULL\n", __func__);
 		return false;
 	}
+	if (rx_emp_dbg_en)
+		return true;
 	if (emp_info_p->pre_emp_pkt_cnt != emp_info_p->emp_pkt_cnt)
 		return true;
 	else if (memcmp((u8 *)emp_buf[rx[port].emp_vid_idx],
@@ -2247,17 +2287,77 @@ int rx_pkt_handler(enum pkt_decode_type pkt_int_src, u8 port)
 	return 0;
 }
 
+int rx_check_emp_type(struct emp_pkt_st *pkt)
+{
+	u32 u_ieee;
+	int emp_type = -1;
+	u8 new, end, ds_type, vfr, afr, sync, temp;
+	u8 *src = (u8 *)pkt;
+
+	if (!pkt)
+		return emp_type;
+	u_ieee = pkt->cnt.md[0] + (pkt->cnt.md[1] << 8) + (pkt->cnt.md[2] << 16);
+	temp = src[4];
+	new = (temp & _BIT(7)) >> 7;
+	end = (temp & _BIT(6)) >> 6;
+	ds_type = (temp & MSK(2, 4)) >> 4;
+	afr = (temp & _BIT(3)) >> 3;
+	vfr = (temp & _BIT(2)) >> 2;
+	sync = (temp & _BIT(1)) >> 1;
+	if (log_level == 0x121) {
+		rx_pr("---emp dsf params---\n");
+		rx_pr("pkttype = 0x%x", pkt->pkttype);
+		rx_pr("ds_type=0x%x, sync=0x%x, vfr=0x%x, afr=0x%x\n",
+			ds_type, sync, vfr, afr);
+		rx_pr("org_id = 0x%x", pkt->cnt.organization_id);
+		rx_pr("data_tag = 0x%x", pkt->cnt.data_set_tag_lo);
+		rx_pr("length = 0x%x", pkt->cnt.data_set_length_lo);
+		if (!pkt->cnt.organization_id)
+			rx_pr("ieee = 0x%x", u_ieee);
+		rx_pr("md[0] = 0x%x", pkt->cnt.md[0]);
+		rx_pr("md[1] = 0x%x", pkt->cnt.md[1]);
+		rx_pr("md[2] = 0x%x", pkt->cnt.md[2]);
+		rx_pr("md[3] = 0x%x", pkt->cnt.md[3]);
+	}
+
+	if (pkt->cnt.organization_id == 0) {
+		if (pkt->cnt.data_set_tag_lo == 2 &&
+			u_ieee == IEEE_CUVAHDR) //cuva
+			emp_type = EMP_CUVA;
+		else if (u_ieee == IEEE_DV15) //dv
+			emp_type = EMP_AMDV;
+	} else if (ds_type == 0 &&
+		vfr == 1 &&
+		afr == 0 &&
+		pkt->cnt.organization_id == 1 &&
+		pkt->cnt.data_set_tag_lo == 1) {
+		emp_type = sync ? EMP_VTEM_CLASS1 : EMP_VTEM_CLASS0;//vtem
+	} else if (pkt->cnt.organization_id == 1 &&
+		pkt->cnt.data_set_tag_lo == 3 &&
+		ds_type == 1 &&
+		sync == 1 &&
+		vfr == 1 &&
+		afr == 0) {
+		emp_type = EMP_SBTM;//sbtm
+	}
+	if (log_level == 0x121)
+		rx_pr("\nemp_type = 0x%x\n", emp_type);
+
+	return emp_type;
+}
+
 void rx_get_em_info(u8 port)
 {
 	u8 i, tmp;
 	int emp_type = -1;
-	u32 u_ieee;
 	struct emp_pkt_st *pkt;
+	static int qms_en = -1;
+	static int m_const = -1;
 
 	rx[port].sbtm_info.flag = false;
-	rx[port].vtem_info.vrr_en = false;
 	rx[port].emp_dv_info.flag = false;
 	rx[port].emp_cuva_info.flag = false;
+	memset(&rx[port].vtem_info, 0, sizeof(rx[port].vtem_info));
 	if (rx_info.chip_id < CHIP_ID_T7 || !rx[port].emp_pkt_rev) {
 		if (log_level == 0x121)
 			rx_pr("rx[%d].emp_pkt_rev = %d\n",
@@ -2269,59 +2369,40 @@ void rx_get_em_info(u8 port)
 		rx_pr("emp_dsf_cnt:0x%x\n", rx[port].emp_dsf_cnt);
 	for (i = 0; i < rx[port].emp_dsf_cnt; i++) {
 		pkt = (struct emp_pkt_st *)rx[port].emp_dsf_info[i].pkt_addr;
-		if (!pkt)
-			break;
-		u_ieee = pkt->cnt.md[0] +
-			(pkt->cnt.md[1] << 8) +
-			(pkt->cnt.md[2] << 16);
-		if (log_level == 0x121) {
-			rx_pr("---emp dsf params---\n");
-			rx_pr("pkttype = %d", pkt->pkttype);
-			rx_pr("ds_type=0x%x, sync=0x%x, vfr=0x%x, afr=0x%x\n",
-				pkt->cnt.ds_type, pkt->cnt.sync,
-				pkt->cnt.vfr, pkt->cnt.afr);
-			rx_pr("org_id = %x", pkt->cnt.organization_id);
-			rx_pr("data_tag = %x", pkt->cnt.data_set_tag_lo);
-			rx_pr("length = %x", pkt->cnt.data_set_length_lo);
-			if (!pkt->cnt.organization_id)
-				rx_pr("ieee = 0x%x", u_ieee);
-			rx_pr("md[0] = %d", pkt->cnt.md[0]);
-			rx_pr("md[1] = %d", pkt->cnt.md[1]);
-			rx_pr("md[2] = %d", pkt->cnt.md[2]);
-			rx_pr("md[3] = %d", pkt->cnt.md[3]);
-		}
-
-		if (pkt->cnt.organization_id == 0) {
-			if (pkt->cnt.data_set_tag_lo == 2 &&
-				u_ieee == IEEE_CUVAHDR) //cuva
-				emp_type = EMP_CUVA;
-			else if (u_ieee == IEEE_DV15) //dv
-				emp_type = EMP_DV;
-		} else if (pkt->cnt.organization_id == 1 &&
-			pkt->cnt.data_set_tag_lo == 1) {
-			emp_type = EMP_VTEM;//vtem
-		} else if (pkt->cnt.organization_id == 1 &&
-			pkt->cnt.data_set_tag_lo == 3 &&
-			pkt->cnt.ds_type == 1 &&
-			pkt->cnt.sync == 1 &&
-			pkt->cnt.vfr == 1 &&
-			pkt->cnt.afr == 0) {
-			emp_type = EMP_SBTM;//sbtm
-		}
+		emp_type = rx_check_emp_type(pkt);
 
 		switch (emp_type) {
-		case EMP_VTEM:
+		case EMP_VTEM_CLASS0:
+			/* spec2.1a table 10-36 gaming-vrr & FVA*/
 			tmp = pkt->cnt.md[0];
 			rx[port].vtem_info.vrr_en = tmp & 1;
+			rx[port].vtem_info.fva_factor_m1 = (tmp >> 4) & 0xf;
+			tmp = pkt->cnt.md[1];
+			rx[port].vtem_info.base_vfront = tmp;
+			rx[port].vtem_info.base_framerate = (pkt->cnt.md[2] & 0x3) |
+				(pkt->cnt.md[3] << 8);
+			pkt->pkttype = 0;
+			break;
+		case EMP_VTEM_CLASS1:
+			/* spec2.1a table 10-37 */
+			tmp = pkt->cnt.md[0];
 			rx[port].vtem_info.m_const = (tmp >> 1) & 1;
 			rx[port].vtem_info.qms_en = (tmp >> 2) & 1;
-			rx[port].vtem_info.fva_factor_m1 = (tmp >> 4) & 0x0f;
+			/* TODO: gaming-vrr/qms-vrr */
+			//rx[port].vtem_info.vrr_en = rx[port].vtem_info.qms_en;
 			tmp = pkt->cnt.md[1];
 			rx[port].vtem_info.base_vfront = tmp;
 			tmp = pkt->cnt.md[2];
-			rx[port].vtem_info.rb = (tmp > 2) & 1;
-			rx[port].vtem_info.base_framerate = pkt->cnt.md[3];
-			rx[port].vtem_info.base_framerate |= (tmp & 3) << 8;
+			rx[port].vtem_info.next_tfr = next_tfr[tmp >> 3];
+			rx[port].vtem_info.base_framerate = ((tmp & 0x3) << 8) | pkt->cnt.md[3];
+			if (qms_en != rx[port].vtem_info.qms_en ||
+				m_const != rx[port].vtem_info.m_const) {
+				rx_pr("qms_en:%d, m_const:%d, next_tfr:%d\n",
+					rx[port].vtem_info.qms_en, rx[port].vtem_info.m_const,
+					rx[port].vtem_info.next_tfr);
+				qms_en = rx[port].vtem_info.qms_en;
+				m_const = rx[port].vtem_info.m_const;
+			}
 			pkt->pkttype = 0;
 			break;
 		case EMP_SBTM:
@@ -2340,7 +2421,7 @@ void rx_get_em_info(u8 port)
 			pkt->pkttype = 0;
 			rx[port].sbtm_info.flag = true;
 			break;
-		case EMP_DV:
+		case EMP_AMDV:
 			rx[port].emp_dv_info.flag = true;
 			rx[port].emp_dv_info.dv_pkt_cnt = rx[port].emp_dsf_info[i].pkt_cnt;
 			if (rx[port].emp_dv_info.dv_pkt_cnt > 32) {

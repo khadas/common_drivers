@@ -31,7 +31,10 @@ int __weak tsync_pcr_start(void)
 	return -1;
 }
 
-void __weak  tsync_pcr_stop(void);
+int __weak tsync_pcr_stop(void)
+{
+	return 0;
+}
 
 int __weak tsync_pcr_set_apts(unsigned int pts)
 {

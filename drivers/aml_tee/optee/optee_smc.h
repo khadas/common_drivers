@@ -587,6 +587,22 @@ struct optee_smc_disable_shm_cache_result {
 #define OPTEE_SMC_GET_LOGGER_CONFIG \
 	OPTEE_SMC_FAST_CALL_VAL(OPTEE_SMC_FUNCID_GET_LOGGER_CONFIG)
 
+/*
+ * Get Dynamic SHM Status
+ *
+ * Call register usage:
+ * a0      SMC Function ID, OPTEE_SMC_GET_DYN_SHM_STATS
+ * a1-7    Not used
+ *
+ * Normal return register usage:
+ * a0      Get result
+ * a1      Dynamic SHM Status
+ * a2-7    Preserved
+ */
+#define OPTEE_SMC_FUNCID_GET_DYN_SHM_STATS                 0xE005
+#define OPTEE_SMC_GET_DYN_SHM_STATS \
+	OPTEE_SMC_FAST_CALL_VAL(OPTEE_SMC_FUNCID_GET_DYN_SHM_STATS)
+
 /* Returned in a0 */
 #define OPTEE_SMC_RETURN_UNKNOWN_FUNCTION 0xFFFFFFFF
 

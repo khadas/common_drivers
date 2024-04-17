@@ -166,6 +166,8 @@ static struct drm_crtc_state *meson_crtc_duplicate_state(struct drm_crtc *crtc)
 	new_state->hdr_conversion_ctrl = cur_state->hdr_conversion_ctrl;
 	new_state->attr_changed = false;
 	new_state->brr_update = false;
+	new_state->brr = cur_state->brr;
+	strncpy(new_state->brr_mode, cur_state->brr_mode, DRM_DISPLAY_MODE_LEN);
 
 	/*reset dynamic info.*/
 	if (amcrtc->priv->logo_show_done)
@@ -795,10 +797,11 @@ static int meson_crtc_atomic_check(struct drm_crtc *crtc,
 	else
 		mvsps->more_4k = 0;
 
-	if (priv->vpu_data->slice_mode == 1 && drm_mode_vrefresh(mode) > 60)
-		mvsps->more_60 = 1;
-	else
-		mvsps->more_60 = 0;
+	mvsps->more_60 = 0;
+	if (priv->vpu_data->slice_mode == 1) {
+		if (drm_mode_vrefresh(mode) > 60 || priv->of_conf.force_slice)
+			mvsps->more_60 = 1;
+	}
 
 	new_state = to_am_meson_crtc_state(crtc_state);
 	/*apply parameters need modeset.*/

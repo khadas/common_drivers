@@ -48,6 +48,7 @@
 		};
 
 		dsp_fw_reserved1:linux,dsp_fw1 {
+			status = "disabled";
 			compatible = "amlogic, dsp";
 			size = <0x0 0x400000>;
 			reg = <0x0 0x3800000 0x0 0x400000>;

@@ -204,6 +204,12 @@ enum dv_type_enum {
 	DV_TYPE_DVB  = 2
 };
 
+enum cfg_cap {
+	CFG_NONE = 0,
+	CFG_ENABLE_PRECISION,
+	CFG_ENABLE_L1L4,
+};
+
 struct dm_reg_ipcore2 {
 	u32 s_range;
 	u32 s_range_inverse;
@@ -930,16 +936,31 @@ extern int cfg_size;
 extern int bin_size;
 extern u32 vpp_vsync_id;
 extern int force_vsync_id;
-extern bool top1_enable_changed;
 extern bool force_bypass_precision;
+extern bool force_bypass_pd_level0;
 extern bool force_bypass_precision_once;
 extern bool miss_top1_and_bypass_pr_once;
 extern bool update_top2_control_path_flag;
+extern bool disable_detunnel;
 extern u32 top1_scale;
 extern bool enable_top1_scale;
 extern bool wait_first_frame_top1;
 extern const char level_str[4][10];
 extern bool update_top2_cfg;
+extern u32 last_top2_ro5;
+extern u32 last_top2_ro4;
+extern u32 last_top2_ro3;
+extern u32 last_top2_ro2;
+extern u32 last_top2_ro1;
+extern u32 last_top2_ro0;
+extern u32 last_top1_ro6;
+extern u32 last_top1_ro5;
+extern u32 last_top1_ro4;
+extern u32 last_top1_ro3;
+extern u32 last_top1_ro2;
+extern u32 last_top1_ro1;
+extern u32 last_top1_ro0;
+extern u32 enable_ro_check;
 /************/
 
 #define pr_dv_dbg(fmt, args...)\
@@ -1325,7 +1346,7 @@ int parse_sei_and_meta_ext_hw5(struct vframe_s *vf,
 					 char *comp_buf,
 					 int id);
 void update_top1_onoff(struct vframe_s *vf);
-bool get_top1_onoff(void);
+u32 get_top1_onoff(void);
 void fixed_buf_config(void);
 bool is_dv_unique_drm(struct vframe_s *vf);
 void dump_top1_frame(int force_w, int force_h);

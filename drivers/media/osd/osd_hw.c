@@ -14698,10 +14698,285 @@ static void osd_flag_regs_init(void)
 	osd_rdma_flag_init();
 }
 
+static void osd_hw_init(u32 logo_loaded)
+{
+	u32 idx, data32;
+
+	osd_vpu_power_on();
+	osd_flag_regs_init();
+	/*close gamma only for axg*/
+	if (osd_hw.osd_meson_dev.osd_ver == OSD_SIMPLE)
+		osd_reg_write(L_GAMMA_CNTL_PORT, 0);
+
+	/* here we will init default value ,these value only set once . */
+	if (!logo_loaded) {
+		if (osd_dev_hw.s5_display)
+			s5_default_path_settings();
+
+		if (osd_dev_hw.multi_afbc_core)
+			multi_afbc_default_path_setting();
+
+		/* init vpu fifo control register */
+		if (osd_dev_hw.display_type != C3_DISPLAY) {
+			data32 = osd_reg_read(VPP_OFIFO_SIZE);
+			if (osd_hw.osd_meson_dev.osd_ver >= OSD_HIGH_ONE) {
+				data32 &= ~((0xfff << 20) | 0x3fff);
+				data32 |= (osd_hw.osd_meson_dev.vpp_fifo_len) << 20;
+				data32 |= osd_hw.osd_meson_dev.vpp_fifo_len + 1;
+			} else {
+				data32 |= osd_hw.osd_meson_dev.vpp_fifo_len;
+			}
+			osd_reg_write(VPP_OFIFO_SIZE, data32);
+			data32 = 0x08080808;
+			osd_reg_write(VPP_HOLD_LINES, data32);
+		}
+		/* init osd fifo control register
+		 * set DDR request priority to be urgent
+		 */
+		data32 = 1;
+		/* hold_fifo_lines */
+		if (osd_hw.osd_meson_dev.osd_ver >= OSD_HIGH_ONE)
+			data32 |= VIU1_DEFAULT_HOLD_LINE << 5;
+		else
+			data32 |= MIN_HOLD_LINE << 5;
+		/* burst_len_sel: 3=64, g12a = 5 */
+		if (osd_hw.osd_meson_dev.osd_ver == OSD_HIGH_ONE ||
+			osd_dev_hw.display_type == C3_DISPLAY) {
+			data32 |= 1 << 10;
+			data32 |= 1 << 31;
+		} else {
+			data32 |= 3 << 10;
+		}
+		/*
+		 * bit 23:22, fifo_ctrl
+		 * 00 : for 1 word in 1 burst
+		 * 01 : for 2 words in 1 burst
+		 * 10 : for 4 words in 1 burst
+		 * 11 : reserved
+		 */
+		data32 |= 2 << 22;
+		/* bit 28:24, fifo_lim */
+		data32 |= 2 << 24;
+
+		/* data32_ = data32; */
+		/* fifo_depth_val: 32 or 64 *8 = 256 or 512 */
+		data32 |= (osd_hw.osd_meson_dev.osd_fifo_len
+			& 0xfffffff) << 12;
+		for (idx = 0; idx < osd_hw.osd_meson_dev.viu1_osd_count; idx++)
+			osd_reg_write(hw_osd_reg_array[idx].osd_fifo_ctrl_stat,
+				      data32);
+		/* osd_reg_write(VIU_OSD2_FIFO_CTRL_STAT, data32_); */
+		if (osd_dev_hw.display_type != C3_DISPLAY) {
+			if (osd_hw.osd_meson_dev.cpu_id ==
+				__MESON_CPU_MAJOR_ID_S1A)
+				osd_reg_clr_mask(VPP_MISC, VPP_VD1_POSTBLEND);
+			osd_reg_set_mask(VPP_MISC, VPP_POSTBLEND_EN);
+			osd_reg_clr_mask(VPP_MISC, VPP_PREBLEND_EN);
+			if (osd_hw.osd_meson_dev.osd_ver <= OSD_NORMAL) {
+				osd_vpp_misc =
+					osd_reg_read(VPP_MISC) & OSD_RELATIVE_BITS;
+				osd_vpp_misc &=
+					~(VPP_OSD1_POSTBLEND | VPP_OSD2_POSTBLEND);
+
+				notify_to_amvideo();
+				osd_reg_clr_mask(VPP_MISC,
+						 VPP_OSD1_POSTBLEND |
+						 VPP_OSD2_POSTBLEND);
+			}
+		}
+		/* just disable osd to avoid booting hang up */
+		data32 = 0x1 << 0;
+		data32 |= OSD_GLOBAL_ALPHA_DEF << 12;
+		for (idx = 0; idx < osd_hw.osd_meson_dev.viu1_osd_count; idx++)
+			osd_reg_write(hw_osd_reg_array[idx].osd_ctrl_stat,
+				      data32);
+		if (osd_hw.osd_meson_dev.osd_ver == OSD_HIGH_ONE)
+			osd_setting_default_hwc();
+	}
+
+	if (osd_hw.osd_meson_dev.cpu_id ==
+			__MESON_CPU_MAJOR_ID_T7) {
+		osd_mali_afbcd_top_ctrl =
+			osd_reg_read(MALI_AFBCD_TOP_CTRL) & osd_mali_afbcd_top_ctrl_mask;
+		osd_mali_afbcd_top_ctrl |= 1 << 19;
+		osd_mali_afbcd_top_ctrl &= ~(1 << 15);
+		osd_mali_afbcd_top_ctrl &= ~(1 << 20);
+		osd_mali_afbcd1_top_ctrl =
+			osd_reg_read(MALI_AFBCD1_TOP_CTRL) & osd_mali_afbcd1_top_ctrl_mask;
+		osd_mali_afbcd1_top_ctrl &= ~(1 << 20);
+		notify_to_amdv();
+	}
+
+	if (osd_hw.osd_meson_dev.osd_ver <= OSD_NORMAL &&
+		osd_dev_hw.display_type != C3_DISPLAY) {
+		osd_vpp_misc =
+			osd_reg_read(VPP_MISC) & OSD_RELATIVE_BITS;
+		if (osd_hw.hw_cursor_en) {
+			osd_vpp_misc |= (VPP_POST_FG_OSD2 | VPP_PRE_FG_OSD2);
+			notify_to_amvideo();
+			osd_reg_set_mask(VPP_MISC,
+					 VPP_POST_FG_OSD2 | VPP_PRE_FG_OSD2);
+			osd_hw.order[OSD1] = OSD_ORDER_10;
+		} else {
+			osd_vpp_misc &= ~(VPP_POST_FG_OSD2 | VPP_PRE_FG_OSD2);
+			notify_to_amvideo();
+			osd_reg_clr_mask(VPP_MISC,
+					 VPP_POST_FG_OSD2 |
+					 VPP_PRE_FG_OSD2);
+			osd_hw.order[OSD1] = OSD_ORDER_01;
+		}
+	} else if (osd_hw.osd_meson_dev.osd_ver == OSD_HIGH_ONE) {
+		for (idx = 0; idx < osd_hw.osd_meson_dev.osd_count; idx++) {
+			if (idx < osd_hw.osd_meson_dev.viu1_osd_count) {
+				/* TODO: temp set at here,
+				 * need move it to uboot
+				 */
+				osd_reg_set_bits
+				(hw_osd_reg_array[idx].osd_fifo_ctrl_stat,
+				 1, 31, 1);
+				osd_reg_set_bits
+				(hw_osd_reg_array[idx].osd_fifo_ctrl_stat,
+				 1, 10, 2);
+				osd_reg_set_bits
+				(hw_osd_reg_array[idx].osd_fifo_ctrl_stat,
+				 VIU1_DEFAULT_HOLD_LINE, 5, 5);
+				if (osd_hw.osd_meson_dev.cpu_id ==
+					__MESON_CPU_MAJOR_ID_G12B)
+					osd_reg_set_bits
+					(hw_osd_reg_array[idx].osd_ctrl_stat,
+					1, 0, 1);
+				osd_reg_set_bits
+				(hw_osd_reg_array[idx].osd_ctrl_stat,
+				 0, 31, 1);
+				osd_hw.powered[idx] = 1;
+			} else {
+				osd_hw.powered[idx] = 0;
+			}
+			osd_set_deband(idx, osd_hw.osd_deband_enable[idx]);
+		}
+		osd_set_basic_urgent(true);
+		if (osd_hw.osd_meson_dev.cpu_id !=
+			__MESON_CPU_MAJOR_ID_TXHD2 &&
+			osd_hw.osd_meson_dev.cpu_id !=
+			__MESON_CPU_MAJOR_ID_S1A &&
+			osd_hw.osd_meson_dev.cpu_id !=
+			__MESON_CPU_MAJOR_ID_S7 &&
+			osd_hw.osd_meson_dev.cpu_id !=
+			__MESON_CPU_MAJOR_ID_T7)
+			osd_set_two_ports(true);
+		if (osd_dev_hw.prevsync_support) {
+			u32 vpp0_pre_go_field = 0;
+			u32 vpp0_post_go_field = 3;
+			u32 output_index;
+
+			/* for t3 0: vpp0_pre_go_field, 3: vpp0_post_go_field */
+			if (is_meson_rev_a()) {
+				osd_set_vpp_path_default(VPP_OSD1, vpp0_pre_go_field);
+				osd_set_vpp_path_default(VPP_OSD2, vpp0_pre_go_field);
+				if (osd_hw.osd_meson_dev.osd_count > OSD3) {
+					output_index = get_output_device_id(OSD3);
+					if (output_index == VIU1)
+						osd_set_vpp_path_default(VPP_OSD3,
+							vpp0_pre_go_field);
+					else
+						osd_set_vpp_path_default(VPP_OSD3,
+							output_index);
+				}
+				if (osd_hw.osd_meson_dev.osd_count > OSD4) {
+					output_index = get_output_device_id(OSD4);
+					if (output_index == VIU1)
+						osd_set_vpp_path_default(VPP_OSD4,
+							vpp0_pre_go_field);
+					else
+						osd_set_vpp_path_default(VPP_OSD4,
+							output_index);
+				}
+			} else {
+				osd_set_vpp_path_default(VPP_OSD1, vpp0_post_go_field);
+				osd_set_vpp_path_default(VPP_OSD2, vpp0_post_go_field);
+				if (osd_hw.osd_meson_dev.osd_count > OSD3) {
+					output_index = get_output_device_id(OSD3);
+					if (output_index == VIU1)
+						osd_set_vpp_path_default(VPP_OSD3,
+							vpp0_post_go_field);
+					else
+						osd_set_vpp_path_default(VPP_OSD3,
+							output_index);
+				}
+				if (osd_hw.osd_meson_dev.osd_count > OSD4) {
+					output_index = get_output_device_id(OSD4);
+					if (output_index == VIU1)
+						osd_set_vpp_path_default(VPP_OSD4,
+							vpp0_post_go_field);
+					else
+						osd_set_vpp_path_default(VPP_OSD4,
+							output_index);
+				}
+			}
+		} else {
+			/* for t7 0: vpp0_post_go_field, no pre go field */
+			if (osd_hw.osd_meson_dev.osd_count > OSD3)
+				osd_set_vpp_path_default(VPP_OSD3,
+							 get_output_device_id(OSD3));
+			if (osd_hw.osd_meson_dev.osd_count > OSD4)
+				osd_set_vpp_path_default(VPP_OSD4,
+							 get_output_device_id(OSD4));
+		}
+	}
+
+	/* disable deband as default */
+	if (osd_hw.osd_meson_dev.has_deband) {
+		if (osd_dev_hw.display_type != C3_DISPLAY)
+			osd_reg_write(OSD_DB_FLT_CTRL, 0);
+		else
+			osd_reg_write(VOUT_OSD1_DB_FLT_CTRL, 0);
+	}
+
+	if (osd_hw.osd_meson_dev.cpu_id == __MESON_CPU_MAJOR_ID_AXG) {
+		data32 = osd_reg_read
+			(hw_osd_reg_array[OSD1].osd_fifo_ctrl_stat);
+		/* bit[9:5]: HOLD_FIFO_LINES */
+		data32 &= ~(0x1f << 5);
+		data32 |= 0x18 << 5;
+		osd_reg_write(hw_osd_reg_array[OSD1].osd_fifo_ctrl_stat,
+			      data32);
+	}
+	if (osd_hw.osd_meson_dev.cpu_id == __MESON_CPU_MAJOR_ID_TXHD2 &&
+		osd_hw.osd_meson_dev.has_vpp1) {
+		set_vpp_osd1_rgb2yuv(1);
+		set_vpp_osd2_rgb2yuv(0);
+	} else if (osd_hw.osd_meson_dev.osd_rgb2yuv == 1) {
+		set_vpp_osd1_rgb2yuv(1);
+		set_vpp_osd2_rgb2yuv(1);
+	}
+
+	if (osd_dev_hw.display_type == C3_DISPLAY &&
+		osd_hw.osd_meson_dev.osd_rgb2yuv)
+		osd1_matrix_yuv2rgb(RGB2YUV);
+
+	if (osd_hw.hw_rdma_en) {
+		osd_rdma_enable(VPU_VPP0, 2);
+		if (osd_hw.osd_meson_dev.has_vpp1 &&
+		   osd_hw.display_dev_cnt == 2)
+			osd_rdma_enable(VPU_VPP1, 2);
+		if (osd_hw.osd_meson_dev.has_vpp2 &&
+		   osd_hw.display_dev_cnt == 3)
+			osd_rdma_enable(VPU_VPP2, 2);
+	} else {
+		osd_hw.afbc_force_reset = 0;
+	}
+	/* temp set */
+	for (idx = 0; idx < osd_hw.osd_meson_dev.viu1_osd_count; idx++) {
+		osd_hw.use_h_filter_mode[idx] = 0xff;
+		osd_hw.use_v_filter_mode[idx] = 0xff;
+		osd_update_coef(idx);
+	}
+}
+
 void osd_init_hw(u32 logo_loaded, u32 osd_probe,
 		 struct osd_device_data_s *osd_meson)
 {
-	u32 idx, data32;
+	u32 idx;
 	int err_num = 0;
 #ifdef CONFIG_AMLOGIC_MEDIA_SECURITY
 	void *osd_secure_op[VPP_TOP_MAX] = {VSYNCOSD_WR_MPEG_REG_BITS,
@@ -14724,7 +14999,6 @@ void osd_init_hw(u32 logo_loaded, u32 osd_probe,
 		osd_hw.vpp_num++;
 	if (osd_hw.osd_meson_dev.has_vpp2)
 		osd_hw.vpp_num++;
-	osd_vpu_power_on();
 
 #ifndef CONFIG_AMLOGIC_C3_REMOVE
 	if (osd_meson->cpu_id == __MESON_CPU_MAJOR_ID_S5 ||
@@ -14821,7 +15095,6 @@ void osd_init_hw(u32 logo_loaded, u32 osd_probe,
 	if (osd_dev_hw.display_type == C3_DISPLAY)
 		irq_clr_c3();
 
-	osd_flag_regs_init();
 	recovery_regs_init();
 
 	/* set osd vpp rdma func */
@@ -14845,125 +15118,8 @@ void osd_init_hw(u32 logo_loaded, u32 osd_probe,
 	}
 	if (osd_hw.osd_meson_dev.has_rdma)
 		osd_hw.hw_rdma_en = 1;
-	/*close gamma only for axg*/
-	if (osd_hw.osd_meson_dev.osd_ver == OSD_SIMPLE)
-		osd_reg_write(L_GAMMA_CNTL_PORT, 0);
 
-	/* here we will init default value ,these value only set once . */
-	if (!logo_loaded) {
-		if (osd_dev_hw.s5_display)
-			s5_default_path_settings();
-
-		if (osd_dev_hw.multi_afbc_core)
-			multi_afbc_default_path_setting();
-
-		/* init vpu fifo control register */
-		if (osd_dev_hw.display_type != C3_DISPLAY) {
-			data32 = osd_reg_read(VPP_OFIFO_SIZE);
-			if (osd_hw.osd_meson_dev.osd_ver >= OSD_HIGH_ONE) {
-				data32 &= ~((0xfff << 20) | 0x3fff);
-				data32 |= (osd_hw.osd_meson_dev.vpp_fifo_len) << 20;
-				data32 |= osd_hw.osd_meson_dev.vpp_fifo_len + 1;
-			} else {
-				data32 |= osd_hw.osd_meson_dev.vpp_fifo_len;
-			}
-			osd_reg_write(VPP_OFIFO_SIZE, data32);
-			data32 = 0x08080808;
-			osd_reg_write(VPP_HOLD_LINES, data32);
-		}
-		/* init osd fifo control register
-		 * set DDR request priority to be urgent
-		 */
-		data32 = 1;
-		/* hold_fifo_lines */
-		if (osd_hw.osd_meson_dev.osd_ver >= OSD_HIGH_ONE)
-			data32 |= VIU1_DEFAULT_HOLD_LINE << 5;
-		else
-			data32 |= MIN_HOLD_LINE << 5;
-		/* burst_len_sel: 3=64, g12a = 5 */
-		if (osd_hw.osd_meson_dev.osd_ver == OSD_HIGH_ONE ||
-			osd_dev_hw.display_type == C3_DISPLAY) {
-			data32 |= 1 << 10;
-			data32 |= 1 << 31;
-		} else {
-			data32 |= 3 << 10;
-		}
-		/*
-		 * bit 23:22, fifo_ctrl
-		 * 00 : for 1 word in 1 burst
-		 * 01 : for 2 words in 1 burst
-		 * 10 : for 4 words in 1 burst
-		 * 11 : reserved
-		 */
-		data32 |= 2 << 22;
-		/* bit 28:24, fifo_lim */
-		data32 |= 2 << 24;
-
-		/* data32_ = data32; */
-		/* fifo_depth_val: 32 or 64 *8 = 256 or 512 */
-		data32 |= (osd_hw.osd_meson_dev.osd_fifo_len
-			& 0xfffffff) << 12;
-		for (idx = 0; idx < osd_hw.osd_meson_dev.viu1_osd_count; idx++)
-			osd_reg_write(hw_osd_reg_array[idx].osd_fifo_ctrl_stat,
-				      data32);
-		/* osd_reg_write(VIU_OSD2_FIFO_CTRL_STAT, data32_); */
-		if (osd_dev_hw.display_type != C3_DISPLAY) {
-			if (osd_hw.osd_meson_dev.cpu_id ==
-				__MESON_CPU_MAJOR_ID_S1A)
-				osd_reg_clr_mask(VPP_MISC, VPP_VD1_POSTBLEND);
-			osd_reg_set_mask(VPP_MISC, VPP_POSTBLEND_EN);
-			osd_reg_clr_mask(VPP_MISC, VPP_PREBLEND_EN);
-			if (osd_hw.osd_meson_dev.osd_ver <= OSD_NORMAL) {
-				osd_vpp_misc =
-					osd_reg_read(VPP_MISC) & OSD_RELATIVE_BITS;
-				osd_vpp_misc &=
-					~(VPP_OSD1_POSTBLEND | VPP_OSD2_POSTBLEND);
-
-				notify_to_amvideo();
-				osd_reg_clr_mask(VPP_MISC,
-						 VPP_OSD1_POSTBLEND |
-						 VPP_OSD2_POSTBLEND);
-			}
-		}
-		/* just disable osd to avoid booting hang up */
-		data32 = 0x1 << 0;
-		data32 |= OSD_GLOBAL_ALPHA_DEF << 12;
-		for (idx = 0; idx < osd_hw.osd_meson_dev.viu1_osd_count; idx++)
-			osd_reg_write(hw_osd_reg_array[idx].osd_ctrl_stat,
-				      data32);
-		if (osd_hw.osd_meson_dev.osd_ver == OSD_HIGH_ONE)
-			osd_setting_default_hwc();
-	} else if (osd_hw.osd_meson_dev.cpu_id ==
-			__MESON_CPU_MAJOR_ID_T7) {
-		osd_mali_afbcd_top_ctrl =
-			osd_reg_read(MALI_AFBCD_TOP_CTRL) & osd_mali_afbcd_top_ctrl_mask;
-		osd_mali_afbcd_top_ctrl |= 1 << 19;
-		osd_mali_afbcd_top_ctrl &= ~(1 << 15);
-		osd_mali_afbcd_top_ctrl &= ~(1 << 20);
-		osd_mali_afbcd1_top_ctrl =
-			osd_reg_read(MALI_AFBCD1_TOP_CTRL) & osd_mali_afbcd1_top_ctrl_mask;
-		osd_mali_afbcd1_top_ctrl &= ~(1 << 20);
-		notify_to_amdv();
-	}
-	if (osd_hw.osd_meson_dev.osd_ver <= OSD_NORMAL &&
-		osd_dev_hw.display_type != C3_DISPLAY) {
-		osd_vpp_misc =
-			osd_reg_read(VPP_MISC) & OSD_RELATIVE_BITS;
-		if (osd_hw.hw_cursor_en) {
-			osd_vpp_misc |= (VPP_POST_FG_OSD2 | VPP_PRE_FG_OSD2);
-			notify_to_amvideo();
-			osd_reg_set_mask(VPP_MISC,
-					 VPP_POST_FG_OSD2 | VPP_PRE_FG_OSD2);
-			osd_hw.order[OSD1] = OSD_ORDER_10;
-		} else {
-			osd_vpp_misc &= ~(VPP_POST_FG_OSD2 | VPP_PRE_FG_OSD2);
-			notify_to_amvideo();
-			osd_reg_clr_mask(VPP_MISC,
-					 VPP_POST_FG_OSD2 |
-					 VPP_PRE_FG_OSD2);
-			osd_hw.order[OSD1] = OSD_ORDER_01;
-		}
-	} else if (osd_hw.osd_meson_dev.osd_ver == OSD_HIGH_ONE) {
+	if (osd_hw.osd_meson_dev.osd_ver == OSD_HIGH_ONE) {
 		osd_hw.order[OSD1] = LAYER_1;
 		osd_hw.order[OSD2] = LAYER_2;
 		osd_hw.order[OSD3] = LAYER_3;
@@ -14992,116 +15148,15 @@ void osd_init_hw(u32 logo_loaded, u32 osd_probe,
 				MALI_AFBC_32X8_PIXEL << 1 |
 				MALI_AFBC_SPLIT_ON;
 			osd_hw.osd_afbcd[idx].afbc_start = 0;
-
 			osd_hw.osd_afbcd[idx].out_addr_id = idx + 1;
 			if (osd_hw.osd_meson_dev.cpu_id ==
 				__MESON_CPU_MAJOR_ID_G12A) {
 				osd_hw.afbc_force_reset = 1;
 				osd_hw.afbc_regs_backup = 1;
 			}
-
-			if (idx < osd_hw.osd_meson_dev.viu1_osd_count) {
-				/* TODO: temp set at here,
-				 * need move it to uboot
-				 */
-				osd_reg_set_bits
-				(hw_osd_reg_array[idx].osd_fifo_ctrl_stat,
-				 1, 31, 1);
-				osd_reg_set_bits
-				(hw_osd_reg_array[idx].osd_fifo_ctrl_stat,
-				 1, 10, 2);
-				osd_reg_set_bits
-				(hw_osd_reg_array[idx].osd_fifo_ctrl_stat,
-				 VIU1_DEFAULT_HOLD_LINE, 5, 5);
-				if (osd_hw.osd_meson_dev.cpu_id ==
-					__MESON_CPU_MAJOR_ID_G12B)
-					osd_reg_set_bits
-					(hw_osd_reg_array[idx].osd_ctrl_stat,
-					1, 0, 1);
-				osd_reg_set_bits
-				(hw_osd_reg_array[idx].osd_ctrl_stat,
-				 0, 31, 1);
-				osd_hw.powered[idx] = 1;
-			} else {
-				osd_hw.powered[idx] = 0;
-			}
-		}
-		osd_set_basic_urgent(true);
-		if (osd_hw.osd_meson_dev.cpu_id !=
-			__MESON_CPU_MAJOR_ID_TXHD2 &&
-			osd_hw.osd_meson_dev.cpu_id !=
-			__MESON_CPU_MAJOR_ID_S1A &&
-			osd_hw.osd_meson_dev.cpu_id !=
-			__MESON_CPU_MAJOR_ID_S7 &&
-			osd_hw.osd_meson_dev.cpu_id !=
-			__MESON_CPU_MAJOR_ID_T7)
-			osd_set_two_ports(true);
-		if (osd_dev_hw.prevsync_support) {
-			u32 vpp0_pre_go_field = 0;
-			u32 vpp0_post_go_field = 3;
-			u32 output_index;
-
-			/* for t3 0: vpp0_pre_go_field, 3: vpp0_post_go_field */
-			if (is_meson_rev_a()) {
-				osd_set_vpp_path_default(VPP_OSD1, vpp0_pre_go_field);
-				osd_set_vpp_path_default(VPP_OSD2, vpp0_pre_go_field);
-				if (osd_hw.osd_meson_dev.osd_count > OSD3) {
-					output_index = get_output_device_id(OSD3);
-					if (output_index == VIU1)
-						osd_set_vpp_path_default(VPP_OSD3,
-							vpp0_pre_go_field);
-					else
-						osd_set_vpp_path_default(VPP_OSD3,
-							output_index);
-				}
-				if (osd_hw.osd_meson_dev.osd_count > OSD4) {
-					output_index = get_output_device_id(OSD4);
-					if (output_index == VIU1)
-						osd_set_vpp_path_default(VPP_OSD4,
-							vpp0_pre_go_field);
-					else
-						osd_set_vpp_path_default(VPP_OSD4,
-							output_index);
-				}
-			} else {
-				osd_set_vpp_path_default(VPP_OSD1, vpp0_post_go_field);
-				osd_set_vpp_path_default(VPP_OSD2, vpp0_post_go_field);
-				if (osd_hw.osd_meson_dev.osd_count > OSD3) {
-					output_index = get_output_device_id(OSD3);
-					if (output_index == VIU1)
-						osd_set_vpp_path_default(VPP_OSD3,
-							vpp0_post_go_field);
-					else
-						osd_set_vpp_path_default(VPP_OSD3,
-							output_index);
-				}
-				if (osd_hw.osd_meson_dev.osd_count > OSD4) {
-					output_index = get_output_device_id(OSD4);
-					if (output_index == VIU1)
-						osd_set_vpp_path_default(VPP_OSD4,
-							vpp0_post_go_field);
-					else
-						osd_set_vpp_path_default(VPP_OSD4,
-							output_index);
-				}
-			}
-		} else {
-			/* for t7 0: vpp0_post_go_field, no pre go field */
-			if (osd_hw.osd_meson_dev.osd_count > OSD3)
-				osd_set_vpp_path_default(VPP_OSD3,
-							 get_output_device_id(OSD3));
-			if (osd_hw.osd_meson_dev.osd_count > OSD4)
-				osd_set_vpp_path_default(VPP_OSD4,
-							 get_output_device_id(OSD4));
 		}
 	}
-	/* disable deband as default */
-	if (osd_hw.osd_meson_dev.has_deband) {
-		if (osd_dev_hw.display_type != C3_DISPLAY)
-			osd_reg_write(OSD_DB_FLT_CTRL, 0);
-		else
-			osd_reg_write(VOUT_OSD1_DB_FLT_CTRL, 0);
-	}
+
 	for (idx = 0; idx < osd_hw.osd_meson_dev.osd_count; idx++) {
 		osd_hw.updated[idx] = 0;
 		osd_hw.urgent[idx] = 1;
@@ -15155,12 +15210,12 @@ void osd_init_hw(u32 logo_loaded, u32 osd_probe,
 		 * osd_hw.rotation_pandata[idx].y_start = 0;
 		 */
 		osd_set_dummy_data(idx, 0xff);
-		osd_set_deband(idx, osd_hw.osd_deband_enable[idx]);
 		#ifdef DEBUG_FIRSTFRAME
 		set_force_dimm(idx);
 		set_force_save_frames(idx);
 		#endif
 	}
+	osd_hw_init(logo_loaded);
 	/* hwc_enable == 0 handler */
 #ifdef CONFIG_AMLOGIC_MEDIA_FB_OSD_SYNC_FENCE
 	osd_hw.osd_fence[VIU1][DISABLE].sync_fence_handler =
@@ -15200,23 +15255,7 @@ void osd_init_hw(u32 logo_loaded, u32 osd_probe,
 	osd_hw.osd_preblend_en = 0;
 	osd_hw.fix_target_width = 1920;
 	osd_hw.fix_target_height = 1080;
-	if (osd_hw.osd_meson_dev.cpu_id == __MESON_CPU_MAJOR_ID_AXG) {
-		data32 = osd_reg_read
-			(hw_osd_reg_array[OSD1].osd_fifo_ctrl_stat);
-		/* bit[9:5]: HOLD_FIFO_LINES */
-		data32 &= ~(0x1f << 5);
-		data32 |= 0x18 << 5;
-		osd_reg_write(hw_osd_reg_array[OSD1].osd_fifo_ctrl_stat,
-			      data32);
-	}
-	if (osd_hw.osd_meson_dev.cpu_id == __MESON_CPU_MAJOR_ID_TXHD2 &&
-		osd_hw.osd_meson_dev.has_vpp1) {
-		set_vpp_osd1_rgb2yuv(1);
-		set_vpp_osd2_rgb2yuv(0);
-	} else if (osd_hw.osd_meson_dev.osd_rgb2yuv == 1) {
-		set_vpp_osd1_rgb2yuv(1);
-		set_vpp_osd2_rgb2yuv(1);
-	}
+
 	if (osd_hw.fb_drvier_probe) {
 #ifdef CONFIG_AMLOGIC_MEDIA_FB_OSD_SYNC_FENCE
 		INIT_LIST_HEAD(&post_fence_list[VIU1]);
@@ -15259,17 +15298,6 @@ void osd_init_hw(u32 logo_loaded, u32 osd_probe,
 		if (osd_hw.osd_meson_dev.has_viu2)
 			request_fiq(INT_VIU_VSYNC, &osd_viu2_fiq_isr);
 #endif
-	}
-	if (osd_hw.hw_rdma_en) {
-		osd_rdma_enable(VPU_VPP0, 2);
-		if (osd_hw.osd_meson_dev.has_vpp1 &&
-		   osd_hw.display_dev_cnt == 2)
-			osd_rdma_enable(VPU_VPP1, 2);
-		if (osd_hw.osd_meson_dev.has_vpp2 &&
-		   osd_hw.display_dev_cnt == 3)
-			osd_rdma_enable(VPU_VPP2, 2);
-	} else {
-		osd_hw.afbc_force_reset = 0;
 	}
 #ifdef CONFIG_AMLOGIC_MEDIA_FB_OSD_SYNC_FENCE
 	affinity_set_init();
@@ -15764,6 +15792,9 @@ void  osd_suspend_hw(void)
 
 void osd_resume_hw(void)
 {
+	/* for hw reg recovery */
+	osd_hw_init(0);
+
 	if (osd_hw.osd_meson_dev.osd_ver <= OSD_NORMAL &&
 		osd_dev_hw.display_type != C3_DISPLAY) {
 		if (osd_hw.reg_status_save &

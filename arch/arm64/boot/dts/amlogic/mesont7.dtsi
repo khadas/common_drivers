@@ -514,7 +514,7 @@
 		      <0x0 0xfe010258 0x0 0x4>, /*host health reg address*/
 		      <0x0 0xfe440068 0x0 0x4>, /*dsp support region*/
 		      <0x0 0x40600000 0x0 0x100000>, /*host remap region [sram_remap_addr size]*/
-		      <0x0 0xf7000000 0x0 0x100000>, /*host sram region [boot_sram_addr size]*/
+		      <0x0 0xf7100000 0x0 0x100000>, /*host sram region [boot_sram_addr size]*/
 		      <0x0 0x780000 0x0 0x80000>, /*host shm region [offset size]*/
 		      <0x0 0x0 0x0 0x800000>; /*host ddrfw region [offset size]*/
 		clocks = <&clkc CLKID_DSPA_CLK>;

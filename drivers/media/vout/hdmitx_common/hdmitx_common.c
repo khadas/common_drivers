@@ -192,7 +192,7 @@ EXPORT_SYMBOL(hdmitx_common_build_format_para);
  */
 int hdmitx_common_validate_mode_locked(struct hdmitx_common *tx_comm,
 				       struct hdmitx_common_state *new_state,
-				       char *mode, char *attr, bool do_validate)
+				       char *mode, char *attr, bool brr_valid, bool do_validate)
 {
 	int ret = 0;
 	struct hdmi_format_para *new_para;
@@ -200,6 +200,12 @@ int hdmitx_common_validate_mode_locked(struct hdmitx_common *tx_comm,
 	enum hdmi_vic vic = HDMI_0_UNKNOWN;
 
 	new_para = &new_state->para;
+
+	if (new_state->state_sequence_id != tx_comm->tx_hw->hw_sequence_id) {
+		HDMITX_ERROR("%s: state_sequence_id failed: %lld\n",
+						__func__, new_state->state_sequence_id);
+		return -1;
+	}
 
 	mutex_lock(&tx_comm->hdmimode_mutex);
 
@@ -223,7 +229,7 @@ int hdmitx_common_validate_mode_locked(struct hdmitx_common *tx_comm,
 
 	hdmitx_parse_color_attr(attr, &tst_para.cs, &tst_para.cd, &tst_para.cr);
 	ret = hdmitx_common_build_format_para(tx_comm,
-		new_para, vic, tx_comm->frac_rate_policy,
+		new_para, vic, brr_valid ? 0 : tx_comm->frac_rate_policy,
 		tst_para.cs, tst_para.cd, tst_para.cr);
 	if (ret != 0) {
 		hdmitx_format_para_reset(new_para);
@@ -312,6 +318,19 @@ int hdmitx_register_hpd_cb(struct hdmitx_common *tx_comm, struct connector_hpd_c
 	return 0;
 }
 EXPORT_SYMBOL(hdmitx_register_hpd_cb);
+
+/* get hdp plugin sequence id */
+u64 hdmitx_get_hpd_hw_sequence_id(struct hdmitx_common *tx_comm)
+{
+	u64 tmp_sequence_id;
+
+	mutex_lock(&tx_comm->hdmimode_mutex);
+	tmp_sequence_id = tx_comm->tx_hw->hw_sequence_id;
+	mutex_unlock(&tx_comm->hdmimode_mutex);
+
+	return tmp_sequence_id;
+}
+EXPORT_SYMBOL(hdmitx_get_hpd_hw_sequence_id);
 
 /* TODO: no mutex */
 int hdmitx_get_hpd_state(struct hdmitx_common *tx_comm)

@@ -509,8 +509,6 @@ void vpu_pipeline_detect_reset(struct meson_vpu_sub_pipeline *sub_pipeline)
 	new_mvps = priv_to_pipeline_state(pipeline->obj.state);
 	new_mvsps = &new_mvps->sub_states[sub_pipeline->index];
 	affected_blocks = new_mvsps->enable_blocks;
-	DRM_DEBUG("detect reset, enable blocks:%lx\n",
-			affected_blocks);
 
 	for_each_set_bit(id, &affected_blocks, 32) {
 		mvb = vpu_blocks[id];
@@ -664,7 +662,9 @@ int vpu_pipeline_osd_update(struct meson_vpu_sub_pipeline *sub_pipeline,
 		mvb = vpu_blocks[id];
 		/*TODO: we may need also update other blocks on newer soc.*/
 		if (mvb->type != MESON_BLK_OSD &&
-			mvb->type != MESON_BLK_AFBC)
+			mvb->type != MESON_BLK_AFBC &&
+			mvb->type != MESON_BLK_VPPBLEND &&
+			mvb->type != MESON_BLK_OSDBLEND)
 			continue;
 
 		mvbs = priv_to_block_state(mvb->obj.state);

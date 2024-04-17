@@ -27,11 +27,9 @@
 #define LCD_REG_DBG_HHI_BUS         11
 #define LCD_REG_DBG_MAX_BUS         0xff
 
-struct lcd_debug_info_if_s {
-	int (*interface_print)(struct aml_lcd_drv_s *pdrv, char *buf, int offset);
-	int (*reg_dump_interface)(struct aml_lcd_drv_s *pdrv, char *buf, int offset);
-	int (*reg_dump_phy)(struct aml_lcd_drv_s *pdrv, char *buf, int offset);
-	struct device_attribute *attrs;
+struct reg_name_set_s {
+	unsigned int reg;
+	char *name;
 };
 
 struct lcd_debug_info_s {
@@ -42,19 +40,23 @@ struct lcd_debug_info_s {
 	unsigned int *reg_encl_table;
 	unsigned int *reg_pinmux_table;
 
+	int (*reg_dump_lvds)(struct aml_lcd_drv_s *pdrv, char *buf, int offset);
+	int (*reg_dump_vbyone)(struct aml_lcd_drv_s *pdrv, char *buf, int offset);
 #ifdef CONFIG_AMLOGIC_LCD_TABLET
-	struct lcd_debug_info_if_s *debug_if_rgb;
-	struct lcd_debug_info_if_s *debug_if_bt;
+	int (*reg_dump_rgb)(struct aml_lcd_drv_s *pdrv, char *buf, int offset);
+	int (*reg_dump_bt)(struct aml_lcd_drv_s *pdrv, char *buf, int offset);
+	int (*reg_dump_mipi)(struct aml_lcd_drv_s *pdrv, char *buf, int offset);
+	int (*reg_dump_edp)(struct aml_lcd_drv_s *pdrv, char *buf, int offset);
 #endif
-	struct lcd_debug_info_if_s *debug_if_lvds;
-	struct lcd_debug_info_if_s *debug_if_vbyone;
-	struct lcd_debug_info_if_s *debug_if_mlvds;
-	struct lcd_debug_info_if_s *debug_if_p2p;
-#ifdef CONFIG_AMLOGIC_LCD_TABLET
-	struct lcd_debug_info_if_s *debug_if_mipi;
-	struct lcd_debug_info_if_s *debug_if_edp;
+#ifdef CONFIG_AMLOGIC_LCD_TV
+	int (*reg_dump_mlvds)(struct aml_lcd_drv_s *pdrv, char *buf, int offset);
+	int (*reg_dump_p2p)(struct aml_lcd_drv_s *pdrv, char *buf, int offset);
 #endif
-	struct lcd_debug_info_if_s *debug_if;
+
+	int (*interface_print)(struct aml_lcd_drv_s *pdrv, char *buf, int offset);
+	int (*reg_dump_interface)(struct aml_lcd_drv_s *pdrv, char *buf, int offset);
+
+	int (*reg_dump_phy)(struct aml_lcd_drv_s *pdrv, char *buf, int offset);
 };
 
 static unsigned int lcd_reg_dump_clk_axg[] = {

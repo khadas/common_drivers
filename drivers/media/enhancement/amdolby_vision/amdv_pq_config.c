@@ -1269,29 +1269,26 @@ static void update_vsvdb_to_rx(void)
 u32 check_cfg_enabled_top1(void)
 {
 	struct target_config_dvp *tdc;
-	u32 ret = 0;
+	u32 ret = CFG_NONE;
 
 	if (bin_to_cfg_dvp) {
 		tdc = &bin_to_cfg_dvp[cur_pic_mode].tdc;
 
 		if (tdc && tdc->pr_config.supports_precision_rendering)
-			ret |= 1;
+			ret |= CFG_ENABLE_PRECISION;
 		else if (tdc && tdc->ana_config.enalbe_l1l4_gen)
-			ret |= 2;
+			ret |= CFG_ENABLE_L1L4;
 	}
-
+	/*todo, check dynamic_cfg_enabled_top1*/
 	return ret;
-}
-
-/*todo, update from dynamic_cfg_s*/
-u32 check_dynamic_cfg_enabled_top1(void)
-{
-	return 0;
 }
 
 void update_cp_cfg_hw5(bool update_pyramid, bool is_top1, bool enable)
 {
 	struct target_config_dvp *tdc;
+
+	if (debug_dolby & 0x80000)
+		pr_dv_dbg("update_cp_cfg_hw5 %d\n",	is_top1);
 
 	if (cur_pic_mode >= num_picture_mode || num_picture_mode == 0 ||
 		!bin_to_cfg_dvp) {
@@ -1340,7 +1337,11 @@ void update_cp_cfg(void)
 
 	if (is_aml_hw5()) {
 		update_cp_cfg_hw5(false, true, false);/*update for top1*/
-		update_top2_cfg = true;/*delay update top2 cfg in parse_metadata*/
+		if (check_cfg_enabled_top1() == 0)
+			/*cfg pd off: top2 cfg update with top1*/
+			update_cp_cfg_hw5(false, false, false);
+		else/*cfg pd on:delay update top2 cfg after top1_enable*/
+			update_top2_cfg = true;
 		return;
 	}
 	if (cur_pic_mode >= num_picture_mode || num_picture_mode == 0 ||
@@ -1437,6 +1438,7 @@ void restore_dv_pq_setting(enum pq_reset_e pq_reset)
 				bin_to_cfg_dvp[mode].tdc.d_saturation;
 			cfg_info[mode].dark_detail =
 				bin_to_cfg_dvp[mode].tdc.ambient_config.dark_detail;
+			cfg_info[mode].bypass_pd_from_user = false;
 			memcpy(cfg_info[mode].vsvdb,
 			       bin_to_cfg_dvp[mode].tdc.vsvdb,
 			       sizeof(cfg_info[mode].vsvdb));
@@ -2727,16 +2729,18 @@ int get_dv_pq_info(char *buf)
 	"echo saturation value   > /sys/class/amdolby_vision/dv_pq_info;\n"
 	"echo darkdetail value   > /sys/class/amdolby_vision/dv_pq_info;\n"
 	"echo lightsense value   > /sys/class/amdolby_vision/dv_pq_info;\n"
+	"echo bypass_pd_from_user value   > /sys/class/amdolby_vision/dv_pq_info;\n"
 	"echo all v1 v2 v3 v4 v5 > /sys/class/amdolby_vision/dv_pq_info;\n"
 	"echo reset value        > /sys/class/amdolby_vision/dv_pq_info;\n"
 	"\n"
-	"picture_mode range: [0, num_picture_mode-1]\n"
-	"brightness   range: [-256, 256]\n"
-	"contrast     range: [-256, 256]\n"
-	"colorshift   range: [-256, 256]\n"
-	"saturation   range: [-256, 256]\n"
-	"darkdetail   range: [0, 1]\n"
-	"lightsense   range: [0, 1]\n"
+	"picture_mode    range: [0, num_picture_mode-1]\n"
+	"brightness      range: [-256, 256]\n"
+	"contrast        range: [-256, 256]\n"
+	"colorshift      range: [-256, 256]\n"
+	"saturation      range: [-256, 256]\n"
+	"darkdetail      range: 0 or 1\n"
+	"lightsense      range: 0 or 1\n"
+	"bypass_pd       range: 0 or 1\n"
 	"reset            0: reset pict mode/all pq for all pict mode]\n"
 	"                 1: reset pq for all picture mode]\n"
 	"                 2: reset pq for current picture mode]\n"
@@ -2800,6 +2804,10 @@ int get_dv_pq_info(char *buf)
 	pos += sprintf(buf + pos,
 		       "current lightsense:        [%d]\n",
 		       cfg_info[cur_pic_mode].light_sense);
+
+	pos += sprintf(buf + pos,
+		       "current bypass_pd:         [%d]\n",
+		       cfg_info[cur_pic_mode].bypass_pd_from_user);
 
 	if (dv_user_cfg_flag) {
 		pos += sprintf(buf + pos,
@@ -2977,6 +2985,17 @@ int set_dv_pq_info(const char *buf, size_t count)
 		if (val != cfg_info[cur_pic_mode].light_sense) {
 			set_update_cfg(true);
 			cfg_info[cur_pic_mode].light_sense = val;
+		}
+	} else if (!strcmp(parm[0], "bypass_pd")) {
+		if (kstrtoint(parm[1], 10, &val) != 0)
+			goto ERR;
+		if (debug_dolby & 0x200)
+			pr_info("[DV]: set mode %d bypass_pd %d\n",
+				cur_pic_mode, val);
+		val = val > 0 ? 1 : 0;
+		if (val != cfg_info[cur_pic_mode].bypass_pd_from_user) {
+			cfg_info[cur_pic_mode].bypass_pd_from_user = val;
+			set_update_cfg(true);
 		}
 	} else {
 		pr_info("unsupport cmd\n");

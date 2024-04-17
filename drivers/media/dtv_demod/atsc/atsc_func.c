@@ -10,31 +10,31 @@
 #include <linux/kernel.h>
 #include <linux/mutex.h>
 
-MODULE_PARM_DESC(debug_atsc, "\n\t\t Enable frontend atsc debug information");
+MODULE_PARM_DESC(debug_atsc, "");
 static int debug_atsc = 1;
 module_param(debug_atsc, int, 0644);
 
-MODULE_PARM_DESC(atsc_thread_enable, "\n\t\t Enable frontend debug information");
+MODULE_PARM_DESC(atsc_thread_enable, "");
 static int atsc_thread_enable = 1;
 module_param(atsc_thread_enable, int, 0644);
 
-MODULE_PARM_DESC(ar_enable, "\n\t\t Enable ar");
+MODULE_PARM_DESC(ar_enable, "");
 static int ar_enable;
 module_param(ar_enable, int, 0644);
 
-MODULE_PARM_DESC(cci_enable, "\n\t\t Enable ar");
+MODULE_PARM_DESC(cci_enable, "");
 static int cci_enable = 1;
 module_param(cci_enable, int, 0644);
 
-MODULE_PARM_DESC(cfo_count, "\n\t\t cfo_count");
+MODULE_PARM_DESC(cfo_count, "");
 static int cfo_count;
 module_param(cfo_count, int, 0644);
 
-MODULE_PARM_DESC(field_test_version, "\n\t\t field_test_version");
+MODULE_PARM_DESC(field_test_version, "");
 static int field_test_version;
 module_param(field_test_version, int, 0644);
 
-MODULE_PARM_DESC(cfo_times, "\n\t\t cfo_times");
+MODULE_PARM_DESC(cfo_times, "");
 static int cfo_times = 30;
 module_param(cfo_times, int, 0644);
 
@@ -353,11 +353,10 @@ int app_apb_write_reg(int addr, int data)
 
 /*int atsc_qam_set(fe_modulation_t mode)*/
 int atsc_qam_set(enum fe_modulation mode)
-
 {
 	int i, j;
 
-	if (mode == VSB_8) {	/* 5-8vsb, 2-64qam, 4-256qam */
+	if (mode == VSB_8) {/* 5-8vsb, 2-64qam, 4-256qam */
 		for (i = 0; list_8vsb[i].adr != 0; i++) {
 			if (list_8vsb[i].rw)
 				atsc_read_reg(list_8vsb[i].adr);
@@ -368,7 +367,6 @@ int atsc_qam_set(enum fe_modulation mode)
 			/* msleep(20); */
 		}
 		j = 15589;
-		PR_ATSC("8-vsb mode\n");
 	} else if (mode == QAM_64) {
 		for (i = 0; list_qam64[i].adr != 0; i++) {
 			if (list_qam64[i].rw) {
@@ -381,7 +379,6 @@ int atsc_qam_set(enum fe_modulation mode)
 			}
 		}
 		j = 16588;	/* 33177; */
-		PR_ATSC("64qam mode\n");
 	} else if (mode == QAM_256) {
 		for (i = 0; list_qam256[i].adr != 0; i++) {
 			if (list_qam256[i].rw) {
@@ -394,7 +391,6 @@ int atsc_qam_set(enum fe_modulation mode)
 			}
 		}
 		j = 15649;	/* 31298; */
-		PR_ATSC("256qam mode\n");
 	} else {
 		for (i = 0; list_qam256[i].adr != 0; i++) {
 			if (list_qam256[i].rw) {
@@ -407,8 +403,10 @@ int atsc_qam_set(enum fe_modulation mode)
 			}
 		}
 		j = 15649;	/* 31298; */
-		PR_ATSC("256qam mode\n");
 	}
+
+	PR_ATSC("set mode %d\n", mode);
+
 	return j;
 }
 
@@ -547,7 +545,7 @@ void set_cr_ck_rate(void)
 			atsc_set_performance_register(TASK8_R22, 1);
 		atsc_write_reg(0x716, atsc_read_reg(0x716) | 0x02);
 	} else {
-		PR_ATSC("!!!!!! field test !!!!!!!!!");
+		PR_ATSC("field test");
 		atsc_write_reg(0x716, atsc_read_reg(0x716) | 0x02);
 		atsc_write_reg(0x552, 0x20);
 		atsc_write_reg(0x551, 0x28);
@@ -590,9 +588,9 @@ void atsc_initial(struct aml_demod_sta *demod_sta)
 		atsc_write_reg(0x0710, (ck >> 8) & 0xff);
 		atsc_write_reg(0x070f, (ck >> 16) & 0xff);
 	}
-	PR_ATSC("0x70e is %x, 0x70d is %x, 0x70c is %x\n",
+	PR_ATSC("0x70e %x,0x70d %x,0x70c %x\n",
 		cr & 0xff, (cr >> 8) & 0xff, (cr >> 16) & 0xff);
-	PR_ATSC("fs is %d(SR),fc is %d(IF),cr is %x,ck is %x\n",
+	PR_ATSC("fs %d(SR),fc %d(IF),cr %x,ck %x\n",
 				fs, fc, cr, ck);
 }
 
@@ -619,7 +617,7 @@ int atsc_set_ch(struct aml_dtvdemod *demod,
 	atsc_reset();
 	/*set_cr_ck_rate();*/
 	dagc_switch = Dagc_Open;
-	PR_ATSC("ATSC mode\n");
+
 	return ret;
 }
 
@@ -715,8 +713,7 @@ int check_snr_ser(int ser_threshholds)
 	ser_be = atsc_read_ser();
 	msleep(100);
 	ser_af = atsc_read_ser();
-	PR_ATSC("%s [%d][%2d]\n", __func__,
-		(ser_af - ser_be), SNR_dB / 10);
+	PR_ATSC("snr [%d][%2d]\n", (ser_af - ser_be), SNR_dB / 10);
 	if (((ser_af - ser_be) > ser_threshholds) ||
 		(SNR_dB / 10 < 14))
 		return -1;
@@ -744,8 +741,7 @@ int cci_run(void)
 		max_b[ck0] = 0;
 	}
 	time[1] = jiffies_to_msecs(jiffies);
-	PR_ATSC("[atsc_time][cci_run1,%d ms]\n",
-		(time[1] - time[0]));
+	PR_ATSC("[cci_run1,%d ms]\n", (time[1] - time[0]));
 	for (ck0 = 0; ck0 < avg_len; ck0++) {
 		/* step1: set 0x918[0] = 1;*/
 		atsc_write_reg(0x918, 0x3);
@@ -788,8 +784,7 @@ int cci_run(void)
 			bin[3], peak[bin[3]]);
 	}
 	time[2] = jiffies_to_msecs(jiffies);
-	PR_ATSC("[atsc_time][cci_run2,%d ms]\n",
-		(time[2] - time[1]));
+	PR_ATSC("[cci_run2,%d ms]\n", (time[2] - time[1]));
 	cci_cnt = 0;
 	for (ck0 = 0; ck0 < 2048; ck0++) {
 		if (peak[ck0] > threshold) {
@@ -806,21 +801,20 @@ int cci_run(void)
 		}
 	}
 	time[3] = jiffies_to_msecs(jiffies);
-	PR_ATSC("[atsc_time][cci_run3,%d ms]\n",
-		(time[3] - time[2]));
+	PR_ATSC("[cci_run3,%d ms]\n", (time[3] - time[2]));
 	atsc_write_reg(0x736, ((max_b[0] >> 8) & 0x7) + 0x40);
 	atsc_write_reg(0x737, max_b[0] & 0xff);
 	atsc_write_reg(0x738, (max_b[1] >> 8) & 0x7);
 	atsc_write_reg(0x739, max_b[1] & 0xff);
 	atsc_write_reg(0x735, 0x80);
 	for (ck0 = 0; ck0 < 2; ck0++) {
-		PR_ATSC(" %d - %d CCI: pos %x  power %x .\n",
+		PR_ATSC("cci_cnt %d ck0 %d CCI: pos %x power %x\n",
 			cci_cnt, ck0, max_b[ck0], max_p[ck0]);
 	}
 	time[4] = jiffies_to_msecs(jiffies);
-	PR_ATSC("[atsc_time][cci_run4,%d ms]\n", (time[4] - time[3]));
-	PR_ATSC("[atsc_time]--------printf cost %d us\n",
-		jiffies_to_msecs(jiffies) - time[4]);
+	PR_ATSC("[cci_run4,%d ms]\n", (time[4] - time[3]));
+	PR_ATSC("[total cost %d ms]\n", time[4] - time[0]);
+
 	return 0;
 }
 
@@ -847,7 +841,7 @@ void cci_run_new(struct aml_dtvdemod *demod)
 	struct amldtvdemod_device_s *devp = (struct amldtvdemod_device_s *)demod->priv;
 
 	time[0] = jiffies_to_msecs(jiffies);
-	PR_ATSC("%s: [atsc_time][start......]\n", __func__);
+	PR_ATSC("cci_run start\n");
 
 	threshold = avg_len * 800;
 	val_0x92.bits = atsc_read_reg_v4(ATSC_EQ_REG_0X92);
@@ -883,8 +877,7 @@ void cci_run_new(struct aml_dtvdemod *demod)
 	}
 
 	time[1] = jiffies_to_msecs(jiffies);
-	PR_ATSC("%s: [atsc_time][cci_run1 cost %d ms]\n",
-			__func__, time[1] - time[0]);
+	PR_ATSC("[cci_run1 %d ms]\n", time[1] - time[0]);
 
 	cci_cnt = 0;
 
@@ -978,7 +971,7 @@ void cci_run_new(struct aml_dtvdemod *demod)
 	}
 
 	for (ck0 = 0; ck0 < 8; ++ck0)
-		PR_ATSC("cci_cnt %d - ck0 %d CCI: pos %d, power %d.\n",
+		PR_ATSC("cci_cnt %d ck0 %d CCI: pos %d, power %d\n",
 				cci_cnt, ck0, max_b[ck0], max_p[ck0]);
 
 	if (cci_cnt > 0) {
@@ -994,18 +987,17 @@ void cci_run_new(struct aml_dtvdemod *demod)
 		}
 
 		for (ck0 = 0; ck0 < cci_cnt; ++ck0)
-			PR_ATSC("ck0 %d CCI: pos %d(0x%x).\n",
+			PR_ATSC("ck0 %d CCI: pos %d(0x%x)\n",
 					ck0, position[ck0], position[ck0]);
 	}
 
 	time[2] = jiffies_to_msecs(jiffies);
-	PR_ATSC("%s: [atsc_time][cci_run2 cost %d ms]\n",
-			__func__, time[2] - time[1]);
+	PR_ATSC("[cci_run2 %d ms]\n", time[2] - time[1]);
 
 	if (cci_cnt > 0) {
-		PR_ATSC("Before read 0x33: 0x%x, 0x34: 0x%x.\n",
+		PR_ATSC("read 0x33: 0x%x, 0x34: 0x%x\n",
 				front_read_reg(0x33), front_read_reg(0x34));
-		PR_ATSC("Before read 0x60: 0x%x, 0x61: 0x%x.\n",
+		PR_ATSC("read 0x60: 0x%x, 0x61: 0x%x\n",
 				atsc_read_reg_v4(ATSC_DEMOD_REG_0X60),
 				atsc_read_reg_v4(ATSC_DEMOD_REG_0X61));
 
@@ -1056,22 +1048,21 @@ void cci_run_new(struct aml_dtvdemod *demod)
 		if (devp->atsc_cr_step_size_dbg) {
 			atsc_write_reg_v4(ATSC_DEMOD_REG_0X60,
 					devp->atsc_cr_step_size_dbg);
-			PR_ATSC("%s: dbg mode, set cr reg(0x60) = 0x%x.\n",
-					__func__, devp->atsc_cr_step_size_dbg);
+			PR_ATSC("set cr reg(0x60) 0x%x\n",
+					devp->atsc_cr_step_size_dbg);
 		} else {
 			atsc_write_reg_v4(ATSC_DEMOD_REG_0X60, 0x143);
-			PR_ATSC("%s: set cr reg(0x60) = 0x143.\n", __func__);
+			PR_ATSC("set cr reg(0x60) 0x143\n");
 		}
 
-		PR_ATSC("After write 0x33: 0x%x, 0x34: 0x%x.\n",
+		PR_ATSC("read2 0x33: 0x%x, 0x34: 0x%x\n",
 				front_read_reg(0x33), front_read_reg(0x34));
-		PR_ATSC("After write 0x60: 0x%x, 0x61: 0x%x.\n",
+		PR_ATSC("read2 0x60: 0x%x, 0x61: 0x%x\n",
 				atsc_read_reg_v4(ATSC_DEMOD_REG_0X60),
 				atsc_read_reg_v4(ATSC_DEMOD_REG_0X61));
 	}
 
-	PR_ATSC("[atsc_time][total cost %d ms]\n",
-			jiffies_to_msecs(jiffies) - time[0]);
+	PR_ATSC("[total cost %d ms]\n", jiffies_to_msecs(jiffies) - time[0]);
 }
 
 unsigned int atsc_check_cci(struct aml_dtvdemod *demod)
@@ -1088,8 +1079,7 @@ unsigned int atsc_check_cci(struct aml_dtvdemod *demod)
 	time[1] = jiffies_to_msecs(jiffies);
 	time_table[0] = (time[1] - time[0]);
 	fsm_status = atsc_read_reg_v4(ATSC_CNTR_REG_0X2E);
-	PR_ATSC("fsm[%x][atsc_time]cci finish cost %d ms\n",
-		fsm_status, time_table[0]);
+	PR_ATSC("fsm[%x]cci finish cost %d ms\n", fsm_status, time_table[0]);
 	if (fsm_status >= ATSC_LOCK) {
 		goto exit;
 	} else if (fsm_status >= CR_PEAK_LOCK) {
@@ -1116,13 +1106,12 @@ unsigned int atsc_check_cci(struct aml_dtvdemod *demod)
 		fsm_status = atsc_read_reg_v4(ATSC_CNTR_REG_0X2E);
 		if (fsm_status >= ATSC_LOCK) {
 			time[3] = jiffies_to_msecs(jiffies);
-			PR_ATSC("----------------------\n");
 			time_table[2] = (time[3] - time[2]);
 			time_table[3] = (time[3] - time[0]);
 			time_table[4] = (time[3] - time[5]);
-			PR_ATSC("fsm[%x][atsc_time]fec lock cost %d ms\n",
+			PR_ATSC("fsm[%x]fec lock cost %d ms\n",
 				fsm_status, time_table[2]);
-			PR_ATSC("fsm[%x][atsc_time]lock,one cost %d ms,\n",
+			PR_ATSC("fsm[%x]lock,one cost %d ms\n",
 				fsm_status, time_table[3]);
 			break;
 		} else if (fsm_status <= IDLE) {
@@ -1213,7 +1202,7 @@ unsigned int cfo_run_new(void)
 		cr_rate1 = (cr_rate >> 8) & 0xff;
 		cr_rate2 = (cr_rate >> 16) & 0xff;
 		atsc_write_reg_v4(ATSC_DEMOD_REG_0X54, cr_rate);
-		PR_ATSC("[autoscan]crRate is %x, Offset is %dkhz\n ", cr_rate, offset);
+		PR_ATSC("[autoscan]crRate is %x, Offset is %dkhz\n", cr_rate, offset);
 
 		/*detec cfo signal*/
 		for (j = 0; j < 3; j++) {
@@ -1335,7 +1324,7 @@ int cfo_run(void)
 			}
 			msleep(20);
 		}
-		PR_ATSC("fsm[%x]cfo_sta is %d\n", read_atsc_fsm(), cfo_sta);
+		PR_ATSC("fsm[%x]cfo_sta %d\n", read_atsc_fsm(), cfo_sta);
 
 		/*detec cr peak signal*/
 		if (cfo_sta == LOCK) {
@@ -1376,7 +1365,7 @@ int AR_run(void)
 	msleep(100);
 	snr_buffer = read_snr_atsc_tune();
 	snr_buffer = snr_buffer / 10;
-	PR_ATSC("[AR]%s, snr_buffer is %d,ar_flag is %d\n", __func__,
+	PR_ATSC("[AR]%s, snr_buffer %d,ar_flag %d\n", __func__,
 		snr_buffer, ar_flag);
 	if (snr_buffer > 15 && ar_flag) {
 		atsc_write_reg(0xf2b, 0x4);
@@ -1428,16 +1417,12 @@ int atsc_check_fsm_status_oneshot(void)
 		(atsc_read_reg(0x0681) << 16) + (atsc_read_reg(0x0680) << 24);
 	ser = atsc_read_reg(0x0687) + (atsc_read_reg(0x0686) << 8) +
 		(atsc_read_reg(0x0685) << 16) + (atsc_read_reg(0x0684) << 24);
-	PR_ATSC
-	    ("SNR %4x SNRdB %2d.%2d FSM %x cr %6x ck %6x",
-	     SNR, (SNR_dB / 10)
-	     , (SNR_dB - (SNR_dB / 10) * 10)
-	     , SM, cr, ck);
-	PR_ATSC
-		(" ber is %8x, ser is %8x\n",
-		ber, ser);
+	PR_ATSC("SNR %4x SNRdB %2d.%2d FSM %x cr %6x ck %6x ber %8x ser %8x",
+			SNR, (SNR_dB / 10), (SNR_dB - (SNR_dB / 10) * 10),
+			SM, cr, ck, ber, ser);
 
 	atsc_snr = (SNR_dB / 10);
+
 	return atsc_snr;
 }
 
@@ -1457,7 +1442,8 @@ int snr_avg_100_times(void)
 		};
 	}
 	snr_all /= 100;
-	PR_ATSC("snr_all is %d\n", snr_all);
+	PR_ATSC("snr_all %d\n", snr_all);
+
 	return snr_all / 10;
 }
 
@@ -1466,12 +1452,12 @@ void atsc_set_r22_register(int flag)
 	if (flag == 1 && awgn_flag == 0) {
 		atsc_write_reg(0x5bc, 0x01);
 		awgn_flag = 1;
-		PR_ATSC("open awgn setting\n");
+		PR_ATSC("on awgn\n");
 		msleep(50);
 	} else {
 		awgn_flag = 0;
 		/*atsc_write_reg(0x5bc, 0x08);*/
-		PR_ATSC("close awgn setting\n");
+		PR_ATSC("off awgn\n");
 	}
 }
 
@@ -1511,7 +1497,6 @@ void atsc_thread(void)
 	static int register_set_flag;
 	static int fsm_status;
 	int snr_now;
-	char *info1 = "[atsc_time]fsm";
 
 	fsm_status = IDLE;
 	ser_thresholds = 200;
@@ -1523,7 +1508,7 @@ void atsc_thread(void)
 		return;
 
 	if (!field_test_version)
-		PR_ATSC("awgn_flag is %d\n", awgn_flag);
+		PR_ATSC("awgn_flag %d\n", awgn_flag);
 	if (fsm_status < ATSC_LOCK) {
 		/*step1:open dagc*/
 
@@ -1537,14 +1522,14 @@ void atsc_thread(void)
 		/*step:check AR*/
 		if (ar_enable)
 			AR_run();
-//		if (cci_enable && !field_test_version)
-//			ret = cci_run();
+		//if (cci_enable && !field_test_version)
+		//	ret = cci_run();
 		atsc_reset();
 		time[1] = jiffies_to_msecs(jiffies);
 		time_table[0] = (time[1] - time[0]);
 		fsm_status = read_atsc_fsm();
-		PR_ATSC("%s[%x]cci finish,need to run cfo,cost %d ms\n",
-			info1, fsm_status, time_table[0]);
+		PR_ATSC("fsm[%x]cci finish,need to run cfo,cost %d ms\n",
+				fsm_status, time_table[0]);
 		if (fsm_status >= ATSC_LOCK) {
 			return;
 		} else if (fsm_status < CR_LOCK) {
@@ -1556,7 +1541,7 @@ void atsc_thread(void)
 		}
 		time[2] = jiffies_to_msecs(jiffies);
 		time_table[1] = (time[2] - time[1]);
-		PR_ATSC("fsm[%x][atsc_time]cfo done,cost %d ms,\n",
+		PR_ATSC("fsm[%x][atsc_time]cfo done,cost %d ms\n",
 			read_atsc_fsm(), time_table[1]);
 		if (ret == CFO_FAIL)
 			return;
@@ -1566,14 +1551,13 @@ void atsc_thread(void)
 			fsm_status = read_atsc_fsm();
 			if (fsm_status >= ATSC_LOCK) {
 				time[3] = jiffies_to_msecs(jiffies);
-				PR_ATSC("----------------------\n");
 				time_table[2] = (time[3] - time[2]);
 				time_table[3] = (time[3] - time[0]);
 				time_table[4] = (time[3] - time[5]);
-				PR_ATSC("%s[%x]cfo->fec lock cost %d ms\n",
-					info1, fsm_status, time_table[2]);
-				PR_ATSC("%s[%x]lock,one cost %d ms,\n",
-					info1, fsm_status, time_table[3]);
+				PR_ATSC("fsm[%x]cfo->fec lock cost %d ms\n",
+						fsm_status, time_table[2]);
+				PR_ATSC("fsm[%x]lock,one cost %d ms\n",
+						fsm_status, time_table[3]);
 				break;
 			} else if (fsm_status <= IDLE) {
 				PR_ATSC("atsc idle,retune, and reset\n");
@@ -1617,14 +1601,14 @@ void atsc_thread(void)
 				register_set_flag = 1;
 				msleep(200);
 				/*%lx to %x*/
-				PR_ATSC("912 is %x,5bc is %x\n",
+				PR_ATSC("0x912 %x,0x5bc %x\n",
 					atsc_read_reg(0x912),
 					atsc_read_reg(0x5bc));
 			}
 		}
 
 		time[5] = jiffies_to_msecs(jiffies);
-		PR_ATSC("fsm[%x][atsc_time]check lock %d ms,\n",
+		PR_ATSC("fsm[%x]check lock %d ms\n",
 					fsm_status, time[5] - time[4]);
 	}
 }
@@ -1704,18 +1688,16 @@ int check_atsc_fsm_status(void)
 	cap_status = app_apb_read_reg(0x196);
 	cap_usr_dc_addr = app_apb_read_reg(0x1a1);
 
-/* read_atsc_all_reg(); */
+	/* read_atsc_all_reg(); */
 
-	PR_ATSC
-		("INT %x SNR %4x SNRdB %2d.%2d FSM %x cr %6x ck %6x",
-		 tni, SNR, (SNR_dB / 10)
-		 , (SNR_dB - (SNR_dB / 10) * 10)
-		 , SM, cr, ck);
-	PR_ATSC
-		(" ber is %8x, ser is %8x, cap %4d cap_addr %8x\n",
-		ber, ser, cap_status >> 16, cap_usr_dc_addr);
+	PR_ATSC("INT %x SNR %4x SNRdB %2d.%2d FSM %x cr %6x ck %6x",
+			tni, SNR, (SNR_dB / 10), (SNR_dB - (SNR_dB / 10) * 10),
+			SM, cr, ck);
+	PR_ATSC("ber  %8x, ser %8x, cap %4d cap_addr %8x\n",
+			ber, ser, cap_status >> 16, cap_usr_dc_addr);
 
 	atsc_snr = (SNR_dB / 10);
+
 	return atsc_snr;
 }
 
@@ -1740,7 +1722,7 @@ void atsc_check_fsm_status(struct aml_dtvdemod *demod)
 	ber = atsc_read_reg_v4(ATSC_FEC_BER);
 	ser = atsc_read_reg_v4(ATSC_FEC_REG_0XFB);
 
-	PR_ATSC("SNRdB:%d FSM:0x%x,cr:%d,ck:0x%x,ber is 0x%x, ser is 0x%x\n",
+	PR_ATSC("SNRdB:%d FSM:0x%x,cr:%d,ck:0x%x,ber 0x%x, ser 0x%x\n",
 		snr_db / 10, sm, cr, ck, ber, ser);
 }
 
@@ -1821,7 +1803,7 @@ unsigned int atsc_read_iqr_reg(void)
 
 	demod_mutex_unlock();
 
-	PR_DBG("[atsc irq] is %x\n", tmp);
+	PR_DBG("[atsc irq] %x\n", tmp);
+
 	return tmp & 0xffffffff;
 }
-

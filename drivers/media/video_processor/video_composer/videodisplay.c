@@ -28,6 +28,10 @@
 #ifdef CONFIG_AMLOGIC_MEDIA_FRC
 #include <linux/amlogic/media/frc/frc_common.h>
 #endif
+#ifdef CONFIG_AMLOGIC_MEDIA_DEINTERLACE
+#include <linux/amlogic/media/di/di_interface.h>
+#include <linux/amlogic/media/di/di.h>
+#endif
 
 static struct timeval vsync_time[MAX_VD_LAYERS];
 static DEFINE_MUTEX(video_display_mutex);
@@ -873,6 +877,7 @@ static struct vframe_s *vc_vf_get(void *op_arg)
 	struct composer_dev *dev = (struct composer_dev *)op_arg;
 	struct vframe_s *vf = NULL;
 	u32 vsync_index_diff = 0;
+	bool enable_prelink = false;
 
 	if (kfifo_get(&dev->ready_q, &vf)) {
 		if (!vf)
@@ -891,6 +896,10 @@ static struct vframe_s *vc_vf_get(void *op_arg)
 
 		get_count[dev->index]++;
 		dev->fget_count++;
+
+#ifdef CONFIG_AMLOGIC_MEDIA_DEINTERLACE
+		enable_prelink = dim_get_pre_link();
+#endif
 
 		if (vf->vc_private) {
 			vsync_index_diff = vf->vc_private->vsync_index - dev->last_vsync_index;
@@ -912,12 +921,34 @@ static struct vframe_s *vc_vf_get(void *op_arg)
 			 vsync_index_diff,
 			 vf->duration);
 
-		vc_print(dev->index, PRINT_FENCE,
-			"%s: vf: %px, vf_ext: %px, vf_type: 0x%x.\n", __func__,
-			vf, vf->vf_ext, vf->type);
+		vc_print(dev->index, PRINT_OTHER,
+			"%s: prelink_en=%d, vf=%px(%px), omx_index=%d, vf_type=0x%x, vf_flag=0x%x, vf->timestamp: %lld.\n",
+			__func__,
+			enable_prelink,
+			vf,
+			vf->vf_ext,
+			vf->omx_index,
+			vf->type,
+			vf->flag,
+			div_u64(vf->timestamp, 1000000000));
 
-		vc_print(dev->index, PRINT_DEWARP,
-			 "get:vf_w: %d, vf_h: %d\n", vf->width, vf->height);
+		vc_print(dev->index, PRINT_OTHER,
+			"%s: fbc:headaddr=0x%lx, bodyaddr=0x%lx, width=%d, height=%d.\n",
+			__func__,
+			vf->compHeadAddr,
+			vf->compBodyAddr,
+			vf->compWidth,
+			vf->compHeight);
+
+		vc_print(dev->index, PRINT_OTHER,
+			"%s: mif:canvasID=%d, y_addr=0x%lx, uv_addr=0x%lx, width=%d, height=%d.\n",
+			__func__,
+			vf->canvas0Addr,
+			vf->canvas0_config[0].phy_addr,
+			vf->canvas0_config[1].phy_addr,
+			vf->width,
+			vf->height);
+
 		vc_print(dev->index, PRINT_AXIS,
 			 "get:crop: %d %d %d %d, axis: %d %d %d %d.\n",
 			 vf->crop[0], vf->crop[1], vf->crop[2], vf->crop[3],
@@ -949,6 +980,9 @@ static struct vframe_s *vc_vf_get(void *op_arg)
 #if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_ATRACE)
 		ATRACE_COUNTER("video_composer_get_vf_omx_index", vf->omx_index);
 		ATRACE_COUNTER("video_composer_get_vf_omx_index", 0);
+		ATRACE_COUNTER("video_composer_get_vf_timestamp",
+			div_u64(vf->timestamp, 1000000000));
+		ATRACE_COUNTER("video_composer_get_vf_timestamp", 0);
 #endif
 		return vf;
 	} else {
@@ -963,11 +997,42 @@ static void vc_vf_put(struct vframe_s *vf, void *op_arg)
 	struct composer_dev *dev = (struct composer_dev *)op_arg;
 	struct vd_prepare_s *vd_prepare_tmp;
 	struct mbp_buffer_info_t *mpb_buf = NULL;
+	bool enable_prelink = false;
 
 	if (!vf)
 		return;
 
-	vc_print(dev->index, PRINT_FENCE, "%s: vf: %px, vf_ext: %px.\n", __func__, vf, vf->vf_ext);
+#ifdef CONFIG_AMLOGIC_MEDIA_DEINTERLACE
+	enable_prelink = dim_get_pre_link();
+#endif
+
+	vc_print(dev->index, PRINT_OTHER,
+		"%s: prelink_en=%d, vf=%px(%px), omx_index=%d, vf_type=0x%x, vf_flag=0x%x, vf->timestamp: %lld.\n",
+		__func__,
+		enable_prelink,
+		vf,
+		vf->vf_ext,
+		vf->omx_index,
+		vf->type,
+		vf->flag,
+		div_u64(vf->timestamp, 1000000000));
+
+	vc_print(dev->index, PRINT_OTHER,
+		"%s: fbc:headaddr=0x%lx, bodyaddr=0x%lx, width=%d, height=%d.\n",
+		__func__,
+		vf->compHeadAddr,
+		vf->compBodyAddr,
+		vf->compWidth,
+		vf->compHeight);
+
+	vc_print(dev->index, PRINT_OTHER,
+		"%s: mif:canvasID=%d, y_addr=0x%lx, uv_addr=0x%lx, width=%d, height=%d.\n",
+		__func__,
+		vf->canvas0Addr,
+		vf->canvas0_config[0].phy_addr,
+		vf->canvas0_config[1].phy_addr,
+		vf->width,
+		vf->height);
 
 	if (dev->is_drm_enable) {
 		if (vf->flag & VFRAME_FLAG_FAKE_FRAME) {
@@ -1020,6 +1085,13 @@ static void vc_vf_put(struct vframe_s *vf, void *op_arg)
 		vf_pop_display_q(dev, vf);
 		videocomposer_vf_put(vf, op_arg);
 	}
+
+#if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_ATRACE)
+	ATRACE_COUNTER("video_composer_put_vf_omx_index", vf->omx_index);
+	ATRACE_COUNTER("video_composer_put_vf_omx_index", 0);
+	ATRACE_COUNTER("video_composer_put_vf_timestamp", div_u64(vf->timestamp, 1000000000));
+	ATRACE_COUNTER("video_composer_put_vf_timestamp", 0);
+#endif
 
 	vc_print(dev->index, PRINT_FENCE, "%s end.\n", __func__);
 }

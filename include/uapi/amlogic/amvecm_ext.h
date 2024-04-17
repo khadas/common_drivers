@@ -86,11 +86,16 @@ struct vpp_hist_param_s {
 	unsigned int vpp_hist_pow;
 	unsigned int vpp_luma_sum;
 	unsigned int vpp_pixel_sum;
-	unsigned short vpp_histgram[DNLP_VPP_HIST_BIN_NUM];
+	unsigned int vpp_chroma_sum;
+	unsigned int vpp_height;
+	unsigned int vpp_width;
+	unsigned char vpp_luma_max;
+	unsigned char vpp_luma_min;
 	unsigned short vpp_dark_hist[DNLP_VPP_HIST_BIN_NUM];
 	unsigned int hdr_histgram[HDR_HIST_BIN_NUM];
-	unsigned int hue_histgram[HUE_HIST_BIN_NUM];
-	unsigned int sat_histgram[SAT_HIST_BIN_NUM];
+	unsigned short vpp_gamma[DNLP_VPP_HIST_BIN_NUM];
+	unsigned int vpp_hue_gamma[HUE_HIST_BIN_NUM];
+	unsigned int vpp_sat_gamma[SAT_HIST_BIN_NUM];
 };
 
 struct vframe_content_light_level_ss {

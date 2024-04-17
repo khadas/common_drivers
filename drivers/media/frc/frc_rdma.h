@@ -127,4 +127,5 @@ int FRC_RDMA_VSYNC_WR_BITS(u32 addr, u32 val, u32 start, u32 len);
 int FRC_RDMA_VSYNC_REG_UPDATE(u32 addr, u32 val, u32 mask);
 int _frc_rdma_wr_reg_in(u32 addr, u32 val);
 int _frc_rdma_wr_reg_out(u32 addr, u32 val);
+int _frc_rdma_rd_reg_man(u32 addr);
 

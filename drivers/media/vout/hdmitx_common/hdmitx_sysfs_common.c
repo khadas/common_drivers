@@ -257,11 +257,12 @@ static ssize_t edid_store(struct device *dev,
 			  const char *buf, size_t count)
 {
 	u32 argn = 0;
-	char *p = NULL, *para = NULL, *argv[8] = {NULL};
+	char *p = NULL, *para = NULL, *temp_p = NULL, *argv[8] = {NULL};
 	u32 path_length = 0;
 	int ret = 0;
 
 	p = kstrdup(buf, GFP_KERNEL);
+	temp_p = p;
 	if (!p)
 		return count;
 
@@ -326,7 +327,7 @@ static ssize_t edid_store(struct device *dev,
 	}
 
 PROCESS_END:
-	kfree(p);
+	kfree(temp_p);
 	return count;
 }
 static DEVICE_ATTR_RW(edid);
@@ -731,8 +732,13 @@ static ssize_t phy_store(struct device *dev,
 		while (global_tx_hw->tmds_phy_op) {
 			usleep_range(mute_us, mute_us + 10);
 			cnt++;
-			if (cnt > 3)
+			if (cnt > 3) {
+				HDMITX_ERROR("not have vsync intr, manually turn off phy\n");
+				hdmitx_hw_cntl_misc(global_tx_hw,
+					MISC_TMDS_PHY_OP, TMDS_PHY_DISABLE);
+				global_tx_hw->tmds_phy_op = TMDS_PHY_NONE;
 				break;
+			}
 		}
 		if (hdmitx_find_vendor_phy_delay(global_tx_common->EDID_buf)) {
 			usleep_range(delay_frame * mute_us, delay_frame * mute_us + 10);

@@ -187,6 +187,7 @@ static void cvbs_set_vid2_clk(unsigned int src_pll)
 	usleep_range(5, 7);
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 /* htx pll VCO output: (3G, 6G), for tmds */
 static void cvbs_s7_htxpll_clk_vco(const u32 clk)
 {
@@ -279,6 +280,7 @@ void cvbs_s7_htxpll_clk_out(const u32 clk, u32 div)
 	cvbs_out_ana_setb(ANACTRL_HDMIPLL_CTRL2, pll_od21, 15, 2);
 	cvbs_out_ana_setb(ANACTRL_HDMIPLL_CTRL2, pll_od1, 19, 4);
 }
+#endif
 
 void set_vmode_clk(void)
 {
@@ -444,9 +446,11 @@ void set_vmode_clk(void)
 		ret = pll_wait_lock(ANACTRL_HDMIPLL_CTRL0, 31);
 		if (ret)
 			pr_info("[error]:hdmi_pll lock failed\n");
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	} else if (cvbs_cpu_type() == CVBS_CPU_TYPE_S7) {
 		/* hdmi_clk_out2: 1485Mhz */
 		cvbs_s7_htxpll_clk_out(5940000, 4);
+#endif
 	} else {
 		pr_info("config eqafter gxl hdmi pll\n");
 		cvbs_out_ana_write(HHI_HDMI_PLL_CNTL, 0x4000027b);

@@ -53,6 +53,7 @@ FRAGMENT_CONFIG=${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/${ARCH}/configs/amlogic
 FRAGMENT_CONFIG_UPGRADE_R=${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/${ARCH}/configs/amlogic_upgrade_r.defconfig
 FRAGMENT_CONFIG_UPGRADE_P=${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/${ARCH}/configs/amlogic_upgrade_p.defconfig
 FRAGMENT_CONFIG_UPGRADE_S=${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/${ARCH}/configs/amlogic_upgrade_s.defconfig
+FRAGMENT_CONFIG_UPGRADE_U=${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/${ARCH}/configs/amlogic_upgrade_u.defconfig
 
 PRE_DEFCONFIG_CMDS="pre_defconfig_cmds"
 POST_DEFCONFIG_CMDS="post_defconfig_cmds"

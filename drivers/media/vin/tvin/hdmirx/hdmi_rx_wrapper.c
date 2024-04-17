@@ -102,6 +102,8 @@ int reset_pcs_flag;
 int reset_pcs_cnt = 10;
 int port_debug_en;
 int fpll_ready_max = 1;
+int rx_emp_dbg_en;
+
 //for rs err test
 int frl_debug_en;
 int rs_err_chk;
@@ -2084,6 +2086,7 @@ reisr:hdmirx_top_intr_stat = hdmirx_rd_top(TOP_INTR_STAT, port);
 				need_check = true;
 		}
 		if (need_check) {
+			rx_pkt_initial(port);
 			need_check = false;
 			if (rx[port].var.de_stable)
 				rx[port].var.de_cnt++;
@@ -2237,6 +2240,7 @@ irqreturn_t irq1_handler(int irq, void *params)
 			rx_pr("[isr] emp_field_done\n");
 	}
 	if (hdmirx_top_intr_stat & (1 << 23)) {
+		rx_pkt_initial(E_PORT1);
 		if (rx[E_PORT1].var.de_stable)
 			rx[E_PORT1].var.de_cnt++;
 		if (rx[E_PORT1].state >= FSM_SIG_STABLE) {
@@ -2403,6 +2407,7 @@ irqreturn_t irq2_handler(int irq, void *params)
 			rx_pr("[isr] emp_field_done\n");
 	}
 	if (hdmirx_top_intr_stat & (1 << 23)) {
+		rx_pkt_initial(E_PORT2);
 		if (rx[E_PORT2].var.de_stable)
 			rx[E_PORT2].var.de_cnt++;
 		if (rx[E_PORT2].state >= FSM_SIG_STABLE) {
@@ -2592,6 +2597,7 @@ irqreturn_t irq3_handler(int irq, void *params)
 			rx_pr("[isr] emp_field_done\n");
 	}
 	if (hdmirx_top_intr_stat & (1 << 23)) {
+		rx_pkt_initial(E_PORT3);
 		if (rx[E_PORT3].var.de_stable)
 			rx[E_PORT3].var.de_cnt++;
 		if (rx[E_PORT3].state >= FSM_SIG_STABLE) {
@@ -3992,6 +3998,7 @@ void rx_get_global_variable(const char *buf)
 	pr_var(fps_unready_max, i++);
 	pr_var(clk_msr_param, i++);
 	pr_var(frl_debug_en, i++);
+	pr_var(rx_emp_dbg_en, i++);
 	pr_var(fsm_debug, i++);
 	pr_var(rs_err_chk, i++);
 	pr_var(err_cnt, i++);
@@ -4121,7 +4128,6 @@ void rx_get_global_variable(const char *buf)
 	pr_var(gcp_mute_cnt, i++);
 	pr_var(fps_unready_max, i++);
 	pr_var(clk_msr_param, i++);
-	pr_var(frl_debug_en, i++);
 	pr_var(fsm_debug, i++);
 	pr_var(rs_err_chk, i++);
 	pr_var(err_cnt, i++);
@@ -4485,6 +4491,9 @@ int rx_set_global_variable(const char *buf, int size)
 	if (set_pr_var(tmpbuf, var_to_str(frl_debug_en),
 		&frl_debug_en, value))
 		return pr_var(frl_debug_en, index);
+	if (set_pr_var(tmpbuf, var_to_str(rx_emp_dbg_en),
+		&rx_emp_dbg_en, value))
+		return pr_var(rx_emp_dbg_en, index);
 	if (set_pr_var(tmpbuf, var_to_str(fsm_debug),
 		&fsm_debug, value))
 		return pr_var(fsm_debug, index);
@@ -4917,8 +4926,7 @@ static void hdmirx_open_main_port(u8 port)
 	sm_pause = fsmst;
 	rx[port].pre_state = rx[port].state;
 	if (rx_info.phy_ver >= PHY_VER_TM2)
-		//rx_info.aml_phy.pre_int = 1;
-		hdmirx_phy_var_init();
+		rx_info.aml_phy.pre_int = 1;
 	rx_pr("%s:%d\n", __func__, port);
 }
 

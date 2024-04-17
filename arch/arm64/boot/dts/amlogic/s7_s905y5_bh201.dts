@@ -195,41 +195,6 @@
 		status = "disabled";
 		tv_mode = <0>;/*1:enable ;0:disable*/
 	};
-	cvbsout {
-		compatible = "amlogic, cvbsout-s7";
-		status = "okay";
-
-		/* clk path */
-		/* 0:vid_pll vid2_clk */
-		/* 1:gp0_pll vid2_clk */
-		/* 2:vid_pll vid1_clk */
-		/* 3:gp0_pll vid1_clk */
-		clk_path = <0>;
-
-		/* performance: reg_address, reg_value */
-		/* s4 */
-		performance_pal = <0x1bf0  0x9 /* default Matrx625 CTCC value*/
-			0x1b12  0x80c0
-			0x1b05  0xf7
-			0x1b56  0x333
-			0x1c59  0xf25c
-			0xffff  0x0>; /* ending flag */
-		performance = <0x1bf0  0x9 /* ccitt033 SVA value */
-			0x1b12  0x8040
-			0x1b05  0xfd
-			0x1b56  0x333
-			0x1c59  0xf654
-			0xffff  0x0>; /* ending flag */
-		performance_ntsc = <0x1bf0  0x9
-			0x1b12  0x8020
-			0x1b03  0x0
-			0x1b04  0x0
-			0x1b05  0x0
-			0x1b06  0x0
-			0x1b56  0x333
-			0x1c59  0xf850
-			0xffff  0x0>; /* ending flag */
-	};
 
 	gpio_leds {
 		compatible = "gpio-leds";
@@ -355,6 +320,8 @@
 		status = "okay";
 		amlvideo2_id = <0>;
 		cma_mode = <1>;
+		/*1:720P_NV21 2:1080P_NV21 3:4K_NV21*/
+		codec_mm_alloc = <1>;
 	};
 
 	amlvideo2_1 {
@@ -363,6 +330,8 @@
 		status = "okay";
 		amlvideo2_id = <1>;
 		cma_mode = <1>;
+		/*1:720P_NV21 2:1080P_NV21 3:4K_NV21*/
+		codec_mm_alloc = <1>;
 	};
 
 	ppmgr {
@@ -600,9 +569,7 @@
 		compatible = "amlogic, auge-sound-card";
 		aml-audio-card,name = "AML-AUGESOUND";
 
-		/*avout mute gpio*/
-		avout_mute-gpios = <&gpio GPIOH_5 GPIO_ACTIVE_HIGH>;
-		av_mute_sleep_time = <700>;
+		spk_mute-gpios = <&gpio GPIOH_5 GPIO_ACTIVE_HIGH>;
 		aml-audio-card,dai-link@0 {
 			format = "dsp_b";
 			mclk-fs = <512>;

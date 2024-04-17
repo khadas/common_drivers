@@ -1161,28 +1161,32 @@ u32 rdma_read_reg(int handle, u32 adr)
 		for (j = 0; j < rdma_trace_num; j++) {
 			if (adr == rdma_trace_reg[j]) {
 				if (read_from == 3)
-					pr_info("(%s) handle %d, %04x=0x%08x from conflict table(%d)\n",
+					pr_info("(%s) handle %d, %04x=0x%08x from conflict table(%d), cur_val:0x%x\n",
 						__func__,
 						handle, adr,
 						read_val,
-						ins->rdma_write_count);
+						ins->rdma_write_count,
+						READ_VCBUS_REG(adr));
 				else if (read_from == 2)
-					pr_info("(%s) handle %d, %04x=0x%08x from write table(%d)\n",
+					pr_info("(%s) handle %d, %04x=0x%08x from write table(%d), cur_val:0x%x\n",
 						__func__,
 						handle, adr,
 						read_val,
-						ins->rdma_write_count);
+						ins->rdma_write_count,
+						READ_VCBUS_REG(adr));
 				else if (read_from == 1)
-					pr_info("(%s) handle %d, %04x=0x%08x from item table(%d)\n",
+					pr_info("(%s) handle %d, %04x=0x%08x from item table(%d), cur_val:0x%x\n",
 						__func__,
 						handle, adr,
 						read_val,
-						ins->rdma_item_count);
+						ins->rdma_item_count,
+						READ_VCBUS_REG(adr));
 				else
-					pr_info("(%s) handle %d, %04x=0x%08x from real reg\n",
+					pr_info("(%s) handle %d, %04x=0x%08x from real reg, cur_val:0x%x\n",
 						__func__,
 						handle, adr,
-						read_val);
+						read_val,
+						READ_VCBUS_REG(adr));
 			}
 		}
 	}
@@ -1300,11 +1304,12 @@ static bool rdma_check_conflict(int handle, u32 adr, u32 *read_val)
 			for (n = 0; n < rdma_trace_num; n++) {
 				if (adr == rdma_trace_reg[n] ||
 				    (debug_flag & 0x20))
-					pr_info("(%s) handle %d, conflict write %04x=0x%08x (oth handle %d)\n",
+					pr_info("(%s) handle %d, conflict write %04x=0x%08x (oth handle %d), cur_val:0x%x\n",
 						__func__,
 						handle, adr,
 						oth_ins->reg_buf[(j << 1) + 1],
-						i);
+						i,
+						READ_VCBUS_REG(adr));
 			}
 			for (k = 0; k < MAX_CONFLICT; k++) {
 				if (!rdma_info.rdma_reg.adr[i]) {
@@ -1406,11 +1411,12 @@ int rdma_write_reg(int handle, u32 adr, u32 val)
 	if (rdma_trace_enable) {
 		for (j = 0; j < rdma_trace_num; j++) {
 			if (adr == rdma_trace_reg[j]) {
-				pr_info("(%s) handle %d, %04x=0x%08x (%d)\n",
+				pr_info("(%s) handle %d, %04x=0x%08x (%d), cur_val:0x%x\n",
 					__func__,
 					handle, adr,
 					val,
-					ins->rdma_item_count);
+					ins->rdma_item_count,
+					READ_VCBUS_REG(adr));
 			}
 		}
 	}
@@ -1472,38 +1478,42 @@ int rdma_write_reg_bits(int handle, u32 adr, u32 val, u32 start, u32 len)
 	for (j = 0; j < rdma_trace_num; j++) {
 		if (adr == rdma_trace_reg[j]) {
 			if (read_from == 3)
-				pr_info("(%s) handle %d, %04x=0x%08x->0x%08x from conflict table(%d %d %d)\n",
+				pr_info("(%s) handle %d, %04x=0x%08x->0x%08x from conflict table(%d %d %d), cur_val:0x%x\n",
 					__func__,
 					handle, adr,
 					read_val,
 					write_val,
 					ins->rdma_write_count,
 					match,
-					match ? i : ins->rdma_write_count);
+					match ? i : ins->rdma_write_count,
+					READ_VCBUS_REG(adr));
 			else if (read_from == 2)
-				pr_info("(%s) handle %d, %04x=0x%08x->0x%08x from write table(%d %d %d)\n",
+				pr_info("(%s) handle %d, %04x=0x%08x->0x%08x from write table(%d %d %d), cur_val:0x%x\n",
 					__func__,
 					handle, adr,
 					read_val,
 					write_val,
 					ins->rdma_write_count,
 					match,
-					match ? i : ins->rdma_write_count);
+					match ? i : ins->rdma_write_count,
+					READ_VCBUS_REG(adr));
 			else if (read_from == 1)
-				pr_info("(%s) handle %d, %04x=0x%08x->0x%08x from item table(%d %d %d)\n",
+				pr_info("(%s) handle %d, %04x=0x%08x->0x%08x from item table(%d %d %d), cur_val:0x%x\n",
 					__func__,
 					handle, adr,
 					read_val,
 					write_val,
 					ins->rdma_item_count,
 					match,
-					match ? i : ins->rdma_item_count);
+					match ? i : ins->rdma_item_count,
+					READ_VCBUS_REG(adr));
 			else
-				pr_info("(%s) handle %d, %04x=0x%08x->0x%08x from real reg\n",
+				pr_info("(%s) handle %d, %04x=0x%08x->0x%08x from real reg, cur_val:0x%x\n",
 					__func__,
 					handle, adr,
 					read_val,
-					write_val);
+					write_val,
+					READ_VCBUS_REG(adr));
 		}
 	}
 	if (match) {

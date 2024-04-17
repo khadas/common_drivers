@@ -64,6 +64,16 @@
 #define FRAME_RATE_CNT      17
 #define FRC_DBG_DUMP_TABLE_NUM       18
 
+enum frc_arb_ugt {
+	ARB_UGT_R0 = 0,
+	ARB_UGT_R1 = 1,
+	ARB_UGT_R2 = 2,
+	ARB_UGT_R3 = 3,
+	ARB_UGT_W0 = 4,
+	ARB_UGT_W1 = 5,
+	ARB_UGT_WR = 6,
+};
+
 extern void __iomem *frc_clk_base;
 extern void __iomem *vpu_base;
 void frc_clk_init(struct frc_dev_s *frc_devp);
@@ -116,7 +126,7 @@ void frc_set_val_from_reg(void);
 /* pat: 1-red,2-green,3-blue,4-white,5-black */
 void frc_set_input_pattern(u8 enpat);
 void frc_set_output_pattern(u8 enpat);
-void frc_set_urgent_cfg(u8 ch, u8 level);
+void frc_set_arb_ugt_cfg(enum frc_arb_ugt ch, u8 urgent, u8 level);
 void frc_input_init(struct frc_dev_s *frc_devp,
 	struct frc_top_type_s *frc_top);
 void frc_set_n2m(u8 ratio_value);

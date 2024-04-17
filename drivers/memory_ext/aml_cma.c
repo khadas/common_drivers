@@ -103,6 +103,11 @@ static spinlock_t work_list_lock;		/* protect job list */
 
 static atomic_t cma_allocate;
 
+#ifdef CONFIG_ANDROID_VENDOR_HOOKS
+static int cma_enabled;
+module_param(cma_enabled, int, 0644);
+#endif
+
 #ifdef CONFIG_AMLOGIC_CMA_DIS
 unsigned long ion_cma_allocated;
 #endif
@@ -329,6 +334,11 @@ void check_cma_isolated(unsigned long *isolate,
 
 bool can_use_cma(gfp_t gfp_flags)
 {
+#ifdef CONFIG_ANDROID_VENDOR_HOOKS
+	if (!cma_enabled)
+		return false;
+#endif
+
 	if (unlikely(!cma_first_wm_low))
 		return false;
 
@@ -950,6 +960,84 @@ next:
 	return 0;
 }
 
+#ifdef CONFIG_ANDROID_VENDOR_HOOKS
+static int cma_enabled_setup(char *str)
+{
+	if (kstrtoint(str, 0, &cma_enabled)) {
+		pr_err("cma_enabled: bad arg:%s\n", str);
+		return -EINVAL;
+	}
+
+	return 0;
+}
+__setup("cma_enabled=", cma_enabled_setup);
+
+static int cma_enabled_swap_ratio = 70;
+module_param(cma_enabled_swap_ratio, int, 0644);
+
+static int cma_enabled_swap_ratio_setup(char *str)
+{
+	if (kstrtoint(str, 0, &cma_enabled_swap_ratio)) {
+		pr_err("cma_enabled_swap_ratio: bad arg:%s\n", str);
+		return -EINVAL;
+	}
+
+	return 0;
+}
+__setup("cma_enabled_swap_ratio=", cma_enabled_swap_ratio_setup);
+
+static struct delayed_work cma_enabled_work;
+
+static void cma_enabled_work_fn(struct work_struct *work)
+{
+	struct sysinfo i;
+
+	if (cma_enabled)
+		return;
+
+	si_swapinfo(&i);
+
+	if (i.totalswap && i.freeswap * 100 < i.totalswap * cma_enabled_swap_ratio) {
+		pr_info("swap free low(MB):%lu/%lu, ratio=%d, enable cma now!\n",
+				i.freeswap * 4 / 1024,
+				i.totalswap * 4 / 1024,
+				cma_enabled_swap_ratio);
+		cma_enabled = 1;
+	} else {
+		schedule_delayed_work(&cma_enabled_work, HZ / 10);
+	}
+}
+
+#if CONFIG_AMLOGIC_KERNEL_VERSION >= 14515
+static void __maybe_unused delay_enable_cma_hook(void *data,
+		gfp_t gfp_mask, unsigned int *alloc_flags, bool *bypass)
+{
+	if (!cma_enabled)
+		*bypass = 1;
+}
+#else
+static void __maybe_unused delay_enable_cma_hook(void *data,
+		gfp_t gfp_mask, unsigned int *alloc_flags)
+{
+	if (!cma_enabled)
+		*alloc_flags &= ~ALLOC_CMA;
+}
+#endif
+
+static void delay_enable_cma_init(void)
+{
+#if CONFIG_AMLOGIC_KERNEL_VERSION >= 14515
+	register_trace_android_vh_calc_alloc_flags(delay_enable_cma_hook, NULL);
+#else
+
+	register_trace_android_vh_alloc_flags_cma_adjust(delay_enable_cma_hook, NULL);
+#endif
+
+	INIT_DELAYED_WORK(&cma_enabled_work, cma_enabled_work_fn);
+	schedule_delayed_work(&cma_enabled_work, HZ);
+}
+#endif
+
 static int __init init_cma_boost_task(void)
 {
 	int cpu;
@@ -980,6 +1068,11 @@ static int __init init_cma_boost_task(void)
 		}
 	}
 	can_boost = 1;
+
+#ifdef CONFIG_ANDROID_VENDOR_HOOKS
+	delay_enable_cma_init();
+#endif
+
 	return 0;
 }
 
@@ -1907,73 +2000,6 @@ static int __nocfi common_symbol_init(void *data)
 	return 0;
 }
 
-#if CONFIG_AMLOGIC_KERNEL_VERSION >= 14515
-static int cma_enabled;
-module_param(cma_enabled, int, 0644);
-
-static int cma_enabled_setup(char *str)
-{
-	if (kstrtoint(str, 0, &cma_enabled)) {
-		pr_err("cma_enabled: bad arg:%s\n", str);
-		return -EINVAL;
-	}
-
-	return 0;
-}
-__setup("cma_enabled=", cma_enabled_setup);
-
-static int cma_enabled_swap_ratio = 70;
-module_param(cma_enabled_swap_ratio, int, 0644);
-
-static int cma_enabled_swap_ratio_setup(char *str)
-{
-	if (kstrtoint(str, 0, &cma_enabled_swap_ratio)) {
-		pr_err("cma_enabled_swap_ratio: bad arg:%s\n", str);
-		return -EINVAL;
-	}
-
-	return 0;
-}
-__setup("cma_enabled_swap_ratio=", cma_enabled_swap_ratio_setup);
-
-static struct delayed_work cma_enabled_work;
-
-static void cma_enabled_work_fn(struct work_struct *work)
-{
-	struct sysinfo i;
-
-	if (cma_enabled)
-		return;
-
-	si_swapinfo(&i);
-
-	if (i.totalswap && i.freeswap * 100 < i.totalswap * cma_enabled_swap_ratio) {
-		pr_info("swap free low(MB):%lu/%lu, ratio=%d, enable cma now!\n",
-				i.freeswap * 4 / 1024,
-				i.totalswap * 4 / 1024,
-				cma_enabled_swap_ratio);
-		cma_enabled = 1;
-	} else {
-		schedule_delayed_work(&cma_enabled_work, HZ / 10);
-	}
-}
-
-static void __maybe_unused delay_enable_cma_hook(void *data,
-		gfp_t gfp_mask, unsigned int *alloc_flags, bool *bypass)
-{
-	if (!cma_enabled)
-		*bypass = 1;
-}
-
-static void delay_enable_cma_init(void)
-{
-	register_trace_android_vh_calc_alloc_flags(delay_enable_cma_hook, NULL);
-
-	INIT_DELAYED_WORK(&cma_enabled_work, cma_enabled_work_fn);
-	schedule_delayed_work(&cma_enabled_work, HZ);
-}
-#endif
-
 static int __init aml_cma_module_init(void)
 {
 	atomic_set(&cma_allocate, 0);
@@ -1987,10 +2013,6 @@ static int __init aml_cma_module_init(void)
 
 	init_cma_boost_task();
 	kthread_run(common_symbol_init, NULL, "AML_CMA_TASK");
-
-#if CONFIG_AMLOGIC_KERNEL_VERSION >= 14515
-	delay_enable_cma_init();
-#endif
 
 	return 0;
 }

@@ -251,7 +251,7 @@ bool support_multi_core1(void);
 bool support_8k_amdv(void);
 bool is_aml_hw5(void);
 void print_dv_ro(void);
-bool get_top1_onoff(void);
+u32 get_top1_onoff(void);
 int amdolby_vision_process_hw5(struct vframe_s *vf_top1,
 			 struct vframe_s *vf_top2, u32 display_size,
 			 u8 toggle_mode, u8 pps_state);

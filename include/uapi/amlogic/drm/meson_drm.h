@@ -25,6 +25,8 @@
 #define FBIOPUT_OSD_WINDOW_AXIS          0x4513
 #define FBIOGET_DISPLAY_MODE             0x4580
 
+#define MAX_VRR_MODE_GROUP 12
+
 /**
  * User-desired buffer creation information structure.
  *
@@ -40,8 +42,8 @@ struct drm_meson_gem_create {
 };
 
 struct drm_mode_test_attr {
-	char modename[32];
-	char attr[32];
+	char modename[DRM_DISPLAY_MODE_LEN];
+	char attr[DRM_DISPLAY_MODE_LEN];
 	__u32 valid;
 };
 
@@ -59,11 +61,14 @@ struct drm_vrr_mode_group {
 	__u32 height;
 	__u32 vrr_min;
 	__u32 vrr_max;
+	__u32 brr;
+	char modename[DRM_DISPLAY_MODE_LEN];
 };
 
 struct drm_vrr_mode_groups {
+	__u32 conn_id;
 	__u32 num;
-	struct drm_vrr_mode_group gropus[12];
+	struct drm_vrr_mode_group groups[MAX_VRR_MODE_GROUP];
 };
 
 /**

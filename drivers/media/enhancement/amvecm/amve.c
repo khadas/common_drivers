@@ -244,14 +244,13 @@ int sr_gain[2];
 /* *** VPP_FIQ-oriented functions **************************************** */
 /* *********************************************************************** */
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
-void ve_hist_gamma_tgt(struct vframe_s *vf)
+void ve_hist_gamma_tgt(struct vframe_s *vf, struct vpp_hist_param_s *vp)
 {
 	int ave_luma;
-	struct vframe_prop_s *p = &vf->prop;
 
-	video_ve_hist.sum    = p->hist.vpp_luma_sum;
-	video_ve_hist.width  = p->hist.vpp_width;
-	video_ve_hist.height = p->hist.vpp_height;
+	video_ve_hist.sum    = vp->vpp_luma_sum;
+	video_ve_hist.width  = vp->vpp_width;
+	video_ve_hist.height = vp->vpp_height;
 
 	video_ve_hist.ave =
 		video_ve_hist.sum / (video_ve_hist.height *
@@ -346,11 +345,11 @@ static void ve_dnlp_load_def_reg(void)
 	}
 }
 
-void ve_on_vs(struct vframe_s *vf, int vpp_index)
+void ve_on_vs(struct vframe_s *vf, int vpp_index, struct vpp_hist_param_s *vp)
 {
 	if (dnlp_en_dsw) {
 		/* calculate dnlp target data */
-		if (ve_dnlp_calculate_tgtx(vf, vpp_index)) {
+		if (ve_dnlp_calculate_tgtx(vf, vpp_index, vp)) {
 			/* calculate dnlp low-pass-filter data */
 			ve_dnlp_calculate_lpf();
 			/* calculate dnlp reg data */
@@ -361,7 +360,6 @@ void ve_on_vs(struct vframe_s *vf, int vpp_index)
 	}
 
 	/* sharpness process */
-	sharpness_process(vf);
 }
 
 void dnlp_en_update(int vpp_index)
@@ -1773,15 +1771,6 @@ void ve_ogo_param_update(void)
 
 	vecm_latch_flag |= FLAG_RGB_OGO;
 }
-
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
-/* sharpness process begin */
-void sharpness_process(struct vframe_s *vf)
-{
-}
-
-/* sharpness process end */
-#endif
 
 /*for gxbbtv rgb contrast adj in vd1 matrix */
 void vpp_vd1_mtx_rgb_contrast(signed int cont_val, struct vframe_s *vf, int vpp_index)

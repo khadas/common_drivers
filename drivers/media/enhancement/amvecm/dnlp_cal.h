@@ -121,7 +121,7 @@ extern ulong ve_dnlp_reg_v2[32];
 extern ulong ve_dnlp_reg_def[16];
 extern struct dnlp_parse_cmd_s dnlp_parse_cmd[];
 
-int ve_dnlp_calculate_tgtx(struct vframe_s *vf, int vpp_index);
+int ve_dnlp_calculate_tgtx(struct vframe_s *vf, int vpp_index, struct vpp_hist_param_s *vp);
 void ve_set_v3_dnlp(struct ve_dnlp_curve_param_s *p);
 void ve_dnlp_calculate_lpf(void);
 void ve_dnlp_calculate_reg(void);

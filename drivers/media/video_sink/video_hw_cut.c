@@ -17,6 +17,8 @@
 #include <linux/mutex.h>
 #include <linux/platform_device.h>
 #include <linux/ctype.h>
+#include <asm/div64.h>
+
 #include <linux/amlogic/media/vfm/vframe.h>
 #include <linux/amlogic/media/vfm/vframe_provider.h>
 #include <linux/amlogic/media/vfm/vframe_receiver.h>
@@ -40,6 +42,7 @@
 #include "video_hw.h"
 #include "video_hw_s5.h"
 #include "vpp_post_s5.h"
+#include "video_uevent.h"
 
 #if defined(CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_VECM)
 #include <linux/amlogic/media/amvecm/amvecm.h>
@@ -53,6 +56,11 @@
 #include <linux/amlogic/media/vpu/vpu.h>
 #endif
 #include "videolog.h"
+
+#if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_ATRACE)
+#define KERNEL_ATRACE_TAG KERNEL_ATRACE_TAG_VIDEO
+#include <trace/events/meson_atrace.h>
+#endif
 
 #include <linux/amlogic/media/video_sink/vpp.h>
 #ifdef CONFIG_AMLOGIC_MEDIA_TVIN
@@ -112,6 +120,7 @@ static DEFINE_MUTEX(video_mute_mutex);
 #define VPU_DELAYWORK_MEM_POWER_OFF_DOLBY2		BIT(12)
 #define VPU_DELAYWORK_MEM_POWER_OFF_DOLBY_CORE3		BIT(13)
 #define VPU_DELAYWORK_MEM_POWER_OFF_PRIME_DOLBY		BIT(14)
+#define VPU_PRIMARY_FMT_CHANGED		BIT(16)
 
 #define VPU_MEM_POWEROFF_DELAY	100
 #define DV_MEM_POWEROFF_DELAY	2
@@ -6894,6 +6903,13 @@ int set_layer_display_canvas(struct video_layer_s *layer,
 	struct hw_vd_reg_s *vd_mif_reg_mvc;
 	struct hw_afbc_reg_s *vd_afbc_reg;
 
+#if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_ATRACE)
+	ATRACE_COUNTER("vpp_omx_index", vf->omx_index);
+	ATRACE_COUNTER("vpp_omx_index", 0);
+	ATRACE_COUNTER("vpp_timestamp",
+		       (unsigned long)div_u64(vf->timestamp, 1000000000));
+	ATRACE_COUNTER("vpp_timestamp", 0);
+#endif
 	layer_id = layer->layer_id;
 	vpp_index = layer->vpp_index;
 
@@ -7851,6 +7867,8 @@ u32 get_cur_enc_line(void)
 	unsigned int reg_val = 0;
 	u32 offset = 0;
 	u32 venc_type = get_venc_type();
+	u32 is_interlace = 0, is_encp = 0, start_line = 0, total_line = 0;
+	struct vinfo_s *vinfo = NULL;
 
 	if (cur_dev->display_module == T7_DISPLAY_MODULE) {
 		u32 venc_mux = 3;
@@ -7873,6 +7891,7 @@ u32 get_cur_enc_line(void)
 			reg = VPU_VENCI_STAT;
 			break;
 		case 1:
+			is_encp = 1;
 			reg = VPU_VENCP_STAT;
 			break;
 		case 2:
@@ -7888,6 +7907,7 @@ u32 get_cur_enc_line(void)
 			reg = ENCI_INFO_READ;
 			break;
 		case 2:
+			is_encp = 1;
 			reg = ENCP_INFO_READ;
 			break;
 		case 3:
@@ -7899,6 +7919,22 @@ u32 get_cur_enc_line(void)
 	reg_val = READ_VCBUS_REG(reg + offset);
 
 	enc_line = (reg_val >> 16) & 0x1fff;
+	/* progressive device + interlace mode
+	 * 1080i is encp, top half and bottom half lines
+	 * other cvbs is enci
+	 */
+	vinfo = get_current_vinfo();
+	if (vinfo) {
+		if (vinfo->field_height != vinfo->height)
+			is_interlace = 1;
+
+		if (is_interlace && is_encp) {
+			start_line = get_active_start_line();
+			total_line = vinfo->field_height + start_line;
+			if (enc_line > total_line)
+				enc_line -= total_line;
+		}
+	}
 
 	return enc_line;
 }
@@ -7970,6 +8006,14 @@ static void do_vpu_delay_work(struct work_struct *work)
 {
 	unsigned long flags;
 	unsigned int r;
+
+	enum vframe_signal_fmt_e fmt = VFRAME_SIGNAL_FMT_INVALID;
+
+	if (vpu_delay_work_flag & VPU_PRIMARY_FMT_CHANGED) {
+		vpu_delay_work_flag &= ~VPU_PRIMARY_FMT_CHANGED;
+		fmt = (enum vframe_signal_fmt_e)atomic_read(&cur_primary_src_fmt);
+		video_send_uevent(VIDEO_FMT_EVENT, fmt);
+	}
 
 	if (vpu_delay_work_flag & VPU_VIDEO_LAYER1_CHANGED)
 		vpu_delay_work_flag &= ~VPU_VIDEO_LAYER1_CHANGED;
@@ -8547,6 +8591,11 @@ void fgrain_update_table(struct video_layer_s *layer,
 			 struct vframe_s *vf)
 
 {
+}
+
+void update_primary_fmt_event(void)
+{
+	vpu_delay_work_flag |= VPU_PRIMARY_FMT_CHANGED;
 }
 
 /*********************************************************

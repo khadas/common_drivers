@@ -433,12 +433,16 @@ struct tvin_emp_data_s {
 
 /* refer to hdmi_rx_drv.h */
 struct tvin_vtem_data_s {
+	/* gaming-vrr & FVA */
 	u8 vrr_en;
+	u8 fva_factor_m1;
+
+	/* qms-vrr */
 	u8 m_const;
 	u8 qms_en;
-	u8 fva_factor_m1;
-	u8 base_v_front;
-	u8 rb;
+	u32 next_tfr;
+
+	u8 base_vfront;
 	u16 base_framerate;
 };
 

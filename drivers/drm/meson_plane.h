@@ -47,6 +47,7 @@ struct am_osd_plane {
 	struct drm_property *occupied_property;
 	struct drm_property *prop_sec_en;
 	struct drm_property *palette;
+	struct drm_property *unsupport_nonafbc;
 	bool osd_occupied;
 	u32 palette_id;
 	/*max fb property*/

@@ -41,8 +41,6 @@
 		pinctrl-6 = <&ST6451D06_3_off_pins>;
 		pinctrl-7 = <&ST5461D18_2_pins>;
 		pinctrl-8 = <&ST5461D18_2_off_pins>;
-		memory-region = <&lcd_tcon_reserved>;
-
 		/* power type:(0=cpu_gpio, 2=signal, 3=extern, 0xff=ending) */
 		/* power index:(gpios_index, or extern_index, 0xff=invalid) */
 		/* power value:(0=output low, 1=output high, 2=input) */

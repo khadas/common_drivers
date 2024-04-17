@@ -321,6 +321,11 @@ void set_frc_enable(u32 en)
 	WRITE_FRC_REG_BY_CPU(FRC_TOP_CTRL, regdata_topctl_3f01);
 	if (en == 1) {
 		if (chip == ID_T3X) {
+			if (READ_FRC_REG(FRC_REG_TOP_CTRL7) & 0xFFFFFFFF) {
+				PR_ERR("CTRL7 error\n");
+				regdata_top_ctl_0007 = 0;
+				WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL7, regdata_top_ctl_0007);
+			}
 			WRITE_FRC_REG_BY_CPU(FRC_AUTO_RST_SEL, 0x3c);
 			WRITE_FRC_REG_BY_CPU(FRC_SYNC_SW_RESETS, 0x3c);
 			WRITE_FRC_REG_BY_CPU(FRC_SYNC_SW_RESETS, 0);
@@ -338,10 +343,12 @@ void set_frc_enable(u32 en)
 				WRITE_FRC_REG_BY_CPU(FRC_MC_MVRD_CTRL, 0x101);
 		}
 	} else {
-		if ((READ_FRC_REG(FRC_REG_TOP_CTRL7) >> 24) > 0) {
-			frc_config_reg_value(0x0, 0x9000000, &regdata_top_ctl_0007);
-			WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL7, regdata_top_ctl_0007);
-		}
+//		if ((READ_FRC_REG(FRC_REG_TOP_CTRL7) >> 24) > 0) {
+//			frc_config_reg_value(0x0, 0x9000000, &regdata_top_ctl_0007);
+//			WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL7, regdata_top_ctl_0007);
+//		}
+		regdata_top_ctl_0007 = 0;
+		WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL7, regdata_top_ctl_0007);
 		gst_frc_param.s2l_en = 0;
 		gst_frc_param.frc_mcfixlines = 0;
 		// WRITE_FRC_REG_BY_CPU(FRC_FRAME_SIZE, 0x0);
@@ -1007,6 +1014,10 @@ void frc_input_init(struct frc_dev_s *frc_devp,
 		frc_top->film_hwfw_sel = frc_devp->film_mode_det;
 		frc_top->frc_prot_mode = frc_devp->prot_mode;
 	}
+
+	if (frc_devp->out_sts.vout_width > frc_devp->buf.in_hsize ||
+		frc_devp->out_sts.vout_height > frc_devp->buf.in_vsize)
+		PR_ERR("FRC initial buf is not enough!\n");
 
 	if (frc_top->out_vsize == HEIGHT_2K &&
 			frc_top->out_hsize == WIDTH_4K)
@@ -2744,9 +2755,7 @@ void frc_internal_initial(struct frc_dev_s *frc_devp)
 	WRITE_FRC_REG_BY_CPU(FRC_OUT_HOLD_CTRL, regdata_outholdctl_0003);
 	frc_config_reg_value(inp_hold_line, 0x1fff, &regdata_inpholdctl_0002);
 	WRITE_FRC_REG_BY_CPU(FRC_INP_HOLD_CTRL, regdata_inpholdctl_0002);
-	frc_set_urgent_cfg(0, 4);
-	frc_set_urgent_cfg(1, 3);
-	frc_set_urgent_cfg(2, 3);
+	frc_set_arb_ugt_cfg(ARB_UGT_WR, 1, 15);
 	// sys_fw_param_frc_init(frc_top->hsize, frc_top->vsize, frc_top->is_me1mc4);
 	// init_bb_xyxy(frc_top->hsize, frc_top->vsize, frc_top->is_me1mc4);
 	frc_inp_init();
@@ -2992,36 +3001,90 @@ void frc_set_input_pattern(u8 enpat)
 	}
 }
 
-void frc_set_urgent_cfg(u8 ch, u8 level)
+void frc_set_arb_ugt_cfg(enum frc_arb_ugt ch, u8 urgent, u8 level)
 {
-	u32 shift_1;
+	u32 urgent_val;
+	enum chip_id chip;
 
-	// pr_frc(0, "%s set level %d\n", __func__, level);
-	if (level == 1)
-		shift_1 = 0xF000F000;
-	else if (level == 2)
-		shift_1 = 0xFF00FF00;
-	else if (level == 3)
-		shift_1 = 0xFFF0FFF0;
-	else if (level == 4)
-		shift_1 = 0xFFFFFFFF;
-	else
-		shift_1 = 0x00000000;
+	u32 reg_0x0974 = READ_FRC_REG(FRC_ARB_UGT_RD_BASIC);
+	u32 reg_0x0994 = READ_FRC_REG(FRC_ARB_UGT_WR_BASIC);
+	u32 reg_0x3f07 = READ_FRC_REG(FRC_AXIRD0_QLEVEL);
+	u32 reg_0x3f08 = READ_FRC_REG(FRC_AXIRD1_QLEVEL);
+	u32 reg_0x3f09 = READ_FRC_REG(FRC_AXIWR0_QLEVEL);
 
-	if (ch == 0) {
-		WRITE_FRC_REG_BY_CPU(FRC_AXIRD0_QLEVEL, shift_1);
-	} else if (ch == 1) {
-		WRITE_FRC_REG_BY_CPU(FRC_AXIRD1_QLEVEL, shift_1);
-	} else if (ch == 2) {
-		WRITE_FRC_REG_BY_CPU(FRC_AXIWR0_QLEVEL, shift_1);
-	} else if (ch == 3) {
-		WRITE_FRC_REG_BY_CPU(FRC_AXIRD0_QLEVEL, shift_1);
-		WRITE_FRC_REG_BY_CPU(FRC_AXIRD1_QLEVEL, shift_1);
-		WRITE_FRC_REG_BY_CPU(FRC_AXIWR0_QLEVEL, shift_1);
+	chip = get_chip_type();
+	urgent_val = (urgent > 3) ? 3 : urgent;
+	pr_frc(1, "%s set (ch:%d, urgent:%d, level:%d)\n", __func__, ch, urgent, level);
+	if ((chip == ID_T3X || chip == ID_T5M) && urgent_val > 1) {
+		pr_frc(1, "T3X/T5M only 0 or 1 urgent\n");
+		urgent_val = 1;
 	}
-
+	switch (ch) {
+	case ARB_UGT_R0:
+		frc_config_reg_value(urgent_val, BIT_0 + BIT_1, &reg_0x0974);
+		WRITE_FRC_REG_BY_CPU(FRC_ARB_UGT_RD_BASIC, reg_0x0974);
+		reg_0x3f07 &= 0xFFFF0000;
+		WRITE_FRC_REG_BY_CPU(FRC_AXIRD0_QLEVEL, reg_0x3f07 | level << urgent_val * 4);
+		break;
+	case ARB_UGT_R1:
+		frc_config_reg_value(urgent_val << 2, BIT_2 + BIT_3, &reg_0x0974);
+		WRITE_FRC_REG_BY_CPU(FRC_ARB_UGT_RD_BASIC, reg_0x0974);
+		reg_0x3f07 &= 0x0000FFFF;
+		WRITE_FRC_REG_BY_CPU(FRC_AXIRD0_QLEVEL,
+			reg_0x3f07 | level << (urgent_val  * 4 + 16));
+		break;
+	case ARB_UGT_R2:
+		frc_config_reg_value(urgent_val << 4, BIT_4 + BIT_5, &reg_0x0974);
+		WRITE_FRC_REG_BY_CPU(FRC_ARB_UGT_RD_BASIC, reg_0x0974);
+		reg_0x3f08 &= 0xFFFF0000;
+		WRITE_FRC_REG_BY_CPU(FRC_AXIRD1_QLEVEL, reg_0x3f08 | level << urgent_val * 4);
+		break;
+	case ARB_UGT_R3:
+		frc_config_reg_value(urgent_val << 6, BIT_6 + BIT_7, &reg_0x0974);
+		WRITE_FRC_REG_BY_CPU(FRC_ARB_UGT_RD_BASIC, reg_0x0974);
+		reg_0x3f08 &= 0x0000FFFF;
+		WRITE_FRC_REG_BY_CPU(FRC_AXIRD1_QLEVEL,
+			reg_0x3f08 | level << (urgent_val  * 4 + 16));
+		break;
+	case ARB_UGT_W0:
+		frc_config_reg_value(urgent_val, BIT_0 + BIT_1, &reg_0x0994);
+		WRITE_FRC_REG_BY_CPU(FRC_ARB_UGT_WR_BASIC, reg_0x0994);
+		reg_0x3f09 &= 0xFFFF0000;
+		WRITE_FRC_REG_BY_CPU(FRC_AXIWR0_QLEVEL, reg_0x3f09 | level << urgent_val * 4);
+		break;
+	case ARB_UGT_W1:
+		frc_config_reg_value(urgent_val << 2, BIT_2 + BIT_3, &reg_0x0994);
+		WRITE_FRC_REG_BY_CPU(FRC_ARB_UGT_WR_BASIC, reg_0x0994);
+		reg_0x3f09 &= 0x0000FFFF;
+		WRITE_FRC_REG_BY_CPU(FRC_AXIWR0_QLEVEL,
+			reg_0x3f09 | level << (urgent_val * 4  + 16));
+		break;
+	case ARB_UGT_WR:
+		reg_0x0974 &= 0xFF00;
+		reg_0x0974 |= urgent_val | (urgent_val << 2) |
+			(urgent_val << 4) | (urgent_val << 6);
+		WRITE_FRC_REG_BY_CPU(FRC_ARB_UGT_RD_BASIC, reg_0x0974);
+		reg_0x0994 &= 0xFFF0;
+		reg_0x0994 |= urgent_val | (urgent_val << 2);
+		WRITE_FRC_REG_BY_CPU(FRC_ARB_UGT_WR_BASIC, reg_0x0994);
+		reg_0x3f07 = (level << (urgent_val & 0x3) * 4) |
+			(level << ((urgent_val & 0x3) * 4 + 16));
+		WRITE_FRC_REG_BY_CPU(FRC_AXIRD0_QLEVEL, reg_0x3f07);
+		reg_0x3f08 = reg_0x3f07;
+		WRITE_FRC_REG_BY_CPU(FRC_AXIRD1_QLEVEL, reg_0x3f08);
+		reg_0x3f09 = reg_0x3f08;
+		WRITE_FRC_REG_BY_CPU(FRC_AXIWR0_QLEVEL, reg_0x3f09);
+		break;
+	default:
+		PR_FRC("%s ch:%d error", __func__, ch);
+		break;
+	}
+	pr_frc(1, "FRC_ARB_UGT_RD_BASIC=0x%x\n",
+					READ_FRC_REG(FRC_ARB_UGT_RD_BASIC));
+	pr_frc(1, "FRC_ARB_UGT_WR_BASIC=0x%x\n",
+					READ_FRC_REG(FRC_ARB_UGT_WR_BASIC));
 	pr_frc(1, "FRC_AXIRD0_QLEVEL=0x%x\n",
-					READ_FRC_REG(FRC_AXIWR0_QLEVEL));
+					READ_FRC_REG(FRC_AXIRD0_QLEVEL));
 	pr_frc(1, "FRC_AXIRD1_QLEVEL=0x%x\n",
 					READ_FRC_REG(FRC_AXIRD1_QLEVEL));
 	pr_frc(1, "FRC_AXIWR0_QLEVEL=0x%x\n",
@@ -3922,4 +3985,6 @@ void frc_clr_badedit_effect_before_enable(void)
 		WRITE_FRC_REG_BY_CPU(FRC_REG_FWD_FID, regdata_fwd_fid_0147);
 		pr_frc(1, "set FRC_REG_FWD_FID %8x\n", regdata_fwd_fid_0147);
 	}
+	regdata_top_ctl_0007 = 0;
+	WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL7, regdata_top_ctl_0007);
 }

@@ -327,10 +327,10 @@ void hdmitx21_sys_reset(void)
 	case MESON_CPU_ID_S5:
 		hdmitx21_sys_reset_s5();
 		break;
-#endif
 	case MESON_CPU_ID_S7:
 		hdmitx21_sys_reset_s7();
 		break;
+#endif
 	default:
 		break;
 	}
@@ -728,10 +728,10 @@ static void set_phy_by_mode(u32 mode)
 		HDMITX_INFO("%s[%d] tmds_clk %d\n", __func__, __LINE__, tmds_clk);
 		hdmitx_set_s5_phypara(hdev->frl_rate, tmds_clk);
 		break;
-#endif
 	case MESON_CPU_ID_S7:
 		set21_phy_by_mode_s7(mode);
 		break;
+#endif
 	default:
 		HDMITX_INFO("%s: Not match chip ID\n", __func__);
 		break;
@@ -2729,6 +2729,21 @@ static void hdmitx_debug(struct hdmitx_hw_common *tx_hw, const char *buf)
 	} else if (strncmp(tmpbuf, "fmt_para", 8) == 0) {
 		hdmitx_format_para_print(para, NULL);
 		HDMITX_INFO("external frl_rate: %d, dsc_en: %d\n", hdev->frl_rate, hdev->dsc_en);
+	} else if (strncmp(tmpbuf, "hdcp_mode", 9) == 0) {
+		ret = kstrtoul(tmpbuf + 9, 16, &value);
+		if (ret == 0 && value <= 2)
+			hdev->drm_hdcp.test_hdcp_mode = value - 0;
+		HDMITX_INFO("test drm_hdcp_mode: %d\n", hdev->drm_hdcp.test_hdcp_mode);
+	} else if (strncmp(tmpbuf, "drm_hdcp_op", 11) == 0) {
+		ret = kstrtoul(tmpbuf + 11, 16, &value);
+		if (ret != 0)
+			return;
+		if (value == 0 && hdev->drm_hdcp.test_hdcp_disable)
+			hdev->drm_hdcp.test_hdcp_disable();
+		else if (value == 1 && hdev->drm_hdcp.test_hdcp_enable)
+			hdev->drm_hdcp.test_hdcp_enable(hdev->drm_hdcp.test_hdcp_mode);
+		else if (value == 2 && hdev->drm_hdcp.test_hdcp_disconnect)
+			hdev->drm_hdcp.test_hdcp_disconnect();
 	}
 }
 
@@ -3001,6 +3016,9 @@ static int hdmitx_cntl_config(struct hdmitx_hw_common *tx_hw, u32 cmd,
 	case CONF_EMP_NUMBER:
 		break;
 	case CONF_EMP_PHY_ADDR:
+		break;
+	case CONF_HW_INIT:
+		hdmi_hwp_init(hdev, 1);
 		break;
 	default:
 		break;

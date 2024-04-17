@@ -39,13 +39,13 @@
 #include "j83b_frontend.h"
 #include <linux/amlogic/aml_dtvdemod.h>
 
-MODULE_PARM_DESC(auto_search_std, "\n\t\t atsc-c std&hrc search");
+MODULE_PARM_DESC(auto_search_std, "");
 static unsigned int auto_search_std;
 module_param(auto_search_std, int, 0644);
 
 static int dvb_j83b_count = 5;
 module_param(dvb_j83b_count, int, 0644);
-MODULE_PARM_DESC(dvb_atsc_count, "dvb_j83b_count");
+MODULE_PARM_DESC(dvb_atsc_count, "");
 /*come from j83b_speedup_func*/
 
 /*copy from dtvdemod_atsc_init*/
@@ -62,7 +62,7 @@ int dtvdemod_atsc_j83b_init(struct aml_dtvdemod *demod)
 	demod->demod_status.delsys = SYS_ATSC;
 	sys.adc_clk = ADC_CLK_24M;
 
-	PR_DBG(" %s c->modulation : %d\n", __func__, c->modulation);
+	PR_DBG("%s modulation: %d\n", __func__, c->modulation);
 	if (cpu_after_eq(MESON_CPU_MAJOR_ID_TL1))
 		sys.demod_clk = DEMOD_CLK_250M;
 	else
@@ -98,7 +98,7 @@ int gxtv_demod_atsc_j83b_set_frontend(struct dvb_frontend *fe)
 	struct aml_demod_dvbc param_j83b;
 	int nco_rate;
 
-	PR_INFO("%s [id %d]: delsys:%d, freq:%d, symbol_rate:%d, bw:%d, modul:%d, invert:%d.\n",
+	PR_INFO("%s [id %d]: delsys:%d, freq:%d, symbol_rate:%d, bw:%d, modul:%d, invert:%d\n",
 			__func__, demod->id, c->delivery_system, c->frequency, c->symbol_rate,
 			c->bandwidth_hz, c->modulation, c->inversion);
 
@@ -170,7 +170,7 @@ int gxtv_demod_atsc_j83b_set_frontend(struct dvb_frontend *fe)
 		demod_atsc_j83b_store_qam_cfg(demod);
 		demod_atsc_j83b_set_qam(demod, param_j83b.mode, false);
 
-		PR_ATSC("j83b mode: %d.\n", param_j83b.mode);
+		PR_ATSC("j83b mode: %d\n", param_j83b.mode);
 	}
 
 	return 0;
@@ -181,7 +181,7 @@ int gxtv_demod_atsc_j83b_get_frontend(struct dvb_frontend *fe)
 	/*these content will be written into eeprom .*/
 	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
 
-	PR_ATSC("c->frequency is %d\n", c->frequency);
+	PR_ATSC("frequency %d\n", c->frequency);
 	return 0;
 }
 
@@ -219,7 +219,7 @@ int gxtv_demod_atsc_j83b_read_signal_strength(struct dvb_frontend *fe,
 		*strength += 3;
 	}
 
-	PR_DVBC("demod [id %d] signal strength %d dBm\n", demod->id, *strength);
+	PR_DVBC("[id %d] strength %d dBm\n", demod->id, *strength);
 
 	return 0;
 }
@@ -230,7 +230,7 @@ int gxtv_demod_atsc_j83b_read_snr(struct dvb_frontend *fe, u16 *snr)
 
 	*snr = demod->real_para.snr;
 
-	PR_ATSC("demod[%d] snr %d dBx10\n", demod->id, *snr);
+	PR_ATSC("[id %d] snr %d dBx10\n", demod->id, *snr);
 
 	return 0;
 }
@@ -365,8 +365,8 @@ int atsc_j83b_read_status(struct dvb_frontend *fe, enum fe_status *status, bool 
 
 	gxtv_demod_atsc_j83b_read_signal_strength(fe, &strength);
 	if (strength < THRD_TUNER_STRENGTH_J83) {
-		PR_ATSC("%s: tuner strength [%d] no signal(%d).\n",
-				__func__, strength, THRD_TUNER_STRENGTH_J83);
+		PR_ATSC("strength [%d] no signal(%d)\n",
+				strength, THRD_TUNER_STRENGTH_J83);
 		*status = FE_TIMEDOUT;
 		demod->last_status = *status;
 		real_para_clear(&demod->real_para);
@@ -383,7 +383,7 @@ int atsc_j83b_read_status(struct dvb_frontend *fe, enum fe_status *status, bool 
 		real_para_clear(&demod->real_para);
 
 	demod->real_para.snr = atsc_j83b_get_snr(demod);
-	PR_ATSC("fsm %d, snr %d dBx10, demod->time_passed %u\n", s,
+	PR_ATSC("fsm %d, snr %d dBx10, time_passed %u\n", s,
 		demod->real_para.snr, demod->time_passed);
 
 	if (s == 5) {
@@ -520,8 +520,8 @@ int atsc_j83b_polling(struct dvb_frontend *fe, enum fe_status *s)
 	strength = tuner_get_ch_power(fe);
 	if (strength < THRD_TUNER_STRENGTH_J83) {
 		*s = FE_TIMEDOUT;
-		PR_ATSC("%s: tuner strength [%d] no signal(%d).\n",
-				__func__, strength, THRD_TUNER_STRENGTH_J83);
+		PR_ATSC("strength [%d] no signal(%d)\n",
+				strength, THRD_TUNER_STRENGTH_J83);
 		return 0;
 	}
 
@@ -529,7 +529,6 @@ int atsc_j83b_polling(struct dvb_frontend *fe, enum fe_status *s)
 
 	if (*s != 0x1f) {
 		/*msleep(200);*/
-		PR_DBG("[j.83b] 1\n");
 		for (i = 0; i < dvb_j83b_count; i++) {
 			msleep(25);
 			gxtv_demod_atsc_j83b_read_ber(fe, &j83b_status);
@@ -538,7 +537,7 @@ int atsc_j83b_polling(struct dvb_frontend *fe, enum fe_status *s)
 			if (j83b_status >= 0x3)
 				break;
 		}
-		PR_DBG("[rsj]j.83b_status is %x,modulation is %d\n",
+		PR_DBG("j.83b_status %x,modulation %d\n",
 				j83b_status,
 				c->modulation);
 
@@ -577,14 +576,14 @@ int gxtv_demod_atsc_j83b_tune(struct dvb_frontend *fe, bool re_tune,
 			timer_begain(demod, D_TIMER_DETECT);
 
 		if (c->modulation == QPSK) {
-			PR_ATSC("[id %d] modulation is QPSK do nothing!", demod->id);
+			PR_ATSC("[id %d] modulation QPSK do nothing!", demod->id);
 		} else if (c->modulation <= QAM_AUTO) {
-			PR_ATSC("[id %d] detect modulation is j83 first.\n", demod->id);
+			PR_ATSC("[id %d] detect modulation j83 first\n", demod->id);
 			atsc_j83b_read_status(fe, status, re_tune);
 		} else if (c->modulation > QAM_AUTO) {
-			PR_ATSC("[id %d] %s modulation is 8VSB.\n", demod->id, __func__);
+			PR_ATSC("[id %d] %s modulation 8VSB\n", demod->id, __func__);
 		} else {
-			PR_ATSC("[id %d] modulation is %d unsupported!\n",
+			PR_ATSC("[id %d] modulation is %d unsupported\n",
 					demod->id, c->modulation);
 		}
 
@@ -592,7 +591,7 @@ int gxtv_demod_atsc_j83b_tune(struct dvb_frontend *fe, bool re_tune,
 	}
 
 	if (!demod->en_detect) {
-		PR_DBGL("%s: [id %d] not enable.\n", __func__, demod->id);
+		PR_DBGL("[id %d] j83b not enable\n", demod->id);
 		return 0;
 	}
 
@@ -628,7 +627,7 @@ int amdemod_stat_j83b_islock(struct aml_dtvdemod *demod,
 		demod_sts.ch_sts = atsc_j83b_get_ch_sts(demod);
 		ret = demod_sts.ch_sts & 0x1;
 	} else {
-		PR_ERR("%s delsys wrong.\n", __func__);
+		PR_ERR("%s delsys wrong\n", __func__);
 	}
 	return ret;
 }

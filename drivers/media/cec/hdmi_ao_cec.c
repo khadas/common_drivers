@@ -2227,7 +2227,6 @@ static const struct cec_platform_data_s cec_t7_data = {
 	.share_io = true,
 	.reg_tab_group = cec_reg_group_a1,
 };
-#endif
 
 static const struct cec_platform_data_s cec_s4_data = {
 	.chip_id = CEC_CHIP_S4,
@@ -2252,6 +2251,7 @@ static const struct cec_platform_data_s cec_s7_data = {
 	.share_io = false,
 	.reg_tab_group = cec_reg_group_a1,
 };
+#endif
 
 /* s1a based on s4d */
 static const struct cec_platform_data_s cec_s1a_data = {
@@ -2399,8 +2399,6 @@ static const struct of_device_id aml_cec_dt_match[] = {
 		.compatible = "amlogic, aocec-t7",
 		.data = &cec_t7_data,
 	},
-#endif
-
 	{
 		.compatible = "amlogic, aocec-s4",
 		.data = &cec_s4_data,
@@ -2409,6 +2407,7 @@ static const struct of_device_id aml_cec_dt_match[] = {
 		.compatible = "amlogic, aocec-s7",
 		.data = &cec_s7_data,
 	},
+#endif
 	{
 		.compatible = "amlogic, aocec-s1a",
 		.data = &cec_s1a_data,

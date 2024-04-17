@@ -830,7 +830,6 @@ void vdin_afbce_mode_init(struct vdin_dev_s *devp)
 		 */
 	}
 
-	devp->afbce_flag = devp->dts_config.afbce_flag_cfg;
 	/* In dolby afbce mode,disable lossy */
 	if (devp->afbce_valid && vdin_is_dolby_signal_in(devp) &&
 		(devp->vdin_function_sel & VDIN_AFBCE_DOLBY))

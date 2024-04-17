@@ -312,119 +312,122 @@ u32 set_vpu_module_security(struct vpu_secure_ins *ins,
 	struct vpu_sec_bit_s change;
 
 	version = vpu_secure_version();
-	if (is_vpu_secure_support()) {
-		switch (module) {
-		case OSD_MODULE:
-			if ((secure_src & OSD1_INPUT_SECURE) ||
-			    (secure_src & OSD2_INPUT_SECURE) ||
-			    (secure_src & OSD3_INPUT_SECURE) ||
-			    (secure_src & OSD4_INPUT_SECURE) ||
-			    (secure_src & MALI_AFBCD_SECURE)) {
-				/* for T7 revA */
-				if (is_meson_t7_cpu() && is_meson_rev_a() &&
-				    (secure_src & (OSD1_INPUT_SECURE |
-						   OSD2_INPUT_SECURE)))
-					secure_src |= OSD4_INPUT_SECURE;
+	if (!is_vpu_secure_support())
+		return 0;
+	switch (module) {
+	case OSD_MODULE:
+		if ((secure_src & OSD1_INPUT_SECURE) ||
+		    (secure_src & OSD2_INPUT_SECURE) ||
+		    (secure_src & OSD3_INPUT_SECURE) ||
+		    (secure_src & OSD4_INPUT_SECURE) ||
+		    (secure_src & MALI_AFBCD_SECURE)) {
+			/* for T7 revA */
+			if (is_meson_t7_cpu() && is_meson_rev_a() &&
+			    (secure_src & (OSD1_INPUT_SECURE |
+					   OSD2_INPUT_SECURE)))
+				secure_src |= OSD4_INPUT_SECURE;
 
-				/* OSD module secure */
-				osd_secure[vpp_index] = secure_src;
-				value = osd_secure[vpp_index] |
-					video_secure[vpp_index];
-				ins->secure_enable = 1;
-				ins->secure_status = value;
-				osd_secure_en[vpp_index] = 1;
-			} else {
-				/* OSD none secure */
-				osd_secure[vpp_index] = secure_src;
-				value = osd_secure[vpp_index] |
-					video_secure[vpp_index];
-				ins->secure_enable = 0;
-				ins->secure_status = value;
-				osd_secure_en[vpp_index] = 0;
-			}
-			break;
-		case VIDEO_MODULE:
-			if ((secure_src & VD2_FGRAIN_SECURE) ||
-			    (secure_src & VD1_FGRAIN_SECURE) ||
-			    (secure_src & DV_INPUT_SECURE) ||
-			    (secure_src & AFBCD_INPUT_SECURE) ||
-			    (secure_src & VD3_INPUT_SECURE) ||
-			    (secure_src & VD2_INPUT_SECURE) ||
-			    (secure_src & VD1_INPUT_SECURE)) {
-				/* video module secure */
-				video_secure[vpp_index] = secure_src;
-				value = video_secure[vpp_index] |
-					osd_secure[vpp_index];
-				if (version == VPU_SEC_V4) {
-					u32 temp;
+			/* OSD module secure */
+			osd_secure[vpp_index] = secure_src;
+			value = osd_secure[vpp_index] |
+				video_secure[vpp_index];
+			ins->secure_enable = 1;
+			ins->secure_status = value;
+			osd_secure_en[vpp_index] = 1;
+		} else {
+			/* OSD none secure */
+			osd_secure[vpp_index] = secure_src;
+			value = osd_secure[vpp_index] |
+				video_secure[vpp_index];
+			ins->secure_enable = 0;
+			ins->secure_status = value;
+			osd_secure_en[vpp_index] = 0;
+		}
+		break;
+	case VIDEO_MODULE:
+		if ((secure_src & VD2_FGRAIN_SECURE) ||
+		    (secure_src & VD1_FGRAIN_SECURE) ||
+		    (secure_src & DV_INPUT_SECURE) ||
+		    (secure_src & AFBCD_INPUT_SECURE) ||
+		    (secure_src & VD3_INPUT_SECURE) ||
+		    (secure_src & VD2_INPUT_SECURE) ||
+		    (secure_src & VD1_INPUT_SECURE)) {
+			/* video module secure */
+			video_secure[vpp_index] = secure_src;
+			value = video_secure[vpp_index] |
+				osd_secure[vpp_index];
+			if (version == VPU_SEC_V4) {
+				u32 temp;
 
-					if (value & VD1_INPUT_SECURE) {
+				if (value & VD1_INPUT_SECURE) {
+					if (is_meson_t3x_cpu())
+						temp = VD1_SLICE1_SECURE;
+					else
 						temp = VD1_SLICE1_SECURE |
 							VD1_SLICE2_SECURE |
 							VD1_SLICE3_SECURE;
-						value |= temp;
-					}
+					value |= temp;
 				}
-				ins->secure_enable = 1;
-				ins->secure_status = value;
-				video_secure_en[vpp_index] = 1;
-			} else {
-				/* video module secure */
-				video_secure[vpp_index] = secure_src;
-				value = video_secure[vpp_index] |
-					osd_secure[vpp_index];
-				ins->secure_enable = 0;
-				ins->secure_status = value;
-				video_secure_en[vpp_index] = 0;
 			}
-			break;
-		case DI_MODULE:
-			break;
-		case VDIN_MODULE:
-			break;
-		default:
-			break;
+			ins->secure_enable = 1;
+			ins->secure_status = value;
+			video_secure_en[vpp_index] = 1;
+		} else {
+			/* video module secure */
+			video_secure[vpp_index] = secure_src;
+			value = video_secure[vpp_index] |
+				osd_secure[vpp_index];
+			ins->secure_enable = 0;
+			ins->secure_status = value;
+			video_secure_en[vpp_index] = 0;
 		}
+		break;
+	case DI_MODULE:
+		break;
+	case VDIN_MODULE:
+		break;
+	default:
+		break;
+	}
 
-		if (version < VPU_SEC_V4 || version == VPU_SEC_V5) {
-			vpp_top_en = osd_secure_en[vpp_index] ||
-				     video_secure_en[vpp_index];
-			if (vpp_index == 0) {
-				if (vpp_top_en)
-					value |= VPP_OUTPUT_SECURE;
-				else
-					value &= ~VPP_OUTPUT_SECURE;
-			}
-			if (vpp_index == 1) {
-				if (vpp_top_en)
-					value |= VPP1_OUTPUT_SECURE;
-				else
-					value &= ~VPP1_OUTPUT_SECURE;
-			}
-			if (vpp_index == 2) {
-				if (vpp_top_en)
-					value |= VPP2_OUTPUT_SECURE;
-				else
-					value &= ~VPP2_OUTPUT_SECURE;
-			}
+	if (version < VPU_SEC_V4 || version == VPU_SEC_V5) {
+		vpp_top_en = osd_secure_en[vpp_index] ||
+			     video_secure_en[vpp_index];
+		if (vpp_index == 0) {
+			if (vpp_top_en)
+				value |= VPP_OUTPUT_SECURE;
+			else
+				value &= ~VPP_OUTPUT_SECURE;
 		}
-		/* debug value setting */
-		if (debug_value)
-			value = debug_value;
+		if (vpp_index == 1) {
+			if (vpp_top_en)
+				value |= VPP1_OUTPUT_SECURE;
+			else
+				value &= ~VPP1_OUTPUT_SECURE;
+		}
+		if (vpp_index == 2) {
+			if (vpp_top_en)
+				value |= VPP2_OUTPUT_SECURE;
+			else
+				value &= ~VPP2_OUTPUT_SECURE;
+		}
+	}
+	/* debug value setting */
+	if (debug_value)
+		value = debug_value;
 
-		if (module == OSD_MODULE ||
-			module == VIDEO_MODULE ||
-			module == DI_MODULE) {
-			if (value_save[vpp_index] != value) {
-				/* record changed bit and current val */
-				change.bit_changed =
-						value ^ value_save[vpp_index];
-				change.current_val = value;
-				secure_reg_update(ins, &change, vpp_index);
-				secure_update = 1;
-			}
-			value_save[vpp_index] = value;
+	if (module == OSD_MODULE ||
+		module == VIDEO_MODULE ||
+		module == DI_MODULE) {
+		if (value_save[vpp_index] != value) {
+			/* record changed bit and current val */
+			change.bit_changed =
+					value ^ value_save[vpp_index];
+			change.current_val = value;
+			secure_reg_update(ins, &change, vpp_index);
+			secure_update = 1;
 		}
+		value_save[vpp_index] = value;
 	}
 
 	if (log_level >= 2)

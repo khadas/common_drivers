@@ -1696,6 +1696,39 @@ static void cvbsout_clktree_remove(struct device *dev)
 }
 
 #ifdef CONFIG_OF
+#ifndef CONFIG_AMLOGIC_REMOVE_OLD
+struct meson_cvbsout_data meson_tl1_cvbsout_data = {
+	.cpu_id = CVBS_CPU_TYPE_TL1,
+	.name = "meson-tl1-cvbsout",
+
+	.vdac_vref_adj = 0x10,
+	.vdac_gsw = 0x0,
+
+	.reg_vid_pll_clk_div = HHI_VID_PLL_CLK_DIV,
+	.reg_vid_clk_div = HHI_VID_CLK_DIV,
+	.reg_vid_clk_ctrl = HHI_VID_CLK_CNTL,
+	.reg_vid2_clk_div = HHI_VIID_CLK_DIV,
+	.reg_vid2_clk_ctrl = HHI_VIID_CLK_CNTL,
+	.reg_vid_clk_ctrl2 = HHI_VID_CLK_CNTL2,
+};
+#endif
+
+struct meson_cvbsout_data meson_s1a_cvbsout_data = {
+	.cpu_id = CVBS_CPU_TYPE_S1A,
+	.name = "meson-s1a-cvbsout",
+
+	.vdac_vref_adj = 0x10,
+	.vdac_gsw = 0x5c,
+
+	.reg_vid_pll_clk_div = CLKCTRL_VID_PLL_CLK_DIV,
+	.reg_vid_clk_div = CLKCTRL_VID_CLK_DIV,
+	.reg_vid_clk_ctrl = CLKCTRL_VID_CLK_CTRL,
+	.reg_vid2_clk_div = CLKCTRL_VIID_CLK_DIV,
+	.reg_vid2_clk_ctrl = CLKCTRL_VIID_CLK_CTRL,
+	.reg_vid_clk_ctrl2 = CLKCTRL_VID_CLK_CTRL2,
+};
+
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 struct meson_cvbsout_data meson_g12a_cvbsout_data = {
 	.cpu_id = CVBS_CPU_TYPE_G12A,
 	.name = "meson-g12a-cvbsout",
@@ -1725,23 +1758,6 @@ struct meson_cvbsout_data meson_g12b_cvbsout_data = {
 	.reg_vid2_clk_ctrl = HHI_VIID_CLK_CNTL,
 	.reg_vid_clk_ctrl2 = HHI_VID_CLK_CNTL2,
 };
-
-#ifndef CONFIG_AMLOGIC_REMOVE_OLD
-struct meson_cvbsout_data meson_tl1_cvbsout_data = {
-	.cpu_id = CVBS_CPU_TYPE_TL1,
-	.name = "meson-tl1-cvbsout",
-
-	.vdac_vref_adj = 0x10,
-	.vdac_gsw = 0x0,
-
-	.reg_vid_pll_clk_div = HHI_VID_PLL_CLK_DIV,
-	.reg_vid_clk_div = HHI_VID_CLK_DIV,
-	.reg_vid_clk_ctrl = HHI_VID_CLK_CNTL,
-	.reg_vid2_clk_div = HHI_VIID_CLK_DIV,
-	.reg_vid2_clk_ctrl = HHI_VIID_CLK_CNTL,
-	.reg_vid_clk_ctrl2 = HHI_VID_CLK_CNTL2,
-};
-#endif
 
 struct meson_cvbsout_data meson_sm1_cvbsout_data = {
 	.cpu_id = CVBS_CPU_TYPE_SM1,
@@ -1878,21 +1894,6 @@ struct meson_cvbsout_data meson_t5w_cvbsout_data = {
 	.reg_vid_clk_ctrl2 = HHI_VID_CLK0_CTRL2,
 };
 
-struct meson_cvbsout_data meson_s1a_cvbsout_data = {
-	.cpu_id = CVBS_CPU_TYPE_S1A,
-	.name = "meson-s1a-cvbsout",
-
-	.vdac_vref_adj = 0x10,
-	.vdac_gsw = 0x5c,
-
-	.reg_vid_pll_clk_div = CLKCTRL_VID_PLL_CLK_DIV,
-	.reg_vid_clk_div = CLKCTRL_VID_CLK_DIV,
-	.reg_vid_clk_ctrl = CLKCTRL_VID_CLK_CTRL,
-	.reg_vid2_clk_div = CLKCTRL_VIID_CLK_DIV,
-	.reg_vid2_clk_ctrl = CLKCTRL_VIID_CLK_CTRL,
-	.reg_vid_clk_ctrl2 = CLKCTRL_VID_CLK_CTRL2,
-};
-
 struct meson_cvbsout_data meson_s7_cvbsout_data = {
 	.cpu_id = CVBS_CPU_TYPE_S7,
 	.name = "meson-s7-cvbsout",
@@ -1907,15 +1908,9 @@ struct meson_cvbsout_data meson_s7_cvbsout_data = {
 	.reg_vid2_clk_ctrl = CLKCTRL_VIID_CLK_CTRL,
 	.reg_vid_clk_ctrl2 = CLKCTRL_VID_CLK_CTRL2,
 };
+#endif
 
 static const struct of_device_id meson_cvbsout_dt_match[] = {
-	{
-		.compatible = "amlogic, cvbsout-g12a",
-		.data		= &meson_g12a_cvbsout_data,
-	}, {
-		.compatible = "amlogic, cvbsout-g12b",
-		.data		= &meson_g12b_cvbsout_data,
-	},
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
 	{
 		.compatible = "amlogic, cvbsout-tl1",
@@ -1923,6 +1918,17 @@ static const struct of_device_id meson_cvbsout_dt_match[] = {
 	},
 #endif
 	{
+		.compatible = "amlogic, cvbsout-s1a",
+		.data		= &meson_s1a_cvbsout_data,
+	},
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+	{
+		.compatible = "amlogic, cvbsout-g12a",
+		.data		= &meson_g12a_cvbsout_data,
+	}, {
+		.compatible = "amlogic, cvbsout-g12b",
+		.data		= &meson_g12b_cvbsout_data,
+	}, {
 		.compatible = "amlogic, cvbsout-sm1",
 		.data		= &meson_sm1_cvbsout_data,
 	}, {
@@ -1950,12 +1956,10 @@ static const struct of_device_id meson_cvbsout_dt_match[] = {
 		.compatible = "amlogic, cvbsout-t5w",
 		.data		= &meson_t5w_cvbsout_data,
 	}, {
-		.compatible = "amlogic, cvbsout-s1a",
-		.data		= &meson_s1a_cvbsout_data,
-	}, {
 		.compatible = "amlogic, cvbsout-s7",
 		.data		= &meson_s7_cvbsout_data,
 	},
+#endif
 	{}
 };
 #endif

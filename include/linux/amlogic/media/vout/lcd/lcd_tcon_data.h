@@ -64,11 +64,11 @@
 #define LCD_TCON_DATA_CTRL_FLAG_MULTI           0x01
 #define LCD_TCON_DATA_CTRL_FLAG_DMA             0x02
 /*FLAG_DLG only for basic init data*/
-#define LCD_TCON_DATA_CTRL_FLAG_DLG             0xd0
+#define LCD_TCON_DATA_CTRL_FLAG_UFR             0xd0
 
 #define is_block_ctrl_dma(block_ctrl) ((block_ctrl) & LCD_TCON_DATA_CTRL_FLAG_DMA)
 #define is_block_ctrl_multi(block_ctrl) ((block_ctrl) & LCD_TCON_DATA_CTRL_FLAG_MULTI)
-#define is_block_ctrl_dlg(block_ctrl) ((block_ctrl) == LCD_TCON_DATA_CTRL_FLAG_DLG)
+#define is_block_ctrl_ufr(block_ctrl) ((block_ctrl) == LCD_TCON_DATA_CTRL_FLAG_UFR)
 
 /* ctrl_method */
 #define LCD_TCON_DATA_CTRL_DEFAULT              0x00

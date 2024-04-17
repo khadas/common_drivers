@@ -125,12 +125,14 @@ int lcd_tv_driver_init(struct aml_lcd_drv_s *pdrv)
 		lcd_vbyone_power_on_wait_stable(pdrv);
 		break;
 	case LCD_MLVDS:
+		lcd_tcon_top_init(pdrv);
 		lcd_mlvds_dphy_set(pdrv, 1);
 		lcd_tcon_enable(pdrv);
 		lcd_mlvds_pinmux_set(pdrv, 1);
 		lcd_phy_set(pdrv, LCD_PHY_ON);
 		break;
 	case LCD_P2P:
+		lcd_tcon_top_init(pdrv);
 		lcd_p2p_pinmux_set(pdrv, 1);
 		lcd_phy_set(pdrv, LCD_PHY_ON);
 		lcd_p2p_dphy_set(pdrv, 1);
@@ -200,6 +202,11 @@ int lcd_tv_driver_change(struct aml_lcd_drv_s *pdrv)
 	int ret;
 	unsigned long long local_time[3];
 
+	if (!pdrv->probe_done) {
+		LCDPR("[%d]: config not loaded, bypass %s", pdrv->index, __func__);
+		return 0;
+	}
+
 	local_time[0] = sched_clock();
 
 	LCDPR("[%d]: tv driver change(ver %s): %s\n",
@@ -213,21 +220,17 @@ int lcd_tv_driver_change(struct aml_lcd_drv_s *pdrv)
 	vpu_dev_clk_request(pdrv->lcd_vpu_dev, pdrv->config.timing.enc_clk);
 #endif
 
-	if (pdrv->status & LCD_STATUS_ENCL_ON) {
-		if (pdrv->config.basic.lcd_type == LCD_VBYONE) {
-			if (pdrv->status & LCD_STATUS_IF_ON)
-				lcd_vbyone_interrupt_enable(pdrv, 0);
-		}
+	if (pdrv->status & LCD_STATUS_IF_ON) {
+		if (pdrv->config.basic.lcd_type == LCD_VBYONE)
+			lcd_vbyone_interrupt_enable(pdrv, 0);
 	}
 
 	lcd_clk_change(pdrv);
 	lcd_venc_change(pdrv);
 
-	if (pdrv->status & LCD_STATUS_ENCL_ON) {
-		if (pdrv->config.basic.lcd_type == LCD_VBYONE) {
-			if (pdrv->status & LCD_STATUS_IF_ON)
-				lcd_vbyone_wait_stable(pdrv);
-		}
+	if (pdrv->status & LCD_STATUS_IF_ON) {
+		if (pdrv->config.basic.lcd_type == LCD_VBYONE)
+			lcd_vbyone_wait_stable(pdrv);
 	}
 
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)

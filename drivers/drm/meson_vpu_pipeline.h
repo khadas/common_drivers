@@ -66,6 +66,13 @@
 #define SCALER_OUTPUT_SCAN_MODE_CHANGED BIT(4)
 
 #define SCALER_OVERLAP 32
+
+#define VIU_OSD1_TCOLOR_AG3 0x1a1a
+#define VIU_OSD2_TCOLOR_AG3 0x1a3a
+#define VIU_OSD3_TCOLOR_AG3 0x3d87
+
+extern u32 frame_seq[MESON_MAX_OSDS];
+
 enum slice_index {
 	OSD1_SLICE0,
 	OSD2_SLICE1,
@@ -290,6 +297,12 @@ struct meson_vpu_video_layer_info {
 	int sec_en;
 };
 
+struct meson_vpu_disable_work {
+	struct work_struct work;
+	struct meson_vpu_video *video;
+	u32 idx;
+};
+
 struct meson_vpu_video {
 	struct meson_vpu_block base;
 	struct vframe_provider_s vprov;
@@ -303,7 +316,10 @@ struct meson_vpu_video {
 	u32 vfm_mode;
 	bool video_enabled;
 	struct dma_fence *fence;
+	struct dma_buf *dmabuf;
 	struct list_head vfm_node[MESON_MAX_VIDEO];
+	struct workqueue_struct *disable_wq;
+	struct meson_vpu_disable_work worker;
 };
 
 struct meson_vpu_video_state {
@@ -340,6 +356,7 @@ struct meson_vpu_video_state {
 	u32 fb_size[2];
 	u32 pixel_blend;
 	u32 afbc_en;
+	u32 repeat_frame;
 	struct vframe_s *vf;
 	struct dma_buf *dmabuf;
 	bool is_uvm;
@@ -539,6 +556,7 @@ struct meson_vpu_pipeline {
 	u32 num_dbs;
 	u32 num_postblend;
 	u8 osd_version;
+	u32 osd_axi_sel;
 
 	struct meson_drm *priv;
 	struct meson_vpu_block **mvbs;
@@ -701,6 +719,12 @@ int vpu_video_pipeline_check_block(struct meson_vpu_pipeline_state *mvps,
 				   struct drm_atomic_state *state);
 void vpu_pipeline_check_finish_reg(int crtc_index);
 void vpu_pipeline_detect_reset(struct meson_vpu_sub_pipeline *sub_pipeline);
+struct meson_vpu_pipeline_state *
+meson_vpu_pipeline_get_old_state(struct meson_vpu_pipeline *pipeline,
+			     struct drm_atomic_state *state);
+struct meson_vpu_pipeline_state *
+meson_vpu_pipeline_get_new_state(struct meson_vpu_pipeline *pipeline,
+			     struct drm_atomic_state *state);
 void sort_osd_by_zorder(struct osd_zorder_s *din, u32 osd_num);
 
 extern struct rdma_reg_ops common_reg_ops[3];

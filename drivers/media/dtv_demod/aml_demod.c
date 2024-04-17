@@ -38,20 +38,9 @@
 #endif
 
 /*#include "sdio/sdio_init.h"*/
-#define DRIVER_NAME "aml_demod"
-#define MODULE_NAME "aml_demod"
 #define DEVICE_NAME "aml_demod"
-#define DEVICE_UI_NAME "aml_demod_ui"
-
-#define pr_dbg(a ...) \
-	do { \
-		if (1) { \
-			printk(a); \
-		} \
-	} while (0)
-
-
-const char aml_demod_dev_id[] = "aml_demod";
+//#define DEVICE_UI_NAME "aml_demod_ui"
+//const char aml_demod_dev_id[] = "aml_demod";
 #define CONFIG_AM_DEMOD_DVBAPI	/*ary temp*/
 
 /*******************************
@@ -90,7 +79,7 @@ static struct attribute *aml_demod_info_class_attrs[] = {
 ATTRIBUTE_GROUPS(aml_demod_info_class);
 
 static struct class aml_demod_class = {
-	.name		= "aml_demod",
+	.name		= DEVICE_NAME,
 	.class_groups	= aml_demod_info_class_groups,
 };
 
@@ -104,19 +93,17 @@ static int aml_demod_open(struct inode *inode, struct file *file)
 	mutex_lock(&demod_lock);
 
 	pdev = container_of(inode->i_cdev, struct demod_device_t, dev);
-	if (!pdev) {
-		PR_ERR("demod_device_t == NULL\n");
+	if (!pdev)
 		return -1;
-	}
-	if (!pdev->priv) {
-		PR_ERR("pdev->priv == NULL\n");
-		return -1;
-	}
+
+	if (!pdev->priv)
+		return -2;
 
 	file->private_data = pdev->priv;
 
-	PR_INFO("%s: %s %s,major=%d,minor=%d\n", __func__, pdev->priv->name,
+	PR_INFO("%s %s,major=%d,minor=%d\n", pdev->priv->name,
 			pdev->priv->dev->kobj.name, major, minor);
+
 	mutex_unlock(&demod_lock);
 
 	return 0;
@@ -134,11 +121,12 @@ void mem_read(struct aml_demod_mem *arg)
 
 	addr = arg->addr;
 	data = arg->dat;
-/*      memcpy(mem_buf[addr],data,1);*/
-	pr_dbg("[addr %x] data is %x\n", addr, data);
+	/* memcpy(mem_buf[addr],data,1);*/
+	PR_DBG("addr 0x%x data 0x%x\n", addr, data);
 }
+
 static long aml_demod_ioctl(struct file *file,
-			    unsigned int cmd, unsigned long arg)
+		unsigned int cmd, unsigned long arg)
 {
 	int strength = 0;
 	struct aml_tuner_sys tuner_para = {0};
@@ -151,12 +139,8 @@ static long aml_demod_ioctl(struct file *file,
 	struct demod_priv *priv = file->private_data;
 	void __user *argp;
 
-	mutex_lock(&demod_lock);
-
-	if (!devp) {
-		pr_err("%s devp is NULL\n", __func__);
+	if (!devp)
 		return -EFAULT;
-	}
 
 	list_for_each_entry(tmp, &devp->demod_list, list) {
 		if (tmp->id == demod_id) {
@@ -166,37 +150,36 @@ static long aml_demod_ioctl(struct file *file,
 	}
 
 	if (!demod) {
-		pr_err("%s get demod [id %d] is NULL.\n", __func__, demod_id);
+		PR_ERR("demod [id %d] NULL\n", demod_id);
 		return -EFAULT;
 	}
 
 	if (!priv) {
-		PR_ERR("priv is NULL!\n");
+		PR_ERR("priv NULL\n");
 		return -EINVAL;
 	}
+
 	if (!devp->flg_cma_allc || !devp->cma_mem_size) {
-		PR_ERR("%s: not enter_mode or invalid cma_mem_size!!\n", __func__);
+		PR_ERR("not enter_mode or invalid cma_mem_size\n");
 		return -EINVAL;
 	}
+
+	mutex_lock(&demod_lock);
 
 	argp = (void __user *)arg;
 
 	switch (cmd) {
 	case AML_DEMOD_GET_LOCK_STS:
-		if (copy_to_user((void __user *)arg, &val, sizeof(unsigned int)))
-			pr_dbg("copy_to_user error AML_DEMOD_GET_PLL_INIT\n");
+		ret = copy_to_user((void __user *)arg, &val, sizeof(unsigned int));
 		break;
 
 	case AML_DEMOD_GET_PER:
-		if (copy_to_user((void __user *)arg, &val, sizeof(unsigned int)))
-			pr_dbg("copy_to_user error AML_DEMOD_GET_PLL_INIT\n");
+		ret = copy_to_user((void __user *)arg, &val, sizeof(unsigned int));
 		break;
 
 	case AML_DEMOD_GET_CPU_ID:
 		val = get_cpu_type();
-
-		if (copy_to_user((void __user *)arg, &val, sizeof(unsigned int)))
-			pr_dbg("copy_to_user error AML_DEMOD_GET_PLL_INIT\n");
+		ret = copy_to_user((void __user *)arg, &val, sizeof(unsigned int));
 		break;
 
 	case AML_DEMOD_GET_RSSI:
@@ -206,23 +189,17 @@ static long aml_demod_ioctl(struct file *file,
 			strength = 0 - strength;
 
 		tuner_para.rssi = strength;
-		if (copy_to_user((void __user *)arg, &tuner_para,
-			sizeof(struct aml_tuner_sys))) {
-			pr_err("copy_to_user error AML_DEMOD_GET_RSSI\n");
-		}
+		ret = copy_to_user((void __user *)arg, &tuner_para, sizeof(struct aml_tuner_sys));
 		break;
 
 	case AML_DEMOD_SET_TUNER:
-		if (copy_from_user(&tuner_para, (void __user *)arg,
-			sizeof(struct aml_tuner_sys))) {
-			PR_ERR("copy error AML_DEMOD_SET_TUNER\n");
-		} else {
+		ret = copy_from_user(&tuner_para, (void __user *)arg, sizeof(struct aml_tuner_sys));
+		if (!ret) {
 			if (tuner_para.mode <= FE_ISDBT) {
-				PR_INFO("set tuner md = %d\n",
-					tuner_para.mode);
+				PR_INFO("set tuner md %d\n", tuner_para.mode);
 				demod->frontend.ops.info.type = tuner_para.mode;
 			} else {
-				PR_ERR("wrong md: %d\n", tuner_para.mode);
+				PR_ERR("wrong md %d\n", tuner_para.mode);
 			}
 
 			demod->frontend.dtv_property_cache.frequency =
@@ -233,18 +210,14 @@ static long aml_demod_ioctl(struct file *file,
 		break;
 
 	case AML_DEMOD_SET_SYS:
-		pr_dbg("Ioctl Demod Set System\n");
 		demod_set_sys(demod, (struct aml_demod_sys *)arg);
 		break;
 
 	case AML_DEMOD_GET_SYS:
-		pr_dbg("Ioctl Demod Get System\n");
-
 		/*demod_get_sys(&demod_i2c, (struct aml_demod_sys *)arg); */
 		break;
 #ifdef AML_DEMOD_SUPPORT_DVBC
 	case AML_DEMOD_DVBC_SET_CH:
-		pr_dbg("Ioctl DVB-C Set Channel.\n");
 		dvbc_set_ch(demod, (struct aml_demod_dvbc *)arg,
 			&demod->frontend);
 		break;
@@ -255,12 +228,10 @@ static long aml_demod_ioctl(struct file *file,
 #endif
 #ifdef AML_DEMOD_SUPPORT_DVBT
 	case AML_DEMOD_DVBT_SET_CH:
-		pr_dbg("Ioctl DVB-T Set Channel\n");
 		dvbt_dvbt_set_ch(demod, (struct aml_demod_dvbt *)arg);
 		break;
 #endif
 	case AML_DEMOD_DVBT_GET_CH:
-		pr_dbg("Ioctl DVB-T Get Channel\n");
 		/*dvbt_status(&demod_sta, &demod_i2c,*/
 		/* (struct aml_demod_sts *)arg); */
 		break;
@@ -279,31 +250,23 @@ static long aml_demod_ioctl(struct file *file,
 		break;
 #endif
 	case AML_DEMOD_SET_REG:
-		if (copy_from_user(&arg_t, (void __user *)arg,
-			sizeof(struct aml_demod_reg))) {
-			pr_dbg("copy error AML_DEMOD_SET_REG\n");
-		} else
+		ret = copy_from_user(&arg_t, (void __user *)arg, sizeof(struct aml_demod_reg));
+		if (!ret)
 			demod_set_reg(demod, &arg_t);
-
 		break;
 
 	case AML_DEMOD_GET_REG:
-		if (copy_from_user(&arg_t, (void __user *)arg,
-			sizeof(struct aml_demod_reg)))
-			pr_dbg("copy error AML_DEMOD_GET_REG\n");
-		else
+		ret = copy_from_user(&arg_t, (void __user *)arg, sizeof(struct aml_demod_reg));
+		if (!ret)
 			demod_get_reg(demod, &arg_t);
 
-		if (copy_to_user((void __user *)arg, &arg_t,
-			sizeof(struct aml_demod_reg))) {
-			pr_dbg("copy_to_user copy error AML_DEMOD_GET_REG\n");
-		}
+		ret = copy_to_user((void __user *)arg, &arg_t, sizeof(struct aml_demod_reg));
 		break;
 
 	case AML_DEMOD_SET_MEM:
 		/*step=(struct aml_demod_mem)arg;*/
 		/* for(i=step;i<1024-1;i++){ */
-		/* pr_dbg("0x%x,",mem_buf[i]); */
+		/* PR_DBG("0x%x,",mem_buf[i]); */
 		/* } */
 		mem_read((struct aml_demod_mem *)arg);
 		break;
@@ -314,92 +277,75 @@ static long aml_demod_ioctl(struct file *file,
 #endif
 	case AML_DEMOD_GET_PLL_INIT:
 		val = get_dtvpll_init_flag();
-
-		if (copy_to_user((void __user *)arg, &val,
-			sizeof(unsigned int))) {
-			pr_dbg("copy_to_user error AML_DEMOD_GET_PLL_INIT\n");
-		}
+		ret = copy_to_user((void __user *)arg, &val, sizeof(unsigned int));
 		break;
 
 	case AML_DEMOD_GET_CAPTURE_ADDR:
 		val = devp->mem_start;
-
-		if (copy_to_user((void __user *)arg, &val,
-				 sizeof(unsigned int)))
-			pr_dbg("copy_to_user error AML_DEMOD_GET_CAPTURE_ADDR\n");
+		ret = copy_to_user((void __user *)arg, &val, sizeof(unsigned int));
 		break;
 
 	case AML_DEMOD_SET_ID:
-		if (copy_from_user(&demod_id, (void __user *)arg,
-			sizeof(demod_id)))
-			pr_dbg("copy error AML_DEMOD_SET_ID\n");
-		else
-			pr_dbg("set demod_id %d.\n", demod_id);
+		ret = copy_from_user(&demod_id, (void __user *)arg, sizeof(demod_id));
+		PR_DBG("set demod_id %d %d.\n", demod_id, ret);
 		break;
 
 	case DEMOD_IOC_START_DUMP_ADC:
 		ret = copy_from_user(&dump_param, argp, sizeof(unsigned int));
-		if (ret < 0) {
-			PR_ERR("Error user param\n");
-			return -EINVAL;
-		}
-		PR_DBG("%s dump_param %#x\n", __func__, dump_param);
+		if (ret)
+			break;
+
+		PR_DBG("dump_param %#x\n", dump_param);
 		capture_adc_data_once(NULL, dump_param & 0xf, (dump_param & 0xf0) >> 4, priv);
-		PR_DBG("%s %#x %d\n", __func__, priv->data, priv->size);
+		PR_DBG("data %#x size %d\n", priv->data, priv->size);
 
 		ret = copy_to_user(argp, &priv->size, sizeof(unsigned int));
-		if (ret < 0) {
-			PR_ERR("Error user param\n");
-			return -EINVAL;
-		}
 		break;
+
 	case DEMOD_IOC_STOP_DUMP_ADC:
 		break;
+
 	case DEMOD_IOC_START_DUMP_TS:
 		ret = copy_from_user(&dump_param, argp, sizeof(unsigned int));
-		if (ret < 0) {
-			PR_ERR("Error user param\n");
-			return -EINVAL;
-		}
+		if (ret)
+			break;
+
 		PR_DBG("%s dump_param %d\n", __func__, dump_param);
 		break;
+
 	case DEMOD_IOC_STOP_DUMP_TS:
 		break;
+
 	case DEMOD_IOC_START_DUMP_MEM:
 		if (!devp->mem_start || !devp->mem_size) {
-			PR_ERR("%s: invalid mem_start or mem_size!!\n", __func__);
-			return -EINVAL;
+			PR_ERR("invalid mem_start or mem_size\n");
+			break;
 		}
 		priv->size = devp->mem_size;
 		priv->data = devp->mem_start;
-		PR_DBG("%s %#x %d\n", __func__, priv->data, priv->size);
+		PR_DBG("data %#x size %d\n", priv->data, priv->size);
 		ret = copy_to_user(argp, &priv->size, sizeof(unsigned int));
-		if (ret < 0) {
-			PR_ERR("Error user param\n");
-			return -EINVAL;
-		}
 		break;
+
 	case DEMOD_IOC_STOP_DUMP_MEM:
 		break;
 
 	default:
-		pr_dbg("enter Default! 0x%X\n", cmd);
+		mutex_unlock(&demod_lock);
 		return -EINVAL;
 	}
 
 	mutex_unlock(&demod_lock);
 
-	return 0;
+	return ret;
 }
 
 #ifdef CONFIG_COMPAT
-
 static long aml_demod_compat_ioctl(struct file *file, unsigned int cmd,
-				   ulong arg)
+		ulong arg)
 {
 	return aml_demod_ioctl(file, cmd, (ulong)compat_ptr(arg));
 }
-
 #endif
 
 static int aml_demod_mmap(struct file *fp, struct vm_area_struct *vma)
@@ -410,37 +356,33 @@ static int aml_demod_mmap(struct file *fp, struct vm_area_struct *vma)
 	struct demod_priv *priv = fp->private_data;
 	struct amldtvdemod_device_s *devp = dtvdemod_get_dev();
 
-	mutex_lock(&demod_lock);
+	if (!vma)
+		return -EINVAL;
 
-	if (!vma) {
-		PR_ERR("input error: vma is NULL\n");
+	if (!priv)
 		return -EINVAL;
-	}
-	if (!priv) {
-		PR_ERR("priv is NULL!\n");
-		return -EINVAL;
-	}
 
 	if (unlikely(!devp)) {
-		PR_ERR("%s:devp is NULL\n", __func__);
+		PR_ERR("devp is NULL\n");
+
 		return -1;
 	}
 
 	if (!devp->flg_cma_allc || !devp->cma_mem_size) {
-		PR_ERR("%s: not enter_mode or invalid cma_mem_size!!\n", __func__);
-		return -1;
+		PR_ERR("not enter_mode or invalid cma_mem_size\n");
+		return -2;
 	}
 
-	if (!priv->data) {
-		PR_ERR("%s: priv->data is NULL\n", __func__);
-		return -1;
-	}
-	PR_INFO("%s: %s\n", __func__,
-			PageHighMem(phys_to_page(priv->data)) ? "high_mem" : "low_mem");
+	if (!priv->data)
+		return -3;
+
+	mutex_lock(&demod_lock);
+
+	PR_INFO("%s mem\n", PageHighMem(phys_to_page(priv->data)) ? "high" : "low");
 
 	phyaddr = (unsigned long)priv->data;
 	size = vma->vm_end - vma->vm_start;
-	PR_INFO("vma=0x%pK, size=%ld, vm_start=%#lx, end=%#lx.\n", vma,
+	PR_INFO("vma=0x%pK,size=%ld,vm_start=%#lx,end=%#lx\n", vma,
 			vma->vm_end - vma->vm_start, vma->vm_start, vma->vm_end);
 
 	vma->vm_page_prot = PAGE_SHARED;
@@ -451,10 +393,8 @@ static int aml_demod_mmap(struct file *fp, struct vm_area_struct *vma)
 
 	ret = remap_pfn_range(vma, vma->vm_start, phyaddr >> PAGE_SHIFT, size,
 			vma->vm_page_prot);
-	if (ret != 0) {
-		PR_ERR("remap_pfn_range failed, ret=%d\n", ret);
-		return -1;
-	}
+	if (ret != 0)
+		PR_ERR("remap_pfn_range error %d\n", ret);
 
 	mutex_unlock(&demod_lock);
 
@@ -475,15 +415,16 @@ static const struct file_operations aml_demod_fops = {
 /*
 static int aml_demod_ui_open(struct inode *inode, struct file *file)
 {
-	pr_dbg("Amlogic aml_demod_ui_open Open\n");
+	PR_DBG("Amlogic aml_demod_ui_open Open\n");
 	return 0;
 }
 
 static int aml_demod_ui_release(struct inode *inode, struct file *file)
 {
-	pr_dbg("Amlogic aml_demod_ui_open Release\n");
+	PR_DBG("Amlogic aml_demod_ui_open Release\n");
 	return 0;
 }
+
 char buf_all[100];
 static ssize_t aml_demod_ui_read(struct file *file, char __user *buf,
 				 size_t count, loff_t *ppos)
@@ -503,7 +444,7 @@ static ssize_t aml_demod_ui_read(struct file *file, char __user *buf,
 	count = min_t(size_t, count, (sizeof(buf_all)-1));
 	res = copy_to_user((void *)buf, (char *)capture_buf, count);
 	if (res < 0) {
-		pr_dbg("[aml_demod_ui_read]res is %d", res);
+		PR_DBG("res is %d", res);
 		return res;
 	}
 
@@ -554,7 +495,7 @@ int aml_demod_ui_init(void)
 
 	r = class_register(&aml_demod_ui_class);
 	if (r) {
-		pr_dbg("create aml_demod class fail\r\n");
+		PR_DBG("create aml_demod class fail\r\n");
 		class_unregister(&aml_demod_ui_class);
 		return r;
 	}
@@ -596,7 +537,7 @@ int aml_demod_ui_init(void)
 					 NULL, DEVICE_UI_NAME);
 
 	if (IS_ERR(aml_demod_ui_dev)) {
-		pr_dbg("Can't create aml_demod device\n");
+		PR_DBG("Can't create aml_demod device\n");
 		unregister_chrdev_region(aml_demod_devno_ui, 1);
 		cdev_del(aml_demod_cdevp_ui);
 		kfree(aml_demod_cdevp_ui);
@@ -636,21 +577,18 @@ static int __init aml_demod_init(void)
 	/*              IRQF_SHARED, "aml_demod", */
 	/*              (void *)aml_demod_dev_id); */
 	/* if (r) { */
-	/*      pr_dbg("aml_demod irq register error.\n"); */
+	/*      PR_DBG("aml_demod irq register error.\n"); */
 	/*      r = -ENOENT; */
 	/*      goto err0; */
 	/* } */
 
 	/* sysfs node creation */
 	r = class_register(&aml_demod_class);
-	if (r) {
-		pr_dbg("create aml_demod class fail\r\n");
+	if (r)
 		goto err1;
-	}
 
 	r = alloc_chrdev_region(&aml_demod_devno, 0, 1, DEVICE_NAME);
 	if (r < 0) {
-		PR_ERR("aml_demod: failed to alloc major number\n");
 		r = -ENODEV;
 		goto err2;
 	}
@@ -658,7 +596,6 @@ static int __init aml_demod_init(void)
 	//init demod_device_t
 	demod_dev = kzalloc(sizeof(*demod_dev), GFP_KERNEL);
 	if (!demod_dev) {
-		PR_ERR("kzalloc for demod_device_t error\n");
 		r = -ENOMEM;
 		goto err3;
 	}
@@ -666,7 +603,6 @@ static int __init aml_demod_init(void)
 	//init demod_priv
 	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
 	if (!priv) {
-		PR_ERR("kzalloc for demod_priv error\n");
 		r = -ENOMEM;
 		goto err4;
 	}
@@ -676,19 +612,14 @@ static int __init aml_demod_init(void)
 	demod_dev->dev.owner = THIS_MODULE;
 	/* connect the major/minor number to cdev */
 	r = cdev_add(&demod_dev->dev, aml_demod_devno, 1);
-	if (r) {
-		PR_ERR("aml_demod:failed to add cdev\n");
+	if (r)
 		goto err5;
-	}
 
 	aml_demod_dev = device_create(&aml_demod_class, NULL,
-				      MKDEV(MAJOR(aml_demod_devno), 0), NULL,
-				      DEVICE_NAME);
+			MKDEV(MAJOR(aml_demod_devno), 0), NULL, DEVICE_NAME);
 
-	if (IS_ERR(aml_demod_dev)) {
-		pr_dbg("Can't create aml_demod device\n");
+	if (IS_ERR_OR_NULL(aml_demod_dev))
 		goto err6;
-	}
 
 	priv->dev = aml_demod_dev;
 	strncpy(priv->name, DEVICE_NAME, sizeof(priv->name));
@@ -697,10 +628,9 @@ static int __init aml_demod_init(void)
 	demod_dev->priv = priv;
 	mutex_init(&demod_lock);
 
-	pr_dbg("%s ok.\n", __func__);
+	PR_INFO("%s ok\n", __func__);
 
 #if defined(CONFIG_AM_AMDEMOD_FPGA_VER) && !defined(CONFIG_AM_DEMOD_DVBAPI)
-	pr_dbg("sdio_init\n");
 	sdio_init();
 #endif
 	//aml_demod_ui_init();
@@ -718,12 +648,14 @@ err3:
 	unregister_chrdev_region(aml_demod_devno, 1);
 
 err2:
-/*    free_irq(INT_DEMOD, (void *)aml_demod_dev_id);*/
+	/* free_irq(INT_DEMOD, (void *)aml_demod_dev_id);*/
 
 err1:
 	class_unregister(&aml_demod_class);
 
-/*  err0:*/
+/* err0:*/
+	PR_INFO("%s fail %d\n", __func__, r);
+
 	return r;
 }
 
@@ -734,13 +666,12 @@ static void __exit aml_demod_exit(void)
 #endif
 {
 	struct demod_priv *priv = demod_dev->priv;
-	pr_dbg("Amlogic Demod DVB-T/C DebugIF Exit\n");
 
 	unregister_chrdev_region(aml_demod_devno, 1);
 	device_destroy(priv->class, priv->dev->devt);
 	cdev_del(&demod_dev->dev);
 
-	/*   free_irq(INT_DEMOD, (void *)aml_demod_dev_id); */
+	/* free_irq(INT_DEMOD, (void *)aml_demod_dev_id); */
 
 	class_unregister(priv->class);
 

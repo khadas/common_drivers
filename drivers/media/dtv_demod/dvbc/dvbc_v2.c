@@ -10,8 +10,6 @@
 #include "aml_demod.h"
 #include "demod_func.h"
 
-/*#define dprintk(a ...)	aml_dbgdvbc_reg(a)*/
-
 void enable_qam_int(int idx)
 {
 	unsigned long mask;
@@ -42,20 +40,20 @@ int dvbc_cci_task(void *data)
 	while (1) {
 		msleep(200);
 		if ((((dvbc_read_reg(0x18)) & 0x1) == 1)) {
-			PR_DVBC("demod [id %d] [cci]lock ", demod->id);
+			PR_DVBC("[id %d] [cci]lock\n", demod->id);
 			if (demod->cciflag == 0) {
 				dvbc_write_reg(0xa8, 0);
 				dvbc_write_reg(0xac, 0);
-				PR_DVBC("demod [id %d] no cci ", demod->id);
+				PR_DVBC("[id %d] no cci\n", demod->id);
 				demod->cciflag = 0;
 			}
-			PR_DVBC("\n");
+
 			msleep(500);
 			continue;
 		}
 
 		if (demod->cciflag == 1) {
-			PR_DVBC("demod [id %d] [cci] cciflag is 1, wait 20\n",
+			PR_DVBC("[id %d] [cci] cciflag is 1, wait 20\n",
 					demod->id);
 			msleep(20000);
 		}
@@ -131,8 +129,8 @@ int dvbc_cci_task(void *data)
 			demod->cciflag = 0;
 		}
 
-		PR_DVBC("%s demod [id %d] [cci] cciflag is %d.\n",
-				__func__, demod->id, demod->cciflag);
+		PR_DVBC("[id %d] [cci] cciflag %d\n",
+				demod->id, demod->cciflag);
 	}
 	return 0;
 }
@@ -147,26 +145,22 @@ int dvbc_get_cci_task(struct aml_dtvdemod *demod)
 
 void dvbc_create_cci_task(struct aml_dtvdemod *demod)
 {
-	int ret;
-
 	/*dvbc_write_reg(QAM_BASE+0xa8, 0x42b2ebe3); // enable CCI */
 	/*dvbc_write_reg(QAM_BASE+0xac, 0x42b2ebe3); // enable CCI */
 	/*if(dvbc.mode == 4) // 256QAM*/
 	/*dvbc_write_reg(QAM_BASE+0x54, 0xa25705fa); // */
-	ret = 0;
+
 	demod->cci_task = kthread_create(dvbc_cci_task, (void *)demod,
 			"cci_task%d", demod->id);
-	if (ret != 0) {
-		PR_DVBC("[%s] demod [id %d] Create cci kthread error!\n",
-				__func__, demod->id);
+	if (IS_ERR(demod->cci_task)) {
+		PR_DVBC("[id %d] Create cci kthread error\n", demod->id);
 		demod->cci_task = NULL;
 		return;
 	}
 
 	wake_up_process(demod->cci_task);
 
-	PR_DVBC("[%s] demod [id %d] Create cci kthread and wake up!\n",
-			__func__, demod->id);
+	PR_DVBC("[id %d] Create cci kthread and wake up\n", demod->id);
 }
 
 void dvbc_kill_cci_task(struct aml_dtvdemod *demod)
@@ -174,14 +168,13 @@ void dvbc_kill_cci_task(struct aml_dtvdemod *demod)
 	if (demod->cci_task) {
 		kthread_stop(demod->cci_task);
 		demod->cci_task = NULL;
-		PR_DVBC("[%s] demod [id %d] kill cci kthread !\n",
-				__func__, demod->id);
+		PR_DVBC("[id %d] kill cci kthread\n", demod->id);
 	}
 }
 
 u32 dvbc_set_qam_mode(unsigned char mode)
 {
-	PR_DVBC("auto change mode ,now mode is %d\n", mode);
+	PR_DVBC("set qam mode %d\n", mode);
 	dvbc_write_reg(0x008, (mode & 7));
 	/* qam mode */
 	switch (mode) {
@@ -407,7 +400,7 @@ void dvbc_reg_initial_old(struct aml_dtvdemod *demod)
 	ch_if = demod->demod_status.ch_if;	/* kHz */
 	ch_bw = demod->demod_status.ch_bw;	/* kHz */
 	symb_rate = demod->demod_status.symb_rate;	/* k/sec */
-	PR_DVBC("ch_if is %d,  %d,	%d,  %d, %d\n",
+	PR_DVBC("ch_if %d, %d, %d, %d, %d\n",
 		ch_if, ch_mode, ch_freq, ch_bw, symb_rate);
 /*	  ch_mode=4;*/
 /*		dvbc_write_reg(DEMOD_CFG_BASE,0x00000007);*/
@@ -667,7 +660,7 @@ void dvbc_reg_initial_old(struct aml_dtvdemod *demod)
 		tmp = 40000000 / adc_freq;
 		max_frq_off = tmp * max_frq_off;
 	}
-	PR_DVBC("max_frq_off is %x,\n", max_frq_off);
+	PR_DVBC("max_frq_off %x,\n", max_frq_off);
 	dvbc_write_reg(0x02c, max_frq_off & 0x3fffffff);
 	/* max frequency offset, by raymond 20121208 */
 

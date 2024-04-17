@@ -76,6 +76,12 @@
 
 #define FRC_ALG_VER_SIZE     64
 
+#define RD_REG_MAX   50
+#define RD_MOTION_BY_MEMC_KO   0
+#define RD_MOTION_BY_VPU_ISR   1
+#define RD_MOTION_BY_INP_ISR   2
+#define RD_MOTION_BY_RDMA_IN   3
+
 enum dbg_level {
 	dbg_frc = 0,
 	dbg_sts = 5,
@@ -169,6 +175,11 @@ struct frc_holdline_s {
 	u32 reg_mc_dly_vofst0;//fixed
 };
 
+struct frc_reg_val {
+	u32 addr;
+	u32 val;
+};
+
 struct frc_top_type_s {
 	/*input*/
 	u16       hsize;
@@ -189,7 +200,7 @@ struct frc_top_type_s {
 	u8        chip;   // 1:T3, 2:T5M
 	u16       other_set1;
 	u8        rdma_en; //1:rdma 0:cpu interrupt access reg
-	u8        rdma_reserved1;
+	u8        motion_ctrl;  // for frc motion ctrl
 	u8        rdma_reserved2;
 	u8        rdma_reserved3;
 	u32       frc_prot_mode;//0:memc prefetch acorrding mode frame 1:memc prefetch 1 frame
@@ -208,7 +219,6 @@ struct frc_top_type_s {
 	u16 video_duration;
 	u8  frc_deblur_level;
 	u8  frc_reserved;
-
 };
 
 struct frc_fw_alg_ctrl_s {
@@ -235,6 +245,7 @@ struct frc_fw_data_s {
 	struct frc_top_type_s frc_top_type;
 	struct frc_holdline_s holdline_parm;
 	struct frc_fw_alg_ctrl_s  frc_fw_alg_ctrl;
+	struct frc_reg_val reg_val[RD_REG_MAX];
 
 	void (*frc_input_cfg)(struct frc_fw_data_s *fw_data);
 	void (*frc_memc_level)(struct frc_fw_data_s *fw_data);

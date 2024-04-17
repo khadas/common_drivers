@@ -1018,18 +1018,6 @@ static const struct pll_params_table t7_hifi_pll_table[] = {
 };
 #endif
 
-/*
- * Internal hifi pll emulation configuration parameters
- */
-static const struct reg_sequence t7_hifi_init_regs[] = {
-	{ .reg = ANACTRL_HIFIPLL_CTRL1,	.def = 0x00014820 }, /*frac = 20.16M */
-	{ .reg = ANACTRL_HIFIPLL_CTRL2,	.def = 0x00000000 },
-	{ .reg = ANACTRL_HIFIPLL_CTRL3,	.def = 0x6a285c00 },
-	{ .reg = ANACTRL_HIFIPLL_CTRL4,	.def = 0x65771290 },
-	{ .reg = ANACTRL_HIFIPLL_CTRL5,	.def = 0x3927200a },
-	{ .reg = ANACTRL_HIFIPLL_CTRL6,	.def = 0x56540000 }
-};
-
 static struct clk_regmap t7_hifi_pll_dco = {
 	.data = &(struct meson_clk_pll_data){
 		.en = {
@@ -1063,8 +1051,6 @@ static struct clk_regmap t7_hifi_pll_dco = {
 			.width   = 1,
 		},
 		.table = t7_hifi_pll_table,
-		.init_regs = t7_hifi_init_regs,
-		.init_count = ARRAY_SIZE(t7_hifi_init_regs),
 		.flags = CLK_MESON_PLL_ROUND_CLOSEST
 			 | CLK_MESON_PLL_FIXED_FRAC_WEIGHT_PRECISION,
 	},
@@ -1075,6 +1061,8 @@ static struct clk_regmap t7_hifi_pll_dco = {
 			.fw_name = "xtal",
 		},
 		.num_parents = 1,
+		/* HIFI PLL is 491.52M in U-boot, do not gate it in CCF */
+		.flags = CLK_IGNORE_UNUSED,
 	},
 };
 

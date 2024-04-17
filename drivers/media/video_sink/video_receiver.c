@@ -695,7 +695,7 @@ static struct vframe_s *recv_common_dequeue_frame(struct video_recv_s *ins,
 #endif
 			vf = common_vf_get(ins);
 #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
-			if (get_top1_onoff()) {
+			if (get_top1_onoff() == 3) {
 				if (ins->save_vf_en && ins->save_vf) {
 					/* need toggle */
 					ins->toggle_vf = ins->save_vf;
@@ -709,16 +709,25 @@ static struct vframe_s *recv_common_dequeue_frame(struct video_recv_s *ins,
 					ins->save_vf_en = true;
 				}
 				if (debug_flag & DEBUG_FLAG_PRINT_FRAME_DETAIL) {
-					pr_info("%s: save_vf_num=%d, vf=%p, save_vf=%p, toggle_vf=%p\n",
+					pr_info("%s: save_vf_en=%d,vf=%p(%d),save_vf=%p(%d),toggle_vf=%p(%d)\n",
 						__func__,
 						ins->save_vf_en, vf,
+						vf ? vf->omx_index : 0,
 						ins->save_vf ? ins->save_vf : NULL,
-						ins->toggle_vf ? ins->toggle_vf : NULL);
+						ins->save_vf ? ins->save_vf->omx_index : 0,
+						ins->toggle_vf ? ins->toggle_vf : NULL,
+						ins->toggle_vf ? ins->toggle_vf->omx_index : 0);
 				}
 			} else {
 				ins->toggle_vf = vf;
+				if (debug_flag & DEBUG_FLAG_PRINT_FRAME_DETAIL)
+					pr_info("put save_vf=%p(%d),toggle_vf=%p(%d)\n",
+						ins->save_vf ? ins->save_vf : NULL,
+						ins->save_vf ? ins->save_vf->omx_index : 0,
+						vf,
+						vf ? vf->omx_index : 0);
 				if (ins->save_vf) {
-					kfifo_put(&ins->put_q, ins->save_vf);
+					common_vf_put(ins, ins->save_vf);
 					ins->save_vf = NULL;
 				}
 				ins->save_vf_en = false;
@@ -731,7 +740,7 @@ static struct vframe_s *recv_common_dequeue_frame(struct video_recv_s *ins,
 #endif
 #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
 				/*top1 enable, need check one more frame*/
-				if (get_top1_onoff()) {/*todo*/
+				if (get_top1_onoff() ==  3) {/*todo*/
 					vf_top1 = ins->save_vf;//common_vf_peek(ins);
 					/*wait next new Fn+1 for top1, proc top2 Fn + top1 Fn+1*/
 					/*if no new frame, proc top2 Fn + repeat Top1 Fn*/
@@ -763,9 +772,14 @@ static struct vframe_s *recv_common_dequeue_frame(struct video_recv_s *ins,
 
 				if (glayer_info[0].display_path_id ==
 				    ins->path_id || is_multi_dv_mode()) {
-					if (!get_top1_onoff() || !vf_top1) {/*no top1*/
+					if (get_top1_onoff() == 0) {/*no top1*/
 						dv_toggle_frame(vf, vd_path, true);
-					} else if (vf_top1) {/*top1 next + top2 cur*/
+					} else if (get_top1_onoff() == 1) {
+						/*top1 enabled but no need get frame in advance*/
+						vf_top1 = vf;
+						amdv_parse_metadata_hw5_top1(vf_top1);
+						dv_toggle_frame(vf, VD1_PATH, true);
+					} else if (get_top1_onoff() == 3) {/*top1 next + top2 cur*/
 						amdv_parse_metadata_hw5_top1(vf_top1);
 						dv_toggle_frame(vf, vd_path, true);
 					}

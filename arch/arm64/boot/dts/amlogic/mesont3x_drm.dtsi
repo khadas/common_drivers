@@ -44,6 +44,7 @@
 		crtcmask_of_osd = <0 0 0>; /* indicate the crtc mask of osd plane */
 		crtcmask_of_video = <0 0>; /* indicate the crtc mask of video plane */
 		logo_skip = <0>;
+		force_slice = <1>; /*1: enable force slice 0: disable force slice */
 
 		vpu_topology: vpu_topology {
 			vpu_blocks {

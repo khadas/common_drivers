@@ -107,6 +107,48 @@ static const struct drm_mode_config_helper_funcs meson_mode_config_helpers = {
 	.atomic_commit_tail = meson_atomic_helper_commit_tail,
 };
 
+int am_meson_get_vrr_range_ioctl(struct drm_device *dev,
+			void *data, struct drm_file *file_priv)
+{
+	int num_group = 0;
+	u32 conn_id;
+	struct drm_connector *connector;
+	struct drm_vrr_mode_groups *groups = data;
+	struct drm_vrr_mode_group *group;
+	int i = 0;
+
+	conn_id = groups->conn_id;
+	connector = drm_connector_lookup(dev, file_priv, conn_id);
+	if (!connector)
+		return -ENOENT;
+
+	if (connector->connector_type == DRM_MODE_CONNECTOR_HDMIA)
+		num_group = am_meson_hdmi_get_vrr_range(dev, data, file_priv);
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+	else if (connector->connector_type == DRM_MODE_CONNECTOR_LVDS)
+		num_group = am_meson_lcd_get_vrr_range(connector, groups->groups,
+						       MAX_VRR_MODE_GROUP);
+#endif
+	else
+		return -ENOENT;
+
+	if (!num_group) {
+		DRM_ERROR("get vrr error or not support qms\n");
+		return -EINVAL;
+	}
+
+	groups->num = num_group;
+
+	for (i = 0; i < num_group; i++) {
+		group = &groups->groups[i];
+		DRM_DEBUG("%s,%d, %d, %d, %d\n", __func__,
+		group->vrr_max, group->vrr_min, group->width, group->height);
+	}
+
+	drm_connector_put(connector);
+	return 0;
+}
+
 static const struct drm_ioctl_desc meson_ioctls[] = {
 	#ifdef CONFIG_AMLOGIC_DRM_USE_ION
 	DRM_IOCTL_DEF_DRV(MESON_GEM_CREATE, am_meson_gem_create_ioctl,
@@ -117,9 +159,7 @@ static const struct drm_ioctl_desc meson_ioctls[] = {
 #ifndef CONFIG_AMLOGIC_DRM_CUT_HDMI
 	DRM_IOCTL_DEF_DRV(MESON_TESTATTR, am_meson_mode_testattr_ioctl, 0),
 #endif
-#ifndef CONFIG_AMLOGIC_DRM_CUT_HDMI
 	DRM_IOCTL_DEF_DRV(MESON_GET_VRR_RANGE, am_meson_get_vrr_range_ioctl, 0),
-#endif
 	DRM_IOCTL_DEF_DRV(MESON_RMFB, am_meson_mode_rmfb_ioctl, 0),
 	#if IS_ENABLED(CONFIG_SYNC_FILE)
 	DRM_IOCTL_DEF_DRV(MESON_DMABUF_EXPORT_SYNC_FILE, am_meson_dmabuf_export_sync_file_ioctl,

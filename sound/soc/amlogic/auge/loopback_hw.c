@@ -50,6 +50,21 @@ void tdminlb_set_format(int i2s_fmt)
 			     0x1 << 30,
 			     !!i2s_fmt << 30 /* 0:tdm mode; 1: i2s mode; */
 	);
+	audiobus_update_bits(EE_AUDIO_TDMIN_LB_CTRL,
+			     0x1 << 25,
+			!!i2s_fmt << 25 /* 0:tdm mode; 1: i2s mode, revert ws; */
+	);
+}
+
+void tdminlb_set_slot_num(int slot_num, bool i2s_mode)
+{
+	int tdminlb_slot_num = 1;
+
+	if (!i2s_mode && slot_num > 2)
+		tdminlb_slot_num = slot_num - 1;
+	audiobus_update_bits(EE_AUDIO_TDMIN_LB_CTRL,
+				0xf << 8,
+				tdminlb_slot_num << 8);
 }
 
 void tdminlb_set_ctrl(enum datalb_src src)
@@ -243,4 +258,27 @@ void lb_set_chnum_en(int id, bool en, bool chnum_en)
 
 		audiobus_update_bits(reg, 0x1 << 27, en << 27);
 	}
+}
+
+void loopback_data_orig_channel_sync(int loopback_id, int channel, int enable)
+{
+	unsigned int reg, offset;
+
+	offset = EE_AUDIO_LB_B_CHSYNC_CTRL_ORIG - EE_AUDIO_LB_A_CHSYNC_CTRL_ORIG;
+	reg = EE_AUDIO_LB_A_CHSYNC_CTRL_ORIG + offset * loopback_id;
+	audiobus_update_bits(reg, 0xff, channel - 1);
+	audiobus_update_bits(reg, 1 << 29, 1 << 29);
+	audiobus_update_bits(reg, 1 << 31, enable << 31);
+}
+
+void loopback_data_insert_channel_sync(int loopback_id, int channel, int enable)
+{
+	unsigned int reg, offset;
+
+	offset = EE_AUDIO_LB_B_CHSYNC_CTRL_INSERT - EE_AUDIO_LB_A_CHSYNC_CTRL_INSERT;
+	reg = EE_AUDIO_LB_A_CHSYNC_CTRL_INSERT + offset * loopback_id;
+
+	audiobus_update_bits(reg, 0xff, channel - 1);
+	audiobus_update_bits(reg, 1 << 29, 1 << 29);
+	audiobus_update_bits(reg, 1 << 31, enable << 31);
 }

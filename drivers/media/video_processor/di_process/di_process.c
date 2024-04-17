@@ -296,6 +296,141 @@ void dp_put_file_ext(int dev_index, struct file *file_vf)
 }
 EXPORT_SYMBOL(dp_put_file_ext);
 
+static int init_dummy_vf_param(struct di_process_dev *dev, struct vframe_s *src_vf)
+{
+	struct userdata_param_t *userdata = NULL;
+	u32 sei_size = 0;
+	char *sei_ptr = NULL;
+	char *temp = NULL;
+
+	if (!dev || !src_vf) {
+		pr_err("%s: param is invalid.\n", __func__);
+		return -EINVAL;
+	}
+
+	//hdr10p_data
+	if (src_vf->hdr10p_data_size > 0 &&
+		src_vf->hdr10p_data_size <= 128 &&
+		src_vf->hdr10p_data_buf) {
+		temp = vmalloc(src_vf->hdr10p_data_size);
+		if (temp) {
+			memset(temp, 0, src_vf->hdr10p_data_size);
+			memcpy(temp, src_vf->hdr10p_data_buf, src_vf->hdr10p_data_size);
+			dev->dummy_vf.hdr10p_data_size = src_vf->hdr10p_data_size;
+			dev->dummy_vf.hdr10p_data_buf = temp;
+		} else {
+			dp_print(dev->index, PRINT_ERROR, "alloc hdr10+ failed.\n");
+			dev->dummy_vf.hdr10p_data_size = 0;
+			dev->dummy_vf.hdr10p_data_buf = NULL;
+		}
+	} else {
+		dp_print(dev->index, PRINT_ERROR, "no hdr10+ data.\n");
+		dev->dummy_vf.hdr10p_data_size = 0;
+		dev->dummy_vf.hdr10p_data_buf = NULL;
+	}
+
+	//meta_data
+	if (src_vf->src_fmt.sei_magic_code == SEI_MAGIC_CODE) {
+		sei_ptr = (char *)get_sei_from_src_fmt(src_vf, &sei_size);
+		if (sei_ptr && sei_size) {
+			temp = vmalloc(sei_size);
+			if (temp) {
+				memset(temp, 0, sei_size);
+				memcpy(temp, sei_ptr, sei_size);
+				dev->dummy_vf.src_fmt.sei_size = sei_size;
+				dev->dummy_vf.src_fmt.sei_ptr = temp;
+			} else {
+				dp_print(dev->index, PRINT_ERROR, "alloc meta failed.\n");
+				dev->dummy_vf.src_fmt.sei_size = 0;
+				dev->dummy_vf.src_fmt.sei_ptr = NULL;
+				dev->dummy_vf.src_fmt.sei_magic_code = 0;
+			}
+		} else {
+			dp_print(dev->index, PRINT_ERROR, "invalid meta_data.\n");
+			dev->dummy_vf.src_fmt.sei_size = 0;
+			dev->dummy_vf.src_fmt.sei_ptr = NULL;
+			dev->dummy_vf.src_fmt.sei_magic_code = 0;
+		}
+	} else {
+		dp_print(dev->index, PRINT_ERROR, "no meta_data.\n");
+		dev->dummy_vf.src_fmt.sei_size = 0;
+		dev->dummy_vf.src_fmt.sei_ptr = NULL;
+		dev->dummy_vf.src_fmt.sei_magic_code = 0;
+	}
+
+	//user_data
+	if (is_ud_param_valid(src_vf->vf_ud_param)) {
+		dp_print(dev->index, PRINT_OTHER, "has ud\n");
+		userdata = &src_vf->vf_ud_param.ud_param;
+		if (userdata->pbuf_addr &&
+			userdata->buf_len > 0 &&
+			userdata->buf_len <= VF_UD_MAX_SIZE) {
+			temp = vmalloc(userdata->buf_len);
+			if (temp) {
+				memset(temp, 0, userdata->buf_len);
+				memcpy(temp, userdata->pbuf_addr, userdata->buf_len);
+				dev->dummy_vf.vf_ud_param.ud_param.pbuf_addr = temp;
+			} else {
+				dp_print(dev->index, PRINT_ERROR, "alloc ud failed.\n");
+				dev->dummy_vf.vf_ud_param.magic_code = 0;
+				dev->dummy_vf.vf_ud_param.ud_param.pbuf_addr = NULL;
+			}
+		} else {
+			dp_print(dev->index, PRINT_ERROR, "invalid ud param.\n");
+			dev->dummy_vf.vf_ud_param.magic_code = 0;
+			dev->dummy_vf.vf_ud_param.ud_param.pbuf_addr = NULL;
+		}
+	} else {
+		dp_print(dev->index, PRINT_ERROR, "no ud.\n");
+		dev->dummy_vf.vf_ud_param.magic_code = 0;
+		dev->dummy_vf.vf_ud_param.ud_param.pbuf_addr = NULL;
+	}
+
+	return 0;
+}
+
+static int uninit_dummy_vf_param(struct di_process_dev *dev, struct di_buffer *buf)
+{
+	if (!dev || !buf) {
+		pr_err("%s: param is invalid.\n", __func__);
+		return -EINVAL;
+	}
+
+	if (!buf->vf) {
+		dp_print(dev->index, PRINT_ERROR, "%s: NULL vf.\n", __func__);
+		return -EINVAL;
+	}
+
+	buf->caller_mng.dummy = buf->vf->crop[2];
+	if (buf->caller_mng.dummy) {
+		dp_print(dev->index, PRINT_OTHER, "free dummy frame alloc buf.\n");
+		if (dev->dummy_vf.hdr10p_data_buf) {
+			vfree(dev->dummy_vf.hdr10p_data_buf);
+			dev->dummy_vf.hdr10p_data_buf = NULL;
+		} else {
+			dp_print(dev->index, PRINT_OTHER, "no hdr10 data.\n");
+		}
+
+		if (dev->dummy_vf.src_fmt.sei_ptr) {
+			vfree(dev->dummy_vf.src_fmt.sei_ptr);
+			dev->dummy_vf.src_fmt.sei_ptr = NULL;
+		} else {
+			dp_print(dev->index, PRINT_OTHER, "no sei data.\n");
+		}
+
+		if (dev->dummy_vf.vf_ud_param.ud_param.pbuf_addr) {
+			vfree(dev->dummy_vf.vf_ud_param.ud_param.pbuf_addr);
+			dev->dummy_vf.vf_ud_param.ud_param.pbuf_addr = NULL;
+		} else {
+			dp_print(dev->index, PRINT_OTHER, "no ud data.\n");
+		}
+	} else {
+		dp_print(dev->index, PRINT_OTHER, "not dummy vf.\n");
+	}
+
+	return 0;
+}
+
 static void dp_put_file(struct di_process_dev *dev, struct file *file_vf)
 {
 	if (!file_vf) {
@@ -582,6 +717,7 @@ int process_empty_done_buf(struct di_process_dev *dev, struct di_buffer *buf)
 	file_vf = buf->caller_mng.src_file;
 
 	buf->caller_mng.queued = false;
+	uninit_dummy_vf_param(dev, buf);
 
 	if (!kfifo_put(&dev->di_input_free_q, buf))
 		dp_print(dev->index, PRINT_ERROR,
@@ -984,6 +1120,8 @@ static int di_process_uninit(struct di_process_dev *dev)
 
 			buf->caller_mng.queued = false;
 
+			uninit_dummy_vf_param(dev, buf);
+
 			if (!kfifo_put(&dev->di_input_free_q, buf))
 				dp_print(dev->index, PRINT_ERROR,
 				"%s: put di_input_free_q fail\n", __func__);
@@ -1176,12 +1314,7 @@ static int di_process_set_frame(struct di_process_dev *dev, struct frame_info_t 
 		dev->received_frame[i].dummy = true;
 
 		dev->dummy_vf.decontour_pre = NULL;
-		dev->dummy_vf.hdr10p_data_size = 0;
-		dev->dummy_vf.hdr10p_data_buf = NULL;
-		dev->dummy_vf.meta_data_size = 0;
-		dev->dummy_vf.meta_data_buf = NULL;
-		dev->dummy_vf.vf_ud_param.magic_code = 0;
-		dev->dummy_vf.src_fmt.sei_magic_code = 0;
+		init_dummy_vf_param(dev, vf);
 
 		atomic_set(&dev->received_frame[i].on_use, true);
 

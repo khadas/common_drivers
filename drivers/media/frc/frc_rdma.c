@@ -609,6 +609,72 @@ int _frc_rdma_wr_reg_out(u32 addr, u32 val)
 	return 0;
 }
 
+int frc_rdma_rd_reg(u32 addr)
+{
+	u32 reg_val;
+	u32 i, j, tol;
+	struct frc_rdma_info *rdma_info;
+	struct frc_rdma_s *frc_rdma = get_frc_rdma();
+	int pr_flag = 11;
+	int match = 0;
+
+	rdma_info = (struct frc_rdma_info *)frc_rdma->rdma_info[0]; // man
+	tol = rdma_info->rdma_item_count;
+
+	for (i = 0; i < tol; i++) {
+		if (addr == rdma_info->rdma_table_addr[i * 2]) {
+			reg_val = rdma_info->rdma_table_addr[i * 2 + 1];
+			match = 1;
+			break;
+		}
+	}
+
+	if (!match) {
+		reg_val = READ_FRC_REG(addr);
+		pr_frc(pr_flag, "match error, rdma read error\n");
+	} else {
+		pr_frc(pr_flag, "match, rdma read success\n");
+	}
+
+	pr_frc(pr_flag, "match:%d, addr:%04x, value:%08x\n",
+		match,
+		rdma_info->rdma_table_addr[i * 2],
+		rdma_info->rdma_table_addr[i * 2 + 1]);
+
+	if (rdma_trace_enable) {
+		for (j = 0; j < rdma_trace_num; j++) {
+			if (addr == rdma_trace_reg[j]) {
+				pr_frc(0, "(%s) handle out_isr, %04x=0x%08x (%d)\n",
+					__func__, addr, reg_val,
+					rdma_info->rdma_item_count);
+			}
+		}
+	}
+	return reg_val;
+}
+
+int _frc_rdma_rd_reg_man(u32 addr)
+{
+	u32 reg_val = readl(frc_base + (addr << 2));
+	int pr_flag = 10;
+
+	if (get_frc_devp()->power_on_flag == 0)
+		return 0;
+
+	if (is_rdma_enable()) {
+		// frc_rdma_out_table_config(addr, val);
+		reg_val = frc_rdma_rd_reg(addr);
+		pr_frc(pr_flag, "rdma on, channel rd addr:0x%04x, reg_val:0x%08x\n",
+			addr, reg_val);
+	} else {
+		// reg_val = readl(frc_base + (addr << 2));
+		pr_frc(pr_flag, "rdma off, channel rd addr:0x%04x, reg_val:0x%08x\n",
+			addr, reg_val);
+	}
+
+	return reg_val;
+}
+
 int FRC_RDMA_VSYNC_WR_BITS(u32 addr, u32 val, u32 start, u32 len)
 {
 	if (get_frc_devp()->power_on_flag == 0)
@@ -899,14 +965,14 @@ int frc_rdma_config(int handle, u32 trigger_type)
 
 		WRITE_FRC_BITS(rdma_regadr->addr_inc_reg, 0,
 			rdma_regadr->addr_inc_reg_bitpos, 1);
-		WRITE_FRC_BITS(rdma_regadr->rw_flag_reg, 1,   //1:write
+		WRITE_FRC_BITS(rdma_regadr->rw_flag_reg, 0,   //1:write
 			rdma_regadr->rw_flag_reg_bitpos, 1);
 
 		WRITE_FRC_REG_BY_CPU(rdma_regadr->trigger_mask_reg,
 			READ_FRC_REG(rdma_regadr->trigger_mask_reg) | 1);
 
 		pr_frc(pr_flag, "config manual write done\n");
-		rdma_info->rdma_item_count = 0;
+		// rdma_info->rdma_item_count = 0;
 	} else {
 		//auto RDMA
 		WRITE_FRC_BITS(rdma_regadr->trigger_mask_reg, 0,
@@ -990,6 +1056,24 @@ void frc_rdma_info_init(void)
 	}
 }
 
+void frc_rdma_rd_table_init(struct frc_dev_s *devp)
+{
+	int i;
+	struct frc_fw_data_s *fw_data;
+	struct frc_rdma_info *rdma_info;
+	struct frc_rdma_s *frc_rdma = get_frc_rdma();
+
+	rdma_info = (struct frc_rdma_info *)frc_rdma->rdma_info[0]; // man
+	fw_data = (struct frc_fw_data_s *)devp->fw_data;
+
+	for (i = 0; i < RD_REG_MAX; i++) {
+		if (fw_data->reg_val[i].addr) {
+			rdma_info->rdma_table_addr[i * 2] = fw_data->reg_val[i].addr;
+			rdma_info->rdma_item_count++;
+		}
+	}
+}
+
 int frc_rdma_init(void)
 {
 	u32 i, data32;
@@ -1041,6 +1125,9 @@ int frc_rdma_init(void)
 		irq_status.len = 16;
 		rdma_ctrl = FRC_RDMA_CTRL_T3X;
 	}
+
+	// rdma read init
+	frc_rdma_rd_table_init(devp);
 
 	data32  = 0;
 	data32 |= 0 << 7; /* write ddr urgent */

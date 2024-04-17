@@ -124,6 +124,48 @@ static unsigned long aml_cancel_transfer(struct file *filp, struct aml_usbcam *u
 	return 0;
 }
 
+static unsigned long aml_get_usbcam_state(struct aml_usbcam *usbcam_dev, unsigned long arg)
+{
+	int ret;
+	unsigned int status = usbcam_dev->device_state;
+
+	usbcam_dbg("get usbcam state\n");
+
+	if (!usbcam_dev || !arg) {
+		usbcam_err("invalid parameter\n");
+		return -EINVAL;
+	}
+
+	ret = copy_to_user((unsigned int *)arg, &status, sizeof(unsigned int));
+	if (ret) {
+		usbcam_err("copy data to user error\n");
+		return ret;
+	}
+
+	return ret;
+}
+
+static unsigned long aml_set_usbcam_state(struct aml_usbcam *usbcam_dev, unsigned long arg)
+{
+	int ret;
+
+	usbcam_dbg("set usbcam state\n");
+
+	if (!usbcam_dev || !arg) {
+		usbcam_err("invalid parameter\n");
+		return -EINVAL;
+	}
+
+	ret = copy_from_user(&usbcam_dev->device_state, (unsigned int *)arg,
+							sizeof(unsigned int));
+	if (ret) {
+		usbcam_err("copy data to user error\n");
+		return ret;
+	}
+
+	return ret;
+}
+
 static int aml_intf_open(struct inode *node, struct file *filp)
 {
 	struct aml_usbcam *usbcam_dev = NULL;
@@ -705,6 +747,14 @@ static long aml_intf_ioctl(struct file *filp, unsigned int cmd, unsigned long ar
 		usbcam_dbg("ioctl op: get usbcam module capabilities\n");
 		ret = aml_get_usbcam_capabilities(usbcam_dev, arg);
 		break;
+	case AML_USBCAM_IOC_GET_MODULE_STATE:
+		usbcam_dbg("ioctl op: get usbcam module status\n");
+		ret = aml_get_usbcam_state(usbcam_dev, arg);
+		break;
+	case AML_USBCAM_IOC_SET_MODULE_STATE:
+		usbcam_dbg("ioctl op: set usbcam module status\n");
+		ret = aml_set_usbcam_state(usbcam_dev, arg);
+		break;
 	default:
 		usbcam_err("unknown op type %08x", cmd);
 		ret = -1;
@@ -787,16 +837,25 @@ static const struct file_operations aml_intf_fops = {
 #endif
 };
 
+static char *aml_usbcam_class_devnode(struct device *dev, umode_t *mode)
+{
+	if (mode)
+		*mode = 0666;
+	return NULL;
+}
+
 static struct usb_class_driver aml_usbcam_command_class = {
 	.name = "cimodule_command%d",
 	.fops = &aml_intf_fops,
 	.minor_base = USBCAM_COMMAND_MINOR_BASE,
+	.devnode = aml_usbcam_class_devnode,
 };
 
 static struct usb_class_driver aml_usbcam_media_class = {
 	.name = "cimodule_media%d",
 	.fops = &aml_intf_fops,
 	.minor_base = USBCAM_MEDIA_MINOR_BASE,
+	.devnode = aml_usbcam_class_devnode,
 };
 
 static ssize_t usb_show(struct class *class,
@@ -1100,6 +1159,7 @@ static int aml_usbcam_probe(struct usb_interface *intf, const struct usb_device_
 
 	usbcam_dev->read_status = READ_STATUS_EMPTY;
 	usbcam_dev->device_status = DEVICE_STATUS_MATCH;
+	usbcam_dev->device_state = DEVICE_CONNECT;
 
 	usb_set_intfdata(intf, usbcam_dev);
 

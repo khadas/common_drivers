@@ -48,6 +48,7 @@
 		};
 
 		dsp_fw_reserved1:linux,dsp_fw1 {
+			status = "disabled";
 			compatible = "amlogic, dsp";
 			size = <0x0 0x400000>;
 			reg = <0x0 0x3800000 0x0 0x400000>;
@@ -335,7 +336,7 @@
 		key_name = "power";
 		key_code = <KEY_POWER>;
 		key-gpios = <&gpio GPIOF_7 GPIO_ACTIVE_HIGH>;
-		detect_mode = <0>;/*0:polling mode, 1:irq mode*/
+		detect_mode = <1>;/*0:polling mode, 1:irq mode*/
 	};
 
 	adc_keypad {

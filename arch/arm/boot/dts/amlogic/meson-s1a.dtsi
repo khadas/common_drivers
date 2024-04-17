@@ -1029,13 +1029,12 @@
 					<&clkc CLKID_FCLK_DIV2>;
 			clock-names = "gate", "fdiv2pll";
 			nand_clk_ctrl = <0xfe08c000>;
-			/* disabled host ecc poc bit */
-			dis_host_ecc = <4>;
+			infopage_force_hostecc;
 			#address-cells = <1>;
 			#size-cells = <0>;
 		};
 
-		ethmac: ethernet@fdc00000 {
+		ethmac: ethernet@fe368000 {
 			compatible = "amlogic,meson-axg-dwmac",
 				     "snps,dwmac-4.00";
 			reg = <0xfe368000 0x12ec>,
@@ -1126,6 +1125,42 @@
 		reg = <0xfe036000 0x400>;
 		reg_base = <0xfe037000>;
 		interrupts = <0 62 IRQ_TYPE_LEVEL_HIGH>;
+	};
+
+	cvbsout: cvbsout {
+		compatible = "amlogic, cvbsout-s1a";
+		status = "okay";
+
+		/* clk path */
+		/* 0:vid_pll vid2_clk */
+		/* 1:gp0_pll vid2_clk */
+		/* 2:vid_pll vid1_clk */
+		/* 3:gp0_pll vid1_clk */
+		clk_path = <0>;
+
+		/* performance: reg_address, reg_value */
+		/* s4 */
+		performance_pal = <0x1bf0  0x9 /* default Matrx625 CTCC value*/
+			0x1b12  0x80c0
+			0x1b05  0xf7
+			0x1b56  0x333
+			0x1c59  0xf25c
+			0xffff  0x0>; /* ending flag */
+		performance = <0x1bf0  0x9 /* ccitt033 SVA value */
+			0x1b12  0x8040
+			0x1b05  0xfd
+			0x1b56  0x333
+			0x1c59  0xf654
+			0xffff  0x0>; /* ending flag */
+		performance_ntsc = <0x1bf0  0x9
+			0x1b12  0x8020
+			0x1b03  0x0
+			0x1b04  0x0
+			0x1b05  0x0
+			0x1b06  0x0
+			0x1b56  0x333
+			0x1c59  0xf850
+			0xffff  0x0>; /* ending flag */
 	};
 
 	amhdmitx: amhdmitx{

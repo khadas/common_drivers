@@ -73,6 +73,7 @@ static struct meson_vdac_ctrl_s vdac_ctrl_enable_s4[] = {
 	{VDAC_REG_MAX, 0, 0, 0},
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static struct meson_vdac_ctrl_s vdac_ctrl_enable_s7[] = {
 	/* cdac_ctrl_rsv1[7:0] clk_delay_adj<2:0> */
 	{ANACTRL_VDAC_CTRL0, 2, 0, 3},
@@ -81,7 +82,6 @@ static struct meson_vdac_ctrl_s vdac_ctrl_enable_s7[] = {
 	{VDAC_REG_MAX, 0, 0, 0},
 };
 
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static struct meson_vdac_ctrl_s vdac_ctrl_enable_t5m[] = {
 	{ANACTRL_VDAC_CTRL0, 1, 4, 1}, /* chopper_clk_h */
 	{ANACTRL_VDAC_CTRL1, 1, 7, 1}, /* cdac_en */
@@ -214,6 +214,19 @@ static struct meson_vdac_data meson_s4d_vdac_data = {
 };
 #endif
 
+static struct meson_vdac_data meson_s1a_vdac_data = {
+	.cpu_id = VDAC_CPU_S1A,
+	.name = "meson-s1a-vdac",
+
+	.reg_cntl0 = ANACTRL_VDAC_CTRL0,
+	.reg_cntl1 = ANACTRL_VDAC_CTRL1,
+	.reg_vid_clk_ctrl2 = CLKCTRL_VID_CLK_CTRL2,
+	.reg_vid2_clk_div = CLKCTRL_VIID_CLK_DIV,
+	.ctrl_table = vdac_ctrl_enable_s4,
+	.bypass_cfg_cntl0 = 0x00418982, //vlsi suggestion value
+	.cvbsout_cfg_cntl0 = 0x00418982, //vlsi suggestion value
+};
+
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static struct meson_vdac_data meson_t5w_vdac_data = {
 	.cpu_id = VDAC_CPU_T5W,
@@ -267,20 +280,6 @@ static struct meson_vdac_data meson_txhd2_vdac_data = {
 	.bypass_cfg_cntl0 = 0x00411982, //vlsi suggestion value
 	.cvbsout_cfg_cntl0 = 0x00411a82, //vlsi suggestion value
 };
-#endif
-
-static struct meson_vdac_data meson_s1a_vdac_data = {
-	.cpu_id = VDAC_CPU_S1A,
-	.name = "meson-s1a-vdac",
-
-	.reg_cntl0 = ANACTRL_VDAC_CTRL0,
-	.reg_cntl1 = ANACTRL_VDAC_CTRL1,
-	.reg_vid_clk_ctrl2 = CLKCTRL_VID_CLK_CTRL2,
-	.reg_vid2_clk_div = CLKCTRL_VIID_CLK_DIV,
-	.ctrl_table = vdac_ctrl_enable_s4,
-	.bypass_cfg_cntl0 = 0x00418982, //vlsi suggestion value
-	.cvbsout_cfg_cntl0 = 0x00418982, //vlsi suggestion value
-};
 
 static struct meson_vdac_data meson_s7_vdac_data = {
 	.cpu_id = VDAC_CPU_S7,
@@ -294,6 +293,7 @@ static struct meson_vdac_data meson_s7_vdac_data = {
 	.bypass_cfg_cntl0 = 0x00419A82, //vlsi suggestion value
 	.cvbsout_cfg_cntl0 = 0x00419A82, //vlsi suggestion value
 };
+#endif
 
 const struct of_device_id meson_vdac_dt_match[] = {
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
@@ -341,6 +341,10 @@ const struct of_device_id meson_vdac_dt_match[] = {
 		.data		= &meson_s4d_vdac_data,
 	},
 #endif
+	{
+		.compatible = "amlogic, vdac-s1a",
+		.data		= &meson_s1a_vdac_data,
+	},
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	{
 		.compatible = "amlogic, vdac-t5w",
@@ -355,15 +359,11 @@ const struct of_device_id meson_vdac_dt_match[] = {
 		.compatible = "amlogic, vdac-txhd2",
 		.data		= &meson_txhd2_vdac_data,
 	},
-#endif
-	{
-		.compatible = "amlogic, vdac-s1a",
-		.data		= &meson_s1a_vdac_data,
-	},
 	{
 		.compatible = "amlogic, vdac-s7",
 		.data		= &meson_s7_vdac_data,
 	},
+#endif
 	{}
 };
 

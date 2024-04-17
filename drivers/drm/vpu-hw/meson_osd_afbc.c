@@ -362,6 +362,8 @@ static struct afbc_status_reg_s afbc_status_t3x_regs[3] = {
 	},
 
 };
+
+static bool afbc_first_update_done;
 #endif
 
 static int afbc_pix_format(u32 fmt_mode)
@@ -674,6 +676,58 @@ static void g12a_osd_afbc_set_state(struct meson_vpu_block *vblk,
 }
 
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+static void osd_afbc_ctrl_init(struct meson_vpu_block *vblk,
+	struct rdma_reg_ops *reg_ops, struct meson_vpu_pipeline_state *mvps)
+{
+	struct meson_vpu_pipeline *pipeline = vblk->pipeline;
+	int i;
+
+	if (pipeline->osd_axi_sel == 1) {
+		if (afbc_first_update_done)
+			return;
+
+		for (i = 0; i < MESON_MAX_OSDS; i++)
+			if (mvps->plane_info[i].enable && mvps->plane_info[i].afbc_en)
+				break;
+		if (i >= MESON_MAX_OSDS)
+			return;
+
+		/* osd axi sel afbcd and can not be changed */
+#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
+		reg_ops->rdma_write_reg_bits(MALI_AFBCD_TOP_CTRL,
+			is_amdv_graphic_on() ? 0 : 1, 14, 1);
+		MESON_DRM_BLOCK("osd0 amdv_graphic switch status: %d\n",
+			is_amdv_graphic_on());
+
+		reg_ops->rdma_write_reg_bits(MALI_AFBCD_TOP_CTRL,
+			is_amdv_graphic_on() ? 0 : 1, 19, 1);
+		MESON_DRM_BLOCK("osd1 amdv_graphic switch status: %d\n",
+			is_amdv_graphic_on());
+
+		reg_ops->rdma_write_reg_bits(MALI_AFBCD1_TOP_CTRL,
+			is_amdv_graphic_on_osd3() ? 0 : 1, 19, 1);
+		MESON_DRM_BLOCK("osd2 amdv_graphic switch status: %d\n",
+			is_amdv_graphic_on_osd3());
+#endif
+
+		reg_ops = pipeline->subs[0].reg_ops;
+		reg_ops->rdma_write_reg_bits(MALI_AFBCD_TOP_CTRL,
+						1, 16, 1); /* osd0 */
+		reg_ops->rdma_write_reg_bits(MALI_AFBCD_TOP_CTRL,
+						1, 21, 1); /* osd1 */
+
+		reg_ops = pipeline->subs[1].reg_ops;
+		reg_ops->rdma_write_reg_bits(MALI_AFBCD1_TOP_CTRL,
+						1, 21, 1); /* osd2 */
+
+		reg_ops = pipeline->subs[2].reg_ops;
+		reg_ops->rdma_write_reg_bits(MALI_AFBCD2_TOP_CTRL,
+						1, 21, 1); /* osd3 */
+
+		afbc_first_update_done = true;
+	}
+}
+
 static void t7_osd_afbc_set_state(struct meson_vpu_block *vblk,
 				  struct meson_vpu_block_state *state,
 				  struct meson_vpu_block_state *old_state)
@@ -707,6 +761,7 @@ static void t7_osd_afbc_set_state(struct meson_vpu_block *vblk,
 	core_enable = 0;
 
 	afbc_stat_reg = afbc->status_regs;
+	osd_afbc_ctrl_init(vblk, reg_ops, mvps);
 
 	for (i = afbc->start_surface; i <= afbc->end_surface; i++) {
 		if (mvps->plane_info[i].enable && mvps->plane_info[i].afbc_en) {
@@ -807,38 +862,49 @@ static void t7_osd_afbc_set_state(struct meson_vpu_block *vblk,
 						reverse_x, 0, 1);
 			reg_ops->rdma_write_reg_bits(afbc_reg->vpu_mafbc_prefetch_cfg_s,
 						reverse_y, 1, 1);
-			if (osd_index == 0) {
+
+			if (pipeline->osd_axi_sel == 0) {
+				if (osd_index == 0) {
 #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
-				reg_ops->rdma_write_reg_bits(afbc_stat_reg->mali_afbcd_top_ctrl,
+					reg_ops->rdma_write_reg_bits
+						(afbc_stat_reg->mali_afbcd_top_ctrl,
 						is_amdv_graphic_on() ? 0 : 1, 14, 1);
-				MESON_DRM_BLOCK("osd0 amdv_graphic switch status: %d\n",
-					is_amdv_graphic_on());
+					MESON_DRM_BLOCK("osd0 amdv_graphic switch status: %d\n",
+						is_amdv_graphic_on());
 #endif
-				reg_ops->rdma_write_reg_bits(afbc_stat_reg->mali_afbcd_top_ctrl,
-							 1, 16, 1);
-			} else if (osd_index == 1) {
+					reg_ops->rdma_write_reg_bits
+						(afbc_stat_reg->mali_afbcd_top_ctrl,
+						1, 16, 1);
+				} else if (osd_index == 1) {
 #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
-				reg_ops->rdma_write_reg_bits(afbc_stat_reg->mali_afbcd_top_ctrl,
+					reg_ops->rdma_write_reg_bits
+						(afbc_stat_reg->mali_afbcd_top_ctrl,
 						is_amdv_graphic_on() ? 0 : 1, 19, 1);
-				MESON_DRM_BLOCK("osd1 amdv_graphic switch status: %d\n",
-					is_amdv_graphic_on());
+					MESON_DRM_BLOCK("osd1 amdv_graphic switch status: %d\n",
+						is_amdv_graphic_on());
 #endif
-				reg_ops->rdma_write_reg_bits(afbc_stat_reg->mali_afbcd_top_ctrl,
-							 1, 21, 1);
-			} else if (osd_index == 2) {
+					reg_ops->rdma_write_reg_bits
+						(afbc_stat_reg->mali_afbcd_top_ctrl,
+						1, 21, 1);
+				} else if (osd_index == 2) {
 #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
-				reg_ops->rdma_write_reg_bits(afbc_stat_reg->mali_afbcd_top_ctrl,
+					reg_ops->rdma_write_reg_bits
+						(afbc_stat_reg->mali_afbcd_top_ctrl,
 						is_amdv_graphic_on_osd3() ? 0 : 1, 19, 1);
-				MESON_DRM_BLOCK("osd2 amdv_graphic switch status: %d\n",
-					is_amdv_graphic_on_osd3());
+					MESON_DRM_BLOCK("osd2 amdv_graphic switch status: %d\n",
+						is_amdv_graphic_on_osd3());
 #endif
-				reg_ops->rdma_write_reg_bits(afbc_stat_reg->mali_afbcd_top_ctrl,
-							 1, 21, 1);
-			} else if (osd_index == 3)
-				reg_ops->rdma_write_reg_bits(afbc_stat_reg->mali_afbcd_top_ctrl,
-							 1, 21, 1);
-			else
-				DRM_DEBUG("%s, invalid afbc top ctrl index\n", __func__);
+					reg_ops->rdma_write_reg_bits
+						(afbc_stat_reg->mali_afbcd_top_ctrl,
+						1, 21, 1);
+				} else if (osd_index == 3) {
+					reg_ops->rdma_write_reg_bits
+						(afbc_stat_reg->mali_afbcd_top_ctrl,
+						1, 21, 1);
+				} else {
+					DRM_DEBUG("%s, invalid afbc top ctrl index\n", __func__);
+				}
+			}
 		} else {
 			t7_osd_afbc_enable(vblk, reg_ops, afbc_stat_reg, i, 0);
 		}
@@ -1712,6 +1778,7 @@ static void t7_osd_afbc_hw_init(struct meson_vpu_block *vblk)
 	afbc->afbc_regs = &afbc_osd_t7_regs[0];
 	afbc->status_regs = &afbc_status_t7_regs[vblk->index];
 	afbc->num_of_4k_osd = 1;
+	afbc_first_update_done = false;
 
 	switch (vblk->index) {
 	case AFBC_CORE1:

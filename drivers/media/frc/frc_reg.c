@@ -254,6 +254,20 @@ void FRC_RDMA_WR_REG_OUT(unsigned int reg, unsigned int val)
 }
 EXPORT_SYMBOL(FRC_RDMA_WR_REG_OUT);
 
+int READ_FRC_RDMA_REG(unsigned int reg)
+{
+#ifndef FRC_DISABLE_REG_RD_WR
+	// if (get_frc_devp()->power_on_flag == 0)
+	// return 0;
+	// if (get_frc_devp()->clk_state == FRC_CLOCK_OFF)
+	// return 0;
+	// return readl(frc_base + (reg << 2));
+
+	return _frc_rdma_rd_reg_man(reg);
+#endif
+}
+EXPORT_SYMBOL(READ_FRC_RDMA_REG);
+
 void UPDATE_FRC_REG_BITS(unsigned int reg,
 	unsigned int value,
 	unsigned int mask)

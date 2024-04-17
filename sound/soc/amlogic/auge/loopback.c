@@ -159,6 +159,7 @@ struct loopback {
 	void *ref_src;
 	/*tdm_in lb select mclk*/
 	int tdmlb_mclk_sel;
+	int data_lb_rate;
 };
 
 static struct loopback *loopback_priv[2];
@@ -611,6 +612,8 @@ static int loopback_set_ctrl(struct loopback *p_loopback, int bitwidth)
 	tdminlb_set_lanemask_and_chswap(0x76543210,
 		p_loopback->datalb_lane_mask,
 		p_loopback->lb_lane_chmask);
+	tdminlb_set_slot_num(p_loopback->datalb_chnum,
+			p_loopback->lb_format == SND_SOC_DAIFMT_I2S);
 
 	src_str = tdmin_lb_src2str(p_loopback->datalb_src);
 	conf = p_loopback->chipinfo->tdmin_lb_srcs;
@@ -888,6 +891,12 @@ static int loopback_dai_trigger(struct snd_pcm_substream *ss,
 
 			aml_toddr_enable(p_loopback->tddr, true);
 			/* loopback */
+			if (p_loopback->chipinfo && p_loopback->chipinfo->orig_channel_sync) {
+				loopback_data_orig_channel_sync(p_loopback->id,
+					p_loopback->datain_chnum, true);
+				loopback_data_insert_channel_sync(p_loopback->id,
+					p_loopback->datalb_chnum, true);
+			}
 			if (p_loopback->chipinfo)
 				lb_enable(p_loopback->id,
 					  true,
@@ -929,6 +938,12 @@ static int loopback_dai_trigger(struct snd_pcm_substream *ss,
 		if (p_loopback->datalb_chnum > 0)
 			loopback_ref_src_trigger(p_loopback, ss->stream, false);
 
+		if (p_loopback->chipinfo && p_loopback->chipinfo->orig_channel_sync) {
+			loopback_data_orig_channel_sync(p_loopback->id,
+					p_loopback->datain_chnum, false);
+			loopback_data_insert_channel_sync(p_loopback->id,
+					p_loopback->datalb_chnum, false);
+		}
 		/* loopback */
 		if (p_loopback->chipinfo)
 			lb_enable(p_loopback->id,
@@ -1055,6 +1070,8 @@ static int loopback_dai_hw_params(struct snd_pcm_substream *ss,
 		case TDMINLB_PAD_TDMINA:
 		case TDMINLB_PAD_TDMINB:
 		case TDMINLB_PAD_TDMINC:
+			if (p_loopback->data_lb_rate != rate && p_loopback->data_lb_rate > 0)
+				rate = p_loopback->data_lb_rate;
 			aml_tdm_hw_setting_init(p_loopback->ref_src, rate,
 				p_loopback->datalb_chnum, ss->stream);
 			break;
@@ -1560,6 +1577,11 @@ static int datalb_tdminlb_parse_of(struct device_node *node,
 		p_loopback->mclk_fs_ratio = 256;
 		ret = 0;
 	}
+
+	ret = of_property_read_u32(node, "data_lb_rate",
+		&p_loopback->data_lb_rate);
+	if (ret)
+		pr_warn("failed to get data_lb_ratec\n");
 
 	return 0;
 err:

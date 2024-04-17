@@ -46,6 +46,7 @@ struct meson_drm_fbdev {
 	u32 zorder;
 	u32 fbdev_rec_palette[256];
 	bool blank;
+	bool vscreen_info_changed;
 };
 
 extern struct am_meson_logo logo;

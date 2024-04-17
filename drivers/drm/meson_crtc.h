@@ -142,6 +142,12 @@ struct am_meson_crtc *meson_crtc_bind(struct meson_drm *priv,
 	int idx);
 int meson_crtc_creat_present_fence_ioctl(struct drm_device *dev,
 			void *data, struct drm_file *file_priv);
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+int am_meson_lcd_get_vrr_range(struct drm_connector *connector,
+			struct drm_vrr_mode_group *groups, int max_group);
+#endif
+int am_meson_hdmi_get_vrr_range(struct drm_device *dev,
+			void *data, struct drm_file *file_priv);
 
 #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
 void set_amdv_policy(int policy);

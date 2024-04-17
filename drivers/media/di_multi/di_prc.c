@@ -299,9 +299,13 @@ const struct di_cfg_ctr_s di_cfg_top_ctr[K_DI_CFG_NUB] = {
 			EDI_CFG_TB,
 			0,
 			K_DI_CFG_T_FLG_DTS},
-#ifdef CONFIG_AMLOGIC_MEDIA_THERMAL
+#ifdef CONFIG_AMLOGIC_MEDIA_THERMAL1
 	[EDI_CFG_TEMP_CONTROL]  = {"temp_control",
 			EDI_CFG_TEMP_CONTROL,
+			0,
+			K_DI_CFG_T_FLG_DTS},
+	[EDI_CFG_422_8bit]  = {"422_8bit",
+			EDI_CFG_422_8bit,
 			0,
 			K_DI_CFG_T_FLG_DTS},
 #endif
@@ -483,6 +487,13 @@ void di_cfg_top_dts(void)
 		PR_WARN("TB not support\n");
 		cfgs(TB, 0);
 	}
+
+#ifdef CONFIG_AMLOGIC_MEDIA_THERMAL1
+	if (cfgg(422_8bit))
+		dimp_set(edi_mp_force_422_8bit, 1);
+	else
+		dimp_set(edi_mp_force_422_8bit, 0);
+#endif
 
 #ifdef TMP_EN_PLINK
 	//disable p-only:
@@ -937,10 +948,8 @@ const struct di_mp_uit_s di_mp_ui_top[] = {
 				edi_mp_tb_dump, 0},//1400
 	[edi_mp_prelink_hold_line]	= {"pre_hold_line:ushort:8",
 				edi_mp_prelink_hold_line, 8},
-#ifdef CONFIG_AMLOGIC_MEDIA_THERMAL
 	[edi_mp_force_422_8bit]	= {"force_422_8bit:8",
 				edi_mp_force_422_8bit, -1},
-#endif
 	[EDI_MP_SUB_DI_E]  = {"di end-------",
 				EDI_MP_SUB_DI_E, 0},
 	/**************************************/
@@ -3041,7 +3050,8 @@ static enum EDPST_MODE dim_cnt_mode(struct di_ch_s *pch)
 	if (dim_cfg_nv21()) {
 		mode = EDPST_MODE_NV21_8BIT;
 	} else {
-		if (dimp_get(edi_mp_nr10bit_support)) {
+		if (dimp_get(edi_mp_nr10bit_support) &&
+			dimp_get(edi_mp_force_422_8bit) != 1) {
 			if (dimp_get(edi_mp_full_422_pack))
 				mode = EDPST_MODE_422_10BIT_PACK;
 			else
@@ -3221,7 +3231,7 @@ void dip_init_value_reg(unsigned int ch, struct vframe_s *vframe)
 		dimp_set(edi_mp_prog_proc_config, 0x23);
 		dimp_set(edi_mp_use_2_interlace_buff, 1);
 	}
-#ifdef CONFIG_AMLOGIC_MEDIA_THERMAL
+#ifdef CONFIG_AMLOGIC_MEDIA_THERMAL1
 	pch->record_10bit_flag = 1;
 	pch->record_8bit_flag = 1;
 #endif

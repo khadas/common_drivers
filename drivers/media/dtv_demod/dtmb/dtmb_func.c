@@ -7,19 +7,19 @@
 #include "demod_func.h"
 #include "demod_dbg.h"
 
-MODULE_PARM_DESC(demod_enable_performance, "\n\t\t demod_enable_performance information");
+MODULE_PARM_DESC(demod_enable_performance, "");
 static int demod_enable_performance = 1;
 module_param(demod_enable_performance, int, 0644);
 
-MODULE_PARM_DESC(demod_sync_count, "\n\t\t timeout debug information");
+MODULE_PARM_DESC(demod_sync_count, "");
 static int demod_sync_count = 60;
 module_param(demod_sync_count, int, 0644);
 
-MODULE_PARM_DESC(demod_sync_delay_time, "\n\t\t timeout debug information");
+MODULE_PARM_DESC(demod_sync_delay_time, "");
 static int demod_sync_delay_time = 8;
 module_param(demod_sync_delay_time, int, 0644);
 
-MODULE_PARM_DESC(demod_timeout, "\n\t\t timeout debug information");
+MODULE_PARM_DESC(demod_timeout, "");
 static int demod_timeout = 120;
 module_param(demod_timeout, int, 0644);
 
@@ -31,7 +31,7 @@ void dtmb_set_fe_config_modify(unsigned int modify)
 	fe_cofig.b.fe_modify = modify;
 
 	dtmb_write_reg(DTMB_SYNC_FE_CONFIG, fe_cofig.d32);
-	PR_DTMB("set modify=0x%x,0x%x\n", modify, fe_cofig.d32);
+	PR_DTMB("set fe_cofig 0x%x,0x%x\n", modify, fe_cofig.d32);
 }
 
 /* formula: fs(MHz)
@@ -197,7 +197,7 @@ void dtmb_all_reset(struct aml_dtvdemod *demod)
 		else
 			dtmb_write_reg(DTMB_TOP_CTRL_TPS, 0x2);
 
-		PR_DTMB("spectrum is %d\n", demod->demod_status.spectrum);
+		PR_DTMB("spectrum %d\n", demod->demod_status.spectrum);
 		dtmb_write_reg(DTMB_TOP_CTRL_FEC, 0x41444400);
 		dtmb_write_reg(DTMB_TOP_CTRL_INTLV_TIME, 0x180300);
 		dtmb_write_reg(DTMB_FRONT_DDC_BYPASS, 0x662ca0);
@@ -313,7 +313,7 @@ int dtmb_information(struct seq_file *seq)
 	dtmb_read_agc(DTMB_D9_ALL, &buf[0]);
 
 	if (seq) {
-		seq_printf(seq, "[FSM] : %x %x %x %x\n",
+		seq_printf(seq, "[FSM]: %x %x %x %x\n",
 		       dtmb_read_reg(DTMB_TOP_CTRL_FSM_STATE0),
 		       dtmb_read_reg(DTMB_TOP_CTRL_FSM_STATE1),
 		       dtmb_read_reg(DTMB_TOP_CTRL_FSM_STATE2),
@@ -333,12 +333,11 @@ int dtmb_information(struct seq_file *seq)
 			(tps >> 20) & 0x1,
 		     (tps >> 18) & 0x3, (tps >> 16) & 0x3);
 
-		seq_printf(seq, "[dtmb] snr is %d,fec_lock is %d,fec_bch_add is %d,",
+		seq_printf(seq, "[dtmb] snr %d,fec_lock %d,fec_bch_add %d,",
 		     snr, fec_lock, fec_bch_add);
-		seq_printf(seq, "fec_ldpc_unc_acc is %d ,fec_ldpc_it_avg is %d\n",
+		seq_printf(seq, "fec_ldpc_unc_acc %d ,fec_ldpc_it_avg %d\n\n",
 		     fec_ldpc_unc_acc,
 		     fec_ldpc_it_avg / 256);
-		seq_puts(seq, "------------------------------------------------------------\n");
 	} else {
 		PR_DTMB("[FSM] : %x %x %x %x\n",
 		       dtmb_read_reg(DTMB_TOP_CTRL_FSM_STATE0),
@@ -360,12 +359,11 @@ int dtmb_information(struct seq_file *seq)
 			(tps >> 20) & 0x1,
 		     (tps >> 18) & 0x3, (tps >> 16) & 0x3);
 
-		PR_DTMB("[dtmb] snr is %d,fec_lock is %d,fec_bch_add is %d,",
+		PR_DTMB("[dtmb] snr %d,fec_lock %d,fec_bch_add %d,",
 		     snr, fec_lock, fec_bch_add);
-		PR_DTMB("fec_ldpc_unc_acc is %d ,fec_ldpc_it_avg is %d\n",
+		PR_DTMB("fec_ldpc_unc_acc %d ,fec_ldpc_it_avg %d\n\n",
 		     fec_ldpc_unc_acc,
 		     fec_ldpc_it_avg / 256);
-		PR_DTMB("------------------------------------------------------------\n");
 	}
 
 	return 0;
@@ -385,6 +383,7 @@ int dtmb_check_cci(void)
 		dtmb_write_reg(DTMB_CHE_M_CCI_THR_CONFIG3, 0x20081f6);
 		dtmb_write_reg(DTMB_CHE_M_CCI_THR_CONFIG2, 0x3f08020);
 	}
+
 	return cci_det;
 }
 
@@ -395,8 +394,8 @@ int dtmb_bch_check(struct dvb_frontend *fe)
 	union DTMB_TOP_CTRL_SW_RST_BITS sw_rst;
 	unsigned int value_before;
 	int fec_bch_add, i, strength;
-	char *info1 = "fec lock,but bch add ,need reset,wait not to reset";
-	char *info2 = "fec lock,but bch add ,need reset,now is lock";
+	char *info1 = "fec lock,but bch add,need reset,wait not to reset";
+	char *info2 = "fec lock,but bch add,need reset,now is lock";
 	int strength_limit = THRD_TUNER_STRENGTH_DTMB;
 
 	if (tuner_find_by_name(fe, "atbm253"))
@@ -526,7 +525,7 @@ int dtmb_check_fsm(void)
 	tmp = dtmb_read_reg(DTMB_TOP_CTRL_FSM_STATE0);
 	fsm_status =  tmp & 0xffffffff;
 	has_signal = 0;
-	PR_DTMB("fsm_status is %x\n", fsm_status);
+	PR_DTMB("fsm_status %x\n", fsm_status);
 	for (i = 0 ; i < 8 ; i++) {
 		if (((fsm_status >> (i * 4)) & 0xf) > 3) {
 			/*has signal*/
@@ -610,7 +609,7 @@ int dtmb_check_status_gxtv(struct dvb_frontend *fe)
 		}
 		if (cfo_init == 0 &&
 			((dtmb_read_reg(DTMB_TOP_CTRL_FSM_STATE0) & 0xf) <= 7)) {
-			PR_DTMB("over 400ms,status is %x, need reset\n",
+			PR_DTMB("over 400ms,status %x, need reset\n",
 				(dtmb_read_reg(DTMB_TOP_CTRL_FSM_STATE0) & 0xf));
 			return 0;
 		}
@@ -621,14 +620,12 @@ int dtmb_check_status_gxtv(struct dvb_frontend *fe)
 			dtmb_information(NULL);
 			dtmb_check_cci();
 			if (time_cnt > 8)
-				PR_DTMB
-					("* local_state = %d\n", local_state);
+				PR_DTMB("local_state %d\n", local_state);
 		}
 		if (time_cnt >= 10 && (check_dtmb_fec_lock() != 1)) {
 			local_state = AMLOGIC_DTMB_STEP4;
 			time_cnt = 0;
-			PR_DTMB
-				("*all reset,timeout is %d\n", demod_timeout);
+			PR_DTMB("all reset,timeout %d\n", demod_timeout);
 		}
 	} else {
 		dtmb_check_cci();
@@ -668,7 +665,7 @@ int dtmb_check_status_txl(struct dvb_frontend *fe)
 				}
 			}
 			if (time_cnt > 8)
-				PR_DTMB("* time_cnt = %d\n", time_cnt);
+				PR_DTMB("time_cnt %d\n", time_cnt);
 		}
 		if (time_cnt >= 10 && (check_dtmb_fec_lock() != 1)) {
 			time_cnt = 0;
@@ -678,7 +675,7 @@ int dtmb_check_status_txl(struct dvb_frontend *fe)
 				demod->demod_status.spectrum = 1;
 			else
 				demod->demod_status.spectrum = 0;
-			PR_DTMB("*all reset,timeout is %d\n", demod_timeout);
+			PR_DTMB("all reset,timeout %d\n", demod_timeout);
 		}
 	} else {
 		dtmb_bch_check(fe);
@@ -793,16 +790,14 @@ int dtmb_set_ch(struct aml_dtvdemod *demod,
 		dtmb_write_reg(0x60, 0x07570347); //(0x60)
 	}
 
-	PR_DTMB("DTMB mode\n");
-
 	return ret;
 }
 
 void dtmb_set_mem_st(unsigned int mem_start)
 {
-	PR_DTMB("[im]memstart is %x\n", mem_start);
 	dtmb_write_reg(DTMB_FRONT_MEM_ADDR, mem_start);
-	PR_DTMB("[dtmb]mem_buf is 0x%x\n", dtmb_read_reg(DTMB_FRONT_MEM_ADDR));
+	PR_DTMB("[dtmb]mem start 0x%x, buf 0x%x\n",
+			mem_start, dtmb_read_reg(DTMB_FRONT_MEM_ADDR));
 }
 
 int dtmb_read_agc(enum REG_DTMB_D9 type, unsigned int *buf)
@@ -873,20 +868,15 @@ unsigned int dtmb_reg_r_bch(void)
 /*1: timeout;2:have signal*/
 unsigned int dtmb_detect_first(void)
 {
-	int has_signal, i;
+	int has_signal = 0, i = 0;
 	unsigned int dtmb_status;
-
 	unsigned int timeout = 0;
 
-	PR_DTMB("%s\n", __func__);
-	/*printk("k:%s\n",__func__);*/
-
-	has_signal = 0;
 	msleep(200);
 
 	/*fsm status is 4,maybe analog signal*/
 	dtmb_status = dtmb_read_reg(DTMB_TOP_CTRL_FSM_STATE0);
-	PR_DTMB("fsm_status is %x\n", dtmb_status);
+	PR_DTMB("fsm_status %x\n", dtmb_status);
 
 	for (i = 0 ; i < 8 ; i++) {
 		if (((dtmb_status >> (i * 4)) & 0xf) > 4) {
@@ -903,7 +893,7 @@ unsigned int dtmb_detect_first(void)
 		/*(7->8) 8ms,(8->9) 55ms, (9->a) 350ms*/
 		msleep(500);
 		dtmb_status = dtmb_read_reg(DTMB_TOP_CTRL_FSM_STATE0);
-		PR_DTMB("fsm_status2 is %x\n", dtmb_status);
+		PR_DTMB("fsm_status2 %x\n", dtmb_status);
 		for (i = 0 ; i < 8 ; i++) {
 			if (((dtmb_status >> (i * 4))
 				& 0xf) > 6) {
@@ -914,14 +904,14 @@ unsigned int dtmb_detect_first(void)
 		}
 	}
 
-	PR_DTMB("[DTV]has_signal is %d\n", has_signal);
+	PR_DTMB("has_signal %d\n", has_signal);
 	if (has_signal == 0 || has_signal == 0x1) {
 		//timeout = 1;	/*FE_TIMEDOUT;*/
 		timeout = 0;	/*FE_TIMEDOUT;*/
-		PR_DTMB("\t timeout\n");
+		PR_DTMB("timeout\n");
 	} else {
 		/*timeout = 2; *//*have signal*/
-		PR_DTMB("\thave signal\n");
+		PR_DTMB("have signal\n");
 	}
 
 	return timeout;

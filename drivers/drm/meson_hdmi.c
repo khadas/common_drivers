@@ -41,7 +41,6 @@
 
 #define HDMITX_ATTR_LEN_MAX	16
 #define HDMITX_MAX_BPC	12
-#define MAX_VRR_MODE_GROUP 12
 
 struct am_hdmi_tx am_hdmi_info;
 bool attr_force_debugfs;
@@ -269,7 +268,7 @@ static bool meson_hdmitx_test_color_attr(struct hdmitx_common *common,
 			build_hdmitx_attr_str(attr_str,
 				attr_list->colorformat, attr_list->bitdepth);
 			if (!hdmitx_common_validate_mode_locked(common, &comm_state, outputmode,
-					attr_str, true)) {
+					attr_str, false, true)) {
 				DRM_INFO("%s success [%d]+[%d]\n", __func__,
 					attr_list->colorformat,
 					attr_list->bitdepth);
@@ -307,7 +306,7 @@ static int meson_hdmitx_decide_color_attr
 		build_hdmitx_attr_str(attr_str,
 			attr_list->colorformat, attr_list->bitdepth);
 		if (!hdmitx_common_validate_mode_locked(common, &comm_state, outputmode,
-				attr_str, true)) {
+				attr_str, false, true)) {
 			attr->colorformat = attr_list->colorformat;
 			attr->bitdepth = attr_list->bitdepth;
 			DRM_INFO("%s get fmt attr [%d]+[%d]\n",
@@ -355,6 +354,9 @@ int meson_hdmitx_get_modes(struct drm_connector *connector)
 	conf = &priv->of_conf;
 
 	edid = (struct edid *)hdmitx_get_raw_edid(tx_comm);
+
+	am_hdmitx->sequence_id = hdmitx_get_hpd_hw_sequence_id(tx_comm);
+
 	drm_connector_update_edid_property(connector, edid);
 
 	/* get vrr capability */
@@ -475,6 +477,10 @@ int meson_hdmitx_get_modes(struct drm_connector *connector)
 			count++;
 		}
 	}
+
+	connector->display_info.monitor_range.max_vfreq = am_hdmi_info.max_vfreq;
+	connector->display_info.monitor_range.min_vfreq = am_hdmi_info.min_vfreq;
+
 	return count;
 }
 
@@ -926,6 +932,7 @@ struct drm_connector_state *meson_hdmitx_atomic_duplicate_state
 	new_state->hdr_priority = cur_state->hdr_priority;
 	new_state->pref_hdr_policy = cur_state->pref_hdr_policy;
 	new_state->allm_mode = cur_state->allm_mode;
+	cur_state->hcs.state_sequence_id = am_hdmi_info.sequence_id;
 	memcpy(&new_state->hcs, &cur_state->hcs, sizeof(struct hdmitx_common_state));
 
 	return &new_state->base;
@@ -1473,6 +1480,8 @@ static void meson_hdmitx_cal_brr(struct am_hdmi_tx *hdmitx,
 			if (group->vrr_max >= brr) {
 				brr = group->vrr_max;
 				vic = group->brr_vic;
+				am_hdmi_info.min_vfreq = group->vrr_min;
+				am_hdmi_info.max_vfreq = group->vrr_max;
 			}
 		}
 	}
@@ -1800,7 +1809,8 @@ static int meson_hdmitx_encoder_atomic_check(struct drm_encoder *encoder,
 	build_hdmitx_attr_str(attr_str, attr->colorformat, attr->bitdepth);
 
 	ret = hdmitx_common_validate_mode_locked(common, &hdmitx_state->hcs,
-						 modename, attr_str, do_valid);
+						 modename, attr_str, meson_crtc_state->valid_brr,
+						 do_valid);
 	if (ret) {
 		DRM_ERROR("validate_mode fail for [%s-%s]\n", modename, attr_str);
 		return -EINVAL;
@@ -2273,15 +2283,13 @@ int am_meson_mode_testattr_ioctl(struct drm_device *dev,
 	return 0;
 }
 
-int am_meson_get_vrr_range_ioctl(struct drm_device *dev,
+int am_meson_hdmi_get_vrr_range(struct drm_device *dev,
 			void *data, struct drm_file *file_priv)
 {
 	int num_group = 0;
 	struct drm_vrr_mode_groups *groups = data;
-	struct drm_vrr_mode_group *group;
-	int i = 0;
 
-	num_group = am_hdmi_info.hdmitx_dev->get_vrr_mode_group(groups->gropus,
+	num_group = am_hdmi_info.hdmitx_dev->get_vrr_mode_group(groups->groups,
 							   MAX_VRR_MODE_GROUP);
 	if (!num_group) {
 		DRM_ERROR("get vrr error or not support qms\n");
@@ -2290,11 +2298,5 @@ int am_meson_get_vrr_range_ioctl(struct drm_device *dev,
 
 	groups->num = num_group;
 
-	for (i = 0; i < num_group; i++) {
-		group = &groups->gropus[i];
-		DRM_DEBUG("%s,%d, %d, %d, %d\n", __func__,
-		group->vrr_max, group->vrr_min, group->width, group->height);
-	}
-
-	return 0;
+	return num_group;
 }

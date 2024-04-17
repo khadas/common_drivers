@@ -111,6 +111,7 @@ bool is_hdmi_ll_as_hdr10(void);
  *#define VPP_VADJ1_BLMINUS_EN        (1 << 1)
  *#define VPP_VADJ1_EN                (1 << 0)
  */
+#define FLAG_RESUME_RECOVERY        BIT(21)
 #define SHARPNESS_GAIN_UPDATE       BIT(20)
 #define FLAG_GAMMA_TABLE_EN_SUB     BIT(19)
 #define FLAG_GAMMA_TABLE_DIS_SUB    BIT(18)
@@ -233,6 +234,8 @@ enum rw_md_e {
 	RD_MOD = 1,
 	WR_MOD
 };
+
+struct vpp_hist_param_s *get_vpp_hist(void);
 
 struct ve_pq_table_s {
 	unsigned int src_timing;
@@ -559,6 +562,7 @@ extern struct single_scene_s detected_scenes[SCENE_MAX];
 extern int freerun_en;
 u32 hdr_set(u32 module_sel, u32 hdr_process_select, enum vpp_index_e vpp_index);
 int vinfo_lcd_support(void);
+int vinfo_hdmi_out_fmt(void);
 int dv_pq_ctl(enum dv_pq_ctl_e ctl);
 int cm_force_update_flag(void);
 int get_lum_ave(void);
@@ -608,5 +612,7 @@ struct gamma_data_s *get_gm_data(void);
 void bs_ct_latch(void);
 int pkt_adv_chip(void);
 extern unsigned int ai_color_enable;
+
+void resume_recovery_process(int vpp_index);
 #endif /* AMVECM_H */
 

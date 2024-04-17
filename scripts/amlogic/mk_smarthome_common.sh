@@ -76,6 +76,10 @@ set_default_parameters_for_smarthome
 
 auto_patch_to_common_dir
 
+if [[ -d ${MODULES_STAGING_DIR} ]]; then
+	rm -rf ${MODULES_STAGING_DIR}
+fi
+
 mkdir -p ${DIST_DIR} ${MODULES_STAGING_DIR}
 
 savedefconfig_cmd_for_smarthome

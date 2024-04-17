@@ -3716,7 +3716,7 @@ static struct vframe_s *vsync_toggle_frame(struct vframe_s *vf, int line)
 static struct vframe_s *save_toggle_frame(struct vframe_s *vf)
 {
 #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
-	if (get_top1_onoff()) {
+	if (get_top1_onoff() == 3) {
 		if (video_save.save_vf_en && video_save.save_vf) {
 			/* need toggle */
 			video_save.toggle_vf = video_save.save_vf;
@@ -4007,7 +4007,7 @@ struct vframe_s *amvideo_toggle_frame(s32 *vd_path_id)
 				break; // not render err crc frame
 			}
 			/*top1 enable, need check one more frame*/
-			if (is_amdv_enable() && get_top1_onoff()) {/*todo*/
+			if (is_amdv_enable() && get_top1_onoff() == 3) {/*todo*/
 				vf_top1 = amvideo_vf_peek();
 				/*wait next new Fn+1 for top1, proc top2 Fn + top1 Fn+1*/
 				/*if no new frame, proc top2 Fn + repeat Top1 Fn cur vsync*/
@@ -4035,9 +4035,14 @@ struct vframe_s *amvideo_toggle_frame(s32 *vd_path_id)
 			if (vd_path_id[0] == VFM_PATH_AMVIDEO ||
 			    vd_path_id[0] == VFM_PATH_DEF ||
 				vd_path_id[0] == VFM_PATH_AUTO) {
-				if (!get_top1_onoff() || !vf_top1) {/*no top1*/
+				if (get_top1_onoff() == 0 || !vf_top1) {/*no top1*/
 					dv_new_vf = dv_toggle_frame(vf, VD1_PATH, true);
-				} else if (vf_top1) {/*top1 + top2*/
+				} else if (get_top1_onoff() == 1) {
+				/*top1 enabled but no need get frame in advance*/
+					vf_top1 = vf;
+					amdv_parse_metadata_hw5_top1(vf_top1);
+					dv_new_vf = dv_toggle_frame(vf, VD1_PATH, true);
+				} else if (get_top1_onoff() == 3) {/*top1 + top2*/
 					amdv_parse_metadata_hw5_top1(vf_top1);
 					dv_new_vf = dv_toggle_frame(vf, VD1_PATH, true);
 				}
@@ -4540,11 +4545,16 @@ static void hdmi_in_delay_maxmin_new1(struct tvin_to_vpp_info_s *tvin_info)
 	 *di keep 1/2 buf, 8/7 left
 	 *count = (7 + 8/7) * vdin_vsync+ 3 * vpp_vsync;
 	 */
+
+#ifdef CONFIG_AMLOGIC_MEDIA_VIN
 	vdin_buf_count = get_vdin_buffer_num();
 	if (vdin_buf_count <= 0) {
 		pr_info("%s:Get count failed, use default value.\n", __func__);
 		vdin_buf_count = VDIN_BUF_COUNT;
 	}
+#else
+	vdin_buf_count = VDIN_BUF_COUNT;
+#endif
 	if (di_has_vdin_vf || !do_di || di_backend_en) {
 		vdin_count = vdin_buf_count - 3 - display_path_count - 1;
 		vpp_count = display_path_count + 1;
@@ -10537,6 +10547,8 @@ static ssize_t vdx_state_show(u32 index, char *buf)
 	struct vpp_frame_par_s *_cur_frame_par = NULL;
 	struct video_layer_s *_vd_layer = NULL;
 	struct disp_info_s *layer_info = NULL;
+	int afbc = 0, dw = 0;
+	struct vframe_s *dispbuf = NULL;
 
 	if (index >= MAX_VD_LAYER)
 		return 0;
@@ -10546,13 +10558,21 @@ static ssize_t vdx_state_show(u32 index, char *buf)
 
 	if (!_cur_frame_par)
 		return len;
+
+	dispbuf = get_dispbuf(index);
+	if (dispbuf) {
+		afbc = dispbuf->type & VIDTYPE_COMPRESS ? 1 : 0;
+		dw = afbc && _cur_frame_par->nocomp;
+		len += sprintf(buf + len, "afbc:%d double_write:%d.\n",
+			       afbc, dw);
+	}
 	vpp_filter = &_cur_frame_par->vpp_filter;
 	len += sprintf(buf + len,
 		       "zoom_start_x_lines:%u.zoom_end_x_lines:%u.\n",
 		       _vd_layer->start_x_lines, _vd_layer->end_x_lines);
 	len += sprintf(buf + len,
 		       "zoom_start_y_lines:%u.zoom_end_y_lines:%u.\n",
-		       _vd_layer->start_y_lines, _vd_layer->end_x_lines);
+		       _vd_layer->start_y_lines, _vd_layer->end_y_lines);
 	len += sprintf(buf + len, "frame parameters: pic_in_height %u.\n",
 		       _cur_frame_par->VPP_pic_in_height_);
 	len += sprintf(buf + len,
@@ -13773,6 +13793,7 @@ static void video_early_suspend(struct early_suspend *h)
 
 static void video_late_resume(struct early_suspend *h)
 {
+	video_resume_hw_recovery();
 	video_suspend_cycle = 0;
 	video_suspend = false;
 	log_out = 1;
@@ -14404,7 +14425,7 @@ static struct amvideo_device_data_s amvideo_s5 = {
 	.mif_linear = 1,
 	.display_module = S5_DISPLAY_MODULE,
 	.max_vd_layers = 2,
-	.has_vpp1 = 1,
+	.has_vpp1 = 0,
 	.has_vpp2 = 0,
 	.is_tv_panel = 0,
 };

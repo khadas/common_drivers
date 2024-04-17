@@ -1109,6 +1109,10 @@ static void frc_drv_initial(struct frc_dev_s *devp)
 	fw_data->holdline_parm.reg_post_dly_vofst = 0;/*fixed*/
 	fw_data->holdline_parm.reg_mc_dly_vofst0 = 1;/*fixed*/
 
+	fw_data->frc_top_type.motion_ctrl = RD_MOTION_BY_VPU_ISR;
+	for (i = 0; i < RD_REG_MAX; i++)
+		fw_data->reg_val[i].addr = 0x0;
+
 	if (fw_data->frc_top_type.chip != 0)
 		memcpy(&devp->frm_dly_set[0],
 			&chip_frc_frame_dly[fw_data->frc_top_type.chip - 1][0],

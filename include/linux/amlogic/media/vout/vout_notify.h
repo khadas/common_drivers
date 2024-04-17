@@ -76,6 +76,7 @@ int get_vframe_rate_policy(void);
 void set_vout_bist(unsigned int bist);
 void set_vout_bl_brightness(unsigned int brightness);
 unsigned int get_vout_bl_brightness(void);
+int get_dummyp_timing_flip(void);
 #else
 static inline int vout_register_client(struct notifier_block *p)
 {
@@ -152,6 +153,10 @@ static inline unsigned int get_vout_bl_brightness(void)
 	return 0;
 }
 
+static inline int get_dummyp_timing_flip(void)
+{
+	return 0;
+}
 #endif
 
 #ifdef CONFIG_AMLOGIC_VOUT2_SERVE

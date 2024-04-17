@@ -618,9 +618,6 @@ struct vdin_debug_s {
 	unsigned int dbg_reg_bit[DBG_REG_LENGTH];
 	/* bit0:scl_mode;bit1:bypass dsc;bit2:bypass sc */
 	unsigned int dbg_dv_hw5;
-	unsigned int dbg_dw_h;
-	unsigned int dbg_dw_v;
-	unsigned int dbg_dw_dfmt;
 	unsigned int hconv_mode;
 };
 
@@ -654,6 +651,14 @@ struct vdin_hdr_s {
 	u8 rawdata[HDR_RAW_DATA_SIZE];
 	u8 empbuf[HDR_EMP_DATA_SIZE];
 	u8 emp_size;
+};
+
+struct vdin_dv_hw5_s {
+	/* bit0:scl_mode;bit1:bypass dsc;bit2:bypass sc */
+	unsigned int hw5_ctl;
+	unsigned int dw_out_w;
+	unsigned int dw_out_h;
+	unsigned int dw_dfmt;
 };
 
 struct vdin_afbce_s {
@@ -750,6 +755,7 @@ struct vdin_vrr_s {
 	enum vdin_vrr_mode_e pre_vrr_status;
 	/* driver detect status */
 	enum vdin_vrr_mode_e cur_vrr_status;
+	unsigned int qms_chg_cnt;
 };
 
 /* scatter start */
@@ -843,7 +849,8 @@ struct vdin_dev_s {
 	struct vdin_debug_s debug;
 	enum vdin_format_convert_e format_convert;
 	unsigned int mif_fmt;/*enum vdin_mif_fmt*/
-	enum vdin_color_deeps_e source_bitdepth;
+	enum vdin_color_deeps_e source_bitdepth;/* afbce or main mif */
+	enum vdin_color_deeps_e source_bitdepth_dw;/* dw or main mif */
 	enum vdin_matrix_csc_e csc_idx;
 	struct vf_entry *curr_wr_vfe;//current isr config addr because RDMA next isr write this addr
 	struct vf_entry *last_wr_vfe;//last isr config addr because RDMA current isr write this addr
@@ -1158,6 +1165,7 @@ struct vdin_dev_s {
 	unsigned int vdin_isr_drop;
 	unsigned int vdin_isr_drop_num;
 	unsigned int fs_open_cnt;
+	struct vdin_dv_hw5_s dv_hw5;
 };
 
 extern unsigned int max_ignore_frame_cnt;

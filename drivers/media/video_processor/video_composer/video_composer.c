@@ -1408,8 +1408,7 @@ void videocomposer_vf_put(struct vframe_s *vf, void *op_arg)
 	is_mosaic_22 = vf->type_ext & VIDTYPE_EXT_MOSAIC_22;
 
 	if (vf->flag & VFRAME_FLAG_FAKE_FRAME) {
-		vc_print(dev->index, PRINT_OTHER,
-			 "put: fake frame\n");
+		vc_print(dev->index, PRINT_OTHER, "put: fake frame\n");
 		return;
 	}
 
@@ -4305,11 +4304,9 @@ static void set_frames_info(struct composer_dev *dev,
 	dev->received_frames[i].time_us64 = time_us64;
 
 	vc_print(dev->index, PRINT_PERFORMANCE,
-		 "len =%d,frame_count=%d,i=%d,z=%d,time_us64=%lld,fd=%d, transform=%d\n",
+		 "len =%d, frame_count=%d, time_us64=%lld, fd=%d, transform=%d\n",
 		 kfifo_len(&dev->receive_q),
 		 frames_info->frame_count,
-		 i,
-		 frames_info->disp_zorder,
 		 time_us64,
 		 fence_fd,
 		 frames_info->frame_info[0].transform);
@@ -4332,61 +4329,53 @@ static void set_frames_info(struct composer_dev *dev,
 		dev->received_frames[i].fence_file[j] = fence_file;
 
 		type = frames_info->frame_info[j].type;
-		is_dec_vf =
-		is_valid_mod_type(file_vf->private_data, VF_SRC_DECODER);
-		is_v4l_vf =
-		is_valid_mod_type(file_vf->private_data, VF_PROCESS_V4LVIDEO);
+		is_dec_vf = is_valid_mod_type(file_vf->private_data, VF_SRC_DECODER);
+		is_v4l_vf = is_valid_mod_type(file_vf->private_data, VF_PROCESS_V4LVIDEO);
 
-		vc_print(dev->index, PRINT_FENCE, "receive:file=%px, dma=%px, file_count=%ld\n",
+		vc_print(dev->index, PRINT_FENCE,
+			"receive:file=%px, dma=%px, file_fd=%d, file_count=%ld\n",
 			 file_vf,
 			 file_vf->private_data,
+			 frames_info->frame_info[j].fd,
 			 file_count(file_vf));
 
-		if (frames_info->frame_info[j].transform != 0 ||
-			frames_info->frame_count != 1)
+		vc_print(dev->index, PRINT_FENCE,
+			 "disp_fen_fd=%d, disp_fence_file=%px\n",
+			 frames_info->frame_info[j].disp_fen_fd,
+			 fence_file);
+
+		if (frames_info->frame_info[j].transform != 0 || frames_info->frame_count != 1)
 			need_dw = true;
+
+		vc_print(dev->index, PRINT_OTHER, "%s: type is %d.\n", __func__, type);
 		if (type == 0 || type == 1) {
-			vc_print(dev->index, PRINT_FENCE,
-				 "received_cnt=%lld,new_cnt=%lld,i=%d,z=%d,DMA_fd=%d, disp_fen_fd=%d, fence_file=%px\n",
-				 dev->received_count + 1,
-				 dev->received_new_count + 1,
-				 i,
-				 frames_info->frame_info[j].zorder,
-				 frames_info->frame_info[j].fd,
-				 frames_info->frame_info[j].disp_fen_fd,
-				 fence_file);
 			if (!(is_dec_vf || is_v4l_vf)) {
 				if (type == 0) {
-					vc_print(dev->index, PRINT_ERROR,
-						 "%s type is %d but not vf\n",
-						 __func__, type);
+					vc_print(dev->index, PRINT_ERROR, "%s: not vf\n", __func__);
 					return;
 				}
 				dev->received_frames[i].phy_addr[j] =
-				get_dma_phy_addr(frames_info->frame_info[j].fd,
-						 dev->index);
+				get_dma_phy_addr(frames_info->frame_info[j].fd, dev->index);
 				vc_print(dev->index, PRINT_OTHER,
 					 "%s dma buffer not vf\n", __func__);
 				continue;
 			}
 			vf = get_vf_from_file(dev, file_vf, need_dw);
-			vc_print(dev->index, PRINT_OTHER,
-				 "%s type is %d and get vf\n",
-				 __func__, type);
-
 			if (!vf) {
-				vc_print(dev->index, PRINT_ERROR,
-					 "received NULL vf!!\n");
+				vc_print(dev->index, PRINT_ERROR, "received NULL vf!!\n");
 				return;
 			}
+
+			vc_print(dev->index, PRINT_FENCE, "%s: vf:%px, vf_ext:%px,timestamp:%lld\n",
+				__func__, vf, vf->vf_ext, div_u64(vf->timestamp, 1000000000));
+
 			if (((reset_drop >> dev->index) & 1) ||
 			    last_index[dev->index][j] > vf->omx_index) {
 				dev->received_new_count = vf->omx_index;
 				dev->received_count = vf->omx_index;
 				vpp_drop_count = 0;
 				reset_drop ^= 1 << dev->index;
-				vc_print(dev->index, PRINT_PATTERN,
-					 "drop cnt reset!!\n");
+				vc_print(dev->index, PRINT_PATTERN, "drop cnt reset!!\n");
 			}
 
 			if (last_index[dev->index][j] != vf->omx_index) {
@@ -4439,11 +4428,12 @@ static void set_frames_info(struct composer_dev *dev,
 #if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_ATRACE)
 			ATRACE_COUNTER("video_composer_sf_omx_index", vf->omx_index);
 			ATRACE_COUNTER("video_composer_sf_omx_index", 0);
+			ATRACE_COUNTER("video_composer_sf_timestamp",
+				div_u64(vf->timestamp, 1000000000));
+			ATRACE_COUNTER("video_composer_sf_timestamp", 0);
 #endif
 		} else {
-			vc_print(dev->index, PRINT_ERROR,
-				 "unsupport type=%d\n",
-				 frames_info->frame_info[j].type);
+			vc_print(dev->index, PRINT_ERROR, "unsupport type.\n");
 		}
 	}
 	dev->received_frames[i].is_tvp = is_tvp;

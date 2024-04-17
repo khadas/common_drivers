@@ -250,6 +250,10 @@ int hdmitx_common_do_mode_setting(struct hdmitx_common *tx_comm,
 	}
 
 	mutex_lock(&tx_comm->hdmimode_mutex);
+	if (new_state->state_sequence_id != tx_comm->tx_hw->hw_sequence_id) {
+		HDMITX_ERROR("state_sequence_id failed %lld\n", new_state->state_sequence_id);
+		goto fail;
+	}
 	ret = hdmitx_common_pre_enable_mode(tx_comm, new_para);
 	if (ret < 0) {
 		HDMITX_ERROR("pre mode enable fail\n");
@@ -697,6 +701,9 @@ void hdmitx_plugin_common_work(struct hdmitx_common *tx_comm)
 	/* trace event */
 	hdmitx_tracer_write_event(tx_comm->tx_tracer, HDMITX_HPD_PLUGIN);
 
+	tx_comm->tx_hw->hw_sequence_id = get_jiffies_64();
+	HDMITX_INFO("plugin sequence id: %lld\n", tx_comm->tx_hw->hw_sequence_id);
+
 	/* SW: start rxsense check */
 	if (tx_comm->rxsense_policy) {
 		cancel_delayed_work(&tx_comm->work_rxsense);
@@ -746,6 +753,9 @@ void hdmitx_plugout_common_work(struct hdmitx_common *tx_comm)
 	HDMITX_INFO(SYS "plugout\n");
 	/* trace event */
 	hdmitx_tracer_write_event(tx_comm->tx_tracer, HDMITX_HPD_PLUGOUT);
+
+	tx_comm->tx_hw->hw_sequence_id = 0;
+	HDMITX_INFO("plug out sequence id: %lld\n", tx_comm->tx_hw->hw_sequence_id);
 
 	/* step1: disable output */
 	hdmitx_common_output_disable(tx_comm, true, true, true, true);

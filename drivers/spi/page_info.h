@@ -277,4 +277,8 @@ unsigned int page_info_get_pages_in_boot(void);
 void page_info_initialize(unsigned int default_n2m,
 	unsigned char bus_width, unsigned char ca);
 int page_info_pre_init(u8 *boot_info, int version);
+#if IS_ENABLED(CONFIG_AMLOGIC_SPI_NFC)
+void spi_nfc_set_ecc(u8 mode);
+u8 spi_nfc_need_infopage_force_hostecc(void);
+#endif
 #endif

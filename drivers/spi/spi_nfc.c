@@ -79,10 +79,38 @@ struct spi_nfc {
 	void __iomem *nand_clk_reg;
 
 	u8 disable_host_ecc;
+	u8 infopage_force_hostecc;
 	u8 *data_buf;
 	u8 *info_buf;
 	dma_addr_t daddr;
 	dma_addr_t iaddr;
+};
+
+struct spi_nand_id {
+	u8 mfr_id;
+	u8 dev_id;
+};
+
+struct spi_nfc *spi_nfc;
+
+void spi_nfc_set_ecc(u8 mode)
+{
+	if (spi_nfc)
+		spi_nfc->disable_host_ecc = mode;
+}
+EXPORT_SYMBOL_GPL(spi_nfc_set_ecc);
+
+u8 spi_nfc_need_infopage_force_hostecc(void)
+{
+	if (spi_nfc)
+		return spi_nfc->infopage_force_hostecc;
+
+	return 0;
+}
+EXPORT_SYMBOL_GPL(spi_nfc_need_infopage_force_hostecc);
+
+static struct spi_nand_id host_ecc_list[] = {
+	{0xc2, 0x14},	/* MX35LF1G24AD */
 };
 
 static const struct regmap_config spi_nfc_regmap_config = {
@@ -91,6 +119,33 @@ static const struct regmap_config spi_nfc_regmap_config = {
 	.reg_stride = 4,
 	.max_register = REG_MAX,
 };
+
+static int spi_nfc_select_ecc(struct spi_nfc *spi_nfc)
+{
+	u8 addr = 0, value[3] = {0};
+	u32 ret, i;
+	static int init_flags;
+
+	if (init_flags++)
+		return 0;
+
+	spi_nfc->disable_host_ecc = 1;
+	ret = NFC_SEND_CMD_ADDR_DATA_RD(0x9F, &addr, 1, value, 3);
+	if (ret)
+		return ret;
+
+	for (i = 0; i < (sizeof(host_ecc_list) / sizeof(struct spi_nand_id)); i++)
+		if (host_ecc_list[i].mfr_id == value[0] && host_ecc_list[i].dev_id == value[1])
+			spi_nfc->disable_host_ecc = 0;
+
+	if (spi_nfc->disable_host_ecc &&
+		device_property_read_bool(spi_nfc->dev, "infopage_force_hostecc"))
+		spi_nfc->infopage_force_hostecc = 1;
+
+	pr_info("spinand use %s ecc!\n", spi_nfc->disable_host_ecc ? "buildin" : "host");
+
+	return 0;
+}
 
 static int spi_nfc_buffer_init(struct spi_nfc *spi_nfc)
 {
@@ -216,21 +271,24 @@ static const struct mtd_ooblayout_ops spi_nfc_ecc_ooblayout = {
 static void spi_nfc_mtd_info_prepare(struct spi_nfc *spi_nfc)
 {
 	struct mtd_info *mtd = spi_mem_get_mtd();
-	static u8 prepared;
 
-	if (!mtd || prepared)
+	if (!mtd)
 		return;
 
-	prepared = 1;
 	page_info->dev_cfg0.page_size = mtd->writesize;
+
 	if (spi_nfc->disable_host_ecc) {
 		page_info->host_cfg.n2m_cmd = N2M_RAW | mtd->writesize;
-	} else {
+		return;
+	}
+
+	if (!page_info_get_block_size() || !GET_BCH_MODE(page_info->host_cfg.n2m_cmd)) {
 		page_info->host_cfg.n2m_cmd =
 			(DEFAULT_ECC_MODE & (~0x3F)) | mtd->writesize >> 9;
 		mtd_set_ooblayout(mtd, &spi_nfc_ecc_ooblayout);
 		mtd->oobavail = mtd_ooblayout_count_freebytes(mtd);
 	}
+
 	SPI_NFC_DEBUG("page_size = 0x%x\n", page_info->dev_cfg0.page_size);
 }
 
@@ -436,6 +494,8 @@ static int spi_nfc_transfer_one(struct spi_master *master,
 	case TRANSFER_STATE_CMD:
 		if (IS_CACHE_CMD(p[0]))
 			cache_op_running = 1;
+		if (p[0] == 0x9f)
+			spi_nfc_select_ecc(spi_nfc);
 		return NFC_SEND_CMD(p[0]);
 	case TRANSFER_STATE_DUMMY:
 	case TRANSFER_STATE_ADDR:
@@ -579,31 +639,9 @@ static int spi_nfc_prepare(struct spi_nfc *spi_nfc,
 	return ret;
 }
 
-static void spi_nfc_ecc_select(struct spi_nfc *spi_nfc,
-			    struct platform_device *pdev)
-{
-	u32 poc, dis_host_ecc;
-	int ret;
-
-	ret = of_property_read_u32(pdev->dev.of_node, "dis_host_ecc", &dis_host_ecc);
-	if (ret) {
-		spi_nfc->disable_host_ecc = 1;
-		pr_info("%s %d, use default buildin ecc!\n",
-				__func__, __LINE__);
-		return;
-	}
-
-	regmap_read(nfc_regmap[POC_IDX], 0, &poc);
-	if (poc & (1 << dis_host_ecc))
-		spi_nfc->disable_host_ecc = 0;
-	else
-		spi_nfc->disable_host_ecc = 1;
-}
-
 static int spi_nfc_probe(struct platform_device *pdev)
 {
 	struct spi_master *master;
-	struct spi_nfc *spi_nfc;
 	void __iomem *base;
 	int ret = 0, i;
 
@@ -631,7 +669,6 @@ static int spi_nfc_probe(struct platform_device *pdev)
 		nfc_regmap[i] = spi_nfc->regmap[i];
 	}
 
-	spi_nfc_ecc_select(spi_nfc, pdev);
 	ret = spi_nfc_prepare(spi_nfc, pdev);
 	if (ret)
 		goto out_err;

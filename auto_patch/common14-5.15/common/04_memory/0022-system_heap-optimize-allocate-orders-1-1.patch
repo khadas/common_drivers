@@ -1,4 +1,4 @@
-From 6a06b8f316bc7a27ff03a860c28002362533b73c Mon Sep 17 00:00:00 2001
+From 8fe07ea465e160d866994082a5f1afc535a94d0e Mon Sep 17 00:00:00 2001
 From: Hanjie Lin <hanjie.lin@amlogic.com>
 Date: Sat, 7 Oct 2023 20:38:57 +0800
 Subject: [PATCH] system_heap: optimize allocate orders [1/1]
@@ -23,7 +23,7 @@ Signed-off-by: Hanjie Lin <hanjie.lin@amlogic.com>
  1 file changed, 10 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/dma-buf/heaps/system_heap.c b/drivers/dma-buf/heaps/system_heap.c
-index 538b31663179..12120632e3eb 100644
+index 538b31663179..9cceca9366eb 100644
 --- a/drivers/dma-buf/heaps/system_heap.c
 +++ b/drivers/dma-buf/heaps/system_heap.c
 @@ -52,12 +52,16 @@ struct dma_heap_attachment {
@@ -37,7 +37,7 @@ index 538b31663179..12120632e3eb 100644
 -				LOW_ORDER_GFP, LOW_ORDER_GFP};
 -static const unsigned int orders[] = {8, 6, 4, 2, 0};
 +
-+#if IS_ENABLED(CONFIG_AMLOGIC_MEMORY_OPT)
++#if IS_ENABLED(CONFIG_AMLOGIC_MEMORY_DEBUG) || IS_ENABLED(CONFIG_AMLOGIC_MEMORY_OPT)
 +/*
 + * For middle order:
 + * MID_ORDER_GFP may cost a lot of CPU time in memory compaction when allocate

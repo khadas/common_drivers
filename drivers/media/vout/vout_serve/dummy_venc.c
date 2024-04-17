@@ -119,6 +119,8 @@ static struct dummy_venc_driver_s *dummy_encp_drv;
 static struct dummy_venc_driver_s *dummy_enci_drv;
 static struct dummy_venc_driver_s *dummy_encl_drv;
 
+static u32 dummyp_timing_flip;
+
 #define DUMMY_L_NAME    "dummy_encl"
 #define DUMMY_I_NAME    "dummy_enci"
 #define DUMMY_P_NAME    "dummy_encp"
@@ -127,6 +129,22 @@ static struct dummy_venc_driver_s *dummy_encl_drv;
  * common function
  * **********************************************************
  */
+
+static int dummy_encp_timing_flip_setup(char *str)
+{
+	int ret;
+
+	ret = kstrtoint(str, 0, &dummyp_timing_flip);
+	return ret;
+}
+__setup("dummyp_timing_flip=", dummy_encp_timing_flip_setup);
+
+int get_dummyp_timing_flip(void)
+{
+	return dummyp_timing_flip;
+}
+EXPORT_SYMBOL(get_dummyp_timing_flip);
+
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static void dummy_venc_sel_t7(struct dummy_venc_driver_s *venc_drv, unsigned int venc_sel)
 {
@@ -456,17 +474,31 @@ static void dummy_encp_vinfo_update(struct dummy_venc_driver_s *venc_drv)
 		return;
 	}
 
-	venc_drv->vinfo->width = vinfo->width;
-	venc_drv->vinfo->height = vinfo->height;
-	venc_drv->vinfo->field_height = vinfo->field_height;
-	venc_drv->vinfo->aspect_ratio_num = vinfo->aspect_ratio_num;
-	venc_drv->vinfo->aspect_ratio_den = vinfo->aspect_ratio_den;
-	venc_drv->vinfo->sync_duration_num = vinfo->sync_duration_num;
-	venc_drv->vinfo->sync_duration_den = vinfo->sync_duration_den;
-	venc_drv->vinfo->video_clk = vinfo->video_clk;
-	venc_drv->vinfo->htotal = vinfo->htotal;
-	venc_drv->vinfo->vtotal = vinfo->vtotal;
-	venc_drv->vinfo->viu_color_fmt = vinfo->viu_color_fmt;
+	if (dummyp_timing_flip) {
+		venc_drv->vinfo->width = vinfo->height;
+		venc_drv->vinfo->height = vinfo->width;
+		venc_drv->vinfo->field_height = vinfo->width;
+		venc_drv->vinfo->aspect_ratio_num = vinfo->aspect_ratio_den;
+		venc_drv->vinfo->aspect_ratio_den = vinfo->aspect_ratio_num;
+		venc_drv->vinfo->sync_duration_num = vinfo->sync_duration_num;
+		venc_drv->vinfo->sync_duration_den = vinfo->sync_duration_den;
+		venc_drv->vinfo->video_clk = vinfo->video_clk;
+		venc_drv->vinfo->htotal = vinfo->vtotal;
+		venc_drv->vinfo->vtotal = vinfo->htotal;
+		venc_drv->vinfo->viu_color_fmt = vinfo->viu_color_fmt;
+	} else {
+		venc_drv->vinfo->width = vinfo->width;
+		venc_drv->vinfo->height = vinfo->height;
+		venc_drv->vinfo->field_height = vinfo->field_height;
+		venc_drv->vinfo->aspect_ratio_num = vinfo->aspect_ratio_num;
+		venc_drv->vinfo->aspect_ratio_den = vinfo->aspect_ratio_den;
+		venc_drv->vinfo->sync_duration_num = vinfo->sync_duration_num;
+		venc_drv->vinfo->sync_duration_den = vinfo->sync_duration_den;
+		venc_drv->vinfo->video_clk = vinfo->video_clk;
+		venc_drv->vinfo->htotal = vinfo->htotal;
+		venc_drv->vinfo->vtotal = vinfo->vtotal;
+		venc_drv->vinfo->viu_color_fmt = vinfo->viu_color_fmt;
+	}
 }
 
 static struct vinfo_s *dummy_encp_get_current_info(void *data)

@@ -4056,6 +4056,20 @@ int __nocfi get_mte_sync_tags_hook_kprobe(void *data)
 }
 #endif
 
+bool is_2k_platform(void)
+{
+	int cpu_type = get_cpu_type();
+	int pack_type = get_meson_cpu_version(MESON_CPU_VERSION_LVL_PACK);
+
+	if (cpu_type == MESON_CPU_MAJOR_ID_T5D ||
+		cpu_type == MESON_CPU_MAJOR_ID_TXHD2 ||
+		cpu_type == MESON_CPU_MAJOR_ID_S1A ||
+		(cpu_type == MESON_CPU_MAJOR_ID_S4 && pack_type == 2) ||
+		(cpu_type == MESON_CPU_MAJOR_ID_S7 && pack_type == 3))
+		return true;
+
+	return false;
+}
 static int codec_mm_probe(struct platform_device *pdev)
 {
 	int r;

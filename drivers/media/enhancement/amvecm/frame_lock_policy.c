@@ -546,6 +546,13 @@ void frame_lock_disable_vrr(bool en)
 
 	vdata.line_dly = 500;
 
+	if (frame_sts.vrr_lfc_mode) {
+		aml_vrr_atomic_notifier_call_chain(VRR_EVENT_LFC_OFF, &vdata);
+		if (frame_lock_debug & VRR_POLICY_LOCK_STATUS_DEBUG_FLAG)
+			framelock_pr_info("%s lfc:%d\n", __func__, frame_sts.vrr_lfc_mode);
+		frame_sts.vrr_lfc_mode = false;
+	}
+
 	aml_vrr_atomic_notifier_call_chain(FRAME_LOCK_EVENT_VRR_OFF_MODE, &vdata);
 	vlock_set_sts_by_frame_lock(true);
 }

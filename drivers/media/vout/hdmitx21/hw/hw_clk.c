@@ -195,10 +195,10 @@ void hdmitx21_clks_gate_ctrl(bool en)
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
 
 	switch (hdev->tx_hw.chip_data->chip_type) {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	case MESON_CPU_ID_S7:
 		hdmitx_s7_clock_gate_ctrl(hdev, en);
 		break;
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	case MESON_CPU_ID_S5:
 		hdmitx_s5_clock_gate_ctrl(hdev, en);
 		break;
@@ -222,10 +222,10 @@ static void set_hpll_sspll(enum hdmi_vic vic)
 	case MESON_CPU_ID_S5:
 		set21_hpll_sspll_s5(vic);
 		break;
-#endif
 	case MESON_CPU_ID_S7:
 		set21_hpll_sspll_s7(vic);
 		break;
+#endif
 	case MESON_CPU_ID_S1A:
 	default:
 		HDMITX_INFO("%s%dNot match chip ID\n", __func__, __LINE__);
@@ -799,60 +799,6 @@ static struct hw_enc_clk_val_group setting_3dfp_enc_clk_val[] = {
 };
 
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
-/* if vsync likes 24000, 30000, ... etc, return 1 */
-static bool is_vsync_int(u32 clk)
-{
-	if (clk % 3000 == 0)
-		return 1;
-	return 0;
-}
-
-/* if vsync likes 59940, ... etc, return 1 */
-static bool is_vsync_frac(u32 clk)
-{
-	clk += clk / 1000;
-	if (is_vsync_int(clk) || is_vsync_int(clk + 1))
-		return 1;
-	return 0;
-}
-
-/* for varied hdmi basic modes, such as
- * vic/16, the vsync is 60, and may shift to 59.94
- * but vic/2, the vsync is 59.94, and may shift to 60
- * return values:
- *    0: no any shift
- *    1: shift down 0.1%
- *    2: shift up 0.1%
- */
-static u32 check_clock_shift(enum hdmi_vic vic, u32 frac_policy)
-{
-	const struct hdmi_timing *timing = NULL;
-
-	timing = hdmitx_mode_vic_to_hdmi_timing(vic);
-	if (!timing) {
-		HDMITX_ERROR("%s[%d] not valid vic %d\n", __func__, __LINE__, vic);
-		return 0;
-	}
-
-	/* only check such as 24hz, 30hz, 60hz, ... */
-	if (!likely_frac_rate_mode(timing->name))
-		return 0;
-
-	if (is_vsync_int(timing->v_freq)) {
-		if (frac_policy)
-			return 1;
-		else
-			return 0;
-	}
-	if (is_vsync_frac(timing->v_freq)) {
-		if (frac_policy)
-			return 0;
-		else
-			return 2;
-	}
-	return 0;
-}
-
 static void set_hdmitx_s5_htx_pll(struct hdmitx_dev *hdev)
 {
 	enum hdmi_vic vic = HDMI_0_UNKNOWN;
@@ -928,10 +874,6 @@ static void set_hdmitx_s5_htx_pll(struct hdmitx_dev *hdev)
 			break;
 		}
 	}
-	if (check_clock_shift(vic, frac_rate) == 1)
-		base_pixel_clk = base_pixel_clk - base_pixel_clk / 1001;
-	if (check_clock_shift(vic, frac_rate) == 2)
-		base_pixel_clk = base_pixel_clk + base_pixel_clk / 1000;
 	base_pixel_clk = base_pixel_clk * 10; /* for tmds modes, here should multi 10 */
 	if (cs == HDMI_COLORSPACE_YUV420)
 		base_pixel_clk /= 2;
@@ -1285,14 +1227,6 @@ static void hdmitx_set_fpll_without_dsc(struct hdmitx_dev *hdev)
 		HDMITX_INFO("hdmitx21: FPLL VCO over clock %d\n", fpll_vco);
 		return;
 	}
-	if (check_clock_shift(vic, frac_rate) == 1) {
-		fpll_vco = fpll_vco - fpll_vco / 1001;
-		HDMITX_INFO("fpll_vco %d down shift to %d\n", tmp_clk, fpll_vco);
-	}
-	if (check_clock_shift(vic, frac_rate) == 2) {
-		fpll_vco = fpll_vco + fpll_vco / 1000;
-		HDMITX_INFO("fpll_vco %d up shift to %d\n", tmp_clk, fpll_vco);
-	}
 	div = 1;
 	do {
 		if (fpll_vco >= MIN_FPLL_VCO && fpll_vco < MAX_FPLL_VCO)
@@ -1569,10 +1503,12 @@ void hdmitx21_set_clk(struct hdmitx_dev *hdev)
 		/* set the clock and test the pixel clock */
 		set_hdmitx_htx_pll(hdev, &test_clks);
 		break;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	case MESON_CPU_ID_S7:
 		disable_hdmitx_s7_plls(hdev);
 		set_hdmitx_htx_pll(hdev, &test_clks);
 		break;
+#endif
 	case MESON_CPU_ID_S5:
 	default:
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT

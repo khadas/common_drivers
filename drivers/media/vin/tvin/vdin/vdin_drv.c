@@ -315,8 +315,8 @@ void tvin_update_vdin_prop(u8 port_type)
 		vdin_set_vframe_prop_info(update_wr_vf, devp);
 		vdin_set_freesync_data(devp, update_wr_vf);
 	}
-	if (sm_ops->hdmi_clr_pkts)
-		sm_ops->hdmi_clr_pkts(devp->frontend, devp->port_type);
+	//if (sm_ops->hdmi_clr_pkts)
+	//	sm_ops->hdmi_clr_pkts(devp->frontend, devp->port_type);
 	spin_unlock_irqrestore(&devp->isr_lock, flags);
 
 	if (vdin_isr_monitor & DBG_RX_UPDATE_VDIN_PROP && update_wr_vf)
@@ -1094,9 +1094,35 @@ static u32 vdin_is_delay_vfe2rd_list(struct vdin_dev_s *devp)
 	}
 }
 
+/* For DV HW5 on T3X only */
+static void vdin_dv_hw5_init(struct vdin_dev_s *devp)
+{
+	if (!is_meson_t3x_cpu())
+		return;
+
+	//not dv input,return
+	if (!(vdin_is_dolby_signal_in(devp) &&
+	    devp->index == devp->dv.dv_path_idx &&
+	    !devp->dv_is_not_std))
+		return;
+
+	/* Debugging commands take priority */
+	if (!devp->debug.dbg_dv_hw5) {
+		devp->dv_hw5.hw5_ctl = 0xd;
+		devp->dv_hw5.dw_out_w = 0;
+		devp->dv_hw5.dw_out_h = 0;
+		devp->dv_hw5.dw_dfmt = TVIN_YUV444;
+		devp->afbce_flag |=
+			(VDIN_AFBCE_EN_1080P | VDIN_AFBCE_EN_720P | VDIN_AFBCE_EN_SMALL);
+		pr_info("t3x dv hw5 init %#x\n", devp->afbce_flag);
+	}
+}
+
 static void vdin_scale_and_cutwin_handle(struct vdin_dev_s *devp)
 {
 	u32 vdin0_max_w_h;
+	u32 div_h = 1, div_v = 1;
+	u32 h_active, v_active;
 
 	if (!devp || !devp->fmt_info_p)
 		return;
@@ -1115,12 +1141,29 @@ static void vdin_scale_and_cutwin_handle(struct vdin_dev_s *devp)
 		devp->prop.scaling4h = devp->parm.dest_height;
 	}
 
-	if (devp->debug.dbg_dw_h && devp->debug.dbg_dw_v &&
-		devp->debug.dbg_dw_dfmt) {
-		devp->flags |= VDIN_FLAG_MANUAL_CONVERSION;
-		devp->debug.scaling4w = devp->fmt_info_p->h_active / devp->debug.dbg_dw_h;
-		devp->debug.scaling4h = devp->fmt_info_p->v_active / devp->debug.dbg_dw_v;
-		devp->debug.dest_cfmt = devp->debug.dbg_dw_dfmt;
+	h_active = devp->fmt_info_p->h_active /
+			(devp->prop.decimation_ratio + 1);
+	v_active = devp->fmt_info_p->v_active;
+
+	if (devp->dv_hw5.hw5_ctl) {
+		if (!devp->dv_hw5.dw_out_w && !devp->dv_hw5.dw_out_h) {
+			if (h_active > 1920 && v_active > 1080) {
+				div_h = 4;
+				div_v = 4;
+			} else if (h_active > 960) {
+				div_h = 2;
+				div_v = 2;
+			} else {
+				div_h = 1;
+				div_v = 1;
+			}
+		} else {
+			div_h = devp->dv_hw5.dw_out_w ? devp->dv_hw5.dw_out_w : 2;
+			div_v = devp->dv_hw5.dw_out_h ? devp->dv_hw5.dw_out_h : 2;
+		}
+		devp->prop.scaling4w = devp->fmt_info_p->h_active / div_h;
+		devp->prop.scaling4h = devp->fmt_info_p->v_active / div_v;
+		devp->prop.dest_cfmt = devp->dv_hw5.dw_dfmt;
 	}
 
 	/* prevent display of resolution beyond specification */
@@ -1152,6 +1195,16 @@ static void vdin_scale_and_cutwin_handle(struct vdin_dev_s *devp)
 		devp->prop.vs = devp->debug.cutwin.vs;
 		devp->prop.ve = devp->debug.cutwin.ve;
 	}
+}
+
+/* Parameter initialization at startup phase should be placed here */
+static void vdin_start_param_init(struct vdin_dev_s *devp)
+{
+	if (!devp->debug.dbg_dv_hw5)
+		memset(&devp->dv_hw5, 0, sizeof(devp->dv_hw5));
+
+	devp->afbce_flag = devp->dts_config.afbce_flag_cfg;
+	//todo:more parameter initializations will be move here
 }
 
 /*
@@ -1202,6 +1255,7 @@ int vdin_start_dec(struct vdin_dev_s *devp)
 		return -1;
 	}
 
+	vdin_start_param_init(devp);
 	if (devp->frontend && devp->frontend->sm_ops) {
 		sm_ops = devp->frontend->sm_ops;
 		sm_ops->get_sig_property(devp->frontend, &devp->prop, devp->port_type);
@@ -1223,6 +1277,7 @@ int vdin_start_dec(struct vdin_dev_s *devp)
 		if (!(devp->flags & VDIN_FLAG_V4L2_DEBUG))
 			devp->parm.info.cfmt = devp->prop.color_format;
 
+		vdin_dv_hw5_init(devp);
 		vdin_scale_and_cutwin_handle(devp);
 	}
 	/*gxbb/gxl/gxm use clkb as vdin clk,
@@ -1236,9 +1291,9 @@ int vdin_start_dec(struct vdin_dev_s *devp)
 		vdin_vpu_clk_gate_on_off(devp, 1);
 		/*switch_vpu_clk_gate_vmod(VPU_VPU_CLKB, VPU_CLK_GATE_ON);*/
 #endif
-	vdin_sw_reset(devp);
 	/*enable clk*/
 	vdin_clk_on_off(devp, true);
+	vdin_sw_reset(devp);
 	vdin_set_default_regmap(devp);
 
 	if (devp->dts_config.urgent_en && devp->hw_core == VDIN_HW_CORE_NORMAL)
@@ -1747,7 +1802,7 @@ void vdin_stop_dec(struct vdin_dev_s *devp)
 void vdin_self_stop_dec(struct vdin_dev_s *devp)
 {
 	if (!(devp->flags & VDIN_FLAG_DEC_STARTED)) {
-		pr_err("%s(%d) decode haven't started flags=0x%x\n",
+		pr_info("%s(%d) decoder in state stopped flags=0x%x\n",
 			__func__, devp->index, devp->flags);
 		return;
 	}
@@ -1896,6 +1951,14 @@ int start_tvin_service(int no, struct vdin_parm_s  *para)
 	devp->parm.port = para->port;
 	if (devp->parm.port == TVIN_PORT_VIU1_VIDEO)
 		devp->flags |= VDIN_FLAG_V4L2_DEBUG;
+
+	/* g12a/g12b/sm1 do not have wb0_vpp */
+	if ((is_meson_g12a_cpu() || (is_meson_g12b_cpu()) ||
+		is_meson_sm1_cpu()) && para->port == TVIN_PORT_VIU1_WB0_VPP) {
+		pr_info("line:%d, cpu :%#x, vdin%d force to use postblend\n",
+			__LINE__, get_cpu_type(), devp->index);
+		para->port = TVIN_PORT_VIU1_WB0_POST_BLEND;
+	}
 
 	devp->parm.info.fmt = para->fmt;
 	fmt = devp->parm.info.fmt;
@@ -2210,6 +2273,14 @@ int start_tvin_capture_ex(int dev_num, enum port_vpp_e port, struct vdin_parm_s 
 		loop_port = TVIN_PORT_VIU3_OSD1;
 	else
 		loop_port = para->port;
+
+	/* g12a/g12b/sm1 do not have wb0_vpp */
+	if ((is_meson_g12a_cpu() || (is_meson_g12b_cpu()) ||
+		is_meson_sm1_cpu()) && loop_port == TVIN_PORT_VIU1_WB0_VPP) {
+		pr_info("line:%d, cpu :%#x, vdin1 force to use postblend\n",
+			__LINE__, get_cpu_type());
+		loop_port = TVIN_PORT_VIU1_WB0_POST_BLEND;
+	}
 
 	/* For chips before T7,only vpp0 + VIU2 ENCP/I/L */
 	if (!cpu_after_eq(MESON_CPU_MAJOR_ID_T7) &&
@@ -2634,6 +2705,7 @@ int vdin_vs_duration_check(struct vdin_dev_s *devp)
 	int ret = 0;
 	int cur_time, diff_time;
 	int temp;
+	unsigned int input_fps;
 
 	if (devp->game_mode || !IS_HDMI_SRC(devp->parm.port) ||
 	    vdin_is_auto_game_mode(devp))
@@ -2645,10 +2717,13 @@ int vdin_vs_duration_check(struct vdin_dev_s *devp)
 	if (vdin_isr_monitor & VDIN_ISR_MONITOR_VS)
 		pr_info("isr:diff_time:%d, cycle:%d\n",
 			diff_time, devp->cycle);
-
+	if (devp->prop.vtem_data.qms_en)
+		input_fps = devp->prop.vtem_data.next_tfr;
+	else
+		input_fps = devp->parm.info.fps;
 	/* In a duration 50M clk theory value */
-	if (devp->parm.info.fps)
-		devp->vs_time_stamp = devp->msr_clk_val / devp->parm.info.fps;
+	if (input_fps)
+		devp->vs_time_stamp = devp->msr_clk_val / input_fps;
 	else
 		devp->vs_time_stamp = cur_time;
 
@@ -4337,6 +4412,7 @@ static long vdin_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	unsigned int idx = 0;
 	unsigned int recovery_idx = 0;
 	struct vdin_vrr_freesync_param_s vdin_vrr_status;
+	struct vdin_qms_param_s vdin_qms_status;
 	unsigned int tmp = 0;
 
 	/* Get the per-device structure that contains this cdev */
@@ -4859,6 +4935,19 @@ static long vdin_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 				devp->prop.spd_data.data[0],
 				devp->prop.spd_data.data[5],
 				devp->pre_prop.spd_data.data[5]);
+		break;
+	case TVIN_IOC_G_QMS_STATUS:
+		vdin_qms_status.qms_en = devp->pre_prop.vtem_data.qms_en;
+		vdin_qms_status.qms_fr = devp->pre_prop.vtem_data.next_tfr;
+		vdin_qms_status.qms_base_fr = devp->pre_prop.vtem_data.base_framerate;
+		if (copy_to_user(argp, &vdin_qms_status, sizeof(vdin_qms_status))) {
+			pr_info("vdin_qms_status copy fail\n");
+			ret = -EFAULT;
+			break;
+		}
+
+		pr_info("vdin%d,TVIN_IOC_G_QMS_STATUS qms_en:%d,qms_fr:%d\n\n",
+			devp->index, vdin_qms_status.qms_en, vdin_qms_status.qms_fr);
 		break;
 	case TVIN_IOC_GET_COLOR_RANGE:
 		if (copy_to_user(argp, &color_range_force,
@@ -6075,9 +6164,11 @@ static int vdin_signal_notify_callback(struct notifier_block *block,
 	struct vd_signal_info_s *vd_signal = NULL;
 	/* only for vdin loopback */
 	struct vdin_dev_s *devp = NULL;
+#ifdef VDIN_ENALBE_NOTIFY_SECURITY
 #ifdef CONFIG_AMLOGIC_MEDIA_SECURITY
 	unsigned int i = 0;
 	struct vd_secure_info_s *vd_secure = NULL;
+#endif
 #endif
 
 	if (is_meson_t3x_cpu())
@@ -6100,6 +6191,7 @@ static int vdin_signal_notify_callback(struct notifier_block *block,
 				__func__, devp->tx_fmt, devp->vd1_fmt);
 		break;
 	case VIDEO_SECURE_TYPE_CHANGED:
+#ifdef VDIN_ENALBE_NOTIFY_SECURITY
 #ifdef CONFIG_AMLOGIC_MEDIA_SECURITY
 		vd_secure = (struct vd_secure_info_s *)para;
 		if (!vd_secure || !(devp->flags & VDIN_FLAG_DEC_STARTED))
@@ -6155,6 +6247,10 @@ static int vdin_signal_notify_callback(struct notifier_block *block,
 
 			vdin_set_mem_protect(devp, 0);
 		}
+#endif
+#else
+		if (vdin_dbg_en)
+			pr_info("%s VDIN_ENALBE_NOTIFY_SECURITY is not defined\n", __func__);
 #endif
 		break;
 
@@ -6724,7 +6820,7 @@ static int vdin_drv_suspend(struct platform_device *pdev, pm_message_t state)
 #endif
 	//cpumask_copy(&vdin_irq_mask, mask);
 	//}
-
+	vdin_self_stop_dec(devp);
 	devp->flags |= VDIN_FLAG_SUSPEND;
 	/*no need setting any regs*/
 	/*vdin_enable_module(devp, false);*/
@@ -6751,9 +6847,7 @@ static int vdin_drv_suspend(struct platform_device *pdev, pm_message_t state)
 		wr_bits(devp->addr_offset, VDIN_COM_CTRL0, 0,
 			VDIN_SEL_BIT, VDIN_SEL_WID);
 	}
-	/* Restarting vdin1 clock will crash */
-	if (!devp->index || devp->dtdata->hw_ver < VDIN_HW_T7)
-		vdin_clk_on_off(devp, false);
+	vdin_clk_on_off(devp, false);
 	/* vdin msr clock gate disable */
 	if (!devp->index && devp->msr_clk &&
 		devp->vdin_clk_flag) {
@@ -6788,9 +6882,6 @@ static int vdin_drv_resume(struct platform_device *pdev)
 	 *? VPU_VIU_VDIN0 : VPU_VIU_VDIN1,
 	 *VPU_CLK_GATE_ON);
 	 */
-	/* Restarting vdin1 clock will crash */
-	if (!devp->index || devp->dtdata->hw_ver < VDIN_HW_T7)
-		vdin_clk_on_off(devp, true);
 
 	if (devp->index && devp->set_canvas_manual == 1 &&
 	    is_meson_t5d_cpu()) {
@@ -6799,6 +6890,7 @@ static int vdin_drv_resume(struct platform_device *pdev)
 		wr_bits(devp->addr_offset, VDIN_COM_CTRL0, 1,
 			VDIN_COMMON_INPUT_EN_BIT, VDIN_COMMON_INPUT_EN_WID);
 	}
+	vdin_clk_on_off(devp, true);
 
 	//if (devp->irq) {
 	//	if (!irq_can_set_affinity(devp->irq))

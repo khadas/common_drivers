@@ -1027,11 +1027,7 @@ static void scaler_hw_disable(struct meson_vpu_block *vblk,
 			      struct meson_vpu_block_state *state)
 {
 	struct meson_vpu_scaler *scaler = to_scaler_block(vblk);
-	struct osd_scaler_reg_s *reg = scaler->reg;
-	struct rdma_reg_ops *reg_ops = state->sub->reg_ops;
 
-	/*disable sc*/
-	reg_ops->rdma_write_reg(reg->vpp_osd_sc_ctrl0, 0);
 	MESON_DRM_BLOCK("%s disable called.\n", scaler->base.name);
 }
 

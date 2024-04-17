@@ -114,7 +114,7 @@ static int osd_fbdump_open(struct inode *inode, struct file *filp)
 	pipeline = priv->pipeline;
 	mvps = priv_to_pipeline_state(pipeline->obj.state);
 
-	index = plane->index;
+	index = amp->plane_index;
 	info = &mvps->plane_info[index];
 
 	if (!info->enable) {
@@ -129,6 +129,7 @@ static int osd_fbdump_open(struct inode *inode, struct file *filp)
 	amp->bflg = bflg;
 	amp->vir_addr = vir_addr;
 	amp->dump_size = fb_size;
+	DRM_INFO("%s, %px, %u\n", __func__, vir_addr, fb_size);
 
 	return 0;
 }

@@ -307,17 +307,17 @@ void lcd_tcon_fw_prepare(struct aml_lcd_drv_s *pdrv, struct lcd_tcon_config_s *t
 
 	if (pdrv->status & LCD_STATUS_IF_ON)
 		lcd_tcon_fw.tcon_state |= TCON_FW_STATE_TCON_EN;
-	if (mm_table->valid_flag & LCD_TCON_DATA_VALID_VAC)
+	if (mm_table->lut_valid_flag & LCD_TCON_DATA_VALID_VAC)
 		lcd_tcon_fw.tcon_state |= TCON_FW_STATE_VAC_VALID;
-	if (mm_table->valid_flag & LCD_TCON_DATA_VALID_DEMURA)
+	if (mm_table->lut_valid_flag & LCD_TCON_DATA_VALID_DEMURA)
 		lcd_tcon_fw.tcon_state |= TCON_FW_STATE_DEMURA_VALID;
-	if (mm_table->valid_flag & LCD_TCON_DATA_VALID_ACC)
+	if (mm_table->lut_valid_flag & LCD_TCON_DATA_VALID_ACC)
 		lcd_tcon_fw.tcon_state |= TCON_FW_STATE_ACC_VALID;
-	if (mm_table->valid_flag & LCD_TCON_DATA_VALID_DITHER)
+	if (mm_table->lut_valid_flag & LCD_TCON_DATA_VALID_DITHER)
 		lcd_tcon_fw.tcon_state |= TCON_FW_STATE_DITHER_VALID;
-	if (mm_table->valid_flag & LCD_TCON_DATA_VALID_OD)
+	if (mm_table->lut_valid_flag & LCD_TCON_DATA_VALID_OD)
 		lcd_tcon_fw.tcon_state |= TCON_FW_STATE_OD_VALID;
-	if (mm_table->valid_flag & LCD_TCON_DATA_VALID_LOD)
+	if (mm_table->lut_valid_flag & LCD_TCON_DATA_VALID_LOD)
 		lcd_tcon_fw.tcon_state |= TCON_FW_STATE_LOD_VALID;
 
 	lcd_tcon_fw_base_timing_update(pdrv);

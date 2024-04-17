@@ -129,6 +129,8 @@ void lcd_set_venc_timing(struct aml_lcd_drv_s *pdrv)
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
 		LCDPR("[%d]: %s\n", pdrv->index, __func__);
 	lcd_venc_op.venc_set_timing(pdrv);
+
+	lcd_act_timing_dbg_print(pdrv);
 }
 
 void lcd_set_venc(struct aml_lcd_drv_s *pdrv)
@@ -141,6 +143,8 @@ void lcd_set_venc(struct aml_lcd_drv_s *pdrv)
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
 		LCDPR("[%d]: %s\n", pdrv->index, __func__);
 	lcd_venc_op.venc_set(pdrv);
+
+	lcd_act_timing_dbg_print(pdrv);
 }
 
 void lcd_venc_change(struct aml_lcd_drv_s *pdrv)
@@ -155,6 +159,8 @@ void lcd_venc_change(struct aml_lcd_drv_s *pdrv)
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
 		LCDPR("[%d]: %s\n", pdrv->index, __func__);
 	lcd_venc_op.venc_change(pdrv);
+
+	lcd_act_timing_dbg_print(pdrv);
 }
 
 void lcd_venc_enable(struct aml_lcd_drv_s *pdrv, int flag)

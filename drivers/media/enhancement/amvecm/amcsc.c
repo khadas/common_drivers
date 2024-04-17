@@ -61,6 +61,7 @@
 #include <linux/amlogic/gki_module.h>
 #include "color/ai_color.h"
 #include "hdr/am_cuva_hdr_tm.h"
+#include <linux/amlogic/media/vout/hdmitx_common/hdmitx_common.h>
 
 uint debug_csc;
 static int cur_mvc_type[VD_PATH_MAX];
@@ -82,6 +83,10 @@ static uint pre_gamut_conv_en;
 signed int vd1_contrast_offset;
 
 signed int saturation_offset;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+static bool cur_hdmi_out_fmt;
+#endif
+bool limit_8bit_hdr10 = true;
 
 /*hdr------------------------------------*/
 
@@ -4104,7 +4109,84 @@ uint32_t sink_dv_support(const struct vinfo_s *vinfo)
 EXPORT_SYMBOL(sink_dv_support);
 #endif
 
+/*always hdr, add 8bit hdr10 limitation*/
 uint32_t sink_hdr_support(const struct vinfo_s *vinfo)
+{
+	u32 new_hdr_cap = 0;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+	u32 hdr_cap = 0;
+	u32 dv_cap = 0;
+
+	if (!limit_8bit_hdr10)
+		return sink_hdr_support_ori_cap(vinfo);
+
+	/* when policy == follow sink(0) or force output (2) */
+	/* use force_output */
+	if (get_force_output() != 0 &&
+	    get_hdr_policy() != 1) {
+		switch (get_force_output()) {
+		case BT709:
+		case BT_BYPASS:
+			break;
+		case BT2020:
+			hdr_cap |= BT2020_SUPPORT;
+			break;
+		case BT2020_PQ:
+			hdr_cap |= HDR_SUPPORT;
+			break;
+		case BT2020_PQ_DYNAMIC:
+			hdr_cap |= HDRP_SUPPORT;
+			break;
+		case BT2020_HLG:
+			hdr_cap |= HLG_SUPPORT;
+			break;
+		case BT2100_IPT:
+			hdr_cap |= DV_SUPPORT;
+		default:
+			break;
+		}
+	} else if (vinfo) {
+		if (vinfo->hdr_info.hdr_support & HDR_SUPPORT)
+			hdr_cap |= HDR_SUPPORT;
+		if (vinfo->hdr_info.hdr_support & HLG_SUPPORT)
+			hdr_cap |= HLG_SUPPORT;
+		if (vinfo->hdr_info.hdr10plus_info.ieeeoui == HDR_PLUS_IEEE_OUI &&
+		    vinfo->hdr_info.hdr10plus_info.application_version == 1)
+			hdr_cap |= HDRP_SUPPORT;
+		if (vinfo->hdr_info.cuva_info.ieeeoui ==
+			CUVA_IEEEOUI)
+			hdr_cap |= CUVA_SUPPORT;
+		if (vinfo->hdr_info.colorimetry_support & 0xe0)
+			hdr_cap |= BT2020_SUPPORT;
+
+		dv_cap = sink_dv_support(vinfo);
+		if (dv_cap)
+			hdr_cap |= (dv_cap << DV_SUPPORT_SHF) & DV_SUPPORT;
+	}
+
+	/*always hdr, add 8bit hdr10 limitation*/
+	/*adatpive hdr, no 8bit limitation, hdmi will trans 444-8=>422-12*/
+	if (get_hdr_policy() == 0 && get_hdmi_colordepth(vinfo) == COLORDEPTH_24B)
+		new_hdr_cap = hdr_cap & (~HDR_SUPPORT) & (~HLG_SUPPORT) & (~HDRP_SUPPORT);
+	else
+		new_hdr_cap = hdr_cap;
+
+	if (vinfo)
+		pr_csc(256, "%s:support %d %d %d,mode=%d,hdr_cap 0x%x,0x%x\n",
+			__func__,
+			vinfo->hdr_info.hdr_support,
+			vinfo->hdr_info.hdr10plus_info.ieeeoui,
+			vinfo->hdr_info.hdr10plus_info.application_version,
+			vinfo->mode,
+			hdr_cap, new_hdr_cap);
+#endif
+	return new_hdr_cap;
+}
+EXPORT_SYMBOL(sink_hdr_support);
+
+/*original hdr_cap from HDMI, it depends on hdmi limit 8bit hdr10 or not*/
+/*on trunk, hdmi limit 8bit hdr10; on some projects, hdmi not limit 8bit hdr10*/
+uint32_t sink_hdr_support_ori_cap(const struct vinfo_s *vinfo)
 {
 	u32 hdr_cap = 0;
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
@@ -4172,7 +4254,7 @@ uint32_t sink_hdr_support(const struct vinfo_s *vinfo)
 #endif
 	return hdr_cap;
 }
-EXPORT_SYMBOL(sink_hdr_support);
+EXPORT_SYMBOL(sink_hdr_support_ori_cap);
 
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 int signal_type_changed(struct vframe_s *vf,
@@ -4468,6 +4550,15 @@ int signal_type_changed(struct vframe_s *vf,
 			1, "gamut convert changed = 0x%x\n",
 			gamut_conv_enable);
 	}
+
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+	if (cur_hdmi_out_fmt != vinfo->vpp_post_out_color_fmt) {
+		cur_hdmi_out_fmt = vinfo->vpp_post_out_color_fmt;
+		change_flag |= SIG_OP_CHG;
+		pr_csc(1, "hdmi out format changed = 0x%x\n",
+			cur_hdmi_out_fmt);
+	}
+#endif
 
 	return change_flag;
 }
@@ -9225,6 +9316,17 @@ int amvecm_matrix_process(struct vframe_s *vf,
 				   vinfo->viu_color_fmt);
 		}
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+		if (cur_hdmi_out_fmt != vinfo->vpp_post_out_color_fmt) {
+			if (is_video_layer_on(vd_path))
+				null_vf_cnt[vd_path] = 0;
+			else
+				force_fake = true;
+			//cur_hdmi_out_fmt = vinfo->vpp_post_out_color_fmt;
+			pr_csc(4, "vd%d: hdmi out format changed\n",
+				vd_path + 1);
+		}
+#endif
 		/* handle eye protect mode */
 		if (cur_eye_protect_mode != wb_val[0] &&
 		    vd_path == VD1_PATH) {
@@ -9352,6 +9454,17 @@ int amvecm_matrix_process(struct vframe_s *vf,
 					       "%d:set video_process_status[VD%d] = MODULE_OFF\n",
 					       __LINE__, vd_path + 1);
 				}
+
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+				//dv enable, hdmi 8k out dsc enable, use post matrix for yuv2rgb
+				if (cur_hdmi_out_fmt != vinfo->vpp_post_out_color_fmt) {
+					if (chip_type_id == chip_s5)
+						output_color_fmt_convert(vpp_index);
+					cur_hdmi_out_fmt = vinfo->vpp_post_out_color_fmt;
+					pr_csc(8, "dv on:Fake frame: hdmi out fmt changed = 0x%x\n",
+						cur_hdmi_out_fmt);
+				}
+#endif
 			} else {
 #endif
 				/* dolby disable */

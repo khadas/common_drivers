@@ -102,6 +102,18 @@ struct hdmitx_clk_tree_s {
 	struct clk *venci_1_gate;
 };
 
+struct drm_hdmitx_hdcp {
+	int hdcp_auth_result;
+	int hdcp_fail_cnt;
+	/* hdcp result callback */
+	struct connector_hdcp_cb drm_hdcp_cb;
+	/* drm hdcp debug function. */
+	int test_hdcp_mode;
+	void (*test_hdcp_disable)(void);
+	void (*test_hdcp_enable)(int hdcp_mode);
+	void (*test_hdcp_disconnect)(void);
+};
+
 struct hdmitx_dev {
 	struct cdev cdev; /* The cdev structure */
 	dev_t hdmitx_id;
@@ -183,7 +195,7 @@ struct hdmitx_dev {
 	struct vpu_dev_s *hdmitx_vpu_clk_gate_dev;
 
 	/*DRM related*/
-	struct connector_hdcp_cb drm_hdcp_cb;
+	struct drm_hdmitx_hdcp drm_hdcp;
 
 	struct miscdevice hdcp_comm_device;
 	u8 def_stream_type;

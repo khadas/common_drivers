@@ -70,6 +70,9 @@ struct meson_of_conf {
 	u32 crtcmask_video[MESON_MAX_VIDEO];
 
 	char *pref_mode;
+
+	/* force osd slice_mode: 1*/
+	u32 force_slice;
 };
 
 struct meson_drm {
@@ -100,6 +103,10 @@ struct meson_drm {
 	u32 num_planes;
 	struct am_osd_plane *osd_planes[MESON_MAX_OSD];
 	struct am_video_plane *video_planes[MESON_MAX_VIDEO];
+
+	/* During a vsync of pan display, an async commit already ran */
+	bool pan_async_commit_ran;
+	u32 disable_video_plane;
 
 	struct meson_of_conf of_conf;
 

@@ -9,6 +9,7 @@
 #include <drm/drm_probe_helper.h>
 #include <drm/drm_atomic_helper.h>
 #include <linux/component.h>
+#include <linux/amlogic/gki_module.h>
 #include <vout/vout_serve/vout_func.h>
 #include "meson_crtc.h"
 #include "meson_dummyp.h"
@@ -32,8 +33,43 @@ static struct drm_display_mode dummy_mode = {
 int meson_dummyp_get_modes(struct drm_connector *connector)
 {
 	struct drm_display_mode *mode = NULL;
+	struct vinfo_s *vinfo = NULL;
+	u32 dummyp_timing_flip;
 	int count = 0;
+	int tmp = 0;
 
+	vinfo = get_current_vinfo2();
+	dummyp_timing_flip = get_dummyp_timing_flip();
+
+	if (dummyp_timing_flip) {
+		dummy_mode.clock  = vinfo->video_clk / 1000;
+
+		dummy_mode.hdisplay  = vinfo->height;
+		tmp = vinfo->vtotal - vinfo->height - vinfo->vbp;
+		dummy_mode.hsync_start  = vinfo->height + tmp - vinfo->vsw;
+		dummy_mode.hsync_end = vinfo->height + tmp;
+		dummy_mode.htotal  = vinfo->vtotal;
+
+		dummy_mode.vdisplay = vinfo->width;
+		tmp = vinfo->htotal - vinfo->width - vinfo->hbp;
+		dummy_mode.vsync_start  =  vinfo->width + tmp - vinfo->hsw;
+		dummy_mode.vsync_end = vinfo->width + tmp;
+		dummy_mode.vtotal = vinfo->htotal;
+	} else {
+		dummy_mode.clock = vinfo->video_clk / 1000;
+
+		dummy_mode.hdisplay = vinfo->width;
+		tmp = vinfo->htotal - vinfo->width - vinfo->hbp;
+		dummy_mode.hsync_start = vinfo->width + tmp - vinfo->hsw;
+		dummy_mode.hsync_end = vinfo->width + tmp;
+		dummy_mode.htotal = vinfo->htotal;
+
+		dummy_mode.vdisplay = vinfo->height;
+		tmp = vinfo->vtotal - vinfo->height - vinfo->vbp;
+		dummy_mode.vsync_start = vinfo->height + tmp - vinfo->vsw;
+		dummy_mode.vsync_end = vinfo->height + tmp;
+		dummy_mode.vtotal = vinfo->vtotal;
+	}
 	mode = drm_mode_duplicate(connector->dev, &dummy_mode);
 	if (!mode) {
 		DRM_INFO("[%s:%d]dup dummy mode failed.\n", __func__,

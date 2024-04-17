@@ -2215,6 +2215,8 @@ static void vd_slices_padding_set(u32 vpp_index,
 	}
 	if (vd1_work_mode == VD1_SLICES01_MODE ||
 		vd1_work_mode == VD1_2_2SLICES_MODE) {
+		u32 temp_hsize = 0;
+
 		/* 2slices to 4ppc or 4s4p mosaic mode */
 		for (slice = 0; slice < 2; slice++) {
 			vd1_slice_pad_reg = &vd_proc_reg.vd1_slice_pad_size0_reg[slice];
@@ -2222,8 +2224,11 @@ static void vd_slices_padding_set(u32 vpp_index,
 				vd_proc_vd1_info->vd1_proc_unit_dout_hsize[slice];
 			vd1_proc_unit_dout_vsize =
 				vd_proc_vd1_info->vd1_proc_unit_dout_vsize[slice];
-			if (vd1_proc_unit_dout_hsize <
-				SIZE_ALIG32(vd_proc_vd1_info->vd1_dout_hsize[0]) / 2) {
+			if (video_is_meson_s5_cpu())
+				temp_hsize  = SIZE_ALIG16(vd_proc_vd1_info->vd1_dout_hsize[0]);
+			else
+				temp_hsize  = SIZE_ALIG32(vd_proc_vd1_info->vd1_dout_hsize[0]);
+			if (vd1_proc_unit_dout_hsize < temp_hsize / 2) {
 				slice_pad_ena[slice] = 1;
 				slice_pad_h_bgn[slice] = 0;
 				slice_pad_h_end[slice] =
@@ -2232,6 +2237,10 @@ static void vd_slices_padding_set(u32 vpp_index,
 				slice_pad_v_end[slice] =
 					vd1_proc_unit_dout_vsize - 1;
 			}
+			pr_info("%s(slice=%d), vd1_dout_hsize[0]=%d, temp_hsize=%d, vd1_proc_unit_dout_hsize=%d\n",
+				__func__, slice,
+				vd_proc_vd1_info->vd1_dout_hsize[0], temp_hsize,
+				vd1_proc_unit_dout_hsize);
 			rdma_wr(vd1_slice_pad_reg->vd1_slice_pad_h_size,
 				slice_pad_h_bgn[slice] << 16 |
 				slice_pad_h_end[slice]);
@@ -2682,8 +2691,12 @@ static void vd_proc_set(struct video_layer_s *layer,
 		if (vd1_slices_dout_dpsel == VD1_SLICES_DOUT_2S4P) {
 			/* vd1 dout 2s2p path */
 			rdma_wr_bits(VPP_VD_SYS_CTRL, 2, 0, 2);
-			rdma_wr(SLICE2PPC_H_V_SIZE, vd1_dout_vsize << 16 |
-				SIZE_ALIG32(vd1_dout_hsize) / 2);
+			if (video_is_meson_s5_cpu())
+				rdma_wr(SLICE2PPC_H_V_SIZE, vd1_dout_vsize << 16 |
+					SIZE_ALIG16(vd1_dout_hsize) / 2);
+			else
+				rdma_wr(SLICE2PPC_H_V_SIZE, vd1_dout_vsize << 16 |
+					SIZE_ALIG32(vd1_dout_hsize) / 2);
 		}
 		break;
 	case VD1_4SLICES_MODE:
@@ -3123,6 +3136,7 @@ static void set_vd_proc_info(struct video_layer_s *layer)
 	vd_proc->vd2_used = 0;
 	if (layer->layer_id == 0) {
 		vd_proc->vd1_used = 1;
+		vd_proc_vd1_info->no_compress = no_compress;
 		vd_proc_vd1_info->crop_left = crop_left;
 		/* should be set here */
 		/* todo */
@@ -3394,6 +3408,7 @@ static void set_vd_proc_info(struct video_layer_s *layer)
 		/* if 4 pic, todo */
 	} else if (layer->layer_id == 1) {
 		vd_proc->vd2_used = 1;
+		vd_proc_vd1_info->no_compress = no_compress;
 		vd_proc_vd2_info->crop_left = crop_left;
 		/* todo */
 		if (layer->pi_enable)
@@ -5885,6 +5900,7 @@ static void update_vd_proc_amdv_info(struct vd_proc_s *vd_proc)
 	vd_proc_amdv.overlap_size = vd_proc->vd_proc_vd1_info.vd1_overlap_hsize;
 	vd_proc_amdv.vd1_in_hsize = vd_proc->vd_proc_vd1_info.vd1_src_din_hsize[0];
 	vd_proc_amdv.vd1_in_vsize = vd_proc->vd_proc_vd1_info.vd1_src_din_vsize[0];
+	vd_proc_amdv.no_compress = vd_proc->vd_proc_vd1_info.no_compress;
 	for (i = 0; i < vd_proc->vd_proc_vd1_info.slice_num; i++) {
 		/* slice input */
 		vd_proc_amdv.slice[i].hsize_amdv =
@@ -6469,20 +6485,39 @@ static void vd1_set_dcu_s5(struct video_layer_s *layer,
 		burst_len = 1;
 	if (layer->mif_setting.block_mode)
 		burst_len = layer->mif_setting.block_mode;
-	if ((vf->bitdepth & BITDEPTH_Y10) &&
-	    !(vf->flag & VFRAME_FLAG_DI_DW) &&
-	    !frame_par->nocomp) {
-		if ((vf->type & VIDTYPE_VIU_444) ||
-		    (vf->type & VIDTYPE_RGB_444)) {
-			bit_mode = 2;
+	if (debug_flag & DEBUG_FLAG_PRINT_FRAME_DETAIL)
+		pr_info("bitdepth %x %x, flag %x, type %x, nocomp %x\n",
+			vf->bitdepth, vf->bitdepth_dw, vf->flag, vf->type, frame_par->nocomp);
+
+	if (!frame_par->nocomp) {/*use afbc data*/
+		if ((vf->bitdepth & BITDEPTH_Y10) &&
+		    !(vf->flag & VFRAME_FLAG_DI_DW)) {
+			if ((vf->type & VIDTYPE_VIU_444) ||
+			    (vf->type & VIDTYPE_RGB_444)) {
+				bit_mode = 2;
+			} else {
+				if (vf->bitdepth & FULL_PACK_422_MODE)
+					bit_mode = 3;
+				else
+					bit_mode = 1;
+			}
 		} else {
-			if (vf->bitdepth & FULL_PACK_422_MODE)
-				bit_mode = 3;
-			else
-				bit_mode = 1;
+			bit_mode = 0;
 		}
-	} else {
-		bit_mode = 0;
+	} else {/*use dw data*/
+		if (vf->bitdepth_dw & BITDEPTH_Y10) {
+			if ((vf->type & VIDTYPE_VIU_444) ||
+				(vf->type & VIDTYPE_RGB_444)) {
+				bit_mode = 2;
+			} else {
+				if (vf->bitdepth_dw & FULL_PACK_422_MODE)
+					bit_mode = 3;
+				else
+					bit_mode = 1;
+			}
+		} else {
+			bit_mode = 0;
+		}
 	}
 	/* for 10bit yuv p010 mode, used high 10bit, if used low 10 bit, bit_mode = 1 */
 	if (bit16_mode)
@@ -7041,20 +7076,36 @@ static void vd1_set_slice_dcu_s5(struct video_layer_s *layer,
 		burst_len = 1;
 	if (layer->mif_setting.block_mode)
 		burst_len = layer->mif_setting.block_mode;
-	if ((vf->bitdepth & BITDEPTH_Y10) &&
-	    !(vf->flag & VFRAME_FLAG_DI_DW) &&
-	    !frame_par->nocomp) {
-		if ((vf->type & VIDTYPE_VIU_444) ||
-		    (vf->type & VIDTYPE_RGB_444)) {
-			bit_mode = 2;
+
+	if (!frame_par->nocomp) {/*use afbc data*/
+		if ((vf->bitdepth & BITDEPTH_Y10) &&
+		    !(vf->flag & VFRAME_FLAG_DI_DW)) {
+			if ((vf->type & VIDTYPE_VIU_444) ||
+			    (vf->type & VIDTYPE_RGB_444)) {
+				bit_mode = 2;
+			} else {
+				if (vf->bitdepth & FULL_PACK_422_MODE)
+					bit_mode = 3;
+				else
+					bit_mode = 1;
+			}
 		} else {
-			if (vf->bitdepth & FULL_PACK_422_MODE)
-				bit_mode = 3;
-			else
-				bit_mode = 1;
+			bit_mode = 0;
 		}
-	} else {
-		bit_mode = 0;
+	} else {/*use dw or mif data*/
+		if (vf->bitdepth_dw & BITDEPTH_Y10) {
+			if ((vf->type & VIDTYPE_VIU_444) ||
+				(vf->type & VIDTYPE_RGB_444)) {
+				bit_mode = 2;
+			} else {
+				if (vf->bitdepth_dw & FULL_PACK_422_MODE)
+					bit_mode = 3;
+				else
+					bit_mode = 1;
+			}
+		} else {
+			bit_mode = 0;
+		}
 	}
 	/* for 10bit yuv p010 mode */
 	if (bit16_mode)
@@ -7516,20 +7567,35 @@ static void vdx_set_dcu_s5(struct video_layer_s *layer,
 	if (layer->mif_setting.block_mode)
 		burst_len = layer->mif_setting.block_mode;
 
-	if ((vf->bitdepth & BITDEPTH_Y10) &&
-	    !(vf->flag & VFRAME_FLAG_DI_DW) &&
-	    !frame_par->nocomp) {
-		if ((vf->type & VIDTYPE_VIU_444) ||
-		    (vf->type & VIDTYPE_RGB_444)) {
-			bit_mode = 2;
+	if (!frame_par->nocomp) {/*use afbc data*/
+		if ((vf->bitdepth & BITDEPTH_Y10) &&
+		    !(vf->flag & VFRAME_FLAG_DI_DW)) {
+			if ((vf->type & VIDTYPE_VIU_444) ||
+			    (vf->type & VIDTYPE_RGB_444)) {
+				bit_mode = 2;
+			} else {
+				if (vf->bitdepth & FULL_PACK_422_MODE)
+					bit_mode = 3;
+				else
+					bit_mode = 1;
+			}
 		} else {
-			if (vf->bitdepth & FULL_PACK_422_MODE)
-				bit_mode = 3;
-			else
-				bit_mode = 1;
+			bit_mode = 0;
 		}
-	} else {
-		bit_mode = 0;
+	} else {/*use dw or mif data*/
+		if (vf->bitdepth_dw & BITDEPTH_Y10) {
+			if ((vf->type & VIDTYPE_VIU_444) ||
+				(vf->type & VIDTYPE_RGB_444)) {
+				bit_mode = 2;
+			} else {
+				if (vf->bitdepth_dw & FULL_PACK_422_MODE)
+					bit_mode = 3;
+				else
+					bit_mode = 1;
+			}
+		} else {
+			bit_mode = 0;
+		}
 	}
 	/* for 10bit yuv p010 mode */
 	if (bit16_mode)
@@ -12248,6 +12314,8 @@ u32 get_cur_enc_line_s5(void)
 	int enc_line = 0;
 	unsigned int reg = VPU_VENCI_STAT;
 	unsigned int reg_val = 0;
+	u32 is_interlace = 0, is_encp = 0, start_line = 0, total_line = 0;
+	struct vinfo_s *vinfo = NULL;
 	u32 venc_type = get_venc_type_s5();
 
 	if (cur_dev->display_module == S5_DISPLAY_MODULE) {
@@ -12263,6 +12331,7 @@ u32 get_cur_enc_line_s5(void)
 			reg = venc_regs[venc_mux].vpu_enci_stat;
 			break;
 		case 1:
+			is_encp = 1;
 			reg = venc_regs[venc_mux].vpu_encp_stat;
 			break;
 		case 2:
@@ -12273,6 +12342,23 @@ u32 get_cur_enc_line_s5(void)
 	reg_val = READ_VCBUS_REG(reg);
 
 	enc_line = (reg_val >> 16) & 0x1fff;
+	/* progressive device + interlace mode
+	 * 1080i is encp, top half and bottom half lines
+	 * other cvbs is enci
+	 */
+	vinfo = get_current_vinfo();
+	if (vinfo) {
+		if (vinfo->field_height != vinfo->height)
+			is_interlace = 1;
+
+		if (is_interlace && is_encp) {
+			start_line = get_active_start_line();
+			total_line = vinfo->field_height + start_line;
+			if (enc_line > total_line)
+				enc_line -= total_line;
+		}
+	}
+
 	return enc_line;
 }
 
@@ -12604,7 +12690,7 @@ static void save_vd_pps_reg(void)
 	}
 }
 
-int video_hw_init_s5(void)
+int _video_hw_init_s5(void)
 {
 	struct vd_proc_misc_reg_s *vd_proc_misc_reg = NULL;
 	struct vpp_post_blend_reg_s *vpp_post_blend_reg = NULL;
@@ -12619,12 +12705,6 @@ int video_hw_init_s5(void)
 	vd_proc_blend_reg = &vd_proc_reg.vd_proc_blend_reg;
 	vd2_pre_blend_reg = &vd_proc_reg.vd2_pre_blend_reg;
 	vd_proc_sr_reg = &vd_proc_reg.vd_proc_sr_reg;
-#ifdef CONFIG_AMLOGIC_MEDIA_SECURITY
-	void *video_secure_op[VPP_TOP_MAX] = {VSYNC_WR_MPEG_REG_BITS,
-					       VSYNC_WR_MPEG_REG_BITS_VPP1,
-					       VSYNC_WR_MPEG_REG_BITS_VPP2,
-					       PRE_VSYNC_WR_MPEG_REG_BITS};
-#endif
 
 	WRITE_VCBUS_REG_BITS
 		(vpp_post_misc_reg->vpp_ofifo_size,
@@ -12679,7 +12759,7 @@ int video_hw_init_s5(void)
 		1, 17, 1);
 	/* disable aisr_sr1_nn func */
 	if (cur_dev->aisr_support)
-		aisr_sr1_nn_enable_s5(0);
+		aisr_sr1_nn_enable_sync_s5(0);
 	/* VD_PROC_BYPASS_CTRL default setting */
 	/* should not bypass ve, it means connect preblend and ve */
 	/* default bypass preblend */
@@ -12722,6 +12802,20 @@ int video_hw_init_s5(void)
 		WRITE_VCBUS_REG(VPU_AXI_QOS_WR0, 0xfb73fedc);
 	}
 	save_vd_pps_reg();
+	return 0;
+}
+
+int video_hw_init_s5(void)
+{
+#ifdef CONFIG_AMLOGIC_MEDIA_SECURITY
+		void *video_secure_op[VPP_TOP_MAX] = {VSYNC_WR_MPEG_REG_BITS,
+							   VSYNC_WR_MPEG_REG_BITS_VPP1,
+							   VSYNC_WR_MPEG_REG_BITS_VPP2,
+							   PRE_VSYNC_WR_MPEG_REG_BITS};
+#endif
+
+	_video_hw_init_s5();
+
 #ifdef CONFIG_AMLOGIC_MEDIA_LUT_DMA
 	int i;
 

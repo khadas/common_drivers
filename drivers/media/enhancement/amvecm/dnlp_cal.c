@@ -390,7 +390,7 @@ static void ve_dnlp_add_cm(unsigned int value, int vpp_index)
  *return: hstSum
  */
 static int load_histogram(int *osamebin_num, struct vframe_s *vf,
-			  int h_sel, unsigned int ntstcnt)
+			  int h_sel, unsigned int ntstcnt, struct vpp_hist_param_s *vp)
 {
 	struct vframe_prop_s *p = &vf->prop;
 	int nT0;   /* counter number of bins same to last frame */
@@ -403,7 +403,7 @@ static int load_histogram(int *osamebin_num, struct vframe_s *vf,
 		pre_1_gamma_copy[i] = pre_0_gamma_copy[i];
 		if (h_sel)
 			pre_0_gamma_copy[i] =
-				(unsigned int)p->hist.vpp_gamma[i];
+				(unsigned int)vp->vpp_gamma[i];
 		else
 			pre_0_gamma_copy[i] = (unsigned int)p->hist.gamma[i];
 
@@ -505,7 +505,7 @@ int dnlp_sat_compensation(int vpp_index)
 	return	ntmp;
 }
 
-int ve_dnlp_calculate_tgtx(struct vframe_s *vf, int vpp_index)
+int ve_dnlp_calculate_tgtx(struct vframe_s *vf, int vpp_index, struct vpp_hist_param_s *vp)
 {
 	struct vframe_prop_s *p = &vf->prop;
 
@@ -526,7 +526,7 @@ int ve_dnlp_calculate_tgtx(struct vframe_s *vf, int vpp_index)
 	dnlp_alg_function->dnlp3_param_refresh();
 
 	if (hist_sel)
-		*ve_dnlp_luma_sum_copy = p->hist.vpp_luma_sum;
+		*ve_dnlp_luma_sum_copy = vp->vpp_luma_sum;
 	else
 		*ve_dnlp_luma_sum_copy = p->hist.luma_sum;
 
@@ -541,7 +541,7 @@ int ve_dnlp_calculate_tgtx(struct vframe_s *vf, int vpp_index)
 	 *do histogram pre-processing and detections
 	 */
 	/*step 0.00 load the histogram*/
-	raw_hst_sum = load_histogram(&smbin_num, vf, hist_sel, *ntstcnt_copy);
+	raw_hst_sum = load_histogram(&smbin_num, vf, hist_sel, *ntstcnt_copy, vp);
 
 	/*step 0.01 all the same histogram as last frame, freeze DNLP */
 	if (smbin_num == 64 &&

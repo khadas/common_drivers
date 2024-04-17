@@ -48,23 +48,23 @@ static unsigned long demod_dmc_id;
 static unsigned int demod_ddr_addr;
 static unsigned int demod_ddr_size;
 
-MODULE_PARM_DESC(testbus_addr, "\n\t\t testbus_addr");
+MODULE_PARM_DESC(testbus_addr, "");
 static unsigned int testbus_addr = 0x1000;
 module_param(testbus_addr, int, 0644);
 
-MODULE_PARM_DESC(testbus_width, "\n\t\t testbus_width");
+MODULE_PARM_DESC(testbus_width, "");
 static unsigned int testbus_width = 9;
 module_param(testbus_width, int, 0644);
 
-MODULE_PARM_DESC(testbus_vld, "\n\t\t testbus_vld");
+MODULE_PARM_DESC(testbus_vld, "");
 static unsigned int testbus_vld = 0x100000;
 module_param(testbus_vld, int, 0644);
 
-MODULE_PARM_DESC(testbus_read_only, "\n\t\t testbus_read_only");
+MODULE_PARM_DESC(testbus_read_only, "");
 static unsigned int testbus_read_only;
 module_param(testbus_read_only, int, 0644);
 
-MODULE_PARM_DESC(testbus_test_mode, "\n\t\t testbus_test_mode");
+MODULE_PARM_DESC(testbus_test_mode, "");
 static unsigned char testbus_test_mode;
 module_param(testbus_test_mode, byte, 0644);
 
@@ -72,70 +72,71 @@ static void get_chip_name(struct amldtvdemod_device_s *devp, char *str)
 {
 	switch (devp->data->hw_ver) {
 	case DTVDEMOD_HW_ORG:
-		strcpy(str, "DTVDEMOD_HW_ORG");
+		strcpy(str, "ORG");
 		break;
 
 	case DTVDEMOD_HW_TXLX:
-		strcpy(str, "DTVDEMOD_HW_TXLX");
+		strcpy(str, "TXLX");
 		break;
 
 	case DTVDEMOD_HW_SM1:
-		strcpy(str, "DTVDEMOD_HW_SM1");
+		strcpy(str, "SM1");
 		break;
 
 	case DTVDEMOD_HW_TL1:
-		strcpy(str, "DTVDEMOD_HW_TL1");
+		strcpy(str, "TL1");
 		break;
 
 	case DTVDEMOD_HW_TM2:
-		strcpy(str, "DTVDEMOD_HW_TM2");
+		strcpy(str, "TM2");
 		break;
 
 	case DTVDEMOD_HW_TM2_B:
-		strcpy(str, "DTVDEMOD_HW_TM2_B");
+		strcpy(str, "TM2_B");
 		break;
 
 	case DTVDEMOD_HW_T5:
-		strcpy(str, "DTVDEMOD_HW_T5");
+		strcpy(str, "T5");
 		break;
 
 	case DTVDEMOD_HW_T5D:
-		strcpy(str, "DTVDEMOD_HW_T5D");
+		strcpy(str, "T5D");
 		break;
 
 	case DTVDEMOD_HW_T5D_B:
-		strcpy(str, "DTVDEMOD_HW_T5D_B");
+		strcpy(str, "T5D_B");
 		break;
 
 	case DTVDEMOD_HW_S4:
-		strcpy(str, "DTVDEMOD_HW_S4");
+		strcpy(str, "S4");
 		break;
 
 	case DTVDEMOD_HW_T3:
-		strcpy(str, "DTVDEMOD_HW_T3");
+		strcpy(str, "T3");
 		break;
 
 	case DTVDEMOD_HW_S4D:
-		strcpy(str, "DTVDEMOD_HW_S4D");
+		strcpy(str, "S4D");
 		break;
 
 	case DTVDEMOD_HW_T5W:
-		strcpy(str, "DTVDEMOD_HW_T5W");
+		strcpy(str, "T5W");
 		break;
 
 	case DTVDEMOD_HW_T5M:
-		strcpy(str, "DTVDEMOD_HW_T5M");
+		strcpy(str, "T5M");
 		break;
 
 	case DTVDEMOD_HW_T3X:
-		strcpy(str, "DTVDEMOD_HW_T3X");
+		strcpy(str, "T3X");
 		break;
 
 	case DTVDEMOD_HW_TXHD2:
-		strcpy(str, "DTVDEMOD_HW_TXHD2");
+		strcpy(str, "TXHD2");
 		break;
+
 	case DTVDEMOD_HW_S1A:
-		strcpy(str, "DTVDEMOD_HW_S1A");
+		strcpy(str, "S1A");
 		break;
 
 	default:
@@ -341,7 +342,7 @@ static void seq_dump_status(struct seq_file *seq)
 			polling_en = devp->demod_thread;
 			devp->demod_thread = 0;
 			demod_top_write_reg(DEMOD_TOP_CFG_REG_4, 0x182);
-			dvbt2_info(seq);
+			dvbt2_info(demod, seq);
 
 			if (demod_is_t5d_cpu(devp))
 				demod_top_write_reg(DEMOD_TOP_CFG_REG_4, 0x0);
@@ -352,7 +353,7 @@ static void seq_dump_status(struct seq_file *seq)
 #ifdef AML_DEMOD_SUPPORT_DVBS
 		case SYS_DVBS:
 		case SYS_DVBS2:
-			seq_printf(seq, "lock: %d.\n", (dvbs_rd_byte(0x160) >> 3) & 0x1);
+			seq_printf(seq, "lock: %d\n", (dvbs_rd_byte(0x160) >> 3) & 0x1);
 			dvbs_check_status(seq);
 			break;
 #endif
@@ -360,7 +361,7 @@ static void seq_dump_status(struct seq_file *seq)
 			break;
 		}
 
-		seq_printf(seq, "tuner strength : %d, 0x%x\n", strength, strength);
+		seq_printf(seq, "tuner strength: %d, 0x%x\n", strength, strength);
 	}
 }
 
@@ -605,7 +606,7 @@ static void demod_dma_flush(void *vaddr, int size, enum dma_data_direction dir)
 	struct amldtvdemod_device_s *devp = dtvdemod_get_dev();
 
 	if (unlikely(!devp)) {
-		PR_ERR("%s:devp is NULL\n", __func__);
+		PR_ERR("%s:devp NULL\n", __func__);
 		return;
 	}
 
@@ -631,16 +632,16 @@ static int read_memory_to_file(char *path, unsigned int start_addr,
 	mm_segment_t old_fs = get_fs();
 
 	if (!start_addr) {
-		PR_ERR("%s: start addr is NULL\n", __func__);
+		PR_ERR("start addr NULL\n");
 		return -1;
 	}
 
 	if (unlikely(!path)) {
-		PR_ERR("%s:capture path is NULL\n", __func__);
-		return -1;
+		PR_ERR("capture path NULL\n");
+		return -2;
 	}
 
-	PR_INFO("capture data path:%s,start addr:0x%x, size:%dM\n ",
+	PR_INFO("capture data path:%s,addr:0x%x,size:%dM\n",
 		path, start_addr, size / SZ_1M);
 
 	set_fs(KERNEL_DS);
@@ -648,7 +649,7 @@ static int read_memory_to_file(char *path, unsigned int start_addr,
 
 	buf = demod_vmap(start_addr, size);
 	if (!buf) {
-		PR_ERR("%s:buf is NULL\n", __func__);
+		PR_ERR("buf NULL\n");
 		return -1;
 	}
 
@@ -675,7 +676,7 @@ unsigned int capture_adc_data_once(char *path, unsigned int capture_mode,
 	unsigned int offset = 0, size = 0;
 
 	if (unlikely(!devp)) {
-		PR_ERR("%s:devp is NULL\n", __func__);
+		PR_ERR("%s:devp NULL\n", __func__);
 		return -1;
 	}
 
@@ -688,7 +689,7 @@ unsigned int capture_adc_data_once(char *path, unsigned int capture_mode,
 	}
 
 	if (unlikely(!demod)) {
-		PR_ERR("%s: demod is NULL\n", __func__);
+		PR_ERR("%s:demod NULL\n", __func__);
 		return -1;
 	}
 
@@ -771,7 +772,7 @@ unsigned int capture_adc_data_once(char *path, unsigned int capture_mode,
 		break;
 	}
 
-	PR_INFO("%s: testbus addr:0x%x, width:%d, vld:0x%x, read_only:%d.\n",
+	PR_INFO("%s:testbus addr:0x%x,width:%d,vld:0x%x,read_only:%d\n",
 			__func__, addr, width, vld, testbus_read_only);
 
 	if (devp->data->hw_ver >= DTVDEMOD_HW_T5D) {
@@ -829,7 +830,7 @@ unsigned int capture_adc_data_once(char *path, unsigned int capture_mode,
 
 	default:
 		offset = 16 * SZ_1M;
-		PR_ERR("%s: unknown delivery system\n", __func__);
+		PR_ERR("unknown delsys\n");
 		break;
 	}
 
@@ -838,7 +839,7 @@ unsigned int capture_adc_data_once(char *path, unsigned int capture_mode,
 	else
 		size = demod_ddr_size;
 
-	PR_INFO("%s: capture_mode:%d, test_mode:%d, start_addr:0x%x, offset:%dM, size:%dM.\n",
+	PR_INFO("%s:capture_mode:%d,test_mode:%d,start_addr:0x%x,offset:%dM,size:%dM\n",
 			__func__, capture_mode, test_mode || testbus_test_mode,
 			start_addr, offset / SZ_1M, size / SZ_1M);
 
@@ -979,7 +980,7 @@ unsigned int clear_ddr_bus_data(struct aml_dtvdemod *demod)
 		devp->demod_thread = polling_en;
 	}
 
-	PR_DBGL("%s: clear done.\n", __func__);
+	PR_DBGL("%s ok\n", __func__);
 
 	return 0;
 }
@@ -996,17 +997,17 @@ static void dbg_ic_cfg_addr(struct amldtvdemod_device_s *devp)
 	struct ss_reg_vt *regv = &devp->reg_v[0];
 	int i = 0;
 
-	PR_INFO("demod top :0x%x\n", devp->data->regoff.off_demod_top);
-	PR_INFO("dvbc      :0x%x\n", devp->data->regoff.off_dvbc);
-	PR_INFO("dtmb      :0x%x\n", devp->data->regoff.off_dtmb);
+	PR_INFO("top:0x%x\n", devp->data->regoff.off_demod_top);
+	PR_INFO("dvbc:0x%x\n", devp->data->regoff.off_dvbc);
+	PR_INFO("dtmb:0x%x\n", devp->data->regoff.off_dtmb);
 	PR_INFO("dvbt/isdbt:0x%x\n", devp->data->regoff.off_dvbt_isdbt);
-	PR_INFO("isdbt     :0x%x\n", devp->data->regoff.off_isdbt);
-	PR_INFO("atsc      :0x%x\n", devp->data->regoff.off_atsc);
-	PR_INFO("front     :0x%x\n", devp->data->regoff.off_front);
-	PR_INFO("dvbt/t2   :0x%x\n", devp->data->regoff.off_dvbt_t2);
+	PR_INFO("isdbt:0x%x\n", devp->data->regoff.off_isdbt);
+	PR_INFO("atsc:0x%x\n", devp->data->regoff.off_atsc);
+	PR_INFO("front:0x%x\n", devp->data->regoff.off_front);
+	PR_INFO("dvbt/t2:0x%x\n", devp->data->regoff.off_dvbt_t2);
 
 	for (i = 0; i < ES_MAP_ADDR_NUM; i++)
-		PR_INFO("%s: phy_addr=0x%x size=0x%x vir_addr=0x%p.\n",
+		PR_INFO("%s:phy_addr=0x%x size=0x%x vir_addr=0x%p\n",
 			name_reg[i], preg[i].phy_addr, preg[i].size, regv[i].v);
 }
 
@@ -1033,16 +1034,16 @@ static void info_show(void)
 #endif
 
 	PR_INFO("DTV DEMOD state:\n");
-	PR_INFO("demod_thread: %d.\n", devp->demod_thread);
+	PR_INFO("demod_thread: %d\n", devp->demod_thread);
 	get_chip_name(devp, chip_name);
-	PR_INFO("hw version chip: %d, %s.\n", devp->data->hw_ver, chip_name);
+	PR_INFO("hw version chip: %d, %s\n", devp->data->hw_ver, chip_name);
 	PR_INFO("version: %s-%s\n", AMLDTVDEMOD_VER, DTVDEMOD_VER);
 	dbg_ic_cfg_addr(devp);
 
-	PR_INFO("agc_pin_direction: %d.\n", devp->agc_direction);
+	PR_INFO("agc_pin_direction: %d\n", devp->agc_direction);
 
 #ifdef AML_DEMOD_SUPPORT_DVBS
-	PR_INFO("iq_swap: %d.\n", dvbs_get_iq_swap());
+	PR_INFO("iq_swap: %d\n", dvbs_get_iq_swap());
 
 	aml_diseqc_status(&devp->diseqc);
 #endif
@@ -1052,7 +1053,7 @@ static void info_show(void)
 		c = &demod->frontend.dtv_property_cache;
 
 		PR_INFO("demod [id %d]: 0x%p\n", demod->id, demod);
-		PR_INFO("current delsys: %s.\n", dtvdemod_get_cur_delsys(demod->last_delsys));
+		PR_INFO("current delsys: %s\n", dtvdemod_get_cur_delsys(demod->last_delsys));
 #ifdef AML_DEMOD_SUPPORT_DVBT
 		if (c->delivery_system == SYS_DVBT2) {
 			if (cpu_after_eq(MESON_CPU_MAJOR_ID_T3))
@@ -1060,7 +1061,7 @@ static void info_show(void)
 			PR_INFO("T2 FW ver: V%d.%s\n", fw_ver, AMLDTVDEMOD_T2_FW_VER);
 		}
 #endif
-		PR_INFO("delsys:%d, freq:%d, symbol_rate:%d, bw:%d, modulation:%d, invert:%d.\n",
+		PR_INFO("delsys:%d, freq:%d, sr:%d, bw:%d, modul:%d, invert:%d\n",
 				c->delivery_system, c->frequency, c->symbol_rate,
 				c->bandwidth_hz, c->modulation, c->inversion);
 
@@ -1094,17 +1095,17 @@ static void info_show(void)
 				return;
 
 			snr = atsc_read_snr();
-			PR_INFO("snr: %d.\n", snr);
+			PR_INFO("snr: %d\n", snr);
 
 			if (cpu_after_eq(MESON_CPU_MAJOR_ID_TL1))
 				lock_status = dtvdemod_get_atsc_lock_sts(demod);
 			else
 				lock_status = atsc_read_reg(0x0980);
 
-			PR_INFO("lock: %d.\n", lock_status);
+			PR_INFO("lock: %d\n", lock_status);
 
 			ser = atsc_read_ser();
-			PR_INFO("ser: %d.\n", ser);
+			PR_INFO("ser: %d\n", ser);
 			break;
 #endif
 #ifdef AML_DEMOD_SUPPORT_DVBT
@@ -1118,7 +1119,7 @@ static void info_show(void)
 			aml_demod_debug |= DBG_DVBT;
 			devp->demod_thread = 0;
 			demod_top_write_reg(DEMOD_TOP_CFG_REG_4, 0x182);
-			dvbt2_info(NULL);
+			dvbt2_info(demod, NULL);
 			if (demod_is_t5d_cpu(devp))
 				demod_top_write_reg(DEMOD_TOP_CFG_REG_4, 0x0);
 
@@ -1129,7 +1130,7 @@ static void info_show(void)
 #ifdef AML_DEMOD_SUPPORT_DVBS
 		case SYS_DVBS:
 		case SYS_DVBS2:
-			PR_INFO("lock: %d.\n", (dvbs_rd_byte(0x160) >> 3) & 0x1);
+			PR_INFO("lock: %d\n", (dvbs_rd_byte(0x160) >> 3) & 0x1);
 			dvbs_check_status(NULL);
 			break;
 #endif
@@ -1137,7 +1138,7 @@ static void info_show(void)
 			break;
 		}
 
-		PR_INFO("tuner strength: %d, 0x%x.\n", strength, strength);
+		PR_INFO("tuner strength: %d, 0x%x\n", strength, strength);
 	}
 }
 
@@ -1151,15 +1152,15 @@ static void dump_regs(struct aml_dtvdemod *demod)
 #endif
 
 	if (cpu_after_eq(MESON_CPU_MAJOR_ID_TL1)) {
-		pr_info("demod top start\n");
+		pr_info("top start\n");
 		for (reg_start = 0; reg_start <= 0xc; reg_start += 4)
 			pr_info("[0x%x]=0x%x\n", reg_start, demod_top_read_reg(reg_start));
-		pr_info("demod top end\n\n");
+		pr_info("top end\n\n");
 
-		pr_info("demod front start\n");
+		pr_info("front start\n");
 		for (reg_start = 0x20; reg_start <= 0x68; reg_start++)
 			pr_info("[0x%x]=0x%x\n", reg_start, front_read_reg(reg_start));
-		pr_info("demod front end\n\n");
+		pr_info("front end\n\n");
 	}
 
 	switch (delsys) {
@@ -1169,10 +1170,10 @@ static void dump_regs(struct aml_dtvdemod *demod)
 		pr_info("atsc start\n");
 		if (is_meson_txlx_cpu()) {
 			for (reg_start = 0; reg_start <= 0xfff; reg_start++)
-				pr_info("[0x%x] = 0x%x\n", reg_start, atsc_read_reg(reg_start));
+				pr_info("[0x%x]=x%x\n", reg_start, atsc_read_reg(reg_start));
 		} else if (cpu_after_eq(MESON_CPU_MAJOR_ID_TL1)) {
 			for (reg_start = 0; reg_start <= 0xff; reg_start++)
-				pr_info("[0x%x] = 0x%x\n", reg_start, atsc_read_reg_v4(reg_start));
+				pr_info("[0x%x]=0x%x\n", reg_start, atsc_read_reg_v4(reg_start));
 		}
 		pr_info("atsc end\n");
 		break;
@@ -1184,7 +1185,7 @@ static void dump_regs(struct aml_dtvdemod *demod)
 		pr_info("dvbc/j83b start\n");
 		if (cpu_after_eq(MESON_CPU_MAJOR_ID_TL1)) {
 			for (reg_start = 0; reg_start <= 0xff; reg_start++)
-				pr_info("[0x%x] = 0x%x\n", reg_start,
+				pr_info("[0x%x]=0x%x\n", reg_start,
 						qam_read_reg(demod, reg_start));
 		}
 		pr_info("dvbc/j83b end\n");
@@ -1202,13 +1203,13 @@ static void dump_regs(struct aml_dtvdemod *demod)
 
 		if (devp->data->hw_ver >= DTVDEMOD_HW_T5D) {
 			for (reg_start = 0x0; reg_start <= 0xf4; reg_start++)
-				pr_info("[0x%x] = 0x%x\n", reg_start, dvbt_t2_rdb(reg_start));
+				pr_info("[0x%x]=0x%x\n", reg_start, dvbt_t2_rdb(reg_start));
 
 			for (reg_start = 0x538; reg_start <= 0xfff; reg_start++)
-				pr_info("[0x%x] = 0x%x\n", reg_start, dvbt_t2_rdb(reg_start));
+				pr_info("[0x%x]=0x%x\n", reg_start, dvbt_t2_rdb(reg_start));
 
 			for (reg_start = 0x1500; reg_start <= 0x3776; reg_start++)
-				pr_info("[0x%x] = 0x%x\n", reg_start, dvbt_t2_rdb(reg_start));
+				pr_info("[0x%x]=0x%x\n", reg_start, dvbt_t2_rdb(reg_start));
 		}
 
 		if (demod->last_delsys == SYS_DVBT2) {
@@ -1224,7 +1225,7 @@ static void dump_regs(struct aml_dtvdemod *demod)
 	case SYS_DTMB:
 		pr_info("dtmb start\n");
 		for (reg_start = 0x0; reg_start <= 0xff; reg_start++)
-			pr_info("[0x%x] = 0x%x\n", reg_start, dtmb_read_reg(reg_start));
+			pr_info("[0x%x]=0x%x\n", reg_start, dtmb_read_reg(reg_start));
 
 		pr_info("dtmb end\n");
 		break;
@@ -1233,7 +1234,7 @@ static void dump_regs(struct aml_dtvdemod *demod)
 	case SYS_ISDBT:
 		pr_info("isdbt start\n");
 		for (reg_start = 0x0; reg_start <= 0xff; reg_start++)
-			pr_info("[0x%x] = 0x%x\n", reg_start, dvbt_isdbt_rd_reg_new(reg_start));
+			pr_info("[0x%x]=0x%x\n", reg_start, dvbt_isdbt_rd_reg_new(reg_start));
 
 		pr_info("isdbt end\n");
 		break;
@@ -1243,7 +1244,7 @@ static void dump_regs(struct aml_dtvdemod *demod)
 	case SYS_DVBS2:
 		pr_info("dvbs start\n");
 		for (reg_start = 0x0; reg_start <= 0xfbf; reg_start++)
-			pr_info("[0x%x] = 0x%x\n", reg_start, dvbs_rd_byte(reg_start));
+			pr_info("[0x%x]=0x%x\n", reg_start, dvbs_rd_byte(reg_start));
 
 		pr_info("dvbs end\n");
 		break;
@@ -1292,7 +1293,7 @@ static ssize_t attr_store(struct class *cls, struct class_attribute *attr,
 	if (!demod) {
 		fe = aml_dtvdm_attach(&config);
 		if (!fe) {
-			pr_err("delsys, fe is NULL\n");
+			pr_err("fe NULL\n");
 		} else {
 			list_for_each_entry(tmp, &devp->demod_list, list) {
 				if (tmp->id == 0) {
@@ -1591,11 +1592,11 @@ static ssize_t attr_store(struct class *cls, struct class_attribute *attr,
 	} else if (!strcmp(parm[0], "blind_stop")) {
 		if (parm[1] && (kstrtouint(parm[1], 16, &val)) == 0)
 			devp->blind_scan_stop = val;
-		PR_INFO("set blind scan to %d\n", devp->blind_scan_stop);
+		PR_INFO("set blind scan %d\n", devp->blind_scan_stop);
 	} else if (!strcmp(parm[0], "cr_val")) {
 		if (parm[1] && (kstrtouint(parm[1], 16, &val)) == 0)
 			devp->atsc_cr_step_size_dbg = val;
-		PR_INFO("set atsc cr val to 0x%x\n", devp->atsc_cr_step_size_dbg);
+		PR_INFO("set atsc cr val 0x%x\n", devp->atsc_cr_step_size_dbg);
 	} else if (!strcmp(parm[0], "ci_mode")) {
 		if (demod->demod_status.delsys == SYS_DVBC_ANNEX_A) {
 #ifdef AML_DEMOD_SUPPORT_DVBC
@@ -1607,20 +1608,20 @@ static ssize_t attr_store(struct class *cls, struct class_attribute *attr,
 					qam_write_bits(demod, 0x11, 0x00, 24, 8);
 					demod->ci_mode = 1;
 				}
-				PR_INFO("ic card set mode to %d\n", val);
+				PR_INFO("ic card set mode %d\n", val);
 			}
 #endif
 		} else {
-			PR_INFO("not dvbc mode,nothing to do\n");
+			PR_INFO("not dvbc mode\n");
 		}
 	} else if (!strcmp(parm[0], "blind_min")) {
 		if (parm[1] && (kstrtouint(parm[1], 10, &val)) == 0)
 			devp->blind_debug_min_frc = val;
-		PR_INFO("set blind frec min to %d\n", devp->blind_debug_min_frc);
+		PR_INFO("set blind frec min %d\n", devp->blind_debug_min_frc);
 	} else if (!strcmp(parm[0], "blind_max")) {
 		if (parm[1] && (kstrtouint(parm[1], 10, &val)) == 0)
 			devp->blind_debug_max_frc = val;
-		PR_INFO("set blind frec max to %d\n", devp->blind_debug_max_frc);
+		PR_INFO("set blind frec max %d\n", devp->blind_debug_max_frc);
 	} else if (!strcmp(parm[0], "timeout_ddr_leave")) {
 		if (parm[1] && (kstrtouint(parm[1], 10, &val)) == 0)
 			demod->timeout_ddr_leave = val;
@@ -1631,7 +1632,7 @@ static ssize_t attr_store(struct class *cls, struct class_attribute *attr,
 		isdbt_get_tmcc_info(&tmcc_info);
 #endif
 	} else {
-		PR_INFO("invalid command: %s.\n", parm[0]);
+		PR_INFO("invalid cmd: %s\n", parm[0]);
 	}
 
 fail_exec_cmd:
@@ -1669,7 +1670,7 @@ static ssize_t attr_show(struct class *cls,
 	len += sprintf(buf + len, "\tdiseqc_toneon [val]\n");
 	//len += sprintf(buf + len, "\tcapture_once /data/hcap_XXX.bin [mode]\n");
 	//len += sprintf(buf + len,
-		//"\t\tmode: 0 - others adc(default); 3 - ts, 4 - t/t2 adc; 5 - s/s2 adc.\n");
+	//"\t\tmode: 0 - others adc(default); 3 - ts, 4 - t/t2 adc; 5 - s/s2 adc.\n");
 
 	return len;
 }
@@ -1699,20 +1700,20 @@ static ssize_t dtmb_para_show(struct class *cls,
 			dtmb_read_agc(DTMB_D9_IF_GAIN, &agc_if_gain[0]);
 			strength = dtmb_get_power_strength(agc_if_gain[0]);
 		}
-		return sprintf(buf, "strength is %d\n", strength);
+		return sprintf(buf, "strength %d\n", strength);
 	} else if (dtmb_mode == DTMB_READ_SNR) {
 		/*snr = dtmb_read_reg(DTMB_TOP_FEC_LOCK_SNR) & 0x3fff;*/
 		snr = dtmb_reg_r_che_snr();
 		snr = convert_snr(snr);
-		return sprintf(buf, "snr is %d\n", snr);
+		return sprintf(buf, "snr %d\n", snr);
 	} else if (dtmb_mode == DTMB_READ_LOCK) {
 		lock_status = dtmb_reg_r_fec_lock();
-		return sprintf(buf, "lock_status is %d\n", lock_status);
+		return sprintf(buf, "lock_status %d\n", lock_status);
 	} else if (dtmb_mode == DTMB_READ_BCH) {
 		bch = dtmb_reg_r_bch();
-		return sprintf(buf, "bch is %d\n", bch);
+		return sprintf(buf, "bch %d\n", bch);
 	} else {
-		return sprintf(buf, "dtmb_para_show can't match mode\n");
+		return sprintf(buf, "dtmb can't match mode\n");
 	}
 
 	return 0;
@@ -1730,7 +1731,7 @@ static ssize_t dtmb_para_store(struct class *cls, struct class_attribute *attr,
 	else if (buf[0] == '3')
 		dtmb_mode = DTMB_READ_BCH;
 	else
-		PR_INFO("invalid command.\n");
+		PR_INFO("invalid cmd\n");
 
 	return count;
 }
@@ -1766,41 +1767,41 @@ static ssize_t atsc_para_show(struct class *cls,
 #ifdef AML_DEMOD_SUPPORT_J83B
 		if (atsc_mode_para == ATSC_READ_STRENGTH) {
 			strength = tuner_get_ch_power(&demod->frontend);
-			return sprintf(buf, "strength is %d\n", strength);
+			return sprintf(buf, "strength %d\n", strength);
 		} else if (atsc_mode_para == ATSC_READ_SER) {
 			ser = (unsigned int)atsc_j83b_get_per(demod);
-			return sprintf(buf, "ser is %d\n", ser);
+			return sprintf(buf, "ser %d\n", ser);
 		} else if (atsc_mode_para == ATSC_READ_FREQ) {
-			return sprintf(buf, "freq is %d\n", demod->freq);
+			return sprintf(buf, "freq %d\n", demod->freq);
 		} else {
-			return sprintf(buf, "atsc_para_shows can't match mode\n");
+			return sprintf(buf, "atsc can't match mode\n");
 		}
 #endif
 	} else if (demod->atsc_mode == VSB_8) {
 #ifdef AML_DEMOD_SUPPORT_ATSC
 		if (atsc_mode_para == ATSC_READ_STRENGTH) {
 			strength = tuner_get_ch_power(&demod->frontend);
-			return sprintf(buf, "strength is %d\n", strength);
+			return sprintf(buf, "strength %d\n", strength);
 		} else if (atsc_mode_para == ATSC_READ_SNR) {
 			snr = atsc_read_snr();
-			return sprintf(buf, "snr is %d\n", snr);
+			return sprintf(buf, "snr %d\n", snr);
 		} else if (atsc_mode_para == ATSC_READ_LOCK) {
 			lock_status = atsc_read_reg(0x0980);
-			return sprintf(buf, "lock_status is %x\n", lock_status);
+			return sprintf(buf, "lock_status %x\n", lock_status);
 		} else if (atsc_mode_para == ATSC_READ_SER) {
 			ser = atsc_read_ser();
-			return sprintf(buf, "ser is %d\n", ser);
+			return sprintf(buf, "ser %d\n", ser);
 		} else if (atsc_mode_para == ATSC_READ_FREQ) {
-			return sprintf(buf, "freq is %d\n", demod->freq);
+			return sprintf(buf, "freq %d\n", demod->freq);
 		} else if (atsc_mode_para == ATSC_READ_CK) {
 			ck = atsc_read_ck();
 			return sprintf(buf, "ck=0x%x lock=%d\n", ck, demod->last_status);
 		} else {
-			return sprintf(buf, "atsc_para_shows can't match mode\n");
+			return sprintf(buf, "atsc can't match mode\n");
 		}
 #endif
 	} else {
-		return sprintf(buf, "atsc_para_shows can't match mode.\n");
+		return sprintf(buf, "atsc can't match mode.\n");
 	}
 
 	return 0;
@@ -1822,7 +1823,7 @@ static ssize_t atsc_para_store(struct class *cls, struct class_attribute *attr,
 	else if (buf[0] == '5')
 		atsc_mode_para = ATSC_READ_CK;
 	else
-		PR_INFO("invalid command.\n");
+		PR_INFO("invalid cmd\n");
 
 	return count;
 }
@@ -1855,7 +1856,7 @@ static ssize_t diseq_cmd_store(struct class *cla, struct class_attribute *attr,
 	}
 
 	if (unlikely(!demod)) {
-		PR_ERR("%s: demod is NULL\n", __func__);
+		PR_ERR("demod NULL\n");
 		return -1;
 	}
 
@@ -1871,7 +1872,7 @@ static ssize_t diseq_cmd_store(struct class *cla, struct class_attribute *attr,
 
 	for (i = 0; i < cnt; i++) {
 		cmd.msg[i] = (char)tmpbuf[i];
-		PR_INFO(" 0x%x\n", cmd.msg[i]);
+		PR_INFO("0x%x\n", cmd.msg[i]);
 	}
 	cmd.msg_len = cnt;
 	/* send diseqc msg */
@@ -1935,7 +1936,7 @@ void aml_demod_dbg_init(void)
 
 	root_entry = debugfs_create_dir("demod", NULL);
 	if (!root_entry) {
-		PR_INFO("Can't create debugfs dir frontend.\n");
+		PR_INFO("Can't create debugfs dir\n");
 		return;
 	}
 
@@ -1945,7 +1946,7 @@ void aml_demod_dbg_init(void)
 			root_entry, NULL,
 			demod_debug_files[i].fops);
 		if (!entry)
-			PR_INFO("Can't create debugfs seq file.\n");
+			PR_INFO("Can't create debugfs file\n");
 	}
 }
 
@@ -1955,7 +1956,7 @@ void aml_demod_dbg_exit(void)
 	struct dentry *root_entry;
 
 	if (unlikely(!devp)) {
-		PR_ERR("%s:devp is NULL\n", __func__);
+		PR_ERR("devp NULL\n");
 		return;
 	}
 
@@ -1973,9 +1974,7 @@ static int demod_dmc_dev_access_notify(struct notifier_block *nb, unsigned long 
 	struct aml_dtvdemod *demod = NULL, *tmp = NULL;
 
 	if (unlikely(!devp)) {
-		PR_ERR("\n\n\n%s: devp is NULL, demod is not load!!!\n", __func__);
-		PR_ERR("%s: devp is NULL, demod is not load!!!\n", __func__);
-		PR_ERR("%s: devp is NULL, demod is not load!!!\n\n\n", __func__);
+		PR_ERR("devp NULL\n");
 
 		return 0;
 	}
@@ -1988,15 +1987,13 @@ static int demod_dmc_dev_access_notify(struct notifier_block *nb, unsigned long 
 	}
 
 	if (!demod || demod->last_delsys == SYS_UNDEFINED) {
-		PR_ERR("\n\n\n%s: demod is not work, please scan and channel!!!\n", __func__);
-		PR_ERR("%s: demod is not work, please scan and channel!!!\n", __func__);
-		PR_ERR("%s: demod is not work, please scan and channel!!!\n\n\n", __func__);
+		PR_ERR("demod not work\n");
 
 		return 0;
 	}
 
 	if (demod_dmc_id == id) {
-		PR_ERR("%s: id (%ld) == demod_dmc_id (%ld).\n", __func__, id, demod_dmc_id);
+		PR_ERR("id (%ld) == demod_dmc_id (%ld).\n", id, demod_dmc_id);
 
 		demod_ddr_addr = dmc->addr;
 		demod_ddr_size = dmc->size;

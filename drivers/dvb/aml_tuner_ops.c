@@ -28,7 +28,7 @@ static int tuner_attach(struct dvb_tuner *tuner, bool attach)
 	list_for_each_entry(ops, &tuner->list, list) {
 		if ((ops->attached && attach) ||
 			(!ops->attached && !attach)) {
-			pr_err("Tuner: tuner%d [id %d] had %s.\n",
+			pr_info("Tuner: tuner%d [id %d] had %s\n",
 					ops->index, ops->cfg.id,
 					attach ? "attached" : "detached");
 			continue;
@@ -43,7 +43,7 @@ static int tuner_attach(struct dvb_tuner *tuner, bool attach)
 				else
 					ops->attached = false;
 
-				pr_err("Tuner: attach tuner%d [id %d] %s.\n",
+				pr_info("Tuner: attach tuner%d [id %d] %s\n",
 						ops->index, ops->cfg.id,
 						ops->attached ? "done" : "fail");
 			}
@@ -59,7 +59,7 @@ static int tuner_attach(struct dvb_tuner *tuner, bool attach)
 
 			memset(&ops->fe, 0, sizeof(struct dvb_frontend));
 
-			pr_err("Tuner: detach tuner%d [id %d] done.\n",
+			pr_info("Tuner: detach tuner%d [id %d] done\n",
 					ops->index, ops->cfg.id);
 		}
 	}
@@ -133,7 +133,7 @@ static int tuner_detect(struct dvb_tuner *tuner)
 		if (ops->fe.ops.tuner_ops.set_config) {
 			ret = ops->fe.ops.tuner_ops.set_config(&ops->fe, NULL);
 		} else {
-			pr_err("Tuner: tuner%d [id %d] set_config() is NULL.\n",
+			pr_info("Tuner: tuner%d [id %d] set_config NULL\n",
 					ops->index, ops->cfg.id);
 
 			continue;
@@ -146,14 +146,14 @@ static int tuner_detect(struct dvb_tuner *tuner)
 			else
 				ops->valid = false;
 
-			pr_err("Tuner: detect tuner%d [id %d] %s.\n",
+			pr_info("Tuner: detect tuner%d [id %d] %s\n",
 					ops->index, ops->cfg.id,
 					ops->valid ? "done" : "fail");
 
 			if (ops->fe.ops.tuner_ops.release)
 				ops->fe.ops.tuner_ops.release(&ops->fe);
 		} else {
-			pr_err("Tuner: tuner%d [id %d] set_config() error, ret %d.\n",
+			pr_info("Tuner: tuner%d [id %d] set_config error %d\n",
 					ops->index, ops->cfg.id, ret);
 		}
 	}
@@ -184,7 +184,7 @@ static int tuner_pre_init(struct dvb_tuner *tuner)
 
 			ops->pre_inited = ret ? false : true;
 
-			pr_err("Tuner: pre_init tuner%d [id %d] %s.\n",
+			pr_info("Tuner: pre_init tuner%d [id %d] %s\n",
 					ops->index, ops->cfg.id,
 					ret ? "fail" : "done");
 
@@ -248,7 +248,7 @@ static struct tuner_ops *tuner_fe_type_match(struct dvb_frontend *fe)
 	if (tuner->used && tuner->used->user == fe &&
 		tuner->used->type == fe->ops.info.type) {
 		/* name = tuner->used->fe.ops.tuner_ops.info.name;
-		 * pr_err("Tuner: return current match fe type [%d] tuner%d (%s).\n",
+		 * pr_info("Tuner: return current match fe type [%d] tuner%d (%s)\n",
 		 * fe->ops.info.type, ops->index, name ? name : "");
 		 */
 
@@ -300,7 +300,7 @@ static struct tuner_ops *tuner_fe_type_match(struct dvb_frontend *fe)
 		match = tuner->match(tuner, fe->ops.info.type);
 
 	if (!match) {
-		pr_err("Tuner: can't get match fe type [%d] tuner.\n",
+		pr_info("Tuner: can't get match fe type [%d]\n",
 				fe->ops.info.type);
 
 	} else {
@@ -316,7 +316,7 @@ static struct tuner_ops *tuner_fe_type_match(struct dvb_frontend *fe)
 		tuner->used = match;
 
 		name = match->fe.ops.tuner_ops.info.name;
-		pr_err("Tuner: get match fe type [%d] tuner%d (%s).\n",
+		pr_info("Tuner: get match fe type [%d] tuner%d (%s)\n",
 				fe->ops.info.type, match->index,
 				name ? name : "");
 	}
@@ -565,7 +565,7 @@ struct dvb_frontend *dvb_tuner_attach(struct dvb_frontend *fe)
 	struct dvb_tuner *tuner = get_dvb_tuners();
 
 	if (IS_ERR_OR_NULL(fe)) {
-		pr_err("Tuner: %s: NULL or error pointer of fe.\n", __func__);
+		pr_info("Tuner: NULL fe\n");
 
 		return NULL;
 	}
@@ -666,7 +666,7 @@ int dvb_tuner_ops_add(struct tuner_ops *ops)
 		if (p == ops) {
 			mutex_unlock(&dvb_tuners_mutex);
 
-			pr_err("Tuner: tuner%d ops [0x%p] exist.\n",
+			pr_info("Tuner: tuner%d ops [0x%p] exist\n",
 					ops->index, ops);
 
 			return -EEXIST;

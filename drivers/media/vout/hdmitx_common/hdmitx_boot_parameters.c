@@ -123,8 +123,15 @@ static int parse_hdmitx_boot_para(char *s)
 	unsigned int token_len = 0;
 	unsigned int token_offset = 0;
 	unsigned int offset = 0;
-	int size = strlen(s);
+	int size = 0;
 
+	if (!s) {
+		memset(tx_params.color_attr, 0, sizeof(tx_params.color_attr));
+		tx_params.init_state = 0;
+		return -EINVAL;
+	}
+
+	size = strlen(s);
 	memset(tx_params.color_attr, 0, sizeof(tx_params.color_attr));
 	tx_params.init_state = 0;
 
@@ -154,6 +161,11 @@ __setup("hdmitx=",    parse_hdmitx_boot_para);
 
 static int parse_hdmitx_fraction_rate(char *str)
 {
+	if (!str) {
+		tx_params.fraction_refreshrate = 1;
+		return -EINVAL;
+	}
+
 	if (strncmp("0", str, 1) == 0)
 		tx_params.fraction_refreshrate = 0;
 	else
@@ -170,6 +182,11 @@ static int parse_hdmitx_hdr_priority(char *str)
 {
 	int err;
 	u32 value;
+
+	if (!str) {
+		tx_params.hdr_mask = 0;
+		return -EINVAL;
+	}
 
 	err = kstrtou32(str, 10, &value);
 	if (err) {
@@ -188,6 +205,11 @@ __setup("hdr_priority=", parse_hdmitx_hdr_priority);
 
 static int parse_hdmitx_checksum(char *str)
 {
+	if (!str) {
+		pr_err("hdmitx_param:[checksum]=[%s]\n", tx_params.edid_chksum);
+		return -EINVAL;
+	}
+
 	snprintf(tx_params.edid_chksum, sizeof(tx_params.edid_chksum), "%s", str);
 	pr_debug("hdmitx_param:[checksum]=[%s]\n", tx_params.edid_chksum);
 
@@ -197,6 +219,11 @@ __setup("hdmichecksum=", parse_hdmitx_checksum);
 
 static int hdmitx_config_csc_en(char *str)
 {
+	if (!str) {
+		tx_params.config_csc = false;
+		return -EINVAL;
+	}
+
 	if (strncmp("1", str, 1) == 0)
 		tx_params.config_csc = true;
 	else
@@ -204,12 +231,16 @@ static int hdmitx_config_csc_en(char *str)
 	pr_debug("config_csc_en:[config_csc_en]=[%d]\n", tx_params.config_csc);
 	return 0;
 }
-
 __setup("config_csc_en=", hdmitx_config_csc_en);
 
 static int hdmitx_boot_edid_check(char *str)
 {
 	int val = 0;
+
+	if (!str) {
+		tx_params.edid_check = 0;
+		return -EINVAL;
+	}
 
 	if ((strncmp("0", str, 1) == 0) || (strncmp("1", str, 1) == 0) ||
 		(strncmp("2", str, 1) == 0) || (strncmp("3", str, 1) == 0)) {
@@ -220,12 +251,16 @@ static int hdmitx_boot_edid_check(char *str)
 
 	return 0;
 }
-
 __setup("edid_check=", hdmitx_boot_edid_check);
 
 static int hdmitx_boot_dsc_policy(char *str)
 {
 	unsigned int val = 0;
+
+	if (!str) {
+		tx_params.dsc_policy = 0;
+		return -EINVAL;
+	}
 
 	if ((strncmp("0", str, 1) == 0) ||
 		(strncmp("1", str, 1) == 0) ||

@@ -75,6 +75,11 @@ enum vpu_mux_e {
 	FCLK_DIV_MAX,
 };
 
+enum vpu_read_type_e {
+	READ0_2 = 0,
+	ONLY_READ0,
+};
+
 struct fclk_div_s {
 	unsigned int fclk_id;
 	unsigned int fclk_mux;
@@ -117,6 +122,7 @@ struct vpu_data_s {
 	unsigned char gp_pll_valid;
 	unsigned int mem_pd_reg[VPU_MEM_PD_REG_CNT];
 	unsigned int mem_pd_reg_flag;
+	unsigned int vpu_read_type;
 
 	unsigned int *pwrctrl_id_table;
 

@@ -101,7 +101,7 @@ extern u16 gamma_data_b[257];
 void vpp_get_lcd_gamma_table(u32 rgb_mask);
 void vpp_get_lcd_gamma_table_sub(void);
 
-void ve_on_vs(struct vframe_s *vf, int vpp_index);
+void ve_on_vs(struct vframe_s *vf, int vpp_index, struct vpp_hist_param_s *vp);
 void dnlp_en_update(int vpp_index);
 
 void ve_set_bext(struct ve_bext_s *p);
@@ -145,7 +145,6 @@ void ve_lc_curve_update(void);
 void ve_lc_latch_process(void);
 void ve_ogo_param_update(void);
 void ve_ogo_param_update_sub(void);
-void sharpness_process(struct vframe_s *vf);
 void amvecm_bricon_process(signed int bri_val,
 			   signed int cont_val,
 			   struct vframe_s *vf, int vpp_index);
@@ -194,7 +193,7 @@ extern struct am_regs_s sr1reg_cvbs;
 extern struct am_regs_s sr1reg_hv_noscale;
 void amvecm_fresh_overscan(struct vframe_s *vf);
 void amvecm_reset_overscan(void);
-void ve_hist_gamma_tgt(struct vframe_s *vf);
+void ve_hist_gamma_tgt(struct vframe_s *vf, struct vpp_hist_param_s *vp);
 int vpp_set_lut3d(int bfromkey,
 		  int keyindex,
 		  unsigned int p3dlut_in[][3],

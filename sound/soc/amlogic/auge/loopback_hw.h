@@ -62,6 +62,8 @@ void tdminlb_fifo_enable(int is_enable);
 void tdminlb_set_format(int i2s_fmt);
 void tdminlb_set_lanemask_and_chswap
 	(int swap, int lane_mask, unsigned int mask);
+void tdminlb_set_slot_num(int slot_num, bool i2s_mode);
+
 
 void tdminlb_set_src(int src);
 void lb_set_datain_src(int id, int src);
@@ -71,6 +73,9 @@ void lb_set_datalb_cfg(int id, struct data_cfg *datalb_cfg, bool multi_bits_lbsr
 void lb_enable(int id, bool enable, bool chnum_en);
 void lb_set_chnum_en(int id, bool en, bool chnum_en);
 void loopback_src_set(int id, struct mux_conf *conf, int version);
+
+void loopback_data_orig_channel_sync(int id, int channel, int enable);
+void loopback_data_insert_channel_sync(int id, int channel, int enable);
 
 enum lb_out_rate {
 	MIC_RATE,

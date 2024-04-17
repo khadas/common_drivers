@@ -559,16 +559,17 @@ static int extn_dai_prepare(struct snd_pcm_substream *substream,
 		enum toddr_src src = toddr_src_get();
 		struct toddr_fmt fmt;
 
-		if (bit_depth == 24)
+		if (bit_depth == 32)
+			toddr_type = 3;
+		else if (bit_depth == 24)
 			toddr_type = 4;
 		else
 			toddr_type = 0;
 
 		if (src == FRATV) {
-			/* Now tv supports 48k, 16bits */
-			if (bit_depth != 16 || runtime->rate != 48000) {
-				pr_err("not support sample rate:%d, bits:%d\n",
-					runtime->rate, bit_depth);
+			/* Now tv supports 48k */
+			if (runtime->rate != 48000) {
+				pr_err("not support sample rate:%d\n", runtime->rate);
 				return -EINVAL;
 			}
 
@@ -580,13 +581,6 @@ static int extn_dai_prepare(struct snd_pcm_substream *substream,
 			 */
 			/* fratv_src_select(1); */
 		} else if (src == FRHDMIRX) {
-			if (bit_depth == 32)
-				toddr_type = 3;
-			else if (bit_depth == 24)
-				toddr_type = 4;
-			else
-				toddr_type = 0;
-
 			if (p_extn->hdmirx_mode == HDMIRX_MODE_PAO) { /* PAO */
 				msb = 28 - 1 - 4;
 				lsb = (bit_depth == 16) ? 24 - bit_depth : 4;

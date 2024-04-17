@@ -1137,6 +1137,9 @@ static void independ_path_default_regs(struct meson_vpu_block *vblk,
 	osd_set_vpp_path_default(vblk, reg_ops, 3, 0);
 	/* OSD4  uses VPP0*/
 	osd_set_vpp_path_default(vblk, reg_ops, 4, 0);
+
+	/* postblend uses dummy black with limit range YUV */
+	reg_ops->rdma_write_reg(VPP_POST_BLEND_BLEND_DUMMY_DATA, 0x108080);
 }
 #endif
 

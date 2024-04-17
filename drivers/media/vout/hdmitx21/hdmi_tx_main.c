@@ -3444,7 +3444,11 @@ static int hdmitx21_post_enable_mode(struct hdmitx_common *tx_comm, struct hdmi_
 		if (hdev->frl_rate == FRL_NONE) {
 			if (get_hdcp2_lstore())
 				hdev->dw_hdcp22_cap = is_rx_hdcp2ver();
-			schedule_delayed_work(&hdev->work_start_hdcp, HZ / 4);
+			/* 0: for hdmitx driver control hdcp
+			 * 1/2: drm driver or app control hdcp
+			 */
+			if (tx_comm->hdcp_ctl_lvl == 0)
+				schedule_delayed_work(&hdev->work_start_hdcp, HZ / 4);
 		}
 	}
 
@@ -4697,6 +4701,12 @@ static int amhdmitx_resume(struct platform_device *pdev)
 
 	HDMITX_INFO("amhdmitx: resume\n");
 	hdmitx_clk_ctrl(hdev, 1);
+	/* When s7 is in standby and wakes up, it will turn off and on the vpu power domain.
+	 * When it is turned off, the reg of the relevant modules will be reset. When it wakes up,
+	 * the hdmitx driver needs to reinitialize the required top register.
+	 */
+	if (hdev->tx_hw.chip_data->chip_type == MESON_CPU_ID_S7)
+		hdmitx_hw_cntl_config(&hdev->tx_hw.base, CONF_HW_INIT, 0);
 	mutex_lock(&tx_comm->hdmimode_mutex);
 	/* need to update EDID in case TV changed during suspend */
 	tx_comm->hpd_state = !!(hdmitx_hw_cntl_misc(tx_hw_base, MISC_HPD_GPI_ST, 0));
@@ -4776,20 +4786,26 @@ void __exit amhdmitx21_exit(void)
 
 /*************DRM connector API**************/
 /*hdcp functions*/
-static void drm_hdmitx_hdcp_init(void)
-{
-}
-
-static void drm_hdmitx_hdcp_exit(void)
-{
-}
-
+/* should sync with hdmitx21_enable_hdcp() and hdmitx_start_hdcp_handler()
+ * hdmi mode setting/hdcp enable or disable should be mutexed.
+ * time delay may be needed after hdmi mode setting and before hdcp enable
+ * so that hdcp auth is conducted under TV signal detection stable.
+ */
 static void drm_hdmitx_hdcp_enable(int hdcp_type)
 {
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
 
-	if (!hdev->tx_comm.ready) {
-		HDMITX_ERROR("%s hdmitx output not ready, skip hdcp auth\n", __func__);
+	mutex_lock(&hdev->tx_comm.hdmimode_mutex);
+	HDMITX_INFO("%s: %d\n", __func__, hdcp_type);
+	if (!hdev->tx_comm.ready || !hdev->tx_comm.hpd_state) {
+		HDMITX_ERROR("%s hdmitx ready:%d. hpd: %d, skip hdcp auth\n",
+			__func__, hdev->tx_comm.ready, hdev->tx_comm.hpd_state);
+		mutex_unlock(&hdev->tx_comm.hdmimode_mutex);
+		return;
+	}
+	if (hdev->frl_rate) {
+		HDMITX_INFO("%s hdcp enable for frl mode is on hdmitx side, skip here\n", __func__);
+		mutex_unlock(&hdev->tx_comm.hdmimode_mutex);
 		return;
 	}
 	switch (hdcp_type) {
@@ -4797,10 +4813,17 @@ static void drm_hdmitx_hdcp_enable(int hdcp_type)
 		HDMITX_ERROR("%s enabled HDCP_NULL\n", __func__);
 		break;
 	case HDCP_MODE14:
+		/* hdcp1.4 auth may pass->fail->pass as hdmi signal detection
+		 * need some time on TV side, so need postpone auth time to
+		 * wait TV side signal detection stable
+		 */
+		msleep(100);
+		hdmitx21_ctrl_hdcp_gate(1, true);
 		hdev->tx_comm.hdcp_mode = 0x1;
 		hdcp_mode_set(1);
 		break;
 	case HDCP_MODE22:
+		hdmitx21_ctrl_hdcp_gate(2, true);
 		hdev->tx_comm.hdcp_mode = 0x2;
 		hdcp_mode_set(2);
 		break;
@@ -4808,31 +4831,80 @@ static void drm_hdmitx_hdcp_enable(int hdcp_type)
 		HDMITX_ERROR("%s unknown hdcp %d\n", __func__, hdcp_type);
 		break;
 	};
+	mutex_unlock(&hdev->tx_comm.hdmimode_mutex);
 }
 
 static void drm_hdmitx_hdcp_disable(void)
 {
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
 
+	mutex_lock(&hdev->tx_comm.hdmimode_mutex);
 	hdmitx21_disable_hdcp(hdev);
+	hdev->drm_hdcp.hdcp_auth_result = HDCP_AUTH_UNKNOWN;
+	hdev->drm_hdcp.hdcp_fail_cnt = 0;
+	HDMITX_INFO("%s\n", __func__);
+	mutex_unlock(&hdev->tx_comm.hdmimode_mutex);
 }
 
 static void drm_hdmitx_hdcp_disconnect(void)
 {
-	drm_hdmitx_hdcp_disable();
+	struct hdmitx_dev *hdev = get_hdmitx21_device();
+
+	mutex_lock(&hdev->tx_comm.hdmimode_mutex);
+	/* for hdmitx20 driver, need update disconnect state to
+	 * hdcp_tx22 daemon, but for hdmitx21 driver, hdcp is
+	 * disabled when hdmitx driver plugout, no need disable again
+	 */
+	hdev->drm_hdcp.hdcp_auth_result = HDCP_AUTH_UNKNOWN;
+	hdev->drm_hdcp.hdcp_fail_cnt = 0;
+	HDMITX_INFO("%s\n", __func__);
+	mutex_unlock(&hdev->tx_comm.hdmimode_mutex);
+}
+
+static void drm_hdmitx_hdcp_init(void)
+{
+	struct hdmitx_dev *hdev = get_hdmitx21_device();
+
+	hdev->drm_hdcp.hdcp_auth_result = HDCP_AUTH_UNKNOWN;
+	hdev->drm_hdcp.hdcp_fail_cnt = 0;
+
+	hdev->drm_hdcp.test_hdcp_enable = drm_hdmitx_hdcp_enable;
+	hdev->drm_hdcp.test_hdcp_disable = drm_hdmitx_hdcp_disable;
+	hdev->drm_hdcp.test_hdcp_disconnect = drm_hdmitx_hdcp_disconnect;
+	HDMITX_DEBUG_HDCP("%s\n", __func__);
+}
+
+static void drm_hdmitx_hdcp_exit(void)
+{
+	struct hdmitx_dev *hdev = get_hdmitx21_device();
+
+	hdev->drm_hdcp.hdcp_auth_result = HDCP_AUTH_UNKNOWN;
+	hdev->drm_hdcp.hdcp_fail_cnt = 0;
+	hdev->drm_hdcp.drm_hdcp_cb.data = NULL;
+	hdev->drm_hdcp.drm_hdcp_cb.hdcp_notify = NULL;
+	hdev->drm_hdcp.test_hdcp_enable = NULL;
+	hdev->drm_hdcp.test_hdcp_disable = NULL;
+	hdev->drm_hdcp.test_hdcp_disconnect = NULL;
+	HDMITX_DEBUG_HDCP("%s\n", __func__);
 }
 
 static unsigned int drm_hdmitx_get_tx_hdcp_cap(void)
 {
-	int lstore = 0;
+	struct hdmitx_dev *hdev = get_hdmitx21_device();
 
-	if (get_hdcp2_lstore())
-		lstore |= HDCP_MODE22;
-	if (get_hdcp1_lstore())
-		lstore |= HDCP_MODE14;
+	if (!hdev || hdev->hdmi_init != 1)
+		return 0;
 
-	HDMITX_DEBUG("%s tx hdcp [%d]\n", __func__, lstore);
-	return lstore;
+	if (hdev->lstore < 0x10) {
+		hdev->lstore = 0;
+		if (get_hdcp2_lstore())
+			hdev->lstore |= HDCP_MODE22;
+		if (get_hdcp1_lstore())
+			hdev->lstore |= HDCP_MODE14;
+	}
+
+	HDMITX_DEBUG("%s tx hdcp [%d]\n", __func__, hdev->lstore);
+	return hdev->lstore & (HDCP_MODE14 | HDCP_MODE22);
 }
 
 unsigned int drm_hdmitx_get_rx_hdcp_cap(void)
@@ -4865,11 +4937,13 @@ static void drm_hdmitx_register_hdcp_notify(struct connector_hdcp_cb *cb)
 {
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
 
-	if (hdev->drm_hdcp_cb.hdcp_notify)
+	if (hdev->drm_hdcp.drm_hdcp_cb.hdcp_notify)
 		HDMITX_ERROR("Register hdcp notify again!?\n");
 
-	hdev->drm_hdcp_cb.hdcp_notify = cb->hdcp_notify;
-	hdev->drm_hdcp_cb.data = cb->data;
+	hdev->drm_hdcp.drm_hdcp_cb.hdcp_notify = cb->hdcp_notify;
+	hdev->drm_hdcp.drm_hdcp_cb.data = cb->data;
+
+	HDMITX_DEBUG("%s\n", __func__);
 }
 
 static struct meson_hdmitx_dev drm_hdmitx_instance = {
@@ -4921,6 +4995,7 @@ static long hdcp_comm_ioctl(struct file *file,
 	int rtn_val;
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
 	u8 hdcp_key_store = 0;
+	void *cb_data = hdev->drm_hdcp.drm_hdcp_cb.data;
 
 	switch (cmd) {
 	case TEE_HDCP_IOC_START:
@@ -4931,6 +5006,15 @@ static long hdcp_comm_ioctl(struct file *file,
 		if (get_hdcp1_lstore())
 			hdcp_key_store |= BIT(0);
 		HDMITX_INFO("tee load hdcp key ready: 0x%x\n", hdcp_key_store);
+		/* for linux platform, notify hdcp key load ready to drm side */
+		if (hdev->tx_comm.hdcp_ctl_lvl > 0) {
+			if (hdev->drm_hdcp.drm_hdcp_cb.hdcp_notify) {
+				hdev->drm_hdcp.drm_hdcp_cb.hdcp_notify(cb_data,
+					HDCP_KEY_UPDATE, HDCP_AUTH_UNKNOWN);
+				HDMITX_DEBUG("notify hdcp key load done to drm\n");
+			}
+			return rtn_val;
+		}
 		mutex_lock(&hdev->tx_comm.hdmimode_mutex);
 		if (hdev->tx_comm.hpd_state == 1 &&
 			hdev->tx_comm.ready &&

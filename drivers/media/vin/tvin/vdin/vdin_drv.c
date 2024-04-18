@@ -1431,6 +1431,7 @@ int vdin_start_dec(struct vdin_dev_s *devp)
 
 	devp->dv.chg_cnt = 0;
 	devp->prop.hdr_info.hdr_check_cnt = 0;
+	devp->prop.hdr10p_info.hdr10p_check_cnt = 0;
 	devp->vrr_data.vrr_chg_cnt = 0;
 	devp->vrr_data.freesync_chg_cnt = 0;
 	devp->last_wr_vfe = NULL;
@@ -3250,7 +3251,8 @@ irqreturn_t vdin_isr(int irq, void *dev_id)
 
 	if (devp->dv.chg_cnt || devp->dv.allm_chg_cnt ||
 	    devp->vrr_data.vrr_chg_cnt ||
-	    devp->prop.hdr_info.hdr_check_cnt) {
+	    devp->prop.hdr_info.hdr_check_cnt ||
+	    devp->prop.hdr10p_info.hdr10p_check_cnt) {
 		if (devp->game_mode)
 			vdin_pause_hw_write(devp, devp->flags & VDIN_FLAG_RDMA_ENABLE);
 		vdin_drop_frame_info(devp, "dv or vrr allm chg");

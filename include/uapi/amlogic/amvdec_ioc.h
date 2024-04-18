@@ -7,6 +7,7 @@
 #define __AMVDEC_IOC_H__
 
 #include <linux/types.h>
+#include <linux/stddef.h>
 
 #define _A_M_V  'S'
 
@@ -301,9 +302,18 @@ struct av_param_qosinfo_t {
 	struct vframe_qos_s vframe_qos[QOS_FRAME_NUM];
 };
 
+#ifndef struct_group
+#define struct_group(NAME, MEMBERS...)	\
+		union { \
+			struct { MEMBERS }; \
+			struct { MEMBERS } NAME; \
+		}
+#endif
+
 struct vdec_info {
 	char vdec_name[16];
 	__u32 ver;
+	struct_group(normal_info,
 	__u32 frame_width;
 	__u32 frame_height;
 	__u32 frame_rate;
@@ -331,7 +341,9 @@ struct vdec_info {
 	};
 	__u32 offset;
 	__u32 ratio_control;
+	);
 	char reserved[0];
+	struct_group(ipb,
 	unsigned int i_decoded_frames;/*i frames decoded*/
 	unsigned int i_lost_frames;/*i frames can not be decoded*/
 	unsigned int i_concealed_frames;/*i frames decoded but have some error*/
@@ -341,6 +353,7 @@ struct vdec_info {
 	unsigned int b_decoded_frames;
 	unsigned int b_lost_frames;
 	unsigned int b_concealed_frames;
+	);
 	char endipb_line[0];
 };
 
@@ -453,6 +466,7 @@ struct vframe_comm_s {
 struct vframe_counter_s {
 	struct vframe_qos_s qos;
 	__u32  decode_time_cost;/*us*/
+	struct_group(normal_info,
 	__u32 frame_width;
 	__u32 frame_height;
 	__u32 frame_rate;
@@ -480,11 +494,15 @@ struct vframe_counter_s {
 	};
 	__u32 offset;
 	__u32 ratio_control;
+
+	);
+
 	__u32 vf_type;
 	__u32 signal_type;
 	__u32 pts;
 	__u64 pts_us64;
 	/*mediacodec report*/
+	struct_group(ipb,
 	unsigned int i_decoded_frames; //i frames decoded
 	unsigned int i_lost_frames;//i frames can not be decoded
 	unsigned int i_concealed_frames;//i frames decoded but have some error
@@ -495,6 +513,9 @@ struct vframe_counter_s {
 	unsigned int b_lost_frames;
 	unsigned int b_concealed_frames;
 	unsigned int av_resynch_counter;
+
+	);
+
 };
 
 struct vframe_counter_s_old {

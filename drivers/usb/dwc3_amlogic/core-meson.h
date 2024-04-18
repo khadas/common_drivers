@@ -1309,6 +1309,9 @@ struct aml_dwc3 {
 
 	unsigned		dis_split_quirk:1;
 	unsigned		async_callbacks:1;
+#if IS_ENABLED(CONFIG_AMLOGIC_COMMON_USB)
+	unsigned		super_speed_support:1;
+#endif
 
 	u16			imod_interval;
 

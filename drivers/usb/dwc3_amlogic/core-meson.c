@@ -38,6 +38,10 @@
 
 #include "debug-meson.h"
 
+#if IS_ENABLED(CONFIG_AMLOGIC_COMMON_USB)
+#include <linux/amlogic/usbtype.h>
+#endif
+
 #define DWC3_DEFAULT_AUTOSUSPEND_DELAY	5000 /* ms */
 
 /**
@@ -1316,6 +1320,13 @@ static int dwc3_core_get_phy(struct aml_dwc3 *dwc)
 			return dev_err_probe(dev, ret, "no usb2 phy configured\n");
 		}
 	}
+
+#if IS_ENABLED(CONFIG_AMLOGIC_COMMON_USB)
+	dwc->super_speed_support = 0;
+	if (dwc->usb3_phy)
+		if (dwc->usb3_phy->flags == AML_USB3_PHY_ENABLE)
+			dwc->super_speed_support = 1;
+#endif
 
 	if (IS_ERR(dwc->usb3_phy)) {
 		ret = PTR_ERR(dwc->usb3_phy);

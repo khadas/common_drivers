@@ -4872,6 +4872,63 @@ err:
 }
 EXPORT_SYMBOL_GPL(crg_otg_write_UDC);
 
+#if IS_ENABLED(CONFIG_AMLOGIC_COMMON_USB)
+int crg_rewrite_otg_write_UDC(void)
+{
+	struct crg_gadget_dev *crg_udc;
+	struct gadget_info *gi;
+	struct usb_composite_dev *cdev;
+	char *name;
+	size_t len;
+	int ret;
+
+	crg_udc = &crg_udc_dev;
+	cdev = get_gadget_data(&crg_udc->gadget);
+	if (!cdev)
+		return -ENODEV;
+
+	gi = container_of(cdev, struct gadget_info, cdev);
+
+	if (!gi->composite.gadget_driver.udc_name)
+		return -1;
+
+	len = strlen(gi->composite.gadget_driver.udc_name);
+	name = kstrdup(gi->composite.gadget_driver.udc_name, GFP_KERNEL);
+	if (!name)
+		return -ENOMEM;
+	if (name[len - 1] == '\n')
+		name[len - 1] = '\0';
+
+	mutex_lock(&gi->lock);
+	ret = usb_gadget_unregister_driver(&gi->composite.gadget_driver);
+	if (ret)
+		goto err;
+	kfree(gi->composite.gadget_driver.udc_name);
+	gi->composite.gadget_driver.udc_name = NULL;
+	mutex_unlock(&gi->lock);
+
+	mdelay(50);
+	mutex_lock(&gi->lock);
+	if (!gi->composite.gadget_driver.udc_name) {
+		gi->composite.gadget_driver.udc_name = name;
+		ret = usb_gadget_probe_driver(&gi->composite.gadget_driver);
+		if (ret) {
+			gi->composite.gadget_driver.udc_name = NULL;
+			goto err;
+		}
+	} else {
+		ret = -EBUSY;
+		goto err;
+	}
+	mutex_unlock(&gi->lock);
+	return 0;
+err:
+	mutex_unlock(&gi->lock);
+	kfree(name);
+	return ret;
+}
+#endif
+
 #ifdef CONFIG_PM
 static int crg_udc_suspend(struct device *dev)
 {
@@ -4899,6 +4956,10 @@ static int crg_udc_resume(struct device *dev)
 
 	if (crg_udc->controller_type != USB_M31)
 		amlogic_crg_device_usb2_init(crg_udc->phy_id);
+
+#if IS_ENABLED(CONFIG_AMLOGIC_COMMON_USB)
+	crg_rewrite_otg_write_UDC();
+#endif
 
 	return 0;
 }

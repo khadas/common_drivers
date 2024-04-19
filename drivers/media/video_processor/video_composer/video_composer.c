@@ -856,6 +856,21 @@ static void video_composer_uninit_buffer(struct composer_dev *dev)
 			 "%s buffer have uninit already finished!\n", __func__);
 		return;
 	}
+
+	if (!IS_ERR_OR_NULL(dev->dewarp_para.context)) {
+		ret = uninit_dewarp_composer(&dev->dewarp_para);
+		if (ret < 0)
+			vc_print(dev->index, PRINT_ERROR, "uninit dewarp composer fail!\n");
+		dev->dewarp_para.context = NULL;
+	}
+
+	if (!IS_ERR_OR_NULL(dev->ge2d_para.context)) {
+		ret = uninit_ge2d_composer(&dev->ge2d_para);
+		if (ret < 0)
+			vc_print(dev->index, PRINT_ERROR, "uninit ge2d composer failed!\n");
+		dev->ge2d_para.context = NULL;
+	}
+
 	dev->buffer_status = UNINITIAL;
 	for (i = 0; i < BUFFER_LEN; i++) {
 		if (dev->dst_buf[i].phy_addr != 0) {
@@ -870,20 +885,6 @@ static void video_composer_uninit_buffer(struct composer_dev *dev)
 				dev->dst_buf[i].afbc_table_addr = 0;
 			}
 		}
-	}
-
-	if (!IS_ERR_OR_NULL(dev->dewarp_para.context)) {
-		ret = uninit_dewarp_composer(&dev->dewarp_para);
-		if (ret < 0)
-			vc_print(dev->index, PRINT_ERROR, "uninit dewarp composer fail!\n");
-		dev->dewarp_para.context = NULL;
-	}
-
-	if (!IS_ERR_OR_NULL(dev->ge2d_para.context)) {
-		ret = uninit_ge2d_composer(&dev->ge2d_para);
-		if (ret < 0)
-			vc_print(dev->index, PRINT_ERROR, "uninit ge2d composer failed!\n");
-		dev->ge2d_para.context = NULL;
 	}
 
 	dev->dev_choice = COMPOSER_WITH_UNINITIAL;
@@ -4596,7 +4597,7 @@ int video_composer_set_enable(struct composer_dev *dev, u32 val)
 	if (val == 0)
 		dev->composer_enabled = false;
 
-	vc_print(dev->index, PRINT_OTHER,
+	vc_print(dev->index, PRINT_ERROR,
 		 "vc: set enable index=%d, val=%d\n",
 		 dev->index, val);
 

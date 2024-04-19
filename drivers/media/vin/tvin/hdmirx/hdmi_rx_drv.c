@@ -3994,7 +3994,7 @@ static int hdmirx_probe(struct platform_device *pdev)
 		"aud_compose_type",
 		&rpt_edid_selection);
 	if (ret) {
-		rpt_edid_selection = 1;
+		rpt_edid_selection = use_edid_def;
 		sprintf(boot_info[i++], "not find aud_compose_type, soundbar by default.");
 	}
 	ret = of_property_read_u32(pdev->dev.of_node,

@@ -838,6 +838,19 @@ enum earc_cap_block_id {
 	EARC_CAP_BLOCK_ID_3 = 3
 };
 
+enum rx_edid_selection {
+	//rx default edid,product:tv+tx+none_cec
+	use_edid_def = 1,
+	//edid extraction,product:standard repeater
+	use_edid_repeater = 2,
+	//edid extraction,product:repeater+audio block passthrough
+	use_edid_repeater_sad_passthrough = 3,
+	//product:rx edid+audio block passthrough+secondary phyaddr
+	use_edid_def_sad_passthrough_secondary_phyaddr = 4,
+	//product:rx edid+secondary phyaddr
+	use_edid_def_secondary_phyaddr = 5,
+};
+
 extern u8 port_hpd_rst_flag;
 extern int edid_mode;
 extern int port_map;

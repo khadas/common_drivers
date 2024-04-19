@@ -4851,14 +4851,77 @@ void rpt_edid_update_stand_timing(u8 *p_edid)
 	}
 }
 
+static void edid_sad_passthrough(unsigned char *p_edid_dest, unsigned char *p_edid_src)
+{
+	u8 adb_start = 0;
+
+	adb_start = rx_get_cea_tag_offset(p_edid_src, AUDIO_TAG);
+	if (adb_start) {
+		edid_rm_db_by_tag(p_edid_dest, AUDIO_TAG);
+		/* place tv aud data blk to blk index = 0x1 */
+		splice_data_blk_to_edid(p_edid_dest, &p_edid_src[adb_start], 0x01);
+	}
+}
+
+static void edid_secondaryphyaddr(unsigned char *p_edid_dest, unsigned char *p_edid_src)
+{
+	u8 src_vsdb_offset = 0;
+	u8 def_vsdb_offset = 0;
+	struct vsdb_s vsdb_src, vsdb_def, vsdb_dest;
+	u8 *p_vsdb_src = (u8 *)&vsdb_src;
+	u8 *p_vsdb_def = (u8 *)&vsdb_def;
+
+	src_vsdb_offset = rx_get_cea_tag_offset(p_edid_src, VENDOR_TAG);
+	def_vsdb_offset = rx_get_cea_tag_offset(p_edid_dest, VENDOR_TAG);
+	memcpy(p_vsdb_src + 4, &p_edid_src[src_vsdb_offset + 4], 2);
+	memcpy(p_vsdb_def + 4, &p_edid_dest[def_vsdb_offset + 4], 2);
+	if (vsdb_src.a == 0) {
+		vsdb_dest.b = vsdb_def.b;
+		vsdb_dest.a = vsdb_def.a;
+		vsdb_dest.d = vsdb_def.d;
+		vsdb_dest.c = vsdb_def.c;
+	} else if (vsdb_src.b == 0) {
+		vsdb_dest.b = vsdb_def.a;
+		vsdb_dest.a = vsdb_src.a;
+		vsdb_dest.d = 0;
+		vsdb_dest.c = 0;
+	} else if (vsdb_src.c == 0) {
+		vsdb_dest.b = vsdb_src.b;
+		vsdb_dest.a = vsdb_src.a;
+		vsdb_dest.d = 0;
+		vsdb_dest.c = vsdb_def.a;
+	} else if (vsdb_src.d == 0) {
+		vsdb_dest.b = vsdb_src.b;
+		vsdb_dest.a = vsdb_src.a;
+		vsdb_dest.d = vsdb_def.a;
+		vsdb_dest.c = vsdb_src.c;
+	} else {
+		vsdb_dest.b = vsdb_src.b;
+		vsdb_dest.a = vsdb_src.a;
+		vsdb_dest.d = vsdb_src.d;
+		vsdb_dest.c = vsdb_src.c;
+	}
+	p_vsdb_def = (u8 *)&vsdb_dest;
+	memcpy(&p_edid_dest[def_vsdb_offset + 4], p_vsdb_def + 4, 2);
+	if (log_level & EDID_LOG)
+		rx_pr("dest addr:0x%x 0x%x",
+			p_edid_dest[def_vsdb_offset + 4], p_edid_dest[def_vsdb_offset + 5]);
+}
+
 void rpt_edid_extraction(unsigned char *p_edid)
 {
 	if (!is_valid_edid_data(edid_tx))
 		return;
-	if (rpt_edid_selection == 1)//use tx edid
-		p_edid = edid_tx;
-	else if (rpt_edid_selection == 2)//use def edid
+	if (rpt_edid_selection == use_edid_def_secondary_phyaddr) {
+		edid_secondaryphyaddr(p_edid, edid_tx);
 		return;
+	} else if (rpt_edid_selection == use_edid_def_sad_passthrough_secondary_phyaddr) {
+		edid_sad_passthrough(p_edid, edid_tx);
+		edid_secondaryphyaddr(p_edid, edid_tx);
+		return;
+	} else if (rpt_edid_selection == use_edid_def) {
+		return;
+	}
 
 	//block0
 	rpt_edid_update_stand_timing(p_edid);
@@ -4879,7 +4942,10 @@ void rpt_edid_extraction(unsigned char *p_edid)
 	 */
 	rpt_edid_rm_hf_eeodb(p_edid);
 	rpt_edid_video_db_extraction(p_edid);
-	rpt_edid_audio_db_extraction(p_edid);
+	if (rpt_edid_selection == use_edid_repeater_sad_passthrough)
+		edid_sad_passthrough(p_edid, edid_tx);
+	else
+		rpt_edid_audio_db_extraction(p_edid);
 	rpt_edid_14_vs_db_extraction(p_edid);
 	rpt_edid_hf_vs_db_extraction(p_edid);
 	rpt_edid_420_vdb_extraction(p_edid);

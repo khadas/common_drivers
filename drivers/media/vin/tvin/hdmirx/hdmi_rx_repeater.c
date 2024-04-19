@@ -129,6 +129,10 @@ int rx_hdmi_tx_notify_handler(struct notifier_block *nb,
 			rx_pr("update EDID from HDMITX\n");
 			rx_update_tx_edid_with_audio_block(p, rx_audio_block);
 		}
+		if (rpt_edid_selection == use_edid_def) {
+			ret = NOTIFY_OK;
+			break;
+		}
 		rx_irq_en(0, rx_info.main_port);
 		rx_set_cur_hpd(0, 4, rx_info.main_port);
 		if (!rx_info.main_port_open)

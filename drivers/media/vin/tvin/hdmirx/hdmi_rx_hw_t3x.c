@@ -4855,6 +4855,7 @@ void hdmirx_frl_config(u8 port)
 	u32 data32;
 	u32 frl_rate_sel;
 
+	hdmirx_wr_cor(DPLL_CFG6_DPLL_IVCRX, 0x0, port);
 	/* new for t3x */
 	data32  = 0;
 	data32 |= (0 << 31); //[   31] update_man

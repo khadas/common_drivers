@@ -3495,6 +3495,7 @@ void vdin_set_black_pattern(bool mute);
 void rx_set_term_value(unsigned char port, bool value);
 void rx_emp_hw_enable(bool enable);
 bool rx_is_need_edid_reset(u8 port);
+
 bool rx_is_phy_power_off(u8 port);
 
 #endif

@@ -1696,24 +1696,24 @@ void hdmirx_top_irq_en(u8 en, u8 port)
 
 	if (rx_info.chip_id >= CHIP_ID_T3X) {//todo
 		data32  = 0;
-		data32 |= (0    << 30); // [   30] aud_chg;
-		data32 |= (1    << 29); // [   29] hdmirx_sqofclk_fall;
-		data32 |= (0    << 28); // [   28] hdmirx_sqofclk_rise;
-		data32 |= (0	<< 26); // [   26] last_emp_done;
+		data32 |= (0    << 30); // [   30] edid_bus_conflict_pls;
+		data32 |= (1    << 29); // [   29] hdmirx_21_valid_m_fall;
+		data32 |= (0    << 28); // [   28] hdmirx_21_valid_m_rise;
+		data32 |= (0	<< 26); // [   26] hdmirx_pll_locks_chg;
 		data32 |= (1	<< 23); // [   23] de_rise_del_irq;
 		data32 |= (1	<< 21); // [   21] emp_field_done;
 		data32 |= (1    << 20); // [   23] hdmirx_sqofclk_fall;
-		data32 |= (0    << 19); // [   19] edid_addr2_intr
-		data32 |= (0    << 18); // [   18] edid_addr1_intr
-		data32 |= (0    << 17); // [   17] edid_addr0_intr
-		data32 |= (0    << 16); // [   16] hdcp_enc_state_fall
-		data32 |= (0    << 15); // [   15] hdcp_enc_state_rise
-		data32 |= (0    << 14); // [   14] hdcp_auth_start_fall
+		data32 |= (0    << 19); // [   19] hdmirx_sqofclk_rise
+		data32 |= (0    << 18); // [   18] hdcp_enc_state_fall
+		data32 |= (0    << 17); // [   17] hdcp_enc_state_rise
+		data32 |= (0    << 16); // [   16] hdcp_auth_start_fall
+		data32 |= (0    << 15); // [   15] hdcp_auth_start_rise
+		data32 |= (0    << 14); // [   14] meter_stable_chg_pixel
 		data32 |= (0    << 13); // [   13] clk1618 chg
 		data32 |= (0    << 12); // [   12] meter_stable_chg_hdmi
-		data32 |= (0    << 11); // [   11] vid_colour_depth_chg
-		data32 |= (0    << 10); // [   10] vid_fmt_chg
-		data32 |= (0    << 9);  // [    9] tmds21clk chg
+		data32 |= (0    << 11); // [   11] meter_stable_chg_phy
+		data32 |= (0    << 10); // [   10] meter_stable_chg_cable
+		data32 |= (0    << 9);  // [    9] meter_stable_chg_tmds21
 		data32 |= (0x0  << 4);  // [ 8: 6] hdmirx_5v_fall
 		data32 |= (0x0  << 3);  // [ 5: 3] hdmirx_5v_rise
 		// [    2] sherman_phy_intr: phy digital interrupt

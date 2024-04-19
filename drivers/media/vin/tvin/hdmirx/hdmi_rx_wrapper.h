@@ -43,9 +43,7 @@ enum fsm_states_e {
 	FSM_INIT,
 	FSM_HPD_LOW,
 	FSM_HPD_HIGH,
-	FSM_COR_RESET,
 	FSM_FRL_FLT_READY,
-	FSM_WAIT_SIG,
 	FLT_RX_LTS_3,
 	FLT_RX_LTS_P,
 	FSM_FRL_TRN,
@@ -140,6 +138,7 @@ extern int rx_emp_dbg_en;
 extern int fsm_debug;
 extern int rs_err_chk;
 extern int err_cnt;
+
 enum tvin_sig_fmt_e hdmirx_hw_get_fmt(u8 port);
 void rx_mute_vpp(u8 port_type);
 void hdmirx_mute_vpp(bool en, u8 port);

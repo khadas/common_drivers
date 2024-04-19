@@ -4082,8 +4082,9 @@ void rx_set_aud_output_t3x(u32 param, u8 port)
 		hdmirx_wr_cor(RX_TDM_CTRL1_AUD_IVCRX, 0x00, port);
 		hdmirx_wr_cor(RX_TDM_CTRL2_AUD_IVCRX, 0x10, port);
 		hdmirx_wr_cor(AAC_MCLK_SEL_AUD_IVCRX, 0x80, port); //I2S
-		//hdmirx_wr_bits_top(TOP_CLK_CNTL, _BIT(15), 0);
-		hdmirx_wr_bits_top_common_1(TOP_ACR_CNTL2_T3X, _BIT(5), 1);
+		/* bit'15 1-spdif, 0- hbr */
+		hdmirx_wr_bits_top(TOP_CLK_CNTL, _BIT(15), 0, port);
+		hdmirx_wr_bits_top_common_1(TOP_ACR_CNTL2_T3X, _BIT(5), port);
 	} else {
 		hdmirx_wr_cor(RX_TDM_CTRL1_AUD_IVCRX, 0x00, port);
 		hdmirx_wr_cor(RX_TDM_CTRL2_AUD_IVCRX, 0x10, port);

@@ -1842,16 +1842,18 @@ EXPORT_SYMBOL(rx_get_audio_status);
 
 int rx_set_audio_param(u32 param)
 {
-	u8 port = rx_info.main_port;
-
 	if (rx_info.chip_id == CHIP_ID_NONE)
 		return 0;
-	if (rx_info.chip_id < CHIP_ID_T7)
+	if (rx_info.chip_id < CHIP_ID_T7) {
 		hbr_force_8ch = param & 1;
-	else if (rx_info.chip_id < CHIP_ID_T3X)
+	} else if (rx_info.chip_id < CHIP_ID_T3X) {
 		rx_set_aud_output_t7(param);
-	else
-		rx_set_aud_output_t3x(param, port);//todo
+	} else {
+		rx_set_aud_output_t3x(param, E_PORT0);
+		rx_set_aud_output_t3x(param, E_PORT1);
+		rx_set_aud_output_t3x(param, E_PORT2);
+		rx_set_aud_output_t3x(param, E_PORT3);
+	}
 	return 1;
 }
 EXPORT_SYMBOL(rx_set_audio_param);
@@ -2530,6 +2532,9 @@ static int top_init(u8 port)
 	data32 |= (8192 << 0); /* [23: 0] ref_cycles */
 	hdmirx_wr_top(TOP_METER_HDMI_CNTL, data32, port);
 
+	/* bit'15 hbr_spdif_en: 1-spdif, 0- hbr */
+	if (rx_info.chip_id >= CHIP_ID_T7)
+		hdmirx_wr_bits_top(TOP_CLK_CNTL, _BIT(15), 0, port);
 	return err;
 }
 

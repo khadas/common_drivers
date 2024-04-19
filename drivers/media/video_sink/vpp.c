@@ -1618,8 +1618,8 @@ static int vpp_set_filters_internal
 	bool crop_adjust = false;
 	bool hskip_adjust = false;
 	bool src_crop_adjust = false;
-	bool force_dw = false;
-	u32 force_skip_cnt = 0, slice_num = 0;
+	bool force_dw = false, force_skip_update = false;
+	u32 force_vskip_cnt = 0, force_hskip_cnt = 0, slice_num = 0;
 	bool vd1s1_vd2_prebld_en = false;
 	u32 w_out, h_out;
 	u8 id = 0;
@@ -2316,19 +2316,6 @@ RESTART:
 			(end >> 1) : end;
 	}
 
-	if (for_amdv_certification()) {
-		force_skip_cnt = get_force_skip_cnt(VD1_PATH);
-		if (input->layer_id == VD1_PATH && force_skip_cnt > 0) {
-			next_frame_par->vscale_skip_count = force_skip_cnt;
-			next_frame_par->hscale_skip_count = force_skip_cnt;
-		}
-		force_skip_cnt = get_force_skip_cnt(VD2_PATH);
-		if (input->layer_id == VD2_PATH && force_skip_cnt > 0) {
-			next_frame_par->vscale_skip_count = force_skip_cnt;
-			next_frame_par->hscale_skip_count = force_skip_cnt;
-		}
-	}
-
 	/* set filter co-efficient */
 	tmp_ratio_y = ratio_y;
 	ratio_y <<= height_shift;
@@ -2562,19 +2549,6 @@ RESTART:
 		}
 	}
 
-	if (for_amdv_certification()) {
-		force_skip_cnt = get_force_skip_cnt(VD1_PATH);
-		if (input->layer_id == VD1_PATH && force_skip_cnt > 0) {
-			next_frame_par->vscale_skip_count = force_skip_cnt;
-			next_frame_par->hscale_skip_count = force_skip_cnt;
-		}
-		force_skip_cnt = get_force_skip_cnt(VD2_PATH);
-		if (input->layer_id == VD2_PATH && force_skip_cnt > 0) {
-			next_frame_par->vscale_skip_count = force_skip_cnt;
-			next_frame_par->hscale_skip_count = force_skip_cnt;
-		}
-	}
-
 	/* for 8k 4slice case, if scaler down too much, eg. 720x576*/
 	/* used force dw */
 	slice_num = get_slice_num(input->layer_id);
@@ -2647,6 +2621,21 @@ RESTART:
 			src_crop_right = vf->src_crop.right;
 			src_crop_adjust = true;
 			goto RESTART_ALL;
+		}
+	}
+
+	if (get_force_skip_cnt(input->layer_id,
+		&force_vskip_cnt, &force_hskip_cnt)) {
+		next_frame_par->vscale_skip_count = force_vskip_cnt;
+		next_frame_par->hscale_skip_count = force_hskip_cnt;
+		if (!force_skip_update) {
+			force_skip_update = true;
+			if (cur_super_debug)
+				pr_info("vd%d: set force skip: vskip=%d, hskip=%d\n",
+					input->layer_id,
+					next_frame_par->vscale_skip_count,
+					next_frame_par->hscale_skip_count);
+			goto RESTART;
 		}
 	}
 

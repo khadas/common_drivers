@@ -325,8 +325,7 @@ static u8 enable_hdmi_delay_normal_check = 1;
 #define HDMI_DELAY_NORMAL_CHECK_COUNT 300
 #define HDMI_VIDEO_MIN_DELAY 3
 
-/*bit0~1 for vd1, bit2~3 for vd2*/
-static u32 force_skip_cnt;
+static u32 force_skip_cnt[MAX_VD_LAYERS];
 /* wait queue for poll */
 static wait_queue_head_t amvideo_trick_wait;
 static u32 smooth_sync_enable;
@@ -3121,14 +3120,16 @@ void set_vsync_pts_inc_mode(int inc)
 }
 EXPORT_SYMBOL(set_vsync_pts_inc_mode);
 
-u32 get_force_skip_cnt(enum vd_path_e path)
+bool get_force_skip_cnt(u8 layer_id,
+	u32 *vskip_cnt, u32 *hskip_cnt)
 {
-	if (path == VD1_PATH)
-		return (force_skip_cnt & 3);
-	else if (path == VD2_PATH)
-		return ((force_skip_cnt >> 2) & 3);
-	else
-		return 0;
+	if (force_skip_cnt[layer_id] != 0xff) {
+		*vskip_cnt = force_skip_cnt[layer_id] & 0xff;
+		*hskip_cnt = (force_skip_cnt[layer_id] & 0x100) >> 8;
+		return true;
+	} else {
+		return false;
+	}
 }
 
 static void vd_dispbuf_to_put(void)
@@ -7731,23 +7732,25 @@ static ssize_t over_field_state_store(struct class *cla,
 static ssize_t video_force_skip_cnt_show(struct class *cla, struct class_attribute *attr,
 			       char *buf)
 {
-	return sprintf(buf, "force_skip_cnt:%d, bit0~1 for vd1, bit2~3 for vd2\n",
-		       force_skip_cnt);
+	return sprintf(buf, "force_skip_cnt:0x%x, 0x%x, 0x%x(bit8: hskip, bit0-7: vskip)\n",
+		       force_skip_cnt[0],
+		       force_skip_cnt[1],
+		       force_skip_cnt[2]);
 }
 
 static ssize_t video_force_skip_cnt_store(struct class *cla,
 		struct class_attribute *attr,
 		const char *buf, size_t count)
 {
-	unsigned long cnt;
-	int ret = 0;
+	int parsed[2];
+	u32 index;
 
-	ret = kstrtoul(buf, 0, (unsigned long *)&cnt);
-	if (ret < 0)
-		return -EINVAL;
-
-	force_skip_cnt = cnt;
-
+	if (likely(parse_para(buf, 2, parsed) == 2)) {
+		if (parsed[0] < MAX_VD_LAYER) {
+			index = parsed[0];
+			force_skip_cnt[index] = parsed[1];
+		}
+	}
 	return count;
 }
 

@@ -119,10 +119,12 @@
 #define DISPBUF_TO_PUT_MAX 6
 
 #define IS_DI_PROCESSED(vftype) ((vftype) & (VIDTYPE_PRE_INTERLACE | VIDTYPE_DI_PW))
+/* post link */
 #define IS_DI_POST(vftype) \
 	(((vftype) & (VIDTYPE_PRE_INTERLACE | VIDTYPE_DI_PW)) \
 	 == VIDTYPE_PRE_INTERLACE)
 #define IS_DI_POSTWRTIE(vftype) ((vftype) & VIDTYPE_DI_PW)
+/* pre link */
 #define IS_DI_PRELINK(di_flag) ((di_flag) & DI_FLAG_DI_PVPPLINK)
 #define IS_DI_PRELINK_BYPASS(di_flag) ((di_flag) & DI_FLAG_DI_PVPPLINK_BYPASS)
 
@@ -1056,7 +1058,8 @@ void vsync_rdma_process(void);
 void amvecm_process(struct path_id_s *path_id, struct video_recv_s *p_gvideo_recv,
 			    struct vframe_s *new_frame);
 #endif
-u32 get_force_skip_cnt(enum vd_path_e path);
+bool get_force_skip_cnt(u8 layer_id,
+	u32 *vskip_cnt, u32 *hskip_cnt);
 bool is_pre_link_source(struct vframe_s *vf);
 bool is_pre_link_on(struct video_layer_s *layer);
 void vpp_trace_axis(int left, int top, int right, int bottom);

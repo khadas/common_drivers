@@ -1101,7 +1101,7 @@ static void earctx_set_dmac_freq_normal(struct earc *p_earc, unsigned int freq, 
 		spin_unlock_irqrestore(&s_earc->tx_lock, flags);
 	}
 
-	dev_info(p_earc->dev,
+	dev_dbg(p_earc->dev,
 		"%s, tune 0x%x p_earc->standard_tx_freq %d set freq:%d, get freq:%lu, get src freq:%lu, standard_tx_dmac %d\n",
 		__func__, tune,
 		p_earc->standard_tx_freq,

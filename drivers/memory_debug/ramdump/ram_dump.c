@@ -297,10 +297,17 @@ static void lazy_clear_work(struct work_struct *work)
 	struct list_head head, *pos, *next;
 	void *virt;
 	int order;
-	gfp_t flags = __GFP_NORETRY   |
-		      __GFP_NOWARN    |
-		      __GFP_MOVABLE;
+	gfp_t flags = __GFP_NORETRY		|
+					__GFP_NOWARN	|
+					__GFP_MOVABLE;
 	unsigned long clear = 0, size = 0, free = 0, tick;
+	unsigned long free_pages;
+	unsigned long target_size;
+
+	free_pages = global_zone_page_state(NR_FREE_PAGES);
+	pr_info("ramdump, Free pages available: %lu (%lu MB)\n",
+			free_pages, free_pages * PAGE_SIZE / 1024 / 1024);
+	target_size = (free_pages * 90) / 100 * PAGE_SIZE;
 
 	INIT_LIST_HEAD(&head);
 	order = MAX_ORDER - 3;
@@ -314,6 +321,8 @@ static void lazy_clear_work(struct work_struct *work)
 			memset(virt, 0, size);
 			clear += size;
 		}
+		if (clear > target_size)
+			break;
 	} while (page);
 	tick = sched_clock() - tick;
 
@@ -323,8 +332,8 @@ static void lazy_clear_work(struct work_struct *work)
 		__free_pages(page, order);
 		free += size;
 	}
-	pr_info("ramdump, clear:%lx, free:%lx, tick:%ld us\n",
-		clear, free, tick / 1000);
+	pr_info("ramdump, clear:%lu MB, free:%lu MB, tick:%ld ms\n",
+			clear / 1024 / 1024, free / 1024 / 1024, tick / 1000000);
 }
 
 #if defined(CONFIG_TRACEPOINTS) && defined(CONFIG_ANDROID_VENDOR_HOOKS)
@@ -406,7 +415,8 @@ static int __init ramdump_probe(struct platform_device *pdev)
 	if (!ram->disable) {
 		if (!ram->mem_base) {	/* No compressed data */
 			INIT_DELAYED_WORK(&ram->work, lazy_clear_work);
-			schedule_delayed_work(&ram->work, msecs_to_jiffies(60 * 1000));
+			schedule_delayed_work(&ram->work, msecs_to_jiffies(120 * 1000));
+			pr_info("%s, clear ddr 120s later.\n", __func__);
 		} else {		/* with compressed data */
 #ifdef	SAVE_DATA_BY_INIT_RC_SHELL
 			pr_info("%s, SAVE_DATA_BY_INIT_RC_SHELL\n", __func__);

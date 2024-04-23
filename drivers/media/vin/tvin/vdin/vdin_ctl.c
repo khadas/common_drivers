@@ -7430,7 +7430,19 @@ int vdin_get_base_fr(struct vdin_dev_s *devp)
 		} else {
 			fps = devp->parm.info.fps;
 		}
-		(fps <= 60) ? (fps = 60) : (fps = 120);
+		//(fps <= 60) ? (fps = 60) : (fps = 120);
+		if (fps <= 60)
+			fps = 60;
+		else if (fps <= 120)
+			fps = 120;
+		else if (fps <= 144)
+			fps = 144;
+		else if (fps <= 200)
+			fps = 200;
+		else if (fps <= 240)
+			fps = 240;
+		else if (fps <= 288)
+			fps = 288;
 	} else if (vdin_check_is_spd_data(devp) &&
 		(devp->prop.spd_data.data[5] >> 1 & 0x7)) { /* FreeSync */
 		/* FreeSync Maximum refresh rate (Hz) */
@@ -7438,7 +7450,19 @@ int vdin_get_base_fr(struct vdin_dev_s *devp)
 			fps = devp->prop.spd_data.data[7];
 		else
 			fps = devp->parm.info.fps;
-		(fps <= 60) ? (fps = 60) : (fps = 120);
+		//(fps <= 60) ? (fps = 60) : (fps = 120);
+		if (fps <= 60)
+			fps = 60;
+		else if (fps <= 120)
+			fps = 120;
+		else if (fps <= 144)
+			fps = 144;
+		else if (fps <= 200)
+			fps = 200;
+		else if (fps <= 240)
+			fps = 240;
+		else if (fps <= 288)
+			fps = 288;
 	}
 
 	if (fps) {

@@ -62,7 +62,8 @@ void post_wb_ctl(enum wr_md_e mode, int en, int vpp_index);
 void post_pre_gamma_ctl(enum wr_md_e mode, int en, int vpp_index);
 void post_pre_gamma_set(int *lut);
 void vpp_luma_hist_init(void);
-void get_luma_hist(struct vframe_s *vf, struct vpp_hist_param_s *vp);
+void get_luma_hist(struct vframe_s *vf,
+	struct vpp_hist_param_s *vp, int vpp_index);
 void cm_top_ctl(enum wr_md_e mode, int en, int vpp_index);
 
 void ve_multi_picture_case_set(int enable);

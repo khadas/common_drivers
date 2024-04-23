@@ -1100,12 +1100,27 @@ void post_pre_gamma_ctl(enum wr_md_e mode, int en, int vpp_index)
 	pr_amve_v2("pre_gamma_ctl: en = %d\n", en);
 }
 
-void vpp_luma_hist_en(int slice_case)
+void vpp_luma_hist_en(int slice_case,
+	enum wr_md_e mode, int vpp_index)
 {
-	WRITE_VPP_REG_BITS(VI_HIST_CTRL, 1, 0, 1);
+	if (mode == WR_VCB) {
+		WRITE_VPP_REG_BITS(VI_HIST_CTRL, 1, 0, 1);
 
-	if (slice_case)
-		WRITE_VPP_REG_BITS(VI_HIST_CTRL + 0x30, 1, 0, 1);
+		if (slice_case)
+			WRITE_VPP_REG_BITS(VI_HIST_CTRL + 0x30, 1, 0, 1);
+		else
+			WRITE_VPP_REG_BITS(VI_HIST_CTRL + 0x30, 0, 0, 1);
+	} else if (mode == WR_DMA) {
+		VSYNC_WRITE_VPP_REG_BITS_VPP_SEL(VI_HIST_CTRL,
+			1, 0, 1, vpp_index);
+
+		if (slice_case)
+			VSYNC_WRITE_VPP_REG_BITS_VPP_SEL(VI_HIST_CTRL + 0x30,
+				1, 0, 1, vpp_index);
+		else
+			VSYNC_WRITE_VPP_REG_BITS_VPP_SEL(VI_HIST_CTRL + 0x30,
+				0, 0, 1, vpp_index);
+	}
 
 	vi_hist_en = 1;
 }
@@ -1165,7 +1180,8 @@ void vpp_luma_hist_init(void)
 	}
 }
 
-void get_luma_hist(struct vframe_s *vf, struct vpp_hist_param_s *vp)
+void get_luma_hist(struct vframe_s *vf,
+	struct vpp_hist_param_s *vp, int vpp_index)
 {
 	static int pre_w, pre_h;
 	int width, height;
@@ -1180,7 +1196,7 @@ void get_luma_hist(struct vframe_s *vf, struct vpp_hist_param_s *vp)
 
 	if (chip_type_id == chip_t3x &&
 		(!vi_hist_en || dnlp_slice_num_changed)) {
-		vpp_luma_hist_en(slice_case);
+		vpp_luma_hist_en(slice_case, WR_DMA, vpp_index);
 		dnlp_slice_num_changed = 0;
 		pr_amve_v2("%s: dnlp_slice_num_changed 1->0\n",
 			__func__);

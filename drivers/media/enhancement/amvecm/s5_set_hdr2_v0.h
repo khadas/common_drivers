@@ -39,7 +39,8 @@ void s5_hdr_hist_config(enum hdr_module_sel module_sel,
 		     struct hdr_proc_lut_param_s *hdr_lut_param,
 		     enum vpp_index_e vpp_index);
 void s5_hdr_hist_config_int(void);
-void s5_get_hist(enum vd_path_e vd_path, enum hdr_hist_sel hist_sel);
+void s5_get_hist(enum vd_path_e vd_path,
+	enum hdr_hist_sel hist_sel, int vpp_index);
 
 void set_vpu_lut_dma_mif(struct VPU_LUT_DMA_t      *vpu_lut_dma);
 void vpu_lut_dma(enum hdr_module_sel module_sel,

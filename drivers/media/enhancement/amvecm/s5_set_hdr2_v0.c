@@ -1612,7 +1612,7 @@ void disable_ai_color(enum vpp_index_e vpp_index)
 
 void s5_set_hist(enum hdr_module_sel module_sel, int enable,
 	enum hdr_hist_sel hist_sel,
-	unsigned int hist_width, unsigned int hist_height)
+	unsigned int hist_width, unsigned int hist_height, int vpp_index)
 {
 	unsigned int hist_ctrl_port = 0;
 	unsigned int hist_hs_he;
@@ -1640,15 +1640,24 @@ void s5_set_hist(enum hdr_module_sel module_sel, int enable,
 		WRITE_VPP_REG_S5(hist_vs_ve, hist_height - 1);
 
 		tmp = READ_VPP_REG_S5(hist_ctrl_port);
-		WRITE_VPP_REG_S5(hist_ctrl_port,
-			tmp | (1 << 4) | (hist_sel << 0));
+		tmp |= (1 << 4) | (hist_sel << 0);
+		if (chip_type_id == chip_t3x)
+			VSYNC_WRITE_VPP_REG_VPP_SEL(hist_ctrl_port,
+				tmp, vpp_index);
+		else
+			WRITE_VPP_REG_S5(hist_ctrl_port, tmp);
 	} else if (READ_VPP_REG_BITS(hist_ctrl_port, 4, 1)) {
-		WRITE_VPP_REG_BITS_S5(hist_ctrl_port, 0, 4, 1);
+		if (chip_type_id == chip_t3x)
+			VSYNC_WRITE_VPP_REG_BITS_VPP_SEL(hist_ctrl_port,
+				0, 4, 1, vpp_index);
+		else
+			WRITE_VPP_REG_BITS_S5(hist_ctrl_port, 0, 4, 1);
 		hdr_max_rgb = 0;
 	}
 }
 
-void s5_get_hist(enum vd_path_e vd_path, enum hdr_hist_sel hist_sel)
+void s5_get_hist(enum vd_path_e vd_path,
+	enum hdr_hist_sel hist_sel, int vpp_index)
 {
 	unsigned int hist_ctrl_port = 0;
 	unsigned int hist_height, hist_width, i;
@@ -1719,16 +1728,19 @@ void s5_get_hist(enum vd_path_e vd_path, enum hdr_hist_sel hist_sel)
 		(hist_width != READ_VPP_REG(hist_ctrl_port + 1) + 1) ||
 		/*(READ_VPP_REG_BITS(hist_ctrl_port, 4, 1) == 0) ||*/
 		(READ_VPP_REG_BITS(hist_ctrl_port, 0, 3) != hist_sel)) {
-		s5_set_hist(module_sel, 1, hist_sel, hist_width, hist_height);
-		pr_csc(96, "%s: module_sel = %d, hist_sel = %d, hist_w = %d, hist_h= %d\n",
-			__func__, module_sel, hist_sel, hist_width, hist_height);
+		s5_set_hist(module_sel, 1, hist_sel,
+			hist_width, hist_height, vpp_index);
+		pr_csc(96, "%s: module_sel = %d, hist_sel = %d\n",
+			__func__, module_sel, hist_sel);
+		pr_csc(96, "%s: hist_w = %d, hist_h= %d, vpp_index= %d\n",
+				__func__, hist_width, hist_height, vpp_index);
 		if (chip_type_id == chip_t3x) {
 			if (slice_case)
 				enable = 1;
 			else
 				enable = 0;
 			s5_set_hist(S5_VD1_SLICE1, enable, hist_sel,
-				hist_width, hist_height);
+				hist_width, hist_height, vpp_index);
 			pr_csc(96, "%s: module_sel = %d, hist_sel = %d, enable = %d\n",
 				__func__, S5_VD1_SLICE1, hist_sel, enable);
 			pr_csc(96, "%s: hist_w = %d, hist_h= %d\n",

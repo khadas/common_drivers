@@ -1368,22 +1368,24 @@ void get_cm_hist(struct vpp_hist_param_s *vp)
 	}
 }
 
-void refresh_hist_info(struct vframe_s *vf, struct vpp_hist_param_s *vp)
+void refresh_hist_info(struct vframe_s *vf,
+	struct vpp_hist_param_s *vp, int vpp_index)
 {
 	if (chip_type_id == chip_t3x) {
-		get_luma_hist(vf, vp);
-		s5_get_hist(VD1_PATH, HIST_E_RGBMAX);
+		get_luma_hist(vf, vp, vpp_index);
+		s5_get_hist(VD1_PATH, HIST_E_RGBMAX, vpp_index);
 	}
 }
 
-void vpp_get_vframe_hist_info(struct vframe_s *vf, struct vpp_hist_param_s *vp)
+void vpp_get_vframe_hist_info(struct vframe_s *vf,
+	struct vpp_hist_param_s *vp, int vpp_index)
 {
 	unsigned int hist_height, hist_width;
 	u64 divid;
 
 	if (chip_type_id == chip_s5 ||
 		chip_type_id == chip_t3x) {
-		get_luma_hist(vf, vp);
+		get_luma_hist(vf, vp, vpp_index);
 		get_cm_hist(vp);
 		return;
 	}
@@ -2875,7 +2877,8 @@ void refresh_on_vs(struct vframe_s *vf, struct vframe_s *rpt_vf, u32 vpp_index)
 #endif
 
 	if (vf || rpt_vf) {
-		vpp_get_vframe_hist_info(vf ? vf : rpt_vf, &vpp_hist_param);
+		vpp_get_vframe_hist_info(vf ? vf : rpt_vf,
+			&vpp_hist_param, vpp_index);
 		pr_amvecm_bringup_dbg("[on_vs] refresh get_vframe_hist_info done.\n");
 #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
 		if (!for_amdv_certification())

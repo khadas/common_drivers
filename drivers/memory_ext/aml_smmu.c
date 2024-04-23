@@ -297,13 +297,6 @@ pgprot_t (*aml_dma_pgprot)(struct device *dev, pgprot_t prot, unsigned long attr
 
 unsigned long aml_max_pfn;
 
-unsigned long (*aml_kallsyms_lookup_name)(const char *name);
-
-/* For each probe you need to allocate a kprobe structure */
-static struct kprobe kp_lookup_name = {
-	.symbol_name	= "kallsyms_lookup_name",
-};
-
 /*
  * We need to save away the original address corresponding to a mapped entry
  * for the sync operations.
@@ -1255,6 +1248,25 @@ static void *get_symbol_addr(const char *symbol_name)
 	return kp.addr;
 }
 
+static unsigned long get_max_pfn(void)
+{
+	int nid;
+	unsigned long end_pfn;
+
+	/* Not inialized....update now */
+	/* find out "max pfn" */
+	end_pfn = 0;
+	for_each_node_state(nid, N_MEMORY) {
+		unsigned long node_end;
+
+		node_end = node_end_pfn(nid);
+		if (end_pfn < node_end)
+			end_pfn = node_end;
+	}
+
+	return end_pfn;
+}
+
 static int __nocfi aml_smmu_symbol_init(void *data)
 {
 	int ret;
@@ -1302,16 +1314,8 @@ static int __nocfi aml_smmu_symbol_init(void *data)
 	aml_dma_pgprot = (pgprot_t (*)(struct device *dev, pgprot_t prot,
 				unsigned long attrs))get_symbol_addr("dma_pgprot");
 #endif
-	ret = register_kprobe(&kp_lookup_name);
-	if (ret < 0) {
-		pr_err("register_kprobe failed, returned %d\n", ret);
-		return ret;
-	}
-	pr_debug("kprobe lookup offset at %px\n", kp_lookup_name.addr);
-
-	aml_kallsyms_lookup_name = (unsigned long (*)(const char *name))kp_lookup_name.addr;
-
-	aml_max_pfn = *(unsigned long *)aml_kallsyms_lookup_name("max_pfn");
+	aml_max_pfn = get_max_pfn();
+	pr_info("aml_max_pfn: %lx\n", aml_max_pfn);
 
 	/* Record our private device structure */
 	platform_set_drvdata(pdev, smmu);

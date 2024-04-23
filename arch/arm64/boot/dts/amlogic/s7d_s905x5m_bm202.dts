@@ -8,9 +8,10 @@
 #include "meson-s7d.dtsi"
 #include "mesons7d_drm.dtsi"
 #include "mesons7d_audio.dtsi"
+#include "firmware_ab.dtsi"
 / {
-	amlogic-dt-id = "s7d_s905x5m_bm201";
-	compatible = "s7d_s905x5m_bm201";
+	amlogic-dt-id = "s7d_s905x5m_bm202";
+	compatible = "s7d_s905x5m_bm202";
 	interrupt-parent = <&gic>;
 	#address-cells = <2>;
 	#size-cells = <2>;
@@ -217,52 +218,75 @@
 		status = "okay";
 		pwr_led {
 			label = "pwr_led";
+			gpios = <&gpio GPIODV_6 GPIO_ACTIVE_LOW>;
 			default-state = "on";
 		};
-
-		bt_led {
-			label = "bt_led";
-			gpios = <&gpio GPIODV_6 GPIO_ACTIVE_HIGH>;
-			default-state = "on";
-		};
-
 	};
 
 	dvb-extern {
 		compatible = "amlogic, dvb-extern";
 		dev_name = "dvb-extern";
-		status = "okay";
+		status = "disabled";
 
-		//dvb hardware main power.
+		/* dvb hardware main power. */
 		dvb_power_gpio = <&gpio GPIOZ_5 GPIO_ACTIVE_HIGH>;
-		dvb_power_value = <0>;
-		dvb_power_dir = <0>; //0: out, 1: in.
+		dvb_power_value = <1>;
+		dvb_power_dir = <0>; /* 0: out, 1: in. */
 
-		fe_num = <1>;
-		fe0_demod = "cxd2856";
-		fe0_i2c_adap_id = <&i2c3>;
-		fe0_demod_i2c_addr = <0xD8>;
-		fe0_reset_value = <0>;
-		fe0_reset_gpio = <&gpio GPIOZ_4 GPIO_ACTIVE_HIGH>;
-		fe0_reset_dir = <0>; //0: out, 1: in.
-		fe0_ant_poweron_value = <0>;
-		fe0_ant_power_gpio = <&gpio GPIOZ_6 GPIO_ACTIVE_HIGH>;
-		fe0_ts = <0>;
-		fe0_ts_out_mode = <0>; //0: serial, 1: parallel.
-		fe0_tuner0 = <0>; //T/C
-		fe0_tuner1 = <1>; //S
+		fe_num = <3>; /* internal 2 * dvb-c, extern 1 * dvb-s */
+		fe0_demod = "internal";
+		fe0_tuner0 = <0>; /* use tuner0 */
 
-		tuner_num = <2>; //for extern demod use tuner
+		fe1_demod = "internal";
+		fe1_tuner0 = <1>; /* use tuner1 */
+
+		fe2_demod = "cxd2856";
+		fe2_i2c_adap_id = <&i2c4>;
+		fe2_demod_i2c_addr = <0xD8>;
+		fe2_reset_value = <0>;
+		fe2_reset_gpio = <&gpio GPIOZ_4 GPIO_ACTIVE_HIGH>;
+		fe2_reset_dir = <0>; /* 0: out, 1: in. */
+		fe2_ant_poweron_value = <0>;
+		fe2_ant_power_gpio = <&gpio GPIOH_9 GPIO_ACTIVE_HIGH>;
+		fe2_ts = <0>;
+		fe2_tuner1 = <3>; /* use tuner3, only S. */
+
+		tuner_num = <4>; /* tuner number, multi tuner support */
 		tuner0_name = "r836_tuner";
-		tuner0_i2c_addr = <0x1A>;
-		tuner1_name = "av2018_tuner";
-		tuner1_i2c_addr = <0xC4>;
+		tuner0_i2c_adap = <&i2c3>;
+		tuner0_i2c_addr = <0x1a>; /* 7bit */
+		tuner0_xtal = <0>; /* 0: 16MHz, 1: 24MHz */
+		tuner0_xtal_mode = <0>;
+					/* NO_SHARE_XTAL(0)
+					 * SLAVE_XTAL_SHARE(3)
+					 */
+		tuner0_xtal_cap = <16>;
+		tuner0_lt_out = <1>;
+
+		tuner1_name = "r836_tuner";
+		tuner1_i2c_adap = <&i2c3>;
+		tuner1_i2c_addr = <0x3a>; /* 7bit */
+		tuner1_xtal = <0>; /* 0: 16MHz, 1: 24MHz */
+		tuner1_xtal_mode = <0>;
+					/* NO_SHARE_XTAL(0)
+					 * SLAVE_XTAL_SHARE(3)
+					 */
+		tuner1_xtal_cap = <16>;
+		tuner1_lt_out = <1>;
+
+		tuner2_name = "av2018_tuner";
+		tuner2_i2c_adap = <&i2c3>;
+		tuner2_i2c_addr = <0xC4>; /* 8bit */
+		tuner2_lt_out = <1>;
+
+		tuner3_name = "av2018_tuner";
+		tuner3_lt_out = <1>;
 	};
 
 	dvb-demux {
 		compatible = "amlogic sc2, dvb-demux";
 		dev_name = "dvb-demux";
-		status = "okay";
+		status = "disabled";
 
 		reg = <0x0 0xfe000000 0x0 0x480000>;
 
@@ -639,8 +663,7 @@
 				system-clock-frequency = <12288000>;
 			};
 			tdmccodec: codec {
-				prefix-names = "AMP";
-				sound-dai = <&sy602x_54 &amlogic_codec>;
+				sound-dai = <&amlogic_codec>;
 			};
 		};
 
@@ -731,145 +754,54 @@
 		status = "disabled";
 	};/* Audio Related end */
 
-	adc_keypad {
-		compatible = "amlogic, adc_keypad";
-		status = "okay";
-		key_name = "vol-", "vol+", "power";
-		key_num = <3>;
-		io-channels = <&saradc 0>;
-		io-channel-names = "key-chan-0";
-		key_chan = <SARADC_CH0 SARADC_CH0 SARADC_CH0>;
-		key_code = <KEY_VOLUMEDOWN KEY_VOLUMEUP KEY_POWER>;
-		key_val = <1109 1601 35>;	/* Unit: millivolt */
-		key_tolerance = <70 70 70>;	/* Unit: millivolt */
+	vin_5v_reg: fixedregulator@vin_5v_reg {
+		compatible = "regulator-fixed";
+		regulator-name = "5V";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
+	vddq_reg: fixedregulator@vddq_reg {
+		compatible = "regulator-fixed";
+		vin-supply = <&vin_5v_reg>;
+		regulator-name = "VDDQ";
+		regulator-min-microvolt = <1100000>;
+		regulator-max-microvolt = <1100000>;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
+	vddao1v8_reg: fixedregulator@vddao1v8_reg {
+		compatible = "regulator-fixed";
+		vin-supply = <&vin_5v_reg>;
+		regulator-name = "VDDAO_1V8_DCDC";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		regulator-boot-on;
+		regulator-always-on;
 	};
 
 	gpio_keypad {
 		compatible = "amlogic, gpio_keypad";
 		status = "okay";
 		scan_period = <20>;
-		key_num = <2>;
-		key_name = "bluetooth", "mute";
-		key_code = <600 SW_MUTE_DEVICE>;
-		key_type = <EV_KEY EV_SW>;
-		key-gpios = <&gpio GPIOD_2 GPIO_ACTIVE_HIGH
-			     &gpio GPIOD_3 GPIO_ACTIVE_HIGH>;
+		key_num = <1>;
+		key_name = "recovery";
+		key_code = <600>;
+		key_type = <EV_KEY>;
+		key-gpios = <&gpio GPIOD_2 GPIO_ACTIVE_HIGH>;
 		/* 0:polling mode, 1:irq mode */
 		detect_mode = <0>;
 	};
+};
 
-	vin_12v_reg: fixed@vin_12v_reg {
-		compatible = "regulator-fixed";
-		regulator-name = "12V";
-		regulator-min-microvolt = <12000000>;
-		regulator-max-microvolt = <12000000>;
-		regulator-boot-on;
-		regulator-always-on;
-	};
-
-	vddao_5v_reg: fixed@vddao_5v_reg {
-		vin-supply = <&vin_12v_reg>;
-		compatible = "regulator-fixed";
-		regulator-name = "VDDAO_5V";
-		regulator-min-microvolt = <5000000>;
-		regulator-max-microvolt = <5000000>;
-		regulator-boot-on;
-		regulator-always-on;
-	};
-
-	vcc5v_reg: fixed@vcc5v_reg {
-		vin-supply = <&vddao_5v_reg>;
-		compatible = "regulator-fixed";
-		regulator-name = "VCC5V";
-		regulator-min-microvolt = <5000000>;
-		regulator-max-microvolt = <5000000>;
-		pinctrl-names = "default";
-		gpio = <&gpio GPIOC_7 (GPIO_ACTIVE_HIGH | GPIO_OPEN_DRAIN)>;
-		startup-delay-us = <7000>;
-		enable-active-high;
-		regulator-boot-on;
-		regulator-always-on;
-	};
-
-	vddq_reg: fixed@vddq_reg {
-		compatible = "regulator-fixed";
-		vin-supply = <&vin_12v_reg>;
-		regulator-name = "VDDQ1.2V";
-		regulator-min-microvolt = <1200000>;
-		regulator-max-microvolt = <1200000>;
-		regulator-boot-on;
-		regulator-always-on;
-	};
-
-	vddao_3v3p_reg: fixed@vddao_3v3p_reg {
-		vin-supply = <&vin_12v_reg>;
-		compatible = "regulator-fixed";
-		regulator-name = "VDDAO_3V3_P";
-		regulator-min-microvolt = <3300000>;
-		regulator-max-microvolt = <3300000>;
-		regulator-boot-on;
-		regulator-always-on;
-	};
-
-	vddao_3v3_reg: fixed@vddao_3v3_reg {
-		vin-supply = <&vddao_3v3p_reg>;
-		compatible = "regulator-fixed";
-		regulator-name = "VDDAO_3V3";
-		regulator-min-microvolt = <3300000>;
-		regulator-max-microvolt = <3300000>;
-		regulator-boot-on;
-		regulator-always-on;
-	};
-
-	vdd3v3_soc_reg: fixed@vdd3v3_soc_reg {
-		vin-supply = <&vddao_3v3_reg>;
-		compatible = "regulator-fixed";
-		regulator-name = "VDD3V3_SOC";
-		regulator-min-microvolt = <3300000>;
-		regulator-max-microvolt = <3300000>;
-		regulator-boot-on;
-		regulator-always-on;
-	};
-
-	vdd1v8_dcdc_reg: fixed@vdd1v8_dcdc_reg {
-		compatible = "regulator-fixed";
-		vin-supply = <&vin_12v_reg>;
-		regulator-name = "VDD_1V8_DCDC";
-		regulator-min-microvolt = <1800000>;
-		regulator-max-microvolt = <1800000>;
-		regulator-boot-on;
-		regulator-always-on;
-	};
-
-	vddio_x_reg: fixed@vddio_x_reg {
-		compatible = "regulator-fixed";
-		vin-supply = <&vdd1v8_dcdc_reg>;
-		regulator-name = "VDDIO_X";
-		regulator-min-microvolt = <1800000>;
-		regulator-max-microvolt = <1800000>;
-		regulator-boot-on;
-		regulator-always-on;
-	};
-
-	vdd_ao1v8_ldo_reg: fixed@vdd_ao1v8_ldo_reg {
-		compatible = "regulator-fixed";
-		vin-supply = <&vddao_3v3p_reg>;
-		regulator-name = "VDD_AO18_LDO";
-		regulator-min-microvolt = <1800000>;
-		regulator-max-microvolt = <1800000>;
-		regulator-boot-on;
-		regulator-always-on;
-	};
-
-	ddr4_2v5_reg: fixed@ddr4_2v5 {
-		vin-supply = <&vddao_3v3_reg>;
-		compatible = "regulator-fixed";
-		regulator-name = "DDR4_2.5V";
-		regulator-min-microvolt = <2500000>;
-		regulator-max-microvolt = <2500000>;
-		regulator-boot-on;
-		regulator-always-on;
-	};
+&i2c3 {
+	status = "disabled";
+	pinctrl-names="default";
+	pinctrl-0=<&i2c3_pins2>;
+	clock-frequency = <300000>;
 };
 
 &i2c4 {
@@ -877,63 +809,6 @@
 	pinctrl-names="default";
 	pinctrl-0=<&i2c4_pins3>;
 	clock-frequency = <300000>;
-};
-
-&i2c3 {
-	status = "okay";
-	pinctrl-names="default";
-	pinctrl-0=<&i2c3_pins2>;
-	clock-frequency = <300000>; /* default 100k */
-
-	sy602x_54: sy602x_54@2a {
-		compatible = "silergy,sy602x";
-		#sound-dai-cells = <0>;
-		reg = <0x2a>;
-		status = "okay";
-		reset_pin = <&gpio GPIOH_7 GPIO_ACTIVE_HIGH>;
-	};
-
-	aw9523: aw9523_led@5b {
-		compatible = "amlogic,aw9523b_led";
-		reg = <0x5b>;
-		status = "okay";
-		//reset-gpio = <&gpio GPIOD_10 GPIO_ACTIVE_HIGH>;
-		platform = <4>;
-
-		led1 {
-			default_colors = <0 0 0>;
-			r_io_number = <2>;
-			g_io_number = <12>;
-			b_io_number = <7>;
-		};
-
-		led2 {
-			default_colors = <0 0 0>;
-			r_io_number = <4>;
-			g_io_number = <10>;
-			b_io_number = <9>;
-		};
-
-		led3 {
-			default_colors = <0 0 0>;
-			r_io_number = <3>;
-			g_io_number = <11>;
-			b_io_number = <8>;
-		};
-
-		led4 {
-			default_colors = <0 0 0>;
-			r_io_number = <0>;
-			g_io_number = <14>;
-			b_io_number = <5>;
-		};
-		led9 {
-			default_colors = <0 0 0>;
-			r_io_number = <1>;
-			g_io_number = <13>;
-			b_io_number = <6>;
-		};
-	};
 };
 
 &vddcpu0 {
@@ -974,13 +849,40 @@
 		};
 	};
 
+	pdmin: pdmin {
+		mux { /* GPIOD_8, GPIOD_9 */
+			groups = "pdm_din0_d";
+			function = "pdm";
+		};
+		mux1 {
+			groups = "pdm_dclk_d";
+			function = "pdm";
+			drive-strength-microamp = <500>;
+		};
+	};
+
+	spdifout: spdifout {
+		mux { /* GPIOH_4 */
+			groups = "spdif_out_h";
+			function = "spdif_out";
+		};
+	};
+
+	spdifout_a_mute: spdifout_a_mute {
+		mux { /* GPIOH_4 */
+			groups = "GPIOH_4";
+			function = "gpio_periphs";
+			output-low;
+		};
+	};
+
 	dvb_s_ts0_pins: dvb_s_ts0_pins {
 		tsin_a {
 			groups = "tsin_a_sop",
 				"tsin_a_valid",
 				"tsin_a_clk",
-				"tsin_a_d0";
-			function = "tsin";
+				"tsin_a_din0";
+			function = "tsin_a";
 		};
 	};
 }; /* end of periphs_pinctrl */
@@ -997,8 +899,6 @@
 &usb_phy21 {
 	portnum = <1>;
 	status = "okay";
-	gpio-vbus-power = "GPIOH_8";
-	gpios = <&gpio GPIOH_8 GPIO_ACTIVE_HIGH>;
 };
 
 &usb_phy30 {
@@ -1209,6 +1109,10 @@
 
 &saradc {
 	status = "okay";
+
+	pd {
+		enabled;
+	};
 };
 
 &ethmac {
@@ -1267,7 +1171,7 @@
 
 /*if you want to use vdin just modify status to "ok"*/
 &vdin0 {
-	/*compatible = "amlogic, vdin-s7d";*/
+	/*compatible = "amlogic, vdin-s7";*/
 	/*memory-region = <&vdin0_cma_reserved>;*/
 	/*status = "disabled";*/
 	/* up to 1920x1080 yuv422 8bit and 5 buffers
@@ -1285,7 +1189,7 @@
 };
 
 &vdin1 {
-	/*compatible = "amlogic, vdin-s7d";*/
+	/*compatible = "amlogic, vdin-s7";*/
 	memory-region = <&vdin1_cma_reserved>;
 	frame_buff_num = <4>;
 	/*status = "disabled";*/

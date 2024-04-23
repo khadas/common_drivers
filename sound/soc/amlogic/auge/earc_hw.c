@@ -61,32 +61,46 @@ int earctx_get_dmac_mute(struct regmap *dmac_map)
 
 void earcrx_pll_refresh(struct regmap *top_map,
 			enum pll_rst_src rst_src,
-			bool level)
+			bool level,
+			bool arcin_new)
 {
 	pr_info("%s, level %d\n", __func__, level);
-	if (rst_src == RST_BY_SELF) {
-		/* pll tdc mode */
-		mmio_update_bits(top_map, EARCRX_PLL_CTRL3,
-				 0x1 << 15, 0x1 << 15);
+	if (arcin_new) {
+		if (rst_src == RST_BY_SELF || rst_src == RST_BY_D2A) {
+			mmio_update_bits(top_map, EARCRX_PLL_CTRL3,
+					 0x1 << 0, 0x1 << 0);
+			mmio_update_bits(top_map, EARCRX_PLL_CTRL0,
+					 0x1 << 29, 0x0 << 29);
+			mmio_update_bits(top_map, EARCRX_PLL_CTRL0,
+					 0x1 << 29, 0x1 << 29);
+			mmio_update_bits(top_map, EARCRX_PLL_CTRL3,
+					 0x1 << 0, 0x0 << 0);
+		}
+	} else {
+		if (rst_src == RST_BY_SELF) {
+			/* pll tdc mode */
+			mmio_update_bits(top_map, EARCRX_PLL_CTRL3,
+					 0x1 << 15, 0x1 << 15);
 
-		/* pll self reset */
-		mmio_update_bits(top_map, EARCRX_PLL_CTRL0,
-				 0x1 << 29, 0x1 << 29);
-		mmio_update_bits(top_map, EARCRX_PLL_CTRL0,
-				 0x1 << 29, 0x0 << 29);
+			/* pll self reset */
+			mmio_update_bits(top_map, EARCRX_PLL_CTRL0,
+					 0x1 << 29, 0x1 << 29);
+			mmio_update_bits(top_map, EARCRX_PLL_CTRL0,
+					 0x1 << 29, 0x0 << 29);
 
-		mmio_update_bits(top_map, EARCRX_PLL_CTRL3,
-				 0x1 << 15, 0x0 << 15);
-	} else if (rst_src == RST_BY_D2A) {
-		int rst_src_val = level ? 0x10 : 0x0;
+			mmio_update_bits(top_map, EARCRX_PLL_CTRL3,
+					 0x1 << 15, 0x0 << 15);
+		} else if (rst_src == RST_BY_D2A) {
+			int rst_src_val = level ? 0x10 : 0x0;
 
-		mmio_update_bits(top_map, EARCRX_PLL_CTRL0,
-				 0x3 << 23, rst_src_val << 23);
-	} else if (rst_src == RST_BY_DMACRX) {
-		int rst_src_val = level ? 0x01 : 0x0;
+			mmio_update_bits(top_map, EARCRX_PLL_CTRL0,
+					 0x3 << 23, rst_src_val << 23);
+		} else if (rst_src == RST_BY_DMACRX) {
+			int rst_src_val = level ? 0x01 : 0x0;
 
-		mmio_update_bits(top_map, EARCRX_PLL_CTRL0,
-				 0x3 << 23, rst_src_val << 23);
+			mmio_update_bits(top_map, EARCRX_PLL_CTRL0,
+					 0x3 << 23, rst_src_val << 23);
+		}
 	}
 }
 
@@ -113,55 +127,100 @@ void earcrx_cmdc_int_mask(struct regmap *top_map)
 		  );
 }
 
-void earcrx_cmdc_init(struct regmap *top_map, bool en, bool rx_dmac_sync_int, bool rterm_on)
+void earcrx_cmdc_init(struct regmap *top_map, bool en, bool rx_dmac_sync_int,
+	bool rterm_on, bool arc_in_new)
 {
-	if (rterm_on) {
-		mmio_write(top_map, EARCRX_ANA_CTRL0,
-			   en  << 31 | /* earcrx_en_d2a */
-			   0x10 << 25 | /* earcrx_cmdcrx_reftrim */
-			   0x10  << 20 | /* earcrx_idr_trim */
-			   0x10 << 15 | /* earcrx_rterm_trim */
-			   0x4  << 12 | /* earcrx_cmdctx_ack_hystrim */
-			   0x10 << 7  | /* earcrx_cmdctx_ack_reftrim */
-			   0x1  << 4  | /* earcrx_cmdcrx_rcfilter_sel */
-			   0x4  << 0    /* earcrx_cmdcrx_hystrim */
+	if (arc_in_new) {
+		if (rterm_on) {
+			mmio_write(top_map,
+				EARCRX_ANA_CTRL0,
+				0x21084814);
+			mmio_update_bits(top_map,
+					 EARCRX_ANA_CTRL0,
+					 0x1 << 31,
+					 en  << 31);
+			mmio_write(top_map, EARCRX_ANA_CTRL1,
+					 0x1 << 19 | 0x1 << 11 | 0x1 << 10 | 0x8 << 4 | 0x8 << 0);
+		} else {
+			mmio_write(top_map,
+				EARCRX_ANA_CTRL0,
+				0x21084814);
+			mmio_write(top_map, EARCRX_ANA_CTRL1,
+					 0x1 << 19 | 0x1 << 11 | 0x1 << 10 | 0x8 << 4 | 0x8 << 0);
+			mmio_update_bits(top_map,
+				 EARCRX_ANA_CTRL0,
+				 0x1 << 31,
+				 en  << 31);
+		}
+
+		/* init one time */
+		mmio_write(top_map,
+			EARCRX_PLL_CTRL0,
+			0x00004001);
+		mmio_write(top_map,
+			EARCRX_PLL_CTRL1,
+			0x28020000);
+		mmio_write(top_map,
+			EARCRX_PLL_CTRL2,
+			0x00000301);
+		mmio_write(top_map,
+			EARCRX_PLL_CTRL3,
+			0x2);
+		mmio_update_bits(top_map, EARCRX_PLL_CTRL0, 0x1 << 28, en << 28);
+
+		earcrx_pll_refresh(top_map,
+				  RST_BY_SELF,
+				  true,
+				  arc_in_new);
+	} else  {
+		if (rterm_on) {
+			mmio_write(top_map, EARCRX_ANA_CTRL0,
+				   en  << 31 | /* earcrx_en_d2a */
+				   0x10 << 25 | /* earcrx_cmdcrx_reftrim */
+				   0x10  << 20 | /* earcrx_idr_trim */
+				   0x10 << 15 | /* earcrx_rterm_trim */
+				   0x4  << 12 | /* earcrx_cmdctx_ack_hystrim */
+				   0x10 << 7  | /* earcrx_cmdctx_ack_reftrim */
+				   0x1  << 4  | /* earcrx_cmdcrx_rcfilter_sel */
+				   0x4  << 0    /* earcrx_cmdcrx_hystrim */
+				  );
+			mmio_write(top_map, EARCRX_ANA_CTRL1,
+					 0x1 << 11 | 0x1 << 10 | 0x8 << 4 | 0x8 << 0);
+		} else {
+			mmio_write(top_map, EARCRX_ANA_CTRL0,
+				   en  << 31 | /* earcrx_en_d2a */
+				   0x10 << 24 | /* earcrx_cmdcrx_reftrim */
+				   0x8  << 20 | /* earcrx_idr_trim */
+				   0x10 << 15 | /* earcrx_rterm_trim */
+				   0x4  << 12 | /* earcrx_cmdctx_ack_hystrim */
+				   0x10 << 7  | /* earcrx_cmdctx_ack_reftrim */
+				   0x1  << 4  | /* earcrx_cmdcrx_rcfilter_sel */
+				   0x4  << 0    /* earcrx_cmdcrx_hystrim */
+				  );
+		}
+
+		mmio_write(top_map, EARCRX_PLL_CTRL3,
+			   0x2 << 20 | /* earcrx_pll_bias_adj */
+			   0x4 << 16 | /* earcrx_pll_rou */
+			   en << 13   /* earcrx_pll_dco_sdm_e */
 			  );
-		mmio_write(top_map, EARCRX_ANA_CTRL1,
-				 0x1 << 11 | 0x1 << 10 | 0x8 << 4 | 0x8 << 0);
-	} else {
-		mmio_write(top_map, EARCRX_ANA_CTRL0,
-			   en  << 31 | /* earcrx_en_d2a */
-			   0x10 << 24 | /* earcrx_cmdcrx_reftrim */
-			   0x8  << 20 | /* earcrx_idr_trim */
-			   0x10 << 15 | /* earcrx_rterm_trim */
-			   0x4  << 12 | /* earcrx_cmdctx_ack_hystrim */
-			   0x10 << 7  | /* earcrx_cmdctx_ack_reftrim */
-			   0x1  << 4  | /* earcrx_cmdcrx_rcfilter_sel */
-			   0x4  << 0    /* earcrx_cmdcrx_hystrim */
+
+		mmio_write(top_map, EARCRX_PLL_CTRL0,
+			   en << 28 | /* earcrx_pll_en */
+			   0x1 << 23 | /* earcrx_pll_dmacrx_sqout_rstn_sel */
+			   0x1 << 10   /* earcrx_pll_n */
 			  );
+		mmio_write(top_map,
+			EARCRX_PLL_CTRL1,
+			0x1410a8);
+		mmio_update_bits(top_map,
+			EARCRX_PLL_CTRL2,
+			0x3,
+			0x2);
+		mmio_write(top_map,
+			EARCRX_PLL_CTRL3,
+			0x20046000);
 	}
-
-	mmio_write(top_map, EARCRX_PLL_CTRL3,
-		   0x2 << 20 | /* earcrx_pll_bias_adj */
-		   0x4 << 16 | /* earcrx_pll_rou */
-		   en << 13   /* earcrx_pll_dco_sdm_e */
-		  );
-
-	mmio_write(top_map, EARCRX_PLL_CTRL0,
-		   en << 28 | /* earcrx_pll_en */
-		   0x1 << 23 | /* earcrx_pll_dmacrx_sqout_rstn_sel */
-		   0x1 << 10   /* earcrx_pll_n */
-		  );
-	mmio_write(top_map,
-		EARCRX_PLL_CTRL1,
-		0x1410a8);
-	mmio_update_bits(top_map,
-		EARCRX_PLL_CTRL2,
-		0x3,
-		0x2);
-	mmio_write(top_map,
-		EARCRX_PLL_CTRL3,
-		0x20046000);
 }
 
 void earcrx_cmdc_arc_connect(struct regmap *cmdc_map, bool init)
@@ -222,7 +281,8 @@ void earcrx_dmac_sync_int_enable(struct regmap *top_map, int enable)
 void earcrx_dmac_init(struct regmap *top_map,
 		      struct regmap *dmac_map,
 		      bool unstable_tick_sel,
-		      bool chnum_mult_mode)
+		      bool chnum_mult_mode,
+		      bool arc_ch_sync)
 {
 	/* can't open bit 5 as it will cause stuck on t7 chips */
 	mmio_update_bits(top_map, EARCRX_DMAC_INT_MASK,
@@ -255,6 +315,12 @@ void earcrx_dmac_init(struct regmap *top_map,
 	mmio_write(dmac_map, EARCRX_ANA_RST_CTRL0, 1 << 31 | 2000 << 0);
 	if (chnum_mult_mode)
 		mmio_update_bits(dmac_map, EARCRX_SPDIFIN_CTRL6, 0x1 << 27, 0x1 << 27);
+	/* channel sync */
+	if (arc_ch_sync) {
+		mmio_update_bits(dmac_map, EARCRX_SPDIFIN_CTRL6, 0x1 << 27, 0x1 << 27);
+		mmio_update_bits(dmac_map, EARCRX_SPDIFIN_CTRL6, 0x1 << 26, 0x1 << 26);
+		mmio_update_bits(dmac_map, EARCRX_SPDIFIN_CTRL6, 0x3F << 20, 0x7 << 20);
+	}
 	if (unstable_tick_sel) {
 		mmio_update_bits(top_map, EARCRX_DMAC_INT_MASK, 0x1 << 28, 0x1 << 28);
 		mmio_write(dmac_map, EARCRX_DMAC_SYNC_CTRL3, 0x1 << 19 | 0x2 << 16 | 0x64 << 0);
@@ -591,14 +657,15 @@ unsigned int earcrx_get_cs_freq(struct regmap *dmac_map,
 				enum audio_coding_types coding_type)
 {
 	unsigned int val;
-	unsigned int csfs, freq, channels;
+	unsigned int csfs, freq, channels, h_flag;
 
 	val = earcrx_get_cs_bits(dmac_map,
 				 IEC_CS_SFREQ_OFFSET,
 				 IEC_CS_SFREQ_MASK);
 
 	csfs = val & 0xf;
-	freq = iec_rate_from_csfs(csfs);
+	h_flag = !!(val & 0x80);
+	freq = iec_rate_from_csfs(csfs, h_flag);
 
 	/* Fix to really fs */
 	channels = earcrx_get_cs_channels(dmac_map, coding_type);
@@ -1864,7 +1931,7 @@ void earctx_ana_auto_cal(struct regmap *top_map)
 			 (stat0 & 0x1f) << 12);
 }
 
-bool earxrx_get_pll_valid(struct regmap *top_map)
+bool earcrx_get_pll_valid(struct regmap *top_map)
 {
 	int stat0 = 0;
 	unsigned int value = 0;
@@ -1876,7 +1943,7 @@ bool earxrx_get_pll_valid(struct regmap *top_map)
 	return stat0;
 }
 
-bool earxrx_get_pll_valid_auto(struct regmap *top_map)
+bool earcrx_get_pll_valid_auto(struct regmap *top_map)
 {
 	int stat0 = 0;
 	unsigned int value = 0;
@@ -1884,6 +1951,18 @@ bool earxrx_get_pll_valid_auto(struct regmap *top_map)
 	value = mmio_read(top_map, EARCRX_PLL_STAT0);
 
 	stat0 = (value & 0x40000000) >> 30;
+
+	return stat0;
+}
+
+bool earcrx_get_dmac_valid_auto(struct regmap *top_map)
+{
+	int stat0 = 0;
+	unsigned int value = 0;
+
+	value = mmio_read(top_map, EARCRX_PLL_STAT0);
+
+	stat0 = (value & 0x20000000) >> 29;
 
 	return stat0;
 }

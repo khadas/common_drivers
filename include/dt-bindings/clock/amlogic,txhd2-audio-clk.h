@@ -46,8 +46,15 @@
 /* Gate En1 */
 #define CLKID_AUDIO_GATE_FRDDRD                 32
 #define CLKID_AUDIO_GATE_TODDRD                 33
+#define CLKID_AUDIO_GATE_LOOPBACKB              34
+#define CLKID_AUDIO_GATE_FRDDRE                 35
+#define CLKID_AUDIO_GATE_TODDRE                 36
+#define CLKID_AUDIO_GATE_EARCTX                 37
+#define CLKID_AUDIO_GATE_EARCRX                 38
+#define CLKID_AUDIO_GATE_RESAMPLEB_OLD          39
+#define CLKID_AUDIO_GATE_LOCKER                 40
 
-#define CLKID_AUDIO_GATE_MAX                    34
+#define CLKID_AUDIO_GATE_MAX                    41
 
 #define MCLK_BASE                               CLKID_AUDIO_GATE_MAX
 #define CLKID_AUDIO_MCLK_A                      (MCLK_BASE + 0)
@@ -66,12 +73,17 @@
 #define CLKID_AUDIO_PDMIN1                      (MCLK_BASE + 12)
 #define CLKID_AUDIO_SPDIFOUT_B                  (MCLK_BASE + 13)
 #define CLKID_AUDIO_RESAMPLE_B                  (MCLK_BASE + 14)
-#define CLKID_AUDIO_EQDRC                       (MCLK_BASE + 15)
-#define CLKID_AUDIO_VAD                         (MCLK_BASE + 16)
+#define CLKID_AUDIO_SPDIFIN_LB                  (MCLK_BASE + 15)
+#define CLKID_AUDIO_EQDRC                       (MCLK_BASE + 16)
+#define CLKID_AUDIO_VAD                         (MCLK_BASE + 17)
+#define CLKID_EARCTX_CMDC                       (MCLK_BASE + 18)
+#define CLKID_EARCTX_DMAC                       (MCLK_BASE + 19)
+#define CLKID_EARCRX_CMDC                       (MCLK_BASE + 20)
+#define CLKID_EARCRX_DMAC                       (MCLK_BASE + 21)
 
-#define CLKID_AUDIO_MCLK_PAD0                   (MCLK_BASE + 17)
-#define CLKID_AUDIO_MCLK_PAD1                   (MCLK_BASE + 18)
-#define CLKID_AUDIO_MCLK_PAD2                   (MCLK_BASE + 19)
+#define CLKID_AUDIO_MCLK_PAD0                   (MCLK_BASE + 22)
+#define CLKID_AUDIO_MCLK_PAD1                   (MCLK_BASE + 23)
+#define CLKID_AUDIO_MCLK_PAD2                   (MCLK_BASE + 24)
 
-#define NUM_AUDIO_CLKS                          (MCLK_BASE + 20)
+#define NUM_AUDIO_CLKS                          (MCLK_BASE + 25)
 #endif /* __T5_AUDIO_CLK_H__ */

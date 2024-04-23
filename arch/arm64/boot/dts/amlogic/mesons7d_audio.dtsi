@@ -68,6 +68,47 @@
 				reg = <0x0 0xFE334000 0x0 0x104>;
 			};
 		};
+
+		/* eARC */
+		audio_earc: bus@fe333000 {
+			compatible = "simple-bus";
+			reg = <0x0 0xfe333000 0x0 0x1000>;
+			#address-cells = <2>;
+			#size-cells = <2>;
+			ranges = <0x0 0x0 0x0 0xfe333000 0x0 0x1000>;
+
+			earc: earc@0 {
+				compatible = "amlogic, s7d-snd-earc";
+				#sound-dai-cells = <0>;
+
+				status = "disabled";
+
+				reg =
+					<0x0 0x800 0x0 0x400>,
+					<0x0 0xc00 0x0 0x200>,
+					<0x0 0xe00 0x0 0x200>;
+				reg-names =
+					"rx_cmdc",
+					"rx_dmac",
+					"rx_top";
+
+				clocks = < &clkaudio CLKID_EARCRX_CMDC
+					&clkaudio CLKID_EARCRX_DMAC
+					&clkc CLKID_FCLK_DIV4
+					&clkc CLKID_FCLK_DIV4
+					>;
+				clock-names =
+					"rx_cmdc",
+					"rx_dmac",
+					"rx_cmdc_srcpll",
+					"rx_dmac_srcpll";
+
+				interrupts = <
+					GIC_SPI 48 IRQ_TYPE_LEVEL_HIGH>;
+				interrupt-names = "earc_rx";
+			};
+		};
+
 		audiobus: audiobus@fe330000 {
 			compatible = "amlogic, audio-controller", "simple-bus";
 			reg = <0x0 0xfe330000 0x0 0x3000>;

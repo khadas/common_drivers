@@ -1611,7 +1611,7 @@ static ssize_t cma_debug_write(struct file *file, const char __user *buffer,
 	struct cma_pcp *work;
 	char *buf;
 
-	buf = kmalloc(count, GFP_KERNEL);
+	buf = kzalloc(count + 1, GFP_KERNEL);
 	if (!buf)
 		return -ENOMEM;
 

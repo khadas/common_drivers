@@ -797,7 +797,7 @@
 		dmxdev_num = <0x11>;
 
 		tsn_from = "demod";
-
+		ts_clone = <0x0>;
 		ts2_sid = <0x12>;
 		ts2 = "parallel";
 		ts2_control = <0x0>;

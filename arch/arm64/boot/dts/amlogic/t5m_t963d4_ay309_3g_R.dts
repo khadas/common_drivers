@@ -1073,7 +1073,7 @@
 		dmxdev_num = <0x11>;
 
 		tsn_from = "demod";
-
+		ts_clone = <0x0>;
 		/*single demod setting */
 		ts1_sid = <0x21>;
 		ts1 = "parallel";

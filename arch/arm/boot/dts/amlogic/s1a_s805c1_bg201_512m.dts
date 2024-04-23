@@ -177,7 +177,7 @@
 		dmxdev_num = <0x5>;
 
 		tsn_from = "demod";
-
+		ts_clone = <0x0>;
 		/*single demod setting BG201 no use TS_INA */
 		/* ts0_sid = <0x10>; */
 		/* ts0 = "serial-4wire"; */

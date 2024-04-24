@@ -325,7 +325,7 @@ static u8 enable_hdmi_delay_normal_check = 1;
 #define HDMI_DELAY_NORMAL_CHECK_COUNT 300
 #define HDMI_VIDEO_MIN_DELAY 3
 
-static u32 force_skip_cnt[MAX_VD_LAYERS];
+static u32 force_skip_cnt[MAX_VD_LAYERS] = {0xff, 0xff, 0xff};
 /* wait queue for poll */
 static wait_queue_head_t amvideo_trick_wait;
 static u32 smooth_sync_enable;

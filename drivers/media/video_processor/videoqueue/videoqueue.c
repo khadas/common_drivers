@@ -719,7 +719,7 @@ static int do_file_thread(struct video_queue_dev *dev)
 	}
 
 	if (dev->unknown_check && vframe_disp_mode == VFRAME_DISP_MODE_UNKNOWN &&
-		dev->frame_skip_check_cnt < 4) {
+		dev->frame_skip_check_cnt < 4 && !dev->game_mode) {
 		vq_print(dev->inst, P_SYNC, "unknown, need wait next vsync\n");
 		dev->frame_skip_check_cnt++;
 		return 0;

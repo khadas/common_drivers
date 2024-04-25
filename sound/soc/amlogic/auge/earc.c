@@ -220,6 +220,10 @@ struct earc {
 	struct work_struct tx_hold_bus_work;
 	struct delayed_work gain_disable;
 	int tx_arc_status;
+	int rx_cs_ready;
+	/* stream ready to read the channel status and audio type */
+	bool stream_stable;
+	struct delayed_work rx_stable_work;
 };
 
 static struct earc *s_earc;
@@ -642,12 +646,13 @@ static irqreturn_t earc_rx_isr(int irq, void *data)
 							p_earc->chipinfo->arc_in_new);
 		}
 
-		if (p_earc->rx_status0 & INT_EARCRX_CMDC_HB_STATUS) {
-			if (p_earc->rx_status1 & INT_ARCRX_BIPHASE_DECODE_C_CHST_MUTE_CLR) {
-				earcrx_err_correction_force_mode(p_earc->rx_dmac_map, true);
-				dev_dbg(p_earc->dev, "INT_ARCRX_BIPHASE_DECODE_C_CHST_MUTE_CLR\n");
-			}
+		if (p_earc->rx_status0 & INT_EARCRX_CMDC_HB_STATUS)
 			dev_dbg(p_earc->dev, "EARCRX_CMDC_HB_STATUS\n");
+		if (p_earc->rx_status1 & INT_ARCRX_BIPHASE_DECODE_C_CHST_MUTE_CLR) {
+			mmio_update_bits(p_earc->rx_dmac_map, EARCRX_ERR_CORRECT_CTRL0,
+				0x3,
+				0x1); /* EARCRX_ERR_CORRECT_CTRL0 force mode enable */
+			dev_info(p_earc->dev, "INT_ARCRX_BIPHASE_DECODE_C_CHST_MUTE_CLR\n");
 		}
 		if (p_earc->rx_status1 & INT_ARCRX_BIPHASE_DECODE_C_FIND_PAPB)
 			dev_dbg(p_earc->dev, "ARCRX_C_FIND_PAPB\n");
@@ -662,12 +667,15 @@ static irqreturn_t earc_rx_isr(int irq, void *data)
 
 			if (p_earc->rx_cs_mute != mute) {
 				p_earc->rx_cs_mute = mute;
-				earcrx_pll_refresh(p_earc->rx_top_map,
-						   RST_BY_SELF, true,
-						   p_earc->chipinfo->arc_in_new);
+				if (!mute) {
+					/* EARCRX_ERR_CORRECT_CTRL0 force mode disable */
+					mmio_update_bits(p_earc->rx_dmac_map,
+						EARCRX_ERR_CORRECT_CTRL0,
+						0x3,
+						0x0);
+				}
+				dev_info(p_earc->dev, "ARCRX_C_CH_STATUS_CHANGE\n");
 			}
-			if (!mute)
-				earcrx_err_correction_force_mode(p_earc->rx_dmac_map, false);
 		}
 		if (p_earc->rx_status1 & INT_ARCRX_BIPHASE_DECODE_I_SAMPLE_MODE_CHANGE)
 			dev_dbg(p_earc->dev, "ARCRX_I_SAMPLE_MODE_CHANGE\n");
@@ -880,7 +888,6 @@ static int earc_open(struct snd_soc_component *component, struct snd_pcm_substre
 		}
 
 		p_earc->fddr = aml_audio_register_frddr(dev,
-			p_earc->actrl,
 			earc_ddr_isr, substream, false);
 		if (!p_earc->fddr) {
 			ret = -ENXIO;
@@ -893,7 +900,6 @@ static int earc_open(struct snd_soc_component *component, struct snd_pcm_substre
 		p_earc->tx_stream_state = SNDRV_PCM_STATE_OPEN;
 	} else {
 		p_earc->tddr = aml_audio_register_toddr(dev,
-			p_earc->actrl,
 			earc_ddr_isr, substream);
 		if (!p_earc->tddr) {
 			ret = -ENXIO;
@@ -1405,6 +1411,8 @@ static int earc_dai_trigger(struct snd_pcm_substream *substream, int cmd,
 			earcrx_enable(p_earc->rx_cmdc_map,
 				      p_earc->rx_dmac_map,
 				      true);
+			p_earc->rx_cs_ready = true;
+			schedule_delayed_work(&p_earc->rx_stable_work, msecs_to_jiffies(100));
 		}
 		break;
 	case SNDRV_PCM_TRIGGER_STOP:
@@ -1425,8 +1433,10 @@ static int earc_dai_trigger(struct snd_pcm_substream *substream, int cmd,
 			aml_frddr_enable(p_earc->fddr, false);
 			p_earc->tx_stream_state = SNDRV_PCM_STATE_DISCONNECTED;
 		} else {
+			p_earc->rx_cs_ready = false;
 			dev_info(substream->pcm->card->dev, "eARC/ARC RX disable\n");
-
+			cancel_delayed_work(&p_earc->rx_stable_work);
+			p_earc->stream_stable = false;
 			earcrx_enable(p_earc->rx_cmdc_map,
 				      p_earc->rx_dmac_map,
 				      false);
@@ -1868,7 +1878,10 @@ int earcrx_get_audio_coding_type(struct snd_kcontrol *kcontrol,
 
 	type = earcrx_cmdc_get_attended_type(p_earc->rx_cmdc_map);
 	spin_lock_irqsave(&p_earc->rx_lock, flags);
-	coding_type = earcrx_get_cs_fmt(p_earc->rx_dmac_map, type);
+	if (p_earc->stream_stable)
+		coding_type = earcrx_get_cs_fmt(p_earc->rx_dmac_map, type);
+	else
+		coding_type = AUDIO_CODING_TYPE_UNDEFINED;
 	spin_unlock_irqrestore(&p_earc->rx_lock, flags);
 
 	ucontrol->value.integer.value[0] = coding_type;
@@ -1889,7 +1902,7 @@ int earcrx_get_freq(struct snd_kcontrol *kcontrol,
 	if (!p_earc || IS_ERR(p_earc->rx_cmdc_map))
 		return 0;
 
-	if (!p_earc->rx_dmac_clk_on)
+	if (!p_earc->rx_cs_ready)
 		return 0;
 
 	type = earcrx_cmdc_get_attended_type(p_earc->rx_cmdc_map);
@@ -1901,6 +1914,32 @@ int earcrx_get_freq(struct snd_kcontrol *kcontrol,
 	spin_unlock_irqrestore(&p_earc->rx_lock, flags);
 
 	ucontrol->value.integer.value[0] = freq;
+
+	return 0;
+}
+
+static int earcrx_get_freq_by_pll(struct snd_kcontrol *kcontrol,
+			struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *component = snd_kcontrol_chip(kcontrol);
+	struct earc *p_earc = dev_get_drvdata(component->dev);
+	int val = 0x7;
+	unsigned long flags;
+
+	if (!p_earc || IS_ERR(p_earc->rx_cmdc_map))
+		return 0;
+
+	spin_lock_irqsave(&p_earc->rx_lock, flags);
+	if (p_earc->rx_dmac_clk_on)
+		val = earcrx_get_sample_rate(p_earc->rx_dmac_map);
+	spin_unlock_irqrestore(&p_earc->rx_lock, flags);
+
+	if (val == 0x7)
+		val = 0;
+	else
+		val += 1;
+
+	ucontrol->value.integer.value[0] = val;
 
 	return 0;
 }
@@ -2191,20 +2230,23 @@ static int earcrx_get_iec958(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component = snd_kcontrol_chip(kcontrol);
 	struct earc *p_earc = dev_get_drvdata(component->dev);
 	unsigned long flags;
-	int cs = 0;
+	int cs = 0, i;
 
 	if (!p_earc || IS_ERR(p_earc->rx_dmac_map))
 		return 0;
 
 	spin_lock_irqsave(&p_earc->rx_lock, flags);
-	if (p_earc->rx_dmac_clk_on)
-		cs = earcrx_get_cs_iec958(p_earc->rx_dmac_map);
-	spin_unlock_irqrestore(&p_earc->rx_lock, flags);
+	if (p_earc->rx_dmac_clk_on) {
+		for (i = 0; i < 6; i++) {
+			cs = earcrx_get_cs_iec958(p_earc->rx_dmac_map, i);
 
-	ucontrol->value.iec958.status[0] = (cs >> 0) & 0xff;
-	ucontrol->value.iec958.status[1] = (cs >> 8) & 0xff;
-	ucontrol->value.iec958.status[2] = (cs >> 16) & 0xff;
-	ucontrol->value.iec958.status[3] = (cs >> 24) & 0xff;
+			ucontrol->value.iec958.status[i * 4] = (cs >> 0) & 0xff;
+			ucontrol->value.iec958.status[i * 4 + 1] = (cs >> 8) & 0xff;
+			ucontrol->value.iec958.status[i * 4 + 2] = (cs >> 16) & 0xff;
+			ucontrol->value.iec958.status[i * 4 + 3] = (cs >> 24) & 0xff;
+		}
+	}
+	spin_unlock_irqrestore(&p_earc->rx_lock, flags);
 
 	dev_info(p_earc->dev,
 		"x get[AES0=%#x AES1=%#x AES2=%#x AES3=%#x]\n",
@@ -2665,6 +2707,11 @@ static const struct snd_kcontrol_new earc_rx_controls[] = {
 		       earcrx_get_freq,
 		       NULL),
 
+	SOC_ENUM_EXT("eARC_RX Audio Sample Frequency by pll",
+				spdifin_sample_rate_enum,
+				earcrx_get_freq_by_pll,
+				NULL),
+
 	SOC_SINGLE_EXT("eARC_RX Audio Word Length",
 		       0, 0, 32, 0,
 		       earcrx_get_word_length,
@@ -2995,6 +3042,14 @@ static void earc_work_func(struct work_struct *work)
 	}
 }
 
+static void rx_stable_work_func(struct work_struct *p_work)
+{
+	struct earc *p_earc = container_of(to_delayed_work(p_work),
+			struct earc, rx_stable_work);
+
+	p_earc->stream_stable = true;
+}
+
 static int earc_platform_probe(struct platform_device *pdev)
 {
 	struct device_node *node = pdev->dev.of_node;
@@ -3209,6 +3264,7 @@ static int earc_platform_probe(struct platform_device *pdev)
 			p_earc->rx_cds_data[i] = default_rx_cds[i];
 		if (earcrx_cmdc_get_attended_type(p_earc->rx_cmdc_map) == ATNDTYP_EARC)
 			earcrx_cmdc_set_cds(p_earc->rx_cmdc_map, p_earc->rx_cds_data);
+		INIT_DELAYED_WORK(&p_earc->rx_stable_work, rx_stable_work_func);
 	}
 	dev_err(dev, "registered eARC platform\n");
 

@@ -296,7 +296,7 @@ void earcrx_dmac_init(struct regmap *top_map,
 			 (0x0 << 11) | /* earcrx_user_bit_check c_fifo_thd_pass */
 			 (0x0 << 10) | /* earcrx_user_bit_check c_u_pk_lost_int_set */
 			 (0x0 << 9)	| /* arcrx_user_bit_check c_iu_pk_end */
-			 (0x0 << 8)	| /* arcrx_biphase_decode c_chst_mute_clr */
+			 (0x1 << 8)	| /* arcrx_biphase_decode c_chst_mute_clr */
 			 (0x1 << 7)	| /* arcrx_biphase_decode c_find_papb */
 			 (0x1 << 6)	| /* arcrx_biphase_decode c_valid_change */
 			 (0x0 << 5)	| /* arcrx_biphase_decode c_find_nonpcm2pcm */
@@ -419,8 +419,8 @@ static void earcrx_mute_block_enable(struct regmap *dmac_map, bool en)
 	mmio_update_bits(dmac_map,
 			 EARCRX_SPDIFIN_CTRL1,
 			 0x7fff << 9,
-			 0x500 << 12 | /* thd */
-			 0x4 << 9      /* tick, 1ms */
+			 0x1 << 12 | /* thd */
+			 0x0 << 9      /* tick, 1ms */
 	);
 
 	/* Mute bit in CS
@@ -430,7 +430,7 @@ static void earcrx_mute_block_enable(struct regmap *dmac_map, bool en)
 	mmio_update_bits(dmac_map,
 			 EARCRX_SPDIFIN_CTRL2,
 			 0x7fff << 17,
-			 IEC_CS_MUTE_OFFSET | 0x2 << 19 | en << 17
+			 IEC_CS_MUTE_OFFSET << 24 | 0x1 << 19 | en << 17
 	);
 }
 
@@ -479,11 +479,9 @@ static unsigned int earcrx_get_cs_bits(struct regmap *dmac_map,
 	return cs_a;
 }
 
-unsigned int earcrx_get_cs_iec958(struct regmap *dmac_map)
+unsigned int earcrx_get_cs_iec958(struct regmap *dmac_map, int offset)
 {
-	/* channel status A/B bits [31 - 0]*/
-	return earcrx_get_cs_bits(dmac_map,
-		0x0, 0xffffffff);
+	return earcrx_get_cs_bits(dmac_map, offset * 32, 0xffffffff);
 }
 
 unsigned int earcrx_get_cs_layout(struct regmap *dmac_map)
@@ -2017,6 +2015,30 @@ void earctx_dmac_force_mode(struct regmap *dmac_map, bool enable)
 		mmio_write(dmac_map, EARCTX_DMAC_TOP_CTRL0, 0xe);
 	else
 		mmio_write(dmac_map, EARCTX_DMAC_TOP_CTRL0, 0);
+}
+
+int earcrx_get_sample_rate(struct regmap *dmac_map)
+{
+	unsigned int val;
+	/*EE_AUDIO_SPDIFIN_STAT0*/
+	/*r_width_max bit17:8 (the max width of two edge;)*/
+	unsigned int max_width = 0;
+
+	val = mmio_read(dmac_map, EARCRX_SPDIFIN_SAMPLE_STAT0);
+
+	/* NA when check min width of two edges */
+	if (((val >> 18) & 0x3ff) == 0x3ff)
+		return 7;
+
+	/*check the max width of two edge when spdifin sr=32kHz*/
+	/*if max_width is more than 0x2f0(magic number),*/
+	/*sr(32kHz) is unavailable*/
+	max_width = ((val >> 8) & 0x3ff);
+
+	if ((((val >> 28) & 0x7) == 0) && max_width == 0x3ff)
+		return 7;
+
+	return (val >> 28) & 0x7;
 }
 
 void earcrx_err_correction_force_mode(struct regmap *dmac_map, bool enable)

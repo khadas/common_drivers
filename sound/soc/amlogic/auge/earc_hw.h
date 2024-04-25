@@ -253,7 +253,7 @@ void earcrx_dmac_init(struct regmap *top_map,
 		      bool chnum_mult_mode,
 		      bool arc_ch_sync);
 void earcrx_arc_init(struct regmap *dmac_map);
-unsigned int earcrx_get_cs_iec958(struct regmap *dmac_map);
+unsigned int earcrx_get_cs_iec958(struct regmap *dmac_map, int offset);
 unsigned int earcrx_get_cs_ca(struct regmap *dmac_map);
 unsigned int earcrx_get_cs_mute(struct regmap *dmac_map);
 unsigned int earcrx_get_cs_fmt(struct regmap *dmac_map, enum attend_type type);
@@ -337,5 +337,6 @@ u8 earcrx_cmdc_get_rx_stat_bits(struct regmap *cmdc_map);
 void earctx_cmdc_earc_mode(struct regmap *cmdc_map, bool enable);
 void earctx_dmac_hold_bus_and_mute(struct regmap *dmac_map, bool enable);
 void earctx_dmac_force_mode(struct regmap *dmac_map, bool enable);
+int earcrx_get_sample_rate(struct regmap *dmac_map);
 void earcrx_err_correction_force_mode(struct regmap *dmac_map, bool enable);
 #endif

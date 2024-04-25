@@ -143,18 +143,6 @@ static const struct snd_pcm_hardware aml_spdif_hardware = {
 	.channels_max = 32,
 };
 
-/* current sample mode and its sample rate */
-static const char *const spdifin_samplerate[] = {
-	"N/A",
-	"32000",
-	"44100",
-	"48000",
-	"88200",
-	"96000",
-	"176400",
-	"192000"
-};
-
 static void aml_spdif_out_reset(unsigned int spdif_id)
 {
 	aml_audio_reset(spdif_priv[spdif_id]->chipinfo->out_reset_reg_offset,
@@ -460,11 +448,6 @@ static int spdifin_samplerate_get_enum(struct snd_kcontrol *kcontrol,
 
 	return 0;
 }
-
-static const struct soc_enum spdifin_sample_rate_enum[] = {
-	SOC_ENUM_SINGLE(SND_SOC_NOPM, 0, ARRAY_SIZE(spdifin_samplerate),
-			spdifin_samplerate),
-};
 
 static const struct soc_enum spdif_audio_type_enum =
 	SOC_ENUM_SINGLE(SND_SOC_NOPM, 0, ARRAY_SIZE(audio_type_texts),
@@ -1070,7 +1053,6 @@ static int aml_spdif_open(struct snd_soc_component *component,
 			release_spdif_same_src(p_spdif, substream);
 
 		p_spdif->fddr = aml_audio_register_frddr(dev,
-			p_spdif->actrl,
 			aml_spdif_ddr_isr, substream, false);
 		if (!p_spdif->fddr) {
 			ret = -ENXIO;
@@ -1079,7 +1061,6 @@ static int aml_spdif_open(struct snd_soc_component *component,
 		}
 	} else {
 		p_spdif->tddr = aml_audio_register_toddr(dev,
-			p_spdif->actrl,
 			aml_spdif_ddr_isr, substream);
 		if (!p_spdif->tddr) {
 			ret = -ENXIO;

@@ -113,7 +113,6 @@ static irqreturn_t aml_ddr_isr(int irq, void *devid)
 
 /* to DDRS */
 static struct toddr *register_toddr_l(struct device *dev,
-	struct aml_audio_controller *actrl,
 	irq_handler_t handler, void *data)
 {
 	struct toddr *to;
@@ -217,14 +216,12 @@ struct toddr *fetch_toddr_by_src(int toddr_src)
 }
 
 struct toddr *aml_audio_register_toddr(struct device *dev,
-	struct aml_audio_controller *actrl,
 	irq_handler_t handler, void *data)
 {
 	struct toddr *to = NULL;
 
 	mutex_lock(&ddr_mutex);
-	to = register_toddr_l(dev, actrl,
-		handler, data);
+	to = register_toddr_l(dev, handler, data);
 	mutex_unlock(&ddr_mutex);
 	return to;
 }
@@ -363,6 +360,9 @@ unsigned int aml_toddr_get_addr(struct toddr *to, enum status_sel sel)
 	return addr;
 }
 
+static void aml_toddr_chsync_enable(int fifo_id,
+		int chnum_max, bool enable);
+
 void aml_toddr_enable(struct toddr *to, bool enable)
 {
 	struct aml_audio_controller *actrl = to->actrl;
@@ -390,6 +390,7 @@ void aml_toddr_enable(struct toddr *to, bool enable)
 		/* clear ctrl1 register */
 		reg = calc_toddr_address(EE_AUDIO_TODDR_A_CTRL1, reg_base);
 		aml_audiobus_write(actrl, reg, 0x0);
+		aml_toddr_chsync_enable(to->fifo_id, 0, 0);
 	}
 }
 
@@ -1198,7 +1199,6 @@ static void aml_check_vad(struct toddr *to, bool enable)
 
 /* from DDRS */
 static struct frddr *register_frddr_l(struct device *dev,
-	struct aml_audio_controller *actrl,
 	irq_handler_t handler, void *data, bool rvd_dst)
 {
 	struct frddr *from;
@@ -1307,13 +1307,12 @@ struct frddr *fetch_frddr_by_src(int frddr_src)
 }
 
 struct frddr *aml_audio_register_frddr(struct device *dev,
-	struct aml_audio_controller *actrl,
 	irq_handler_t handler, void *data, bool rvd_dst)
 {
 	struct frddr *fr = NULL;
 
 	mutex_lock(&ddr_mutex);
-	fr = register_frddr_l(dev, actrl, handler, data, rvd_dst);
+	fr = register_frddr_l(dev, handler, data, rvd_dst);
 	mutex_unlock(&ddr_mutex);
 	return fr;
 }

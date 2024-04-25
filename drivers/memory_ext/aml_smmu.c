@@ -1267,6 +1267,8 @@ static unsigned long get_max_pfn(void)
 	return end_pfn;
 }
 
+static struct reserved_mem *g_rmem1;
+
 static int __nocfi aml_smmu_symbol_init(void *data)
 {
 	int ret;
@@ -1358,6 +1360,7 @@ static int __nocfi aml_smmu_symbol_init(void *data)
 		return -1;
 	}
 
+	g_rmem1 = rmem;
 	pcie_swiotlb_init(dev);
 	aml_dma_atomic_pool_init(dev);
 
@@ -1403,10 +1406,33 @@ static int aml_smmu_device_remove(struct platform_device *pdev)
 	return 0;
 }
 
-static void aml_smmu_device_shutdown(struct platform_device *pdev)
+#if CONFIG_PM_SLEEP
+static int aml_smmu_device_resume_noirq(struct device *dev)
 {
-	aml_smmu_device_remove(pdev);
+	int ret = 0;
+	u32 handle;
+
+	if (g_rmem1) {
+		dev_info(dev, "tee protect memory: %lu MiB at 0x%lx\n",
+			(unsigned long)g_rmem1->size / SZ_1M, (unsigned long)g_rmem1->base);
+		ret = aml_tee_protect_mem_by_type(TEE_MEM_TYPE_PCIE,
+						  g_rmem1->base, g_rmem1->size, &handle);
+		if (ret) {
+			dev_err(dev, "pcie tee mem protect fail: 0x%x\n", ret);
+			return -1;
+			}
+	} else {
+		dev_err(dev, "Can't get reserve memory region\n");
+		return -1;
+	}
+
+	return 0;
 }
+
+static const struct dev_pm_ops aml_smmu_pm_ops = {
+	.restore_noirq = aml_smmu_device_resume_noirq,
+};
+#endif
 
 static const struct of_device_id aml_smmu_of_match[] = {
 	{ .compatible = "amlogic,smmu", },
@@ -1419,10 +1445,12 @@ static struct platform_driver aml_smmu_driver = {
 		.name			= "aml_smmu",
 		.of_match_table		= of_match_ptr(aml_smmu_of_match),
 		.suppress_bind_attrs	= true,
+#if CONFIG_PM_SLEEP
+		.pm = &aml_smmu_pm_ops,
+#endif
 	},
 	.probe	= aml_smmu_device_probe,
 	.remove	= aml_smmu_device_remove,
-	.shutdown = aml_smmu_device_shutdown,
 };
 
 //module_platform_driver(aml_smmu_driver);

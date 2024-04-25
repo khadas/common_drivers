@@ -582,6 +582,37 @@ struct ve_ble_whe_param_s {
 	int brt_slp;
 };
 
+struct db_aicolor_param_s {
+	int reg_sat_s_gain_en;
+	int reg_sat_l_gain_en;
+	int reg_sat_adj_a;
+	int reg_sat_prt;
+	int reg_sat_prt_p;
+	int reg_sat_prt_th;
+
+	int reg_zero;
+	int reg_sat_adj;
+	int reg_sat_shift;
+	int reg_skin_th;
+	int reg_skin_shift;
+	int reg_skin_adj;
+
+	int reg_hue_left1;
+	int reg_hue_right1;
+	int reg_hue_adj1;
+	int reg_hue_shift1;
+
+	int reg_hue_left2;
+	int reg_hue_right2;
+	int reg_hue_adj2;
+	int reg_hue_shift2;
+
+	int reg_hue_left3;
+	int reg_hue_right3;
+	int reg_hue_adj3;
+	int reg_hue_shift3;
+};
+
 #define AMVECM_IOC_G_HIST_AVG			_IOW(_VE_CM, 0x22, struct ve_hist_s)
 #define AMVECM_IOC_VE_DNLP_EN			_IO(_VE_CM, 0x23)
 #define AMVECM_IOC_VE_DNLP_DIS			_IO(_VE_CM, 0x24)
@@ -672,6 +703,7 @@ struct ve_ble_whe_param_s {
 #define AMVECM_IOC_GAMMA_TABLE_G_SUB _IOW(_VE_CM, 0x89, struct tcon_gamma_table_s)
 #define AMVECM_IOC_GAMMA_TABLE_B_SUB _IOW(_VE_CM, 0x8a, struct tcon_gamma_table_s)
 #define AMVECM_IOC_AI_COLOR_EN			_IO(_VE_CM, 0x8b)
+#define AMVECM_IOC_S_AI_COLOR_PARAM  _IOW(_VE_CM, 0x8c, struct db_aicolor_param_s)
 
 
 #endif

@@ -101,6 +101,121 @@ struct sa_param_s sa_parm = {
 	.sa_fw_param = &sa_fw_parm
 };
 
+void db_aicolor_param_set(struct db_aicolor_param_s *db_aicolor_param_data)
+{
+	if (!db_aicolor_param_data) {
+		pr_info("db_aicolor_param_data is NULL\n");
+		return;
+	}
+
+	if (ai_clr_dbg) {
+		pr_info("data from user reg_sat_s_gain_en = %d\n",
+			db_aicolor_param_data->reg_sat_s_gain_en);
+		pr_info("data from user reg_sat_l_gain_en = %d\n",
+			db_aicolor_param_data->reg_sat_l_gain_en);
+		pr_info("data from user reg_sat_adj_a = %d\n",
+			db_aicolor_param_data->reg_sat_adj_a);
+		pr_info("data from user reg_sat_prt = %d\n",
+			db_aicolor_param_data->reg_sat_prt);
+		pr_info("data from user reg_sat_prt_p = %d\n",
+			db_aicolor_param_data->reg_sat_prt_p);
+		pr_info("data from user reg_sat_prt_th = %d\n",
+			db_aicolor_param_data->reg_sat_prt_th);
+		pr_info("data from user reg_zero = %d\n",
+			db_aicolor_param_data->reg_zero);
+		pr_info("data from user reg_sat_adj = %d\n",
+			db_aicolor_param_data->reg_sat_adj);
+		pr_info("data from user reg_sat_shift = %d\n",
+			db_aicolor_param_data->reg_sat_shift);
+		pr_info("data from user reg_skin_th = %d\n",
+			db_aicolor_param_data->reg_skin_th);
+		pr_info("data from user reg_skin_shift = %d\n",
+			db_aicolor_param_data->reg_skin_shift);
+		pr_info("data from user reg_skin_adj = %d\n",
+			db_aicolor_param_data->reg_skin_adj);
+
+		pr_info("data from user reg_hue_left1 = %d\n",
+			db_aicolor_param_data->reg_hue_left1);
+		pr_info("data from user reg_hue_right1 = %d\n",
+			db_aicolor_param_data->reg_hue_right1);
+		pr_info("data from user reg_hue_adj1 = %d\n",
+			db_aicolor_param_data->reg_hue_adj1);
+		pr_info("data from user reg_hue_shift1 = %d\n",
+			db_aicolor_param_data->reg_hue_shift1);
+		pr_info("data from user reg_hue_left2 = %d\n",
+			db_aicolor_param_data->reg_hue_left2);
+		pr_info("data from user reg_hue_right2 = %d\n",
+			db_aicolor_param_data->reg_hue_right2);
+
+		pr_info("data from user reg_hue_adj2 = %d\n",
+			db_aicolor_param_data->reg_hue_adj2);
+		pr_info("data from user reg_hue_shift2 = %d\n",
+			db_aicolor_param_data->reg_hue_shift2);
+		pr_info("data from user reg_hue_left3 = %d\n",
+			db_aicolor_param_data->reg_hue_left3);
+		pr_info("data from user reg_hue_right3 = %d\n",
+			db_aicolor_param_data->reg_hue_right3);
+		pr_info("data from user reg_hue_adj3 = %d\n",
+			db_aicolor_param_data->reg_hue_adj3);
+		pr_info("data from user reg_hue_shift3 = %d\n",
+			db_aicolor_param_data->reg_hue_shift3);
+	}
+
+	sa_adj_parm.reg_sat_s_gain_en =
+		db_aicolor_param_data->reg_sat_s_gain_en;
+	sa_adj_parm.reg_sat_l_gain_en =
+		db_aicolor_param_data->reg_sat_l_gain_en;
+	sa_adj_parm.reg_sat_adj_a =
+		db_aicolor_param_data->reg_sat_adj_a;
+	sa_adj_parm.reg_sat_prt =
+		db_aicolor_param_data->reg_sat_prt;
+	sa_adj_parm.reg_sat_prt_p =
+		db_aicolor_param_data->reg_sat_prt_p;
+	sa_adj_parm.reg_sat_prt_th =
+		db_aicolor_param_data->reg_sat_prt_th;
+
+	sa_fw_parm.reg_zero =
+		db_aicolor_param_data->reg_zero;
+	sa_fw_parm.reg_sat_adj =
+		db_aicolor_param_data->reg_sat_adj;
+	sa_fw_parm.reg_sat_shift =
+		db_aicolor_param_data->reg_sat_shift;
+
+	sa_fw_parm.reg_skin_th =
+		db_aicolor_param_data->reg_skin_th;
+	sa_fw_parm.reg_skin_shift =
+		db_aicolor_param_data->reg_skin_shift;
+	sa_fw_parm.reg_skin_adj =
+		db_aicolor_param_data->reg_skin_adj;
+
+	sa_fw_parm.reg_hue_left1 =
+		db_aicolor_param_data->reg_hue_left1;
+	sa_fw_parm.reg_hue_right1 =
+		db_aicolor_param_data->reg_hue_right1;
+	sa_fw_parm.reg_hue_adj1 =
+		db_aicolor_param_data->reg_hue_adj1;
+	sa_fw_parm.reg_hue_shift1 =
+		db_aicolor_param_data->reg_hue_shift1;
+
+	sa_fw_parm.reg_hue_left2 =
+		db_aicolor_param_data->reg_hue_left2;
+	sa_fw_parm.reg_hue_right2 =
+		db_aicolor_param_data->reg_hue_right2;
+	sa_fw_parm.reg_hue_adj2 =
+		db_aicolor_param_data->reg_hue_adj2;
+	sa_fw_parm.reg_hue_shift2 =
+		db_aicolor_param_data->reg_hue_shift2;
+
+	sa_fw_parm.reg_hue_left3  =
+		db_aicolor_param_data->reg_hue_left3;
+	sa_fw_parm.reg_hue_right3  =
+		db_aicolor_param_data->reg_hue_right3;
+	sa_fw_parm.reg_hue_adj3  =
+		db_aicolor_param_data->reg_hue_adj3;
+	sa_fw_parm.reg_hue_shift3  =
+		db_aicolor_param_data->reg_hue_shift3;
+}
+
 void hue_adj(int *sg_lut, int *hueleft,
 	int *hueright, int *hueadj, int *hueshift)
 {
@@ -372,6 +487,35 @@ void ai_clr_config(int enable, int vpp_index)
 	val = (1 << 8) | (enable << 0);
 	for (i = 0; i < s5_slice_mode; i++)
 		VSYNC_WRITE_VPP_REG_EX_VPP_SEL(SA_CTRL + aice_offset[i], val, 0, vpp_index);
+}
+
+void ai_color_parm_show(void)
+{
+	pr_info("sat_s_gain_en = %d\n", sa_adj_parm.reg_sat_s_gain_en);
+	pr_info("sat_l_gain_en = %d\n", sa_adj_parm.reg_sat_l_gain_en);
+	pr_info("reg_sat_adj_a = %d\n", sa_adj_parm.reg_sat_adj_a);
+	pr_info("reg_sat_prt = %d\n", sa_adj_parm.reg_sat_prt);
+	pr_info("reg_sat_prt_p = %d\n", sa_adj_parm.reg_sat_prt_p);
+	pr_info("reg_sat_prt_th = %d\n", sa_adj_parm.reg_sat_prt_th);
+	pr_info("\n");
+	pr_info("reg_zero = %d\n", sa_fw_parm.reg_zero);
+	pr_info("reg_sat_adj = %d\n", sa_fw_parm.reg_sat_adj);
+	pr_info("reg_sat_shift = %d\n", sa_fw_parm.reg_sat_shift);
+	pr_info("reg_skin_th = %d\n", sa_fw_parm.reg_skin_th);
+	pr_info("reg_skin_shift = %d\n", sa_fw_parm.reg_skin_shift);
+	pr_info("reg_skin_adj = %d\n", sa_fw_parm.reg_skin_adj);
+	pr_info("reg_hue_left1 = %d\n", sa_fw_parm.reg_hue_left1);
+	pr_info("reg_hue_right1 = %d\n", sa_fw_parm.reg_hue_right1);
+	pr_info("reg_hue_adj1 = %d\n", sa_fw_parm.reg_hue_adj1);
+	pr_info("reg_hue_shift1 = %d\n", sa_fw_parm.reg_hue_shift1);
+	pr_info("reg_hue_left2 = %d\n", sa_fw_parm.reg_hue_left2);
+	pr_info("reg_hue_right2 = %d\n", sa_fw_parm.reg_hue_right2);
+	pr_info("reg_hue_adj2 = %d\n", sa_fw_parm.reg_hue_adj2);
+	pr_info("reg_hue_shift2 = %d\n", sa_fw_parm.reg_hue_shift2);
+	pr_info("reg_hue_left3 = %d\n", sa_fw_parm.reg_hue_left3);
+	pr_info("reg_hue_right3 = %d\n", sa_fw_parm.reg_hue_right3);
+	pr_info("reg_hue_adj3 = %d\n", sa_fw_parm.reg_hue_adj3);
+	pr_info("reg_hue_shift3 = %d\n", sa_fw_parm.reg_hue_shift3);
 }
 
 int ai_color_debug_store(char **parm)

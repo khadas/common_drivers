@@ -3309,6 +3309,7 @@ static long amvecm_ioctl(struct file *file,
 	struct ve_ble_whe_param_s ble_whe;
 	struct color_param_s ct_parm1;
 	struct color_tune_parm_s ct_param;
+	struct db_aicolor_param_s db_aicolor_param;
 #endif
 
 	if (debug_amvecm & 2)
@@ -4326,6 +4327,17 @@ static long amvecm_ioctl(struct file *file,
 			ai_color_enable = tmp;
 			pr_amvecm_dbg("ai_color_enable set success, ai_color_enable=%d\n",
 				ai_color_enable);
+		}
+		break;
+	case AMVECM_IOC_S_AI_COLOR_PARAM:
+		if (copy_from_user(&db_aicolor_param,
+			(void __user *)arg,
+			sizeof(struct db_aicolor_param_s))) {
+			ret = -EFAULT;
+			pr_amvecm_dbg("db_aicolor_param copy from user fail\n");
+		} else {
+			db_aicolor_param_set(&db_aicolor_param);
+			pr_amvecm_dbg("db_aicolor_param set success\n");
 		}
 		break;
 #endif
@@ -7470,10 +7482,34 @@ static ssize_t amvecm_hdr_dbg_store(struct class *cla,
 	}
 
 	hdr10_tmo_dbg(parm);
-	ai_color_debug_store(parm);
 
 free_buf:
 	kfree(stemp);
+	kfree(buf_orig);
+	return count;
+}
+
+static ssize_t amvecm_ai_color_show(struct class *cla,
+				   struct class_attribute *attr,
+				   char *buf)
+{
+	ai_color_parm_show();
+	return 0;
+}
+
+static ssize_t amvecm_ai_color_store(struct class *cla,
+				    struct class_attribute *attr,
+				    const char *buf, size_t count)
+{
+	char *buf_orig, *parm[5] = {NULL};
+
+	if (!buf)
+		return count;
+
+	buf_orig = kstrdup(buf, GFP_KERNEL);
+	parse_param_amvecm(buf_orig, (char **)&parm);
+
+	ai_color_debug_store(parm);
 	kfree(buf_orig);
 	return count;
 }
@@ -13183,6 +13219,8 @@ static struct class_attribute amvecm_class_attrs[] = {
 	       amvecm_dump_vpp_hist_show, amvecm_dump_vpp_hist_store),
 	__ATTR(hdr_dbg, 0644,
 	       amvecm_hdr_dbg_show, amvecm_hdr_dbg_store),
+	 __ATTR(ai_color, 0644,
+	       amvecm_ai_color_show, amvecm_ai_color_store),
 	__ATTR(hdr_reg, 0644,
 	       amvecm_hdr_reg_show, amvecm_hdr_reg_store),
 	__ATTR(hdr_tmo, 0644,

@@ -182,7 +182,7 @@ static void vrr_lcd_enable(struct aml_vrr_drv_s *vdrv, unsigned int mode)
 	}
 
 	offset = vdrv->data->offset[vdrv->index];
-	line_dly = vdrv->line_dly;
+	line_dly = vdrv->line_dly + crop_line;
 	if (vdrv->lfc_en) {
 		v_max = vdrv->adj_vline_max;
 		v_min = vdrv->adj_vline_min;
@@ -410,6 +410,7 @@ void vrr_crop_update_delay_line(u32 line, u8 vpp_index)
 	struct aml_vrr_drv_s *vdrv = NULL;
 
 	vdrv = aml_vrr_drv_active_sel();
+	crop_line = line;
 
 	if (!vdrv) {
 		if (vrr_debug_print & VRR_DBG_PR_NORMAL)
@@ -423,7 +424,7 @@ void vrr_crop_update_delay_line(u32 line, u8 vpp_index)
 		return;
 	}
 
-	crop_line = line;
+	//crop_line = line;
 	vrr_vpp_index = vpp_index;
 
 	if (crop_line != pre_line)

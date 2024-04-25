@@ -942,30 +942,12 @@ int aml_pdm_dai_startup(struct snd_pcm_substream *substream,
 
 	/* enable clock gate */
 	ret = clk_prepare_enable(p_pdm->clk_gate);
-
-	/* enable clock */
-	ret = clk_prepare_enable(p_pdm->sysclk_srcpll);
 	if (ret) {
-		pr_err("Can't enable pcm sysclk_srcpll clock: %d\n", ret);
-		goto err;
-	}
-
-	ret = clk_prepare_enable(p_pdm->dclk_srcpll);
-	if (ret) {
-		pr_err("Can't enable pcm dclk_srcpll clock: %d\n", ret);
-		goto err;
-	}
-
-	ret = clk_prepare_enable(p_pdm->clk_pdm_sysclk);
-	if (ret) {
-		pr_err("Can't enable pcm clk_pdm_sysclk clock: %d\n", ret);
-		goto err;
+		pr_err("Can't enable pcm clk_gate: %d\n", ret);
+		return -EINVAL;
 	}
 
 	return 0;
-err:
-	pr_err("failed enable clock\n");
-	return -EINVAL;
 }
 
 void aml_pdm_dai_shutdown(struct snd_pcm_substream *substream,
@@ -984,8 +966,6 @@ void aml_pdm_dai_shutdown(struct snd_pcm_substream *substream,
 	/* disable clock and gate */
 	clk_disable_unprepare(p_pdm->clk_pdm_dclk);
 	clk_disable_unprepare(p_pdm->clk_pdm_sysclk);
-	clk_disable_unprepare(p_pdm->sysclk_srcpll);
-	clk_disable_unprepare(p_pdm->dclk_srcpll);
 	clk_disable_unprepare(p_pdm->clk_gate);
 }
 

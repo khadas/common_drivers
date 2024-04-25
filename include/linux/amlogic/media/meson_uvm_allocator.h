@@ -45,6 +45,7 @@ enum mua_debug_mask {
 #define MUA_ERROR       BIT(MUA_DEBUG_LEVEL_ERROR)
 #define MUA_INFO        BIT(MUA_DEBUG_LEVEL_INFO)
 #define MUA_DBG         BIT(MUA_DEBUG_LEVEL_DBG)
+#define MAX_PIPE_LINE	10
 
 struct mua_buffer {
 	struct uvm_buf_obj base;
@@ -68,6 +69,10 @@ struct mua_buffer {
 struct mua_device {
 	struct miscdevice dev;
 	struct rb_root root;
+	struct dma_buf *dummy_dmabuf[MAX_PIPE_LINE];
+	u32 dummy_dmabuf_w[MAX_PIPE_LINE];
+	u32 dummy_dmabuf_h[MAX_PIPE_LINE];
+	struct kref dummy_dmabuf_ref[MAX_PIPE_LINE];
 
 	struct mutex buffer_lock; /* dev mutex */
 	int pid;

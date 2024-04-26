@@ -82,12 +82,14 @@ void frc_fw_initial(struct frc_dev_s *devp)
 
 	devp->in_sts.vs_cnt = 0;
 	devp->in_sts.vs_tsk_cnt = 0;
+	devp->in_sts.lost_tsk_cnt = 0;
 	devp->in_sts.vs_timestamp = sched_clock();
 	devp->in_sts.vf_repeat_cnt = 0;
 	devp->in_sts.vf_null_cnt = 0;
 
 	devp->out_sts.vs_cnt = 0;
 	devp->out_sts.vs_tsk_cnt = 0;
+	devp->out_sts.lost_tsk_cnt = 0;
 	devp->out_sts.vs_timestamp = sched_clock();
 	devp->in_sts.vf = NULL;
 	// devp->frc_sts.vs_cnt = 0;
@@ -249,11 +251,14 @@ void frc_isr_print_zero(struct frc_dev_s *devp)
 	devp->in_sts.vs_timestamp = 0;
 	devp->in_sts.vs_cnt = 0;
 	devp->in_sts.vs_tsk_cnt = 0;
+	devp->in_sts.lost_tsk_cnt = 0;
 
 	devp->out_sts.vs_duration = 0;
 	devp->out_sts.vs_timestamp = 0;
 	devp->out_sts.vs_cnt = 0;
 	devp->out_sts.vs_tsk_cnt = 0;
+	devp->out_sts.lost_tsk_cnt = 0;
+
 	devp->frc_sts.vs_cnt = 0;
 	devp->frc_sts.video_mute_cnt = 0;
 	devp->frc_sts.vs_data_cnt = 0;
@@ -300,8 +305,13 @@ irqreturn_t frc_input_isr(int irq, void *dev_id)
 	if (devp->clk_state == FRC_CLOCK_OFF)
 		return IRQ_HANDLED;
 
+	if (devp->in_sts.vs_cnt - devp->in_sts.vs_tsk_cnt >
+			devp->in_sts.lost_tsk_cnt) {
+		devp->in_sts.lost_tsk_cnt =
+			devp->in_sts.vs_cnt - devp->in_sts.vs_tsk_cnt;
+			PR_FRC("in_isr_task was missing\n");
+	}
 	devp->in_sts.vs_cnt++;
-
 	/*update vs time*/
 	timestamp = div64_u64(timestamp, 1000);
 	devp->in_sts.vs_duration = timestamp - devp->in_sts.vs_timestamp;
@@ -355,6 +365,7 @@ void frc_input_tasklet_pro(unsigned long arg)
 	iotrace_misc_record_write(RECORD_TYPE_FRC_INPUT_IN, 0, 0, 0);
 #endif
 	devp->in_sts.vs_tsk_cnt++;
+
 	if (!devp->frc_fw_pause) {
 		timestamp = sched_clock();
 		if (pfw_data->memc_in_irq_handler)
@@ -380,7 +391,12 @@ irqreturn_t frc_output_isr(int irq, void *dev_id)
 
 	u64 timestamp = sched_clock();
 	// struct frc_rdma_info *frc_rdma = frc_get_rdma_info();
-
+	if (devp->out_sts.vs_cnt - devp->out_sts.vs_tsk_cnt >
+			devp->out_sts.lost_tsk_cnt) {
+		devp->out_sts.lost_tsk_cnt =
+			devp->out_sts.vs_cnt - devp->out_sts.vs_tsk_cnt;
+			PR_FRC("out_isr_task was missing\n");
+	}
 	devp->out_sts.vs_cnt++;
 	/*update vs time*/
 	timestamp = div64_u64(timestamp, 1000);

@@ -115,14 +115,15 @@
 // frc_20240116 frc rdma process optimisation
 // frc_20240306 high-priority task and timestamp debug
 // frc_20240312 frc protect badedit effect
-// frc_2024-0319 frc sync alg macro
-// frc_2024-0315 buf num configure
-// frc_2024-0325 frc sync motion from drv
-// frc_2024-0407 frc modify urgent control
-// frc_2024-0417 frc add debug setting for T5M user
+// frc_20240319 frc sync alg macro
+// frc_20240315 buf num configure
+// frc_20240325 frc sync motion from drv
+// frc_20240407 frc modify urgent control
+// frc_20240417 frc add debug setting for T5M user
+// frc_20240405 fix pps adapt abnormal
 
-#define FRC_FW_VER			"2024-0405 fix pps adapt abnormal"
-#define FRC_KERDRV_VER                  3500
+#define FRC_FW_VER			"2024-0428 frc add lost task info when working"
+#define FRC_KERDRV_VER		3500
 
 #define FRC_DEVNO	1
 #define FRC_NAME	"frc"
@@ -490,6 +491,7 @@ struct st_frc_in_sts {
 	u32 vs_tsk_cnt;
 	u32 vs_duration;
 	u64 vs_timestamp;
+	u32 lost_tsk_cnt;
 
 	u32 have_vf_cnt;
 	u32 no_vf_cnt;
@@ -537,6 +539,8 @@ struct st_frc_out_sts {
 	u32 vs_tsk_cnt;
 	u32 vs_duration;
 	u64 vs_timestamp;
+	u32 lost_tsk_cnt;
+
 	u8 hi_en;
 };
 

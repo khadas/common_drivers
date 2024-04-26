@@ -752,7 +752,9 @@ static void vdin_game_mode_transfer(struct vdin_dev_s *devp)
 				phase_lock_flag++;
 			else
 				phase_lock_flag = 0;
-			if (phase_lock_flag >= game_mode_phlock_switch_frames) {
+			if ((phase_lock_flag >= game_mode_phlock_switch_frames &&
+				!frame_lock_type_vrr_lock()) || (frame_lock_type_vrr_lock() &&
+				phase_lock_flag >= game_mode_switch_frames)) {
 				/* vrr mode vinfo_std_duration not correct so separate judgment */
 				if (devp->vrr_data.vrr_mode &&
 				    devp->vdin_std_duration >= VDIN_VRR_MIN_FRAME_RATE &&

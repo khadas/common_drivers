@@ -625,7 +625,9 @@ void vrrlock_process(struct vframe_s *vf,
 			framelock_pr_info("%s vdata.line_dly:%d\n",
 				__func__, vdata.line_dly);
 	} else {
-		if (vinfo->height == 2160)
+		if (chip_type_id == chip_t3x && chip_cls_id == TV_CHIP)
+			vdata.line_dly = vrr_delay_line;
+		else if (vinfo->height == 2160)
 			vdata.line_dly =
 			(vf->compHeight < vinfo->height &&
 			vf->compHeight >= 1080 && line <= 1080) ?
@@ -786,6 +788,7 @@ void frame_lock_process(struct vframe_s *vf,
 }
 
 /* vrr/freesync signel and game mode vrr instead vlock low latency */
+/* get frame lock type, vrr or vlock */
 bool frame_lock_type_vrr_lock(void)
 {
 	bool ret = false;
@@ -793,6 +796,8 @@ bool frame_lock_type_vrr_lock(void)
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (frame_sts.vrr_frame_lock_type == FRAMELOCK_VRRLOCK)
 		ret = true;
+	else if (frame_sts.vrr_frame_lock_type == FRAMELOCK_VRRLOCK)
+		ret = false;
 #endif
 
 	return ret;

@@ -942,7 +942,6 @@ static int codec_mm_alloc_in(struct codec_mm_mgt_s *mgt, struct codec_mm_s *mem)
 							  PAGE_SHIFT, false);
 			mem->from_flags = AMPORTS_MEM_FLAGS_FROM_GET_FROM_CMA;
 			if (mem->mem_handle) {
-				mem->vbuffer = mem->mem_handle;
 				mem->phy_addr =
 					page_to_phys((struct page *)mem->mem_handle);
 				if (!mgt->tvp_enable) {
@@ -951,6 +950,10 @@ static int codec_mm_alloc_in(struct codec_mm_mgt_s *mgt, struct codec_mm_s *mem)
 						mem->page_count << PAGE_SHIFT,
 						DMA_FROM_DEVICE);
 				}
+				mem->vbuffer = (mem->flags &
+					CODEC_MM_FLAGS_CPU) ?
+					codec_mm_map_phyaddr(mem) :
+					NULL;
 #ifdef CONFIG_ARM64
 				if (mem->flags & CODEC_MM_FLAGS_CMA_CLEAR) {
 					/*dma_clear_buffer((struct page *)*/

@@ -62,7 +62,6 @@
 #define VIDEO_QUEUE_PIP 1
 
 static unsigned int n_devs = 1;
-static unsigned long vq_unreg_flag;
 static int print_close;
 static int print_flag;
 static int force_delay_ms;
@@ -170,18 +169,9 @@ void videoqueue_pcrscr_update(s32 inc, u32 base)
 	int index = 0;
 	struct video_queue_dev *vq_temp_dev;
 
-	if (test_bit(0, &vq_unreg_flag)) {
-		vq_dev = NULL;
-		clear_bit(0, &vq_unreg_flag);
-	}
-
-	if (test_bit(1, &vq_unreg_flag)) {
-		vq_pip_dev = NULL;
-		clear_bit(1, &vq_unreg_flag);
-	}
-
-	if (!vq_dev)
+	if (!vq_dev || !vq_dev->vq_reg_flag)
 		return;
+
 	if (vq_dev->sync_start)
 		is_vlock_locked = vlock_get_vlock_flag();
 	vsync_pts_inc = 90000 * 16 * (u64)inc;
@@ -206,7 +196,7 @@ void videoqueue_pcrscr_update(s32 inc, u32 base)
 			vq_temp_dev = vq_dev;
 		else
 			vq_temp_dev = vq_pip_dev;
-		if (!vq_temp_dev)
+		if (!vq_temp_dev || !vq_temp_dev->vq_reg_flag)
 			continue;
 		if (vq_temp_dev->sync_start) {
 			vq_temp_dev->pcr_time += vsync_pts_inc;
@@ -1112,11 +1102,9 @@ static int videoqueue_reg_provider(struct video_queue_dev *dev)
 	if (dev->inst == VIDEO_QUEUE_MAIN) {
 		dev->tunnel_id = 0;
 		dev->game_mode = false;
-		vq_dev = dev;
 	} else {
 		dev->tunnel_id = 3;
 		dev->game_mode = true;
-		vq_pip_dev = dev;
 	}
 
 	INIT_KFIFO(dev->file_q);
@@ -1292,10 +1280,6 @@ static int videoqueue_unreg_provider(struct video_queue_dev *dev)
 
 	dev->sync_start = false;
 	dev->game_mode = false;
-	if (dev->inst == VIDEO_QUEUE_MAIN)
-		set_bit(0, &vq_unreg_flag);
-	else
-		set_bit(1, &vq_unreg_flag);
 	return ret;
 }
 
@@ -1417,7 +1401,7 @@ static ssize_t buf_count_show(struct class *cla,
 			       struct class_attribute *attr,
 			       char *buf)
 {
-	if (!vq_dev)
+	if (!vq_dev->vq_reg_flag)
 		return snprintf(buf, 80, "videoqueue is not enable.\n.");
 	return snprintf(buf, 80,
 			"total_get=%d total_pu=%d, di_get=%d, di_pu=%d\n",
@@ -1429,7 +1413,7 @@ static ssize_t dump_index_show(struct class *cla,
 			       struct class_attribute *attr,
 			       char *buf)
 {
-	if (!vq_dev)
+	if (!vq_dev->vq_reg_flag)
 		return snprintf(buf, 80, "videoqueue is not enable.\n.");
 	return snprintf(buf, 80, "current dump_index is %d\n",
 			vq_dev->dump_index);
@@ -1442,7 +1426,7 @@ static ssize_t dump_index_store(struct class *cla,
 	long tmp;
 	int ret;
 
-	if (!vq_dev) {
+	if (!vq_dev->vq_reg_flag) {
 		pr_info("videoqueue is not enable.\n");
 		return -EFAULT;
 	}
@@ -1459,7 +1443,7 @@ static ssize_t delay_vsync_show(struct class *cla,
 			       struct class_attribute *attr,
 			       char *buf)
 {
-	if (!vq_dev)
+	if (!vq_dev->vq_reg_flag)
 		return snprintf(buf, 80, "videoqueue is not enable.\n.");
 	return snprintf(buf, 80,
 			"current delay_vsync is %d\n",
@@ -1473,7 +1457,7 @@ static ssize_t delay_vsync_store(struct class *cla,
 	long tmp;
 	int ret;
 
-	if (!vq_dev) {
+	if (!vq_dev->vq_reg_flag) {
 		pr_info("videoqueue is not enable.\n");
 		return -EFAULT;
 	}
@@ -1490,7 +1474,7 @@ static ssize_t vframe_get_delay_show(struct class *cla,
 			       struct class_attribute *attr,
 			       char *buf)
 {
-	if (!vq_dev)
+	if (!vq_dev->vq_reg_flag)
 		return snprintf(buf, 80, "videoqueue is not enable.\n.");
 	return snprintf(buf, 80,
 			"current vframe_get_delay is %lld\n",
@@ -1513,7 +1497,7 @@ static ssize_t force_delay_ms_store(struct class *cla,
 	long tmp;
 	int ret;
 
-	if (!vq_dev) {
+	if (!vq_dev->vq_reg_flag) {
 		pr_info("videoqueue is not enable.\n");
 		return -EFAULT;
 	}
@@ -1530,7 +1514,7 @@ static ssize_t game_mode_show(struct class *cla,
 			       struct class_attribute *attr,
 			       char *buf)
 {
-	if (!vq_dev)
+	if (!vq_dev->vq_reg_flag)
 		return snprintf(buf, 80, "videoqueue is not enable.\n.");
 	return snprintf(buf, 80, "current game_mode is %d\n",
 			vq_dev->game_mode);
@@ -1543,7 +1527,7 @@ static ssize_t game_mode_store(struct class *cla,
 	bool tmp;
 	int ret;
 
-	if (!vq_dev) {
+	if (!vq_dev->vq_reg_flag) {
 		pr_info("videoqueue is not enable.\n");
 		return -EFAULT;
 	}
@@ -1560,7 +1544,7 @@ static ssize_t force_game_mode_show(struct class *cla,
 			       struct class_attribute *attr,
 			       char *buf)
 {
-	if (!vq_dev)
+	if (!vq_dev->vq_reg_flag)
 		return snprintf(buf, 80, "videoqueue is not enable.\n.");
 	return snprintf(buf, 80,
 			"current force_game_mode is %d\n",
@@ -1574,7 +1558,7 @@ static ssize_t force_game_mode_store(struct class *cla,
 	long tmp;
 	int ret;
 
-	if (!vq_dev) {
+	if (!vq_dev->vq_reg_flag) {
 		pr_info("videoqueue is not enable.\n");
 		return -EFAULT;
 	}
@@ -1591,7 +1575,7 @@ static ssize_t fence_dq_count_show(struct class *cla,
 			       struct class_attribute *attr,
 			       char *buf)
 {
-	if (!vq_dev)
+	if (!vq_dev->vq_reg_flag)
 		return snprintf(buf, 80, "videoqueue is not enable.\n.");
 	return snprintf(buf, 80,
 			"current fence_dq_count is %d\n",
@@ -1602,7 +1586,7 @@ static ssize_t fence_put_count_show(struct class *cla,
 			       struct class_attribute *attr,
 			       char *buf)
 {
-	if (!vq_dev)
+	if (!vq_dev->vq_reg_flag)
 		return snprintf(buf, 80, "videoqueue is not enable.\n.");
 	return snprintf(buf, 80,
 			"current fence_put_count is %d\n",
@@ -1613,7 +1597,7 @@ static ssize_t fence_null_count_show(struct class *cla,
 			       struct class_attribute *attr,
 			       char *buf)
 {
-	if (!vq_dev)
+	if (!vq_dev->vq_reg_flag)
 		return snprintf(buf, 80, "videoqueue is not enable.\n.");
 	return snprintf(buf, 80,
 			"current fence_null_count is %d\n",
@@ -1624,7 +1608,7 @@ static ssize_t resync_open_show(struct class *cla,
 			       struct class_attribute *attr,
 			       char *buf)
 {
-	if (!vq_dev)
+	if (!vq_dev->vq_reg_flag)
 		return snprintf(buf, 80, "videoqueue is not enable.\n.");
 	return snprintf(buf, 80,
 			"current resync_open is %d\n",
@@ -1638,7 +1622,7 @@ static ssize_t resync_open_store(struct class *cla,
 	long tmp;
 	int ret;
 
-	if (!vq_dev) {
+	if (!vq_dev->vq_reg_flag) {
 		pr_info("videoqueue is not enable.\n");
 		return -EFAULT;
 	}
@@ -1655,7 +1639,7 @@ static ssize_t unknown_check_show(struct class *cla,
 			       struct class_attribute *attr,
 			       char *buf)
 {
-	if (!vq_dev)
+	if (!vq_dev->vq_reg_flag)
 		return snprintf(buf, 80, "videoqueue is not enable.\n.");
 	return snprintf(buf, 80,
 			"current unknown_check is %d\n",
@@ -1669,7 +1653,7 @@ static ssize_t unknown_check_store(struct class *cla,
 	long tmp;
 	int ret;
 
-	if (!vq_dev) {
+	if (!vq_dev->vq_reg_flag) {
 		pr_info("videoqueue is not enable.\n");
 		return -EFAULT;
 	}
@@ -1686,7 +1670,7 @@ static ssize_t buf_count_pip_show(struct class *cla,
 			       struct class_attribute *attr,
 			       char *buf)
 {
-	if (!vq_pip_dev)
+	if (!vq_pip_dev->vq_reg_flag)
 		return snprintf(buf, 80, "pip is not enable\n.");
 	return snprintf(buf, 80,
 			"pip: total_get=%d, total_put=%d, di_get=%d, di_put=%d\n",
@@ -1698,7 +1682,7 @@ static ssize_t dump_index_pip_show(struct class *cla,
 			       struct class_attribute *attr,
 			       char *buf)
 {
-	if (!vq_pip_dev)
+	if (!vq_pip_dev->vq_reg_flag)
 		return snprintf(buf, 80, "pip is not enable.\n.");
 	return snprintf(buf, 80, "current dump_index_pip is %d\n",
 			vq_pip_dev->dump_index);
@@ -1711,7 +1695,7 @@ static ssize_t dump_index_pip_store(struct class *cla,
 	long tmp;
 	int ret;
 
-	if (!vq_pip_dev) {
+	if (!vq_pip_dev->vq_reg_flag) {
 		pr_info("pip is not enable.\n");
 		return -EFAULT;
 	}
@@ -1728,7 +1712,7 @@ static ssize_t vframe_get_delay_pip_show(struct class *cla,
 			       struct class_attribute *attr,
 			       char *buf)
 {
-	if (!vq_pip_dev)
+	if (!vq_pip_dev->vq_reg_flag)
 		return snprintf(buf, 80, "pip is not enable\n.");
 	return snprintf(buf, 80,
 			"current vframe_get_delay_pip is %lld\n",
@@ -1739,7 +1723,7 @@ static ssize_t game_mode_pip_show(struct class *cla,
 			       struct class_attribute *attr,
 			       char *buf)
 {
-	if (!vq_pip_dev)
+	if (!vq_pip_dev->vq_reg_flag)
 		return snprintf(buf, 80, "pip is not enable\n.");
 	return snprintf(buf, 80,
 			"current game_mode_pip is %d\n",
@@ -1753,7 +1737,7 @@ static ssize_t game_mode_pip_store(struct class *cla,
 	bool tmp;
 	int ret;
 
-	if (!vq_pip_dev) {
+	if (!vq_pip_dev->vq_reg_flag) {
 		pr_info("pip is not enable.\n");
 		return -EFAULT;
 	}
@@ -1770,7 +1754,7 @@ static ssize_t force_game_mode_pip_show(struct class *cla,
 			       struct class_attribute *attr,
 			       char *buf)
 {
-	if (!vq_pip_dev)
+	if (!vq_pip_dev->vq_reg_flag)
 		return snprintf(buf, 80, "pip is not enable\n.");
 	return snprintf(buf, 80,
 			"current force_game_mode_pip is %d\n",
@@ -1784,7 +1768,7 @@ static ssize_t force_game_mode_pip_store(struct class *cla,
 	long tmp;
 	int ret;
 
-	if (!vq_pip_dev) {
+	if (!vq_pip_dev->vq_reg_flag) {
 		pr_info("pip is not enable.\n");
 		return -EFAULT;
 	}
@@ -1801,7 +1785,7 @@ static ssize_t fence_dq_count_pip_show(struct class *cla,
 			       struct class_attribute *attr,
 			       char *buf)
 {
-	if (!vq_pip_dev)
+	if (!vq_pip_dev->vq_reg_flag)
 		return snprintf(buf, 80, "pip is not enable\n.");
 	return snprintf(buf, 80,
 			"current fence_dq_count_pip is %d\n",
@@ -1812,7 +1796,7 @@ static ssize_t fence_put_count_pip_show(struct class *cla,
 			       struct class_attribute *attr,
 			       char *buf)
 {
-	if (!vq_pip_dev)
+	if (!vq_pip_dev->vq_reg_flag)
 		return snprintf(buf, 80, "pip is not enable\n.");
 	return snprintf(buf, 80,
 			"current fence_put_count_pip is %d\n",
@@ -1823,7 +1807,7 @@ static ssize_t fence_null_count_pip_show(struct class *cla,
 			       struct class_attribute *attr,
 			       char *buf)
 {
-	if (!vq_pip_dev)
+	if (!vq_pip_dev->vq_reg_flag)
 		return snprintf(buf, 80, "pip is not enable\n.");
 	return snprintf(buf, 80,
 			"current fence_null_count_pip is %d\n",
@@ -1834,7 +1818,7 @@ static ssize_t resync_open_pip_show(struct class *cla,
 			       struct class_attribute *attr,
 			       char *buf)
 {
-	if (!vq_pip_dev)
+	if (!vq_pip_dev->vq_reg_flag)
 		return snprintf(buf, 80, "pip is not enable\n.");
 	return snprintf(buf, 80,
 			"current resync_open_pip is %d\n",
@@ -1848,7 +1832,7 @@ static ssize_t resync_open_pip_store(struct class *cla,
 	long tmp;
 	int ret;
 
-	if (!vq_pip_dev) {
+	if (!vq_pip_dev->vq_reg_flag) {
 		pr_info("pip is not enable.\n");
 		return -EFAULT;
 	}
@@ -1865,7 +1849,7 @@ static ssize_t unknown_check_pip_show(struct class *cla,
 			       struct class_attribute *attr,
 			       char *buf)
 {
-	if (!vq_pip_dev)
+	if (!vq_pip_dev->vq_reg_flag)
 		return snprintf(buf, 80, "pip is not enable\n.");
 	return snprintf(buf, 80,
 			"current unknown_check_pip is %d\n",
@@ -1879,7 +1863,7 @@ static ssize_t unknown_check_pip_store(struct class *cla,
 	long tmp;
 	int ret;
 
-	if (!vq_pip_dev) {
+	if (!vq_pip_dev->vq_reg_flag) {
 		pr_info("pip is not enable.\n");
 		return -EFAULT;
 	}
@@ -2091,6 +2075,10 @@ static int videoqueue_create_instance(int inst)
 	dev->inst = inst;
 	snprintf(dev->vf_receiver_name, RECEIVER_NAME_SIZE,
 		 RECEIVER_NAME ".%x", inst & 0xff);
+	if (dev->inst == VIDEO_QUEUE_MAIN)
+		vq_dev = dev;
+	else
+		vq_pip_dev = dev;
 
 	vf_receiver_init(&dev->video_vf_receiver,
 			 dev->vf_receiver_name, &video_vf_receiver, dev);

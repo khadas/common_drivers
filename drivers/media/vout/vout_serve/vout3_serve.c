@@ -53,6 +53,7 @@ static DEFINE_MUTEX(vout3_serve_mutex);
 static char vout3_mode[VMODE_NAME_LEN_MAX];
 static char local_name[VMODE_NAME_LEN_MAX] = {0};
 static char vout3_mode_uboot[VMODE_NAME_LEN_MAX] = "null";
+static char connector2_type[VMODE_NAME_LEN_MAX];
 static unsigned int vout3_init_vmode = VMODE_INIT_NULL;
 static int uboot_display;
 static unsigned int bist_mode3;
@@ -204,6 +205,12 @@ char *get_vout3_mode_uboot(void)
 	return vout3_mode_uboot;
 }
 EXPORT_SYMBOL(get_vout3_mode_uboot);
+
+char *get_uboot_connector2_type(void)
+{
+	return connector2_type;
+}
+EXPORT_SYMBOL(get_uboot_connector2_type);
 
 int get_vout3_mode_uboot_state(void)
 {
@@ -1108,6 +1115,17 @@ static int get_vout3_init_mode(char *str)
 	return 0;
 }
 __setup("vout3=", get_vout3_init_mode);
+
+static int get_connector2_type(char *str)
+{
+	if (str)
+		sprintf(connector2_type, "%s", str);
+
+	VOUTPR("connector2_type: %s\n", connector2_type);
+	return 0;
+}
+
+__setup("connector2_type=", get_connector2_type);
 
 //MODULE_AUTHOR("Platform-BJ <platform.bj@amlogic.com>");
 //MODULE_DESCRIPTION("vout3 Server Module");

@@ -52,6 +52,7 @@ static DEFINE_MUTEX(vout2_serve_mutex);
 static char vout2_mode[VMODE_NAME_LEN_MAX];
 static char local_name[VMODE_NAME_LEN_MAX] = {0};
 static char vout2_mode_uboot[VMODE_NAME_LEN_MAX] = "null";
+static char connector1_type[VMODE_NAME_LEN_MAX];
 static unsigned int vout2_init_vmode = VMODE_INIT_NULL;
 static int uboot_display;
 static unsigned int bist_mode2;
@@ -209,6 +210,12 @@ int get_vout2_mode_uboot_state(void)
 	return uboot_display;
 }
 EXPORT_SYMBOL(get_vout2_mode_uboot_state);
+
+char *get_uboot_connector1_type(void)
+{
+	return connector1_type;
+}
+EXPORT_SYMBOL(get_uboot_connector1_type);
 
 #define MAX_UEVENT_LEN 64
 int vout2_set_uevent(unsigned int vout_event, int val)
@@ -1107,6 +1114,17 @@ static int get_vout2_init_mode(char *str)
 	return 0;
 }
 __setup("vout2=", get_vout2_init_mode);
+
+static int get_connector1_type(char *str)
+{
+	if (str)
+		sprintf(connector1_type, "%s", str);
+
+	VOUTPR("connector1_type: %s\n", connector1_type);
+	return 0;
+}
+
+__setup("connector1_type=", get_connector1_type);
 
 //MODULE_AUTHOR("Platform-BJ <platform.bj@amlogic.com>");
 //MODULE_DESCRIPTION("VOUT2 Server Module");

@@ -53,6 +53,7 @@ static DEFINE_MUTEX(vout_serve_mutex);
 static char vout_mode_uboot[VMODE_NAME_LEN_MAX] = "null";
 static char vout_mode[VMODE_NAME_LEN_MAX] __nosavedata;
 static char local_name[VMODE_NAME_LEN_MAX] = {0};
+static char connector0_type[VMODE_NAME_LEN_MAX];
 static u32 vout_init_vmode = VMODE_INIT_NULL;
 static int uboot_display;
 static unsigned int bist_mode;
@@ -242,6 +243,12 @@ char *get_vout_mode_uboot(void)
 	return vout_mode_uboot;
 }
 EXPORT_SYMBOL(get_vout_mode_uboot);
+
+char *get_uboot_connector0_type(void)
+{
+	return connector0_type;
+}
+EXPORT_SYMBOL(get_uboot_connector0_type);
 
 int get_vout_mode_uboot_state(void)
 {
@@ -1339,6 +1346,17 @@ int get_vout_init_mode(char *str)
 	return 0;
 }
 __setup("vout=", get_vout_init_mode);
+
+static int get_connector0_type(char *str)
+{
+	if (str)
+		sprintf(connector0_type, "%s", str);
+
+	VOUTPR("connector0_type: %s\n", connector0_type);
+	return 0;
+}
+
+__setup("connector0_type=", get_connector0_type);
 
 /*TODO: drm to disable display/mode sysfs set.*/
 void disable_vout_mode_set_sysfs(void)

@@ -719,18 +719,39 @@ void vdin_set_decimation_t3x(struct vdin_dev_s *devp)
 	devp->h_skip_en = false;
 	devp->v_skip_en = false;
 	/* if exceed the maximum processing capacity,skipping in preproc */
-	if (devp->h_active > VDIN_LITE_CORE_MAX_W &&
-		devp->prop.color_format != TVIN_YUV422) {
-		devp->h_active = devp->h_active / 2;
-		if (devp->prop.color_format != TVIN_YUV420)
+	if (devp->h_active > VDIN_LITE_CORE_MAX_W) {
+		switch (devp->prop.color_format) {
+		case TVIN_YUV420:
+			devp->h_active = devp->h_active / 2;
+			break;
+		case TVIN_YUV422:
+			//for 8k60 yuv422 4ppc
+			if (devp->prop.fps >= 45)
+				devp->h_active = devp->h_active / 2;
+			break;
+		case TVIN_YUV444:
+		case TVIN_RGB444:
+			devp->h_active = devp->h_active / 2;
 			devp->h_skip_en = true;
+			break;
+		default:
+			break;
+		}
 	}
-	if (devp->v_active > VDIN_LITE_CORE_MAX_H &&
-	   (devp->prop.color_format == TVIN_RGB444 ||
-	    devp->prop.color_format == TVIN_YUV444 ||
-		devp->prop.color_format == TVIN_YUV422)) {
-		devp->v_active = devp->v_active / 2;
-		devp->v_skip_en = true;
+
+	if (devp->v_active > VDIN_LITE_CORE_MAX_H) {
+		switch (devp->prop.color_format) {
+		case TVIN_YUV422:
+		case TVIN_YUV444:
+		case TVIN_RGB444:
+			devp->v_active = devp->v_active / 2;
+			devp->v_skip_en = true;
+			break;
+		case TVIN_YUV420:
+			break;
+		default:
+			break;
+		}
 	}
 
 	if (vdin_ctl_dbg)

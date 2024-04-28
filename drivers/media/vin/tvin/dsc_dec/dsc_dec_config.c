@@ -936,11 +936,14 @@ void dsc_clk_config(struct aml_dsc_dec_drv_s *dsc_dec_drv)
 {
 	struct dsc_pps_data_s *pps_data = &dsc_dec_drv->pps_data;
 
-	if (pps_data->pic_width == 3840 && pps_data->pic_height == 2160) {
-		dsc_dec_config_fix_pll_clk(297);
-		if (pps_data->fps >= 58 && pps_data->fps <= 62) {
+	if ((pps_data->pic_width == 3840 && pps_data->pic_height == 2160) ||
+		(pps_data->pic_width == 4096 && pps_data->pic_height == 2160)) {
+		if ((pps_data->fps >= 58 && pps_data->fps <= 62)) {
 			dsc_dec_drv->pix_per_clk = 1;
-		} else if ((pps_data->fps >= 118 && pps_data->fps <= 122) |
+			//3840 no problem, 4096 need enhance clk.
+			if (pps_data->pic_width == 4096)
+				dsc_dec_config_fix_pll_clk(594);
+		} else if ((pps_data->fps >= 118 && pps_data->fps <= 122) ||
 		(pps_data->fps >= 98 && pps_data->fps <= 102)) {
 			dsc_dec_drv->pix_per_clk = 1;
 			dsc_dec_config_fix_pll_clk(594);
@@ -948,13 +951,13 @@ void dsc_clk_config(struct aml_dsc_dec_drv_s *dsc_dec_drv)
 	} else if (pps_data->pic_width == 7680 && pps_data->pic_height == 4320) {
 		dsc_dec_config_fix_pll_clk(594);
 		if ((pps_data->fps >= 28 && pps_data->fps <= 32) ||
-			(pps_data->fps >= 48 && pps_data->fps <= 52) ||
 			(pps_data->fps >= 22 && pps_data->fps <= 27)) {
+			//yuv420 ppc setting is different from others.
 			if (dsc_dec_drv->pps_data.native_420)
 				dsc_dec_drv->pix_per_clk = 2;
 			else
 				dsc_dec_drv->pix_per_clk = 1;
-		} else if (pps_data->fps >= 58 && pps_data->fps <= 62) {
+		} else if (pps_data->fps >= 50) {
 			dsc_dec_drv->pix_per_clk = 2;
 		}
 	}
@@ -963,6 +966,7 @@ void dsc_clk_config(struct aml_dsc_dec_drv_s *dsc_dec_drv)
 void dsc_dec_config_init(struct aml_dsc_dec_drv_s *dsc_dec_drv)
 {
 	struct dsc_pps_data_s *pps_data = &dsc_dec_drv->pps_data;
+	int idx;
 
 	dsc_dec_drv->pix_per_clk = 1;
 	dsc_dec_config_fix_pll_clk(297);
@@ -994,6 +998,8 @@ void dsc_dec_config_init(struct aml_dsc_dec_drv_s *dsc_dec_drv)
 	dsc_dec_drv->aff_clr = 0;
 	if (slice_num == 8)
 		dsc_dec_drv->slices_in_core = 1;
+	else
+		dsc_dec_drv->slices_in_core = 0;
 
 	if (dsc_dec_drv->pps_data.convert_rgb ||
 	    (!dsc_dec_drv->pps_data.native_422 && !dsc_dec_drv->pps_data.native_420))
@@ -1005,8 +1011,14 @@ void dsc_dec_config_init(struct aml_dsc_dec_drv_s *dsc_dec_drv)
 			((dsc_dec_drv->pps_data.slice_width >> 1) + 2) / 3 *
 			dsc_dec_drv->pps_data.slice_height;
 
+	if (dsc_dec_drv->pps_data.native_422 || dsc_dec_drv->pps_data.native_420)
+		idx = 2;
+	else
+		idx = 1;
+	//slice_width / 3 == 0 ?
+	//4096 may have problem, so use calculation below.
 	dsc_dec_drv->partial_group_pix_num =
-		(pps_data->slice_width % 3) ? 0 : 3;
+		((pps_data->slice_width / idx) % 3) == 0 ? 3 : ((pps_data->slice_width / idx) % 3);
 
 	if (dsc_dec_drv->pps_data.native_422 || dsc_dec_drv->pps_data.native_420) {
 		dsc_dec_drv->recon_jump_depth =
@@ -1064,9 +1076,10 @@ void dsc_dec_config_init(struct aml_dsc_dec_drv_s *dsc_dec_drv)
 		dsc_dec_drv->tmg_ctrl.tmg_vso_end = 0;
 		dsc_dec_drv->tmg_ctrl.tmg_vso_bline = 3;
 		dsc_dec_drv->tmg_ctrl.tmg_vso_eline = 13;
-		dsc_dec_drv->tmg_cb_von_bline = 85;
-		dsc_dec_drv->tmg_cb_von_eline = 2245;
+		dsc_dec_drv->tmg_cb_von_bline = dsc_dec_drv->pps_data.vbegin + 1;
+		dsc_dec_drv->tmg_cb_von_eline = dsc_dec_drv->pps_data.vend + 1;
 	} else if (pps_data->pic_width == 7680 && pps_data->pic_height == 4320) {
+		dsc_dec_drv->tmg_ctrl.tmg_havon_begin = 1260;
 		if (dsc_dec_drv->pps_data.native_420)
 			dsc_dec_drv->tmg_ctrl.tmg_hso_begin = 1068;
 		else
@@ -1076,14 +1089,29 @@ void dsc_dec_config_init(struct aml_dsc_dec_drv_s *dsc_dec_drv)
 		dsc_dec_drv->tmg_ctrl.tmg_vso_end = 0;
 		dsc_dec_drv->tmg_ctrl.tmg_vso_bline = 2;
 		dsc_dec_drv->tmg_ctrl.tmg_vso_eline = 22;
-		if (pps_data->fps >= 23 && pps_data->fps <= 24) {
-			dsc_dec_drv->tmg_cb_von_bline = 0xa5;
-			dsc_dec_drv->tmg_cb_von_eline = 0x1185;
-		} else {
+		if (pps_data->fps >= 48 &&
+			!dsc_dec_drv->pps_data.native_420 &&
+			!dsc_dec_drv->pps_data.native_422) {
+			dsc_dec_drv->tmg_ctrl.tmg_havon_begin = 386;
+			dsc_dec_drv->tmg_ctrl.tmg_hso_begin = 194;
+			dsc_dec_drv->tmg_ctrl.tmg_hso_end = 238;
+			dsc_dec_drv->tmg_ctrl.tmg_vso_begin = 0;
+			dsc_dec_drv->tmg_ctrl.tmg_vso_end = 0;
+			dsc_dec_drv->tmg_ctrl.tmg_vso_bline = 2;
+			dsc_dec_drv->tmg_ctrl.tmg_vso_eline = 22;
+		}
+		//now 8k has two settings, if signal unstable,vbegin and vend may
+		//get wrong,so set a range, if not in range, use value from rx.
+		if (abs(dsc_dec_drv->pps_data.vbegin - 164) < 10) {
+			dsc_dec_drv->tmg_cb_von_bline = 165;
+			dsc_dec_drv->tmg_cb_von_eline = 4485;
+		} else if (abs(dsc_dec_drv->pps_data.vbegin - 64) < 10) {
 			dsc_dec_drv->tmg_cb_von_bline = 65;
 			dsc_dec_drv->tmg_cb_von_eline = 4385;
+		} else {
+			dsc_dec_drv->tmg_cb_von_bline = dsc_dec_drv->pps_data.vbegin + 1;
+			dsc_dec_drv->tmg_cb_von_eline = dsc_dec_drv->pps_data.vend + 1;
 		}
-		dsc_dec_drv->tmg_ctrl.tmg_havon_begin = 1260;
 	}
 	dsc_dec_config_register(dsc_dec_drv);
 	dsc_dec_config_vpu_mux(dsc_dec_drv);

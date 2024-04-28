@@ -1419,6 +1419,8 @@ void hdmirx_get_pps_info(struct tvin_sig_property_s *prop, u8 port)//todo)
 	prop->pps_data.nsl_bpg_offset = rx[port].dsc_pps_data.nsl_bpg_offset;
 	prop->pps_data.second_line_offset_adj = rx[port].dsc_pps_data.second_line_offset_adj;
 	prop->pps_data.htotal = rx[port].cur.htotal;
+	prop->pps_data.vbegin = rx[port].cur.vbegin;
+	prop->pps_data.vend = rx[port].cur.vend;
 	prop->pps_data.fps = (rx[port].cur.frame_rate + 99) / 100;
 	prop->pps_data.color_depth = rx[port].cur.colordepth;
 	prop->pps_data.color_fmt = rx[port].cur.colorspace;
@@ -1655,7 +1657,6 @@ void hdmirx_get_sig_prop(struct tvin_frontend_s *fe,
 	hdmirx_get_latency_info(prop, cur_port);
 	hdmirx_get_emp_dv_info(prop, cur_port);
 	hdmirx_get_vtem_info(prop, cur_port);
-	//hdmirx_get_cvtem_info(prop, cur_port);
 	hdmirx_get_sbtm_info(prop, cur_port);
 	hdmirx_get_cuva_emds_info(prop, cur_port);
 	hdmirx_get_fmm_info(prop, cur_port);

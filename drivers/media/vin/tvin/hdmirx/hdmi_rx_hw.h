@@ -1276,6 +1276,7 @@
 #define COR_VSYNC_LOW_COUNT_HI      0x1899
 #define COR_VSYNC_HIGH_COUNT_LO     0x189A
 #define COR_VSYNC_HIGH_COUNT_HI     0x189B
+#define COR_VSYNC_VBACK_COUNT_EVEN     0x189E
 
 /*t7/t3*/
 #define RX_CLK_CTRL			(0x4A << 2)

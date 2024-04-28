@@ -514,8 +514,10 @@ struct rx_video_info {
 	u32 frame_rate;
 	/** Interlaced */
 	bool interlaced;
-	/** Vertical offset */
-	u32 voffset;
+	/** Vertical begin */
+	u32 vbegin;
+	/** Vertical end */
+	u32 vend;
 	/** Vertical active */
 	u32 vactive;
 	/** Vertical total */

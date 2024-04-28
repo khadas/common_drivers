@@ -5210,6 +5210,9 @@ void rx_get_de_sts(u8 port)
 			(hdmirx_rd_cor(COR_VSYNC_LOW_COUNT_HI, port) << 8)) +
 			(hdmirx_rd_cor(COR_VSYNC_HIGH_COUNT_LO, port) |
 			(hdmirx_rd_cor(COR_VSYNC_HIGH_COUNT_HI, port) << 8));
+		rx[port].cur.vbegin = hdmirx_rd_cor(COR_VSYNC_HIGH_COUNT_LO, port) +
+			hdmirx_rd_cor(COR_VSYNC_VBACK_COUNT_EVEN, port);
+		rx[port].cur.vend = rx[port].cur.vactive + rx[port].cur.vbegin;
 		if (rx[port].cur.repeat) {
 			rx[port].cur.hactive =
 				rx[port].cur.hactive /

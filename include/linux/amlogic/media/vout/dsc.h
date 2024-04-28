@@ -72,6 +72,8 @@ struct dsc_pps_data_s {
 	int fps;
 	int color_depth;
 	int color_fmt;
+	int vbegin;
+	int vend;
 };
 
 enum dsc_encode_mode {

@@ -73,6 +73,8 @@ struct am_hdmi_tx {
 	struct drm_property *contenttype_cap_prop;
 	struct drm_property *allm_prop;
 	struct drm_property *ready_prop;
+	struct drm_property *type_prop;
+	int hdmi_type;
 
 #ifdef CONFIG_CEC_NOTIFIER
 	struct cec_notifier	*cec_notifier;

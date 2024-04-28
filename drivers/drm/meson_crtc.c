@@ -11,6 +11,7 @@
 #include <linux/amlogic/gki_module.h>
 
 #include <linux/amlogic/media/vout/vout_notify.h>
+#include <linux/amlogic/media/vout/lcd/lcd_vout.h>
 #include <vout/vout_serve/vout_func.h>
 #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT
 #include <linux/amlogic/media/amvecm/amvecm.h>
@@ -748,10 +749,11 @@ static void am_meson_crtc_atomic_disable(struct drm_crtc *crtc,
 		crtc->state->event = NULL;
 	}
 
+	/*0=tv, 1=tablet, 2=invalid*/
 	if ((meson_crtc_state->vmode & VMODE_MASK) == VMODE_LCD &&
-		!strstr(old_mode->name, "panel")) {
-		DRM_INFO("%s[%d], lcd skip setting null vmode\n", __func__,
-			 meson_crtc_state->vmode);
+		get_vout_lcd_mode(amcrtc->crtc_index) == 0) {
+		DRM_INFO("%s[%d], lcd skip setting null vmode\n",
+				 __func__, meson_crtc_state->vmode);
 		return;
 	}
 

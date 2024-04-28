@@ -26,6 +26,16 @@ int meson_connector_dev_bind(struct drm_device *drm,
 #endif
 	}
 
+	if (type > DRM_MODE_MESON_CONNECTOR_HDMI_START &&
+			type < DRM_MODE_MESON_CONNECTOR_HDMI_END) {
+#ifndef CONFIG_AMLOGIC_DRM_CUT_HDMI
+		return meson_hdmitx_dev_bind(drm, type, intf);
+#else
+	pr_err("hdmi connector is not supported!\n");
+			return -1;
+#endif
+	}
+
 	switch (type) {
 #ifndef CONFIG_AMLOGIC_DRM_CUT_HDMI
 	case DRM_MODE_CONNECTOR_HDMIA:

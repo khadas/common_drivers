@@ -133,7 +133,7 @@ int am_meson_get_vrr_range_ioctl(struct drm_device *dev,
 		return -ENOENT;
 
 	if (!num_group) {
-		DRM_ERROR("get vrr error or not support qms\n");
+		DRM_DEBUG("get vrr error or not support qms\n");
 		return -EINVAL;
 	}
 

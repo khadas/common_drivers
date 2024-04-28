@@ -700,6 +700,7 @@ static void am_meson_load_logo(struct drm_device *dev,
 	struct drm_modeset_acquire_ctx *ctx;
 	struct meson_drm *private = dev->dev_private;
 	struct am_meson_fb *meson_fb;
+	char *connector_type = NULL;
 	u32 found, num_modes;
 
 	DRM_DEBUG("%s idx[%d]\n", __func__, idx);
@@ -714,10 +715,35 @@ static void am_meson_load_logo(struct drm_device *dev,
 		return;
 	}
 
+	switch (idx) {
+	case 0:
+		connector_type = get_uboot_connector0_type();
+		DRM_DEBUG("[%s-%d]: connector_type %s\n", __func__, idx, connector_type);
+		break;
+	case 1:
+		connector_type = get_uboot_connector1_type();
+		DRM_DEBUG("[%s-%d]: connector_type %s\n", __func__, idx, connector_type);
+		break;
+	case 2:
+		connector_type = get_uboot_connector2_type();
+		DRM_DEBUG("[%s-%d]: connector_type %s\n", __func__, idx, connector_type);
+		break;
+	default:
+		DRM_DEBUG("[%s]: connector_type not found\n", __func__);
+		break;
+	}
+
 	meson_fb = to_am_meson_fb(fb);
 	/*init all connector and found matched uboot mode.*/
 	found = 0;
 	list_for_each_entry(connector, &dev->mode_config.connector_list, head) {
+		/*connector->name is same as connector_type char*/
+		if (connector_type && strcmp(connector->name, connector_type)) {
+			DRM_DEBUG("[%s-%d]: %s != %s, jump\n", __func__, idx,
+				connector->name, connector_type);
+			continue;
+		}
+
 		drm_modeset_lock_all(dev);
 		if (drm_modeset_is_locked(&dev->mode_config.connection_mutex))
 			drm_modeset_unlock(&dev->mode_config.connection_mutex);

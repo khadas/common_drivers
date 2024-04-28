@@ -276,16 +276,6 @@ static void meson_panel_encoder_atomic_enable(struct drm_encoder *encoder,
 		return;
 	}
 
-	if (crtc->enabled && !crtc->state->active_changed &&
-	    meson_crtc_state->prev_height == mode->vdisplay &&
-	    meson_crtc_state->prev_vrefresh != vrefresh) {
-		lcd_frac_hint = find_frac_hint_by_fps(vrefresh);
-		vout_func_set_vframe_rate_hint(amcrtc->vout_index, lcd_frac_hint);
-		meson_crtc_state->prev_vrefresh = vrefresh;
-		DRM_INFO("skip set_vmode, use set_vframe_rate_hint\n");
-		return;
-	}
-
 	meson_crtc_state->prev_vrefresh = vrefresh;
 	meson_crtc_state->prev_height = mode->vdisplay;
 	meson_vout_notify_mode_change(amcrtc->vout_index,

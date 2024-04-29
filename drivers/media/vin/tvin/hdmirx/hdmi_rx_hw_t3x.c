@@ -3874,7 +3874,7 @@ void aml_phy_switch_port_t3x(u8 port)
 	//hdmirx_wr_amlphy_t3x(T3X_HDMIRX20PHY_DCHA_MISC2, data32, port);
 	//hdmirx_wr_bits_top_common(TOP_PORT_SEL, MSK(4, 0), (1 << port));
 	data32 = 0;
-	if (rx_is_pip_on() && port == rx_info.sub_port) {
+	if (rx_is_pip_on() && rx_info.sub_port != 0xff) {
 		data32 |= (1 << (8 + rx_info.sub_port * 2));
 		data32 |= (1 << rx_info.sub_port);
 	}
@@ -3884,7 +3884,7 @@ void aml_phy_switch_port_t3x(u8 port)
 
 	data32 = 0;
 	data32 |= (1 << (4 + rx_info.main_port));
-	if (rx_is_pip_on() && port == rx_info.sub_port)
+	if (rx_is_pip_on() && rx_info.sub_port != 0xff)
 		data32 |= (1 << (4 + rx_info.sub_port));
 	data32 |= 3;
 	hdmirx_wr_top_common(HDMIRX_TOP_FSW_CLK_CNTL, data32);

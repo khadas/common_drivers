@@ -416,6 +416,10 @@ struct rx_var_param {
 };
 
 struct rx_aml_phy {
+	u32 rterm_val;
+	bool rterm_flag;
+	u32 rterm_dts_lvl;
+	u8 rterm_dbg_lvl;
 	int dfe_en;
 	int ofst_en;
 	int cdr_mode;

@@ -594,9 +594,11 @@ void aml_phy_offset_cal_t5(void)
 	usleep_range(5, 10);
 
 	data32 = phy_misci_t5[idx][1];
-	if (rterm_trim_flag_t5)
-		data32 = ((data32 & (~((0xf << 12) | 0x1))) |
-			(rterm_trim_val_t5 << 12) | rterm_trim_flag_t5);
+	if (rx_info.aml_phy.rterm_flag) {
+		data32 &= (~(0xf << 12));
+		data32 |= (t5_t7_rlevel[rx_info.aml_phy.rterm_dts_lvl] << 12);
+		data32 |= rx_info.aml_phy.rterm_flag << 0;
+	}
 	/* step2-0xd8 */
 	hdmirx_wr_amlphy(T5_HHI_RX_PHY_MISC_CNTL1, data32);
 	/*step2-0xe0*/
@@ -851,23 +853,11 @@ void aml_eq_cfg_t5(void)
 
 void aml_phy_get_trim_val_t5(void)
 {
-	u32 data32;
-
-	dts_debug_flag = (phy_term_lel >> 4) & 0x1;
-	if (dts_debug_flag == 0) {
-		data32 = def_trim_value;
-		rterm_trim_val_t5 = (data32 >> 12) & 0xf;
-		rterm_trim_flag_t5 = data32 & 0x1;
-	} else {
-		rlevel = phy_term_lel & 0xf;
-		if (rlevel > 15)
-			rlevel = 15;
-		rterm_trim_flag_t5 = dts_debug_flag;
-	}
-	if (rterm_trim_flag_t5) {
-		if (log_level & PHY_LOG)
-			rx_pr("rterm trim=0x%x\n", rterm_trim_val_t5);
-	}
+	if (rx_info.aml_phy.rterm_dbg_lvl)
+		rx_info.aml_phy.rterm_dts_lvl = rx_info.aml_phy.rterm_dbg_lvl;
+	if (rx_info.aml_phy.rterm_dts_lvl > 15)
+		rx_info.aml_phy.rterm_dts_lvl = 15;
+	rx_info.aml_phy.rterm_val = t5_t7_rlevel[rx_info.aml_phy.rterm_dts_lvl];
 }
 
 void aml_phy_cfg_t5(void)
@@ -894,11 +884,10 @@ void aml_phy_cfg_t5(void)
 		usleep_range(5, 10);
 		data32 = phy_misci_t5[idx][1];
 		aml_phy_get_trim_val_t5();
-		if (rterm_trim_flag_t5) {
-			if (dts_debug_flag)
-				rterm_trim_val_t5 = t5_t7_rlevel[rlevel];
-			data32 = ((data32 & (~((0xf << 12) | 0x1))) |
-				(rterm_trim_val_t5 << 12) | rterm_trim_flag_t5);
+		if (rx_info.aml_phy.rterm_flag) {
+			data32 &= (~(0xf << 12));
+			data32 |= (t5_t7_rlevel[rx_info.aml_phy.rterm_dts_lvl] << 12);
+			data32 |= rx_info.aml_phy.rterm_flag << 0;
 		}
 		/* step2-0xd8 */
 		hdmirx_wr_amlphy(T5_HHI_RX_PHY_MISC_CNTL1, data32);

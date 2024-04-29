@@ -18,6 +18,8 @@
 	#define T7_SQO_GATE                     _BIT(30)
 	#define T7_PLL_SRC_SEL                  _BIT(29)
 #define T7_HHI_RX_PHY_MISC_CNTL1                (0x6 << 2)/*0x18*/
+	#define RTERM_VAL_T7	MSK(4, 12)
+	#define RTERM_FLAG_T7	_BIT(0)
 #define T7_HHI_RX_PHY_MISC_CNTL2                (0x7 << 2)/*0x1c*/
 #define T7_HHI_RX_PHY_MISC_CNTL3                (0x8 << 2)/*0x20*/
 #define T7_HHI_RX_PHY_DCHA_CNTL0                (0x9 << 2)/*0x24*/

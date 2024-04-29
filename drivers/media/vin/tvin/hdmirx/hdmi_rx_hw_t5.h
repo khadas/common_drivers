@@ -18,6 +18,8 @@
 	#define T5_SQO_GATE                     _BIT(30)
 	#define T5_PLL_SRC_SEL                  _BIT(29)
 #define T5_HHI_RX_PHY_MISC_CNTL1                (0x6 << 2)/*0x18*/
+	#define RTERM_VAL_T5	MSK(4, 12)
+	#define RTERM_FLAG_T5	_BIT(0)
 #define T5_HHI_RX_PHY_MISC_CNTL2                (0x7 << 2)/*0x1c*/
 #define T5_HHI_RX_PHY_MISC_CNTL3                (0x8 << 2)/*0x20*/
 #define T5_HHI_RX_PHY_DCHA_CNTL0                (0x9 << 2)/*0x24*/
@@ -76,7 +78,6 @@ bool aml_get_tmds_valid_t5(void);
 void aml_phy_power_off_t5(void);
 void aml_phy_switch_port_t5(void);
 void aml_phy_get_trim_val_t5(void);
-void aml_phy_offset_cal_t5m(void);
 void rx_dig_clk_en_t5(bool en);
 
 /*function declare end*/

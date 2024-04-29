@@ -977,9 +977,6 @@
 		pinctrl-0 = <&hdmirx_a_mux &hdmirx_b_mux
 			&hdmirx_c_mux>;
 		repeat = <0>;
-		/* bit 4: tdr enable bit */
-		/* bit [3:0]: tdr level control */
-		term_lvl = <0x10>;
 		disable_hdr = <0>;
 		interrupts = <0 41 IRQ_TYPE_LEVEL_HIGH>;
 		clocks = <&clkc CLKID_HDMIRX_MODET_GATE>,
@@ -1015,6 +1012,8 @@
 		en_4k_timing = <0>;
 		hpd_low_cec_off = <1>;
 		arc_port = <1>;
+		/* for 2.2R:0x8, for 5.1R:0x6 */
+		term_lvl = <0x8>;
 		/* bit4: enable feature, bit3~0: port number */
 		disable_port = <0x0>;
 		hdcp_tee_path = <1>;

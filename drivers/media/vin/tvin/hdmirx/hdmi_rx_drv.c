@@ -3822,13 +3822,20 @@ static int hdmirx_probe(struct platform_device *pdev)
 			clk_prepare_enable(hdevp->axi_clk);
 			clk_rate = clk_get_rate(hdevp->axi_clk);
 		}
-		/* */
+		/* phy rterm */
 		ret = of_property_read_u32(pdev->dev.of_node,
 					   "term_lvl",
-					   &phy_term_lel);
+					   &rx_info.aml_phy.rterm_dts_lvl);
 		if (ret) {
 			rx_pr("term_lvl not found.\n");
-			phy_term_lel = 0x0;
+			rx_info.aml_phy.rterm_dts_lvl = 0x8;
+		}
+		ret = of_property_read_u32(pdev->dev.of_node,
+					   "term_lvl_t3x_21",
+					   &rx_info.aml_phy_21.rterm_dts_lvl);
+		if (ret) {
+			rx_pr("term_lvl_t3x_21 not found.\n");
+			rx_info.aml_phy_21.rterm_dts_lvl = 0x8;
 		}
 	} else {
 		hdevp->audmeas_clk = clk_get(&pdev->dev, "hdmirx_audmeas_clk");
@@ -4020,13 +4027,6 @@ static int hdmirx_probe(struct platform_device *pdev)
 		sprintf(boot_info[i++], "not find rx_5v_wake_up_en, soundbar by default.");
 	}
 	ret = of_property_read_u32(pdev->dev.of_node,
-		"phy_term_lel_t3x_21",
-		&phy_term_lel_t3x_21);
-	if (ret) {
-		phy_term_lel_t3x_21 = 0;
-		sprintf(boot_info[i++], "not find phy_term_lel_t3x_21, soundbar by default.");
-	}
-	ret = of_property_read_u32(pdev->dev.of_node,
 		"edid_auto_sel",
 		&edid_auto_sel);
 	if (ret) {
@@ -4044,11 +4044,8 @@ static int hdmirx_probe(struct platform_device *pdev)
 	if (rx_info.chip_id >= CHIP_ID_T3X)
 		rx_emp1_resource_allocate(&pdev->dev);
 	//rx[rx_info.main_port].port = rx[rx_info.main_port].arc_port;
-	def_trim_value = aml_phy_get_def_trim_value();
-	aml_phy_get_trim_val();
+	aml_phy_get_def_trim_value();
 	hdmirx_hw_probe();
-	if (rx_info.chip_id >= CHIP_ID_TL1 && phy_tdr_en)
-		term_cal_en = (!is_ft_trim_done());
 	for (port = E_PORT0; port < rx_info.port_num; port++)
 		hdmirx_init_params(port);
 	hdmirx_switch_pinmux(&pdev->dev);

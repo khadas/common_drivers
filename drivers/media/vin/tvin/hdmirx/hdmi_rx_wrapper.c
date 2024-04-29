@@ -195,7 +195,6 @@ static int cec_dev_info;
 struct rx_info_s rx_info;
 struct rx_s rx[HDMIRX_PORT_MAX];
 //u8 rx_info.main_port;
-static bool term_flag = 1;
 /* vpp mute when signal change, used
  * in companion with vlock phase = 84
  */
@@ -3745,7 +3744,6 @@ void rx_get_global_variable(const char *buf)
 	pr_var(rpt_edid_selection, i++);
 	pr_var(vrr_range_dynamic_update_en, i++);
 	pr_var(allm_update_en, i++);
-	pr_var(phy_term_lel, i++);
 	pr_var(vpcore_debug, i++);
 	pr_var(tuning_cnt, i++);
 	pr_var(frl_scrambler_en, i++);
@@ -3765,7 +3763,6 @@ void rx_get_global_variable(const char *buf)
 	pr_var(vdin_reset_pcs_en, i++);
 	pr_var(rx_5v_wake_up_en, i++);
 	pr_var(hdcp_22_en, i++);
-	pr_var(phy_term_lel_t3x_21, i++);
 	pr_var(fpll_ready_max, i++);
 	pr_var(vpp_mute_cnt, i++);
 	pr_var(gcp_mute_cnt, i++);
@@ -3856,6 +3853,7 @@ void rx_get_global_variable(const char *buf)
 	pr_var(rx_info.aml_phy.tap2_byp, i++);
 	pr_var(rx_info.aml_phy.long_bist_en, i++);
 	pr_var(rx_info.aml_phy.reset_pcs_en, i++);
+	pr_var(rx_info.aml_phy.rterm_dbg_lvl, i++);
 	pr_var(rx_info.aml_phy_21.phy_bwth, i++);
 	pr_var(rx_info.aml_phy_21.vga_gain, i++);
 	pr_var(rx_info.aml_phy_21.eq_stg1, i++);
@@ -3871,6 +3869,7 @@ void rx_get_global_variable(const char *buf)
 	pr_var(rx_info.aml_phy_21.vga_tune, i++);
 	pr_var(rx_info.aml_phy_21.pre_int, i++);
 	pr_var(rx_info.aml_phy_21.pre_int_en, i++);
+	pr_var(rx_info.aml_phy_21.rterm_dbg_lvl, i++);
 	pr_var(rx[E_PORT2].var.frl_rate, i++);
 	pr_var(rx[E_PORT3].var.frl_rate, i++);
 	pr_var(tuning_cnt, i++);
@@ -3892,7 +3891,6 @@ void rx_get_global_variable(const char *buf)
 	pr_var(vdin_reset_pcs_en, i++);
 	pr_var(rx_5v_wake_up_en, i++);
 	pr_var(hdcp_22_en, i++);
-	pr_var(phy_term_lel_t3x_21, i++);
 	pr_var(fpll_ready_max, i++);
 	pr_var(vpp_mute_cnt, i++);
 	pr_var(gcp_mute_cnt, i++);
@@ -4194,8 +4192,6 @@ int rx_set_global_variable(const char *buf, int size)
 	if (set_pr_var(tmpbuf, var_to_str(audio_debug),
 	    &audio_debug, value))
 		return pr_var(audio_debug, index);
-	if (set_pr_var(tmpbuf, var_to_str(phy_term_lel), &phy_term_lel, value))
-		return pr_var(phy_term_lel, index);
 	if (set_pr_var(tmpbuf, var_to_str(tuning_cnt), &tuning_cnt, value))
 		return pr_var(tuning_cnt, index);
 	if (set_pr_var(tmpbuf, var_to_str(sig_unstable_max), &sig_unstable_max, value))
@@ -4244,9 +4240,6 @@ int rx_set_global_variable(const char *buf, int size)
 	if (set_pr_var(tmpbuf, var_to_str(fpll_ready_max),
 		&fpll_ready_max, value))
 		return pr_var(fpll_ready_max, index);
-	if (set_pr_var(tmpbuf, var_to_str(phy_term_lel_t3x_21),
-		&phy_term_lel_t3x_21, value))
-		return pr_var(phy_term_lel_t3x_21, index);
 	if (set_pr_var(tmpbuf, var_to_str(vpp_mute_cnt),
 		&vpp_mute_cnt, value))
 		return pr_var(vpp_mute_cnt, index);
@@ -4492,8 +4485,9 @@ int rx_set_global_variable(const char *buf, int size)
 	if (set_pr_var(tmpbuf, var_to_str(rx_info.aml_phy.reset_pcs_en),
 		&rx_info.aml_phy.reset_pcs_en, value))
 		return pr_var(rx_info.aml_phy.reset_pcs_en, index);
-	if (set_pr_var(tmpbuf, var_to_str(phy_term_lel), &phy_term_lel, value))
-		return pr_var(phy_term_lel, index);
+	if (set_pr_var(tmpbuf, var_to_str(rx_info.aml_phy.rterm_dbg_lvl),
+		&rx_info.aml_phy.rterm_dbg_lvl, value))
+		return pr_var(rx_info.aml_phy.rterm_dbg_lvl, index);
 	if (set_pr_var(tmpbuf, var_to_str(tuning_cnt), &tuning_cnt, value))
 		return pr_var(tuning_cnt, index);
 	if (set_pr_var(tmpbuf, var_to_str(sig_unstable_max), &sig_unstable_max, value))
@@ -4571,6 +4565,9 @@ int rx_set_global_variable(const char *buf, int size)
 	if (set_pr_var(tmpbuf, var_to_str(rx_info.aml_phy_21.pre_int_en),
 		&rx_info.aml_phy_21.pre_int_en, value))
 		return pr_var(rx_info.aml_phy_21.pre_int_en, index);
+	if (set_pr_var(tmpbuf, var_to_str(rx_info.aml_phy_21.rterm_dbg_lvl),
+		&rx_info.aml_phy_21.rterm_dbg_lvl, value))
+		return pr_var(rx_info.aml_phy_21.rterm_dbg_lvl, index);
 	return 0;
 }
 
@@ -7935,8 +7932,6 @@ int hdmirx_debug(const char *buf, int size)
 		rx[port].phy.err_sum = 0xffffff;
 	} else if (strncmp(tmpbuf, "audio", 5) == 0) {
 		hdmirx_audio_fifo_rst(port);
-	} else if (strncmp(tmpbuf, "eqcal", 5) == 0) {
-		rx_phy_rt_cal();
 	} else if (strncmp(tmpbuf, "empbuf", 5) == 0) {
 		emp_p = rx[port].emp_vid_idx ? &rx_info.emp_buff_b : &rx_info.emp_buff_a;
 		rx_pr("cnt=%d\n", emp_p->emp_pkt_cnt);
@@ -8352,10 +8347,6 @@ void hdmirx_timer_handler(struct timer_list *t)
 {
 	struct hdmirx_dev_s *devp = from_timer(devp, t, timer);
 	rx_info.timestamp++;
-	if (term_flag && term_cal_en) {
-		rx_phy_rt_cal();
-		term_flag = 0;
-	}
 	rx_5v_monitor();
 	rx_clkmsr_monitor();
 	rx_hpd_monitor();

@@ -55,7 +55,8 @@
 #define T3X_HDMIRX20PHY_DCHA_MISC1		(0x006 << 2)
 	#define T3X_20_SQ_RSTN			_BIT(26)
 	#define T3X_20_VCO_TMDS_EN			_BIT(20)
-	#define T3X_20_RTERM_CNTL			MSK(4, 12)
+	#define RTERM_VAL_T3X_20			MSK(4, 12)
+	#define RTERM_FLAG_T3X_20	_BIT(0)
 #define T3X_HDMIRX20PHY_DCHA_MISC2		(0x007 << 2)
 	#define T3X_20_TMDS_VALID_SEL		_BIT(10)
 	#define T3X_20_PLL_CLK_SEL			_BIT(9)
@@ -81,6 +82,8 @@
 	#define SQ_RSTN	_BIT(23)
 	#define SQ_GATED	_BIT(29)
 #define T3X_HDMIRX21PHY_MISC2           (0x47 << 2)
+	#define RTERM_FLAG_T3X_21	_BIT(31)
+	#define RTERM_VAL_T3X_21	MSK(4, 0)
 #define T3X_HDMIRX21PHY_DCHA_AFE        (0x48 << 2)
 	#define HYPER_GAIN	MSK(4, 16)
 	#define BUF_BST		MSK(3, 28)
@@ -212,7 +215,6 @@ extern int dts_debug_flag_t3x_21;
 extern int rlevel_t3x_21;
 extern int rterm_trim_val_t3x_21;
 extern int rterm_trim_flag_t3x_21;
-extern int phy_term_lel_t3x_21;
 extern int tuning_cnt;
 extern int vga_tuning_min;
 extern int vga_tuning_max;

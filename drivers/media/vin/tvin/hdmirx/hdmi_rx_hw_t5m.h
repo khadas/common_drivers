@@ -50,7 +50,8 @@
 #define T5M_HDMIRX20PHY_DCHA_MISC1		(0x006 << 2)
 	#define T5M_SQ_RSTN			_BIT(26)
 	#define T5M_VCO_TMDS_EN			_BIT(20)
-	#define T5M_RTERM_CNTL			MSK(4, 12)
+	#define RTERM_VAL_T5M	MSK(4, 12)
+	#define RTERM_FLAG_T5M	_BIT(4)
 #define T5M_HDMIRX20PHY_DCHA_MISC2		(0x007 << 2)
 	#define T5M_TMDS_VALID_SEL		_BIT(10)
 	#define T5M_PLL_CLK_SEL			_BIT(9)
@@ -88,7 +89,6 @@ unsigned int rx_sec_hdcp_cfg_t5m(void);
 void rx_set_aud_output_t5m(u32 param);
 void rx_sw_reset_t5m(int level);
 void hdcp_init_t5m(void);
-void aml_phy_get_trim_val_t5m(void);
 void comb_val_t5m(void (*p)(char *, unsigned int, int),
 	     char *type, unsigned int val_0, unsigned int val_1,
 		 unsigned int val_2, int len);
@@ -99,7 +99,8 @@ void bubble_sort(u32 *sort_array);
 void quick_sort2(int arr[], int l, int r);
 void clk_init_cor_t5m(void);
 void rx_dig_clk_en_t5m(bool en);
-
+void aml_phy_get_trim_val_t5m(void);
+void aml_phy_offset_cal_t5m(void);
 /*function declare end*/
 
 #endif /*_HDMI_RX_T5M_H*/

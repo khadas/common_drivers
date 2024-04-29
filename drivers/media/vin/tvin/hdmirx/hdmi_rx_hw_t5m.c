@@ -33,10 +33,6 @@
 #include "hdmi_rx_wrapper.h"
 #include "hdmi_rx_hw_t5m.h"
 
-/* FT trim flag:1-valid, 0-not valid */
-bool rterm_trim_flag_t5m;
-/* FT trim value 4 bits */
-u32 rterm_trim_val_t5m;
 /* for T5m */
 static const u32 phy_misc_t5m[][2] = {
 		/*  0x18	0x1c	*/
@@ -635,6 +631,16 @@ void aml_dfe_en_t5m(void)
 	}
 }
 
+void aml_phy_get_trim_val_t5m(void)
+{
+	if (rx_info.aml_phy.rterm_dbg_lvl)
+		rx_info.aml_phy.rterm_dts_lvl =
+			rx_info.aml_phy.rterm_dbg_lvl;
+	if (rx_info.aml_phy.rterm_dts_lvl > 15)
+		rx_info.aml_phy.rterm_dts_lvl = 15;
+	rx_info.aml_phy.rterm_val = t5m_rlevel[rx_info.aml_phy.rterm_dts_lvl];
+}
+
 /* phy offset calibration based on different chip and board */
 void aml_phy_offset_cal_t5m(void)
 {
@@ -652,9 +658,9 @@ void aml_phy_offset_cal_t5m(void)
 	hdmirx_wr_amlphy(T5M_HDMIRX20PHY_DCHA_MISC2, 0x11c73220);
 	usleep_range(10, 20);
 	data32 = 0xffe00100;
-	if (rterm_trim_flag_t5m) {
+	if (rx_info.aml_phy.rterm_flag) {
 		data32 = ((data32 & (~((0xf << 12) | 0x1))) |
-			(rterm_trim_val_t5m << 12) | rterm_trim_flag_t5m << 4);
+			(rx_info.aml_phy.rterm_val << 12) | rx_info.aml_phy.rterm_flag << 4);
 	}
 	hdmirx_wr_amlphy(T5M_HDMIRX20PHY_DCHA_MISC1, data32);
 	usleep_range(10, 20);
@@ -1288,26 +1294,7 @@ void aml_eq_cfg_t5m(void)
 		rx_pr("phy end\n");
 }
 
-void aml_phy_get_trim_val_t5m(void)
-{
-	u32 data32;
 
-	dts_debug_flag = (phy_term_lel >> 4) & 0x1;
-	if (dts_debug_flag == 0) {
-		data32 = def_trim_value;
-		rterm_trim_val_t5m = (data32 >> 12) & 0xf;
-		rterm_trim_flag_t5m = data32 & 0x1;
-	} else {
-		rlevel = phy_term_lel & 0xf;
-		if (rlevel > 15)
-			rlevel = 15;
-		rterm_trim_flag_t5m = dts_debug_flag;
-	}
-	if (rterm_trim_flag_t5m) {
-		if (log_level & PHY_LOG)
-			rx_pr("rterm trim=0x%x\n", rterm_trim_val_t5m);
-	}
-}
 
 void aml_phy_cfg_t5m(void)
 {
@@ -1350,15 +1337,14 @@ void aml_phy_cfg_t5m(void)
 		hdmirx_wr_amlphy(T5M_HDMIRX20PHY_DCHD_EQ, data32);
 		usleep_range(5, 10);
 		data32 = phy_misc_t5m[idx][0];
-		aml_phy_get_trim_val_t5m();
 		if (rx_info.aml_phy.phy_debug_en &&
 			rx_info.aml_phy.misc1_value)
 			data32 = rx_info.aml_phy.misc1_value;
-		if (rterm_trim_flag_t5m) {
-			if (dts_debug_flag)
-				rterm_trim_val_t5m = t5m_rlevel[rlevel];
+		aml_phy_get_trim_val_t5m();
+		if (rx_info.aml_phy.rterm_flag) {
 			data32 = ((data32 & (~((0xf << 12) | 0x1))) |
-				(rterm_trim_val_t5m << 12) | rterm_trim_flag_t5m << 4);
+				(rx_info.aml_phy.rterm_val << 12) |
+				rx_info.aml_phy.rterm_flag << 4);
 		}
 		hdmirx_wr_amlphy(T5M_HDMIRX20PHY_DCHA_MISC1, data32);
 		usleep_range(5, 10);
@@ -1488,7 +1474,7 @@ void dump_aml_phy_sts_t5m(void)
 	u32 sli0_ofst2, sli1_ofst2, sli2_ofst2;
 
 	/* rterm */
-	terminal = (hdmirx_rd_bits_amlphy(T5M_HDMIRX20PHY_DCHA_MISC1, T5M_RTERM_CNTL));
+	terminal = (hdmirx_rd_bits_amlphy(T5M_HDMIRX20PHY_DCHA_MISC1, RTERM_VAL_T5M));
 
 	/* eq_boost1 status */
 	/* mux_eye_en */

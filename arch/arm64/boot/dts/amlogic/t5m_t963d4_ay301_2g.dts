@@ -716,6 +716,8 @@
 		vrr_range_dynamic_update_en = <1>;
 		/* bit4: enable feature, bit3~0: port number */
 		disable_port = <0x0>;
+		/* for 2.2R:0x8, for 5.1R:0x6 */
+		term_lvl = <0x8>;
 		/* MAP_ADDR_MODULE_CBUS */
 		/* MAP_ADDR_MODULE_HIU */
 		/* MAP_ADDR_MODULE_HDMIRX_CAPB3 */

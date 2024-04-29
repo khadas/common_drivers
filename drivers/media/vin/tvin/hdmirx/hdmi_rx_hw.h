@@ -1185,6 +1185,9 @@
 #define MISCI_COMMON_RST				_BIT(10)
 #define HHI_HDMIRX_PHY_MISC_CNTL1		(0xd8 << 2)
 #define MISCI_MANUAL_MODE				_BIT(22)
+#define RTERM_VAL_TL1	MSK(10, 12)
+#define RTERM_FLAG_TL1	_BIT(0)
+#define RTERM_FLAG_EFUSE	_BIT(0)
 #define HHI_HDMIRX_PHY_MISC_CNTL2		(0xe0 << 2)
 	/*[4:5] in trim,[6:7] im trim*/
 #define HHI_HDMIRX_PHY_DCHD_CNTL0		(0xe5 << 2)
@@ -3211,16 +3214,12 @@ extern int clock_lock_th;
 extern int scdc_force_en;
 extern u32 hdcp_hpd_ctrl_en;
 extern int eq_dbg_lvl;
-extern u32 phy_term_lel;
-extern bool phy_tdr_en;
 extern char emp_buf[2][1024];
 extern char pre_emp_buf[2][1024];
 extern int hdcp22_on;
 extern int hdcp14_on;
 extern int hdcp22_kill_esm;
 extern bool hpd_to_esm;
-extern u32 term_cal_val;
-extern u32 phy_trim_val;
 extern u32 hdcp22_reauth_enable;
 extern int i2c_err_cnt[4];
 extern u32 rx_ecc_err_thres;
@@ -3228,11 +3227,6 @@ extern u32 rx_ecc_err_frames;
 extern u32 ddc_dbg_en;
 extern int dbg_port;
 extern int kill_esm_fail;
-extern u32 rterm_trim_val_t5;
-extern u32 rterm_trim_flag_t5;
-extern u32 rterm_trim_val_t7;
-extern u32 rterm_trim_flag_t7;
-extern unsigned int rlevel;
 extern u32 dts_debug_flag;
 extern u32 afifo_overflow_cnt;
 extern u32 afifo_underflow_cnt;
@@ -3387,9 +3381,6 @@ void rx_run_eq(u8 port);
 bool rx_eq_done(u8 port);
 bool is_tmds_valid(u8 port);
 void hdmirx_top_irq_en(u8 en, u8 port);
-void rx_phy_rt_cal(void);
-bool is_ft_trim_done(void);
-void aml_phy_get_trim_val(void);
 unsigned int rx_set_hdcp14_secure_key(void);
 bool rx_clr_tmds_valid(u8 port);
 void rx_set_suspend_edid_clk(bool en);
@@ -3483,7 +3474,7 @@ void rx_set_color_bar(bool en, unsigned int lvl, u8 port);
 void reset_pcs(u8 port);
 bool is_earc_hpd_low(void);
 void rx_mute_vpp(u8 port);
-int aml_phy_get_def_trim_value(void);
+void aml_phy_get_def_trim_value(void);
 
 /* t3x  */
 void hdmi_tx_rx_frl_training_main(u8 port);

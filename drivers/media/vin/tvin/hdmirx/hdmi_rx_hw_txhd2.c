@@ -34,11 +34,7 @@
 #include "hdmi_rx_wrapper.h"
 #include "hdmi_rx_hw_txhd2.h"
 
-/* FT trim flag:1-valid, 0-not valid */
-bool rterm_trim_flag_txhd2;
-/* FT trim value 4 bits */
-u32 rterm_trim_val_txhd2;
-/* for T5m */
+/* for Txhd2 */
 static const u32 phy_misc_txhd2[][2] = {
 		/*  0x18	0x1c	*/
 	{	 /* 24~35M */
@@ -653,9 +649,9 @@ void aml_phy_offset_cal_txhd2(void)
 	hdmirx_wr_amlphy(TXHD2_HDMIRX20PHY_DCHA_MISC2, 0x11c73220);
 	usleep_range(10, 20);
 	data32 = 0xffe00100;
-	if (rterm_trim_flag_txhd2) {
+	if (rx_info.aml_phy.rterm_flag) {
 		data32 = ((data32 & (~((0xf << 12) | 0x1))) |
-			(rterm_trim_val_txhd2 << 12) | rterm_trim_flag_txhd2 << 4);
+			(rx_info.aml_phy.rterm_val << 12) | rx_info.aml_phy.rterm_flag << 4);
 	}
 	hdmirx_wr_amlphy(TXHD2_HDMIRX20PHY_DCHA_MISC1, data32);
 	usleep_range(10, 20);
@@ -1342,23 +1338,11 @@ void aml_eq_cfg_txhd2(void)
 
 void aml_phy_get_trim_val_txhd2(void)
 {
-	u32 data32;
-
-	dts_debug_flag = (phy_term_lel >> 4) & 0x1;
-	if (dts_debug_flag == 0) {
-		data32 = def_trim_value;
-		rterm_trim_val_txhd2 = (data32 >> 12) & 0xf;
-		rterm_trim_flag_txhd2 = data32 & 0x1;
-	} else {
-		rlevel = phy_term_lel & 0xf;
-		if (rlevel > 15)
-			rlevel = 15;
-		rterm_trim_flag_txhd2 = dts_debug_flag;
-	}
-	if (rterm_trim_flag_txhd2) {
-		if (log_level & PHY_LOG)
-			rx_pr("rterm trim=0x%x\n", rterm_trim_val_txhd2);
-	}
+	if (rx_info.aml_phy.rterm_dbg_lvl)
+		rx_info.aml_phy.rterm_dts_lvl = rx_info.aml_phy.rterm_dbg_lvl;
+	if (rx_info.aml_phy.rterm_dts_lvl > 15)
+		rx_info.aml_phy.rterm_dts_lvl = 15;
+	rx_info.aml_phy.rterm_val = txhd2_rlevel[rx_info.aml_phy.rterm_dts_lvl];
 }
 
 void aml_phy_cfg_txhd2(void)
@@ -1406,11 +1390,10 @@ void aml_phy_cfg_txhd2(void)
 		if (rx_info.aml_phy.phy_debug_en &&
 			rx_info.aml_phy.misc1_value)
 			data32 = rx_info.aml_phy.misc1_value;
-		if (rterm_trim_flag_txhd2) {
-			if (dts_debug_flag)
-				rterm_trim_val_txhd2 = txhd2_rlevel[rlevel];
+		if (rx_info.aml_phy.rterm_flag) {
 			data32 = ((data32 & (~((0xf << 12) | 0x1))) |
-				(rterm_trim_val_txhd2 << 12) | rterm_trim_flag_txhd2 << 4);
+				(rx_info.aml_phy.rterm_val << 12) |
+				rx_info.aml_phy.rterm_flag << 4);
 		}
 		hdmirx_wr_amlphy(TXHD2_HDMIRX20PHY_DCHA_MISC1, data32);
 		usleep_range(5, 10);
@@ -1540,7 +1523,7 @@ void dump_aml_phy_sts_txhd2(void)
 	u32 sli0_ofst2, sli1_ofst2, sli2_ofst2;
 
 	/* rterm */
-	terminal = (hdmirx_rd_bits_amlphy(TXHD2_HDMIRX20PHY_DCHA_MISC1, TXHD2_RTERM_CNTL));
+	terminal = (hdmirx_rd_bits_amlphy(TXHD2_HDMIRX20PHY_DCHA_MISC1, RTERM_VAL_TXHD2));
 
 	/* eq_boost1 status */
 	/* mux_eye_en */

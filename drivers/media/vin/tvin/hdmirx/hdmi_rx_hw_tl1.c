@@ -184,6 +184,7 @@ static const u32 phy_dchd_2[][3] = {
 	},
 };
 
+/* Including bit'22 mannual control mode + bit[21:12] rterm val */
 u32 tl1_tm2_reg360[] = {
 	0x7ff,
 	0x5ff,
@@ -231,6 +232,15 @@ void aml_eq_cfg_tl1(void)
 	wr_reg_hhi(TL1_HHI_HDMIRX_PHY_DCHD_CNTL1, data32);
 }
 
+void aml_phy_get_trim_val_tl1_tm2(void)
+{
+	if (rx_info.aml_phy.rterm_dbg_lvl)
+		rx_info.aml_phy.rterm_dts_lvl = rx_info.aml_phy.rterm_dbg_lvl;
+	if (rx_info.aml_phy.rterm_dts_lvl > 10)
+		rx_info.aml_phy.rterm_dts_lvl = 10;
+	rx_info.aml_phy.rterm_val = tl1_tm2_reg360[rx_info.aml_phy.rterm_dts_lvl];
+}
+
 void aml_phy_cfg_tl1(void)
 {
 	u8 port = rx_info.main_port;
@@ -259,17 +269,16 @@ void aml_phy_cfg_tl1(void)
 	usleep_range(2, 4);
 	data32 = phy_misci[idx][1];
 	aml_phy_get_trim_val_tl1_tm2();
-	if (idx < PHY_BW_5 && phy_tdr_en) {
-		phy_trim_val = (~(0xfff << 12)) & phy_trim_val;
-		phy_trim_val = (tl1_tm2_reg360[rlevel] << 12) | phy_trim_val;
-		if (term_cal_en) {
-			data32 = (((data32 & (~(0x3ff << 12))) |
-				(term_cal_val << 12)) | (1 << 22));
-		} else {
-			data32 = phy_trim_val;
+	if (idx < PHY_BW_5) {
+		if (rx_info.aml_phy.rterm_flag) {
+			data32 &= (~(0x7ff << 12));
+			/* mannual control mode */
+			data32 |= (1 << 22);
+			/* rterm value */
+			data32 |= (rx_info.aml_phy.rterm_val << 12);
+			/* ft trim flag */
+			data32 |= (rx_info.aml_phy.rterm_flag << 0);
 		}
-	} else {
-		data32 = phy_trim_val;
 	}
 	wr_reg_hhi(TL1_HHI_HDMIRX_PHY_MISC_CNTL1, data32);
 	wr_reg_hhi(TL1_HHI_HDMIRX_PHY_MISC_CNTL2, phy_misci[idx][2]);

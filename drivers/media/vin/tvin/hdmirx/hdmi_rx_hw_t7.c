@@ -32,10 +32,6 @@
 #include "hdmi_rx_hw.h"
 #include "hdmi_rx_wrapper.h"
 #include "hdmi_rx_hw_t7.h"
-/* FT trim flag:1-valid, 0-not valid */
-u32 rterm_trim_flag_t7;
-/* FT trim value 4 bits */
-u32 rterm_trim_val_t7;
 int hdcp_22_en;
 
 /* for T7 */
@@ -590,9 +586,11 @@ void aml_phy_offset_cal_t7(void)
 	usleep_range(5, 10);
 
 	data32 = phy_misci_t7[idx][1];
-	if (rterm_trim_flag_t7)
-		data32 = ((data32 & (~((0xf << 12) | 0x1))) |
-			(rterm_trim_val_t7 << 12) | rterm_trim_flag_t7);
+	if (rx_info.aml_phy.rterm_flag) {
+		data32 &= (~((0xf << 12)  | 0x1));
+		data32 |= (rx_info.aml_phy.rterm_val << 12);
+		data32 |= rx_info.aml_phy.rterm_flag << 0;
+	}
 	/* step2-0xd8 */
 	hdmirx_wr_amlphy(T7_HHI_RX_PHY_MISC_CNTL1, data32);
 	/*step2-0xe0*/
@@ -895,23 +893,12 @@ void aml_eq_cfg_t7(void)
 
 void aml_phy_get_trim_val_t7(void)
 {
-	u32 data32;
-
-	dts_debug_flag = (phy_term_lel >> 4) & 0x1;
-	if (dts_debug_flag == 0) {
-		data32 = def_trim_value;
-		rterm_trim_val_t7 = (data32 >> 12) & 0xf;
-		rterm_trim_flag_t7 = data32 & 0x1;
-	} else {
-		rlevel = phy_term_lel & 0xf;
-		if (rlevel > 15)
-			rlevel = 15;
-		rterm_trim_flag_t7 = dts_debug_flag;
-	}
-	if (rterm_trim_flag_t7) {
-		if (log_level & PHY_LOG)
-			rx_pr("rterm trim=0x%x\n", rterm_trim_val_t7);
-	}
+	if (rx_info.aml_phy.rterm_dbg_lvl)
+		rx_info.aml_phy.rterm_dts_lvl =
+			rx_info.aml_phy.rterm_dbg_lvl;
+	if (rx_info.aml_phy.rterm_dts_lvl > 15)
+		rx_info.aml_phy.rterm_dts_lvl = 15;
+	rx_info.aml_phy.rterm_val = t5_t7_rlevel[rx_info.aml_phy.rterm_dts_lvl];
 }
 
 void aml_phy_cfg_t7(void)
@@ -937,11 +924,10 @@ void aml_phy_cfg_t7(void)
 		usleep_range(5, 10);
 		data32 = phy_misci_t7[idx][1];
 		aml_phy_get_trim_val_t7();
-		if (rterm_trim_flag_t7) {
-			if (dts_debug_flag)
-				rterm_trim_val_t7 = t5_t7_rlevel[rlevel];
-			data32 = ((data32 & (~((0xf << 12) | 0x1))) |
-				(rterm_trim_val_t7 << 12) | rterm_trim_flag_t7);
+		if (rx_info.aml_phy.rterm_flag) {
+			data32 &= (~((0xf << 12)  | 0x1));
+			data32 |= (rx_info.aml_phy.rterm_val << 12);
+			data32 |= rx_info.aml_phy.rterm_flag << 0;
 		}
 		/* step2-0xd8 */
 		hdmirx_wr_amlphy(T7_HHI_RX_PHY_MISC_CNTL1, data32);

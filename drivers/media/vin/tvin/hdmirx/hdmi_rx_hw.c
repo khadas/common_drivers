@@ -123,12 +123,6 @@ int scdc_force_en = 1;
 /* for hdcp_hpd debug, disable by default */
 u32 hdcp_hpd_ctrl_en;
 int eq_dbg_lvl;
-u32 phy_trim_val;
-/* bit'4: tdr enable
- * bit [3:0]: tdr level control
- */
-u32 phy_term_lel;
-bool phy_tdr_en;
 int kill_esm_fail;
 int dbg_port;
 /* emp buffer */
@@ -6347,44 +6341,6 @@ void aml_phy_switch_port(u8 port)
 		aml_phy_switch_port_t3x(port);
 }
 
-bool is_ft_trim_done(void)
-{
-	int ret = phy_trim_val & 0x1;
-
-	rx_pr("ft trim=%d\n", ret);
-	return ret;
-}
-
-/*T5 todo:*/
-void aml_phy_get_trim_val_tl1_tm2(void)
-{
-	phy_trim_val = def_trim_value;
-	dts_debug_flag = (phy_term_lel >> 4) & 0x1;
-	rlevel = phy_term_lel & 0xf;
-	if (rlevel > 11)
-		rlevel = 10;
-	phy_tdr_en = dts_debug_flag;
-}
-
-void aml_phy_get_trim_val(void)
-{
-	if (rx_info.chip_id >= CHIP_ID_TL1 &&
-		rx_info.chip_id <= CHIP_ID_TM2)
-		aml_phy_get_trim_val_tl1_tm2();
-	else if (rx_info.chip_id >= CHIP_ID_T5 &&
-		rx_info.chip_id <= CHIP_ID_T5D)
-		aml_phy_get_trim_val_t5();
-	else if (rx_info.chip_id >= CHIP_ID_T7 &&
-		rx_info.chip_id <= CHIP_ID_T5W)
-		aml_phy_get_trim_val_t7();
-	else if (rx_info.chip_id == CHIP_ID_T5M)
-		aml_phy_get_trim_val_t5m();
-	else if (rx_info.chip_id == CHIP_ID_T3X)
-		aml_phy_get_trim_val_t3x();
-	else if (rx_info.chip_id == CHIP_ID_TXHD2)
-		aml_phy_get_trim_val_txhd2();
-}
-
 void rx_get_best_eq_setting(u8 port)
 {
 	u32 ch0, ch1, ch2, ch3;
@@ -7231,46 +7187,6 @@ u8 rx_get_avmute_sts(u8 port)
 	}
 	return ret;
 }
-/* termination calibration */
-void rx_phy_rt_cal(void)
-{
-	int i = 0, j = 0;
-	u32 x_val[100][2];
-	u32 temp;
-	int val_cnt = 1;
-
-	for (; i < 100; i++) {
-		wr_reg_hhi_bits(HHI_HDMIRX_PHY_MISC_CNTL0, MISCI_COMMON_RST, 0);
-		wr_reg_hhi_bits(HHI_HDMIRX_PHY_MISC_CNTL0, MISCI_COMMON_RST, 1);
-		udelay(1);
-		temp = (rd_reg_hhi(HHI_HDMIRX_PHY_MISC_STAT) >> 1) & 0x3ff;
-		if (i == 0) {
-			x_val[0][0] = temp;
-			x_val[0][1] = 1;
-		}
-
-		for (; j < i; j++) {
-			if (temp == x_val[j][0]) {
-				x_val[j][1]	+= 1;
-				goto todo;
-			}
-		}
-todo:
-		if (j == (val_cnt + 1)) {
-			x_val[j][0] = temp;
-			x_val[j][1] = 1;
-			val_cnt++;
-			rx_pr("new\n");
-		}
-
-		if (x_val[j][1] == 10) {
-			term_cal_val = (~((x_val[j][0]) << 1)) & 0x3ff;
-			rx_pr("tdr cal val=0x%x", term_cal_val);
-			return;
-		}
-		j = 0;
-	}
-}
 
 /*
  * for Nvidia PC long detection time issue
@@ -7564,23 +7480,78 @@ void reset_pcs(u8 port)
 	hdmirx_wr_top(TOP_SW_RESET, 0, port);
 }
 
-int aml_phy_get_def_trim_value(void)
+void aml_phy_get_def_trim_value(void)
 {
-	// t3x to do
-	if (rx_info.chip_id >= CHIP_ID_TL1 &&
-		rx_info.chip_id <= CHIP_ID_TM2)
-		return rd_reg_hhi(HHI_HDMIRX_PHY_MISC_CNTL1);
-	else if (rx_info.chip_id >= CHIP_ID_T5 &&
-		rx_info.chip_id <= CHIP_ID_T5D)
-		return hdmirx_rd_amlphy(T5_HHI_RX_PHY_MISC_CNTL1);
-	else if (rx_info.chip_id >= CHIP_ID_T7 &&
-		rx_info.chip_id <= CHIP_ID_T5W)
-		return hdmirx_rd_amlphy(T7_HHI_RX_PHY_MISC_CNTL1);
-	else if (rx_info.chip_id == CHIP_ID_T5M)
-		return hdmirx_rd_amlphy(T5M_HDMIRX20PHY_DCHA_MISC1);
-	else if (rx_info.chip_id == CHIP_ID_TXHD2)
-		return hdmirx_rd_amlphy(TXHD2_HDMIRX20PHY_DCHA_MISC1);
-	else
-		return 0;
+	u32 data32 = 0;
+
+	/* get rterm def val,TL1/TM2 bit[12:22],other chips bit[12:15] */
+	switch (rx_info.chip_id) {
+	case CHIP_ID_TL1:
+	case CHIP_ID_TM2:
+		rx_info.aml_phy.rterm_val =
+			rd_reg_hhi_bits(HHI_HDMIRX_PHY_MISC_CNTL1,
+			RTERM_VAL_TL1);
+		rx_info.aml_phy.rterm_flag =
+			rd_reg_hhi_bits(HHI_HDMIRX_PHY_MISC_CNTL1,
+			RTERM_FLAG_EFUSE);
+		break;
+	case CHIP_ID_T5:
+	case CHIP_ID_T5D:
+		rx_info.aml_phy.rterm_val =
+			hdmirx_rd_bits_amlphy(T5_HHI_RX_PHY_MISC_CNTL1,
+			RTERM_VAL_T5);
+		rx_info.aml_phy.rterm_flag =
+			hdmirx_rd_bits_amlphy(T5_HHI_RX_PHY_MISC_CNTL1,
+			RTERM_FLAG_EFUSE);
+		break;
+	case CHIP_ID_T3:
+	case CHIP_ID_T7:
+	case CHIP_ID_T5W:
+		rx_info.aml_phy.rterm_val =
+			hdmirx_rd_bits_amlphy(T7_HHI_RX_PHY_MISC_CNTL1,
+			RTERM_VAL_T7);
+		rx_info.aml_phy.rterm_flag =
+			hdmirx_rd_bits_amlphy(T7_HHI_RX_PHY_MISC_CNTL1,
+			RTERM_FLAG_EFUSE);
+		break;
+	case CHIP_ID_T5M:
+		rx_info.aml_phy.rterm_val =
+			hdmirx_rd_bits_amlphy(T5M_HDMIRX20PHY_DCHA_MISC1,
+			RTERM_VAL_T5M);
+		rx_info.aml_phy.rterm_flag =
+			hdmirx_rd_bits_amlphy(T5M_HDMIRX20PHY_DCHA_MISC1,
+			RTERM_FLAG_EFUSE);
+		break;
+	case CHIP_ID_TXHD2:
+		rx_info.aml_phy.rterm_val =
+			hdmirx_rd_bits_amlphy(TXHD2_HDMIRX20PHY_DCHA_MISC1,
+			RTERM_VAL_TXHD2);
+		rx_info.aml_phy.rterm_flag =
+			hdmirx_rd_bits_amlphy(TXHD2_HDMIRX20PHY_DCHA_MISC1,
+			RTERM_FLAG_EFUSE);
+		break;
+	case CHIP_ID_T3X:
+		/* 2.0 port rterm setting */
+		data32 = hdmirx_rd_bits_amlphy_t3x(T3X_HDMIRX20PHY_DCHA_MISC1,
+			RTERM_VAL_T3X_20, E_PORT0);
+		rx_info.aml_phy.rterm_val = data32;
+		data32 = hdmirx_rd_bits_amlphy_t3x(T3X_HDMIRX20PHY_DCHA_MISC1,
+			RTERM_FLAG_T3X_20, E_PORT1);
+		rx_info.aml_phy.rterm_flag = data32;
+		/* 2.1 port rterm setting */
+		data32 = hdmirx_rd_bits_amlphy_t3x(T3X_HDMIRX21PHY_MISC2,
+			RTERM_VAL_T3X_21, E_PORT2);
+		rx_info.aml_phy_21.rterm_val = data32;
+		data32 = hdmirx_rd_bits_amlphy_t3x(T3X_HDMIRX21PHY_MISC2,
+			RTERM_FLAG_T3X_21, E_PORT3);
+		rx_info.aml_phy_21.rterm_flag = data32;
+		break;
+	default:
+		break;
+	}
+	rx_pr("rterm trim 2.0=0x%x-%d\n", rx_info.aml_phy.rterm_val, rx_info.aml_phy.rterm_flag);
+	if (rx_info.chip_id == CHIP_ID_T3X)
+		rx_pr("rterm trim 2.1=0x%x-%d\n", rx_info.aml_phy_21.rterm_val,
+			rx_info.aml_phy_21.rterm_flag);
 }
 

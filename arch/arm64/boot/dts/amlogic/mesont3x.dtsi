@@ -3434,8 +3434,8 @@
 				/*"mif2_meta_wr_done_int"*/
 				/*"vpu_crash_int",*/
 		rdma-irq = <4>;
-//		clocks = <&clkc CLKID_FCLK_DIV5>, <&clkc CLKID_VDIN_MEAS_GATE>;
-//		clock-names = "fclk_div5", "cts_vdin_meas_clk";
+		clocks = <&clkc CLKID_FCLK_DIV5>, <&clkc CLKID_VDIN_MEAS>;
+		clock-names = "fclk_div5", "cts_vdin_meas_clk";
 		vdin_id = <1>;
 		/* export vdin id to other module or app */
 		vdin_export_id = <2>;

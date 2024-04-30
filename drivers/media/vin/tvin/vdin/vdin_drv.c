@@ -368,12 +368,6 @@ int vdin_open_fe(enum tvin_port_e port, int index,  struct vdin_dev_s *devp)
 	 /* clear color para*/
 	memset(&devp->prop, 0, sizeof(devp->prop));
 
-	/* vdin msr clock gate enable */
-	if (devp->msr_clk && !devp->vdin_clk_flag) {
-		clk_prepare_enable(devp->msr_clk);
-		devp->vdin_clk_flag = 1;
-	}
-
 	if (devp->frontend->dec_ops && devp->frontend->dec_ops->open)
 		ret = devp->frontend->dec_ops->open(devp->frontend,
 			port, devp->port_type);
@@ -410,11 +404,7 @@ void vdin_close_fe(struct vdin_dev_s *devp)
 		pr_info("%s: null pointer\n", __func__);
 		return;
 	}
-	/* bt656 clock gate disable */
-	if (devp->msr_clk && devp->vdin_clk_flag) {
-		clk_disable_unprepare(devp->msr_clk);
-		devp->vdin_clk_flag = 0;
-	}
+
 	if (IS_HDMI_SRC(devp->parm.port) || IS_TVAFE_SRC(devp->parm.port))
 		del_timer_sync(&devp->timer);
 	if (devp->frontend && devp->frontend->dec_ops->close) {
@@ -2015,10 +2005,6 @@ int start_tvin_service(int no, struct vdin_parm_s  *para)
 		fe->private_data = para;
 		fe->port         = devp->parm.port;
 		devp->frontend   = fe;
-
-		/* vdin msr clock gate enable */
-		if (devp->msr_clk)
-			clk_prepare_enable(devp->msr_clk);
 
 		if (fe->dec_ops->open && !(devp->flags & VDIN_FLAG_DEC_OPENED))
 			fe->dec_ops->open(fe, fe->port, devp->port_type);
@@ -6684,8 +6670,8 @@ static int vdin_drv_probe(struct platform_device *pdev)
 				clk_set_rate(devp->msr_clk, 50000000);
 				devp->msr_clk_val = clk_get_rate(devp->msr_clk);
 			}
-			/* vdin clk is not enabled in probe by default */
-			//clk_prepare_enable(devp->msr_clk);
+			if (!devp->index)
+				clk_prepare_enable(devp->msr_clk);
 			devp->vdin_clk_flag = 0;
 			pr_info("%s: vdin[%d] clock is %d MHZ\n",
 				__func__, devp->index,
@@ -6889,6 +6875,12 @@ static int vdin_drv_resume(struct platform_device *pdev)
 			VDIN_COMMON_INPUT_EN_BIT, VDIN_COMMON_INPUT_EN_WID);
 	}
 	vdin_clk_on_off(devp, true);
+
+	/* vdin msr clock gate enable */
+	if (!devp->index && devp->msr_clk && !devp->vdin_clk_flag) {
+		clk_prepare_enable(devp->msr_clk);
+		devp->vdin_clk_flag = 1;
+	}
 
 	//if (devp->irq) {
 	//	if (!irq_can_set_affinity(devp->irq))

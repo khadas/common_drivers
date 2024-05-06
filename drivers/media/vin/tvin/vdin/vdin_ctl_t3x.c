@@ -841,8 +841,8 @@ void vdin_change_matrix0_t3x(u32 offset, u32 matrix_csc)
 		wr(offset, VDIN0_MAT_OFFSET2,       matrix_tbl->post_offset2);
 		wr_bits(offset, VDIN0_PP_CTRL, 1, PP_MAT0_EN_BIT, PP_MAT0_EN_WID);
 	}
-
-	pr_info("%s id:%d\n", __func__, matrix_csc);
+	if (vdin_ctl_dbg)
+		pr_info("%s id:%d\n", __func__, matrix_csc);
 }
 
 /* hdr2 used as only matrix,not hdr matrix
@@ -937,8 +937,9 @@ vdin_set_color_matrix_t3x(enum vdin_matrix_sel_e matrix_sel, unsigned int offset
 	/*struct vdin_matrix_lup_s *matrix_tbl;*/
 	struct tvin_format_s *fmt_info = tvin_fmt_p;
 
-	pr_info("%s tvin_fmt_p:%p %p,format_convert:%d,matrix_sel:%d\n",
-		__func__, fmt_info, tvin_fmt_p, format_convert, matrix_sel);
+	if (vdin_ctl_dbg)
+		pr_info("%s tvin_fmt_p:%p %p,format_convert:%d,matrix_sel:%d\n",
+			__func__, fmt_info, tvin_fmt_p, format_convert, matrix_sel);
 
 	if (!fmt_info) {
 		pr_info("error %s tvin_fmt_p:%p\n", __func__, tvin_fmt_p);
@@ -1227,11 +1228,12 @@ void vdin_set_matrix_t3x(struct vdin_dev_s *devp)
 			matrix_sel = devp->debug.dbg_sel_mat & 0xf;
 		else
 			matrix_sel = VDIN_SEL_MATRIX0;/*VDIN_SEL_MATRIX_HDR*/
-		pr_info("%s %d:%p,conv:%d,port:%#x,fmt_range:%d,color_range:%d\n",
-			__func__, __LINE__,
-			devp->fmt_info_p, devp->format_convert,
-			devp->parm.port, devp->prop.color_fmt_range,
-			devp->color_range_mode);
+		if (vdin_ctl_dbg)
+			pr_info("%s %d:%p,conv:%d,port:%#x,fmt_range:%d,color_range:%d\n",
+				__func__, __LINE__,
+				devp->fmt_info_p, devp->format_convert,
+				devp->parm.port, devp->prop.color_fmt_range,
+				devp->color_range_mode);
 
 		if (!devp->dv.dv_flag) {
 			devp->csc_idx = vdin_set_color_matrix_t3x(matrix_sel,

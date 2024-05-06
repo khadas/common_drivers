@@ -1280,6 +1280,8 @@ u32 check_cfg_enabled_top1(void)
 			ret |= CFG_ENABLE_L1L4;
 	}
 	/*todo, check dynamic_cfg_enabled_top1*/
+	if (debug_dolby & 0x200)
+		pr_dv_dbg("check cfg enable precision %d\n", ret);
 	return ret;
 }
 
@@ -1336,12 +1338,13 @@ void update_cp_cfg(void)
 	int i = 0;
 
 	if (is_aml_hw5()) {
-		update_cp_cfg_hw5(false, true, false);/*update for top1*/
-		if (check_cfg_enabled_top1() == 0)
+		if (check_cfg_enabled_top1() == 0) {
 			/*cfg pd off: top2 cfg update with top1*/
 			update_cp_cfg_hw5(false, false, false);
-		else/*cfg pd on:delay update top2 cfg after top1_enable*/
+		} else {/*cfg pd on:delay update top2 cfg after top1_enable*/
+			update_cp_cfg_hw5(false, true, false);/*update for top1*/
 			update_top2_cfg = true;
+		}
 		return;
 	}
 	if (cur_pic_mode >= num_picture_mode || num_picture_mode == 0 ||

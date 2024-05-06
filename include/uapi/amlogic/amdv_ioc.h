@@ -128,7 +128,7 @@ struct light_sensor_s {
 #define DV_IOC_SET_DV_LIGHT_SENSE _IOW((DV_M), 0xf, struct light_sensor_s)
 
 /*get precision detail cap for current mode(1:support 0:not support)*/
-#define DV_IOC_GET_DV_PRECISION_DETAIL_SUPPORT _IOW((DV_M), 0x10, int)
+#define DV_IOC_GET_DV_PRECISION_DETAIL_SUPPORT _IOR((DV_M), 0x10, int)
 
 /*set precision detail for current mode (1: bypass, 0: not bypass*/
 #define DV_IOC_SET_DV_PRECISION_DETAIL_BYPASS _IOW((DV_M), 0x11, int)

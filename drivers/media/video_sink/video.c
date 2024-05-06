@@ -5818,7 +5818,7 @@ s32 update_vframe_src_fmt(struct vframe_s *vf,
 	vf->src_fmt.downsamplers = 2;
 #endif
 	if (debug_flag & DEBUG_FLAG_OMX_DV_DROP_FRAME) {
-		pr_info("===update vf %p, sei %p, size %d, dual_layer %d play_id = %d ===\n",
+		pr_info("===update vf %px, sei %px,size %d,dual_layer %d,play_id=%d ===\n",
 			vf, sei, size, dual_layer,
 			vf->src_fmt.play_id);
 		if (sei && size > 15) {
@@ -5859,7 +5859,7 @@ s32 update_vframe_src_fmt(struct vframe_s *vf,
 #if PARSE_MD_IN_ADVANCE
 			if (vf->src_fmt.md_buf && vf->src_fmt.comp_buf) {
 				if (debug_flag & DEBUG_FLAG_OMX_DV_DROP_FRAME)
-					pr_info("parse vf %p, sei %p, size %d, md_buf %p\n",
+					pr_info("parse vf %px, sei %px, size %d, md_buf %px\n",
 						vf, sei, size, vf->src_fmt.md_buf);
 				ret = parse_sei_and_meta_ext
 					(vf, sei, size,

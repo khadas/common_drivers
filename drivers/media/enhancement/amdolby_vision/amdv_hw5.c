@@ -597,7 +597,7 @@ static void dolby5_ahb_reg_config(u32 *reg_baddr,
 		reg_val = reg_val & 0xffffffff;
 
 		p_last_val = p_last_baddr[i * 2];
-		p_last_val = p_last_val & 0xffff;
+		p_last_val = p_last_val & 0xffffffff;
 		if (i < 6)
 			if (debug_dolby & 0x10000000)
 				pr_dv_dbg("=== addr: 0x%x val:0x%x ===%x %x %x\n",

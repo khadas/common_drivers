@@ -167,7 +167,7 @@ static unsigned int vdin_vrr_chg_cnt = 1;
 module_param(vdin_vrr_chg_cnt, uint, 0664);
 MODULE_PARM_DESC(vdin_vrr_chg_cnt, "vdin_vrr_chg_cnt");
 
-static unsigned int vdin_qms_chg_cnt = 1;
+static unsigned int vdin_qms_chg_cnt = 2;
 module_param(vdin_qms_chg_cnt, uint, 0664);
 MODULE_PARM_DESC(vdin_qms_chg_cnt, "vdin_qms_chg_cnt");
 

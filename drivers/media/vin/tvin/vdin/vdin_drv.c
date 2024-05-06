@@ -2726,7 +2726,7 @@ int vdin_vs_duration_check(struct vdin_dev_s *devp)
 		pr_info("isr:diff_time:%d, cycle:%d\n",
 			diff_time, devp->cycle);
 	if (devp->prop.vtem_data.qms_en)
-		input_fps = devp->prop.vtem_data.next_tfr;
+		input_fps = devp->prop.vtem_data.next_tfr / 1000;
 	else
 		input_fps = devp->parm.info.fps;
 	/* In a duration 50M clk theory value */

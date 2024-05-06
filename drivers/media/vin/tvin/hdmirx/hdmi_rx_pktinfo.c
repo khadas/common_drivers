@@ -740,6 +740,9 @@ void rx_pkt_initial(u8 port)
 	rx[i].vtem_info.vrr_en = false;
 	rx[i].emp_dv_info.flag = false;
 	rx[i].emp_cuva_info.flag = false;
+	rx[i].sbtm_info.flag = false;
+	rx[i].emp_dv_info.flag = false;
+	rx[i].emp_cuva_info.flag = false;
 	rx_pkt_clr_attach_drm(port);
 
 	if (!emp_info_p) {
@@ -747,6 +750,7 @@ void rx_pkt_initial(u8 port)
 		return;
 	}
 	emp_info_p->emp_pkt_cnt = 0;
+	memset(&rx[i].vtem_info, 0, sizeof(rx[port].vtem_info));
 	memset(&rxpktsts[i], 0, sizeof(struct rxpkt_st));
 	while (j < VSI_TYPE_MAX)
 		memset(&rx_pkt[i].multi_vs_info[j++], 0, sizeof(struct pd_infoframe_s));

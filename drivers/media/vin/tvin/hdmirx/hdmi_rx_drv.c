@@ -1485,7 +1485,8 @@ void hdmirx_get_emp_dv_info(struct tvin_sig_property_s *prop, u8 port)
 
 void hdmirx_get_vtem_info(struct tvin_sig_property_s *prop, u8 port)
 {
-	memset(&prop->vtem_data, 0, sizeof(struct tvin_vtem_data_s));
+	if (rx[port].vtem_info.qms_en == 1 && rx[port].vtem_info.m_const == 0)
+		return;
 	memcpy(&prop->vtem_data, &rx[port].vtem_info, sizeof(struct vtem_info_s));
 }
 

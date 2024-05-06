@@ -1048,6 +1048,8 @@ void frc_rdma_info_init(void)
 	for (i = 0; i < RDMA_CHANNEL; i++) {
 		rdma_info[i].rdma_table_addr = NULL;
 		rdma_info[i].rdma_table_size = FRC_RDMA_SIZE / 8;
+		if (i > 2) // dbg, rdma read
+			rdma_info[i].rdma_table_size = FRC_RDMA_SIZE / 16;
 		rdma_info[i].buf_status = 0;
 		rdma_info[i].is_64bit_addr = 0;
 		rdma_info[i].rdma_item_count = 0;

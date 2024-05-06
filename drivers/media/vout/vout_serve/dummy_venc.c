@@ -37,6 +37,7 @@
 
 /* 0 dummyl, 1 dummyp, 2 dummyi */
 static u32 dummy_venc_type;
+
 enum dummy_venc_chip_e {
 	DUMMY_VENC_DFT = 0,
 	DUMMY_VENC_SC2, /* 1 */
@@ -773,10 +774,6 @@ static void dummy_encp_vout_server_init(struct dummy_venc_driver_s *venc_drv)
 	venc_drv->vinfo = NULL;
 	dummy_encp_vout_server.data = (void *)venc_drv;
 	vout_register_server(&dummy_encp_vout_server);
-#ifdef CONFIG_AMLOGIC_VOUT2_SERVE
-	dummy_encp_vout2_server.data = (void *)venc_drv;
-	vout2_register_server(&dummy_encp_vout2_server);
-#endif
 }
 
 static void dummy_encp_vout_server_remove(void)
@@ -1534,20 +1531,50 @@ static struct vout_server_s dummy_encl_vout3_server = {
 
 static void dummy_encl_vout_server_init(struct dummy_venc_driver_s *venc_drv)
 {
+	char *connector0_type;
+	char *connector1_type;
+	char *connector2_type;
+	bool is_register = false;
+
 	venc_drv->vinfo = &dummy_encl_vinfo;
 	if (venc_drv->vdata->venc_type == VENC_TYPE_ENCP)
 		venc_drv->vinfo->viu_mux = VIU_MUX_ENCP;
-	dummy_encl_vout_server.data = (void *)venc_drv;
-	vout_register_server(&dummy_encl_vout_server);
+
+	connector0_type = get_uboot_connector0_type();
+	if (strncmp("HDMI", connector0_type, 4) == 0) {
+		dummy_encl_vout_server.data = (void *)venc_drv;
+		vout_register_server(&dummy_encl_vout_server);
+		is_register = true;
+	}
 #ifdef CONFIG_AMLOGIC_VOUT2_SERVE
-	dummy_encl_vout2_server.data = (void *)venc_drv;
-	vout2_register_server(&dummy_encl_vout2_server);
+	connector1_type = get_uboot_connector1_type();
+	if (strncmp("HDMI", connector1_type, 4) == 0) {
+		dummy_encl_vout2_server.data = (void *)venc_drv;
+		vout2_register_server(&dummy_encl_vout2_server);
+		is_register = true;
+	}
 #endif
 #ifdef CONFIG_AMLOGIC_VOUT3_SERVE
-	dummy_encl_vout3_server.data = (void *)venc_drv;
-	vout3_register_server(&dummy_encl_vout3_server);
+	connector2_type = get_uboot_connector2_type();
+	if (strncmp("HDMI", connector2_type, 4) == 0) {
+		dummy_encl_vout3_server.data = (void *)venc_drv;
+		vout3_register_server(&dummy_encl_vout3_server);
+		is_register = true;
+	}
 #endif
 
+	if (!is_register) {
+		dummy_encl_vout_server.data = (void *)venc_drv;
+		vout_register_server(&dummy_encl_vout_server);
+#ifdef CONFIG_AMLOGIC_VOUT2_SERVE
+		dummy_encl_vout2_server.data = (void *)venc_drv;
+		vout2_register_server(&dummy_encl_vout2_server);
+#endif
+#ifdef CONFIG_AMLOGIC_VOUT3_SERVE
+		dummy_encl_vout3_server.data = (void *)venc_drv;
+		vout3_register_server(&dummy_encl_vout3_server);
+#endif
+	}
 }
 
 static void dummy_encl_vout_server_remove(void)

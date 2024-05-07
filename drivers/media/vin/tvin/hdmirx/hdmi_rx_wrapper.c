@@ -3028,23 +3028,33 @@ bool rx_is_nosig(u8 port)
 	return rx[port].no_signal;
 }
 
-static bool rx_is_color_space_stable(u8 port)
+static bool rx_is_avi_stable(u8 port)
 {
 	bool ret = true;
 
 	if (rx_info.chip_id < CHIP_ID_T7)
 		return ret;
 
-	if (rx[port].pre.colorspace != rx[port].cur.colorspace &&
+	if ((rx[port].pre.colorspace != rx[port].cur.colorspace ||
+		rx[port].pre.yuv_quant_range != rx[port].cur.yuv_quant_range ||
+		rx[port].pre.rgb_quant_range != rx[port].cur.rgb_quant_range) &&
 		rx_chk_avi_valid(port)) {
 		ret = false;
-		if (log_level & VIDEO_LOG)
+		if (log_level & VIDEO_LOG) {
 			rx_pr("colorspace(%d=>%d),",
-			      rx[port].pre.colorspace,
-			      rx[port].cur.colorspace);
+				rx[port].pre.colorspace,
+				rx[port].cur.colorspace);
+			rx_pr("yuv color range(%d=>%d),",
+				rx[port].pre.yuv_quant_range,
+				rx[port].cur.yuv_quant_range);
+			rx_pr("rgb color range(%d=>%d),",
+				rx[port].pre.rgb_quant_range,
+				rx[port].cur.rgb_quant_range);
+		}
 	}
 	return ret;
 }
+
 /*
  * check timing info
  */
@@ -5419,7 +5429,7 @@ void rx_main_state_machine(void)
 				rx_esm_reset(0);
 				break;
 			}
-		} else if (!rx_is_color_space_stable(port)) {
+		} else if (!rx_is_avi_stable(port)) {
 			//Color space changes, no need to do EQ training
 			skip_frame(skip_frame_cnt, port, "fsm color skip");
 			if (video_mute_enabled(port)) {
@@ -5864,7 +5874,7 @@ void rx_port0_main_state_machine(void)
 				rx[port].var.esd_phy_rst_cnt = 0;
 				break;
 			}
-		} else if (!rx_is_color_space_stable(port)) {
+		} else if (!rx_is_avi_stable(port)) {
 			//Color space changes, no need to do EQ training
 			skip_frame(skip_frame_cnt, port, "fsm color skip");
 			if (video_mute_enabled(port)) {
@@ -6271,7 +6281,7 @@ void rx_port1_main_state_machine(void)
 				rx[port].var.esd_phy_rst_cnt = 0;
 				break;
 			}
-		} else if (!rx_is_color_space_stable(port)) {
+		} else if (!rx_is_avi_stable(port)) {
 			//Color space changes, no need to do EQ training
 			skip_frame(skip_frame_cnt, port, "fsm1 color skip");
 			if (video_mute_enabled(port)) {
@@ -6827,7 +6837,7 @@ void rx_port2_main_state_machine(void)
 				rx[port].var.esd_phy_rst_cnt = 0;
 				break;
 			}
-		} else if (!rx_is_color_space_stable(port)) {
+		} else if (!rx_is_avi_stable(port)) {
 			//Color space changes, no need to do EQ training
 			skip_frame(skip_frame_cnt, port, "fsm2 color skip");
 			if (sig_unready_max)
@@ -7407,7 +7417,7 @@ void rx_port3_main_state_machine(void)
 				rx[port].var.esd_phy_rst_cnt = 0;
 				break;
 			}
-		} else if (!rx_is_color_space_stable(port)) {
+		} else if (!rx_is_avi_stable(port)) {
 			//Color space changes, no need to do EQ training
 			skip_frame(skip_frame_cnt, port, "fsm3 color skip");
 			if (sig_unready_max)

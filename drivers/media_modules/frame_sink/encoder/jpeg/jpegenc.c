@@ -3816,7 +3816,10 @@ static s32 jpegenc_poweron(u32 clock)
 
             /* Remove HCODEC ISO */
             WRITE_AOREG(AO_RTI_GEN_PWR_ISO0,
-                (READ_AOREG(AO_RTI_GEN_PWR_ISO0) & (~0x30)));
+                READ_AOREG(AO_RTI_GEN_PWR_ISO0) &
+				((get_cpu_type() == MESON_CPU_MAJOR_ID_SM1 ||
+				  get_cpu_type() >= MESON_CPU_MAJOR_ID_TM2)
+				 ? ~0x1 : ~0x30));
             udelay(10);
         }
         /* Disable auto-clock gate */
@@ -3844,7 +3847,10 @@ static s32 jpegenc_poweroff(void)
         }else if (get_cpu_major_id() >= AM_MESON_CPU_MAJOR_ID_M8) {
             /* enable HCODEC isolation */
             WRITE_AOREG(AO_RTI_GEN_PWR_ISO0,
-                READ_AOREG(AO_RTI_GEN_PWR_ISO0) | 0x30);
+                READ_AOREG(AO_RTI_GEN_PWR_ISO0) |
+				((get_cpu_type() == MESON_CPU_MAJOR_ID_SM1 ||
+				  get_cpu_type() >= MESON_CPU_MAJOR_ID_TM2)
+				 ? 0x1 : 0x30));
             /* power off HCODEC memories */
             WRITE_VREG(DOS_MEM_PD_HCODEC, 0xffffffffUL);
         }

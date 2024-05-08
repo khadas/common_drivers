@@ -146,34 +146,40 @@ static void vbi_data_type_set(struct vbi_dev_s *devp)
 	unsigned int vbi_data_type = devp->vbi_data_type;
 
 	/* signal not stable not need set will set in vbi_slicer_work */
-	if (devp->slicer->type >= VBI_TYPE_TT_625A &&
-	    devp->slicer->type <= VBI_TYPE_TT_525D &&
-	    !get_tvafe_signal_state())
+	//if (devp->slicer->type >= VBI_TYPE_TT_625A &&
+	    //devp->slicer->type <= VBI_TYPE_TT_525D &&
+	if  (!get_tvafe_signal_state())
 		return;
 
-	/* data type */
-	W_VBI_APB_REG(CVD2_VBI_DATA_TYPE_LINE6,  vbi_data_type);
-	W_VBI_APB_REG(CVD2_VBI_DATA_TYPE_LINE7, vbi_data_type);
-	W_VBI_APB_REG(CVD2_VBI_DATA_TYPE_LINE8, vbi_data_type);
-	W_VBI_APB_REG(CVD2_VBI_DATA_TYPE_LINE9, vbi_data_type);
-	W_VBI_APB_REG(CVD2_VBI_DATA_TYPE_LINE10, vbi_data_type);
-	W_VBI_APB_REG(CVD2_VBI_DATA_TYPE_LINE11, vbi_data_type);
-	W_VBI_APB_REG(CVD2_VBI_DATA_TYPE_LINE12, vbi_data_type);
-	W_VBI_APB_REG(CVD2_VBI_DATA_TYPE_LINE13, vbi_data_type);
-	W_VBI_APB_REG(CVD2_VBI_DATA_TYPE_LINE14, vbi_data_type);
-	W_VBI_APB_REG(CVD2_VBI_DATA_TYPE_LINE15, vbi_data_type);
-	W_VBI_APB_REG(CVD2_VBI_DATA_TYPE_LINE16, vbi_data_type);
-	W_VBI_APB_REG(CVD2_VBI_DATA_TYPE_LINE17, vbi_data_type);
-	W_VBI_APB_REG(CVD2_VBI_DATA_TYPE_LINE18, vbi_data_type);
-	W_VBI_APB_REG(CVD2_VBI_DATA_TYPE_LINE19, vbi_data_type);
-	W_VBI_APB_REG(CVD2_VBI_DATA_TYPE_LINE20, vbi_data_type);
-	W_VBI_APB_REG(CVD2_VBI_DATA_TYPE_LINE21, vbi_data_type);
-	W_VBI_APB_REG(CVD2_VBI_DATA_TYPE_LINE22, vbi_data_type);
-	if (devp->vbi_function_sel & VBI_CONFIG_NOT_VBI_LINE) {
-		W_VBI_APB_REG(CVD2_VBI_DATA_TYPE_LINE23, vbi_data_type); //this line used wss
-		W_VBI_APB_REG(CVD2_VBI_DATA_TYPE_LINE24, vbi_data_type);
-		W_VBI_APB_REG(CVD2_VBI_DATA_TYPE_LINE25, vbi_data_type);
-		/*W_VBI_APB_REG(CVD2_VBI_DATA_TYPE_LINE26, vbi_data_type);*/
+	if (devp->slicer->type == VBI_TYPE_WSSJ) {
+		W_VBI_APB_REG(CVD2_VBI_DATA_TYPE_LINE20, vbi_data_type);
+		W_VBI_APB_REG(CVD2_VBI_DATA_TYPE_LINE23, 0);
+	} else if (devp->slicer->type == VBI_TYPE_WSS625) {
+		if (R_VBI_APB_REG(CVD2_VBI_DATA_TYPE_LINE20) == VBI_TYPE_WSSJ)
+			W_VBI_APB_REG(CVD2_VBI_DATA_TYPE_LINE20, 0);
+		W_VBI_APB_REG(CVD2_VBI_DATA_TYPE_LINE23, vbi_data_type);
+	}
+	if (devp->slicer->type == VBI_TYPE_USCC)
+		W_VBI_APB_REG(CVD2_VBI_DATA_TYPE_LINE21, vbi_data_type);
+	if (devp->slicer->type >= VBI_TYPE_TT_625A &&
+	    devp->slicer->type <= VBI_TYPE_TT_525D) {
+		W_VBI_APB_REG(CVD2_VBI_DATA_TYPE_LINE6,  vbi_data_type);
+		W_VBI_APB_REG(CVD2_VBI_DATA_TYPE_LINE7, vbi_data_type);
+		W_VBI_APB_REG(CVD2_VBI_DATA_TYPE_LINE8, vbi_data_type);
+		W_VBI_APB_REG(CVD2_VBI_DATA_TYPE_LINE9, vbi_data_type);
+		W_VBI_APB_REG(CVD2_VBI_DATA_TYPE_LINE10, vbi_data_type);
+		W_VBI_APB_REG(CVD2_VBI_DATA_TYPE_LINE11, vbi_data_type);
+		W_VBI_APB_REG(CVD2_VBI_DATA_TYPE_LINE12, vbi_data_type);
+		W_VBI_APB_REG(CVD2_VBI_DATA_TYPE_LINE13, vbi_data_type);
+		W_VBI_APB_REG(CVD2_VBI_DATA_TYPE_LINE14, vbi_data_type);
+		W_VBI_APB_REG(CVD2_VBI_DATA_TYPE_LINE15, vbi_data_type);
+		W_VBI_APB_REG(CVD2_VBI_DATA_TYPE_LINE16, vbi_data_type);
+		W_VBI_APB_REG(CVD2_VBI_DATA_TYPE_LINE17, vbi_data_type);
+		W_VBI_APB_REG(CVD2_VBI_DATA_TYPE_LINE18, vbi_data_type);
+		W_VBI_APB_REG(CVD2_VBI_DATA_TYPE_LINE19, vbi_data_type);
+		W_VBI_APB_REG(CVD2_VBI_DATA_TYPE_LINE20, vbi_data_type);
+		W_VBI_APB_REG(CVD2_VBI_DATA_TYPE_LINE21, vbi_data_type);
+		W_VBI_APB_REG(CVD2_VBI_DATA_TYPE_LINE22, vbi_data_type);
 	}
 }
 
@@ -266,14 +272,19 @@ static void vbi_slicer_type_set(struct vbi_dev_s *devp)
 		devp->vbi_dto_wss = VBI_DTO_WSS625;
 		/* line17 for PAL M; line23 for PAL B,D,G,H,I,N,CN */
 		//W_VBI_APB_REG(CVD2_VBI_DATA_TYPE_LINE17, VBI_DATA_TYPE_WSS625);
-		if (get_tvafe_signal_fmt() == TVIN_SIG_FMT_CVBS_PAL_I ||
-		    get_tvafe_signal_fmt() == TVIN_SIG_FMT_CVBS_SECAM)
-			W_APB_REG(CVD2_VBI_DATA_TYPE_LINE23, VBI_DATA_TYPE_WSS625_ODD);
+		//if (get_tvafe_signal_fmt() == TVIN_SIG_FMT_CVBS_PAL_I ||
+		    //get_tvafe_signal_fmt() == TVIN_SIG_FMT_CVBS_SECAM)
+		W_APB_REG(CVD2_VBI_DATA_TYPE_LINE23, VBI_DATA_TYPE_WSS625);
+		if (R_VBI_APB_REG(CVD2_VBI_DATA_TYPE_LINE20) == VBI_TYPE_WSSJ)
+			W_APB_REG(CVD2_VBI_DATA_TYPE_LINE20, 0);
+		//else
+			//W_APB_REG(CVD2_VBI_DATA_TYPE_LINE23, VBI_DATA_TYPE_WSSJ);
 		break;
 	case VBI_TYPE_WSSJ:
 		devp->vbi_data_type = VBI_DATA_TYPE_WSSJ;
 		devp->vbi_start_code = VBI_START_CODE_WSSJ;
 		devp->vbi_dto_wss = VBI_DTO_WSSJ;
+		W_APB_REG(CVD2_VBI_DATA_TYPE_LINE23, 0);
 		W_VBI_APB_REG(CVD2_VBI_DATA_TYPE_LINE20,
 			VBI_DATA_TYPE_WSSJ);
 		break;
@@ -1565,7 +1576,6 @@ static int vbi_slicer_set(struct vbi_dev_s *vbi_dev,
 	vbi_slicer_stop(vbi_slicer);
 
 	vbi_slicer_state_set(vbi_dev, VBI_STATE_SET);
-
 	vbi_slicer_type_set(vbi_dev);
 
 	return 0;/* vbi_slicer_start(vbi_dev); */
@@ -1574,12 +1584,19 @@ static int vbi_slicer_set(struct vbi_dev_s *vbi_dev,
 void tvafe_vbi_set_wss(void)
 {
 	struct vbi_dev_s *devp = vbi_dev_local;
+	enum tvin_sig_fmt_e fmt = get_tvafe_signal_fmt();
 
 	if (!devp || devp->vbi_function_sel & VBI_BYPASS_WSS_SET)
 		return;
 
 	if (tvafe_clk_status) {
-		devp->slicer->type = VBI_TYPE_WSS625;
+		if (fmt == TVIN_SIG_FMT_CVBS_NTSC_M ||
+			fmt == TVIN_SIG_FMT_CVBS_NTSC_443 ||
+			fmt == TVIN_SIG_FMT_CVBS_PAL_60 ||
+			fmt == TVIN_SIG_FMT_CVBS_PAL_M)
+			devp->slicer->type = VBI_TYPE_WSSJ;
+		else
+			devp->slicer->type = VBI_TYPE_WSS625;
 		vbi_slicer_type_set(devp);
 		vbi_manual_reset();
 		W_VBI_APB_REG(CVD2_VBI_FRAME_CODE_CTL, 0x11);
@@ -1846,9 +1863,11 @@ static int vbi_release(struct inode *inode, struct file *file)
 	if (tvafe_clk_status) {
 		/* vbi reset release, vbi agent enable */
 		/*W_VBI_APB_REG(ACD_REG_22, 0x06080000);*/
-		W_VBI_APB_REG(CVD2_VBI_FRAME_CODE_CTL, 0x10);
+		//W_VBI_APB_REG(CVD2_VBI_FRAME_CODE_CTL, 0x10);
 	}
-	tvafe_vbi_set_wss();
+	#ifdef CONFIG_AMLOGIC_MEDIA_TVIN_VBI
+	//tvafe_vbi_set_wss(); //TODO YL ?disable?
+	#endif
 	tvafe_pr_info("[vbi..]%s: device release OK.\n", __func__);
 	return ret;
 }
@@ -1923,7 +1942,7 @@ static long vbi_ioctl(struct file *file,
 			/*W_APB_REG(CVD2_VBI_CC_START, 0x00000054);*/
 			W_VBI_APB_REG(CVD2_VBI_FRAME_CODE_CTL, 0x10);
 		}
-		tvafe_vbi_set_wss();
+		tvafe_vbi_set_wss(); //TODO YL
 		mutex_unlock(&vbi_slicer->mutex);
 		tvafe_pr_info("%s: stop slicer state:%d\n",
 			__func__, vbi_slicer->state);

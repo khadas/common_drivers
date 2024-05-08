@@ -362,6 +362,7 @@ enum vpp_wrbak_src_e {
 /* Hs_cnt        Pixel_Clk(Khz/10) */
 
 enum tvin_ar_b3_b0_val_e {
+	TVIN_AR_NULL_VAL = 0x0,
 	TVIN_AR_14x9_LB_CENTER_VAL = 0x1,
 	TVIN_AR_14x9_LB_TOP_VAL = 0x2,
 	TVIN_AR_16x9_LB_TOP_VAL = 0x4,
@@ -563,6 +564,8 @@ struct tvin_sig_property_s {
 	/* for vdin matrix destination color fmt */
 	enum tvin_color_fmt_e	dest_cfmt;
 	enum tvin_aspect_ratio_e	aspect_ratio;
+	unsigned char		active_ratio;	/* active aspect ratio */
+	unsigned char		pic_aspect_ratio; /* picture aspect ratio */
 	unsigned int		dvi_info;
 	unsigned short		scaling4h;	/* for vscaler */
 	unsigned short		scaling4w;	/* for hscaler */

@@ -62,9 +62,9 @@
 #define VBI_DATA_TYPE_TT_525B      0x99
 #define VBI_DATA_TYPE_TT_525C      0xaa
 #define VBI_DATA_TYPE_TT_525D      0xbb
-#define VBI_DATA_TYPE_WSS625       0xcc
+#define VBI_DATA_TYPE_WSS625       0x0c //0xcc YL
 #define VBI_DATA_TYPE_WSS625_ODD   0x0c //only odd field 23 line value
-#define VBI_DATA_TYPE_WSSJ         0xdd
+#define VBI_DATA_TYPE_WSSJ         0xdd //line283|line20
 
 /* vbi start code,TT start code is programmable by software,*/
 /* but our ic use the programmable value as reverse!!*/

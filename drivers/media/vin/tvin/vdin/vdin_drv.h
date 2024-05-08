@@ -349,6 +349,8 @@ struct match_data_s {
 #define VDIN_HV_REVERSE_EN		BIT(19) //for hv_reverse is disabled by default
 #define VDIN_AUTO_GAME_MODE		BIT(20)
 #define VDIN_AUTO_PC_MODE		BIT(21)
+#define VDIN_SET_DISPLAY_RATIO_TRANS	BIT(22) //vdin transparent transmission aspect ratio
+
 /* vdin_function_sel control bits end */
 
 #define VDIN_2K_SIZE			0x07800438 /* 0x780 = 1920 0x438 = 1080 */

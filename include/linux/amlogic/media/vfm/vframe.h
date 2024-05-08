@@ -70,8 +70,9 @@
 #define DISP_RATIO_FORCECONFIG          0x80000000
 #define DISP_RATIO_FORCE_NORMALWIDE     0x40000000
 #define DISP_RATIO_FORCE_FULL_STRETCH   0x20000000
-#define DISP_RATIO_ADAPTED_PICMODE   0x10000000
-#define DISP_RATIO_INFOFRAME_AVAIL   0x08000000
+#define DISP_RATIO_ADAPTED_PICMODE      0x10000000
+#define DISP_RATIO_INFOFRAME_AVAIL      0x08000000
+#define DISP_RATIO_PARSE_BY_AFD         0x04000000
 #define DISP_RATIO_CTRL_MASK            0x00000003
 #define DISP_RATIO_NO_KEEPRATIO         0x00000000
 #define DISP_RATIO_KEEPRATIO            0x00000001
@@ -716,8 +717,10 @@ struct vframe_s {
 	/* vframe properties */
 	struct vframe_prop_s prop;
 	struct list_head list;
-/* pixel aspect ratio */
+	/* pixel aspect ratio */
 	enum pixel_aspect_ratio_e pixel_ratio;
+	//bit0~3 afd; bit4-7 pic aspect ratio
+	u32 afd_info;
 	u64 ready_jiffies64;	/* ready from decode on  jiffies_64 */
 	long long ready_clock[5];/*ns*/
 	long long ready_clock_hist[2];/*ns*/

@@ -869,6 +869,15 @@ void hdmirx_get_active_aspect_ratio(struct tvin_sig_property_s *prop, u8 port)
 		else
 			prop->aspect_ratio = get_format_ratio(port);
 	}
+	if (rx[port].cur.active_valid)
+		prop->active_ratio = rx[port].cur.active_ratio;
+	else
+		prop->active_ratio = 0;
+	prop->pic_aspect_ratio = rx[port].cur.picture_ratio;
+	if (log_level == 0x125) {
+		rx_pr("afd = %x,%x", rx[port].cur.active_ratio, rx[port].cur.picture_ratio);
+		log_level = 1;
+	}
 }
 
 /*

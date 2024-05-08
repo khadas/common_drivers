@@ -7018,7 +7018,14 @@ void vdin_set_display_ratio(struct vdin_dev_s *devp,
 	    vf->width == 0 || vf->height == 0)
 		return;
 
-	if (devp->vdin_function_sel & VDIN_SET_DISPLAY_RATIO) {
+	if (devp->vdin_function_sel & VDIN_SET_DISPLAY_RATIO_TRANS) {
+		vf->afd_info = (devp->prop.pic_aspect_ratio << 4) |
+			devp->prop.active_ratio;
+		vf->ratio_control |= DISP_RATIO_PARSE_BY_AFD;
+		if (vdin_isr_monitor & VDIN_ISR_MONITOR_RATIO)
+			pr_info("vdin%d,afd:%#x\n", devp->index, vf->afd_info);
+		return;
+	} else if (devp->vdin_function_sel & VDIN_SET_DISPLAY_RATIO) {
 		if (IS_HDMI_SRC(devp->parm.port))
 			vf->ratio_control = 0x3ff << DISP_RATIO_ASPECT_RATIO_BIT;
 		else if (IS_TVAFE_SRC(devp->parm.port))

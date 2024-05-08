@@ -16,6 +16,7 @@
 #include "../tvin_global.h"
 #include "../tvin_format_table.h"
 #include "tvafe.h"
+#include "tvafe_vbi.h"
 #include "tvafe_regs.h"
 #include "tvafe_cvd.h"
 #include "tvafe_debug.h"
@@ -202,6 +203,21 @@ unsigned long vbi_mem_start;
 static int acd_2d_adjust = 0x94;
 module_param(acd_2d_adjust, int, 0644);
 MODULE_PARM_DESC(acd_2d_adjust, "enable/disable acd_2d_adjust");
+
+//TODO
+//const static int wss_asr_tbl[TVIN_ASPECT_MAX][2] = {
+//	{TVIN_ASPECT_NULL, TVIN_AR_NOT_VALUE},
+//	{TVIN_ASPECT_1x1, TVIN_AR_NOT_VALUE},
+//	{TVIN_ASPECT_4x3_FULL, TVIN_AR_4x3_FULL_VAL},
+//	{TVIN_ASPECT_14x9_FULL, TVIN_AR_16x9_FULL_VAL},
+//	{TVIN_ASPECT_14x9_LB_CENTER, TVIN_AR_16x9_LB_CENTER_VAL},
+//	{TVIN_ASPECT_14x9_LB_TOP, TVIN_AR_14x9_LB_TOP_VAL},
+//	{TVIN_ASPECT_16x9_FULL, TVIN_AR_16x9_FULL_VAL},
+//	{TVIN_ASPECT_16x9_LB_CENTER, TVIN_AR_16x9_LB_CENTER_VAL},
+//	{TVIN_ASPECT_16x9_LB_CENTER, TVIN_AR_16x9_LB_CENTER1_VAL},
+//	{TVIN_ASPECT_16x9_LB_TOP, TVIN_AR_16x9_LB_TOP_VAL},
+//	{TVIN_ASPECT_MAX, TVIN_AR_NOT_VALUE},
+//};
 
 void cvd_set_shift_cnt(enum tvafe_cvd2_shift_cnt_e src, unsigned int val)
 {
@@ -481,12 +497,20 @@ static void tvafe_cvd2_write_mode_reg(struct tvafe_cvd2_s *cvd2,
 	/* config data type */
 	/*line17 for PAL M; line23 for PAL B,D,G,H,I,N,CN */
 	//W_VBI_APB_REG(CVD2_VBI_DATA_TYPE_LINE17, vbi_data_type);
-	if (cvd2->config_fmt == TVIN_SIG_FMT_CVBS_PAL_I ||
-	    cvd2->config_fmt == TVIN_SIG_FMT_CVBS_SECAM)
-		W_APB_REG(CVD2_VBI_DATA_TYPE_LINE23, 0x0c);
+	if (cvd2->config_fmt == TVIN_SIG_FMT_CVBS_NTSC_443 ||
+		cvd2->config_fmt == TVIN_SIG_FMT_CVBS_NTSC_M ||
+		cvd2->config_fmt == TVIN_SIG_FMT_CVBS_PAL_60 ||
+		cvd2->config_fmt == TVIN_SIG_FMT_CVBS_PAL_M) {
+		W_APB_REG(CVD2_VBI_DATA_TYPE_LINE20, VBI_DATA_TYPE_WSSJ);
+		W_APB_REG(CVD2_VBI_DATA_TYPE_LINE23, 0);
+	} else {
+		W_APB_REG(CVD2_VBI_DATA_TYPE_LINE23, VBI_DATA_TYPE_WSS625);
+		if (R_VBI_APB_REG(CVD2_VBI_DATA_TYPE_LINE20) == VBI_TYPE_WSSJ)
+			W_APB_REG(CVD2_VBI_DATA_TYPE_LINE20, 0);
+	}
 	/* config wss dto */
-	W_APB_REG(CVD2_VBI_WSS_DTO_MSB, 0x20);
-	W_APB_REG(CVD2_VBI_WSS_DTO_LSB, 0x66);
+	//W_APB_REG(CVD2_VBI_WSS_DTO_MSB, 0x20);
+	//W_APB_REG(CVD2_VBI_WSS_DTO_LSB, 0x66);
 
 	/*0x40[2]=0 Use a fixed vbi threshold 0x30*/
 	W_APB_REG(CVD2_VBI_DATA_HLVL, 0x30);
@@ -500,9 +524,9 @@ static void tvafe_cvd2_write_mode_reg(struct tvafe_cvd2_s *cvd2,
 
 	W_APB_REG(ACD_REG_22, 0x04080000);
 	W_APB_REG(CVD2_VBI_FRAME_CODE_CTL, vbi_ctl_val);
-	if (cvd2->config_fmt == TVIN_SIG_FMT_CVBS_PAL_I ||
-	    cvd2->config_fmt == TVIN_SIG_FMT_CVBS_SECAM)
-		W_APB_BIT(CVD2_VBI_FRAME_CODE_CTL, 1, VBI_EN_BIT, VBI_EN_WID);
+	//if (cvd2->config_fmt == TVIN_SIG_FMT_CVBS_PAL_I ||
+	    //cvd2->config_fmt == TVIN_SIG_FMT_CVBS_SECAM)
+		//W_APB_BIT(CVD2_VBI_FRAME_CODE_CTL, 1, VBI_EN_BIT, VBI_EN_WID);
 
 	/* for tuner picture quality */
 	if (cvd2->pq_conf) {
@@ -532,7 +556,7 @@ static void tvafe_cvd2_write_mode_reg(struct tvafe_cvd2_s *cvd2,
 		}
 	}
 
-	if (cvd2->config_fmt == TVIN_SIG_FMT_CVBS_PAL_M &&
+	if (cvd2->config_fmt == TVIN_SIG_FMT_CVBS_PAL_M && //TODO YL
 	    R_APB_BIT(CVD2_VBI_FRAME_CODE_CTL, VBI_EN_BIT, VBI_EN_WID))
 		W_APB_REG(ACD_REG_22, 0x04080000);
 
@@ -3286,41 +3310,62 @@ void tvafe_snow_config_acd_resume(void)
 		W_APB_REG(ACD_REG_2D, acd_h);
 }
 
-enum tvin_aspect_ratio_e tvafe_cvd2_get_wss(void)
+bool tvafe_wss_ready(void)
 {
-	unsigned int full_format = 0;
-	enum tvin_aspect_ratio_e aspect_ratio = TVIN_ASPECT_NULL;
+	return R_APB_BIT(CVD2_VBI_DATA_STATUS, WSS_RDY, WSS_RDY_WID);
+}
 
-	if (R_APB_BIT(CVD2_VBI_DATA_STATUS, WSS_RDY, WSS_RDY_WID))
-		full_format = R_APB_BIT(CVD2_VBI_WSS_DATA1, WSSDATA1_BYTE1_BIT, WSSDATA1_BYTE1_WID);
-	else
-		full_format = TVIN_AR_NOT_VALUE; //not valid wss data
+u8 tvafe_rd_wss(enum tvin_sig_fmt_e fmt)
+{
+	u8 ar_value;
 
-	if (full_format == TVIN_AR_14x9_LB_CENTER_VAL)
-		aspect_ratio = TVIN_ASPECT_14x9_LB_CENTER;
-	else if (full_format == TVIN_AR_14x9_LB_TOP_VAL)
-		aspect_ratio = TVIN_ASPECT_14x9_LB_TOP;
-	else if (full_format == TVIN_AR_16x9_LB_TOP_VAL)
-		aspect_ratio = TVIN_ASPECT_16x9_LB_TOP;
-	else if (full_format == TVIN_AR_16x9_FULL_VAL)
-		aspect_ratio = TVIN_ASPECT_16x9_FULL;
-	else if (full_format == TVIN_AR_4x3_FULL_VAL)
-		aspect_ratio = TVIN_ASPECT_4x3_FULL;
-	else if (full_format == TVIN_AR_16x9_LB_CENTER_VAL)
-		aspect_ratio = TVIN_ASPECT_16x9_LB_CENTER;
-	else if (full_format == TVIN_AR_16x9_LB_CENTER1_VAL)
-		aspect_ratio = TVIN_ASPECT_16x9_LB_CENTER;
-	else if (full_format == TVIN_AR_14x9_FULL_VAL)
-		aspect_ratio = TVIN_ASPECT_14x9_FULL;
-	else
-		aspect_ratio = TVIN_ASPECT_NULL;
+	//525 line
+	if (fmt == TVIN_SIG_FMT_CVBS_NTSC_M ||
+		fmt == TVIN_SIG_FMT_CVBS_NTSC_443 ||
+		fmt == TVIN_SIG_FMT_CVBS_PAL_60 ||
+		fmt == TVIN_SIG_FMT_CVBS_PAL_M) {
+		ar_value = R_APB_BIT(CVD2_VBI_WSS_DATA2, WSSDATA1_BYTE1_BIT, WSSDATA1_BYTE1_WID);
+		//ar_value = ((ar_value & 1) << 1) | ((ar_value & 2) >> 1);
+		if ((ar_value & 3) == 0)
+			ar_value = 8;
+		else if ((ar_value & 3) == 1)
+			ar_value = 7;
+		else if ((ar_value & 3) == 2)
+			ar_value = 11;
+		else//if (ar_value == 7)
+			ar_value = 7;
+	} else {
+		ar_value = R_APB_BIT(CVD2_VBI_WSS_DATA1, WSSDATA1_BYTE1_BIT, WSSDATA1_BYTE1_WID);
+		//ar_value = ((ar_value & 1) << 3) |
+					//((ar_value & 2) << 1) |
+					//((ar_value & 4) >> 1) |
+					//((ar_value & 8) >> 3);
+	}
+	//clr ready
+	//W_APB_BIT(CVD2_VBI_DATA_STATUS, 1, WSS_RD_DONE, WSS_RD_DONE_WID);
+
+	return ar_value;
+}
+
+u8 tvafe_cvd2_get_wss(enum tvin_sig_fmt_e fmt)
+{
+	u8 ar_value = TVIN_AR_NOT_VALUE;
+	//enum tvin_aspect_ratio_e aspect_ratio = TVIN_ASPECT_MAX;
+
+	if (tvafe_wss_ready())
+		ar_value = tvafe_rd_wss(fmt);
+	//else
+		//ar_value = TVIN_AR_NOT_VALUE; //not valid wss data
 
 	if (tvafe_dbg_print & TVAFE_DBG_WSS)
-		tvafe_pr_info("%s full_format:%#x aspect_ratio:%#x data:%#x,%#x,%#x\n",
-			__func__, full_format, aspect_ratio, R_APB_REG(CVD2_VBI_WSS_DATA0),
-			R_APB_REG(CVD2_VBI_WSS_DATA1), R_APB_REG(CVD2_VBI_DATA_STATUS));
+		tvafe_pr_info("%s FMT:%x, AR:%#x data:%#x,%#x,%#x,%#x\n",
+			__func__, fmt, ar_value,
+			R_APB_REG(CVD2_VBI_WSS_DATA0),
+			R_APB_REG(CVD2_VBI_WSS_DATA1),
+			R_APB_REG(CVD2_VBI_WSS_DATA2),
+			R_APB_REG(CVD2_VBI_DATA_STATUS));
 
-	return aspect_ratio;
+	return ar_value;
 }
 
 /*only for develop debug*/

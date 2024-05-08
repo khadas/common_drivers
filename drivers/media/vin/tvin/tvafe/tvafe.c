@@ -66,7 +66,7 @@ static struct class *tvafe_clsp;
 
 #define TVAFE_TIMER_INTERVAL    (HZ / 100)   /* 10ms, #define HZ 100 */
 #define TVAFE_RATIO_CNT			22
-#define TVAFE_RATIO_EFFECT_CNT		19
+#define TVAFE_RATIO_EFFECT_CNT		3//19 TODO YL
 
 static struct am_regs_s tvafe_regs;
 static struct tvafe_pin_mux_s tvafe_pinmux;
@@ -516,9 +516,9 @@ static int tvafe_dec_open(struct tvin_frontend_s *fe, enum tvin_port_e port,
 		tvafe_get_v_fmt, tvafe_work_mode, tvafe_cvd2_get_force_format);
 #endif
 
-#ifdef CONFIG_AMLOGIC_MEDIA_TVIN_VBI
-	tvafe_vbi_set_wss();
-#endif
+//#ifdef CONFIG_AMLOGIC_MEDIA_TVIN_VBI
+	//tvafe_vbi_set_wss();
+//#endif
 	tvafe->aspect_ratio_cnt = 0;
 	tvafe->aspect_ratio = TVIN_ASPECT_NULL;
 	tvafe_pr_info("%s open port:0x%x ok.\n", __func__, port);
@@ -582,6 +582,9 @@ static void tvafe_dec_start(struct tvin_frontend_s *fe, enum tvin_sig_fmt_e fmt,
 			AFE_CH1_EN_DC_BIAS_BIT,
 			AFE_CH1_EN_DC_BIAS_WIDTH);
 	}
+#endif
+#ifdef CONFIG_AMLOGIC_MEDIA_TVIN_VBI
+	tvafe_vbi_set_wss();
 #endif
 	tvafe->parm.info.fmt = fmt;
 	tvafe->parm.info.status = TVIN_SIG_STATUS_STABLE;
@@ -760,9 +763,9 @@ static void tvafe_get_aspect_ratio_value(struct tvafe_dev_s *devp)
 	int i;
 	bool has_interference_value = false;
 	struct tvafe_info_s *tvafe = &devp->tvafe;
-	enum tvin_aspect_ratio_e maybe_ratio = TVIN_ASPECT_NULL;
-	enum tvin_aspect_ratio_e aspect_ratio;
-	static int count[10] = {0};
+	u8 maybe_ratio = 0;
+	u8 aspect_ratio = 0;
+	static int count[16] = {0};
 
 	if (!(devp->tvafe_function_sel & TVAFE_WSS_FUNCTION))
 		return;
@@ -773,75 +776,51 @@ static void tvafe_get_aspect_ratio_value(struct tvafe_dev_s *devp)
 	     !devp->tvafe.cvd2.hw.acc3xx_cnt))
 		return;
 
-	if (tvafe->cvd2.config_fmt != TVIN_SIG_FMT_CVBS_PAL_I &&
-	    tvafe->cvd2.config_fmt != TVIN_SIG_FMT_CVBS_SECAM)
+	//if (tvafe->cvd2.config_fmt != TVIN_SIG_FMT_CVBS_PAL_I &&
+	    //tvafe->cvd2.config_fmt != TVIN_SIG_FMT_CVBS_SECAM)
+		//return;
+
+	aspect_ratio = tvafe_cvd2_get_wss(tvafe->cvd2.config_fmt);
+	if (aspect_ratio > 15)
 		return;
 
-	aspect_ratio = tvafe_cvd2_get_wss();
-	switch (aspect_ratio) {
-	case TVIN_ASPECT_NULL:
-		count[TVIN_ASPECT_NULL]++;
-		break;
-	case TVIN_ASPECT_1x1:
-		count[TVIN_ASPECT_1x1]++;
-		break;
-	case TVIN_ASPECT_4x3_FULL:
-		count[TVIN_ASPECT_4x3_FULL]++;
-		break;
-	case TVIN_ASPECT_14x9_FULL:
-		count[TVIN_ASPECT_14x9_FULL]++;
-		break;
-	case TVIN_ASPECT_14x9_LB_CENTER:
-		count[TVIN_ASPECT_14x9_LB_CENTER]++;
-		break;
-	case TVIN_ASPECT_14x9_LB_TOP:
-		count[TVIN_ASPECT_14x9_LB_TOP]++;
-		break;
-	case TVIN_ASPECT_16x9_FULL:
-		count[TVIN_ASPECT_16x9_FULL]++;
-		break;
-	case TVIN_ASPECT_16x9_LB_CENTER:
-		count[TVIN_ASPECT_16x9_LB_CENTER]++;
-		break;
-	case TVIN_ASPECT_16x9_LB_TOP:
-		count[TVIN_ASPECT_16x9_LB_TOP]++;
-		break;
-	case TVIN_ASPECT_MAX:
-		break;
-	}
+	count[aspect_ratio]++;
+
 	/* over 6/22 times,ratio is effective*/
 	if (++tvafe->aspect_ratio_cnt > devp->tvafe_ratio_cnt) {
 		//has wss value judge, maybe is interference value
-		for (i = 1; i < TVIN_ASPECT_MAX; i++) {
-			if (count[i] > (devp->tvafe_ratio_cnt - devp->tvafe_ratio_effect_cnt) &&
+		for (i = 0; i < 15; i++) {
+			if (count[i] > devp->tvafe_ratio_effect_cnt &&
 			    !maybe_ratio) {
-				maybe_ratio = (enum tvin_aspect_ratio_e)i;
-				count[0] = 0;
+				maybe_ratio = i;
 			} else if (count[i] > 2) {
 				has_interference_value = true;
-				count[0] = 0;
 			}
+			count[i] = 0;
 		}
 		if (maybe_ratio && !has_interference_value) {//not interference confirm wss value
-			if (tvafe->aspect_ratio != maybe_ratio)
+			if (tvafe->active_ratio != maybe_ratio)
 				pr_info("wss aspect_ratio:%d->%d,%d\n",
 					tvafe->aspect_ratio, maybe_ratio, aspect_ratio);
-			tvafe->aspect_ratio = maybe_ratio;
+			tvafe->aspect_ratio = TVIN_ASPECT_4x3_FULL;
+			tvafe->active_ratio = maybe_ratio;
+		} else {
+			tvafe->aspect_ratio = TVIN_ASPECT_4x3_FULL;
+			tvafe->active_ratio = 0;
 		}
-		for (i = 1; i < TVIN_ASPECT_MAX; i++)
-			count[i] = 0;
 		//not wss value judge
-		if (count[0] >= (devp->tvafe_ratio_cnt * 2 - 1)) {
-			if (tvafe->aspect_ratio != 0 && tvafe_dbg_print & TVAFE_DBG_WSS)
-				pr_info("wss aspect_ratio:%d->0,%d\n",
-					tvafe->aspect_ratio, aspect_ratio);
+		//if (count[0] >= (devp->tvafe_ratio_cnt - 1)) {
+			//if (tvafe->aspect_ratio != 0 && tvafe_dbg_print & TVAFE_DBG_WSS)
+				//pr_info("wss aspect_ratio:%d->0,%d\n",
+					//tvafe->aspect_ratio, aspect_ratio);
 			//tvafe->aspect_ratio = 0;
-			count[0] = 0;
-		} else if (count[0] > devp->tvafe_ratio_cnt + 1) {
-			count[0] = 0;
-		}
+			//count[0] = 0;
+		//}
 		tvafe->aspect_ratio_cnt = 0;
 	}
+
+	//if (aspect_ratio)
+		//count[0] = 0;
 }
 
 /*
@@ -1271,6 +1250,7 @@ static void tvafe_get_sig_property(struct tvin_frontend_s *fe,
 #endif
 	prop->color_fmt_range = TVIN_YUV_LIMIT;
 	prop->aspect_ratio = tvafe->aspect_ratio;
+	prop->active_ratio = tvafe->active_ratio;
 	prop->decimation_ratio = 0;
 	prop->dvi_info = 0;
 	prop->skip_vf_num = user_param->skip_vf_num;

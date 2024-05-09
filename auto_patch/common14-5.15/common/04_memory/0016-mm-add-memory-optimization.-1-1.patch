@@ -1,4 +1,4 @@
-From e564e4ab85a9dfae81928179cad02dbc052baf47 Mon Sep 17 00:00:00 2001
+From 009a05bdb9ada3d1a4ab804e70aeb5c109350e63 Mon Sep 17 00:00:00 2001
 From: Jianxiong Pan <jianxiong.pan@amlogic.com>
 Date: Tue, 20 Jun 2023 19:32:11 +0800
 Subject: [PATCH] mm: add memory optimization. [1/1]
@@ -34,14 +34,14 @@ Signed-off-by: Jianxiong Pan <jianxiong.pan@amlogic.com>
  14 files changed, 77 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/base/core.c b/drivers/base/core.c
-index 741d7c3bcba5..7d892ea6c9d8 100644
+index 741d7c3bcba5..de133a6c7820 100644
 --- a/drivers/base/core.c
 +++ b/drivers/base/core.c
 @@ -3105,8 +3105,10 @@ static int device_add_class_symlinks(struct device *dev)
  
  	if (of_node) {
  		error = sysfs_create_link(&dev->kobj, of_node_kobj(of_node), "of_node");
-+#ifndef CONFIG_AMLOGIC_MEMORY_OPT
++#ifndef CONFIG_AMLOGIC_DTB_NODE_OPT
  		if (error)
  			dev_warn(dev, "Error %d creating of_node link\n",error);
 +#endif
@@ -49,14 +49,14 @@ index 741d7c3bcba5..7d892ea6c9d8 100644
  	}
  
 diff --git a/drivers/of/base.c b/drivers/of/base.c
-index 7c617b497356..14b584f6f32c 100644
+index 54719f8156ed..95e8c18a4a24 100644
 --- a/drivers/of/base.c
 +++ b/drivers/of/base.c
 @@ -166,8 +166,9 @@ void __of_phandle_cache_inv_entry(phandle handle)
  
  void __init of_core_init(void)
  {
-+#ifndef CONFIG_AMLOGIC_MEMORY_OPT
++#ifndef CONFIG_AMLOGIC_DTB_NODE_OPT
  	struct device_node *np;
 -
 +#endif
@@ -67,7 +67,7 @@ index 7c617b497356..14b584f6f32c 100644
  		pr_err("failed to register existing nodes\n");
  		return;
  	}
-+#ifndef CONFIG_AMLOGIC_MEMORY_OPT
++#ifndef CONFIG_AMLOGIC_DTB_NODE_OPT
  	for_each_of_allnodes(np) {
  		__of_attach_node_sysfs(np);
  		if (np->phandle && !phandle_cache[of_phandle_cache_hash(np->phandle)])
@@ -174,7 +174,7 @@ index 559eff84a620..dfe427268949 100644
  EXPORT_SYMBOL(init_task);
  
 diff --git a/kernel/Makefile b/kernel/Makefile
-index 2e0dac3da346..a0d5ebd7c843 100644
+index 2e0dac3da346..7669ad1dc1c0 100644
 --- a/kernel/Makefile
 +++ b/kernel/Makefile
 @@ -81,7 +81,9 @@ obj-$(CONFIG_UTS_NS) += utsname.o
@@ -191,7 +191,7 @@ index 2e0dac3da346..a0d5ebd7c843 100644
  
  filechk_cat = cat $<
  
-+ifdef CONFIG_AMLOGIC_MEMORY_OPT
++ifdef CONFIG_AMLOGIC_CONFIG_OPT
 +$(obj)/cfg_less.txt: $(KCONFIG_CONFIG) FORCE
 +	$(shell sed '/#/d' $(KCONFIG_CONFIG) > $(src)/cfg_less.txt)
 +

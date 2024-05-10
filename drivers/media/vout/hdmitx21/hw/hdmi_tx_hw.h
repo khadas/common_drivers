@@ -15,6 +15,7 @@ enum amhdmitx_chip_e {
 	MESON_CPU_ID_S1A,
 	MESON_CPU_ID_S5,
 	MESON_CPU_ID_S7,
+	MESON_CPU_ID_S7D,
 	MESON_CPU_ID_MAX,
 };
 
@@ -42,3 +43,4 @@ ssize_t _show21_clkmsr(char *buf);
 #define to_hdmitx21_hw(x)	container_of(x, struct hdmitx21_hw, base)
 
 #endif
+

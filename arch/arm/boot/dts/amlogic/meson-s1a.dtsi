@@ -1175,7 +1175,6 @@
 		interrupts = <0 204 4
 			0 197 1>;
 		interrupt-names = "hdmitx_hpd", "vrr_vsync";
-		enc_idx = <0>;
 		res_1080p = <1>;
 		reg =	<0xff000000 0x40000>,
 			<0xfe340000 0x10000>,

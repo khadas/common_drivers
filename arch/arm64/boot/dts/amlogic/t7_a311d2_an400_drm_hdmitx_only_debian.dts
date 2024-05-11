@@ -1519,7 +1519,6 @@
 
 &amhdmitx {
 	status = "okay";
-	enc_idx = <0>;
 	vrr_type = <2>;
 };
 

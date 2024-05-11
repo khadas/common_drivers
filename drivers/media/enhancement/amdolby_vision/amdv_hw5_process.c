@@ -53,7 +53,7 @@ u32 hw5_reg_from_file;
 module_param(hw5_reg_from_file, uint, 0664);
 MODULE_PARM_DESC(hw5_reg_from_file, "\n hw5_reg_from_file\n");
 
-u32 force_update_top2 = true;
+u32 force_update_top2 = true;/*must update DOLBY5_CORE2_REG_BASE0+2,3,4*/
 module_param(force_update_top2, uint, 0664);
 MODULE_PARM_DESC(force_update_top2, "\n force_update_top2\n");
 
@@ -3352,7 +3352,8 @@ int amdolby_vision_process_hw5(struct vframe_s *vf_top1,
 			}
 		}
 
-		if (top2_v_info.tv_dovi_setting_change_flag || force_set) {
+		if (top2_v_info.tv_dovi_setting_change_flag || force_set ||
+			(top2_info.core_on && force_update_top2)) {
 			if (vf && (vf->type & VIDTYPE_VIU_422))
 				src_chroma_format = 2;
 			else if (vf)

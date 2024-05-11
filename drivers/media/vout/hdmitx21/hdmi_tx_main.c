@@ -4026,6 +4026,43 @@ static int amhdmitx21_device_init(struct hdmitx_dev *hdev)
 	return 0;
 }
 
+static int hdmitx_get_connector(void)
+{
+	int i = 0;
+	int j = 0;
+	static const char * const hdmi_types[] = {
+		"HDMI-A-A", /* venc0 */
+		"HDMI-A-B", /* venc1 */
+		"HDMI-A-C", /* venc2 */
+	};
+	char *conn_types[3] = {};
+	char *type;
+
+	conn_types[0] = get_uboot_connector0_type();
+	conn_types[1] = get_uboot_connector1_type();
+	conn_types[2] = get_uboot_connector2_type();
+	if (conn_types[0])
+		pr_info("%s[%d] %s\n", __func__, __LINE__, conn_types[0]);
+	if (conn_types[1])
+		pr_info("%s[%d] %s\n", __func__, __LINE__, conn_types[1]);
+	if (conn_types[2])
+		pr_info("%s[%d] %s\n", __func__, __LINE__, conn_types[2]);
+
+	for (j = 0; j < ARRAY_SIZE(conn_types); j++) {
+		type = conn_types[j];
+		if (!type)
+			continue;
+		for (i = 0; i < ARRAY_SIZE(hdmi_types); i++) {
+			if (strncmp(type, hdmi_types[i], strlen(hdmi_types[i])) == 0)
+				return i;
+		}
+	}
+	if (i < ARRAY_SIZE(hdmi_types))
+		return i;
+
+	return 0;
+}
+
 static int amhdmitx_get_dt_info(struct platform_device *pdev, struct hdmitx_dev *hdev)
 {
 	int ret = 0;
@@ -4185,13 +4222,9 @@ static int amhdmitx_get_dt_info(struct platform_device *pdev, struct hdmitx_dev 
 			if (val == 1)
 				;
 		}
-		ret = of_property_read_u32(pdev->dev.of_node,
-					   "enc_idx", &val);
-		hdev->tx_comm.enc_idx = 0; /* default 0 */
-		if (!ret) {
-			if (val == 2)
-				hdev->tx_comm.enc_idx = 2;
-		}
+
+		hdev->tx_comm.enc_idx = hdmitx_get_connector();
+		HDMITX_INFO("enc_idx %d\n", hdev->tx_comm.enc_idx);
 
 		/* hdcp ctrl 0:sysctrl, 1: drv, 2: linux app */
 		ret = of_property_read_u32(pdev->dev.of_node,

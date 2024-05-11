@@ -294,11 +294,11 @@ void frc_rd_reg_by_drv(struct frc_dev_s *devp)
 
 irqreturn_t frc_input_isr(int irq, void *dev_id)
 {
-	struct frc_fw_data_s *fw_data;
+	struct frc_fw_data_s *pfw_data;
 	struct frc_dev_s *devp = (struct frc_dev_s *)dev_id;
 
 	u64 timestamp = sched_clock();
-	fw_data = (struct frc_fw_data_s *)devp->fw_data;
+
 
 	if (!devp->probe_ok || !devp->power_on_flag)
 		return IRQ_HANDLED;
@@ -308,31 +308,38 @@ irqreturn_t frc_input_isr(int irq, void *dev_id)
 	if (devp->in_sts.vs_cnt - devp->in_sts.vs_tsk_cnt >
 			devp->in_sts.lost_tsk_cnt) {
 		devp->in_sts.lost_tsk_cnt =
-			devp->in_sts.vs_cnt - devp->in_sts.vs_tsk_cnt;
-			PR_FRC("in_isr_task was missing\n");
+				devp->in_sts.vs_cnt - devp->in_sts.vs_tsk_cnt;
+		pr_frc(2, "in_isr_task was missing\n");
 	}
 	devp->in_sts.vs_cnt++;
+
 	/*update vs time*/
 	timestamp = div64_u64(timestamp, 1000);
 	devp->in_sts.vs_duration = timestamp - devp->in_sts.vs_timestamp;
 	devp->in_sts.vs_timestamp = timestamp;
 
-	if (fw_data->frc_top_type.motion_ctrl == RD_MOTION_BY_INP_ISR)
+	pfw_data = (struct frc_fw_data_s *)devp->fw_data;
+	if (!pfw_data)
+		return IRQ_HANDLED;
+	if (pfw_data->frc_top_type.motion_ctrl == RD_MOTION_BY_INP_ISR)
 		frc_rd_reg_by_drv(devp);
 
-//	if (devp->in_sts.vs_cnt < 20)
-//		pr_frc(1, "in_frm:%d,reg_0x102:0x%2X,0x113:0x%3X\n",
-//			devp->in_sts.vs_cnt,
-//			READ_FRC_REG(FRC_REG_PAT_POINTER) >> 4 & 0xFF,
-//			READ_FRC_REG(FRC_REG_OUT_FID) >> 8 & 0xFFF);
-
-	// t3x_verB_set_cfg(1);
 	inp_undone_read(devp);
 	if (devp->dbg_reg_monitor_i)
 		frc_in_reg_monitor(devp);
 	if (devp->in_sts.vs_cnt == devp->dbg_mvrd_mode)
 		if ((READ_FRC_REG(FRC_MC_MVRD_CTRL) & BIT_0) == BIT_0)
 			WRITE_FRC_REG_BY_CPU(FRC_MC_MVRD_CTRL, 0x100);
+
+	if (devp->task_run_method == MEMC_RUN_IN_IRQ) {
+		if (!devp->frc_fw_pause) {
+			timestamp = sched_clock();
+			if (pfw_data->memc_in_irq_handler)
+				pfw_data->memc_in_irq_handler(pfw_data);
+			if (devp->ud_dbg.inud_time_en)
+				frc_in_task_print(sched_clock() - timestamp);
+		}
+	}
 	if (devp->in_sts.hi_en)
 		tasklet_hi_schedule(&devp->input_tasklet);
 	else
@@ -350,30 +357,27 @@ void frc_input_tasklet_pro(unsigned long arg)
 	struct frc_fw_data_s *pfw_data;
 	u64 timestamp;
 
+	if (!devp->probe_ok || !devp->power_on_flag)
+		return;
+	if (devp->clk_state == FRC_CLOCK_OFF)
+		return;
+
 	pfw_data = (struct frc_fw_data_s *)devp->fw_data;
 	if (!pfw_data)
 		return;
-	if (!devp->probe_ok)
-		return;
-	if (!devp->power_on_flag) {
-		// devp->power_off_flag++;
-		return;
-	}
-	if (devp->clk_state == FRC_CLOCK_OFF)
-		return;
+
 #if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_IOTRACE)
 	iotrace_misc_record_write(RECORD_TYPE_FRC_INPUT_IN, 0, 0, 0);
 #endif
 	devp->in_sts.vs_tsk_cnt++;
-
-	if (!devp->frc_fw_pause) {
-		timestamp = sched_clock();
-		if (pfw_data->memc_in_irq_handler)
-			pfw_data->memc_in_irq_handler(pfw_data);
-		// if (!devp->power_on_flag)
-		// devp->power_off_flag++;
-		if (devp->ud_dbg.inud_time_en)
-			frc_in_task_print(sched_clock() - timestamp);
+	if (devp->task_run_method == MEMC_RUN_IN_TASK) {
+		if (!devp->frc_fw_pause) {
+			timestamp = sched_clock();
+			if (pfw_data->memc_in_irq_handler)
+				pfw_data->memc_in_irq_handler(pfw_data);
+			if (devp->ud_dbg.inud_time_en)
+				frc_in_task_print(sched_clock() - timestamp);
+		}
 	}
 #if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_IOTRACE)
 	iotrace_misc_record_write(RECORD_TYPE_FRC_INPUT_OUT, 0, 0, 0);
@@ -383,25 +387,29 @@ void frc_input_tasklet_pro(unsigned long arg)
 irqreturn_t frc_output_isr(int irq, void *dev_id)
 {
 	struct frc_dev_s *devp = (struct frc_dev_s *)dev_id;
+	struct frc_fw_data_s *pfw_data;
 	u32 tmpreg_value;
+	u64 timestamp = sched_clock();
+
 	if (!devp->probe_ok || !devp->power_on_flag)
 		return IRQ_HANDLED;
 	if (devp->clk_state == FRC_CLOCK_OFF)
 		return IRQ_HANDLED;
 
-	u64 timestamp = sched_clock();
-	// struct frc_rdma_info *frc_rdma = frc_get_rdma_info();
 	if (devp->out_sts.vs_cnt - devp->out_sts.vs_tsk_cnt >
 			devp->out_sts.lost_tsk_cnt) {
 		devp->out_sts.lost_tsk_cnt =
 			devp->out_sts.vs_cnt - devp->out_sts.vs_tsk_cnt;
-			PR_FRC("out_isr_task was missing\n");
+		pr_frc(2, "out_isr_task was missing\n");
 	}
 	devp->out_sts.vs_cnt++;
 	/*update vs time*/
 	timestamp = div64_u64(timestamp, 1000);
 	devp->out_sts.vs_duration = timestamp - devp->out_sts.vs_timestamp;
 	devp->out_sts.vs_timestamp = timestamp;
+	pfw_data = (struct frc_fw_data_s *)devp->fw_data;
+	if (!pfw_data)
+		return IRQ_HANDLED;
 
 	if (devp->in_sts.vs_cnt == 1) {
 		tmpreg_value = READ_FRC_REG(FRC_REG_OUT_FID);
@@ -415,7 +423,17 @@ irqreturn_t frc_output_isr(int irq, void *dev_id)
 	me_undone_read(devp);
 	mc_undone_read(devp);
 	vp_undone_read(devp);
-
+	if (devp->task_run_method == MEMC_RUN_IN_IRQ) {
+		if (!devp->frc_fw_pause) {
+			timestamp = sched_clock();
+			if (pfw_data->memc_out_irq_handler)
+				pfw_data->memc_out_irq_handler(pfw_data);
+			if (pfw_data->frc_fw_ctrl_if)
+				pfw_data->frc_fw_ctrl_if(pfw_data);
+			if (devp->ud_dbg.outud_time_en)
+				frc_out_task_print(sched_clock() - timestamp);
+		}
+	}
 	get_vout_info(devp);
 
 	if (devp->dbg_reg_monitor_o)
@@ -464,16 +482,16 @@ void frc_output_tasklet_pro(unsigned long arg)
 			__func__, devp->out_sts.vs_cnt,
 			devp->frc_sts.vs_data_cnt);
 	}
-	if (!devp->frc_fw_pause) {
-		timestamp = sched_clock();
-		if (pfw_data->memc_out_irq_handler)
-			pfw_data->memc_out_irq_handler(pfw_data);
-		if (pfw_data->frc_fw_ctrl_if)
-			pfw_data->frc_fw_ctrl_if(pfw_data);
-		// if (!devp->power_on_flag)
-		// devp->power_off_flag++;
-		if (devp->ud_dbg.outud_time_en)
-			frc_out_task_print(sched_clock() - timestamp);
+	if (devp->task_run_method == MEMC_RUN_IN_TASK) {
+		if (!devp->frc_fw_pause) {
+			timestamp = sched_clock();
+			if (pfw_data->memc_out_irq_handler)
+				pfw_data->memc_out_irq_handler(pfw_data);
+			if (pfw_data->frc_fw_ctrl_if)
+				pfw_data->frc_fw_ctrl_if(pfw_data);
+			if (devp->ud_dbg.outud_time_en)
+				frc_out_task_print(sched_clock() - timestamp);
+		}
 	}
 	frc_dbg_frame_show(devp);
 #if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_IOTRACE)

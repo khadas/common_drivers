@@ -121,8 +121,9 @@
 // frc_20240407 frc modify urgent control
 // frc_20240417 frc add debug setting for T5M user
 // frc_20240405 fix pps adapt abnormal
+// frc_20240428 frc add lost task info when working
 
-#define FRC_FW_VER			"2024-0428 frc add lost task info when working"
+#define FRC_FW_VER			"2024-0510 memc func run in irq"
 #define FRC_KERDRV_VER		3500
 
 #define FRC_DEVNO	1
@@ -292,6 +293,9 @@ extern int frc_dbg_en;
 
 #define FRC_BYPASS_FRAME_NUM_T3X  7
 #define FRC_FREEZE_FRAME_NUM_T3X  8  // should less than 16
+
+#define MEMC_RUN_IN_TASK      1
+#define MEMC_RUN_IN_IRQ       0
 
 #define FRC_TITLE        "Display_FRC"
 #define DEFAULT_TITLE    "default"
@@ -740,6 +744,7 @@ struct frc_dev_s {
 	u8 st_change;
 	u8 need_bypass;	/*notify vpu to bypass frc*/
 	u8 next_frame;
+	u8 task_run_method;
 
 	u32 dbg_force_en;
 	u32 dbg_in_out_ratio;

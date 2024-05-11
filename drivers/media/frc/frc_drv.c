@@ -1103,7 +1103,7 @@ static void frc_drv_initial(struct frc_dev_s *devp)
 	// ctrl high-priority tasklet
 	devp->in_sts.hi_en = 0;
 	devp->out_sts.hi_en = 0;
-
+	devp->task_run_method = MEMC_RUN_IN_IRQ;
 	fw_data = (struct frc_fw_data_s *)devp->fw_data;
 	fw_data->holdline_parm.me_hold_line = 4;
 	fw_data->holdline_parm.mc_hold_line = 1;
@@ -1114,7 +1114,6 @@ static void frc_drv_initial(struct frc_dev_s *devp)
 	fw_data->frc_top_type.motion_ctrl = RD_MOTION_BY_VPU_ISR;
 	for (i = 0; i < RD_REG_MAX; i++)
 		fw_data->reg_val[i].addr = 0x0;
-
 	if (fw_data->frc_top_type.chip != 0)
 		memcpy(&devp->frm_dly_set[0],
 			&chip_frc_frame_dly[fw_data->frc_top_type.chip - 1][0],

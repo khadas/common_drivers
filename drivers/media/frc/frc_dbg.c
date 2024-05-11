@@ -325,7 +325,8 @@ ssize_t frc_debug_if_help(struct frc_dev_s *devp, char *buf)
 	len += sprintf(buf + len, "auto_n2m\t=%d\n", devp->auto_n2m);
 	len += sprintf(buf + len, "set_mcdw\t=(read reg check)\n");
 	len += sprintf(buf + len, "test2\t\t=%d\n", devp->test2);
-
+	len += sprintf(buf + len, "low_latency_en\t=%d\n",
+					fw_data->frc_fw_alg_ctrl.frc_algctrl_u8param3);
 	return len;
 }
 
@@ -499,6 +500,11 @@ void frc_debug_if(struct frc_dev_s *devp, const char *buf, size_t count)
 			goto exit;
 		if (kstrtoint(parm[1], 10, &val1) == 0)
 			devp->test2 = (u8)val1;
+	} else if (!strcmp(parm[0], "low_latency_en")) {
+		if (!parm[1])
+			goto exit;
+		if (kstrtoint(parm[1], 10, &val1) == 0)
+			fw_data->frc_fw_alg_ctrl.frc_algctrl_u8param3 = val1;
 	}
 exit:
 	kfree(buf_orig);
@@ -952,7 +958,6 @@ exit:
 
 ssize_t frc_debug_other_if_help(struct frc_dev_s *devp, char *buf)
 {
-	int i;
 	ssize_t len = 0;
 	struct frc_fw_data_s *fw_data;
 
@@ -979,14 +984,9 @@ ssize_t frc_debug_other_if_help(struct frc_dev_s *devp, char *buf)
 			devp->timer_dbg.timer_en, devp->timer_dbg.timer_level,
 			devp->timer_dbg.time_interval);
 	len += sprintf(buf + len, "frm_seg_en\t=%d\n", devp->in_sts.frm_en);
-	len += sprintf(buf + len, "motion_ctrl\t=%d\n",
-			fw_data->frc_top_type.motion_ctrl);
-	for (i = 0; i < RD_REG_MAX; i++) {
-		if (fw_data->reg_val[i].addr == 0x0)
-			break;
-		len += sprintf(buf + len, "trace reg addr[%d]:%04x\n",
-			i, fw_data->reg_val[i].addr);
-	}
+	len += sprintf(buf + len, "motion_ctrl\t=%d, read reg =0x%4x\n",
+			fw_data->frc_top_type.motion_ctrl, fw_data->reg_val[0].addr);
+	len += sprintf(buf + len, "task_run\t=%d\n", devp->task_run_method);
 	return len;
 }
 
@@ -1142,6 +1142,11 @@ void frc_debug_other_if(struct frc_dev_s *devp, const char *buf, size_t count)
 			goto exit;
 		if (kstrtoint(parm[1], 10, &val1) == 0)
 			fw_data->frc_top_type.motion_ctrl = val1;
+	} else if (!strcmp(parm[0], "task_run")) {
+		if (!parm[1])
+			goto exit;
+		if (kstrtoint(parm[1], 10, &val1) == 0)
+			devp->task_run_method = val1;
 	}
 exit:
 	kfree(buf_orig);

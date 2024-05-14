@@ -22,6 +22,8 @@
 #include "film_vof_soft.h"
 #include "../deinterlace.h"
 #include "../register.h"
+static int test_cnt = 1024;
+module_param_named(test_cnt, test_cnt, int, 0664);
 
 static int DIweavedetec(struct sFlmSftPar *pPar, int nDif01);
 /* Software parameters (registers) */
@@ -794,10 +796,8 @@ int FlmVOFSftTop(UINT8 *rCmb32Spcl, unsigned short *rPstCYWnd0,
 	if (max_dif02 / (nDIF02[HISDIFNUM - 1] + 1) > flm22_dif02_ratio) {
 		if (pd22224_dif02_flag == 0 && nDIF02[HISDIFNUM - 1]
 			< (1 << (pd_dif02_sel + 1))) {
-			if (pd22224_mcdi_cnt == 10)
+			if (pd22224_mcdi_cnt == 10 && nDIF02[HISDIFNUM - 1] > test_cnt)
 				pd22224_cnt = ((pd22224_cnt - 10) > 0) ? (pd22224_cnt - 10) : 0;
-			if (pRDat.pModXx[HISDETNUM - 1 - mDly] == 4)
-				pd22224_cnt = 0;
 			if ((pd22224_cnt < pd22224_th && nDIF02[HISDIFNUM - 1]
 				< (1 << pd_dif02_sel)) || pd22224_dif02_reset)
 				pd22224_mcdi_cnt = 0;

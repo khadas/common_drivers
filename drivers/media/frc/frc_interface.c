@@ -124,14 +124,15 @@ int frc_get_video_latency_for_gd(void)
 	u32 vout_hz = 0;
 	int delay_time = -1;   /*ms*/
 
+	// delay_time = out_frm_dly_num;
+	if (!devp || !vinfo)
+		return -1;
+
 	fw_data = (struct frc_fw_data_s *)devp->fw_data;
 	frc_top = &fw_data->frc_top_type;
 
 	if (vinfo && vinfo->sync_duration_den != 0)
 		vout_hz = vinfo->sync_duration_num / vinfo->sync_duration_den;
-	// delay_time = out_frm_dly_num;
-	if (!devp || !vinfo)
-		return -1;
 
 	if (devp->frc_sts.auto_ctrl == 1) {
 		if (devp->in_sts.frc_vf_rate == 0)
@@ -165,11 +166,12 @@ int frc_get_video_latency_for_gd1(void)
 	int delay_time = -1;   /*ms*/
 	int delay_vsync_num = 0;
 
+	if (!devp || !vinfo)
+		return -1;
+
 	fw_data = (struct frc_fw_data_s *)devp->fw_data;
 	frc_top = &fw_data->frc_top_type;
 
-	if (!devp || !vinfo)
-		return -1;
 	if (vinfo && vinfo->sync_duration_den != 0)
 		vout_hz = vinfo->sync_duration_num / vinfo->sync_duration_den;
 

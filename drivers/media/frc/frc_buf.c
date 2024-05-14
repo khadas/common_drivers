@@ -669,17 +669,16 @@ int frc_buf_alloc(struct frc_dev_s *devp)
 	}
 	devp->buf.cma_mem_paddr_start = page_to_phys(devp->buf.cma_mem_paddr_pages);
 	devp->buf.cma_mem_alloced = 1;
-	if (devp->buf.cma_mem_paddr_start > 0x300000000) {
-		WRITE_FRC_REG(FRC_AXI_ADDR_EXT_CTRL, 0x3333);
-		pr_frc(1, "frc run on 16G-dram board\n");
-	} else if (devp->buf.cma_mem_paddr_start > 0x200000000) {
-		WRITE_FRC_REG(FRC_AXI_ADDR_EXT_CTRL, 0x2222);
-		pr_frc(1, "frc run on 12G-dram board\n");
-	} else if (devp->buf.cma_mem_paddr_start > 0x100000000) {
-		WRITE_FRC_REG(FRC_AXI_ADDR_EXT_CTRL, 0x1111);
-		pr_frc(1, "frc run on 8G-dram board\n");
-	}
 
+#ifdef CONFIG_PHYS_ADDR_T_64BIT  // fixed CID error [DEADCODE]
+	if (devp->buf.cma_mem_paddr_start >= 0x100000000) {
+		WRITE_FRC_REG(FRC_AXI_ADDR_EXT_CTRL, 0x1111);
+		pr_frc(1, "frc run on 8G-dram 64 bit board\n");
+	} else {
+		WRITE_FRC_REG(FRC_AXI_ADDR_EXT_CTRL, 0x0000);
+		pr_frc(1, "frc run on 4G-dram 64 bit board\n");
+	}
+#endif
 	pr_frc(0, "cma paddr_start=0x%lx size:0x%x\n",
 		(ulong)devp->buf.cma_mem_paddr_start, frc_buf_size);
 
@@ -1759,14 +1758,9 @@ int frc_buf_config(struct frc_dev_s *devp)
 		WRITE_FRC_REG_BY_CPU(i, 0);
 	for (i = FRC_REG_MCDW_CBUF_ADDRX_0 + frm_buf_num; i <= FRC_REG_MCDW_CBUF_ADDRX_15; i++)
 		WRITE_FRC_REG_BY_CPU(i, 0);
-	/*t3 norm hme data buffer*/
-	if (chip == ID_T3) {
-		for (i = FRC_REG_HME_BUF_ADDRX_0 + frm_buf_num; i <= FRC_REG_HME_BUF_ADDRX_15; i++)
-			WRITE_FRC_REG_BY_CPU(i, 0);
-	} else {
-		for (i = FRC_REG_HME_BUF_ADDRX_0 + frm_buf_num; i <= FRC_REG_HME_BUF_ADDRX_15; i++)
-			WRITE_FRC_REG_BY_CPU(i, 0);
-	}
+	/*t3/other last norm hme data buffer*/
+	for (i = FRC_REG_HME_BUF_ADDRX_0 + frm_buf_num; i <= FRC_REG_HME_BUF_ADDRX_15; i++)
+		WRITE_FRC_REG_BY_CPU(i, 0);
 	/*norm memv buffer*/
 	for (i = FRC_REG_ME_NC_UNI_MV_ADDRX_0; i <= FRC_REG_ME_PC_PHS_MV_ADDR; i++)
 		WRITE_FRC_REG_BY_CPU(i,

@@ -302,13 +302,14 @@ struct av_param_qosinfo_t {
 	struct vframe_qos_s vframe_qos[QOS_FRAME_NUM];
 };
 
-#ifndef struct_group
+#ifdef struct_group
+#undef struct_group
+#endif
 #define struct_group(NAME, MEMBERS...)	\
 		union { \
-			struct { MEMBERS }; \
-			struct { MEMBERS } NAME; \
+			struct __attribute__((packed)) { MEMBERS }; \
+			struct __attribute__((packed)) { MEMBERS } NAME; \
 		}
-#endif
 
 struct vdec_info {
 	char vdec_name[16];
@@ -512,10 +513,9 @@ struct vframe_counter_s {
 	unsigned int b_decoded_frames;
 	unsigned int b_lost_frames;
 	unsigned int b_concealed_frames;
-	unsigned int av_resynch_counter;
 
 	);
-
+	unsigned int av_resynch_counter;
 };
 
 struct vframe_counter_s_old {

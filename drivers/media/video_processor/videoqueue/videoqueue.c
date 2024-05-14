@@ -1153,6 +1153,7 @@ static int videoqueue_reg_provider(struct video_queue_dev *dev)
 		vq_print(dev->inst, P_ERROR, "reg: init_vt failed.\n");
 		return ret;
 	}
+	v4lvideo_dec_count_increase();
 	for (i = 0; i < FILE_CNT; i++) {
 		dmabuf = uvm_alloc_dmabuf(SZ_4K, 0, 0);
 		if (!dmabuf_is_uvm(dmabuf))
@@ -1195,6 +1196,7 @@ static int videoqueue_unreg_provider(struct video_queue_dev *dev)
 	}
 	dev->vq_reg_flag  = 0;
 	mutex_unlock(&dev->mutex_reg);
+	v4lvideo_dec_count_decrease();
 	wake_up_interruptible(&dev->fence_wq);
 	dev->wakeup = 1;
 	wake_up_interruptible(&dev->file_wq);

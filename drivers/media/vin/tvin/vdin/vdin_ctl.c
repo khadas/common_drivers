@@ -4370,6 +4370,8 @@ bool vdin_check_cycle(struct vdin_dev_s *devp)
 	struct tvin_state_machine_ops_s *sm_ops = NULL;
 	u64 interval_value;
 
+	if (devp->index)
+		return ret;
 	interval_value = vdin_calculate_isr_interval_value(devp);
 	stamp = vdin_get_meas_v_stamp(devp);
 
@@ -4458,6 +4460,9 @@ void vdin_calculate_duration(struct vdin_dev_s *devp)
 			if (abs(duration_diff) > VDIN_DURATION_FILTER_VALUE)
 				curr_wr_vf->duration = devp->duration;
 		}
+
+		if (devp->index)
+			curr_wr_vf->duration = devp->duration;
 	} else {
 #ifdef VDIN_DYNAMIC_DURATION
 		devp->curr_wr_vf->duration =

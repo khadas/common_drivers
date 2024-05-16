@@ -140,6 +140,7 @@ static void meson_uvm_unmap_dma_buf(struct dma_buf_attachment *attachment,
 	struct uvm_handle *handle;
 	struct uvm_alloc *ua;
 
+	UVM_PRINTK(UVM_INFO, "%s called, %s.\n", __func__, current->comm);
 	dmabuf = attachment->dmabuf;
 	if (!dmabuf) {
 		UVM_PRINTK(UVM_ERROR, "%s called skip,dmabuf is null .\n", __func__);
@@ -156,7 +157,6 @@ static void meson_uvm_unmap_dma_buf(struct dma_buf_attachment *attachment,
 		return;
 	}
 
-	UVM_PRINTK(UVM_INFO, "%s called, %s.\n", __func__, current->comm);
 	if (sgt != ua->sgt[0] && sgt != ua->sgt[1]) {
 		UVM_PRINTK(UVM_ERROR, "%s called skip,sgt have free.\n", __func__);
 		return;
@@ -235,16 +235,23 @@ static int meson_uvm_vmap(struct dma_buf *dmabuf, struct dma_buf_map *map)
 	void *vaddr;
 
 	handle = dmabuf->priv;
-	if (handle->ua && (handle->ua->flags & BIT(UVM_IMM_ALLOC)))
+	if (handle->ua && ((handle->ua->flags & BIT(UVM_IMM_ALLOC)) ||
+	    !handle->ua->sgt[1]))
 		sgt = handle->ua->sgt[0];
 	else
 		sgt = handle->ua->sgt[1];
+	if (!sgt) {
+		UVM_PRINTK(UVM_ERROR, "buffer was not allocated.\n");
+		return -ENOMEM;
+	}
 	npages = PAGE_ALIGN(handle->size) / PAGE_SIZE;
 	pgprot = pgprot_writecombine(PAGE_KERNEL);
 
 	pages = vmalloc(sizeof(struct page *) * npages);
-	if (!pages)
+	if (!pages) {
+		UVM_PRINTK(UVM_ERROR, "vmalloc fail in %s.\n", __func__);
 		return -ENOMEM;
+	}
 
 	tmp = pages;
 	for_each_sg(sgt->sgl, sg, sgt->nents, i) {
@@ -289,7 +296,8 @@ static int meson_uvm_mmap(struct dma_buf *dmabuf, struct vm_area_struct *vma)
 
 	UVM_PRINTK(UVM_INFO, "%s called.\n", __func__);
 
-	if (handle->ua && (handle->ua->flags & BIT(UVM_IMM_ALLOC)))
+	if (handle->ua && ((handle->ua->flags & BIT(UVM_IMM_ALLOC)) ||
+	    !handle->ua->sgt[1]))
 		table = handle->ua->sgt[0];
 	else
 		table = handle->ua->sgt[1];

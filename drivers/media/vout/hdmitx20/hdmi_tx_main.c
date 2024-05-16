@@ -609,6 +609,7 @@ static void hdmitx_set_drm_pkt(struct master_display_info_s *data)
 	unsigned long flags = 0;
 	struct hdmitx_hw_common *tx_hw_base = &hdev->tx_hw.base;
 	struct rx_cap *prxcap = &hdev->tx_comm.rxcap;
+	unsigned int save_last_hdr_mode;
 
 	HDMITX_DEBUG_PACKET("%s[%d]\n", __func__, __LINE__);
 	spin_lock_irqsave(&hdev->tx_comm.edid_spinlock, flags);
@@ -870,9 +871,11 @@ static void hdmitx_set_drm_pkt(struct master_display_info_s *data)
 
 	/* if sdr/hdr mode change ,notify uevent to userspace*/
 	if (hdev->tx_comm.hdmi_current_hdr_mode != hdev->tx_comm.hdmi_last_hdr_mode) {
+		save_last_hdr_mode = hdev->tx_comm.hdmi_last_hdr_mode;
 		/* NOTE: for HDR <-> HLG, also need update last mode */
 		hdev->tx_comm.hdmi_last_hdr_mode = hdev->tx_comm.hdmi_current_hdr_mode;
-		if (hdr_mute_frame) {
+		/* only SDR->HDR/SDR->HLG need mute */
+		if (hdr_mute_frame && save_last_hdr_mode == 0) {
 			hdmitx20_video_mute_op(0);
 			HDMITX_INFO("SDR->HDR enter mute\n");
 			/* force unmute after specific frames,

@@ -3034,6 +3034,7 @@ static int hdmitx_cntl_config(struct hdmitx_hw_common *tx_hw, u32 cmd,
 	int ret = 0;
 	u32 data32 = 0;
 	struct hdmitx_dev *hdev = to_hdmitx21_dev(tx_hw);
+	enum vmode_e vmode = get_current_vmode();
 
 	if ((cmd & CMD_CONF_OFFSET) != CMD_CONF_OFFSET) {
 		HDMITX_ERROR(HW "config: invalid cmd 0x%x\n", cmd);
@@ -3053,8 +3054,17 @@ static int hdmitx_cntl_config(struct hdmitx_hw_common *tx_hw, u32 cmd,
 	case CONF_VIDEO_MUTE_OP:
 		if (argv == VIDEO_MUTE) {
 			if (hdev->tx_hw.chip_data->chip_type == MESON_CPU_ID_T7) {
-				/* T7 use vpp mute pattern */
-				set_output_mute(true);
+				/* T7 use vpp mute pattern when hdmi is the main screen*/
+				if (vmode == VMODE_HDMI) {
+					set_output_mute(true);
+				} else {
+					hd21_set_reg_bits(ENCP_VIDEO_MODE_ADV, 0, 3, 1);
+					hd21_write_reg(VENC_VIDEO_TST_EN, 1);
+					hd21_write_reg(VENC_VIDEO_TST_MDSEL, 0);
+					hd21_write_reg(VENC_VIDEO_TST_Y, 0x0);
+					hd21_write_reg(VENC_VIDEO_TST_CB, 0x200);
+					hd21_write_reg(VENC_VIDEO_TST_CR, 0x200);
+				}
 			} else {
 				hd21_set_reg_bits(ENCP_VIDEO_MODE_ADV, 0, 3, 1);
 				hd21_write_reg(VENC_VIDEO_TST_EN, 1);
@@ -3066,8 +3076,13 @@ static int hdmitx_cntl_config(struct hdmitx_hw_common *tx_hw, u32 cmd,
 		}
 		if (argv == VIDEO_UNMUTE) {
 			if (hdev->tx_hw.chip_data->chip_type == MESON_CPU_ID_T7) {
-				/* T7 use vpp mute pattern */
-				set_output_mute(false);
+				/* T7 use vpp mute pattern when hdmi is the main screen*/
+				if (vmode == VMODE_HDMI) {
+					set_output_mute(false);
+				} else {
+					hd21_set_reg_bits(ENCP_VIDEO_MODE_ADV, 1, 3, 1);
+					hd21_write_reg(VENC_VIDEO_TST_EN, 0);
+				}
 			} else {
 				hd21_set_reg_bits(ENCP_VIDEO_MODE_ADV, 1, 3, 1);
 				hd21_write_reg(VENC_VIDEO_TST_EN, 0);

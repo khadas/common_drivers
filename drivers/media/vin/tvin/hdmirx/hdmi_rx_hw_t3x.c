@@ -5917,7 +5917,7 @@ bool is_fsm_ready_t3x(void)
 bool rx_is_power_off_t3x(u8 port)
 {
 	if (port <= E_PORT1)
-		return hdmirx_rd_cor(T3X_HDMIRX20PHY_DCHA_MISC1, port) == 0;
+		return hdmirx_rd_amlphy_t3x(T3X_HDMIRX20PHY_DCHA_MISC1, port) == 0;
 	else
 		return hdmirx_rd_amlphy_t3x(T3X_HDMIRX21PHY_MISC0, port) == 0;
 }

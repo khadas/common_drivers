@@ -79,7 +79,7 @@ static const struct reg_default tl1_acodec_init_list[] = {
 	{ACODEC_5, 0xFBFB0033},
 	{ACODEC_6, 0x0},
 	{ACODEC_7, 0x0},
-	{ACODEC_8, 0x0}
+	{ACODEC_8, 0x3}
 };
 
 static struct tl1_acodec_chipinfo tl1_acodec_cinfo = {
@@ -475,7 +475,7 @@ static SOC_ENUM_SINGLE_DECL(out_lo2r_enum, ACODEC_3,
 static const struct snd_kcontrol_new lo2r_mux =
 SOC_DAPM_ENUM("LO2R_MUX", out_lo2r_enum);
 
-static const struct snd_soc_dapm_widget tl1_acodec_dapm_widgets[] = {
+static const __maybe_unused struct snd_soc_dapm_widget tl1_acodec_dapm_widgets[] = {
 	/* Input */
 	SND_SOC_DAPM_INPUT("Linein left 1"),
 	SND_SOC_DAPM_INPUT("Linein left 2"),
@@ -555,7 +555,7 @@ static const struct snd_soc_dapm_widget tl1_acodec_dapm_widgets[] = {
 
 };
 
-static const struct snd_soc_dapm_route tl1_acodec_dapm_routes[] = {
+static const __maybe_unused struct snd_soc_dapm_route tl1_acodec_dapm_routes[] = {
 /* Input path */
 	{"Linein left switch", "AIL1", "Linein left 1"},
 	{"Linein left switch", "AIL2", "Linein left 2"},
@@ -648,6 +648,7 @@ static int tl1_acodec_dai_set_bias_level
 	(struct snd_soc_component *component,
 	enum snd_soc_bias_level level)
 {
+	pr_info("%s set bias level %d\n", __func__, level);
 	switch (level) {
 	case SND_SOC_BIAS_ON:
 		snd_soc_component_write(component, ACODEC_8, 0x3);
@@ -662,6 +663,7 @@ static int tl1_acodec_dai_set_bias_level
 		if (component->dapm.bias_level == SND_SOC_BIAS_OFF) {
 			snd_soc_component_cache_sync(component);
 			snd_soc_component_write(component, ACODEC_0, tl1_acodec_init_list[0].def);
+			snd_soc_component_write(component, ACODEC_8, tl1_acodec_init_list[8].def);
 		}
 		break;
 
@@ -903,13 +905,13 @@ const static struct snd_soc_component_driver soc_codec_dev_tl1_acodec = {
 	.remove = tl1_acodec_remove,
 	.suspend = tl1_acodec_suspend,
 	.resume = tl1_acodec_resume,
-	.set_bias_level = tl1_acodec_dai_set_bias_level,
+//	.set_bias_level = tl1_acodec_dai_set_bias_level,
 	.controls = tl1_acodec_snd_controls,
 	.num_controls = ARRAY_SIZE(tl1_acodec_snd_controls),
-	.dapm_widgets = tl1_acodec_dapm_widgets,
-	.num_dapm_widgets = ARRAY_SIZE(tl1_acodec_dapm_widgets),
-	.dapm_routes = tl1_acodec_dapm_routes,
-	.num_dapm_routes = ARRAY_SIZE(tl1_acodec_dapm_routes),
+//	.dapm_widgets = tl1_acodec_dapm_widgets,
+//	.num_dapm_widgets = ARRAY_SIZE(tl1_acodec_dapm_widgets),
+//	.dapm_routes = tl1_acodec_dapm_routes,
+//	.num_dapm_routes = ARRAY_SIZE(tl1_acodec_dapm_routes),
 };
 
 static const struct regmap_config tl1_acodec_regmap_config = {

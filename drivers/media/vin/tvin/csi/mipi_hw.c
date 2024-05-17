@@ -145,7 +145,8 @@ void init_am_mipi_csi2_clock(void)
 		g_csi.csi_clk = NULL;
 		return;
 	}
-	clk_set_rate(g_csi.csi_clk, csi_rate);
+	if (clk_set_rate(g_csi.csi_clk, csi_rate) < 0)
+		pr_err("%s :Failed to set csi rate\n", __func__);
 	rc = clk_prepare_enable(g_csi.csi_clk);
 	if (rc != 0) {
 		pr_err("Failed to enable csi clk\n");
@@ -160,7 +161,8 @@ void init_am_mipi_csi2_clock(void)
 		g_csi.adapt_clk = NULL;
 		return;
 	}
-	clk_set_rate(g_csi.adapt_clk, adapt_rate);
+	if (clk_set_rate(g_csi.adapt_clk, adapt_rate))
+		pr_err("%s: Failed to set adapt rate\n", __func__);
 	rc = clk_prepare_enable(g_csi.adapt_clk);
 	if (rc != 0) {
 		pr_err("Failed to enable adapt clk\n");
@@ -313,9 +315,9 @@ static void reset_am_mipi_phy(void)
 
 void am_mipi_csi2_para_init(struct platform_device *pdev)
 {
-	struct resource rs;
+	struct resource rs = {};
 	int i = 0;
-	int rtn = -1;
+	int rtn = 0;
 
 	memset(&g_csi, 0, sizeof(struct csi_adapt));
 	g_csi.p_dev = pdev;
@@ -325,7 +327,6 @@ void am_mipi_csi2_para_init(struct platform_device *pdev)
 		if (rtn != 0) {
 			pr_err("%s:Error idx %d get mipi csi reg resource\n",
 				__func__, i);
-			continue;
 		} else {
 			pr_info("%s: rs idx %d info: name: %s\n", __func__,
 				i, rs.name);

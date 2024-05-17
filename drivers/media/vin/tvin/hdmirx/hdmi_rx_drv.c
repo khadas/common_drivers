@@ -165,8 +165,8 @@ u8 rx_audio_block[MAX_AUDIO_BLK_LEN] = {
 };
 
 u32 en_4096_2_3840;
-int en_4k_2_2k;
-int en_4k_timing = 1;
+u32 en_4k_2_2k;
+u32 en_4k_timing = 1;
 u32 ops_port;
 int cec_dev_en;
 bool dev_is_apple_tv_v2;
@@ -189,12 +189,12 @@ int vdin_reset_pcs_en;
  */
 int suspend_pddq_sel = 1;
 /* as cvt required, set hpd low if cec off when boot */
-int hpd_low_cec_off = 1;
-int rx_5v_wake_up_en;
+u32 hpd_low_cec_off = 1;
+u32 rx_5v_wake_up_en;
 int vpp_mute_cnt = 6;
 int gcp_mute_cnt = 25;
 int gcp_mute_flag[4];
-int edid_auto_sel;
+u32 edid_auto_sel;
 #ifdef CONFIG_AMLOGIC_LEGACY_EARLY_SUSPEND
 static bool early_suspend_flag;
 #endif
@@ -210,15 +210,15 @@ struct reg_map rx_reg_maps[MAP_ADDR_MODULE_NUM];
 //RPT_RX's behavior when RPT_TX is disconnected:
 //1.  HPD pulled down.
 //2.  works on receiver mode
-int rpt_only_mode;
-int rpt_edid_selection;
+u32 rpt_only_mode;
+u32 rpt_edid_selection;
 
 /* disable hdr function in dts */
-int disable_hdr;
+u32 disable_hdr;
 
 //vrr field VRRmin/max dynamic update enable
-int vrr_range_dynamic_update_en;
-int allm_update_en;
+u32 vrr_range_dynamic_update_en;
+u32 allm_update_en;
 int rx_phy_level = 1;
 int def_trim_value;
 static struct notifier_block aml_hdcp22_pm_notifier = {
@@ -813,7 +813,7 @@ enum tvin_aspect_ratio_e get_format_ratio(u8 port)
 
 	vic = rx[port].pre.sw_vic;
 	if (force_vic)
-		vic = force_vic;
+		vic = (enum hdmi_vic_e)force_vic;
 
 	switch (vic) {
 	case HDMI_800_600:
@@ -1829,7 +1829,7 @@ static long hdmirx_ioctl(struct file *file, unsigned int cmd,
 	struct avi_infoframe_st *avi_pkt;
 	unsigned int pin_status;
 	void *src_buff;
-	u8 sad_data[30];
+	u8 sad_data[30] = {0};
 	u8 len = 0;
 	u8 i = 0;
 	u8 port_idx = 0;
@@ -1950,8 +1950,8 @@ static long hdmirx_ioctl(struct file *file, unsigned int cmd,
 			break;
 		}
 		rx_pr("en cmd:0x%x\n", param);
-		rx_pkt_buffclear(param, rx_info.main_port);
-		temp = rx_pkt_type_mapping(param);
+		rx_pkt_buffclear((enum pkt_type_e)param, rx_info.main_port);
+		temp = rx_pkt_type_mapping((enum pkt_type_e)param);
 		packet_fifo_cfg |= temp;
 		/*enable pkt pd fifo*/
 		temp_val = hdmirx_rd_dwc(DWC_PDEC_CTRL);
@@ -1977,7 +1977,7 @@ static long hdmirx_ioctl(struct file *file, unsigned int cmd,
 			break;
 		}
 		rx_pr("dis cmd:0x%x\n", param);
-		temp = rx_pkt_type_mapping(param);
+		temp = rx_pkt_type_mapping((enum pkt_type_e)param);
 		packet_fifo_cfg &= ~temp;
 		/*disable pkt pd fifo*/
 		temp_val = hdmirx_rd_dwc(DWC_PDEC_CTRL);
@@ -2251,7 +2251,7 @@ int rx_pr(const char *fmt, ...)
 
 	if (last_break == 1 &&
 	    strlen(fmt) > 1) {
-		strcpy(buf, "[RX]-");
+		strncpy(buf, "[RX]-", 6);
 		for (len = 0; len < strlen(fmt); len++)
 			if (fmt[len] == '\n')
 				pos++;
@@ -2260,7 +2260,7 @@ int rx_pr(const char *fmt, ...)
 
 		strncpy(buf + 5, fmt + pos, (sizeof(buf) - 5));
 	} else {
-		strcpy(buf, fmt);
+		strncpy(buf, fmt, strlen(fmt));
 	}
 	if (fmt[strlen(fmt) - 1] == '\n')
 		last_break = 1;
@@ -2338,7 +2338,7 @@ static ssize_t log_store(struct device *dev,
 			 struct device_attribute *attr,
 			 const char *buf, size_t count)
 {
-	long tmp;
+	unsigned long tmp = 0;
 	unsigned long flags;
 
 	if (strncmp(buf, "bufsize", 7) == 0) {
@@ -2434,7 +2434,8 @@ static ssize_t hdcp14_onoff_show(struct device *dev,
 	if (rx_info.chip_id >= CHIP_ID_T7)
 		;//TODO
 	else
-		return sprintf(buf, "%s", (hdmirx_rd_dwc(DWC_HDCP_BKSV0) ? "1" : "0"));
+		return snprintf(buf, 2, "%s",
+			(hdmirx_rd_dwc(DWC_HDCP_BKSV0) ? "1" : "0"));
 	return pos;
 }
 
@@ -2531,7 +2532,7 @@ static ssize_t cec_store(struct device *dev,
 			 const char *buf,
 			 size_t count)
 {
-	int cnt, val;
+	int cnt = 0, val = 0;
 
 	/* cnt = sscanf(buf, "%x", &val); */
 	cnt = kstrtoint(buf, 0, &val);
@@ -2637,8 +2638,7 @@ static ssize_t info_store(struct device *dev,
 
 static ssize_t arc_aud_type_store(struct device *dev,
 				  struct device_attribute *attr,
-				  const char *buf,
-				  size_t count)
+				  const char *buf, size_t count)
 {
 	rx_parse_arc_aud_type(buf);
 	return count;
@@ -2680,7 +2680,7 @@ static ssize_t earc_cap_ds_store(struct device *dev,
 	unsigned char char_len = 0;
 	unsigned int data = 0;
 	unsigned char i = 0;
-	unsigned char tmp[3] = {0};
+	char tmp[3] = {0};
 	unsigned char earc_cap_ds[EARC_CAP_DS_MAX_LENGTH] = {0};
 	int ret = 0;
 
@@ -2716,7 +2716,7 @@ static ssize_t edid_select_store(struct device *dev,
 				 size_t count)
 {
 	int ret;
-	unsigned int tmp;
+	unsigned int tmp = 0;
 	int i;
 	/* PCB port number for UI HDMI1/2/3/4 */
 	unsigned char pos[E_PORT_NUM] = {0};
@@ -2732,10 +2732,10 @@ static ssize_t edid_select_store(struct device *dev,
 
 	if (!port_map) {
 		edid_select = tmp;
-		rx[0].edid_type.cfg = tmp & 0xF;
-		rx[1].edid_type.cfg = (tmp >> 4) & 0xF;
-		rx[2].edid_type.cfg = (tmp >> 8) & 0xF;
-		rx[3].edid_type.cfg = (tmp >> 12) & 0xF;
+		rx[0].edid_type.cfg = (enum edid_ver_e)(tmp & 0xF);
+		rx[1].edid_type.cfg = (enum edid_ver_e)((tmp >> 4) & 0xF);
+		rx[2].edid_type.cfg = (enum edid_ver_e)((tmp >> 8) & 0xF);
+		rx[3].edid_type.cfg = (enum edid_ver_e)((tmp >> 12) & 0xF);
 		rx_pr("without port_map edid select for UI HDMI4~1: 0x%x, for portD~A: 0x%x\n",
 			tmp, edid_select);
 		edid_type_init();
@@ -2761,13 +2761,13 @@ static ssize_t edid_select_store(struct device *dev,
 	}
 	/* edid select for portD/C/B/A */
 	edid_select = 0;
-	rx[0].edid_type.cfg = tmp & 0xF;
+	rx[0].edid_type.cfg = (enum edid_ver_e)(tmp & 0xF);
 	edid_select |= rx[0].edid_type.cfg << (pos[0] * 4);
-	rx[1].edid_type.cfg = (tmp >> 4) & 0xF;
+	rx[1].edid_type.cfg = (enum edid_ver_e)((tmp >> 4) & 0xF);
 	edid_select |= rx[1].edid_type.cfg << (pos[1] * 4);
-	rx[2].edid_type.cfg = (tmp >> 8) & 0xF;
+	rx[2].edid_type.cfg = (enum edid_ver_e)((tmp >> 8) & 0xF);
 	edid_select |= rx[2].edid_type.cfg << (pos[2] * 4);
-	rx[3].edid_type.cfg = (tmp >> 12) & 0xF;
+	rx[3].edid_type.cfg = (enum edid_ver_e)((tmp >> 12) & 0xF);
 	edid_select |= rx[3].edid_type.cfg << (pos[3] * 4);
 	rx_pr("edid select for UI HDMI4~1: 0x%x, for portD~A: 0x%x\n", tmp, edid_select);
 	edid_type_init();
@@ -2787,7 +2787,7 @@ static ssize_t vrr_func_ctrl_store(struct device *dev,
 				 size_t count)
 {
 	int ret;
-	unsigned int tmp;
+	unsigned int tmp = 0;
 
 	ret = kstrtouint(buf, 16, &tmp);
 	if (ret)
@@ -2811,7 +2811,7 @@ static ssize_t allm_func_ctrl_store(struct device *dev,
 				 size_t count)
 {
 	int ret;
-	unsigned int tmp;
+	unsigned int tmp = 0;
 
 	ret = kstrtouint(buf, 16, &tmp);
 	if (ret)
@@ -3083,7 +3083,7 @@ static void hdmirx_get_base_addr(struct device_node *node)
 static int hdmirx_switch_pinmux(struct device *dev)
 {
 	struct pinctrl *pin;
-	const char *pin_name;
+	const char *pin_name = NULL;
 	int ret = 0;
 
 	/* pinmux set */
@@ -3723,7 +3723,7 @@ static int hdmirx_probe(struct platform_device *pdev)
 			   &hdmirx_dec_ops,
 			   &hdmirx_sm_ops,
 			   hdevp->index);
-	sprintf(hdevp->frontend.name, "%s", TVHDMI_NAME);
+	snprintf(hdevp->frontend.name, strlen(TVHDMI_NAME), "%s", TVHDMI_NAME);
 	if (tvin_reg_frontend(&hdevp->frontend) < 0)
 		rx_pr("hdmirx: driver probe error!!!\n");
 
@@ -3871,7 +3871,8 @@ static int hdmirx_probe(struct platform_device *pdev)
 		if (IS_ERR(hdevp->cts_hdmirx_hdcp2x_eclk)) {
 			rx_pr("get cts_hdmirx_hdcp2x_eclk err\n");
 		} else {
-			clk_set_rate(hdevp->cts_hdmirx_hdcp2x_eclk, 25000000);
+			if (clk_set_rate(hdevp->cts_hdmirx_hdcp2x_eclk, 25000000) < 0)
+				rx_pr("clk_set_rate:meter err-%d\n", __LINE__);
 			clk_prepare_enable(hdevp->cts_hdmirx_hdcp2x_eclk);
 			clk_rate = clk_get_rate(hdevp->cts_hdmirx_hdcp2x_eclk);
 		}

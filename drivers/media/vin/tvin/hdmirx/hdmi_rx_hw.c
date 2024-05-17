@@ -127,7 +127,7 @@ u32 phy_trim_val;
 /* bit'4: tdr enable
  * bit [3:0]: tdr level control
  */
-int phy_term_lel;
+u32 phy_term_lel;
 bool phy_tdr_en;
 int kill_esm_fail;
 int dbg_port;

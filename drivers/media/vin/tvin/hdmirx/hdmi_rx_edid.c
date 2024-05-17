@@ -1405,7 +1405,7 @@ static void get_edid_standard_timing(unsigned char *buff,
 				     unsigned int length,
 				     struct edid_info_s *edid_info)
 {
-	unsigned char  i, img_aspect_ratio;
+	unsigned int  i, img_aspect_ratio;
 	int hactive_pixel, vactive_pixel, refresh_rate;
 	int asp_ratio[] = {
 		80 * 10 / 16,
@@ -4872,7 +4872,11 @@ static void edid_secondaryphyaddr(unsigned char *p_edid_dest, unsigned char *p_e
 	u8 *p_vsdb_def = (u8 *)&vsdb_def;
 
 	src_vsdb_offset = rx_get_cea_tag_offset(p_edid_src, VENDOR_TAG);
+	if (!src_vsdb_offset)
+		rx_pr("src_vsdb_offset error\n");
 	def_vsdb_offset = rx_get_cea_tag_offset(p_edid_dest, VENDOR_TAG);
+	if (!def_vsdb_offset)
+		rx_pr("def_vsdb_offset error\n");
 	memcpy(p_vsdb_src + 4, &p_edid_src[src_vsdb_offset + 4], 2);
 	memcpy(p_vsdb_def + 4, &p_edid_dest[def_vsdb_offset + 4], 2);
 	if (vsdb_src.a == 0) {

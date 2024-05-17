@@ -120,7 +120,7 @@ struct tvafe_user_param_s {
 
 /* tvafe device structure */
 struct tvafe_dev_s {
-	int	index;
+	unsigned int index;
 	dev_t devt;
 	struct cdev cdev;
 	struct device *dev;

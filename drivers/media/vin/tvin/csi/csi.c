@@ -46,8 +46,7 @@ static void init_csi_dec_parameter(struct amcsi_dev_s *devp)
 
 	pr_info("%s,Enter\n", __func__);
 	fmt = devp->para.fmt;
-	fmt_info_p =
-	(struct tvin_format_s *)tvin_get_fmt_info(fmt);
+	fmt_info_p = (struct tvin_format_s *)tvin_get_fmt_info(fmt);
 	devp->para.v_active    = 1080;
 	devp->para.h_active    = 1920;
 	devp->para.hsync_phase = 0;
@@ -434,7 +433,7 @@ static void csi_delete_device(int minor)
 static int amvdec_csi_probe(struct platform_device *pdev)
 {
 	int ret = 0;
-	int id = 0;
+	unsigned int id = 0;
 	struct amcsi_dev_s *devp = NULL;
 
 	devp = kmalloc(sizeof(*devp), GFP_KERNEL);
@@ -460,7 +459,8 @@ static int amvdec_csi_probe(struct platform_device *pdev)
 	sprintf(devp->frontend.name, "%s", DEV_NAME);
 	tvin_frontend_init(&devp->frontend, &amcsi_decoder_ops_s,
 		&amcsi_machine_ops, pdev->id);
-	tvin_reg_frontend(&devp->frontend);
+	if (tvin_reg_frontend(&devp->frontend) < 0)
+		pr_err("%s: reg frontend error\n", __func__);
 	devp->pdev = pdev;
 
 	platform_set_drvdata(pdev, devp);

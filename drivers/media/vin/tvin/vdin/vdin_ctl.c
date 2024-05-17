@@ -830,7 +830,7 @@ void vdin_get_format_convert(struct vdin_dev_s *devp)
 enum vdin_format_convert_e
 vdin_get_format_convert_matrix0(struct vdin_dev_s *devp)
 {
-	enum vdin_format_convert_e format_convert = VDIN_FORMAT_CONVERT_MAX;
+	enum vdin_format_convert_e format_convert = VDIN_MATRIX_XXX_YUV_BLACK;
 
 	switch (devp->format_convert) {
 	case VDIN_FORMAT_CONVERT_YUV_NV21:
@@ -1698,7 +1698,7 @@ static void vdin_manual_matrix_csc(enum vdin_matrix_csc_e *matrix_csc)
 	if (devp->debug.manual_change_csc >= VDIN_MATRIX_MAX)
 		*matrix_csc = VDIN_MATRIX_NULL;
 	else
-		*matrix_csc = devp->debug.manual_change_csc;
+		*matrix_csc = (enum vdin_matrix_csc_e)(devp->debug.manual_change_csc);
 	pr_info("%s matrix_csc:%d\n", __func__, *matrix_csc);
 }
 
@@ -1861,6 +1861,7 @@ vdin_set_color_matrix(enum vdin_matrix_sel_e matrix_sel, unsigned int offset,
 				matrix_csc = VDIN_MATRIX_NULL;
 		}
 		break;
+	case VDIN_FORMAT_CONVERT_MAX:
 	default:
 		matrix_csc = VDIN_MATRIX_NULL;
 		break;
@@ -1900,7 +1901,7 @@ void vdin_set_hdr(struct vdin_dev_s *devp)
 	case TVIN_PORT_VIU1_WB0_OSD2:
 	case TVIN_PORT_VIU1_WB1_OSD1:
 	case TVIN_PORT_VIU1_WB1_OSD2:
-		video_format = devp->vd1_fmt;
+		video_format = (enum vd_format_e)(devp->vd1_fmt);
 		break;
 
 	case TVIN_PORT_VIU1_WB0_VPP:
@@ -1908,11 +1909,11 @@ void vdin_set_hdr(struct vdin_dev_s *devp)
 	case TVIN_PORT_VIU2_ENCL:
 	case TVIN_PORT_VIU2_ENCI:
 	case TVIN_PORT_VIU2_ENCP:
-		video_format = devp->tx_fmt;
+		video_format = (enum vd_format_e)(devp->tx_fmt);
 		break;
 
 	default:
-		video_format = devp->tx_fmt;
+		video_format = (enum vd_format_e)(devp->tx_fmt);
 		break;
 	}
 
@@ -3420,10 +3421,10 @@ void vdin_get_crc_val(struct vframe_s *vf, struct vdin_dev_s *devp)
 
 static inline ulong vdin_reg_limit(ulong val, ulong wid)
 {
-	if (val < (1 << wid))
+	if (val < ((ulong)1 << wid))
 		return val;
 	else
-		return (1 << wid) - 1;
+		return ((ulong)1 << wid) - 1;
 }
 
 void vdin_set_all_regs(struct vdin_dev_s *devp)
@@ -4010,6 +4011,10 @@ void vdin1_hw_hist_on_off(struct vdin_dev_s *devp, bool on_off)
 	unsigned int offset = devp->addr_offset;
 
 	vinfo = get_current_vinfo();
+	if (!vinfo) {
+		pr_err("%s is NULL\n", __func__);
+		return;
+	}
 
 	enum vdin_matrix_csc_e	  matrix_csc = VDIN_MATRIX_RGB_YUV709;
 
@@ -5318,7 +5323,7 @@ void vdin_dolby_addr_alloc(struct vdin_dev_s *devp, unsigned int size)
 	dolby_size_byte = one_buf_size;
 
 	if (devp->dtdata->hw_ver == VDIN_HW_T7)
-		devp->dv.dv_dma_size = one_buf_size * size + K_DV_META_RAW_BUFF0;
+		devp->dv.dv_dma_size = (unsigned long)one_buf_size * size + K_DV_META_RAW_BUFF0;
 	else
 		devp->dv.dv_dma_size = one_buf_size * size;
 	devp->dv.dv_dma_vaddr = dma_alloc_coherent(&devp->this_pdev->dev,
@@ -5337,7 +5342,7 @@ void vdin_dolby_addr_alloc(struct vdin_dev_s *devp, unsigned int size)
 
 	for (index = 0; index < size; index++) {
 		devp->vfp->dv_buf_mem[index] = devp->dv.dv_dma_paddr +
-			one_buf_size * index;
+			(dma_addr_t)one_buf_size * index;
 		devp->vfp->dv_buf_vmem[index] = devp->dv.dv_dma_vaddr +
 			one_buf_size * index;
 		/*
@@ -5392,9 +5397,9 @@ void vdin_dolby_addr_alloc(struct vdin_dev_s *devp, unsigned int size)
 	if (devp->dtdata->hw_ver == VDIN_HW_T7) {
 		/*need dma buffer*/
 		devp->dv.meta_data_raw_p_buffer0 = devp->dv.dv_dma_paddr +
-							one_buf_size * size;
+							(dma_addr_t)one_buf_size * size;
 		devp->dv.meta_data_raw_v_buffer0 = devp->dv.dv_dma_vaddr +
-							one_buf_size * size;
+							(dma_addr_t)one_buf_size * size;
 		pr_info("dv meta hw buff: paddr:0x%lx vaddr:0x%p\n",
 			(ulong)devp->dv.meta_data_raw_p_buffer0,
 			devp->dv.meta_data_raw_v_buffer0);
@@ -7229,8 +7234,12 @@ void vdin_source_bitdepth_reinit(struct vdin_dev_s *devp)
 
 	for (i = 0; i < p->size; ++i) {
 		master = vf_get_master(p, i);
-		vf = &master->vf;
-		vdin_set_source_bitdepth(devp, vf);
+		if (master) {
+			vf = &master->vf;
+			vdin_set_source_bitdepth(devp, vf);
+		} else {
+			pr_info("master is null.\n");
+		}
 	}
 }
 
@@ -7439,7 +7448,7 @@ void vdin_bist(struct vdin_dev_s *devp, unsigned int mode)
  */
 int vdin_get_base_fr(struct vdin_dev_s *devp)
 {
-	u32 fps = 0;
+	unsigned int fps = 0;
 	int ret = -1;
 
 	if (!IS_HDMI_SRC(devp->parm.port))
@@ -7645,8 +7654,6 @@ enum vdin_vrr_mode_e get_cur_vrr_status(struct vdin_dev_s *devp)
 			ret = VDIN_VRR_FREESYNC_PREMIUM;
 		else if (freesync_type == 3)
 			ret = VDIN_VRR_FREESYNC_PREMIUM_PRO;
-		else
-			ret = VDIN_VRR_FREESYNC;
 	} else {
 		ret = VDIN_VRR_OFF;
 	}

@@ -697,8 +697,8 @@ static void tvafe_dec_close(struct tvin_frontend_s *fe, enum tvin_port_type_e po
 	if (IS_TVAFE_ATV_SRC(tvafe->parm.port)) {
 		//atv demod clear pll and filter flags
 	} else if (IS_TVAFE_AVIN_SRC(tvafe->parm.port)) {
-		adc_set_pll_cntl(0, ADC_EN_TVAFE, NULL);
-		adc_set_filter_ctrl(0, FILTER_TVAFE, NULL);
+		adc_set_pll_cntl(0, (enum adc_sel)ADC_EN_TVAFE, NULL);
+		adc_set_filter_ctrl(0, (enum filter_sel)FILTER_TVAFE, NULL);
 	}
 #endif
 #endif
@@ -747,7 +747,7 @@ static void tvafe_get_aspect_ratio_value(struct tvafe_dev_s *devp)
 	bool has_interference_value = false;
 	struct tvafe_info_s *tvafe = &devp->tvafe;
 	enum tvin_aspect_ratio_e maybe_ratio = TVIN_ASPECT_NULL;
-	enum tvin_aspect_ratio_e aspect_ratio = tvafe->aspect_ratio;
+	enum tvin_aspect_ratio_e aspect_ratio;
 	static int count[10] = {0};
 
 	if (!(devp->tvafe_function_sel & TVAFE_WSS_FUNCTION))
@@ -801,7 +801,7 @@ static void tvafe_get_aspect_ratio_value(struct tvafe_dev_s *devp)
 		for (i = 1; i < TVIN_ASPECT_MAX; i++) {
 			if (count[i] > (devp->tvafe_ratio_cnt - devp->tvafe_ratio_effect_cnt) &&
 			    !maybe_ratio) {
-				maybe_ratio = i;
+				maybe_ratio = (enum tvin_aspect_ratio_e)i;
 				count[0] = 0;
 			} else if (count[i] > 2) {
 				has_interference_value = true;
@@ -984,7 +984,7 @@ static bool tvafe_is_nosig(struct tvin_frontend_s *fe, enum tvin_port_type_e por
 	struct tvafe_info_s *tvafe = &devp->tvafe;
 	enum tvin_port_e port = tvafe->parm.port;
 	enum tvafe_adc_ch_e adc_ch = TVAFE_ADC_CH_NULL;
-	unsigned int snow_value;
+	unsigned int snow_value = 0;
 
 	if (!(devp->flags & TVAFE_FLAG_DEV_OPENED) ||
 		(devp->flags & TVAFE_POWERDOWN_IN_IDLE)) {
@@ -1183,7 +1183,7 @@ static void tvafe_cutwindow_update(struct tvafe_info_s *tvafe,
 	}
 
 	if (user_param->cutwin_test_en & 0x4) {
-		vs_adj_val = user_param->cutwin_test_hcut;
+		hs_adj_val = user_param->cutwin_test_hcut;
 		if (user_param->auto_adj_en & TVAFE_AUTO_HS_MODE) {
 			prop->hs = 0;
 			prop->he = user_param->cutwin_test_hcut;
@@ -1666,7 +1666,7 @@ static void tvafe_clktree_probe(struct device *dev)
 
 static void tvafe_user_parameters_config(struct device_node *of_node)
 {
-	unsigned int val[6];
+	unsigned int val[6] = {0};
 	int ret;
 
 	if (!of_node)
@@ -1863,7 +1863,7 @@ static unsigned int tvafe_use_reserved_mem;
 static struct resource tvafe_memobj;
 static int tvafe_drv_probe(struct platform_device *pdev)
 {
-	int ret = 0;
+	u32 ret = 0;
 	struct tvafe_dev_s *tdevp;
 	int size_io_reg;
 	/*const void *name;*/
@@ -1932,7 +1932,7 @@ static int tvafe_drv_probe(struct platform_device *pdev)
 
 	/*create sysfs attribute files*/
 	ret = tvafe_device_create_file(tdevp->dev);
-	if (ret < 0) {
+	if (ret) {
 		tvafe_pr_err("%s: create attribute files fail.\n",
 			__func__);
 		goto fail_create_dbg_file;
@@ -1986,7 +1986,7 @@ static int tvafe_drv_probe(struct platform_device *pdev)
 	tdevp->pinmux = &tvafe_pinmux;
 	if (!tdevp->pinmux) {
 		tvafe_pr_err("tvafe: no platform data!\n");
-		ret = -ENODEV;
+		return -ENODEV;
 	}
 
 	if (of_get_property(pdev->dev.of_node, "pinctrl-names", NULL)) {
@@ -2001,6 +2001,7 @@ static int tvafe_drv_probe(struct platform_device *pdev)
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	if (!res) {
 		dev_err(&pdev->dev, "missing memory resource\n");
+		kfree(tdevp);
 		return -ENODEV;
 	}
 	size_io_reg = resource_size(res);
@@ -2010,12 +2011,14 @@ static int tvafe_drv_probe(struct platform_device *pdev)
 	if (!devm_request_mem_region(&pdev->dev,
 				res->start, size_io_reg, pdev->name)) {
 		dev_err(&pdev->dev, "Memory region busy\n");
+		kfree(tdevp);
 		return -EBUSY;
 	}
 	tvafe_reg_base =
 		devm_ioremap(&pdev->dev, res->start, size_io_reg);
 	if (!tvafe_reg_base) {
 		dev_err(&pdev->dev, "tvafe ioremap failed\n");
+		kfree(tdevp);
 		return -ENOMEM;
 	}
 	if (tvafe_dbg_print & TVAFE_DBG_HORSTP_REGBASE)
@@ -2032,6 +2035,7 @@ static int tvafe_drv_probe(struct platform_device *pdev)
 			devm_ioremap(&pdev->dev, res->start, size_io_reg);
 		if (!hiu_reg_base) {
 			dev_err(&pdev->dev, "hiu ioremap failed\n");
+			kfree(tdevp);
 			return -ENOMEM;
 		}
 		if (tvafe_dbg_print & TVAFE_DBG_HORSTP_REGBASE)
@@ -2062,14 +2066,16 @@ static int tvafe_drv_probe(struct platform_device *pdev)
 	ana_addr = ioremap(sys_clk_reg_base, 0x5);
 	if (!ana_addr) {
 		tvafe_pr_err("ana ioremap failure\n");
+		kfree(tdevp);
 		return -ENOMEM;
 	}
 
 	/* frontend */
 	tvin_frontend_init(&tdevp->frontend, &tvafe_dec_ops,
 						&tvafe_sm_ops, tdevp->index);
-	sprintf(tdevp->frontend.name, "%s", TVAFE_NAME);
-	tvin_reg_frontend(&tdevp->frontend);
+	snprintf(tdevp->frontend.name, sizeof(tdevp->frontend.name), "%s", TVAFE_NAME);
+	if (tvin_reg_frontend(&tdevp->frontend) < 0)
+		tvafe_pr_err("tvin_reg_frontend error\n");
 
 	mutex_init(&tdevp->afe_mutex);
 

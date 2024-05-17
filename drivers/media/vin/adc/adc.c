@@ -649,7 +649,7 @@ static int adc_dadc_dvbt_cntl_config(struct tvin_adc_dev *devp)
 //s4/s4d box framework config DTV but not DVBS/S2 DVBT/T2 format
 static int adc_dadc_box_other_dtv_cntl_config(struct tvin_adc_dev *devp)
 {
-	struct adc_reg_addr *adc_addr;
+	__maybe_unused struct adc_reg_addr *adc_addr;
 
 	adc_addr = &devp->plat_data->adc_addr;
 	if (devp->plat_data->chip_id == ADC_CHIP_S4 ||
@@ -853,7 +853,7 @@ static inline void adc_debug_filter_config(struct tvin_adc_dev *devp)
 
 int adc_set_filter_ctrl(bool on, enum filter_sel module_sel, void *data)
 {
-	int ret = 0;
+	__maybe_unused int ret = 0;
 	struct tvin_adc_dev *devp = adc_devp;
 
 	if (!probe_finish || !devp)
@@ -1048,7 +1048,7 @@ int adc_set_pll_cntl(bool on, enum adc_sel module_sel, void *p_para)
 	int ret = 0;/* 0: success; -x: failed */
 	struct dfe_adcpll_para *p_dtv_para = p_para;/* only for dtv demod */
 	struct tvin_adc_dev *devp = adc_devp;
-	struct adc_reg_addr *adc_addr;
+	__maybe_unused struct adc_reg_addr *adc_addr;
 	struct adc_pll_reg_addr *pll_addr;
 	unsigned int reg_offset = 0;
 
@@ -1446,7 +1446,7 @@ EXPORT_SYMBOL(adc_set_pll_reset);
 static void adc_parse_para(char *buf_orig, char **parm)
 {
 	char *ps, *token;
-	char delim1[3] = " ";
+	char delim1[5] = " ";
 	char delim2[2] = "\n";
 	unsigned int n = 0;
 
@@ -1561,11 +1561,11 @@ static ssize_t adc_store(struct device *dev, struct device_attribute *attr,
 			       const char *buf, size_t count)
 {
 	char *buf_orig, *parm[47] = {NULL};
-	unsigned int val;
-	unsigned int tmp_val;
+	unsigned int val = 0;
+	unsigned int tmp_val = 0;
 	struct tvin_adc_dev *devp = adc_devp;
-	unsigned int reg_addr;
-	unsigned int reg_val;
+	unsigned int reg_addr = 0;
+	unsigned int reg_val = 0;
 
 	if (!probe_finish || !devp)
 		return -1;

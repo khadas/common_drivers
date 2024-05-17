@@ -68,7 +68,7 @@ static ssize_t reg_store(struct device *dev,
 	unsigned int argn = 0, addr = 0, value = 0, end = 0;
 	char *p, *para, *buf_work, cmd = 0;
 	char *argv[3];
-	long val;
+	long val = 0;
 	struct am656in_dev_s *devp = dev_get_drvdata(dev);
 
 	if ((devp->dec_status & TVIN_AM656_RUNNING) == 0) {
@@ -1038,7 +1038,7 @@ static int am656in_feopen(struct tvin_frontend_s *fe, enum tvin_port_e port,
 static void am656in_feclose(struct tvin_frontend_s *fe, enum tvin_port_type_e port_type)
 {
 	struct am656in_dev_s *devp = NULL;
-	enum tvin_port_e port = 0;
+	enum tvin_port_e port = TVIN_PORT_NULL;
 
 	devp = container_of(fe, struct am656in_dev_s, frontend);
 	port = devp->para.port;
@@ -1173,7 +1173,7 @@ static int amvdec_656in_probe(struct platform_device *pdev)
 	int bt656_rate;
 	struct resource *res = 0;
 	int size = 0;
-	int index = 0;
+	unsigned int index = 0;
 	struct device_node *child;
 	const char *str;
 	char bt656_clk_name[20];
@@ -1335,8 +1335,8 @@ static int amvdec_656in_probe(struct platform_device *pdev)
 		dev_set_drvdata(devp->dev, devp);
 
 		/*register frontend */
-		sprintf(devp->frontend.name, "%s%d",
-			BT656_DEV_NAME, devp->index);
+		snprintf(devp->frontend.name, sizeof(devp->frontend.name),
+			"%s%d", BT656_DEV_NAME, devp->index);
 		/* tvin_frontend_init(&devp->frontend,
 		 * &am656_decoder_ops_s, &am656_machine_ops, pdev->id);
 		 */

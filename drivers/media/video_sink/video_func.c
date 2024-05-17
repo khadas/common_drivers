@@ -5421,7 +5421,8 @@ exit:
 		alpha_win_set(&vd_layer[0]);
 
 	/* do blend,judge really update in update_vpp_input_info for vpp_index */
-	vpp_blend_update(vinfo, VPP0);
+	if (!cur_dev->pre_vsync_enable)
+		vpp_blend_update(vinfo, VPP0);
 
 	/* late process */
 	for (i = 0; i < cur_dev->max_vd_layers; i++)

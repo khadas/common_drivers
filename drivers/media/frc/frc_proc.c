@@ -1675,7 +1675,8 @@ void frc_state_handle_new(struct frc_dev_s *devp)
 				schedule_work(&devp->frc_secure_work);
 				devp->frc_sts.frame_cnt = 0;
 				/*notify vpu bypass frc   default:0  bypass_frc:1 not_bypass_frc:2*/
-				devp->need_bypass = 1;
+//				devp->need_bypass = 1;
+				set_frc_bypass(ON);
 				devp->frc_sts.frame_cnt++;
 			} else {
 				devp->need_bypass = 0;
@@ -1694,7 +1695,7 @@ void frc_state_handle_new(struct frc_dev_s *devp)
 				} else if (devp->clk_state == FRC_CLOCK_NOR &&
 					devp->buf.cma_mem_alloced) {
 					devp->frc_sts.frame_cnt++;
-					devp->need_bypass = 2;
+//					devp->need_bypass = 2;
 //					frc_clr_badedit_effect_before_enable();
 				}
 				off2on_cnt++;
@@ -1721,7 +1722,7 @@ void frc_state_handle_new(struct frc_dev_s *devp)
 				pr_frc(log, "frc_bypass_cnt:%d,freeze_cnt:%d\n",
 						bypasscnt, freezecnt);
 				devp->st_change = 1;
-				devp->need_bypass = 0;
+//				devp->need_bypass = 0;
 			} else if (devp->frc_sts.frame_cnt == 2) {
 				if (devp->in_sts.t3x_proc_size_chg) {
 					frc_input_init(devp, frc_top);
@@ -1828,7 +1829,8 @@ void frc_state_handle_new(struct frc_dev_s *devp)
 				frc_frame_forcebuf_enable(0);
 				//devp->frc_fw_pause = 1;
 				set_frc_enable(OFF);
-				devp->need_bypass = 1;
+//				devp->need_bypass = 1;
+				set_frc_bypass(ON);
 				frc_clr_badedit_effect_before_enable();
 				devp->st_change = 2;
 				devp->frc_sts.frame_cnt++;
@@ -1878,7 +1880,7 @@ void frc_state_handle_new(struct frc_dev_s *devp)
 				} else if (devp->clk_state == FRC_CLOCK_NOR &&
 					devp->buf.cma_mem_alloced) {
 					//first frame set bypass off
-					devp->need_bypass = 2;
+					set_frc_bypass(OFF);
 					devp->frc_sts.frame_cnt++;
 //					frc_clr_badedit_effect_before_enable();
 				}

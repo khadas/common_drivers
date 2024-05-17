@@ -122,8 +122,9 @@
 // frc_20240417 frc add debug setting for T5M user
 // frc_20240405 fix pps adapt abnormal
 // frc_20240428 frc add lost task info when working
+// frc_2024-0510 memc func run in irq
 
-#define FRC_FW_VER			"2024-0510 memc func run in irq"
+#define FRC_FW_VER			"2024-0522 modify t5m dlg flow"
 #define FRC_KERDRV_VER		3500
 
 #define FRC_DEVNO	1

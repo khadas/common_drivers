@@ -81,10 +81,10 @@ int frc_input_handle(struct vframe_s *vf, struct vpp_frame_par_s *cur_video_sts)
 
 	/*frc work mode handle*/
 	// frc_state_handle_old(devp);
-	if (devp->out_sts.out_framerate <= 60)
-		frc_state_handle(devp);
-	else
+	if (get_chip_type() == ID_T3X)
 		frc_state_handle_new(devp);
+	else
+		frc_state_handle(devp);
 
 	return 0;
 }

@@ -399,9 +399,11 @@ static const struct hdmi_timing vesa_modes[] = {
 		2482, 82, 20, 30, 32, 2400, 1252, 52, 17, 5, 30, 1200, 1, 1, 1, 2, 1},
 	{HDMIV_26_3840x1080p60hz, "3840x1080p60hzV", NULL, 1, 67500, 60000, 297000,
 		4400, 560, 176, 88, 296, 3840, 1125, 45, 4, 5, 36, 1080, 1, 1, 1, 32, 6},
+	{HDMIV_27_2560x1440p60hz, "2560x1440p60hzV", NULL, 1, 88787, 59951, 241500,
+		2720, 160, 48, 32, 80, 2560, 1481, 41, 3, 5, 33, 1440, 1, 1, 1, 16, 9, 1, 1},
 };
 
-#define VESA_TIMING_END HDMIV_26_3840x1080p60hz
+#define VESA_TIMING_END HDMIV_27_2560x1440p60hz
 
 /*return NULL for invalid hdmi_timing.*/
 const struct hdmi_timing *hdmitx_mode_index_to_hdmi_timing(u32 idx)

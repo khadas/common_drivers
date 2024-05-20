@@ -638,6 +638,7 @@ static int hdmitx_validate_mode(struct hdmitx_hw_common *tx_hw, u32 vic)
 		HDMIV_24_3440x1440p60hz,
 		HDMIV_25_2400x1200p90hz,
 		HDMIV_26_3840x1080p60hz,
+		HDMIV_27_2560x1440p60hz,
 	};
 
 	for (i = 0; i < ARRAY_SIZE(ip_support_vics); i++) {

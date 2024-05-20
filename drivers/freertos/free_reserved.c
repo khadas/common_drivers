@@ -103,8 +103,6 @@ static void free_reserved_mem(unsigned long start, unsigned long size)
 			free_reserved_area(__va(start),
 					   __va(bound << PAGE_SHIFT),
 					   0, "free_reserved");
-			zone  = page_zone(epage);
-			bound = zone->zone_start_pfn;
 			free_reserved_highmem(bound << PAGE_SHIFT, end);
 		}
 	}

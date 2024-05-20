@@ -2539,10 +2539,16 @@ static void lcd_tcon_axi_mem_config(void)
 		tcon_rmem.axi_reg[i] = axi_mem_cfg->axi_reg;
 		if (!axi_mem_cfg->mem_valid)
 			continue;
-		tcon_rmem.axi_rmem[i].mem_paddr = tcon_rmem.axi_mem_paddr + temp_size;
-		tcon_rmem.axi_rmem[i].mem_vaddr = (unsigned char *)
-			(unsigned long)tcon_rmem.axi_rmem[i].mem_paddr;
 		tcon_rmem.axi_rmem[i].mem_size = axi_mem_cfg->mem_size;
+		tcon_rmem.axi_rmem[i].mem_paddr = tcon_rmem.axi_mem_paddr + temp_size;
+		tcon_rmem.axi_rmem[i].mem_vaddr =
+			lcd_tcon_paddrtovaddr(tcon_rmem.axi_rmem[i].mem_paddr,
+				axi_mem_cfg->mem_size);
+		if (!tcon_rmem.axi_rmem[i].mem_vaddr) {
+			tcon_rmem.axi_rmem[i].mem_paddr = 0;
+			tcon_rmem.axi_rmem[i].mem_size = 0;
+			continue;
+		}
 		temp_size += axi_mem_cfg->mem_size;
 
 		if (axi_mem_cfg->mem_type == TCON_AXI_MEM_TYPE_OD) {

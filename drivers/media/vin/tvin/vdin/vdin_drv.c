@@ -4981,10 +4981,11 @@ static long vdin_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 			break;
 		}
 		if (vdin_dbg_en)
-			pr_info("allm mode-%d,IT=%d,CN=%d\n\n",
+			pr_info("allm mode-%d,IT=%d,CN=%d,fmm_flag=%d\n\n",
 				devp->prop.latency.allm_mode,
 				devp->prop.latency.it_content,
-				devp->prop.latency.cn_type);
+				devp->prop.latency.cn_type,
+				devp->prop.latency.fmm_flag);
 		break;
 	case TVIN_IOC_G_IMAX_STATUS:
 		if (devp->parm.info.status != TVIN_SIG_STATUS_STABLE)

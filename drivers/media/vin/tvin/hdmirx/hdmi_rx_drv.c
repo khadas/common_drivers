@@ -1527,6 +1527,7 @@ void hdmirx_get_fmm_info(struct tvin_sig_property_s *prop, u8 port)
 		prop->filmmaker.fmm_flag = false;
 		prop->filmmaker.fmm_vsif_flag = false;
 	}
+	prop->latency.fmm_flag = prop->filmmaker.fmm_flag | prop->filmmaker.fmm_vsif_flag;
 }
 
 void rx_set_sig_info(void)
@@ -1672,10 +1673,10 @@ void hdmirx_get_sig_prop(struct tvin_frontend_s *fe,
 			cur_port, prop->dvi_info, prop->colordepth, prop->color_format,
 			prop->dest_cfmt, prop->color_fmt_range, prop->fps,
 			prop->spd_data.data[5], prop->spd_data.data[7]);
-		rx_pr("lat:[%#x,%#x,%#x],vic:%d,avi_c:%d,avi_ec:%d\n",
+		rx_pr("lat:[%#x,%#x,%#x],vic:%d,avi_c:%d,avi_ec:%d,filmmaker:%d\n",
 			prop->latency.allm_mode, prop->latency.cn_type,
 			prop->latency.it_content, prop->hw_vic, prop->avi_colorimetry,
-			prop->avi_ext_colorimetry);
+			prop->avi_ext_colorimetry, prop->latency.fmm_flag);
 		rx_pr("hdr-eotf:0x%x, gaming-vrr:0x%x, qms-vrr:0x%x\n",
 			prop->hdr_info.hdr_data.eotf, prop->vtem_data.vrr_en,
 			prop->vtem_data.qms_en);

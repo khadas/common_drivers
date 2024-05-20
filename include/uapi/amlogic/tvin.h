@@ -557,6 +557,7 @@ struct tvin_latency_s {
 	__u8 allm_mode; /* bit0:hdmi allm, bit1:dv allm*/
 	__u8 it_content;
 	enum tvin_cn_type_e cn_type;
+	__u8 fmm_flag;
 };
 
 /* only for keystone use begin */

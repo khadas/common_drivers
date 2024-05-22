@@ -1100,10 +1100,14 @@ static void frc_drv_initial(struct frc_dev_s *devp)
 
 	devp->pat_dbg.pat_en = 1;
 
+	// test init
+	devp->in_sts.t3x_adj_mcdw_hv = 2;
+
 	// ctrl high-priority tasklet
 	devp->in_sts.hi_en = 0;
 	devp->out_sts.hi_en = 0;
 	devp->task_run_method = MEMC_RUN_IN_IRQ;
+	// devp->task_run_method = MEMC_ALG_PASS;
 	fw_data = (struct frc_fw_data_s *)devp->fw_data;
 	fw_data->holdline_parm.me_hold_line = 4;
 	fw_data->holdline_parm.mc_hold_line = 1;

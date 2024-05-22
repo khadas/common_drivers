@@ -1147,6 +1147,13 @@ void frc_debug_other_if(struct frc_dev_s *devp, const char *buf, size_t count)
 			goto exit;
 		if (kstrtoint(parm[1], 10, &val1) == 0)
 			devp->task_run_method = val1;
+	} else if (!strcmp(parm[0], "adj_mcdw")) {
+		if (!parm[1])
+			goto exit;
+		if (kstrtoint(parm[1], 10, &val1) == 0) {
+			if (val1 >= 0 && val1 < 4)
+				devp->in_sts.t3x_adj_mcdw_hv = val1;
+		}
 	}
 exit:
 	kfree(buf_orig);

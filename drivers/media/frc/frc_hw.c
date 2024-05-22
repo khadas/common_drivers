@@ -2826,7 +2826,7 @@ u8 frc_frame_forcebuf_enable(u8 enable)
 		FRC_RDMA_WR_REG_IN(FRC_REG_TOP_CTRL7, regdata_top_ctl_0007);
 		FRC_RDMA_WR_REG_IN(FRC_REG_TOP_CTRL8, 0);
 	} else {
-		frc_config_reg_value(0x0, 0x9000000, &regdata_top_ctl_0007);
+		frc_config_reg_value(0x0, 0xD000000, &regdata_top_ctl_0007);
 //		WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL7, regdata_top_ctl_0007);
 		FRC_RDMA_WR_REG_IN(FRC_REG_TOP_CTRL7, regdata_top_ctl_0007);
 	}
@@ -3843,6 +3843,7 @@ void t3x_verB_set_cfg(u8 flag, struct frc_dev_s *frc_devp)
 	u32 tmp_isr_cnt; // tmp_value;
 	u32 inp_mcdw_ctrl;
 	u32 mcdw_path_ctrl;
+	u8  adj_mcdw_hv;
 
 	if (!devp->probe_ok || !devp->power_on_flag)
 		return;
@@ -3851,15 +3852,25 @@ void t3x_verB_set_cfg(u8 flag, struct frc_dev_s *frc_devp)
 		return;
 
 	if (flag == 0) {   //  set before frc enable
-		WRITE_FRC_BITS(FRC_INP_MCDW_CTRL, 3, 24, 2);
-		WRITE_FRC_BITS(FRC_MCDW_PATH_CTRL, 3, 0, 2);
+		adj_mcdw_hv = devp->in_sts.t3x_adj_mcdw_hv;
+		inp_mcdw_ctrl = READ_FRC_REG(FRC_INP_MCDW_CTRL);
+		if (devp->in_sts.in_hsize * devp->in_sts.in_vsize < 1920 * 1080) {
+			frc_config_reg_value((adj_mcdw_hv << 24), 0x3000000, &inp_mcdw_ctrl);
+			WRITE_FRC_BITS(FRC_MCDW_PATH_CTRL, adj_mcdw_hv, 0, 2);
+		} else {
+			frc_config_reg_value((3 << 24), 0x3000000, &inp_mcdw_ctrl);
+			WRITE_FRC_BITS(FRC_MCDW_PATH_CTRL, 0x3, 0, 2);
+		}
+
+		WRITE_FRC_REG_BY_CPU(FRC_INP_MCDW_CTRL, inp_mcdw_ctrl);
+		// WRITE_FRC_BITS(FRC_MCDW_PATH_CTRL, 3, 0, 2);
 		WRITE_FRC_REG_BY_CPU(FRC_SRCH_RNG_MODE, 0x77);
 		// tmp_value = READ_FRC_REG(FRC_MC_H2V2_SETTING);
 		// tmp_value |= 0x20800000;
 		// WRITE_FRC_REG_BY_CPU(FRC_MC_H2V2_SETTING, tmp_value);
 		devp->ud_dbg.other1_err = 1;
 
-		FRC_RDMA_WR_REG_IN(FRC_INP_MCDW_CTRL, READ_FRC_REG(FRC_INP_MCDW_CTRL));
+		FRC_RDMA_WR_REG_IN(FRC_INP_MCDW_CTRL, inp_mcdw_ctrl);
 		FRC_RDMA_WR_REG_IN(FRC_MCDW_PATH_CTRL, READ_FRC_REG(FRC_MCDW_PATH_CTRL));
 		FRC_RDMA_WR_REG_IN(FRC_SRCH_RNG_MODE, 0x77);
 		pr_frc(2, "%s set:%d INP_MCDW_CTRL=0x%x, MCDW_CTRL=0x%x vs_cnt=%d\n",

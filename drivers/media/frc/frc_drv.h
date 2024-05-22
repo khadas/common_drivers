@@ -123,8 +123,9 @@
 // frc_20240405 fix pps adapt abnormal
 // frc_20240428 frc add lost task info when working
 // frc_2024-0510 memc func run in irq
+// frc_20240522 modify t5m dlg flow
 
-#define FRC_FW_VER			"2024-0522 modify t5m dlg flow"
+#define FRC_FW_VER			"2024-0522 adjusting the mcdw parameter in litter win"
 #define FRC_KERDRV_VER		3500
 
 #define FRC_DEVNO	1
@@ -295,6 +296,7 @@ extern int frc_dbg_en;
 #define FRC_BYPASS_FRAME_NUM_T3X  7
 #define FRC_FREEZE_FRAME_NUM_T3X  8  // should less than 16
 
+#define MEMC_ALG_PASS         2
 #define MEMC_RUN_IN_TASK      1
 #define MEMC_RUN_IN_IRQ       0
 
@@ -533,6 +535,7 @@ struct st_frc_in_sts {
 	u8 hi_en;
 	u8 frm_en;
 	u8 t3x_proc_size_chg;
+	u8 t3x_adj_mcdw_hv; // lower than FHD：0x2，v/2
 };
 
 struct st_frc_out_sts {

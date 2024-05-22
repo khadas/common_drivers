@@ -433,9 +433,11 @@ void vdin_frame_lock_check(struct vdin_dev_s *devp, int state)
 	vrr_data.input_src = VRR_INPUT_TVIN;
 	vrr_data.target_vfreq_num = devp->parm.info.fps;
 	vrr_data.target_vfreq_den = 1;
-	vrr_data.vrr_mode = devp->prop.vtem_data.vrr_en |
+	vrr_data.vrr_priority = vrr_instead_vlock();
+	vrr_data.vrr_mode = (devp->prop.vtem_data.vrr_en ||
 			(vdin_check_is_spd_data(devp) &&
-			(devp->prop.spd_data.data[5] >> 1 & 0x7));
+			(devp->prop.spd_data.data[5] >> 1 & 0x7))) ||
+			vrr_data.vrr_priority;
 	/* save vrr_mode status */
 	devp->vrr_data.vrr_mode = vrr_data.vrr_mode;
 

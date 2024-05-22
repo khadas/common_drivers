@@ -46,6 +46,7 @@ struct vrr_notifier_data_s {
 	unsigned int vrr_mode;
 	unsigned int lfc_en;
 	unsigned int vrr_policy; /* 0:fix fps as vlock, 1:dynamic fps */
+	unsigned int vrr_priority; /* 1:vrr instead vlock do low latency */
 };
 
 /* **********************************
@@ -131,5 +132,6 @@ bool frame_lock_type_vrr_lock(void);
 unsigned int vrr_check_frame_rate_min_hz(void);
 void vrr_crop_update_delay_line(u32 line, u8 vpp_index);
 struct aml_vrr_drv_s *aml_vrr_drv_active_sel(void);
+unsigned int vrr_instead_vlock(void);
 
 #endif

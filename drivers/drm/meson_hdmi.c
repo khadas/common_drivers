@@ -246,7 +246,7 @@ static struct hdmitx_color_attr *meson_hdmitx_get_candidate_attr_list
 
 static bool meson_hdmitx_test_color_attr(struct hdmitx_common *common,
 	struct am_meson_crtc_state *crtc_state,
-	struct hdmitx_color_attr *test_attr)
+	struct hdmitx_color_attr *test_attr, u64 sequence_id)
 {
 	struct hdmitx_common_state comm_state;
 	char *outputmode = crtc_state->base.adjusted_mode.name;
@@ -265,6 +265,7 @@ static bool meson_hdmitx_test_color_attr(struct hdmitx_common *common,
 		if (attr_list->colorformat == test_attr->colorformat &&
 			attr_list->bitdepth == test_attr->bitdepth) {
 			memset(&comm_state, 0, sizeof(comm_state));
+			comm_state.state_sequence_id = sequence_id;
 			build_hdmitx_attr_str(attr_str,
 				attr_list->colorformat, attr_list->bitdepth);
 			if (!hdmitx_common_validate_mode_locked(common, &comm_state, outputmode,
@@ -1555,6 +1556,7 @@ void meson_hdmitx_encoder_atomic_mode_set(struct drm_encoder *encoder,
 	bool update_attr = false;
 	char *modename = adj_mode->name;
 	int ret = 0;
+	u64 sequence_id = hdmitx_state->hcs.state_sequence_id;
 
 	DRM_DEBUG("%s[%d]: enter\n", __func__, __LINE__);
 
@@ -1610,7 +1612,7 @@ void meson_hdmitx_encoder_atomic_mode_set(struct drm_encoder *encoder,
 	if (!hdmitx_state->color_force) {
 		if (attr->colorformat != HDMI_COLORSPACE_RESERVED6) {
 			if (meson_hdmitx_test_color_attr(tx_comm, meson_crtc_state,
-				attr)) {
+				attr, sequence_id)) {
 				update_attr = false;
 			} else {
 				update_attr = true;

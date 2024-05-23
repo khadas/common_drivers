@@ -5678,8 +5678,9 @@ void rx_port0_main_state_machine(void)
 			rx[port].state = FSM_WAIT_CLK_STABLE;
 			break;
 		}
-		if (port != rx_info.main_port &&
-			port != rx_info.sub_port)
+		if ((port != rx_info.main_port && port != rx_info.sub_port) ||
+			(port == rx_info.main_port && !rx_info.main_port_open) ||
+			(port == rx_info.sub_port && !rx_info.pip_on))
 			break;
 		rx[port].state = FSM_SIG_STABLE;
 		break;
@@ -6079,8 +6080,9 @@ void rx_port1_main_state_machine(void)
 			rx[port].state = FSM_WAIT_CLK_STABLE;
 			break;
 		}
-		if (port != rx_info.main_port &&
-			port != rx_info.sub_port)
+		if ((port != rx_info.main_port && port != rx_info.sub_port) ||
+			(port == rx_info.main_port && !rx_info.main_port_open) ||
+			(port == rx_info.sub_port && !rx_info.pip_on))
 			break;
 		rx[port].state = FSM_SIG_STABLE;
 		break;
@@ -6603,8 +6605,8 @@ void rx_port2_main_state_machine(void)
 		rx[port].state = FSM_SIG_HOLD;
 		break;
 	case FSM_SIG_HOLD:    //todo
-		if (port != rx_info.main_port &&
-			port != rx_info.sub_port)
+		if ((port != rx_info.main_port && port != rx_info.sub_port) ||
+			(port == rx_info.main_port && !rx_info.main_port_open))
 			break;
 		rx[port].state = FSM_SIG_STABLE;
 		break;
@@ -7178,8 +7180,8 @@ void rx_port3_main_state_machine(void)
 		rx[port].state = FSM_SIG_HOLD;
 		break;
 	case FSM_SIG_HOLD:    //todo
-		if (port != rx_info.main_port &&
-			port != rx_info.sub_port)
+		if ((port != rx_info.main_port && port != rx_info.sub_port) ||
+			(port == rx_info.main_port && !rx_info.main_port_open))
 			break;
 		rx[port].state = FSM_SIG_STABLE;
 		break;

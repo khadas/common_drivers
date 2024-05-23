@@ -3933,9 +3933,10 @@ void rx_hdcp_monitor(u8 port)
 
 	if (rx_info.chip_id < CHIP_ID_T7)
 		return;
-	if (rx[port].hdcp.hdcp_version == HDCP_VER_NONE)
-		return;
 	if (rx[port].state < FSM_SIG_STABLE)
+		return;
+	if (rx[port].hdcp.hdcp_version == HDCP_VER_NONE &&
+		rx[port].tx_type != DEV_HDMI14 && rx[port].tx_type != DEV_HDMI20)
 		return;
 
 	rx_get_ecc_info(port);

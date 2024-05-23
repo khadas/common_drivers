@@ -1273,6 +1273,27 @@ bool rx_chk_avi_valid(u8 port)
 		return true;
 }
 
+bool rx_chk_drm_valid(u8 port)
+{
+	union infoframe_u *drm_data;
+	u32 chk = 0;
+	u8 i;
+	bool flag = true;
+
+	drm_data = (union infoframe_u *)&rx_pkt[port].drm_info;
+	if (drm_data->raw_infoframe.length != 0x1a ||
+		drm_data->raw_infoframe.version != 0x1)
+		flag = false;
+
+	for (i = 0; flag && i < sizeof(struct fifo_rawdata_st); i++)
+		chk += *((u8 *)drm_data + i);
+	flag &= (chk & 0xff) ? false : true;
+
+	if (!flag && (log_level & PACKET_LOG))
+		rx_pr("invalid drm pkt\n");
+	return flag;
+}
+
 /*  version2.86 ieee-0x00d046, length 0x1B
  *	pb4 bit[0]: Low_latency
  *	pb4 bit[1]: Dolby_vision_signal

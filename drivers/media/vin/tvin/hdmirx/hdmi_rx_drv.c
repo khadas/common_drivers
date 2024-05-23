@@ -1554,7 +1554,7 @@ void hdmirx_get_hdr_info(struct tvin_sig_property_s *prop, u8 port)
 	struct drm_infoframe_st *drm_pkt;
 
 	drm_pkt = (struct drm_infoframe_st *)&rx_pkt[port].drm_info;
-	if (rx_pkt_chk_attach_drm(port)) {
+	if (rx_pkt_chk_attach_drm(port) && rx_chk_drm_valid(port)) {
 		prop->hdr_info.hdr_data.length = drm_pkt->length;
 		prop->hdr_info.hdr_data.eotf = drm_pkt->des_u.tp1.eotf;
 		prop->hdr_info.hdr_data.metadata_id =

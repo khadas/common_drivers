@@ -1088,4 +1088,5 @@ void parse_dsc_pps_data(u8 *buff, u8 port);
 void dump_dsc_pps_info(u8 port);
 struct emp_info_s *rx_get_emp_info(u8 port);
 bool rx_is_xbox_dev(u8 port);
+bool rx_chk_drm_valid(u8 port);
 #endif

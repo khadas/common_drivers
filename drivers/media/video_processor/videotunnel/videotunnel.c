@@ -990,6 +990,7 @@ static int vt_resend_cmd_process_locked(struct vt_instance *instance,
 
 	if (instance->last_cmd.cmd == VT_VIDEO_SET_STATUS) {
 		if (instance->last_cmd.cmd_data == VT_VIDEO_STATUS_HIDE ||
+			instance->last_cmd.cmd_data == VT_VIDEO_STATUS_COLOR_ONCE ||
 			instance->last_cmd.cmd_data == VT_VIDEO_STATUS_COLOR_ALWAYS ||
 			instance->last_cmd.cmd_data == VT_VIDEO_STATUS_HOLD_FRAME) {
 			cmd = kzalloc(sizeof(*cmd), GFP_KERNEL);
@@ -1208,12 +1209,9 @@ static int vt_send_cmd_process(struct vt_ctrl_data *data,
 			return -ENOTCONN;
 		}
 	} else {
-		if (data->video_cmd != VT_VIDEO_SET_SOURCE_CROP &&
-				data->video_cmd != VT_VIDEO_SET_DISPLAY_FRAME) {
-			if (!instance || session->role != VT_ROLE_PRODUCER) {
-				mutex_unlock(&dev->instance_lock);
-				return -EINVAL;
-			}
+		if (!instance || session->role != VT_ROLE_PRODUCER) {
+			mutex_unlock(&dev->instance_lock);
+			return -EINVAL;
 		}
 	}
 
@@ -1594,6 +1592,11 @@ static int vt_queue_buffer_process(struct vt_buffer_data *data,
 		return -EBADF;
 
 	mutex_lock(&instance->lock);
+	if (instance->last_cmd.cmd == VT_VIDEO_SET_STATUS &&
+			instance->last_cmd.cmd_data == VT_VIDEO_STATUS_COLOR_ONCE) {
+		instance->last_cmd.cmd = VT_VIDEO_CMD_INVALID;
+	}
+
 	instance->fcount++;
 	dev->state.buffer_get++;
 	instance->state.buffer_get++;

@@ -224,7 +224,7 @@ static int tvafe_avin_dts_parse(struct platform_device *pdev)
 		av_dev->report_data_s[1].status = TVAFE_AVIN_STATUS_UNKNOWN;
 	}
 	/* get irq no*/
-	if (tvafe_cpu_type() != TVAFE_CPU_TYPE_T3X) {
+	if (meson_data->detect_version == DETECTED_IRQ_VERSION) {
 		for (i = 0; i < av_dev->device_num; i++) {
 			res = platform_get_resource(pdev, IORESOURCE_IRQ, i);
 			if (!res) {
@@ -1216,7 +1216,7 @@ static void tvafe_avin_detect_timer_handler(struct timer_list *avin_detect_timer
 	}
 
 	avin_detect_param = &av_dev->avin_detect_param;
-	if (tvafe_cpu_type() == TVAFE_CPU_TYPE_T3X) {
+	if (meson_data->detect_version == DETECTED_GPIO_VERSION) {
 		if (avport_opened == 0) {
 			detect_sts = tvafe_avin_detect();
 		} else {

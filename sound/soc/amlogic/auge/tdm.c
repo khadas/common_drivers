@@ -1783,7 +1783,8 @@ static int aml_dai_tdm_prepare(struct snd_pcm_substream *substream,
 
 			memset(&chsts, 0, sizeof(chsts));
 			separated = p_tdm->chipinfo->separate_tohdmitx_en;
-			pr_info("notify tdm to hdmitx,id %d codec_type %d, chs %d, ch_mask %d",
+			dev_dbg(substream->pcm->card->dev,
+				"notify tdm to hdmitx,id %d codec_type %d, chs %d, ch_mask %d\n",
 				p_tdm->id, codec_type, aud_param.chs, aud_param.i2s_ch_mask);
 			i2s_to_hdmitx_ctrl(separated, p_tdm->id, p_tdm->clk_sel);
 
@@ -1861,7 +1862,7 @@ static int aml_dai_tdm_prepare(struct snd_pcm_substream *substream,
 			return -EINVAL;
 		}
 
-		dev_info(substream->pcm->card->dev, "tdm prepare capture\n");
+		dev_dbg(substream->pcm->card->dev, "tdm prepare capture\n");
 		aml_tdmin_set_src(p_tdm);
 
 		fmt.type      = toddr_type;
@@ -1921,7 +1922,7 @@ static int aml_soc_tdm_trigger(struct snd_soc_component *component,
 			 * 4. SPDIFOUT enable
 			 * 5. FRDDR enable
 			 */
-			dev_info(substream->pcm->card->dev,
+			dev_dbg(substream->pcm->card->dev,
 				 "TDM[%d] Playback enable\n",
 				 p_tdm->id);
 			/*don't change this flow*/
@@ -1952,7 +1953,7 @@ static int aml_soc_tdm_trigger(struct snd_soc_component *component,
 			if (p_tdm->samesource_sel != SHAREBUFFER_NONE)
 				tdm_sharebuffer_mute(p_tdm, false);
 		} else {
-			dev_info(substream->pcm->card->dev,
+			dev_dbg(substream->pcm->card->dev,
 				 "TDM[%d] Capture enable\n",
 				 p_tdm->id);
 			aml_toddr_enable(p_tdm->tddr, 1);
@@ -1984,7 +1985,7 @@ static int aml_soc_tdm_trigger(struct snd_soc_component *component,
 			 * 3. TDMOUT/SPDIF Disable
 			 * 4. FRDDR Disable
 			 */
-			dev_info(substream->pcm->card->dev,
+			dev_dbg(substream->pcm->card->dev,
 				 "TDM[%d] Playback stop\n",
 				 p_tdm->id);
 			if (p_tdm->chipinfo->need_mute_tdm) {
@@ -2020,7 +2021,7 @@ static int aml_soc_tdm_trigger(struct snd_soc_component *component,
 			aml_tdm_enable(p_tdm->actrl,
 				substream->stream, p_tdm->id, false, p_tdm->tdm_fade_out_enable,
 				p_tdm->chipinfo->use_vadtop);
-			dev_info(substream->pcm->card->dev,
+			dev_dbg(substream->pcm->card->dev,
 				 "TDM[%d] Capture stop\n",
 				 p_tdm->id);
 

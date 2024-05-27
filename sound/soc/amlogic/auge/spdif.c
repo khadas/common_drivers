@@ -1478,7 +1478,7 @@ static int aml_dai_spdif_trigger(struct snd_pcm_substream *substream, int cmd,
 			p_spdif->id);
 
 		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
-			dev_info(substream->pcm->card->dev,
+			dev_dbg(substream->pcm->card->dev,
 				 "S/PDIF[%d] Playback enable\n",
 				 p_spdif->id);
 			aml_spdif_enable(p_spdif->actrl,
@@ -1494,7 +1494,7 @@ static int aml_dai_spdif_trigger(struct snd_pcm_substream *substream, int cmd,
 			if (p_spdif->samesource_sel != SHAREBUFFER_NONE)
 				spdif_sharebuffer_mute(p_spdif, false);
 		} else {
-			dev_info(substream->pcm->card->dev,
+			dev_dbg(substream->pcm->card->dev,
 				 "S/PDIF[%d] Capture enable\n",
 				 p_spdif->id);
 			aml_toddr_enable(p_spdif->tddr, 1);
@@ -1507,7 +1507,7 @@ static int aml_dai_spdif_trigger(struct snd_pcm_substream *substream, int cmd,
 	case SNDRV_PCM_TRIGGER_SUSPEND:
 	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
 		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
-			dev_info(substream->pcm->card->dev,
+			dev_dbg(substream->pcm->card->dev,
 				 "S/PDIF[%d] Playback disable\n",
 				 p_spdif->id);
 			/* first send trigger msg to samesource module */
@@ -1535,7 +1535,7 @@ static int aml_dai_spdif_trigger(struct snd_pcm_substream *substream, int cmd,
 
 			aml_spdif_enable(p_spdif->actrl,
 					substream->stream, p_spdif->id, false);
-			dev_info(substream->pcm->card->dev,
+			dev_dbg(substream->pcm->card->dev,
 				 "S/PDIF[%d] Capture disable\n",
 				 p_spdif->id);
 

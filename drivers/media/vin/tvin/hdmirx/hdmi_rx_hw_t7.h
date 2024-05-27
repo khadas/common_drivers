@@ -90,6 +90,7 @@ void rx_sw_reset_t7(int level, u8 port);
 void aml_phy_get_trim_val_t7(void);
 void clk_init_cor_t7(void);
 void rx_dig_clk_en_t7(bool en);
+void hdcp_config_t7(u8 port);
 /*function declare end*/
 extern int hdcp_22_en;
 

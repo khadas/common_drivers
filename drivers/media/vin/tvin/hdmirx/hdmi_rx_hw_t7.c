@@ -2018,6 +2018,62 @@ void rx_sw_reset_t7(int level, u8 port)
 	//TODO..
 }
 
+void hdcp_config_t7(u8 port)
+{
+	u8 data8;
+
+	if ((is_rx_hdcp22key_loaded_t7() && is_rx_hdcp22key_crc0_pass()) || hdcp_22_en)
+		hdmirx_wr_cor(RX_HDCP2x_CTRL_PWD_IVCRX, 0x1, port);//ri_hdcp2x_en
+	else
+		hdmirx_wr_cor(RX_HDCP2x_CTRL_PWD_IVCRX, 0x0, port);//ri_hdcp2x_en
+
+	data8 = 0;
+	data8 |= (hdmirx_repeat_support() && rx[port].hdcp.repeat) << 1;
+	hdmirx_wr_cor(CP2PAX_CTRL_0_HDCP2X_IVCRX, data8, port);
+
+	hdmirx_wr_cor(CP2PAX_RX_CTRL_0_HDCP2X_IVCRX, 0x83, port);
+	hdmirx_wr_cor(CP2PAX_RX_CTRL_0_HDCP2X_IVCRX, 0x80, port);
+	//depth
+	hdmirx_wr_cor(CP2PAX_RPT_DEPTH_HDCP2X_IVCRX, 0, port);
+	//dev cnt
+	hdmirx_wr_cor(CP2PAX_RPT_DEVCNT_HDCP2X_IVCRX, 0, port);
+
+	data8 = 0;
+	data8 |= 0 << 0; //hdcp1dev
+	data8 |= 0 << 1; //hdcp1dev
+	data8 |= 0 << 2; //max_casc
+	data8 |= 0 << 3; //max_devs
+	hdmirx_wr_cor(CP2PAX_RPT_DETAIL_HDCP2X_IVCRX, data8, port);
+
+	//----BCAPS config-----
+	data8 = 0;
+	data8 |= (0 << 4);//bit[4] reg_fast I2C transfers speed.
+	data8 |= (0 << 5);//bit[5] reg_fifo_rdy
+	data8 |= ((hdmirx_repeat_support() &&
+		rx[port].hdcp.repeat) << 6);//bit[6] reg_repeater
+	data8 |= (1 << 7);//bit[7] reg_hdmi_capable  HDMI capable
+	hdmirx_wr_cor(RX_BCAPS_SET_HDCP1X_IVCRX, data8, port);//register address: 0x169e (0x80)
+
+	//----Bstatus1 config-----
+	data8 =  0;
+	// data8 |= (2 << 0); //bit[6:0] reg_dev_cnt
+	data8 |= (0 << 7);//bit[  7] reg_dve_exceed
+	hdmirx_wr_cor(RX_SHD_BSTATUS1_HDCP1X_IVCRX, data8, port);//register address: 0x169f (0x00)
+
+	//----Bstatus2 config-----
+	data8 =  0;
+	// data8 |= (2 << 0);//bit[2:0] reg_depth
+	data8 |= (0 << 3);//bit[  3] reg_casc_exceed
+	hdmirx_wr_cor(RX_SHD_BSTATUS2_HDCP1X_IVCRX, data8, port);//register address: 0x169f (0x00)
+
+	//----Rx Sha length in bytes----
+	hdmirx_wr_cor(RX_SHA_length1_HDCP1X_IVCRX, 0x0a, port);//[7:0] 10=2ksv*5byte
+	hdmirx_wr_cor(RX_SHA_length2_HDCP1X_IVCRX, 0x00, port);//[9:8]
+
+	hdmirx_wr_cor(RX_PWD_SRST2_PWD_IVCRX, 0x8, port);
+	hdmirx_wr_cor(RX_PWD_SRST2_PWD_IVCRX, 0x2, port);
+}
+
 void hdcp_init_t7(u8 port)
 {
 	u8 data8;
@@ -2028,33 +2084,10 @@ void hdcp_init_t7(u8 port)
 	//======================================
 	// HDCP 2.X Config ---- RX
 	//======================================
-	hdmirx_wr_cor(RX_HPD_C_CTRL_AON_IVCRX, 0x1, port);//HPD
-	hdmirx_wr_cor(SCDCS_100MS_IN_1MS_CNT_SCDC_IVCRX, 0x1, port);
+
 	//todo: enable hdcp22 according hdcp burning
-	if ((is_rx_hdcp22key_loaded_t7() && is_rx_hdcp22key_crc0_pass()) || hdcp_22_en)
-		hdmirx_wr_cor(RX_HDCP2x_CTRL_PWD_IVCRX, 0x1, port);//ri_hdcp2x_en
-	else
-		hdmirx_wr_cor(RX_HDCP2x_CTRL_PWD_IVCRX, 0x0, port);//ri_hdcp2x_en
-	//hdmirx_wr_cor(RX_INTR13_MASK_PWD_IVCRX, 0x02, port);// irq
+
 	hdmirx_wr_cor(PWD_SW_CLMP_AUE_OIF_PWD_IVCRX, 0x0, port);
-
-	data8 = 0;
-	data8 |= (hdmirx_repeat_support() && rx[port].hdcp.repeat) << 1;
-	hdmirx_wr_cor(CP2PAX_CTRL_0_HDCP2X_IVCRX, data8, port);
-	//depth
-	hdmirx_wr_cor(CP2PAX_RPT_DEPTH_HDCP2X_IVCRX, 0, port);
-	//dev cnt
-	hdmirx_wr_cor(CP2PAX_RPT_DEVCNT_HDCP2X_IVCRX, 0, port);
-	//
-	data8 = 0;
-	data8 |= 0 << 0; //hdcp1dev
-	data8 |= 0 << 1; //hdcp1dev
-	data8 |= 0 << 2; //max_casc
-	data8 |= 0 << 3; //max_devs
-	hdmirx_wr_cor(CP2PAX_RPT_DETAIL_HDCP2X_IVCRX, data8, port);
-
-	hdmirx_wr_cor(CP2PAX_RX_CTRL_0_HDCP2X_IVCRX, 0x83, port);
-	hdmirx_wr_cor(CP2PAX_RX_CTRL_0_HDCP2X_IVCRX, 0x80, port);
 
 	//======================================
 	// HDCP 1.X Config ---- RX
@@ -2067,37 +2100,13 @@ void hdcp_init_t7(u8 port)
 	data8 |= (7 << 0);//bit[2:0] reg_fifo_rdy_clr_en
 	hdmirx_wr_cor(RX_RPT_RDY_CTRL_PWD_IVCRX, data8, port);//register address: 0x1010 (0x0f)
 
-	//----BCAPS config-----
-	data8 = 0;
-	data8 |= (0 << 4);//bit[4] reg_fast I2C transfers speed.
-	data8 |= (0 << 5);//bit[5] reg_fifo_rdy
-	data8 |= ((hdmirx_repeat_support() &&
-		rx[port].hdcp.repeat) << 6);//bit[6] reg_repeater
-	data8 |= (1 << 7);//bit[7] reg_hdmi_capable  HDMI capable
-	hdmirx_wr_cor(RX_BCAPS_SET_HDCP1X_IVCRX, data8, port);//register address: 0x169e (0x80)
-
 	//for (data8 = 0; data8 < 10; data8++) //ksv list number
 		//hdmirx_wr_cor(RX_KSV_FIFO_HDCP1X_IVCRX, ksvlist[data8], port);
-
-	//----Bstatus1 config-----
-	data8 =  0;
-	// data8 |= (2 << 0); //bit[6:0] reg_dev_cnt
-	data8 |= (0 << 7);//bit[  7] reg_dve_exceed
-	hdmirx_wr_cor(RX_SHD_BSTATUS1_HDCP1X_IVCRX, data8, port);//register address: 0x169f (0x00)
-
-		//----Bstatus2 config-----
-	data8 =  0;
-	// data8 |= (2 << 0);//bit[2:0] reg_depth
-	data8 |= (0 << 3);//bit[  3] reg_casc_exceed
-	hdmirx_wr_cor(RX_SHD_BSTATUS2_HDCP1X_IVCRX, data8, port);//register address: 0x169f (0x00)
-
-	//----Rx Sha length in bytes----
-	hdmirx_wr_cor(RX_SHA_length1_HDCP1X_IVCRX, 0x0a, port);//[7:0] 10=2ksv*5byte
-	hdmirx_wr_cor(RX_SHA_length2_HDCP1X_IVCRX, 0x00, port);//[9:8]
 
 	//----Rx Sha repeater KSV fifo start addr----
 	hdmirx_wr_cor(RX_KSV_SHA_start1_HDCP1X_IVCRX, 0x00, port);//[7:0]
 	hdmirx_wr_cor(RX_KSV_SHA_start2_HDCP1X_IVCRX, 0x00, port);//[9:8]
+	hdcp_config_t7(port);
 	//hdmirx_wr_cor(CP2PAX_INTR0_MASK_HDCP2X_IVCRX, 0x3, port); irq
 	//hdmirx_wr_cor(RX_HDCP2x_CTRL_PWD_IVCRX, 0x1, port); //same as L3309
 	//hdmirx_wr_cor(CP2PA_TP1_HDCP2X_IVCRX, 0x9e, port);
@@ -2105,8 +2114,6 @@ void hdcp_init_t7(u8 port)
 	//hdmirx_wr_cor(CP2PA_TP5_HDCP2X_IVCRX, 0x32, port);
 	//hdmirx_wr_cor(CP2PAX_GP_IN1_HDCP2X_IVCRX, 0x2, port);
 	//hdmirx_wr_cor(CP2PAX_GP_CTL_HDCP2X_IVCRX, 0xdb, port);
-	hdmirx_wr_cor(RX_PWD_SRST2_PWD_IVCRX, 0x8, port);
-	hdmirx_wr_cor(RX_PWD_SRST2_PWD_IVCRX, 0x2, port);
 }
 
 void rpt_update_hdcp1x(struct hdcp_topo_s *topo, u8 port)

@@ -236,7 +236,8 @@ static int meson_uvm_vmap(struct dma_buf *dmabuf, struct dma_buf_map *map)
 
 	handle = dmabuf->priv;
 	if (handle->ua && ((handle->ua->flags & BIT(UVM_IMM_ALLOC)) ||
-	    !handle->ua->sgt[1]))
+	    !handle->ua->sgt[1]) &&
+	    !(handle->ua->flags & BIT(UVM_FBC_DEC)))
 		sgt = handle->ua->sgt[0];
 	else
 		sgt = handle->ua->sgt[1];
@@ -297,7 +298,7 @@ static int meson_uvm_mmap(struct dma_buf *dmabuf, struct vm_area_struct *vma)
 	UVM_PRINTK(UVM_INFO, "%s called.\n", __func__);
 
 	if (handle->ua && ((handle->ua->flags & BIT(UVM_IMM_ALLOC)) ||
-	    !handle->ua->sgt[1]))
+	    !handle->ua->sgt[1]) && !(handle->ua->flags & BIT(UVM_FBC_DEC)))
 		table = handle->ua->sgt[0];
 	else
 		table = handle->ua->sgt[1];

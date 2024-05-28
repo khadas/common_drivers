@@ -625,7 +625,7 @@ void vrrlock_process(struct vframe_s *vf,
 			framelock_pr_info("%s vdata.line_dly:%d\n",
 				__func__, vdata.line_dly);
 	} else {
-		if (chip_type_id == chip_t3x && chip_cls_id == TV_CHIP)
+		if (vf->compWidth * 9 == vf->compHeight * 16)
 			vdata.line_dly = vrr_delay_line;
 		else if (vinfo->height == 2160)
 			vdata.line_dly =

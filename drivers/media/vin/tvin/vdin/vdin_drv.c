@@ -434,10 +434,9 @@ void vdin_frame_lock_check(struct vdin_dev_s *devp, int state)
 	vrr_data.target_vfreq_num = devp->parm.info.fps;
 	vrr_data.target_vfreq_den = 1;
 	vrr_data.vrr_priority = vrr_instead_vlock();
-	vrr_data.vrr_mode = (devp->prop.vtem_data.vrr_en ||
+	vrr_data.vrr_mode = devp->prop.vtem_data.vrr_en ||
 			(vdin_check_is_spd_data(devp) &&
-			(devp->prop.spd_data.data[5] >> 1 & 0x7))) ||
-			vrr_data.vrr_priority;
+			(devp->prop.spd_data.data[5] >> 1 & 0x7));
 	/* save vrr_mode status */
 	devp->vrr_data.vrr_mode = vrr_data.vrr_mode;
 
@@ -446,7 +445,8 @@ void vdin_frame_lock_check(struct vdin_dev_s *devp, int state)
 			aml_vrr_atomic_notifier_call_chain(FRAME_LOCK_EVENT_ON, &vrr_data);
 			pr_debug("%s: state =1 and Game, enable frame lock mode:%x\n",
 				__func__, vrr_data.vrr_mode);
-			devp->vrr_data.frame_lock_vrr_en = vrr_data.vrr_mode;
+			devp->vrr_data.frame_lock_vrr_en = vrr_data.vrr_mode ||
+				vrr_data.vrr_priority;
 		} else {
 			if (devp->vrr_data.frame_lock_vrr_en) {
 				aml_vrr_atomic_notifier_call_chain(FRAME_LOCK_EVENT_OFF, &vrr_data);

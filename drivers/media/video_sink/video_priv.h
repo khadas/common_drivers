@@ -294,6 +294,7 @@ struct video_dev_s {
 	u8 vpp_in_padding_support;
 	u8 has_vpp1;
 	u8 has_vpp2;
+	u8 display_device_cnt;
 };
 
 struct video_layer_s;
@@ -687,6 +688,7 @@ struct amvideo_device_data_s {
 	u8 has_vpp2;
 	struct video_device_hw_s dev_property;
 	u8 is_tv_panel;
+	u8 display_device_cnt;
 };
 
 struct pre_scaler_info {

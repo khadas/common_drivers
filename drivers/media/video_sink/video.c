@@ -15212,6 +15212,11 @@ static int amvideom_probe(struct platform_device *pdev)
 	if (vdtemp < 0)
 		vd1_vd2_mux_dts = 0;
 	set_rdma_func_handler();
+
+	prop = of_get_property(pdev->dev.of_node, "display_device_cnt", NULL);
+	if (prop)
+		display_device_cnt = of_read_ulong(prop, 1);
+	amvideo_meson_dev.display_device_cnt = display_device_cnt;
 	if (amvideo_meson_dev.display_module == S5_DISPLAY_MODULE) {
 		video_early_init_s5(&amvideo_meson_dev);
 		video_hw_init_s5();
@@ -15219,9 +15224,6 @@ static int amvideom_probe(struct platform_device *pdev)
 		video_early_init(&amvideo_meson_dev);
 		video_hw_init();
 	}
-	prop = of_get_property(pdev->dev.of_node, "display_device_cnt", NULL);
-	if (prop)
-		display_device_cnt = of_read_ulong(prop, 1);
 	prop = of_get_property(pdev->dev.of_node, "vpp2_layer_count", NULL);
 	if (prop && display_device_cnt >= 3) {
 		int layer_count;

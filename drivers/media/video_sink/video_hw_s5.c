@@ -12794,9 +12794,12 @@ int _video_hw_init_s5(void)
 	/* default 0x4120=0x96105000, 0x279d=0x00900000 */
 	/* VPP_RDARB_MODE */
 	/* vpp_arb0:  osd1, osd2, osd3, osd4, mali-afbc */
-	/* vpp_arb1:  vd1 slice0-slice1, vd2 */
-	/* vpp_arb2:  vd1 slice2-slice3 aisr */
-	WRITE_VCBUS_REG(S5_VPP_RDARB_MODE, 0x9a205000);
+	/* vpp_arb1:  vd1 slice0-slice1 */
+	/* vpp_arb2:  vd2 vd1 slice2-slice3 aisr */
+	if (cur_dev->display_device_cnt >= 2)
+		WRITE_VCBUS_REG(S5_VPP_RDARB_MODE, 0xaa205000);
+	else
+		WRITE_VCBUS_REG(S5_VPP_RDARB_MODE, 0x9a205000);
 	/* VPU_RDARB_MODE_L2C1 */
 	if (video_is_meson_t3x_cpu())
 		WRITE_VCBUS_REG(S5_VPU_RDARB_MODE_L2C1, 0x124000);
@@ -12910,6 +12913,7 @@ int video_early_init_s5(struct amvideo_device_data_s *p_amvideo)
 	cur_dev->has_vpp1 = p_amvideo->has_vpp1;
 	cur_dev->has_vpp2 = p_amvideo->has_vpp2;
 	cur_dev->vpp_in_padding_support = p_amvideo->dev_property.vpp_in_padding_support;
+	cur_dev->display_device_cnt = p_amvideo->display_device_cnt;
 	for (i = 0; i < cur_dev->max_vd_layers; i++) {
 		vd_layer[i].layer_id = i;
 		vd_layer[i].cur_canvas_id = 0;

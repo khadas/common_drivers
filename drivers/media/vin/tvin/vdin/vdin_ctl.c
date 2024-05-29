@@ -6620,7 +6620,8 @@ bool vdin_package_done_check_state(struct vdin_dev_s *devp)
 {
 	if (devp->dv.dv_flag != devp->prop.dolby_vision ||
 	    devp->prop.vdin_hdr_flag != devp->pre_prop.vdin_hdr_flag ||
-	    !!devp->prop.latency.allm_mode != !!devp->pre_prop.latency.allm_mode ||
+	    ((devp->prop.latency.allm_mode != devp->pre_prop.latency.allm_mode) &&
+		(!vdin_is_vrr_state(devp)) && (!devp->vrr_data.vrr_chg_cnt)) ||
 	    vdin_is_vrr_state_chg(devp) ||
 	    devp->prop.color_format != devp->pre_prop.color_format ||
 	    devp->parm.info.status != TVIN_SIG_STATUS_STABLE)

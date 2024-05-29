@@ -238,8 +238,8 @@ void t5m_4k60_pll_cfg(void)
 {
 	u8 port = rx_info.main_port;
 
-	if (rx[port].clk.cable_clk > 300 &&
-		rx[port].clk.cable_clk < 340) {
+	if (rx[port].clk.cable_clk > 300 * MHz &&
+		rx[port].clk.cable_clk < 340 * MHz) {
 		hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05302820);
 		usleep_range(10, 20);
 		hdmirx_wr_amlphy(T5M_RG_RX20PLL_1, 0x01481236);

@@ -3247,7 +3247,8 @@ irqreturn_t vdin_isr(int irq, void *dev_id)
 
 	spin_lock_irqsave(&devp->isr_lock, flags);
 
-	if (devp->dv.chg_cnt || devp->dv.allm_chg_cnt ||
+	if (devp->dv.chg_cnt || (devp->dv.allm_chg_cnt && !vdin_is_vrr_state(devp) &&
+		!devp->vrr_data.vrr_chg_cnt) ||
 	    devp->vrr_data.vrr_chg_cnt ||
 	    devp->prop.hdr_info.hdr_check_cnt ||
 	    devp->prop.hdr10p_info.hdr10p_check_cnt) {

@@ -2581,8 +2581,10 @@ static int aml_ddr_mngr_platform_probe(struct platform_device *pdev)
 		}
 	}
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
-	for (i = 0; i < get_resample_module_num(); i++)
+	for (i = 0; i < RESAMPLE_MAX_NUM; i++) {
 		mutex_init(&attach_resample[i].lock);
+		attach_resample[i].attach_module = TODDR_INVAL;
+	}
 #endif
 	ret = register_pm_notifier(&ddr_pm_notifier_block);
 	if (ret)

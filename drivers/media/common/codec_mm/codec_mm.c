@@ -186,7 +186,7 @@ int cma_mmu_op(struct page *page, int count, bool set)
 	}
 
 	if (!aml_init_mm || !aml_mte_sync_tags) {
-		pr_debug("%s, no cma mmu operation.\n", __func__);
+		pr_err("%s, no cma mmu operation.\n", __func__);
 		return -EINVAL;
 	}
 
@@ -4021,6 +4021,7 @@ int __nocfi get_mte_sync_tags_hook_kprobe(void *data)
 	struct cma *cma = NULL;
 	struct page *page = NULL;
 #if defined(CONFIG_ARM64)
+	struct task_struct *task = NULL;
 	int ret;
 
 	ret = register_kprobe(&kp_lookup_name);
@@ -4032,9 +4033,14 @@ int __nocfi get_mte_sync_tags_hook_kprobe(void *data)
 
 	aml_syms_lookup = (unsigned long (*)(const char *name))kp_lookup_name.addr;
 
-	aml_init_mm = (struct mm_struct *)aml_syms_lookup("init_mm");
+	for_each_process(task) {
+		if (task->pid == 1) {
+			aml_init_mm = task->active_mm;
+			break;
+		}
+	}
 	aml_mte_sync_tags = (void (*)(pte_t old_pte, pte_t pte))aml_syms_lookup("mte_sync_tags");
-	pr_debug("aml_init_mm: %px, aml_mte_sync_tags: %px\n", aml_init_mm, aml_mte_sync_tags);
+	pr_info("aml_init_mm: %px, aml_mte_sync_tags: %px\n", aml_init_mm, aml_mte_sync_tags);
 #endif
 
 	cma = dev_get_cma_area(codec_dev);

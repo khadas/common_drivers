@@ -616,84 +616,93 @@ static struct vinfo_s *hdmitx_get_current_vinfo(void *data)
 }
 #endif
 
-#ifdef CONFIG_AMLOGIC_VOUT2_SERVE
-static struct vout_server_s hdmitx_vout2_server = {
-	.name = "hdmitx_vout2_server",
-	.op = {
-		.get_vinfo = hdmitx_get_current_vinfo,
-		.set_vmode = hdmitx_set_current_vmode,
-		.validate_vmode = hdmitx_validate_vmode,
-		.check_same_vmodeattr = hdmitx_check_same_vmodeattr,
-		.vmode_is_supported = hdmitx_vmode_is_supported,
-		.disable = hdmitx_module_disable,
-		.set_state = hdmitx_vout_set_state,
-		.clr_state = hdmitx_vout_clr_state,
-		.get_state = hdmitx_vout_get_state,
-		.get_disp_cap = hdmitx_vout_get_disp_cap,
-		.set_vframe_rate_hint = NULL,
-		.get_vframe_rate_hint = NULL,
-		.set_bist = hdmitx_set_bist,
-#ifdef CONFIG_PM
-		.vout_suspend = NULL,
-		.vout_resume = NULL,
-#endif
-	},
-	.data = NULL,
-};
-#endif
+static int is_valid_hdmi(const char *input)
+{
+	static const char * const valid_hdmi_modes[] = {
+			"HDMI-A-A", /* venc0 */
+			"HDMI-A-B", /* venc1 */
+			"HDMI-A-C"  /* venc2 */
+	};
 
-#ifdef CONFIG_AMLOGIC_VOUT3_SERVE
-static struct vout_server_s hdmitx_vout3_server = {
-	.name = "hdmitx_vout3_server",
-	.op = {
-		.get_vinfo = hdmitx_get_current_vinfo,
-		.set_vmode = hdmitx_set_current_vmode,
-		.validate_vmode = hdmitx_validate_vmode,
-		.check_same_vmodeattr = hdmitx_check_same_vmodeattr,
-		.vmode_is_supported = hdmitx_vmode_is_supported,
-		.disable = hdmitx_module_disable,
-		.set_state = hdmitx_vout_set_state,
-		.clr_state = hdmitx_vout_clr_state,
-		.get_state = hdmitx_vout_get_state,
-		.get_disp_cap = hdmitx_vout_get_disp_cap,
-		.set_vframe_rate_hint = NULL,
-		.get_vframe_rate_hint = NULL,
-		.set_bist = hdmitx_set_bist,
-#ifdef CONFIG_PM
-		.vout_suspend = NULL,
-		.vout_resume = NULL,
-#endif
-	},
-	.data = NULL,
-};
-#endif
+	int num_modes = ARRAY_SIZE(valid_hdmi_modes);
+	int i;
+
+	for (i = 0; i < num_modes; i++) {
+		if (strcmp(input, valid_hdmi_modes[i]) == 0)
+			return 1; // Found a match
+	}
+	return 0; // No match found
+}
 
 void hdmitx_vout_init(struct hdmitx_common *tx_comm, struct hdmitx_hw_common *tx_hw)
 {
 	global_tx_common = tx_comm;
 	global_tx_hw = tx_hw;
-#ifdef CONFIG_AMLOGIC_VOUT_SERVE
-	vout_register_server(&hdmitx_vout_server);
-#endif
-#ifdef CONFIG_AMLOGIC_VOUT2_SERVE
-	vout2_register_server(&hdmitx_vout2_server);
-#endif
-#ifdef CONFIG_AMLOGIC_VOUT3_SERVE
-	vout3_register_server(&hdmitx_vout3_server);
-#endif
+	bool is_register = false;
+	int i;
+	char *connectors[3];
+	static const char * const server_names[] = {
+			"hdmitx_vout_server",
+			"hdmitx_vout2_server",
+			"hdmitx_vout3_server"
+	};
+	int (*register_functions[])(struct vout_server_s *p) = {
+			vout_register_server,
+			vout2_register_server,
+			vout3_register_server
+	};
+
+	connectors[0] = get_uboot_connector0_type();
+	connectors[1] = get_uboot_connector1_type();
+	connectors[2] = get_uboot_connector2_type();
+
+	for (i = 0; i < 3; ++i) {
+		if (is_valid_hdmi(connectors[i])) {
+			HDMITX_INFO("%s\n", server_names[i]);
+			hdmitx_vout_server.name = (char *)server_names[i];
+			register_functions[i](&hdmitx_vout_server);
+			is_register = true;
+		}
+	}
+
+	// If no server has been registered, register the default server
+	if (!is_register) {
+		HDMITX_INFO("vout_register_server default\n");
+		hdmitx_vout_server.name = "hdmitx_vout_server";
+		vout_register_server(&hdmitx_vout_server);
+	}
 }
 
 void hdmitx_vout_uninit(void)
 {
-#ifdef CONFIG_AMLOGIC_VOUT_SERVE
-	vout_unregister_server(&hdmitx_vout_server);
-#endif
-#ifdef CONFIG_AMLOGIC_VOUT2_SERVE
-	vout2_unregister_server(&hdmitx_vout2_server);
-#endif
-#ifdef CONFIG_AMLOGIC_VOUT3_SERVE
-	vout3_unregister_server(&hdmitx_vout3_server);
-#endif
+	char *connectors[3];
+
+	int (*unregister_functions[])(struct vout_server_s *p) = {
+			vout_unregister_server,
+			vout2_unregister_server,
+			vout3_unregister_server
+	};
+
+	// Default unregister function
+	int (*default_unregister)(struct vout_server_s *p) = vout_unregister_server;
+
+	bool is_unregistered = false;
+	int i;
+
+	connectors[0] = get_uboot_connector0_type();
+	connectors[1] = get_uboot_connector1_type();
+	connectors[2] = get_uboot_connector2_type();
+
+	for (i = 0; i < 3; ++i) {
+		if (is_valid_hdmi(connectors[i])) {
+			unregister_functions[i](&hdmitx_vout_server);
+			is_unregistered = true;
+		}
+	}
+
+	// If no valid HDMI found, use the default unregistration
+	if (!is_unregistered)
+		default_unregister(&hdmitx_vout_server);
 }
 
 /* common work for plugin/resume, which is done in lock */

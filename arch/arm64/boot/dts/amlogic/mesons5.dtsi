@@ -2063,7 +2063,6 @@
 		interrupts = <0 80 4
 			0 115 1>;
 		interrupt-names = "hdmitx_hpd", "vrr_vsync";
-		enc_idx = <0>;
 		tx_max_frl_rate = <5>; /* max FRL_10G4L */
 		max_refreshrate = <120>; /* the max freshrate of S5 is upto 120hz */
 		reg =	<0x0 0xff800000 0x0 0x40000>,

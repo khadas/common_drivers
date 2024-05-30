@@ -804,5 +804,6 @@ extern struct mutex lcd_power_mutex;
 
 void set_output_mute(bool on);
 int get_output_mute(void);
+unsigned char get_vout_lcd_mode(unsigned char vout_index);
 
 #endif

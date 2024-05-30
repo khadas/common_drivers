@@ -769,6 +769,9 @@ static int am_hdmitx_connector_atomic_get_property
 	} else if (property == am_hdmi->ready_prop) {
 		*val = hdmitx_common_get_ready_state(tx_comm);
 		return 0;
+	} else if (property == am_hdmi->type_prop) {
+		*val = am_hdmi->hdmi_type;
+		return 0;
 	}
 
 	return -EINVAL;
@@ -2124,6 +2127,10 @@ int meson_hdmitx_dev_bind(struct drm_device *drm,
 	struct connector_hpd_cb hpd_cb;
 	struct hdmitx_common *tx_comm;
 	int ret;
+	int connector_type = type;
+	char *connector_name = NULL;
+	int encoder_type = DRM_MODE_ENCODER_TMDS;
+	struct drm_property *type_prop = NULL;
 #ifdef CONFIG_CEC_NOTIFIER
 	struct edid *pedid;
 #endif
@@ -2169,6 +2176,38 @@ int meson_hdmitx_dev_bind(struct drm_device *drm,
 	mesonconn->update = meson_hdmitx_update;
 	encoder = &am_hdmi->encoder;
 	connector = &am_hdmi->base.connector;
+	am_hdmi->hdmi_type = type;
+
+	switch (type) {
+	case DRM_MODE_CONNECTOR_MESON_HDMIA_A:
+		connector_type = DRM_MODE_CONNECTOR_HDMIA;
+		connector_name = "HDMI-A-A";
+		break;
+	case DRM_MODE_CONNECTOR_MESON_HDMIA_B:
+		connector_type = DRM_MODE_CONNECTOR_HDMIA;
+		connector_name = "HDMI-A-B";
+		break;
+	case DRM_MODE_CONNECTOR_MESON_HDMIA_C:
+		connector_type = DRM_MODE_CONNECTOR_HDMIA;
+		connector_name = "HDMI-A-C";
+		break;
+	case DRM_MODE_CONNECTOR_MESON_HDMIB_A:
+		connector_type = DRM_MODE_CONNECTOR_HDMIB;
+		connector_name = "HDMI-B-A";
+		break;
+	case DRM_MODE_CONNECTOR_MESON_HDMIB_B:
+		connector_type = DRM_MODE_CONNECTOR_HDMIB;
+		connector_name = "HDMI-B-B";
+		break;
+	case DRM_MODE_CONNECTOR_MESON_HDMIB_C:
+		connector_type = DRM_MODE_CONNECTOR_HDMIB;
+		connector_name = "HDMI-B-C";
+		break;
+	default:
+		connector_type = DRM_MODE_CONNECTOR_Unknown;
+		encoder_type = DRM_MODE_ENCODER_NONE;
+		break;
+	};
 
 	/* Connector */
 	connector->polled = DRM_CONNECTOR_POLL_HPD;
@@ -2176,18 +2215,26 @@ int meson_hdmitx_dev_bind(struct drm_device *drm,
 				 &am_hdmi_connector_helper_funcs);
 
 	ret = drm_connector_init(drm, connector, &am_hdmi_connector_funcs,
-				 DRM_MODE_CONNECTOR_HDMIA);
+				 connector_type);
 	if (ret) {
 		dev_err(priv->dev, "Failed to init hdmi tx connector\n");
 		return ret;
 	}
 	connector->interlace_allowed = 1;
 
+	/*update name to amlogic name*/
+	if (connector_name) {
+		kfree(connector->name);
+		connector->name = kasprintf(GFP_KERNEL, "%s", connector_name);
+		if (!connector->name)
+			DRM_ERROR("[%s]: alloc name failed\n", __func__);
+	}
+
 	/* Encoder */
 	encoder->possible_crtcs = priv->of_conf.crtc_masks[ENCODER_HDMI];
 	drm_encoder_helper_add(encoder, &meson_hdmitx_encoder_helper_funcs);
 	ret = drm_encoder_init(drm, encoder, &meson_hdmitx_encoder_funcs,
-			       DRM_MODE_ENCODER_TMDS, "am_hdmi_encoder");
+			       encoder_type, "am_hdmi_encoder");
 	if (ret) {
 		dev_err(priv->dev, "Failed to init hdmi encoder\n");
 		return ret;
@@ -2247,6 +2294,19 @@ int meson_hdmitx_dev_bind(struct drm_device *drm,
 					   CEC_PHYS_ADDR_INVALID);
 	}
 #endif
+
+	/*prop for userspace to acquire prop*/
+	type_prop = drm_property_create_range(drm, DRM_MODE_PROP_IMMUTABLE,
+		MESON_CONNECTOR_TYPE_PROP_NAME, 0, INT_MAX);
+	if (type_prop) {
+		am_hdmi->type_prop = type_prop;
+		drm_object_attach_property(&am_hdmi->base.connector.base,
+			type_prop, type);
+	} else {
+		DRM_ERROR("%s: Failed to create property %s\n",
+			__func__, MESON_CONNECTOR_TYPE_PROP_NAME);
+	}
+
 	DRM_DEBUG("%s out[%d]\n", __func__, __LINE__);
 	return 0;
 }

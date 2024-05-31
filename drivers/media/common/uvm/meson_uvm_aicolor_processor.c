@@ -620,7 +620,7 @@ int aicolor_getinfo(void *arg, char *buf)
 		aicolor_info->omx_index = vf->omx_index;
 		aicolor_info->ge2d_out_phy_addr = (ulong)phy_addr;
 
-		output.format = GE2D_FORMAT_S24_RGB;
+		output.format = GE2D_FORMAT_S24_BGR;
 		output.addr = (ulong)phy_addr;
 		do_gettimeofday(&begin_time);
 		ret = ge2d_vf_process(vf, &output);

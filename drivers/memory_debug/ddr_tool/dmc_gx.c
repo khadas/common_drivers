@@ -232,26 +232,80 @@ static int gx_reg_analysis(char *input, char *output)
 	return count;
 }
 
+static int dmc_sec_check(char *output)
+{
+	unsigned long dmc_vio_status, dmc_vio_reg[8], addr;
+	int count = 0, error = 0, port, subport, i;
+	char rw = 'n', offset = 20;
+
+	dmc_vio_status = dmc_prot_rw(NULL, DMC_SEC_STATUS, 0, DMC_READ);
+	for (i = 0; i < 8; i++)
+		dmc_vio_reg[i] = dmc_prot_rw(NULL, DMC_VIO_ADDR0 + (i << 2), 0, DMC_READ);
+
+	if (dmc_vio_status & 0x1) {
+		error = 1;
+		rw = 'r';
+		if (dmc_vio_reg[5] & (0x7 << offset)) {
+			addr = dmc_vio_reg[4];
+			port = (dmc_vio_reg[5] >> 10) & 0xf;
+			subport = (dmc_vio_reg[5] >> 6) & 0xf;
+		}
+		if (dmc_vio_reg[7] & (0x7 << offset)) {
+			addr = dmc_vio_reg[6];
+			port = (dmc_vio_reg[7] >> 10) & 0xf;
+			subport = (dmc_vio_reg[7] >> 6) & 0xf;
+		}
+		count += sprintf(output + count,
+				 "DMC SEC READ CHECK ERROR: addr:0x%lx, port:%s, subport:%s\n",
+				addr, to_ports(port), to_sub_ports_name(port, subport, rw));
+	}
+	if (dmc_vio_status & 0x2) {
+		error = 1;
+		rw = 'w';
+		if (dmc_vio_reg[1] & (0x7 << offset)) {
+			addr = dmc_vio_reg[]0;
+			port = (dmc_vio_reg[1] >> 10) & 0xf;
+			subport = (dmc_vio_reg[1] >> 6) & 0xf;
+		}
+		if (dmc_vio_reg[3] & (0x7 << offset)) {
+			addr = dmc_vio_reg[2];
+			port = (dmc_vio_reg[3] >> 10) & 0xf;
+			subport = (dmc_vio_reg[3] >> 6) & 0xf;
+		}
+		count += sprintf(output + count,
+				 "DMC SEC WRITE CHECK ERROR: addr:0x%lx, port:%s, subport:%s\n",
+				 addr, to_ports(port), to_sub_ports_name(port, subport, rw));
+	}
+
+	if (!error)
+		count += sprintf(output + count, "DMC SEC CHECK PASS.\n");
+
+	if (dmc_vio_status || dmc_vio_reg[0] || dmc_vio_reg[1] ||
+		dmc_vio_reg[2] || dmc_vio_reg[3] ||
+		dmc_vio_reg[4] || dmc_vio_reg[5] ||
+		dmc_vio_reg[6] || dmc_vio_reg[7]) {
+		count += sprintf(output + count, "DMC_SEC_STATUS:%lx\n", dmc_vio_status);
+		for (i = 0; i < 8; i++)
+			count += sprintf(output + count, "DMC_VIO_ADDR%d:%lx\n", i, dmc_vio_reg[i]);
+	}
+
+	return count;
+}
+
 static int gx_dmc_reg_control(char *input, char control, char *output)
 {
 	int count = 0, i;
 	unsigned long val;
 
 	switch (control) {
-	case 'a':	/* analysis sec vio reg */
+	case 'a':	/* analysis prot vio reg */
 		count = gx_reg_analysis(input, output);
 		break;
 	case 'c':	/* clear sec statue reg */
 		dmc_prot_rw(NULL, DMC_SEC_STATUS, 0x3, DMC_WRITE);
 		break;
 	case 'd':	/* dump sec vio reg */
-		count += sprintf(output + count, "DMC SEC INFO:\n");
-		val = dmc_prot_rw(NULL, DMC_SEC_STATUS, 0, DMC_READ);
-		count += sprintf(output + count, "DMC_SEC_STATUS:%lx\n", val);
-		for (i = 0; i < 8; i++) {
-			val = dmc_prot_rw(NULL, DMC_VIO_ADDR0 + (i << 2), 0, DMC_READ);
-			count += sprintf(output + count, "DMC_VIO_ADDR%d:%lx\n", i, val);
-		}
+		count = dmc_sec_check(output);
 		break;
 	default:
 		break;

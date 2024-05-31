@@ -47,7 +47,7 @@
 #include "dmc_trace.h"
 
 // #define DEBUG
-#define DMC_VERSION		"1.6"
+#define DMC_VERSION		"1.7"
 
 #define IRQ_CHECK		0
 #define IRQ_CLEAR		1
@@ -874,7 +874,6 @@ static void serror_dump_dmc_reg(void)
 				pr_emerg("%.*s", offset, buf + i);
 			i += offset;
 		}
-		pr_emerg("\n");
 	}
 }
 
@@ -1668,18 +1667,17 @@ static int __init dmc_monitor_probe(struct platform_device *pdev)
 			dmc_mon->ops->handle_irq(dmc_mon, &dmc_mon->mon_comm[i], IRQ_CLEAR);
 	}
 
+	/* check dmc sec reg*/
+	if (dmc_mon->ops && dmc_mon->ops->reg_control)
+		dmc_mon->ops->reg_control(NULL, 'c', NULL);
+	serror_dump_dmc_reg();
+
 	if (dmc_mon->debug & DMC_DEBUG_SUSPEND) {
 		if (dmc_irq_set(node, 1, 0) < 0)
 			pr_emerg("get dmc irq failed\n");
 	} else {
 		if (dmc_irq_set(node, 1, 1) < 0)
 			pr_emerg("request dmc irq failed\n");
-	}
-
-	if (dmc_mon->debug & DMC_DEBUG_SERROR) {
-		if (dmc_mon->ops && dmc_mon->ops->reg_control)
-			dmc_mon->ops->reg_control(NULL, 'c', NULL);
-		serror_dump_dmc_reg();
 	}
 
 	return 0;

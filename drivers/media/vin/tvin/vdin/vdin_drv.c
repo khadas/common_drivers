@@ -333,6 +333,20 @@ void tvin_notify_vdin_skip_frame(unsigned int drop_num, enum tvin_port_type_e po
 }
 EXPORT_SYMBOL(tvin_notify_vdin_skip_frame);
 
+bool tvin_get_game_mode_status(u8 port_type)
+{
+	struct vdin_dev_s *devp = port_type ? vdin_devp[1] : vdin_devp[0];
+
+	if (!devp)
+		return false;
+
+	if (devp->game_mode)
+		return true;
+	else
+		return false;
+}
+EXPORT_SYMBOL(tvin_get_game_mode_status);
+
 /*
  * 1. find the corresponding frontend according to the port & save it.
  * 2. set default register, including:

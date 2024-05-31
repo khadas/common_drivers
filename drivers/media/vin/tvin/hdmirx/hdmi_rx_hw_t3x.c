@@ -5972,7 +5972,8 @@ void rx_mute_t3x(bool en, u8 port_type)
 	if (en) {
 		if (port_type == TVIN_PORT_MAIN) {
 			rx_mute_dual_video_rdma(E_RX_MUTE, E_RX_NA);
-			rx_mute_dual_video_vcbus(E_RX_MUTE, E_RX_NA);
+			if (tvin_get_game_mode_status(port_type))
+				rx_mute_dual_video_vcbus(E_RX_MUTE, E_RX_NA);
 			rx_pr("main port mute\n");
 		} else if (port_type == TVIN_PORT_SUB) {
 			rx_mute_dual_video_rdma(E_RX_NA, E_RX_MUTE);
@@ -5980,6 +5981,8 @@ void rx_mute_t3x(bool en, u8 port_type)
 			rx_pr("sub port mute\n");
 		} else {
 			rx_mute_dual_video_rdma(E_RX_NA, E_RX_NA);
+			if (tvin_get_game_mode_status(port_type))
+				rx_mute_dual_video_vcbus(E_RX_MUTE, E_RX_NA);
 			rx_mute_dual_video_vcbus(E_RX_NA, E_RX_NA);
 			rx_pr("Na\n");
 		}

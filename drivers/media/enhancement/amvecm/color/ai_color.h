@@ -51,6 +51,7 @@ struct sa_param_s    {
 void db_aicolor_param_set(struct db_aicolor_param_s *db_aicolor_param_data);
 void ai_color_proc(struct vframe_s *vf, int vpp_index);
 void ai_color_parm_show(void);
+int aicolor_param_adb_show(char *str);
 int ai_color_debug_store(char **parm);
 void ai_clr_config(int enable, int vpp_index);
 

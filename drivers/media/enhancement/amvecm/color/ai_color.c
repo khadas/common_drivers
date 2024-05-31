@@ -489,6 +489,33 @@ void ai_clr_config(int enable, int vpp_index)
 		VSYNC_WRITE_VPP_REG_EX_VPP_SEL(SA_CTRL + aice_offset[i], val, 0, vpp_index);
 }
 
+static char ai_color_debug_usage_str[24][25] = {
+	"sat_s_gain_en = ",
+	"sat_l_gain_en = ",
+	"reg_sat_adj_a = ",
+	"reg_sat_prt = ",
+	"reg_sat_prt_p = ",
+	"reg_sat_prt_th = ",
+	"reg_zero = ",
+	"reg_sat_adj = ",
+	"reg_sat_shift = ",
+	"reg_skin_th = ",
+	"reg_skin_shift = ",
+	"reg_skin_adj = ",
+	"reg_hue_left1 = ",
+	"reg_hue_right1 = ",
+	"reg_hue_adj1 = ",
+	"reg_hue_shift1 = ",
+	"reg_hue_left2 = ",
+	"reg_hue_right2 = ",
+	"reg_hue_adj2 = ",
+	"reg_hue_shift2 = ",
+	"reg_hue_left3 = ",
+	"reg_hue_right3 = ",
+	"reg_hue_adj3 = ",
+	"reg_hue_shift3 = ",
+};
+
 void ai_color_parm_show(void)
 {
 	pr_info("sat_s_gain_en = %d\n", sa_adj_parm.reg_sat_s_gain_en);
@@ -497,7 +524,6 @@ void ai_color_parm_show(void)
 	pr_info("reg_sat_prt = %d\n", sa_adj_parm.reg_sat_prt);
 	pr_info("reg_sat_prt_p = %d\n", sa_adj_parm.reg_sat_prt_p);
 	pr_info("reg_sat_prt_th = %d\n", sa_adj_parm.reg_sat_prt_th);
-	pr_info("\n");
 	pr_info("reg_zero = %d\n", sa_fw_parm.reg_zero);
 	pr_info("reg_sat_adj = %d\n", sa_fw_parm.reg_sat_adj);
 	pr_info("reg_sat_shift = %d\n", sa_fw_parm.reg_sat_shift);
@@ -516,6 +542,50 @@ void ai_color_parm_show(void)
 	pr_info("reg_hue_right3 = %d\n", sa_fw_parm.reg_hue_right3);
 	pr_info("reg_hue_adj3 = %d\n", sa_fw_parm.reg_hue_adj3);
 	pr_info("reg_hue_shift3 = %d\n", sa_fw_parm.reg_hue_shift3);
+}
+
+void ai_color_param_reg_get_arr(int *arry)
+{
+	arry[0] = sa_adj_parm.reg_sat_s_gain_en;
+	arry[1] = sa_adj_parm.reg_sat_l_gain_en;
+	arry[2] = sa_adj_parm.reg_sat_adj_a;
+	arry[3] = sa_adj_parm.reg_sat_prt;
+	arry[4] = sa_adj_parm.reg_sat_prt_p;
+	arry[5] = sa_adj_parm.reg_sat_prt_th;
+	arry[6] = sa_fw_parm.reg_zero;
+	arry[7] = sa_fw_parm.reg_sat_adj;
+	arry[8] = sa_fw_parm.reg_sat_shift;
+	arry[9] = sa_fw_parm.reg_skin_th;
+	arry[10] = sa_fw_parm.reg_skin_shift;
+	arry[11] = sa_fw_parm.reg_skin_adj;
+	arry[12] = sa_fw_parm.reg_hue_left1;
+	arry[13] = sa_fw_parm.reg_hue_right1;
+	arry[14] = sa_fw_parm.reg_hue_adj1;
+	arry[15] = sa_fw_parm.reg_hue_shift1;
+	arry[16] = sa_fw_parm.reg_hue_left2;
+	arry[17] = sa_fw_parm.reg_hue_right2;
+	arry[18] = sa_fw_parm.reg_hue_adj2;
+	arry[19] = sa_fw_parm.reg_hue_shift2;
+	arry[20] = sa_fw_parm.reg_hue_left3;
+	arry[21] = sa_fw_parm.reg_hue_right3;
+	arry[22] = sa_fw_parm.reg_hue_adj3;
+	arry[23] = sa_fw_parm.reg_hue_shift3;
+}
+
+int aicolor_param_adb_show(char *str)
+{
+	int param_val[24];
+	int i = 0;
+	int len1 = 0;
+
+	ai_color_param_reg_get_arr(param_val);
+
+	for (i = 0; i < 24; i++) {
+		len1 += sprintf(str + len1, "%s", ai_color_debug_usage_str[i]);
+		len1 += sprintf(str + len1, "%d\n", param_val[i]);
+	}
+
+	return len1;
 }
 
 int ai_color_debug_store(char **parm)
@@ -565,19 +635,19 @@ int ai_color_debug_store(char **parm)
 		sa_fw_parm.reg_sat_adj = (uint)val;
 		pr_info("reg_sat_adj = %d\n", sa_fw_parm.reg_sat_adj);
 	} else if (!strcmp(parm[0], "reg_sat_shift")) {
-		if (kstrtoul(parm[1], 10, &val) < 0)
+		if (kstrtol(parm[1], 10, &val) < 0)
 			return -EINVAL;
-		sa_fw_parm.reg_sat_shift = (uint)val;
+		sa_fw_parm.reg_sat_shift = (int)val;
 		pr_info("reg_sat_shift = %d\n", sa_fw_parm.reg_sat_shift);
 	} else if (!strcmp(parm[0], "reg_skin_th")) {
-		if (kstrtoul(parm[1], 10, &val) < 0)
+		if (kstrtol(parm[1], 10, &val) < 0)
 			return -EINVAL;
-		sa_fw_parm.reg_skin_th = (uint)val;
+		sa_fw_parm.reg_skin_th = (int)val;
 		pr_info("reg_skin_th = %d\n", sa_fw_parm.reg_skin_th);
 	} else if (!strcmp(parm[0], "reg_skin_shift")) {
-		if (kstrtoul(parm[1], 10, &val) < 0)
+		if (kstrtol(parm[1], 10, &val) < 0)
 			return -EINVAL;
-		sa_fw_parm.reg_skin_shift = (uint)val;
+		sa_fw_parm.reg_skin_shift = (int)val;
 		pr_info("reg_skin_shift = %d\n", sa_fw_parm.reg_skin_shift);
 	} else if (!strcmp(parm[0], "reg_skin_adj")) {
 		if (kstrtoul(parm[1], 10, &val) < 0)
@@ -600,9 +670,9 @@ int ai_color_debug_store(char **parm)
 		sa_fw_parm.reg_hue_adj1 = (uint)val;
 		pr_info("reg_hue_adj1 = %d\n", sa_fw_parm.reg_hue_adj1);
 	} else if (!strcmp(parm[0], "reg_hue_shift1")) {
-		if (kstrtoul(parm[1], 10, &val) < 0)
+		if (kstrtol(parm[1], 10, &val) < 0)
 			return -EINVAL;
-		sa_fw_parm.reg_hue_shift1 = (uint)val;
+		sa_fw_parm.reg_hue_shift1 = (int)val;
 		pr_info("reg_hue_shift1 = %d\n", sa_fw_parm.reg_hue_shift1);
 	} else if (!strcmp(parm[0], "reg_hue_left2")) {
 		if (kstrtoul(parm[1], 10, &val) < 0)
@@ -620,9 +690,9 @@ int ai_color_debug_store(char **parm)
 		sa_fw_parm.reg_hue_adj2 = (uint)val;
 		pr_info("reg_hue_adj2 = %d\n", sa_fw_parm.reg_hue_adj2);
 	} else if (!strcmp(parm[0], "reg_hue_shift2")) {
-		if (kstrtoul(parm[1], 10, &val) < 0)
+		if (kstrtol(parm[1], 10, &val) < 0)
 			return -EINVAL;
-		sa_fw_parm.reg_hue_shift2 = (uint)val;
+		sa_fw_parm.reg_hue_shift2 = (int)val;
 		pr_info("reg_hue_shift2 = %d\n", sa_fw_parm.reg_hue_shift2);
 	} else if (!strcmp(parm[0], "reg_hue_left3")) {
 		if (kstrtoul(parm[1], 10, &val) < 0)
@@ -640,9 +710,9 @@ int ai_color_debug_store(char **parm)
 		sa_fw_parm.reg_hue_adj3 = (uint)val;
 		pr_info("reg_hue_adj3 = %d\n", sa_fw_parm.reg_hue_adj3);
 	} else if (!strcmp(parm[0], "reg_hue_shift3")) {
-		if (kstrtoul(parm[1], 10, &val) < 0)
+		if (kstrtol(parm[1], 10, &val) < 0)
 			return -EINVAL;
-		sa_fw_parm.reg_hue_shift3 = (uint)val;
+		sa_fw_parm.reg_hue_shift3 = (int)val;
 		pr_info("reg_hue_shift3 = %d\n", sa_fw_parm.reg_hue_shift3);
 	} else if (!strcmp(parm[0], "read_all")) {
 		pr_info("sat_s_gain_en = %d\n", sa_adj_parm.reg_sat_s_gain_en);

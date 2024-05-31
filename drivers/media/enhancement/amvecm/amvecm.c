@@ -7493,8 +7493,11 @@ static ssize_t amvecm_ai_color_show(struct class *cla,
 				   struct class_attribute *attr,
 				   char *buf)
 {
+	int len = 0;
+
 	ai_color_parm_show();
-	return 0;
+	len = aicolor_param_adb_show(buf);
+	return len;
 }
 
 static ssize_t amvecm_ai_color_store(struct class *cla,

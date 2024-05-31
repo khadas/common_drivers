@@ -85,7 +85,7 @@ int dbg_monitor_ctrl;
 module_param(dbg_monitor_ctrl, int, 0664);
 MODULE_PARM_DESC(dbg_monitor_ctrl, "\n dbg_monitor_ctrl\n");
 
-int skip_num = 1;
+int skip_num;
 module_param(skip_num, int, 0664);
 MODULE_PARM_DESC(skip_num, "\n skip_num\n");
 
@@ -1730,12 +1730,13 @@ static void lc_fw_curve_iir(struct vframe_s *vf,
 	}
 
 	/* step 1: osd detect*/
-	osd_detect(osd_flag_cnt_above,/*out*/
-		osd_flag_cnt_below,/*out*/
-		&frm_cnt_above,/*out*/
-		&frm_cnt_below,/*out: osd case heavy iir time */
-		lc_hist,
-		blk_hnum);
+	if (chip_type_id != chip_t3x)
+		osd_detect(osd_flag_cnt_above,/*out*/
+			osd_flag_cnt_below,/*out*/
+			&frm_cnt_above,/*out*/
+			&frm_cnt_below,/*out: osd case heavy iir time */
+			lc_hist,
+			blk_hnum);
 
 	/*step 2: scene change signal get: two method*/
 	scene_change_flag = global_scene_change(curve_nodes_cur,
@@ -1904,8 +1905,8 @@ void lc_read_region(int blk_vnum, int blk_hnum,
 				cur_block = i * blk_hnum + j;
 
 				if (tune_curve_en == 2) {
-					tune_nodes_patch(&data_curve[cur_block * 6],
-						&data_hist[cur_block * 17], i, j);
+					/*tune_nodes_patch(&data_curve[cur_block * 6],*/
+					/*	&data_hist[cur_block * 17], i, j);*/
 				} else if (tune_curve_en == 1) {
 					linear_nodes_patch(&data_curve[cur_block * 6]);
 				} else {
@@ -2351,7 +2352,9 @@ void lc_process(struct vframe_s *vf,
 		/*	pr_amlc_dbg("%s: use_lc_curve_isr/defined: %d/%d\n",*/
 		/*		__func__, use_lc_curve_isr, lc_curve_isr_defined);*/
 		/*}*/
-		lc_read_region(blk_vnum, blk_hnum, 0);
+
+		if (!use_lc_curve_isr || !lc_curve_isr_defined)
+			lc_read_region(blk_vnum, blk_hnum, 0);
 
 		/*do time domain iir*/
 		lc_fw_curve_iir(vf, lc_hist,

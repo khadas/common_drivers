@@ -2558,6 +2558,7 @@ static void amvecm_overscan_process(struct vframe_s *vf,
 {
 	if (vpp_index == VPP_TOP0 && vd_path != VD1_PATH)
 		return;
+
 	if (flags & CSC_FLAG_CHECK_OUTPUT) {
 		if (toggle_vf)
 			amvecm_fresh_overscan(toggle_vf);
@@ -2565,6 +2566,7 @@ static void amvecm_overscan_process(struct vframe_s *vf,
 			amvecm_fresh_overscan(vf);
 		return;
 	}
+
 	if (!toggle_vf && !vf)
 		amvecm_reset_overscan();
 
@@ -2915,7 +2917,7 @@ static irqreturn_t amvecm_lc_curve_isr(int irq, void *dev_id)
 	iotrace_misc_record_write(RECORD_TYPE_AMVECM_IN, 0, 0, 0);
 #endif
 
-	if (use_lc_curve_isr && chip_type_id != chip_t3x)
+	if (use_lc_curve_isr) /* && chip_type_id != chip_t3x)*/
 		lc_read_region(8, 12, 0);
 
 #if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_IOTRACE)
@@ -12869,7 +12871,7 @@ tvchip_pq_setting:
 		am_dma_set_mif_wr(EN_DMA_WR_ID_VI_HIST_SPL_1, 1);
 		am_dma_set_mif_wr(EN_DMA_WR_ID_VD1_HDR_0, 1);
 		am_dma_set_mif_wr(EN_DMA_WR_ID_VD1_HDR_1, 1);
-		am_dma_set_mif_wr(EN_DMA_WR_ID_LC_STTS_0, 1);
+		am_dma_set_mif_wr(EN_DMA_WR_ID_LC_STTS_0, 0);
 		/*am_dma_set_mif_wr(EN_DMA_WR_ID_LC_STTS_1, 1);*/
 		/*am_dma_set_mif_wr(EN_DMA_WR_ID_CM2_HIST_0, 1);*/
 		/*am_dma_set_mif_wr(EN_DMA_WR_ID_CM2_HIST_1, 0);*/

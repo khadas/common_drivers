@@ -3635,7 +3635,7 @@ void ve_lc_region_read(int blk_vnum, int blk_hnum,
 	unsigned int i, j;
 	unsigned int tmp, tmp1;
 	unsigned int cur_block;
-	unsigned int length = 1632; /*12*8*17*/
+	unsigned int length;
 
 	if (!black_count || !curve_data || !hist_data)
 		return;
@@ -3685,7 +3685,8 @@ void ve_lc_region_read(int blk_vnum, int blk_hnum,
 	WRITE_VPP_REG_S5(ctrl_reg, 0);
 
 	/*part2: get lc hist*/
-	am_dma_get_mif_data_lc_stts(slice, hist_data, length);
+	length = 1632; /*12*8*17*/
+	/*am_dma_get_mif_data_lc_stts(slice, hist_data, length);*/
 }
 
 void ve_lc_total_en_ctrl(int enable, int rdma_mode, int vpp_index)

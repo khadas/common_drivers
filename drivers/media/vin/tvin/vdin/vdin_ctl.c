@@ -784,9 +784,10 @@ void vdin_get_format_convert(struct vdin_dev_s *devp)
 
 	/* vdin v4l2 mode */
 	if (devp->work_mode == VDIN_WORK_MD_V4L) {
-		pr_info("%s vdin v4l2 mode,color_format:%#x,pixelformat:%#x\n", __func__,
-			devp->prop.color_format, devp->v4l2_fmt.fmt.pix_mp.pixelformat);
-		if (devp->prop.color_format == TVIN_RGB444) {
+		pr_info("%s vdin v4l2 mode,color_format:%#x %#x,pixelformat:%#x\n", __func__,
+			devp->prop.color_format, devp->parm.info.cfmt,
+			devp->v4l2_fmt.fmt.pix_mp.pixelformat);
+		if (devp->parm.info.cfmt == TVIN_RGB444) {
 			if (devp->v4l2_fmt.fmt.pix_mp.pixelformat == V4L2_PIX_FMT_NV12 ||
 				devp->v4l2_fmt.fmt.pix_mp.pixelformat == V4L2_PIX_FMT_NV12M)
 				format_convert = VDIN_FORMAT_CONVERT_RGB_NV12;

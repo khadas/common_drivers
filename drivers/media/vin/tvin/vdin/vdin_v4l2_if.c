@@ -654,10 +654,15 @@ static int vdin_vidioc_streamon(struct file *file, void *priv,
 	struct vdin_dev_s *devp = video_drvdata(file);
 	unsigned int ret = 0;
 
-	dprintk(2, "%s\n", __func__);
+	dprintk(2, "dbg enter %s\n", __func__);
 
 	if (IS_ERR_OR_NULL(devp))
 		return -EFAULT;
+	if (devp->parm.info.status != TVIN_SIG_STATUS_STABLE) {
+		dprintk(0, "%s failed with status=%d\n", __func__,
+			devp->parm.info.status);
+		return -EBUSY;
+	}
 
 	ret = vb2_ioctl_streamon(file, priv, i);
 	vdin_v4l2_start_tvin(devp);

@@ -1272,7 +1272,7 @@ int vdin_start_dec(struct vdin_dev_s *devp)
 			devp->vrr_data.vdin_vrr_en_flag,
 			devp->prop.vtem_data.vrr_en,
 			devp->prop.spd_data.data[5]);
-		if (!(devp->flags & VDIN_FLAG_V4L2_DEBUG))
+		if (!(devp->flags & VDIN_FLAG_V4L2_DEBUG) && devp->index)
 			devp->parm.info.cfmt = devp->prop.color_format;
 
 		vdin_dv_hw5_init(devp);

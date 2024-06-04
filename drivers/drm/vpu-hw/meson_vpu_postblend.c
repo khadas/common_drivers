@@ -652,7 +652,8 @@ static void t3x_postblend_set_state(struct meson_vpu_block *vblk,
 #endif
 
 	if (!vblk->init_done) {
-		reg_ops->rdma_write_reg_bits(VPP_INTF_OSD3_CTRL, 0, 1, 1);
+		if (crtc_index == 1)
+			reg_ops->rdma_write_reg_bits(VPP_INTF_OSD3_CTRL, 0, 1, 1);
 		reg_ops->rdma_write_reg(VPP_MISC_T3X, 0);
 
 		vblk->init_done = 1;

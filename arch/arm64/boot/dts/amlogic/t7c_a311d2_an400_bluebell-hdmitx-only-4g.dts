@@ -212,6 +212,7 @@
 			/* 1080p STB androidU size 88M for direct render*/
 			size = <0x0 0x5800000>;
 			alignment = <0x0 0x400000>;
+			alloc-ranges = <0x0 0x0 0x0 0xe0000000>;
 		};
 		dmaheap_fb_reserved:heap-fb {
 			compatible = "shared-dma-pool";
@@ -219,6 +220,7 @@
 			/* 1080p UI 1920x1080x4x6 androidU size 56M */
 			size = <0x0 0x3800000>;
 			alignment = <0x0 0x400000>;
+			alloc-ranges = <0x0 0x0 0x0 0xe0000000>;
 		};
 
 		/*  vdin0 CMA pool */

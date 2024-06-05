@@ -651,7 +651,7 @@
 				#size-cells = <0>;
 				enet_type = <5>;
 				phy_pll_mode = <2>;
-				phy_mode = <3>;
+				phy_mode = <4>;
 				tx_amp_src = <0xFE010330>;
 				led_setting = <0x42>;
 
@@ -1155,6 +1155,8 @@
 		       0xfe000000 0xfff
 		       0xfe004000 0x2000>;
 		reg-names = "ao","periphs","clock","pad_reg";
+		mbox-names = "mbox_cec";
+		mboxes = <&mbox_fifo S7_REE2AO_AOCEC>;
 	};
 
 	aml_dma {
@@ -1328,14 +1330,14 @@
 
 	vclk_serve: vclk_serve {
 		compatible = "amlogic, vclk_serve";
-		status = "disabled";
+		status = "okay";
 		reg = <0xfe008000 0x300    /* ana reg */
-			0xfe000000 0x4a0>; /* clk reg */
+			0xfe000000 0xc00>; /* clk reg */
 	};
 
 	vdac {
-		compatible = "amlogic, vdac-s4d";
-		status = "disabled";
+		compatible = "amlogic, vdac-s7";
+		status = "okay";
 	};
 
 	vout: vout {
@@ -1353,11 +1355,13 @@
 	vout_mux: vout_mux {
 		compatible = "amlogic, vout_mux";
 		status = "okay";
+		clocks = <&clkc CLKID_FCLK_DIV5>, <&clkc CLKID_VDIN_MEAS>;
+		clock-names = "fclk_div5", "vdin_meas_clk";
 	};
 
 	dummy_venc: dummy_venc {
-		compatible = "amlogic, dummy_venc_s4";
-		status = "disabled";
+		compatible = "amlogic, dummy_venc_s1a";
+		status = "okay";
 
 		ports {
 			port {

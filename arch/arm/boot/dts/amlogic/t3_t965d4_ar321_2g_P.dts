@@ -1282,7 +1282,7 @@
 
 		/* mode 0~4, default:1 */
 		filter_mode = <1>;
-
+		suspend-clk-off = <1>;
 		status = "okay";
 	};
 

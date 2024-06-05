@@ -709,6 +709,48 @@
 			0xfe008280 0xb4>;
 	};
 
+	multi-di {
+		//status = "okay";
+		/***************************************************
+		 * memory: default is 4
+		 *	0:use reserved;
+		 *	1:use cma;
+		 *	2:use cma as reserved
+		 *  4:use codec mem
+		 ***************************************************/
+		flag_cma = <4>;//t5d unsupport 4K,di 1CH need 42M
+		//memory-region = <&di_cma_reserved>;
+		/***************************************************
+		 * clock-range: <min max>
+		 *	default: <334 667>
+		 ***************************************************/
+		//clock-range = <334 667>;
+		/***************************************************
+		 * en_4k: t5d not support 4k
+		 ***************************************************/
+		en_4k = <1>;
+		keep_dec_vf = <2>;
+		po_fmt = <6>;
+		/***************************************************
+		 * post_nub: default is 11 (T7/T3/SC2/S4 new path)
+		 * local 7*4075520 = 28
+		 * post 11*5222400 = 56
+		 ***************************************************/
+		post_nub = <11>;
+		/***************************************************
+		 * 0:not support
+		 * bit 0: for 4k
+		 * bit 1: for 1080p
+		 ***************************************************/
+		alloc_sct = <1>;
+		/***************************************************
+		 * hf: default is 0 (T7/T3/SC2/S4 new path)
+		 * 0:not enable;
+		 * 1: enable
+		 ***************************************************/
+		hf = <0>;
+	};
+
 	aml_dtv_demod {
 		compatible = "amlogic, ddemod-t5w";
 		dev_name = "aml_dtv_demod";
@@ -784,7 +826,7 @@
 	dmx_aucpu: aucpu {
 		compatible = "amlogic, aucpu";
 		dev_name = "aml_aucpu";
-		status = "disabled";
+		status = "okay";
 		interrupts = <0 95 1>;
 		interrupt-names = "aucpu_irq";
 
@@ -807,7 +849,7 @@
 		dmxdev_num = <0x11>;
 
 		tsn_from = "demod";
-
+		ts_clone = <0x0>;
 		ts2_sid = <0x12>;
 		ts2 = "parallel";
 		ts2_control = <0x0>;
@@ -1116,7 +1158,7 @@
 		 *	EARC_RX,    11
 		 */
 		resample_module = <8>;
-
+		suspend-clk-off = <1>;
 		status = "okay";
 	};
 
@@ -1128,7 +1170,7 @@
 		clock-names = "resample_pll", "resample_src", "resample_clk";
 
 		/*this resample is only used for loopback_A.*/
-
+		suspend-clk-off = <1>;
 		status = "okay";
 	};
 
@@ -1225,7 +1267,7 @@
 
 		/* define loopack with pdm mic. */
 		mic-src = <&pdm>;
-
+		suspend-clk-off = <1>;
 		status = "okay";
 	};
 
@@ -1280,7 +1322,7 @@
 		datalb_chmask = <0x3>;
 		/* config which data pin as loopback */
 		datalb-lane-mask-in = <1 0 0 0>;
-
+		suspend-clk-off = <1>;
 		status = "disabled";
 	};
 }; /* end of audiobus */
@@ -1373,7 +1415,7 @@
 
 /* SD card */
 &sd_emmc_b {
-	status = "okay";
+	status = "disabled";//dvbci use sdcard io, if need use sd,black mask dvbci
 	pinctrl-0 = <&sd_all_pins>;
 	pinctrl-1 = <&sd_1bit_pins>;
 	pinctrl-2 = <&sd_clk_gate_pins>;
@@ -1386,13 +1428,13 @@
 //	sd-uhs-sdr25;
 //	sd-uhs-sdr50;
 //	sd_uhs-sdr104;
-	max-frequency = <200000000>;
+	max-frequency = <50000000>;
 
 	disable-wp;
 	non-removable;
 //	amlogic,dram-access-quirk;
 
-	cd-gpios = <&gpio GPIOC_10 GPIO_ACTIVE_HIGH>;
+//	cd-gpios = <&gpio GPIOC_10 GPIO_ACTIVE_HIGH>;
 //	dat1-gpios = <&gpio GPIOC_1 GPIO_ACTIVE_HIGH>;
 	//vmmc-supply = <&vddao_3v3>;
 	//vqmmc-supply = <&emmc_1v8>;
@@ -1400,14 +1442,12 @@
 
 &sd_emmc_c {
 	status = "okay";
-	pinctrl-names = "default", "clk-gate";
-	pinctrl-0 = <&emmc_clk_cmd_pins>;
-	pinctrl-1 = <&emmc_conf_pull_up &emmc_conf_pull_done>;
-	pinctrl-2 = <&emmc_pins_sleep>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&emmc_pins>, <&emmc_ds_pins>;
 
 	bus-width = <8>;
 	cap-mmc-highspeed;
-	//mmc-ddr-1_8v;
+	mmc-ddr-1_8v;
 	mmc-hs200-1_8v;
 	mmc-hs400-1_8v;
 	max-frequency = <200000000>;

@@ -1137,7 +1137,7 @@
 		/*this resample is only used for loopback_A.*/
 		capture_sample_rate = <16000>;
 
-		status = "okay";
+		status = "disabled";
 	};
 
 	vad:vad {
@@ -1203,7 +1203,7 @@
 		 * 4: pdmin;
 		 */
 		datain_src = <4>;
-		datain_chnum = <4>;
+		datain_chnum = <0>;
 		datain_chmask = <0xf>;
 		/* config which data pin for loopback */
 		datain-lane-mask-in = <1 0 1 0>;

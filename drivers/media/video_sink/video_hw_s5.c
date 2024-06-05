@@ -12814,6 +12814,8 @@ int _video_hw_init_s5(void)
 		WRITE_VCBUS_REG(S5_VPU_WRARB_MODE_L2C1, 0x660000);
 		/* set axi write0 qos default */
 		WRITE_VCBUS_REG(VPU_AXI_QOS_WR0, 0xfb73fedc);
+		WRITE_VCBUS_REG_BITS(0x194, 0, 4, 2);
+		WRITE_VCBUS_REG_BITS(0x27c3, 0, 0, 2);
 	}
 	save_vd_pps_reg();
 	return 0;

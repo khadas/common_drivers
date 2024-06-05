@@ -1711,6 +1711,7 @@ struct aml_urb_priv {
  * Initial allocated size of the ERST, in number of entries */
 #if IS_ENABLED(CONFIG_AMLOGIC_COMMON_USB)
 #define	AML_ERST_NUM_SEGS	10
+#define	AML_HOST11_ERST_NUM_SEGS	32
 #endif
 #define	ERST_NUM_SEGS	1
 /* Poll every 60 seconds */

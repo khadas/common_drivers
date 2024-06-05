@@ -2744,7 +2744,10 @@ int aml_xhci_mem_init(struct aml_xhci_hcd *xhci, gfp_t flags)
 	 */
 	aml_xhci_dbg_trace(xhci, trace_aml_xhci_dbg_init, "// Allocating event ring");
 #if IS_ENABLED(CONFIG_AMLOGIC_COMMON_USB)
-	if (xhci->meson_quirks & XHCI_CRG_HOST_008)
+	if (xhci->meson_quirks & XHCI_CRG_HOST_011)
+		xhci->event_ring = aml_xhci_ring_alloc(xhci, AML_HOST11_ERST_NUM_SEGS, 1,
+							TYPE_EVENT, 0, flags);
+	else if (xhci->meson_quirks & XHCI_CRG_HOST_008)
 		xhci->event_ring = aml_xhci_ring_alloc(xhci, AML_ERST_NUM_SEGS, 1, TYPE_EVENT,
 							0, flags);
 	else
@@ -2768,10 +2771,12 @@ int aml_xhci_mem_init(struct aml_xhci_hcd *xhci, gfp_t flags)
 	val = readl(&xhci->ir_set->erst_size);
 	val &= ERST_SIZE_MASK;
 #if IS_ENABLED(CONFIG_AMLOGIC_COMMON_USB)
-		if (xhci->meson_quirks & XHCI_CRG_HOST_008)
-			val |= AML_ERST_NUM_SEGS;
-		else
-			val |= ERST_NUM_SEGS;
+	if (xhci->meson_quirks & XHCI_CRG_HOST_011)
+		val |= AML_HOST11_ERST_NUM_SEGS;
+	else if (xhci->meson_quirks & XHCI_CRG_HOST_008)
+		val |= AML_ERST_NUM_SEGS;
+	else
+		val |= ERST_NUM_SEGS;
 #else
 		val |= ERST_NUM_SEGS;
 #endif

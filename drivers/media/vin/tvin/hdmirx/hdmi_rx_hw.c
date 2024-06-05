@@ -4776,6 +4776,8 @@ void rx_aud_pll_ctl(bool en, u8 port)
 				/* use mpll */
 				tmp = 0;
 				tmp |= 2 << 2; /* 0:tmds_clk 1:ref_clk 2:mpll_clk */
+				if (rx[port].phy.pll_bw == PLL_BW_1)
+					tmp |= 7 << 9;
 				wr_reg_ana_ctl(ANACTL_AUD_PLL_CNTL2, tmp);
 				/* cntl3 2:0 000=1*cts 001=2*cts 010=4*cts 011=8*cts */
 				wr_reg_ana_ctl(ANACTL_AUD_PLL_CNTL3,

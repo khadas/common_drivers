@@ -183,7 +183,7 @@ void t5m_720p_pll_cfg(void)
 	usleep_range(10, 20);
 	hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05305003);
 	usleep_range(10, 20);
-	hdmirx_wr_amlphy(T5M_RG_RX20PLL_1, 0x61401236);
+	hdmirx_wr_amlphy(T5M_RG_RX20PLL_1, 0x31401236);
 	usleep_range(10, 20);
 	hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05305007);
 	usleep_range(10, 20);

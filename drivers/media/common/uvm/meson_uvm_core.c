@@ -108,6 +108,11 @@ static struct sg_table
 			sgt = ua->sgt[1];
 	}
 
+	if (ua->flags & BIT(UVM_FBC_DEC) && ua->sgt[1]) {
+		UVM_PRINTK(UVM_DBG, "surfacetexture 1:1 temporary path\n");
+		sgt = ua->sgt[1];
+	}
+
 	if (!sgt) {
 		UVM_PRINTK(UVM_ERROR, "meson_uvm: null sgt.\n");
 		return ERR_PTR(-ENOMEM);

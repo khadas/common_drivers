@@ -67,8 +67,8 @@
 //2024.02.21 fix t3x hbr audio clk not correct issue
 //2024.03.04 fix repeat issue
 //2024.04.24 remove esd hpd
-
-#define RX_VER0 "ver.2024/04/24"
+//2024.07.04 optimize pcs reset flow
+#define RX_VER0 "ver.2024/07/04"
 
 
 /*print type*/

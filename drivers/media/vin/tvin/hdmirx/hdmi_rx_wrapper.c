@@ -5258,7 +5258,6 @@ void rx_main_state_machine(void)
 		rx[port].var.sig_unstable_cnt = 0;
 		rx[port].var.sig_stable_err_cnt = 0;
 		rx[port].var.clk_chg_cnt = 0;
-		reset_pcs(port);
 		rx_pkt_initial(port);
 		rx[port].state = FSM_SIG_HOLD;
 		break;

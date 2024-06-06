@@ -286,7 +286,7 @@ static bool meson_hdmitx_test_color_attr(struct hdmitx_common *common,
 
 static int meson_hdmitx_decide_color_attr
 	(struct hdmitx_common *common, struct am_meson_crtc_state *crtc_state,
-	struct hdmitx_color_attr *attr)
+	struct hdmitx_color_attr *attr, u64 sequence_id)
 {
 	struct hdmitx_common_state comm_state;
 	char *outputmode = crtc_state->base.adjusted_mode.name;
@@ -304,6 +304,7 @@ static int meson_hdmitx_decide_color_attr
 		if (attr_list->colorformat == HDMI_COLORSPACE_RESERVED6)
 			break;
 		memset(&comm_state, 0, sizeof(comm_state));
+		comm_state.state_sequence_id = sequence_id;
 		build_hdmitx_attr_str(attr_str,
 			attr_list->colorformat, attr_list->bitdepth);
 		if (!hdmitx_common_validate_mode_locked(common, &comm_state, outputmode,
@@ -1624,7 +1625,8 @@ void meson_hdmitx_encoder_atomic_mode_set(struct drm_encoder *encoder,
 		}
 
 		if (update_attr) {
-			meson_hdmitx_decide_color_attr(tx_comm, meson_crtc_state, attr);
+			meson_hdmitx_decide_color_attr(tx_comm, meson_crtc_state,
+				attr, sequence_id);
 			hdmitx_state->update = true;
 		}
 	}
@@ -1777,6 +1779,7 @@ static int meson_hdmitx_encoder_atomic_check(struct drm_encoder *encoder,
 	struct drm_display_mode *adj_mode = &crtc_state->adjusted_mode;
 	char *modename = adj_mode->name;
 	struct hdmitx_common *common = am_hdmi_info.hdmitx_dev->hdmitx_common;
+	u64 sequence_id = hdmitx_state->hcs.state_sequence_id;
 	int ret = 0;
 	bool do_valid = true;
 	char attr_str[HDMITX_ATTR_LEN_MAX];
@@ -1809,7 +1812,8 @@ static int meson_hdmitx_encoder_atomic_check(struct drm_encoder *encoder,
 
 	/*The recovery mode not have composer to set attr*/
 	if (!meson_crtc_state->uboot_mode_init && am_hdmi_info.recovery_mode)
-		meson_hdmitx_decide_color_attr(common, meson_crtc_state, attr);
+		meson_hdmitx_decide_color_attr(common, meson_crtc_state,
+						 attr, sequence_id);
 
 	build_hdmitx_attr_str(attr_str, attr->colorformat, attr->bitdepth);
 

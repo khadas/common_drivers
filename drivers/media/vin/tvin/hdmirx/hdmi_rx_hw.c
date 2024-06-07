@@ -749,7 +749,6 @@ void hdmirx_wr_bits_amlphy_t3x(u32 addr, u32 mask, u32 value, u8 port)
 		mask, value), port);
 }
 
-/* for T7 */
 u8 hdmirx_rd_cor(u32 addr, u8 port)
 {
 	ulong flags;
@@ -760,9 +759,12 @@ u8 hdmirx_rd_cor(u32 addr, u8 port)
 	if (dbg_port)
 		port = dbg_port - 1;
 
-	/* addr bit[8:15] is 0x1d or 0x1e need write twice */
-	need_wr_twice = ((((addr >> 8) & 0xff) == 0x1d) ||
-		(((addr >> 8) & 0xff) == 0x1e));
+	/* T7/T3 addr bit[8:15] is 0x1d or 0x1e need write twice */
+	if (rx_info.chip_id == CHIP_ID_T7 ||
+		rx_info.chip_id == CHIP_ID_T3) {
+		need_wr_twice = ((((addr >> 8) & 0xff) == 0x1d) ||
+			(((addr >> 8) & 0xff) == 0x1e));
+	}
 	if (rx_info.chip_id == CHIP_ID_TXHD2)
 		dev_offset = rx_reg_maps[MAP_ADDR_MODULE_COR].phy_addr;
 	else
@@ -812,8 +814,11 @@ void hdmirx_wr_cor(u32 addr, u8 data, u8 port)
 	if (dbg_port)
 		port = dbg_port - 1;
 	/* addr bit[8:15] is 0x1d or 0x1e need write twice */
-	need_wr_twice = ((((addr >> 8) & 0xff) == 0x1d) ||
-		(((addr >> 8) & 0xff) == 0x1e));
+	if (rx_info.chip_id == CHIP_ID_T7 ||
+		rx_info.chip_id == CHIP_ID_T3) {
+		need_wr_twice = ((((addr >> 8) & 0xff) == 0x1d) ||
+			(((addr >> 8) & 0xff) == 0x1e));
+	}
 	if (rx_info.chip_id == CHIP_ID_TXHD2)
 		dev_offset = rx_reg_maps[MAP_ADDR_MODULE_COR].phy_addr;
 	else

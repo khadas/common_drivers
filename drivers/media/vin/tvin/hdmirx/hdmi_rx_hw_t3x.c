@@ -1615,7 +1615,7 @@ void rx_21_frl_phy_cfg(u8 port)
 	u32 data32 = 0;
 	u32 idx = rx[port].phy.phy_bw;
 
-	if (rx_info.aml_phy_21.pre_int) {
+	if (rx_info.aml_phy_21.pre_int_21[port]) {
 		if (rx_info.aml_phy_21.ofst_en) {
 			aml_phy_offset_cal_t3x_21(port);
 			usleep_range(1000, 1100);
@@ -1645,7 +1645,7 @@ void rx_21_frl_phy_cfg(u8 port)
 		hdmirx_wr_amlphy_t3x(T3X_HDMIRX21PHY_DCHD_EQ,  phy_dchd_t3x_21[idx][1], port);
 		hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX21PHY_MISC0, _BIT(22), 0x1, port);
 		if (!rx_info.aml_phy_21.pre_int_en)
-			rx_info.aml_phy_21.pre_int = 0;
+			rx_info.aml_phy_21.pre_int_21[port] = 0;
 	}
 	//rterm_en(dcha_misc0[22]) = 0x1
 	hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX21PHY_DCHD_CDR, CDR_FR_EN, 0x0, port);
@@ -2791,9 +2791,9 @@ void aml_phy_init_t3x_20(u8 port)
 void aml_phy_init_t3x_21(u8 port)
 {
 	rx_21_frl_phy_cfg(port);
+	aml_pll_bw_cfg_t3x_21(rx[port].var.frl_rate, port);
 	if (rx[port].state <= FSM_FRL_FLT_READY || rx[port].state == FSM_WAIT_CLK_STABLE)
 		return;
-	aml_pll_bw_cfg_t3x_21(rx[port].var.frl_rate, port);
 	rx_21_frl_pll_cfg(rx[port].var.frl_rate, port);
 	rx_21_eq_cfg(rx[port].var.frl_rate, port);
 	if (!fpll_sel)

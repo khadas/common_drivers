@@ -3145,6 +3145,8 @@ static void rx_phy_resume(void)
 	} else {
 		hdmirx_phy_init(E_PORT0);
 		hdmirx_phy_init(E_PORT1);
+		rx_info.aml_phy_21.pre_int_21[E_PORT2] = 1;
+		rx_info.aml_phy_21.pre_int_21[E_PORT3] = 1;
 		hdmirx_phy_init(E_PORT2);
 		hdmirx_phy_init(E_PORT3);
 	}

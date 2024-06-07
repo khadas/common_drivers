@@ -421,6 +421,7 @@ struct rx_aml_phy {
 	int cdr_mode;
 	int pre_int;
 	int pre_int_en;
+	int pre_int_21[4];
 	int phy_bwth;
 	int alirst_en;
 	int tap1_byp;

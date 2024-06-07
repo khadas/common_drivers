@@ -731,6 +731,11 @@ static void am_meson_load_logo(struct drm_device *dev,
 		break;
 	}
 
+	if (connector_type) {
+		if (strlen(connector_type) == 0 || strstr(connector_type, "NULL"))
+			connector_type = NULL;
+	}
+
 	meson_fb = to_am_meson_fb(fb);
 	/*init all connector and found matched uboot mode.*/
 	found = 0;

@@ -5198,11 +5198,17 @@ void rx_main_state_machine(void)
 					rx[port].err_rec_mode = ERR_REC_HPD_RST;
 				}
 			} else if (rx[port].err_rec_mode == ERR_REC_HPD_RST &&
-				port != rx_info.arc_port && rx[port].ddc_filter_en) {
-				rx_set_cur_hpd(0, 2, port);
-				rx[port].clk.cable_clk = 0;
-				rx[port].state = FSM_INIT;
-				rx[port].err_rec_mode = ERR_REC_EQ_RETRY;
+				rx[port].ddc_filter_en) {
+				if (port == rx_info.arc_port) {
+					rx[port].state = FSM_WAIT_CLK_STABLE;
+				} else {
+					rx_set_cur_hpd(0, 2, port);
+					rx[port].clk.cable_clk = 0;
+					rx[port].state = FSM_INIT;
+					rx[port].err_rec_mode = ERR_REC_EQ_RETRY;
+				}
+			} else {
+				rx[port].state = FSM_WAIT_CLK_STABLE;
 			}
 			rx_set_eq_run_state(E_EQ_START, port);
 		}

@@ -1358,6 +1358,29 @@ static int get_connector0_type(char *str)
 
 __setup("connector0_type=", get_connector0_type);
 
+static int get_connector_type_to_compat(char *str)
+{
+	char *ret = NULL;
+
+	if (!str)
+		return 0;
+	if (connector0_type[0]) {
+		VOUTPR("bypass for connector0_type(%s) already set\n", connector0_type);
+		return 0;
+	}
+
+	snprintf(connector0_type, VMODE_NAME_LEN_MAX - 1, "%s", str);
+
+	ret = strstr(connector0_type, "_");
+	if (ret)
+		connector0_type[ret - connector0_type] = '-';
+
+	VOUTPR("connector_type(compact): %s\n", connector0_type);
+	return 0;
+}
+
+__setup("connector_type=", get_connector_type_to_compat);
+
 /*TODO: drm to disable display/mode sysfs set.*/
 void disable_vout_mode_set_sysfs(void)
 {

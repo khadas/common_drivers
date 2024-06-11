@@ -3658,6 +3658,20 @@ enum hdr_process_sel hdr_func(enum hdr_module_sel module_sel,
 			oft_pre_out = bypass_pre;
 			oft_post_out = bypass_pos;
 		}
+
+		if (chip_type_id == chip_t3x &&
+			(module_sel == OSD1_HDR ||
+			module_sel == OSD2_HDR ||
+			module_sel == OSD3_HDR) &&
+			(hdr_process_select & HDR_BYPASS)) {
+			pr_csc(128, "%s: module_sel = %d HDR_BYPASS ic(%d) bypass matrix in.\n",
+				__func__, module_sel, chip_type_id);
+			coeff_in = bypass_coeff;
+			oft_pre_in = bypass_pre;
+			oft_post_in = bypass_pos;
+			oft_pre_out = bypass_pre;
+			oft_post_out = bypass_pos;
+		}
 	} else if ((module_sel == OSD1_HDR ||
 		    module_sel == OSD2_HDR ||
 		    module_sel == OSD3_HDR) &&

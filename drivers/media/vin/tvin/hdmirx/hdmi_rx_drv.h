@@ -185,6 +185,8 @@
 #define EDID_DETECT_PORT  7
 #endif
 
+#define PACKET_TYPE_MAX 256
+
 enum chip_id_e {
 	CHIP_ID_NONE,
 	CHIP_ID_GXTVBB,
@@ -1009,6 +1011,7 @@ struct rx_s {
 	bool spec_vendor_id;
 	u32 irq_err_cnt;
 	u32 de_err_cnt;
+	int pkt_mini_interval[PACKET_TYPE_MAX]; //unit:frame
 };
 
 struct reg_map {

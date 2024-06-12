@@ -101,6 +101,8 @@ void rx_pkt_debug(void)
 	u32 data32;
 	u8 i;
 
+	if (rx_info.chip_id >= CHIP_ID_T7)
+		return;
 	for (i = 0; i < rx_info.port_num; i++)
 		memset(&rxpktsts[i], 0, sizeof(struct rxpkt_st));
 
@@ -751,7 +753,7 @@ void rx_pkt_initial(u8 port)
 	}
 	emp_info_p->emp_pkt_cnt = 0;
 	memset(&rx[i].vtem_info, 0, sizeof(rx[port].vtem_info));
-	memset(&rxpktsts[i], 0, sizeof(struct rxpkt_st));
+	//memset(&rxpktsts[i], 0, sizeof(struct rxpkt_st));
 	while (j < VSI_TYPE_MAX)
 		memset(&rx_pkt[i].multi_vs_info[j++], 0, sizeof(struct pd_infoframe_s));
 	memset(&rx_pkt[i].avi_info, 0, sizeof(struct pd_infoframe_s));
@@ -1914,6 +1916,47 @@ bool is_new_visf_pkt_rcv(union infoframe_u *pktdata, u8 port)
 	return false;
 }
 
+void rx_reset_pkt_cnt(enum pkt_type_e type, u8 port)
+{
+	switch (type) {
+	case PKT_TYPE_GCP:
+		rx[port].pkt_mini_interval[PKT_TYPE_GCP] = 1;
+		break;
+	case PKT_TYPE_INFOFRAME_MPEGSRC:
+		rx[port].pkt_mini_interval[PKT_TYPE_INFOFRAME_MPEGSRC] = 1;
+		break;
+	case PKT_TYPE_INFOFRAME_NVBI:
+		rx[port].pkt_mini_interval[PKT_TYPE_INFOFRAME_NVBI] = 1;
+		break;
+	case PKT_TYPE_AUD_META:
+		rx[port].pkt_mini_interval[PKT_TYPE_AUD_META] = 2;
+		break;
+	case PKT_TYPE_INFOFRAME_VSI:
+		rx[port].pkt_mini_interval[PKT_TYPE_INFOFRAME_VSI] = 2;
+		break;
+	case PKT_TYPE_INFOFRAME_AVI:
+		rx[port].pkt_mini_interval[PKT_TYPE_INFOFRAME_AVI] = 2;
+		break;
+	case PKT_TYPE_INFOFRAME_AUD:
+		rx[port].pkt_mini_interval[PKT_TYPE_INFOFRAME_AUD] = 2;
+		break;
+	case PKT_TYPE_INFOFRAME_DRM:
+		rx[port].pkt_mini_interval[PKT_TYPE_INFOFRAME_DRM] = 2;
+		break;
+	default:
+		rx[port].pkt_mini_interval[type] = 0;
+		break;
+	}
+}
+
+void hdmirx_pkt_var_init(u8 port)
+{
+	u8 i;
+
+	for (i = 0; i < PKT_TYPE_UNKNOWN; i++)
+		rx_reset_pkt_cnt(i, port);
+}
+
 int rx_pkt_fifodecode(struct packet_info_s *prx,
 		      union infoframe_u *pktdata,
 		      struct rxpkt_st *pktsts, u8 port)
@@ -2266,8 +2309,6 @@ int rx_pkt_handler(enum pkt_decode_type pkt_int_src, u8 port)
 		pkt_num = emp_info_p->emp_pkt_cnt;
 		if (log_level & PACKET_LOG && rx[port].new_emp_pkt)
 			rx_pr("vid_idx:0x%x, emp pkt=%d\n", vid_idx, pkt_num);
-		rx[port].vs_info_details.vsi_state = 0x0;
-		rx_pkt_buffclear(PKT_TYPE_INFOFRAME_VSI, port);
 		while (pkt_num) {
 			pkt_num--;
 			/*read one pkt from fifo*/

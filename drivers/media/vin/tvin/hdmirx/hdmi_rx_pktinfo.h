@@ -1089,4 +1089,6 @@ void dump_dsc_pps_info(u8 port);
 struct emp_info_s *rx_get_emp_info(u8 port);
 bool rx_is_xbox_dev(u8 port);
 bool rx_chk_drm_valid(u8 port);
+void hdmirx_pkt_var_init(u8 port);
+void rx_reset_pkt_cnt(enum pkt_type_e type, u8 port);
 #endif

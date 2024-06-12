@@ -503,6 +503,8 @@ void hdmirx_init_params(u8 port)
 	hdmirx_fsm_var_init();
 	/* for phy variable */
 	hdmirx_phy_var_init();
+	/* for pkt var init */
+	hdmirx_pkt_var_init(port);
 }
 
 void rx_hpd_to_esm_handle(struct work_struct *work)

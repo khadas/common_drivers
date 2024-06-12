@@ -1559,6 +1559,7 @@ void hdmirx_get_hdr_info(struct tvin_sig_property_s *prop, u8 port)
 
 	drm_pkt = (struct drm_infoframe_st *)&rx_pkt[port].drm_info;
 	if (rx_pkt_chk_attach_drm(port) && rx_chk_drm_valid(port)) {
+		rx_reset_pkt_cnt(PKT_TYPE_INFOFRAME_DRM, port);
 		prop->hdr_info.hdr_data.length = drm_pkt->length;
 		prop->hdr_info.hdr_data.eotf = drm_pkt->des_u.tp1.eotf;
 		prop->hdr_info.hdr_data.metadata_id =
@@ -1594,7 +1595,8 @@ void hdmirx_get_hdr_info(struct tvin_sig_property_s *prop, u8 port)
 			   &drm_pkt->des_u.payload, 28);
 		prop->hdr_info.hdr_state = HDR_STATE_GET;
 	} else {
-		prop->hdr_info.hdr_state = HDR_STATE_NULL;
+		if (--rx[port].pkt_mini_interval[PKT_TYPE_INFOFRAME_DRM] <= 0)
+			prop->hdr_info.hdr_state = HDR_STATE_NULL;
 	}
 }
 

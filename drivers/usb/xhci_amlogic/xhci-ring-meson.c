@@ -2273,9 +2273,9 @@ static int finish_td(struct aml_xhci_hcd *xhci, struct aml_xhci_virt_ep *ep,
 			wmb();
 			dma_unmap_single(urb->dev->bus->controller,
 				urb_priv->tmp_dma, 4096, DMA_FROM_DEVICE);
-			//kfree(urb_priv->tmp_buf);
-		urb_priv->tmp_buf = NULL;
-		urb_priv->tmp_dma = 0;
+			kfree(urb_priv->tmp_buf);
+			urb_priv->tmp_buf = NULL;
+			urb_priv->tmp_dma = 0;
 		}
 	}
 #endif
@@ -3948,7 +3948,8 @@ out_host010:
 		/* TRB buffer should not cross 64KB boundaries */
 		trb_buff_len = TRB_BUFF_LEN_UP_TO_BOUNDARY(addr);
 #if IS_ENABLED(CONFIG_AMLOGIC_COMMON_USB)
-	if (xhci->meson_quirks & XHCI_CRG_HOST_010)
+	if ((xhci->meson_quirks & XHCI_CRG_HOST_010) &&
+		urb->dev->speed >= USB_SPEED_SUPER)
 		trb_buff_len = TRB_MAX_BUFF_SIZE;
 #endif
 		trb_buff_len = min_t(unsigned int, trb_buff_len, block_len);
@@ -5082,6 +5083,7 @@ void xhci_stop_endpoint_command_timer(struct timer_list *t)
 
 	command = aml_xhci_alloc_command(xhci, false, GFP_ATOMIC);
 	if (!command) {
+		spin_unlock_irqrestore(&xhci->lock, flags);
 		aml_xhci_info(xhci, "not stop ep=%d, slot=%d\n", ep->ep_index, ep->slot_id);
 		return;
 	}

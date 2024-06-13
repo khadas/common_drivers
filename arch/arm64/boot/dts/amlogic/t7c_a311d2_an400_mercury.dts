@@ -2003,6 +2003,7 @@
 
 &amhdmitx {
 	status = "okay";
+	enc_idx = <2>;
 };
 
 &aocec {

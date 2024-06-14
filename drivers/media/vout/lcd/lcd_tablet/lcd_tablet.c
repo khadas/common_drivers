@@ -603,13 +603,9 @@ static int lcd_set_current_vmode(enum vmode_e mode, void *data)
 	mutex_unlock(&lcd_vout_mutex);
 
 	lcd_vrr_dev_register(pdrv);
-	if (mode & VMODE_INIT_BIT_MASK) {
+	if (mode & VMODE_INIT_BIT_MASK) { // first boot: set clktree
 		lcd_clk_gate_switch(pdrv, 1);
-	} else if ((pdrv->status & LCD_STATUS_ENCL_ON) == 0) {
-		//workaround for drm resume
-		aml_lcd_notifier_call_chain(LCD_EVENT_PREPARE, (void *)pdrv);
-		pdrv->status |= LCD_STATUS_PREPARE;
-	} else {
+	} else if (pdrv->status & LCD_STATUS_ENCL_ON) { // mode change by vout
 		if (pdrv->vmode_switch) {
 			lcd_vmode_switch(pdrv);
 		} else {
@@ -617,6 +613,10 @@ static int lcd_set_current_vmode(enum vmode_e mode, void *data)
 			lcd_tablet_driver_change(pdrv);
 			mutex_unlock(&lcd_vout_mutex);
 		}
+	} else if (!(pdrv->status & LCD_STATUS_ENCL_ON)) {
+		// mode change by drm (disable + mode_change)
+		aml_lcd_notifier_call_chain(LCD_EVENT_ENABLE, (void *)pdrv);
+		pdrv->status |= LCD_EVENT_ENABLE;
 	}
 
 	/* must update vrr dev after driver change for panel parameters update */

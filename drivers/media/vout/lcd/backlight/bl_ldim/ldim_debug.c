@@ -634,6 +634,13 @@ static ssize_t ldim_attr_store(struct class *cla, struct class_attribute *attr,
 			ldim_drv->spiout_mode = (unsigned char)val1;
 		}
 		pr_info("spiout_mode = %d\n", ldim_drv->spiout_mode);
+	} else if (!strcmp(parm[0], "valid_flag")) {
+		if (parm[1]) {
+			if (kstrtoul(parm[1], 10, &val1) < 0)
+				goto ldim_attr_store_err;
+			ldim_drv->valid_flag = (unsigned char)val1;
+		}
+		pr_info("valid_flag = %d\n", ldim_drv->valid_flag);
 	} else if (!strcmp(parm[0], "fw")) {
 		if (fw->fw_alg_para_print)
 			fw->fw_alg_para_print(fw);

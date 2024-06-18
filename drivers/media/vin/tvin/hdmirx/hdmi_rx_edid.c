@@ -16,6 +16,7 @@
 #include <linux/platform_device.h>
 #include <linux/mutex.h>
 #include <linux/cdev.h>
+
 /* Local include */
 #include "hdmi_rx_repeater.h"
 #include "hdmi_rx_drv.h"
@@ -39,6 +40,9 @@ u32 tx_hdr_priority;
 unsigned char tx_vic_list[31] = { 0 };
 unsigned char def_vic_list[31] = { 0 };
 static unsigned char edid_tx[EDID_SIZE];
+//hdmi repeater cert item HF2-31
+//if no intersection between 420vdb, it should remove dc_36bit_420 dc_30bit_420 in vshf
+static bool vshf_dc_30_36_420_support = true;
 #endif
 
 u8 need_support_atmos_bit = 0xff;
@@ -3196,6 +3200,52 @@ unsigned char rx_edid_total_free_size(unsigned char *cur_edid,
 	return (size - dtd_block_offset - 1);
 }
 
+/* extract data block with certain tag from block buf */
+u8 *data_blk_extract(u8 *p_buf, u16 tagid)
+{
+	unsigned int index = 0;
+	u8 tag_length;
+	u16 tag_code;
+
+	if (!p_buf)
+		return NULL;
+	//TODO: for 512byte edid
+	while (index < EDID_BLK_SIZE) {
+		/* Get the tag and length */
+		tag_code = rx_get_tag_code(p_buf + index);
+		tag_length = BLK_LENGTH(p_buf[index]);
+		if (tagid == tag_code)
+			return &p_buf[index];
+		index += tag_length + 1;
+	}
+	return NULL;
+}
+
+/* extract data block with certain tag from EDID */
+u8 *edid_tag_extract(u8 *p_edid, u16 tagid)
+{
+	unsigned int index = EDID_EXT_BLK_OFF;
+	u8 tag_length;
+	u16 tag_code;
+	unsigned char max_offset;
+
+	if (!p_edid)
+		return NULL;
+	 /* check if a cea extension block */
+	if (p_edid[126]) {
+		index += 4;
+		max_offset = p_edid[130] + EDID_EXT_BLK_OFF;
+		while (index < max_offset) {
+			tag_code = rx_get_tag_code(p_edid + index);
+			tag_length = BLK_LENGTH(p_edid[index]);
+			if (tag_code == tagid)
+				return &p_edid[index];
+			index += tag_length + 1;
+		}
+	}
+	return NULL;
+}
+
 bool rx_set_earc_cap_ds(unsigned char *data, unsigned int len)
 {
 	if (rx_info.chip_id == CHIP_ID_NONE)
@@ -3270,27 +3320,6 @@ bool rx_update_tx_edid_with_audio_block(unsigned char *edid_data, unsigned char 
 }
 EXPORT_SYMBOL(rx_update_tx_edid_with_audio_block);
 #endif
-
-/* extract data block with certain tag from block buf */
-u8 *data_blk_extract(u8 *p_buf, u16 tagid)
-{
-	unsigned int index = 0;
-	u8 tag_length;
-	u16 tag_code;
-
-	if (!p_buf)
-		return NULL;
-	//TODO: for 512byte edid
-	while (index < EDID_BLK_SIZE) {
-		/* Get the tag and length */
-		tag_code = rx_get_tag_code(p_buf + index);
-		tag_length = BLK_LENGTH(p_buf[index]);
-		if (tagid == tag_code)
-			return &p_buf[index];
-		index += tag_length + 1;
-	}
-	return NULL;
-}
 
 bool get_edid_support(u8 port, enum edid_support_e func)
 {
@@ -3788,6 +3817,11 @@ void rpt_edid_hf_vs_db_extraction(unsigned char *p_edid)
 		hf_vsdb_tx.dc_36bit_420 & hf_vsdb_def.dc_36bit_420;
 	hf_vsdb_dest.dc_30bit_420 =
 		hf_vsdb_tx.dc_30bit_420 & hf_vsdb_def.dc_30bit_420;
+	if (!vshf_dc_30_36_420_support) {
+		hf_vsdb_dest.dc_36bit_420 = 0;
+		hf_vsdb_dest.dc_30bit_420 = 0;
+		vshf_dc_30_36_420_support = true;
+	}
 	hf_vsdb_dest.qms_tfr_max = hf_vsdb_tx.qms_tfr_max & hf_vsdb_def.qms_tfr_max;
 	hf_vsdb_dest.qms = hf_vsdb_tx.qms & hf_vsdb_def.qms;
 	hf_vsdb_dest.m_delta = hf_vsdb_tx.m_delta & hf_vsdb_def.m_delta;
@@ -3850,11 +3884,69 @@ _end:
 	p_edid[EDID_BLOCK1_OFFSET + EDID_DESCRIP_OFFSET] -= tag_len_def - hf_vsdb_dest.len;
 }
 
+//hdmi repeater cert phyaddr test rule
+//sink phyaddr  --- source phyaddr(Repeater_PA_Increment)
+//	1.0.0.0   --- 1.M.0.0
+//	2.0.0.0   --- 2.M.0.0
+//	2.3.0.0   --- 2.3.M.0
+//	3.4.5.0   --- 3.4.5.M
+//	1.1.1.1   --- F.F.F.F
+//	F.F.F.F   --- F.F.F.F
+static void edid_secondaryphyaddr(unsigned char *p_edid_dest, unsigned char *p_edid_src)
+{
+	u8 src_vsdb_offset = 0;
+	u8 def_vsdb_offset = 0;
+	struct vsdb_s vsdb_src, vsdb_def, vsdb_dest;
+	u8 *p_vsdb_src = (u8 *)&vsdb_src;
+	u8 *p_vsdb_def = (u8 *)&vsdb_def;
+
+	src_vsdb_offset = rx_get_cea_tag_offset(p_edid_src, VENDOR_TAG);
+	if (!src_vsdb_offset)
+		rx_pr("src_vsdb_offset error\n");
+	def_vsdb_offset = rx_get_cea_tag_offset(p_edid_dest, VENDOR_TAG);
+	if (!def_vsdb_offset)
+		rx_pr("def_vsdb_offset error\n");
+	memcpy(p_vsdb_src + 4, &p_edid_src[src_vsdb_offset + 4], 2);
+	memcpy(p_vsdb_def + 4, &p_edid_dest[def_vsdb_offset + 4], 2);
+	if (vsdb_src.a == 0) {
+		vsdb_dest.b = vsdb_def.b;
+		vsdb_dest.a = vsdb_def.a;
+		vsdb_dest.d = vsdb_def.d;
+		vsdb_dest.c = vsdb_def.c;
+	} else if (vsdb_src.b == 0) {
+		vsdb_dest.b = vsdb_def.a;
+		vsdb_dest.a = vsdb_src.a;
+		vsdb_dest.d = 0;
+		vsdb_dest.c = 0;
+	} else if (vsdb_src.c == 0) {
+		vsdb_dest.b = vsdb_src.b;
+		vsdb_dest.a = vsdb_src.a;
+		vsdb_dest.d = 0;
+		vsdb_dest.c = vsdb_def.a;
+	} else if (vsdb_src.d == 0) {
+		vsdb_dest.b = vsdb_src.b;
+		vsdb_dest.a = vsdb_src.a;
+		vsdb_dest.d = vsdb_def.a;
+		vsdb_dest.c = vsdb_src.c;
+	} else {
+		vsdb_dest.b = 0xf;
+		vsdb_dest.a = 0xf;
+		vsdb_dest.d = 0xf;
+		vsdb_dest.c = 0xf;
+	}
+	p_vsdb_def = (u8 *)&vsdb_dest;
+	memcpy(&p_edid_dest[def_vsdb_offset + 4], p_vsdb_def + 4, 2);
+	if (log_level & EDID_LOG)
+		rx_pr("dest addr:0x%x 0x%x",
+			p_edid_dest[def_vsdb_offset + 4], p_edid_dest[def_vsdb_offset + 5]);
+}
+
 void rpt_edid_14_vs_db_extraction(unsigned char *p_edid)
 {
 	u8 vsdb_start = 0;
 	u8 tx_vsdb_start = 0;
 	struct vsdb_s vsdb_tx, vsdb_def, vsdb_dest;
+	u8 *p_vsdb_dest = (u8 *)&vsdb_dest;
 	u8 tag_len_tx, tag_len_def, i, j, k;
 	u8 tx_hdmi_vic[4] = {0};
 	u8 def_hdmi_vic[4] = {0};
@@ -3921,9 +4013,15 @@ _end1:
 	memcpy(&vsdb_tx, edid_tx + tx_vsdb_start, tag_len_tx + 1);
 	//TX edid parsing
 	i = 5;
-	if (tag_len_tx <= i) {
+	if (tag_len_tx < i) {
+		if (log_level & EDID_LOG)
+			rx_pr("vsdb length error\n");
+		return;
+	}
+	if (tag_len_tx == i) {
 		if (log_level & EDID_LOG)
 			rx_pr("vsdb only physcal address info\n");
+		edid_secondaryphyaddr(p_edid, edid_tx);
 		return;
 	}
 	i = 8;
@@ -3967,51 +4065,8 @@ _end2:
 	vsdb_dest.ieee_first = vsdb_tx.ieee_first;
 	vsdb_dest.ieee_second = vsdb_tx.ieee_second;
 	vsdb_dest.ieee_third = vsdb_tx.ieee_third;
-	vsdb_dest.b = vsdb_tx.b;
-	vsdb_dest.a = vsdb_tx.a;
-	vsdb_dest.d = vsdb_tx.d;
-	vsdb_dest.c = vsdb_tx.c;
-	if (vsdb_tx.a == 0) {
-		vsdb_dest.b = vsdb_def.b;
-		vsdb_dest.a = vsdb_def.a;
-		vsdb_dest.d = vsdb_def.d;
-		vsdb_dest.c = vsdb_def.c;
-		if (log_level & EDID_LOG)
-			rx_pr("err, use def err %x%x%x%x",
-				  vsdb_def.a, vsdb_def.b, vsdb_def.c, vsdb_def.d);
-	} else if (vsdb_tx.b == 0) {
-		vsdb_dest.b = vsdb_def.a;
-		vsdb_dest.a = vsdb_tx.a;
-		vsdb_dest.d = 0;
-		vsdb_dest.c = 0;
-		if (log_level & EDID_LOG)
-			rx_pr("dest physical address:%x%x%x%x",
-				  vsdb_tx.a, vsdb_tx.b, vsdb_tx.c, vsdb_tx.d);
-	} else if (vsdb_tx.c == 0) {
-		vsdb_dest.b = vsdb_tx.b;
-		vsdb_dest.a = vsdb_tx.a;
-		vsdb_dest.d = 0;
-		vsdb_dest.c = vsdb_def.a;
-		if (log_level & EDID_LOG)
-			rx_pr("dest physical address:%x%x%x%x",
-				  vsdb_tx.a, vsdb_tx.b, vsdb_tx.c, vsdb_tx.d);
-	} else if (vsdb_tx.d == 0) {
-		vsdb_dest.b = vsdb_tx.b;
-		vsdb_dest.a = vsdb_tx.a;
-		vsdb_dest.d = vsdb_def.a;
-		vsdb_dest.c = vsdb_tx.c;
-		if (log_level & EDID_LOG)
-			rx_pr("dest physical address:%x%x%x%x",
-				  vsdb_tx.a, vsdb_tx.b, vsdb_tx.c, vsdb_tx.d);
-	} else {
-		vsdb_dest.b = vsdb_tx.b;
-		vsdb_dest.a = vsdb_tx.a;
-		vsdb_dest.d = vsdb_tx.d;
-		vsdb_dest.c = vsdb_tx.c;
-		if (log_level & EDID_LOG)
-			rx_pr("err, use tx address:%x%x%x%x",
-				  vsdb_def.a, vsdb_def.b, vsdb_def.c, vsdb_def.d);
-	}
+	edid_secondaryphyaddr(p_edid, edid_tx);
+	memcpy(p_vsdb_dest + 4, &p_edid[vsdb_start + 4], 2);
 	if (vsdb_dest.len <= 5)
 		return;
 	vsdb_dest.dvi_dual = vsdb_tx.dvi_dual & vsdb_def.dvi_dual;
@@ -4156,7 +4211,7 @@ _end3:
 	p_edid[EDID_BLOCK1_OFFSET + EDID_DESCRIP_OFFSET] -= tag_len_def - vsdb_dest.len;
 }
 
-void rpt_edid_video_db_extraction(unsigned char *p_edid)
+void rpt_edid_video_db_extraction(unsigned char *p_dest_edid, unsigned char *p_source_edid)
 {
 	u8 vdb_start = 0;
 	u8 tx_vdb_start = 0;
@@ -4166,31 +4221,31 @@ void rpt_edid_video_db_extraction(unsigned char *p_edid)
 	u8 i, j, tag_len_dest = 0;
 	u8 native_cnt = 0;
 
-	if (!p_edid)
+	if (!p_dest_edid)
 		return;
 
-	vdb_start = rx_get_cea_tag_offset(p_edid, VIDEO_TAG);
+	vdb_start = rx_get_cea_tag_offset(p_dest_edid, VIDEO_TAG);
 	if (!vdb_start) {
 		//abnormal condition, only for errordebug
 		rx_pr("unsupported vdb!!\n");
 		return;
 	}
-	tag_len_def = p_edid[vdb_start] & 0x1f;
+	tag_len_def = p_dest_edid[vdb_start] & 0x1f;
 	memset(def_vic_list, 0, 31);
-	memcpy(def_vic_list, p_edid + vdb_start + 1, tag_len_def);
+	memcpy(def_vic_list, p_dest_edid + vdb_start + 1, tag_len_def);
 	for (i = 0; i < tag_len_def; i++) {
 		if (def_vic_list[i] >= 129 && def_vic_list[i] <= 192)
 			def_vic_list[i] = def_vic_list[i] & 0x7f;
 	}
-	tx_vdb_start = rx_get_cea_tag_offset(edid_tx, VIDEO_TAG);
+	tx_vdb_start = rx_get_cea_tag_offset(p_source_edid, VIDEO_TAG);
 	if (!tx_vdb_start) {
 		if (log_level & EDID_LOG)
 			rx_pr("no vdb\n");
 		return;
 	}
-	tag_len_tx = edid_tx[tx_vdb_start] & 0x1f;
+	tag_len_tx = p_source_edid[tx_vdb_start] & 0x1f;
 	memset(tx_vic_list, 0, 31);
-	memcpy(tx_vic_list, edid_tx + tx_vdb_start + 1, tag_len_tx);
+	memcpy(tx_vic_list, p_source_edid + tx_vdb_start + 1, tag_len_tx);
 	for (i = 0; i < tag_len_tx; i++) {
 		if (tx_vic_list[i] >= 129 && tx_vic_list[i] <= 192) {
 			tx_vic_list[i] = tx_vic_list[i] & 0x7f;
@@ -4215,14 +4270,87 @@ void rpt_edid_video_db_extraction(unsigned char *p_edid)
 	}
 	if (log_level & EDID_LOG)
 		rx_pr("vdb_size = %d\n", tag_len_dest);
-	p_edid[vdb_start] = (VIDEO_TAG << 5) + tag_len_dest;
-	memcpy(p_edid + vdb_start + 1, vdb_dest, tag_len_dest);
+	p_dest_edid[vdb_start] = (VIDEO_TAG << 5) + tag_len_dest;
+	memcpy(p_dest_edid + vdb_start + 1, vdb_dest, tag_len_dest);
 	for (i = vdb_start + tag_len_dest + 1; i < 255 - tag_len_def + tag_len_dest; i++)
-		p_edid[i] = p_edid[i + tag_len_def - tag_len_dest];
+		p_dest_edid[i] = p_dest_edid[i + tag_len_def - tag_len_dest];
 	for (; i < 255; i++)
-		p_edid[i] = 0;
+		p_dest_edid[i] = 0;
 	/* dtd offset modify */
-	p_edid[EDID_BLOCK1_OFFSET + EDID_DESCRIP_OFFSET] -= tag_len_def - tag_len_dest;
+	p_dest_edid[EDID_BLOCK1_OFFSET + EDID_DESCRIP_OFFSET] -= tag_len_def - tag_len_dest;
+}
+
+//this function implement single or multi vdb extraction
+//(9-3)hdmi repeater cert center use multi vdb ref edid to test block1 VDB
+void rpt_edid_multi_vdb_extraction(unsigned char *p_dest_edid, unsigned char *p_source_edid)
+{
+	u8 vdb_start = 0;
+	u8 i = 0;
+	u8 p_dest_tmp[EDID_SIZE];
+	u8 p_source_tmp[EDID_SIZE];
+	u8 vdb_dest[128];
+	u8 vdb_size = 0;
+
+	memcpy(p_source_tmp, p_source_edid, EDID_SIZE);
+	while (edid_tag_extract(p_source_tmp, VIDEO_TAG)) {
+		i++;
+		memcpy(p_dest_tmp, p_dest_edid, EDID_SIZE);
+		rpt_edid_video_db_extraction(p_dest_tmp, p_source_tmp);
+		//remove vdb after extract once
+		edid_rm_db_by_tag(p_source_tmp, VIDEO_TAG);
+		if (!edid_tag_extract(p_source_tmp, VIDEO_TAG) && i == 1) {
+			vdb_start = rx_get_cea_tag_offset(p_dest_tmp, VIDEO_TAG);
+			vdb_size = BLK_LENGTH(p_dest_tmp[vdb_start]);
+			memcpy(&vdb_dest[1], &p_dest_tmp[vdb_start + 1], vdb_size);
+//hdmi repeater cert item(9-3 basic format support requirements), test block0 dtd timing
+//modify suggestion from cert center:
+//1.if there is no intersection between dtd resolution,
+//can fill in the intersection resolution of VDB
+//2.we could fill in VIC1(640*480) to dtd,all rx product should support it.
+//we choose solution 2 to pass this item, when VDB not include VIC1 after VDB extraction,
+//it should fill in VIC1 to VDB for match block0 dtd timing(VIC1).
+//if can not pass this item, it should modify block0 dtd from rx edid.bin
+			for (i = 0; i < vdb_size; i++) {
+				if (vdb_dest[1 + i] == HDMI_640x480p60)
+					break;
+			}
+			if (vdb_size == i) {
+				vdb_size += 1;
+				vdb_dest[0] = VIDEO_TAG << 5 | vdb_size;
+				vdb_dest[vdb_size] = HDMI_640x480p60;//add VIC1
+				splice_data_blk_to_edid(p_dest_tmp, &vdb_dest[0], VIDEO_TAG);
+			}
+			memcpy(p_dest_edid, p_dest_tmp, EDID_SIZE);
+			return;
+		}
+		//capture all vdb block
+		vdb_start = rx_get_cea_tag_offset(p_dest_tmp, VIDEO_TAG);
+		memcpy(&vdb_dest[1 + vdb_size], &p_dest_tmp[vdb_start + 1],
+			BLK_LENGTH(p_dest_tmp[vdb_start]));
+		vdb_size += BLK_LENGTH(p_dest_tmp[vdb_start]);
+		if (log_level & EDID_LOG)
+			rx_pr("found multi vdb:%d start:0x%x blk_length:%d\n", i, vdb_start,
+				BLK_LENGTH(p_dest_tmp[vdb_start]));
+	}
+	vdb_dest[0] = VIDEO_TAG << 5 | vdb_size;
+//hdmi repeater cert item(9-3 basic format support requirements), test block0 dtd timing
+//modify suggestion from cert center:
+//1.if there is no intersection between dtd resolution,
+//can fill in the intersection resolution of VDB
+//2.we could fill in VIC1(640*480) to dtd,all rx product should support it.
+//we choose solution 2 to pass this item, when VDB not include VIC1 after VDB extraction,
+//it should fill in VIC1 to VDB for match block0 dtd timing(VIC1).
+//if can not pass this item, it should modify block0 dtd from rx edid.bin
+	for (i = 0; i < vdb_size; i++) {
+		if (vdb_dest[1 + i] == HDMI_640x480p60)
+			break;
+	}
+	if (vdb_size == i) {
+		vdb_size += 1;
+		vdb_dest[0] = VIDEO_TAG << 5 | vdb_size;
+		vdb_dest[vdb_size] = HDMI_640x480p60;//add VIC1
+	}
+	splice_data_blk_to_edid(p_dest_edid, &vdb_dest[0], VIDEO_TAG);
 }
 
 void rpt_edid_audio_db_extraction(unsigned char *p_edid)
@@ -4492,6 +4620,9 @@ void rpt_edid_420_vdb_extraction(unsigned char *p_edid)
 				k++;
 				break;
 			}
+	//no dest 420vic list, need remove dc_36bit_420 dc_30bit_420 in vshf
+	if (k == 0)
+		vshf_dc_30_36_420_support = false;
 	if (def_cmdb_len) {
 		vdb_start = rx_get_cea_tag_offset(p_edid, VIDEO_TAG);
 		if (!vdb_start && (log_level & EDID_LOG))
@@ -4864,55 +4995,6 @@ static void edid_sad_passthrough(unsigned char *p_edid_dest, unsigned char *p_ed
 	}
 }
 
-static void edid_secondaryphyaddr(unsigned char *p_edid_dest, unsigned char *p_edid_src)
-{
-	u8 src_vsdb_offset = 0;
-	u8 def_vsdb_offset = 0;
-	struct vsdb_s vsdb_src, vsdb_def, vsdb_dest;
-	u8 *p_vsdb_src = (u8 *)&vsdb_src;
-	u8 *p_vsdb_def = (u8 *)&vsdb_def;
-
-	src_vsdb_offset = rx_get_cea_tag_offset(p_edid_src, VENDOR_TAG);
-	if (!src_vsdb_offset)
-		rx_pr("src_vsdb_offset error\n");
-	def_vsdb_offset = rx_get_cea_tag_offset(p_edid_dest, VENDOR_TAG);
-	if (!def_vsdb_offset)
-		rx_pr("def_vsdb_offset error\n");
-	memcpy(p_vsdb_src + 4, &p_edid_src[src_vsdb_offset + 4], 2);
-	memcpy(p_vsdb_def + 4, &p_edid_dest[def_vsdb_offset + 4], 2);
-	if (vsdb_src.a == 0) {
-		vsdb_dest.b = vsdb_def.b;
-		vsdb_dest.a = vsdb_def.a;
-		vsdb_dest.d = vsdb_def.d;
-		vsdb_dest.c = vsdb_def.c;
-	} else if (vsdb_src.b == 0) {
-		vsdb_dest.b = vsdb_def.a;
-		vsdb_dest.a = vsdb_src.a;
-		vsdb_dest.d = 0;
-		vsdb_dest.c = 0;
-	} else if (vsdb_src.c == 0) {
-		vsdb_dest.b = vsdb_src.b;
-		vsdb_dest.a = vsdb_src.a;
-		vsdb_dest.d = 0;
-		vsdb_dest.c = vsdb_def.a;
-	} else if (vsdb_src.d == 0) {
-		vsdb_dest.b = vsdb_src.b;
-		vsdb_dest.a = vsdb_src.a;
-		vsdb_dest.d = vsdb_def.a;
-		vsdb_dest.c = vsdb_src.c;
-	} else {
-		vsdb_dest.b = vsdb_src.b;
-		vsdb_dest.a = vsdb_src.a;
-		vsdb_dest.d = vsdb_src.d;
-		vsdb_dest.c = vsdb_src.c;
-	}
-	p_vsdb_def = (u8 *)&vsdb_dest;
-	memcpy(&p_edid_dest[def_vsdb_offset + 4], p_vsdb_def + 4, 2);
-	if (log_level & EDID_LOG)
-		rx_pr("dest addr:0x%x 0x%x",
-			p_edid_dest[def_vsdb_offset + 4], p_edid_dest[def_vsdb_offset + 5]);
-}
-
 void rpt_edid_extraction(unsigned char *p_edid)
 {
 	if (!is_valid_edid_data(edid_tx))
@@ -4946,14 +5028,15 @@ void rpt_edid_extraction(unsigned char *p_edid)
 	 * Data Blocks in the E-EDID prior to forwarding
 	 */
 	rpt_edid_rm_hf_eeodb(p_edid);
-	rpt_edid_video_db_extraction(p_edid);
+	rpt_edid_multi_vdb_extraction(p_edid, edid_tx);
+	//OTT-56704 need pass through tv audio block
 	if (rpt_edid_selection == use_edid_repeater_sad_passthrough)
 		edid_sad_passthrough(p_edid, edid_tx);
 	else
 		rpt_edid_audio_db_extraction(p_edid);
 	rpt_edid_14_vs_db_extraction(p_edid);
-	rpt_edid_hf_vs_db_extraction(p_edid);
 	rpt_edid_420_vdb_extraction(p_edid);
+	rpt_edid_hf_vs_db_extraction(p_edid);
 	rpt_edid_colorimetry_db_extraction(p_edid);
 	rpt_edid_hdr_static_db_extraction(p_edid);
 	rpt_edid_vsv_hdr10plus_extraction(p_edid);

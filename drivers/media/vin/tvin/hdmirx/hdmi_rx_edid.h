@@ -7,7 +7,8 @@
 #define _HDMI_RX_EDID_H_
 
 /* 2024.07.04 do edid reset to clear segment for edid 512 by edid intr */
-#define RX_EDID_H_VER "ver.2024/07/04"
+//2024.07.18 fix hdmi repeater cert fail item
+#define RX_EDID_H_VER "ver.2024/07/18"
 
 #define EDID_EXT_BLK_OFF	128
 #define EDID_BLK_SIZE		128
@@ -934,7 +935,7 @@ bool rx_update_tx_edid_with_audio_block(unsigned char *edid_data,
 					unsigned char *audio_block);
 void rpt_edid_hf_vs_db_extraction(unsigned char *p_edid);
 void rpt_edid_14_vs_db_extraction(unsigned char *p_edid);
-void rpt_edid_video_db_extraction(unsigned char *p_edid);
+void rpt_edid_multi_vdb_extraction(unsigned char *p_dest_edid, unsigned char *p_source_edid);
 void rpt_edid_audio_db_extraction(unsigned char *p_edid);
 void rpt_edid_colorimetry_db_extraction(unsigned char *p_edid);
 void rpt_edid_420_vdb_extraction(unsigned char *p_edid);

@@ -29,6 +29,9 @@
 #define PHY_REQUEST_CLK_MAX	370000000
 #define TIMER_STATE_CHECK	(1 * HZ / 100)
 
+/* 2024.07.02 optimize suspend flow */
+#define RX_WRAPPER_VER "ver.2024/07/02"
+
 struct freq_ref_s {
 	bool interlace;
 	u8 cd420;

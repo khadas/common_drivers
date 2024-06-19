@@ -4300,11 +4300,15 @@ static int hdmirx_suspend(struct platform_device *pdev, pm_message_t state)
 		rx_irq_en(0, E_PORT3);
 	}
 	hdmirx_output_en(false);
-#ifdef CONFIG_AMLOGIC_LEGACY_EARLY_SUSPEND
+	/* in some specific case,the suspend/resume flow may be:
+	 * earlysuspend->suspend->resume->suspend,in this case phy
+	 * was not turned off in second suspend
+	 */
+//#ifdef CONFIG_AMLOGIC_LEGACY_EARLY_SUSPEND
 	/* if early suspend not called, need to pw down phy here */
-	if (!early_suspend_flag)
-#endif
-		rx_phy_suspend();
+	//if (!early_suspend_flag)
+//#endif
+	rx_phy_suspend();
 	/*
 	 * clk source changed under suspend mode,
 	 * div must change together.

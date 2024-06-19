@@ -2452,6 +2452,45 @@ static void check_composer_buffer_status(struct composer_dev *dev, bool is_tvp,
 	dst_buf->is_tvp = is_tvp;
 }
 
+static int get_output_duration(struct composer_dev *dev)
+{
+	int duration = 0;
+
+	if (IS_ERR_OR_NULL(dev)) {
+		vc_print(dev->index, PRINT_ERROR, "%s: invalid param.\n", __func__);
+		return 1600;
+	}
+
+	if (dev->output_duration > 0 && dev->output_duration < 24)
+		duration = 4004;
+	else if (dev->output_duration == 24)
+		duration = 4000;
+	else if (dev->output_duration == 25)
+		duration = 3840;
+	else if (dev->output_duration > 25 && dev->output_duration < 30)
+		duration = 3203;
+	else if (dev->output_duration == 30)
+		duration = 3200;
+	else if (dev->output_duration == 50)
+		duration = 1920;
+	else if (dev->output_duration > 50 && dev->output_duration < 60)
+		duration = 1601;
+	else if (dev->output_duration == 60)
+		duration = 1600;
+	else if (dev->output_duration == 100)
+		duration = 960;
+	else if (dev->output_duration > 100 && dev->output_duration < 120)
+		duration = 801;
+	else if (dev->output_duration == 120)
+		duration = 800;
+	else if (dev->output_duration == 240)
+		duration = 400;
+	else
+		duration = 1600;
+
+	return duration;
+}
+
 static void vframe_composer(struct composer_dev *dev)
 {
 	struct received_frames_t *received_frames = NULL;
@@ -3089,6 +3128,10 @@ static void vframe_composer(struct composer_dev *dev)
 		dst_vf->canvas0_config[1].height);
 	dst_vf->repeat_count = 0;
 	dst_vf->composer_info = composer_info;
+	if (count == 1 && src_vf)
+		dst_vf->duration = src_vf->duration;
+	else
+		dst_vf->duration = get_output_duration(dev);
 
 	if (dev->last_dst_vf)
 		dev->last_dst_vf->repeat_count += drop_count;

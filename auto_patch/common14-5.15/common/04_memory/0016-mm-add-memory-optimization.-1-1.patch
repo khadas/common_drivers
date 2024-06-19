@@ -1,4 +1,4 @@
-From 009a05bdb9ada3d1a4ab804e70aeb5c109350e63 Mon Sep 17 00:00:00 2001
+From 83e064e3d44056ea2b132361887aaf206ab9c94c Mon Sep 17 00:00:00 2001
 From: Jianxiong Pan <jianxiong.pan@amlogic.com>
 Date: Tue, 20 Jun 2023 19:32:11 +0800
 Subject: [PATCH] mm: add memory optimization. [1/1]
@@ -30,8 +30,7 @@ Signed-off-by: Jianxiong Pan <jianxiong.pan@amlogic.com>
  kernel/printk/printk.c         |  5 +++++
  kernel/scs.c                   | 17 +++++++++++++++++
  mm/slab_common.c               |  4 ++++
- scripts/link-vmlinux.sh        |  4 +++-
- 14 files changed, 77 insertions(+), 3 deletions(-)
+ 13 files changed, 74 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/base/core.c b/drivers/base/core.c
 index 741d7c3bcba5..de133a6c7820 100644
@@ -342,21 +341,6 @@ index 9fad291c443c..2d727cb4c5c3 100644
  
  static int __init setup_slab_nomerge(char *str)
  {
-diff --git a/scripts/link-vmlinux.sh b/scripts/link-vmlinux.sh
-index 57ef6accbb40..6f2ba76b3612 100755
---- a/scripts/link-vmlinux.sh
-+++ b/scripts/link-vmlinux.sh
-@@ -245,7 +245,9 @@ kallsyms()
- {
- 	local kallsymopt;
- 
--	if [ -n "${CONFIG_KALLSYMS_ALL}" ]; then
-+	# we don't need all symbols, this can help to save about 1MB memory
-+	#if [ -n "${CONFIG_KALLSYMS_ALL}" ]; then
-+	if [[ -n "${CONFIG_KALLSYMS_ALL}" && ! -n "${CONFIG_AMLOGIC_KALLSYM_OPT}" ]]; then
- 		kallsymopt="${kallsymopt} --all-symbols"
- 	fi
- 
 -- 
 2.42.0
 

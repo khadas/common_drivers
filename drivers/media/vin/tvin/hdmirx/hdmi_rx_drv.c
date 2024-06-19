@@ -2265,7 +2265,7 @@ int rx_pr(const char *fmt, ...)
 
 		strncpy(buf + 5, fmt + pos, (sizeof(buf) - 5));
 	} else {
-		strncpy(buf, fmt, strlen(fmt));
+		strncpy(buf, fmt, strlen(fmt) + 1);
 	}
 	if (fmt[strlen(fmt) - 1] == '\n')
 		last_break = 1;
@@ -3723,7 +3723,7 @@ static int hdmirx_probe(struct platform_device *pdev)
 			   &hdmirx_dec_ops,
 			   &hdmirx_sm_ops,
 			   hdevp->index);
-	snprintf(hdevp->frontend.name, strlen(TVHDMI_NAME), "%s", TVHDMI_NAME);
+	snprintf(hdevp->frontend.name, strlen(TVHDMI_NAME) + 1, "%s", TVHDMI_NAME);
 	if (tvin_reg_frontend(&hdevp->frontend) < 0)
 		rx_pr("hdmirx: driver probe error!!!\n");
 

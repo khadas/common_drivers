@@ -588,6 +588,13 @@ done:
 
 #if IS_MODULE(CONFIG_AMLOGIC_USER_FAULT) && IS_ENABLED(CONFIG_KALLSYMS_ALL)
 struct mm_struct *aml_init_mm;
+
+unsigned long (*aml_syms_lookup)(const char *name);
+
+/* For each probe you need to allocate a kprobe structure */
+static struct kprobe kp_lookup_name = {
+	.symbol_name	= "kallsyms_lookup_name",
+};
 #endif
 
 static long __nocfi get_user_pfn(struct mm_struct *mm, unsigned long addr)
@@ -943,14 +950,29 @@ static void __kprobes bad_el0_sync_handler_post(struct kprobe *p,
 static int __nocfi user_fault_register_kprobe(void *data)
 {
 	int ret;
+#ifndef CONFIG_KALLSYMS_ALL
 	struct task_struct *task = NULL;
 
+	rcu_read_lock();
 	for_each_process(task) {
 		if (task->pid == 1) {
 			aml_init_mm = task->active_mm;
 			break;
 		}
 	}
+	rcu_read_unlock();
+#else
+	ret = register_kprobe(&kp_lookup_name);
+	if (ret < 0) {
+		pr_err("register_kprobe failed, returned %d\n", ret);
+		return -1;
+	}
+	pr_debug("kprobe lookup offset at %px\n", kp_lookup_name.addr);
+
+	aml_syms_lookup = (unsigned long (*)(const char *name))kp_lookup_name.addr;
+
+	aml_init_mm = (struct mm_struct *)aml_syms_lookup("init_mm");
+#endif
 	pr_info("aml_init_mm: %px\n", aml_init_mm);
 
 	kp_show_regs.post_handler = show_regs_handler_post;
@@ -988,6 +1010,7 @@ static int __init user_fault_module_init(void)
 
 static void __exit user_fault_module_exit(void)
 {
+	unregister_kprobe(&kp_lookup_name);
 	unregister_kprobe(&kp_show_regs);
 	unregister_kprobe(&kp_bad_el0_sync);
 }

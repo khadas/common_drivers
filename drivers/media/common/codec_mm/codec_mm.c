@@ -4033,11 +4033,16 @@ int __nocfi get_mte_sync_tags_hook_kprobe(void *data)
 
 	aml_syms_lookup = (unsigned long (*)(const char *name))kp_lookup_name.addr;
 
-	for_each_process(task) {
-		if (task->pid == 1) {
-			aml_init_mm = task->active_mm;
-			break;
+	aml_init_mm = (struct mm_struct *)aml_syms_lookup("init_mm");
+	if (!aml_init_mm) {
+		rcu_read_lock();
+		for_each_process(task) {
+			if (task->pid == 1) {
+				aml_init_mm = task->active_mm;
+				break;
+			}
 		}
+		rcu_read_unlock();
 	}
 	aml_mte_sync_tags = (void (*)(pte_t old_pte, pte_t pte))aml_syms_lookup("mte_sync_tags");
 	pr_info("aml_init_mm: %px, aml_mte_sync_tags: %px\n", aml_init_mm, aml_mte_sync_tags);

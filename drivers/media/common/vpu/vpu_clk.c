@@ -337,31 +337,34 @@ void vpu_clktree_init_dft(struct device *dev)
 		(IS_ERR_OR_NULL(vpu_conf.vapb_clk1)) ||
 		(IS_ERR_OR_NULL(vpu_conf.vapb_clk))) {
 		vpu_conf.vapb_clk = devm_clk_get(dev, "vapb_clk");
-		if (IS_ERR_OR_NULL(vpu_conf.vapb_clk))
+		if (IS_ERR_OR_NULL(vpu_conf.vapb_clk)) {
 			VPUERR("%s: vapb_clk\n", __func__);
-		else
-			clk_prepare_enable(vpu_conf.vapb_clk);
+		} else {
+			ret = clk_prepare_enable(vpu_conf.vapb_clk);
+			if (ret)
+				VPUERR("%s: %d clk_prepare_enable error\n", __func__, __LINE__);
+		}
 	} else {
 		ret = clk_set_parent(vpu_conf.vapb_clk, vpu_conf.vapb_clk0);
 		if (ret)
 			VPUERR("%s: %d clk_set_parent error\n", __func__, __LINE__);
 
-		clk_prepare_enable(vpu_conf.vapb_clk);
+		ret = clk_prepare_enable(vpu_conf.vapb_clk);
+		if (ret)
+			VPUERR("%s: %d clk_prepare_enable error\n", __func__, __LINE__);
+
 		ret = clk_set_rate(vpu_conf.vapb_clk1, 50000000);
 		if (ret)
 			VPUERR("%s: clk_set_rate error\n", __func__);
 	}
 
 	vpu_conf.vpu_intr = devm_clk_get(dev, "vpu_intr_gate");
-	if (IS_ERR_OR_NULL(vpu_conf.vpu_intr))
+	if (IS_ERR_OR_NULL(vpu_conf.vpu_intr)) {
 		VPUERR("%s: vpu_intr_gate\n", __func__);
-	else
-		clk_prepare_enable(vpu_conf.vpu_intr);
-
-	if (vpu_conf.data->gp_pll_valid) {
-		vpu_conf.gp_pll = devm_clk_get(dev, "gp_pll");
-		if (IS_ERR_OR_NULL(vpu_conf.gp_pll))
-			VPUERR("%s: gp_pll\n", __func__);
+	} else {
+		ret = clk_prepare_enable(vpu_conf.vpu_intr);
+		if (ret)
+			VPUERR("%s: %d clk_prepare_enable error\n", __func__, __LINE__);
 	}
 
 	/* init & enable vpu_clk */
@@ -377,17 +380,24 @@ void vpu_clktree_init_dft(struct device *dev)
 		if (ret)
 			VPUERR("%s: %d clk_set_parent error\n", __func__, __LINE__);
 
-		clk_prepare_enable(vpu_conf.vpu_clk);
+		ret = clk_prepare_enable(vpu_conf.vpu_clk);
+		if (ret)
+			VPUERR("%s: %d clk_prepare_enable error\n", __func__, __LINE__);
 		vpu_conf.vpu_clk_en = true;
 	}
 }
 
 void vpu_clktree_init_c3(struct device *dev)
 {
+	int ret = 0;
+
 	/* init & enable vpu_clk */
 	vpu_conf.vpu_clk = devm_clk_get(dev, "vpu_clk");
-	if (IS_ERR_OR_NULL(vpu_conf.vpu_clk))
+	if (IS_ERR_OR_NULL(vpu_conf.vpu_clk)) {
 		VPUERR("%s: vpu_clk\n", __func__);
-	else
-		clk_prepare_enable(vpu_conf.vpu_clk);
+	} else {
+		ret = clk_prepare_enable(vpu_conf.vpu_clk);
+		if (ret)
+			VPUERR("%s: %d clk_prepare_enable error\n", __func__, __LINE__);
+	}
 }

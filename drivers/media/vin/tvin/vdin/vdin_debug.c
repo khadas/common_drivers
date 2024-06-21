@@ -2159,7 +2159,7 @@ static void vdin_dump_dts_debug_config(struct vdin_dev_s *devp)
 	pr_info("dbg_sel_mat:%d\n", devp->debug.dbg_sel_mat);
 	pr_info("vdin1_set_hdr_bypass:%d\n", devp->debug.vdin1_set_hdr_bypass);
 	pr_info("dbg_force_shrink_en:%d\n", devp->debug.dbg_force_shrink_en);
-	pr_info("bypass_tunnel:%d\n", devp->debug.bypass_tunnel);
+	pr_info("bypass_tunnel:%d\n", devp->bypass_tunnel);
 	pr_info("pause_mif_dec:%d\n", devp->debug.pause_mif_dec);
 	pr_info("pause_afbce_dec:%d\n", devp->debug.pause_afbce_dec);
 	pr_info("bypass_filter_vsync:%d\n", devp->debug.bypass_filter_vsync);
@@ -4423,10 +4423,10 @@ start_chk:
 	} else if (!strcmp(parm[0], "bypass_tunnel")) {
 		if (parm[1] && (kstrtouint(parm[1], 0, &temp) == 0)) {
 			if (temp)
-				devp->debug.bypass_tunnel = true;
+				devp->bypass_tunnel = true;
 			else
-				devp->debug.bypass_tunnel = false;
-			pr_info("bypass_tunnel:%d\n", devp->debug.bypass_tunnel);
+				devp->bypass_tunnel = false;
+			pr_info("bypass_tunnel:%d\n", devp->bypass_tunnel);
 		}
 	} else if (!strcmp(parm[0], "bypass_filter_vsync")) {
 		if (parm[1] && (kstrtouint(parm[1], 0, &temp) == 0))

@@ -262,7 +262,9 @@ bool vdin_dv_is_need_tunnel(struct vdin_dev_s *devp)
 	    (is_amdv_stb_mode() && !is_hdmi_ll_as_hdr10())) &&
 	    (devp->prop.color_format == TVIN_YUV422 ||
 	     devp->prop.color_format == TVIN_YUV420) &&
-	     !devp->debug.bypass_tunnel)
+
+	     !devp->bypass_tunnel &&
+	     vdin_is_dv_supported())
 		return true;
 	else
 		return false;
@@ -283,24 +285,23 @@ bool vdin_dv_is_visf_data(struct vdin_dev_s *devp)
 		return false;
 }
 
-/* some device force send dv 444 source-led need convert to 422 and bypass detunnel
+/* dv standard judgment
  * return value:
- *	true: dv is not standard source-led
- *	false: dv is yuv422/420 12bit source-led
+ *	true: dv is nonstandard,use sdr path
+ *	false: dv is standard or need use dv path and bypass tunnel/detunnel
  */
 bool vdin_dv_is_not_std_source_led(struct vdin_dev_s *devp)
 {
-	if (devp->dv.dv_flag &&
-	    (devp->dv.low_latency || devp->prop.vtem_data.vrr_en)) {
-		if (devp->prop.color_format == TVIN_YUV422 &&
-		    devp->fmt_info_p->h_active >= 1280 &&
-		    devp->fmt_info_p->scan_mode == TVIN_SCAN_MODE_PROGRESSIVE)
-			return false;
-		else
+	if (devp->dv.dv_flag) {
+		if (devp->fmt_info_p->scan_mode == TVIN_SCAN_MODE_INTERLACED)
 			return true;
-	} else {
-		return false;
+		/* dv 420 12bit: recognize as dv but drop 2-lsb */
+		if (devp->prop.color_format == TVIN_YUV420) {
+			devp->bypass_tunnel = true;
+			return false;
+		}
 	}
+	return false;
 }
 
 /* check signal is sink-led

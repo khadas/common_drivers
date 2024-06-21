@@ -381,4 +381,5 @@ bool vdin_is_vrr_state(struct vdin_dev_s *devp);
 enum vdin_vrr_mode_e get_cur_vrr_status(struct vdin_dev_s *devp);
 bool vdin_package_done_check_state(struct vdin_dev_s *devp);
 unsigned int vdin_get_rx_avi_colorimetry(struct vdin_dev_s *devp, unsigned int colorimetry);
+bool vdin_is_dv_supported(void);
 #endif

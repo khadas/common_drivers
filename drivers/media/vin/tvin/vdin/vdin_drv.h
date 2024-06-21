@@ -605,7 +605,6 @@ struct vdin_debug_s {
 	bool bypass_update_prop;
 	bool bypass_pc_mode;//bypass pc mode set
 	bool bypass_game_mode;//bypass game mode set
-	bool bypass_tunnel;
 	bool pause_mif_dec;
 	bool pause_afbce_dec;
 	bool bypass_filter_vsync;
@@ -1166,6 +1165,7 @@ struct vdin_dev_s {
 	unsigned int vdin_isr_drop_num;
 	unsigned int fs_open_cnt;
 	struct vdin_dv_hw5_s dv_hw5;
+	bool bypass_tunnel;
 };
 
 extern unsigned int max_ignore_frame_cnt;

@@ -1077,6 +1077,14 @@ static void vdin_set_meas_mux(unsigned int offset, enum tvin_port_e port_,
 	wr_bits(offset, VDIN_MEAS_CTRL0, 0, MEAS_RST_BIT, MEAS_RST_WID);
 }
 
+bool vdin_is_dv_supported(void)
+{
+	if (get_dv_support_info() & BIT0)
+		return true;
+	else
+		return false;
+}
+
 /*function:set VDIN_COM_CTRL0
  *Bit 3:0 vdin selection,
  *	1: mpeg_in from dram, 2: bt656 input,3: component input

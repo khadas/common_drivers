@@ -132,7 +132,6 @@ static struct cur_line_info_t g_cur_line_info[2];
 static u8 new_frame_mask;
 static bool need_force_black;
 static u32 always_new_vf_cnt;
-
 bool rdma_enable_pre;
 
 u32 frc_mute_frames = 3;
@@ -1427,6 +1426,7 @@ void primary_swap_frame(struct video_layer_s *layer,
 	struct disp_info_s *layer_info = NULL;
 	int axis[4];
 	int crop[4];
+	int crop_save[4];
 	struct vframe_s *vf;
 #ifdef CONFIG_AMLOGIC_MEDIA_DEINTERLACE
 	u32 vpp_index = layer->vpp_index;
@@ -1477,8 +1477,15 @@ void primary_swap_frame(struct video_layer_s *layer,
 		if (vf->source_type != VFRAME_SOURCE_TYPE_HDMI &&
 			vf->source_type != VFRAME_SOURCE_TYPE_CVBS &&
 			vf->source_type != VFRAME_SOURCE_TYPE_TUNER &&
-			vf->source_type != VFRAME_SOURCE_TYPE_HWC)
+			vf->source_type != VFRAME_SOURCE_TYPE_HWC) {
 			_set_video_crop(&glayer_info[0], crop);
+		} else {
+			crop_save[0] = glayer_info[0].crop_top_save;
+			crop_save[1] = glayer_info[0].crop_left_save;
+			crop_save[2] = glayer_info[0].crop_bottom_save;
+			crop_save[3] = glayer_info[0].crop_right_save;
+			_set_video_crop(&glayer_info[0], crop_save);
+		}
 		if (vf->flag & VFRAME_FLAG_MIRROR_H)
 			mirror = H_MIRROR;
 		if (vf->flag & VFRAME_FLAG_MIRROR_V)
@@ -3406,6 +3413,7 @@ static struct vframe_s *vdx_swap_frame(u8 layer_id,
 	int source_type = 0;
 	int axis[4];
 	int crop[4];
+	int crop_save[4];
 	u8 i = 0;
 
 	vd_layer[layer_id].force_switch_mode = force_switch_vf_mode;
@@ -3751,8 +3759,15 @@ static struct vframe_s *vdx_swap_frame(u8 layer_id,
 		if (source_type != VFRAME_SOURCE_TYPE_HDMI &&
 			source_type != VFRAME_SOURCE_TYPE_CVBS &&
 			source_type != VFRAME_SOURCE_TYPE_TUNER &&
-			source_type != VFRAME_SOURCE_TYPE_HWC)
+			source_type != VFRAME_SOURCE_TYPE_HWC) {
 			_set_video_crop(&glayer_info[layer_id], crop);
+		} else {
+			crop_save[0] = glayer_info[layer_id].crop_top_save;
+			crop_save[1] = glayer_info[layer_id].crop_left_save;
+			crop_save[2] = glayer_info[layer_id].crop_bottom_save;
+			crop_save[3] = glayer_info[layer_id].crop_right_save;
+			_set_video_crop(&glayer_info[layer_id], crop_save);
+		}
 		if (vd_layer[layer_id].dispbuf->flag & VFRAME_FLAG_MIRROR_H)
 			mirror = H_MIRROR;
 		if (vd_layer[layer_id].dispbuf->flag & VFRAME_FLAG_MIRROR_V)

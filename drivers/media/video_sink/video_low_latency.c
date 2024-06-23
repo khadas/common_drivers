@@ -125,6 +125,7 @@ static int lowlatency_vsync(u8 instance_id)
 #endif
 	int axis[4];
 	int crop[4];
+	int crop_save[4];
 	int source_type = 0;
 	u32 next_afbc_request = atomic_read(&gafbc_request);
 	struct path_id_s path_id;
@@ -812,8 +813,15 @@ static int lowlatency_vsync(u8 instance_id)
 		if (source_type != VFRAME_SOURCE_TYPE_HDMI &&
 			source_type != VFRAME_SOURCE_TYPE_CVBS &&
 			source_type != VFRAME_SOURCE_TYPE_TUNER &&
-			source_type != VFRAME_SOURCE_TYPE_HWC)
+			source_type != VFRAME_SOURCE_TYPE_HWC) {
 			_set_video_crop(&glayer_info[0], crop);
+		} else {
+			crop_save[0] = glayer_info[0].crop_top_save;
+			crop_save[1] = glayer_info[0].crop_left_save;
+			crop_save[2] = glayer_info[0].crop_bottom_save;
+			crop_save[3] = glayer_info[0].crop_right_save;
+			_set_video_crop(&glayer_info[0], crop_save);
+		}
 		if (vd_layer[0].dispbuf->flag & VFRAME_FLAG_MIRROR_H)
 			mirror = H_MIRROR;
 		if (vd_layer[0].dispbuf->flag & VFRAME_FLAG_MIRROR_V)
@@ -1206,8 +1214,15 @@ static int lowlatency_vsync(u8 instance_id)
 		if (source_type != VFRAME_SOURCE_TYPE_HDMI &&
 			source_type != VFRAME_SOURCE_TYPE_CVBS &&
 			source_type != VFRAME_SOURCE_TYPE_TUNER &&
-			source_type != VFRAME_SOURCE_TYPE_HWC)
+			source_type != VFRAME_SOURCE_TYPE_HWC) {
 			_set_video_crop(&glayer_info[1], crop);
+		} else {
+			crop_save[0] = glayer_info[1].crop_top_save;
+			crop_save[1] = glayer_info[1].crop_left_save;
+			crop_save[2] = glayer_info[1].crop_bottom_save;
+			crop_save[3] = glayer_info[1].crop_right_save;
+			_set_video_crop(&glayer_info[1], crop_save);
+		}
 		if (vd_layer[1].dispbuf->flag & VFRAME_FLAG_MIRROR_H)
 			mirror = H_MIRROR;
 		if (vd_layer[1].dispbuf->flag & VFRAME_FLAG_MIRROR_V)
@@ -1501,8 +1516,15 @@ static int lowlatency_vsync(u8 instance_id)
 			if (source_type != VFRAME_SOURCE_TYPE_HDMI &&
 				source_type != VFRAME_SOURCE_TYPE_CVBS &&
 				source_type != VFRAME_SOURCE_TYPE_TUNER &&
-				source_type != VFRAME_SOURCE_TYPE_HWC)
+				source_type != VFRAME_SOURCE_TYPE_HWC) {
 				_set_video_crop(&glayer_info[2], crop);
+			} else {
+				crop_save[0] = glayer_info[2].crop_top_save;
+				crop_save[1] = glayer_info[2].crop_left_save;
+				crop_save[2] = glayer_info[2].crop_bottom_save;
+				crop_save[3] = glayer_info[2].crop_right_save;
+				_set_video_crop(&glayer_info[2], crop_save);
+			}
 			set_alpha_scpxn(&vd_layer[2], vd_layer[2].dispbuf->composer_info);
 			glayer_info[2].zorder = vd_layer[2].dispbuf->zorder;
 		}

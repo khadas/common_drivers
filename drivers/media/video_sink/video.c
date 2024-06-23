@@ -6502,10 +6502,15 @@ static long amvideo_ioctl(struct file *file, unsigned int cmd, ulong arg)
 		{
 			int crop[4];
 
-			if (copy_from_user(crop, argp, sizeof(crop)) == 0)
+			if (copy_from_user(crop, argp, sizeof(crop)) == 0) {
+				layer->crop_top_save = crop[0];
+				layer->crop_left_save = crop[1];
+				layer->crop_bottom_save = crop[2];
+				layer->crop_right_save = crop[3];
 				_set_video_crop(layer, crop);
-			else
+			} else {
 				ret = -EFAULT;
+			}
 		}
 		break;
 
@@ -7072,8 +7077,13 @@ static void set_video_crop(struct disp_info_s *layer,
 {
 	int parsed[4];
 
-	if (likely(parse_para(para, 4, parsed) == 4))
+	if (likely(parse_para(para, 4, parsed) == 4)) {
+		layer->crop_top_save = parsed[0];
+		layer->crop_left_save = parsed[1];
+		layer->crop_bottom_save = parsed[2];
+		layer->crop_right_save = parsed[3];
 		_set_video_crop(layer, parsed);
+	}
 	amlog_mask
 		(LOG_MASK_SYSFS,
 		"video crop=>x0:%d,y0:%d,x1:%d,y1:%d\n ",

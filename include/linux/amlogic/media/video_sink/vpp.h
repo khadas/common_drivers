@@ -228,6 +228,10 @@ struct disp_info_s {
 	u32 crop_left;
 	u32 crop_bottom;
 	u32 crop_right;
+	u32 crop_top_save;
+	u32 crop_left_save;
+	u32 crop_bottom_save;
+	u32 crop_right_save;
 	s32 global_offset_x;
 	s32 global_offset_y;
 	u32 speed_check_width;

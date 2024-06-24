@@ -6,6 +6,9 @@
 #ifndef __HDMI_RX_HW_H__
 #define __HDMI_RX_HW_H__
 
+/* 2024.07.02 disable audio monitor when no audio sample rate */
+#define RX_HW_VER "ver.2024/07/02"
+
 #define K_TEST_CHK_ERR_CNT
 
 /**

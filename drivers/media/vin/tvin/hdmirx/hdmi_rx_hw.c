@@ -3885,7 +3885,8 @@ void rx_afifo_monitor(u8 port)
 {
 	if (rx[port].state != FSM_SIG_READY || port == rx_info.sub_port)
 		return;
-
+	if (!rx[port].aud_info.real_sr)
+		return;
 	if (rx_info.chip_id < CHIP_ID_T7) {
 		if (rx[port].aud_info.auds_layout || rx[port].aud_info.aud_hbr_rcv) {
 			if (rx[port].aud_info.afifo_cfg) {

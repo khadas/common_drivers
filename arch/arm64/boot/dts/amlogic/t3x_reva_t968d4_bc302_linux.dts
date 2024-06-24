@@ -657,7 +657,7 @@
 				system-clock-frequency = <12288000>;
 			};
 			tdmbcodec: codec {
-				prefix-names = "AMP";
+				prefix-names = "AMP","AMP3";
 				sound-dai = <&ad82128 &acodec>;
 			};
 		};
@@ -1609,7 +1609,7 @@
 	ad82128: ad82128@34 {
 		compatible = "ESMT,ad82128";
 		#sound-dai-cells = <0>;
-		reset_pin = <&gpio GPIOD_9 GPIO_ACTIVE_HIGH>;
+		reset_pin-gpios = <&gpio GPIOD_9 GPIO_ACTIVE_HIGH>;
 		reg = <0x34>;
 		status = "okay";
 	};

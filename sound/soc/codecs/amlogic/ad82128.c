@@ -40,10 +40,16 @@
 #define AD82128_FAULT_CHECK_INTERVAL 500
 #define AD82128_VOLUME_MAX  (230)
 #define AD82128_VOLUME_MIN  (0)
+#define MAX_RESET_PIN_COUNT	4
 
 enum ad82128_type {
 	AD82128,
 };
+
+/* count the number of codec */
+static int g_codec_count;
+/* Stores the reset pin pointer obtained during parse dts */
+static struct gpio_desc *g_reset_pin_desc[MAX_RESET_PIN_COUNT];
 
 static const char * const ad82128_supply_names[] = {
 	"dvdd", /* Digital power supply. Connect to 3.3-V supply. */
@@ -60,13 +66,19 @@ struct ad82128_data {
 	struct regulator_bulk_data supplies[AD82128_NUM_SUPPLIES];
 	struct delayed_work fault_check_work;
 	struct work_struct work;
+	struct device *dev;
 	unsigned int last_fault;
 	int mute;
-	int reset_pin;
 	int init_done;
 	int vol;
 	int subwoofer_enable;
+	int no_device;
 };
+
+static void print_i2c_client_info(struct i2c_client *client, const char *msg)
+{
+	dev_info(&client->dev, "%s\n", msg);
+}
 
 static int ad82128_hw_params(struct snd_pcm_substream *substream,
 	struct snd_pcm_hw_params *params,
@@ -95,7 +107,8 @@ static int ad82128_hw_params(struct snd_pcm_substream *substream,
 		AD82128_SSZ_DS, ssz_ds);
 	if (ret < 0) {
 		dev_err(component->dev, "error setting sample rate: %d\n", ret);
-		return ret;
+		//return ret;
+		return 0;
 	}
 
 	return 0;
@@ -150,7 +163,8 @@ static int ad82128_set_dai_fmt(struct snd_soc_dai *dai, unsigned int fmt)
 		serial_format);
 	if (ret < 0) {
 		dev_err(component->dev, "error setting SAIF format: %d\n", ret);
-		return ret;
+		//return ret;
+		return 0;
 	}
 
 	return 0;
@@ -378,14 +392,16 @@ static void ad82128_fault_check_work(struct work_struct *work)
 	 * the full sequence no matter the first return value to minimizes
 	 * chances for the device to end up in shutdown mode.
 	 */
-	if (ad82128->reset_pin > 0) {
-		ret = gpio_request(ad82128->reset_pin, NULL); // request amp PD pin control GPIO
-		if (ret < 0)
-			dev_err(dev, "failed to request gpio: %d\n", ret);
-
-		gpio_direction_output(ad82128->reset_pin, 0); // pull low amp PD pin
-		msleep(20);
-		gpio_direction_output(ad82128->reset_pin, 1); // pull high amp PD pin
+	for (int i = 0; i < g_codec_count; i++) {
+		if (!IS_ERR(g_reset_pin_desc[i])) {
+			gpiod_direction_output(g_reset_pin_desc[g_codec_count],
+					GPIOF_OUT_INIT_HIGH);
+			pr_info("%s, av out status: %s\n",
+				__func__,
+				gpiod_get_value(g_reset_pin_desc[g_codec_count]) ?
+				"high" : "low");
+			msleep(20);
+		}
 	}
 out:
 	/* Schedule the next fault check at the specified interval */
@@ -474,6 +490,8 @@ static void ad82128_init_func(struct work_struct *p_work)
 #endif
 
 	ad82128->init_done = 1;
+	ad82128->no_device = 0;
+
 	return;
 error_snd_soc_component_update_bits:
 	dev_err(component->dev, "error configuring device registers: %d\n", ret);
@@ -519,6 +537,11 @@ static int ad82128_dac_event(struct snd_soc_dapm_widget *w,
 {
 	struct snd_soc_component *component = snd_soc_dapm_to_component(w->dapm);
 	struct ad82128_data *ad82128 = snd_soc_component_get_drvdata(component);
+
+	if (ad82128->no_device) {
+		dev_err(component->dev, "no device connect for ad82128\n");
+		return 0;
+	}
 
 	// wait until codec ready
 	while (!ad82128->init_done) {
@@ -575,11 +598,22 @@ static int ad82128_suspend(struct snd_soc_component *component)
 	if (ret < 0)
 		dev_err(component->dev, "failed to disable supplies: %d\n", ret);
 
-	if (ad82128->reset_pin >= 0) {
-		gpio_direction_output(ad82128->reset_pin, 0);
+	g_codec_count--;
+	if (!IS_ERR(g_reset_pin_desc[g_codec_count])) {
+		print_i2c_client_info(ad82128->ad82128_client,
+			"ad82128 suspend, It will operate the gpio to power off");
+		ret = gpiod_direction_output(g_reset_pin_desc[g_codec_count],
+				GPIOF_OUT_INIT_LOW);
+		pr_info("%s, ret:%d av out status: %s\n",
+			__func__, ret,
+			gpiod_get_value(g_reset_pin_desc[g_codec_count]) ?
+			"high" : "low");
 		msleep(20);
+	} else {
+		print_i2c_client_info(ad82128->ad82128_client,
+			"ad82128 suspend, just ad82128 count--");
 	}
-	pr_info("ad82128_suspend\n");
+	pr_info("ad82128 suspend, count: %d\n", g_codec_count);
 
 	return ret;
 }
@@ -596,13 +630,24 @@ static int ad82128_resume(struct snd_soc_component *component)
 		return ret;
 	}
 
-	if (ad82128->reset_pin >= 0) {
-		gpio_direction_output(ad82128->reset_pin, 0);
-		msleep(20);
-		gpio_direction_output(ad82128->reset_pin, 1);
+	if (!IS_ERR(g_reset_pin_desc[g_codec_count])) {
+		print_i2c_client_info(ad82128->ad82128_client,
+			"ad82128 resume, It will operate the gpio to power on");
+		ret = gpiod_direction_output(g_reset_pin_desc[g_codec_count],
+				GPIOF_OUT_INIT_HIGH);
+		pr_info("%s, ret:%d av out status: %s\n",
+			__func__, ret,
+			gpiod_get_value(g_reset_pin_desc[g_codec_count]) ?
+			"high" : "low");
 		/* need delay before regcache for spec request */
 		msleep(20);
+	} else {
+		print_i2c_client_info(ad82128->ad82128_client,
+			"ad82128 resume, just codec count++");
 	}
+	pr_info("ad82128 resume, count: %d\n", g_codec_count);
+	g_codec_count++;
+
 	// software reset amp
 	snd_soc_component_update_bits(component, AD82128_STATE_CTRL5_REG,
 		AD82128_SW_RESET, 0);
@@ -822,17 +867,31 @@ static int ad82128_parse_dt(struct ad82128_data *ad82128,
 	struct device_node *np)
 {
 	int ret = 0;
-	int reset_pin = -1;
 
-	reset_pin = of_get_named_gpio(np, "reset_pin", 0);
-	if (reset_pin < 0) {
-		ret = -1;
-		reset_pin = -1;
-	} else {
-		pr_info("%s pdata->reset_pin = %d!\n", __func__,
-			reset_pin);
+	ad82128->no_device = 0;
+	if (IS_ERR_OR_NULL(g_reset_pin_desc[g_codec_count])) {
+		g_reset_pin_desc[g_codec_count] = gpiod_get(ad82128->dev,
+					"reset_pin", GPIOF_OUT_INIT_LOW);
 	}
-	ad82128->reset_pin = reset_pin;
+
+	if (!IS_ERR(g_reset_pin_desc[g_codec_count])) {
+		print_i2c_client_info(ad82128->ad82128_client,
+			"ad82128 init, It will operate the gpio to power on");
+		ret = gpiod_direction_output(g_reset_pin_desc[g_codec_count],
+			GPIOF_OUT_INIT_HIGH);
+		pr_info("%s, ret:%d av out status: %s\n",
+			__func__, ret,
+			gpiod_get_value(g_reset_pin_desc[g_codec_count]) ?
+			"high" : "low");
+	} else {
+		print_i2c_client_info(ad82128->ad82128_client,
+			"ad82128 init, just count++");
+	}
+	pr_info("ad82128 init count:%d\n", g_codec_count);
+	g_codec_count++;
+
+	if (!ret)
+		ad82128->no_device = 1;
 
 	return ret;
 }
@@ -852,16 +911,8 @@ static int ad82128_probe(struct i2c_client *client,
 	data->init_done = 0;
 	data->ad82128_client = client;
 	data->devtype = id->driver_data;
-	ret = ad82128_parse_dt(data, client->dev.of_node);
-	if (data->reset_pin > 0) {
-		// request amp PD pin control GPIO
-		ret = gpio_request(data->reset_pin, NULL);
-		if (ret < 0)
-			dev_err(dev, "failed to request gpio: %d\n", ret);
-		// pull high amp PD pin
-		gpio_direction_output(data->reset_pin, 1);
-		msleep(150);
-	}
+	data->dev  = dev;
+	ad82128_parse_dt(data, client->dev.of_node);
 
 	switch (id->driver_data) {
 	case AD82128:
@@ -908,12 +959,27 @@ static int ad82128_probe(struct i2c_client *client,
 static void ad82128_i2c_shutdown(struct i2c_client *client)
 {
 	struct ad82128_data *data = i2c_get_clientdata(client);
+	int ret;
 
 	if (!data)
 		return;
 
-	if (data->reset_pin)
-		gpio_direction_output(data->reset_pin, GPIOF_OUT_INIT_LOW);
+	g_codec_count--;
+	if (!IS_ERR(g_reset_pin_desc[g_codec_count])) {
+		print_i2c_client_info(client,
+		"ad82128 shutdown, It will operate the gpio to power off");
+		ret = gpiod_direction_output(g_reset_pin_desc[g_codec_count],
+				GPIOF_OUT_INIT_LOW);
+		pr_info("%s, ret:%d av out status: %s\n",
+			__func__, ret,
+			gpiod_get_value(g_reset_pin_desc[g_codec_count]) ?
+			"high" : "low");
+	} else {
+		print_i2c_client_info(client,
+			"ad82128 shutdown, just ad82128 count--");
+	}
+	pr_info("ad82128 shutdown, count:%d\n", g_codec_count);
+
 }
 
 static const struct i2c_device_id ad82128_id[] = {

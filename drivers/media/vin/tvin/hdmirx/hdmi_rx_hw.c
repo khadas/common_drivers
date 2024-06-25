@@ -2570,6 +2570,34 @@ void top_common_init(void)
 	}
 }
 
+void top_config(u8 port)
+{
+	int data32 = 0;
+
+	rx_i2c_div_init();
+	rx_i2c_edid_cfg_with_port(0xf, true);
+	if (rx_info.chip_id >= CHIP_ID_TL1) {
+		data32 = 0;
+		data32 |= (2 << 28); /* [29:28]		source_2 */
+		data32 |= (1 << 26); /* [27:26]		source_1 */
+		data32 |= (0 << 24); /* [25:24]		source_0 */
+		hdmirx_wr_top(TOP_CHAN_SWITCH_0, data32, port);
+
+		/* Enable channel output */
+		data32 = hdmirx_rd_top(TOP_CHAN_SWITCH_0, port);
+		hdmirx_wr_top(TOP_CHAN_SWITCH_0, data32 | (1 << 0), port);
+		if (rx_info.chip_id == CHIP_ID_T3X) {
+			data32	= 0;
+			data32 |= 1 << 4;
+			data32 |= 7 << 0;
+			hdmirx_wr_top(TOP_ACR_CNTL2_T3X, data32, port);// to do
+		}
+		/* bit'15 hbr_spdif_en: 1-spdif, 0- hbr */
+		if (rx_info.chip_id >= CHIP_ID_T7)
+			hdmirx_wr_bits_top(TOP_CLK_CNTL, _BIT(15), 0, port);
+	}
+}
+
 static int top_init(u8 port)
 {
 	int err = 0;
@@ -2583,9 +2611,7 @@ static int top_init(u8 port)
 		data32 |= (1 << 1);// [1:0]  sel
 		hdmirx_wr_top(TOP_PHYIF_CNTL0, data32, port);
 	}
-	rx_i2c_div_init();
 	rx_i2c_hdcp_cfg();
-	rx_i2c_edid_cfg_with_port(0xf, true);
 
 	data32 = 0;
 	if (rx_info.chip_id >= CHIP_ID_TL1) {
@@ -2600,7 +2626,6 @@ static int top_init(u8 port)
 		hdmirx_wr_top(TOP_TL1_ACR_CNTL2, data32, port);// to do
 	else
 		hdmirx_wr_top(TOP_ACR_CNTL2, data32, port);//change
-
 	if (rx_info.chip_id >= CHIP_ID_TL1) {
 		/* Configure channel switch */
 		data32  = 0;
@@ -2611,11 +2636,6 @@ static int top_init(u8 port)
 			hdmirx_wr_top(TOP_CHAN_SWITCH_1_T3X, data32, port);
 		else
 			hdmirx_wr_top(TOP_CHAN_SWITCH_1, data32, port);
-		data32  = 0;
-		data32 |= (2 << 28); /* [29:28]      source_2 */
-		data32 |= (1 << 26); /* [27:26]      source_1 */
-		data32 |= (0 << 24); /* [25:24]      source_0 */
-		hdmirx_wr_top(TOP_CHAN_SWITCH_0, data32, port);
 
 		/* Configure TMDS align T7 unused */
 		if (rx_info.chip_id <= CHIP_ID_T7) {
@@ -2624,10 +2644,6 @@ static int top_init(u8 port)
 			data32	= 0;
 			hdmirx_wr_top(TOP_TMDS_ALIGN_CNTL1, data32, port);
 		}
-
-		/* Enable channel output */
-		data32 = hdmirx_rd_top(TOP_CHAN_SWITCH_0, port);
-		hdmirx_wr_top(TOP_CHAN_SWITCH_0, data32 | (1 << 0), port);
 
 		/* configure cable clock measure */
 		data32 = 0;
@@ -2641,10 +2657,7 @@ static int top_init(u8 port)
 	data32 |= (1 << 28); /* [31:28] meas_tolerance */
 	data32 |= (8192 << 0); /* [23: 0] ref_cycles */
 	hdmirx_wr_top(TOP_METER_HDMI_CNTL, data32, port);
-
-	/* bit'15 hbr_spdif_en: 1-spdif, 0- hbr */
-	if (rx_info.chip_id >= CHIP_ID_T7)
-		hdmirx_wr_bits_top(TOP_CLK_CNTL, _BIT(15), 0, port);
+	top_config(port);
 	return err;
 }
 
@@ -4165,16 +4178,10 @@ void rx_esm_reset(int level)
 	}
 }
 
-void cor_init(u8 port)
+void cor_config(u8 port)
 {
 	u8 data8;
 	u32 data32;
-
-	//--------AON REG------
-	data8  = 0;
-	data8 |= (0 << 4);// [4]   reg_sw_rst_auto
-	data8 |= (1 << 0);// [0]   reg_sw_rst
-	hdmirx_wr_cor(RX_AON_SRST, data8, port);//register address: 0x0005
 
 	data8  = 0;
 	data8 |= (0 << 5);// [5]  reg_scramble_on_ovr
@@ -4183,11 +4190,6 @@ void cor_init(u8 port)
 	data8 |= (0 << 1);// [1]  reg_scramble_on_val
 	data8 |= (1 << 0);// [0]  reg_hdmi2_on_val
 	hdmirx_wr_cor(RX_HDMI2_MODE_CTRL, data8, port);//register address: 0x0040
-
-	data8  = 0;
-	data8 |= (0 << 3);// [3] reg_soft_intr_en
-	data8 |= (0 << 1);// [1] reg_intr_polarity (default is 1)
-	hdmirx_wr_cor(RX_INT_CTRL, data8, port);//register address: 0x0079
 
 	//-------PWD REG-------
 	data8  = 0;
@@ -4200,6 +4202,85 @@ void cor_init(u8 port)
 	data8 |= (0 << 1);// [1]  rsvd
 	data8 |= (0 << 0);// [0]  reg_core_iso_en  TMDS core isolation enable
 	hdmirx_wr_cor(RX_PWD_CTRL, data8, port);//register address: 0x1001
+
+	data8  = 0;
+	data8 |= (0 << 3);//[5:3] divides the vpc out clock
+	//[2:0] divides the vpc core clock:
+	//0: divide by 1; 1: divide by 2; 3: divide by 4; 7: divide by 8
+	data8 |= (1 << 0);
+	hdmirx_wr_cor(RX_PWD0_CLK_DIV_0, data8, port) ;//register address: 0x10c1
+
+	data8 = 0;
+	data8 |= (0 << 7);// [  7] cbcr_order
+	data8 |= (0 << 6);// [  6] yc_demux_polarity
+	data8 |= (0 << 5);// [  5] yc_demux_enable
+	hdmirx_wr_cor(RX_VP_INPUT_FORMAT_LO, data8, port);
+
+	data8  = 0;
+	data8 |= (0 << 3);// [  3] mux_cb_or_cr
+	data8 |= (0 << 2);// [  2] mux_420_enable
+	data8 |= (0 << 0);// [1:0] input_pixel_rate
+	hdmirx_wr_cor(RX_VP_INPUT_FORMAT_HI, data8, port);
+
+	data32 = 0;
+	//data32 |= (((rx_color_format==HDMI_COLOR_FORMAT_422)?3:2)   << 9);
+	data32 |= (2 << 9);
+	// [11: 9] select_cr: 0=ch1(Y); 1=ch0(Cb); 2=ch2(Cr); 3={ch2 8-b,ch0 4-b}(422).
+	//data32 |= (((rx_color_format==HDMI_COLOR_FORMAT_422)?3:1)   << 6);
+	data32 |= (1 << 6);
+	// [ 8: 6] select_cb: 0=ch1(Y); 1=ch0(Cb); 2=ch2(Cr); 3={ch2 8-b,ch0 4-b}(422).
+	//data32 |= (((rx_color_format==HDMI_COLOR_FORMAT_422)?3:0)   << 3);
+	data32 |= (0 << 3);
+	// [ 5: 3] select_y : 0=ch1(Y); 1=ch0(Cb); 2=ch2(Cr); 3={ch1 8-b,ch0 4-b}(422).
+	data32 |= (0 << 2);// [    2] reverse_cr
+	data32 |= (0 << 1);// [    1] reverse_cb
+	data32 |= (0 << 0);// [    0] reverse_y
+	hdmirx_wr_cor(VP_INPUT_MAPPING_VID_IVCRX, data32 & 0xff, port);
+	hdmirx_wr_cor(VP_INPUT_MAPPING_VID_IVCRX + 1, (data32 >> 8) & 0xff, port);
+
+	hdmirx_wr_cor(AAC_MCLK_SEL_AUD_IVCRX, 0x80, port);//MCLK_SEL [5:4]=>00:128*Fs;01:256*Fs
+
+	hdmirx_wr_cor(RX_PWD_SRST_PWD_IVCRX, 0x1a, port);//SRST = 1
+	/* BIT0 AUTO RST AUD FIFO when fifo err */
+	hdmirx_wr_cor(RX_PWD_SRST_PWD_IVCRX, 0x01, port);//SRST = 0
+
+	/* TDM cfg */
+	hdmirx_wr_cor(RX_TDM_CTRL1_AUD_IVCRX, 0x00, port);
+	hdmirx_wr_cor(RX_TDM_CTRL2_AUD_IVCRX, 0x10, port);
+
+	//clr gcp wr; disable hw avmute for [T7,T5M)
+	hdmirx_wr_cor(DEC_AV_MUTE_DP2_IVCRX, 0x20, port);
+
+	//DPLL
+	if (rx[port].var.frl_rate) {
+		//frl_debug todo
+		hdmirx_wr_cor(DPLL_CFG6_DPLL_IVCRX, 0x0, port);
+		hdmirx_wr_cor(H21RXSB_D2TH_M42H_IVCRX, 0x20, port);
+		hdmirx_wr_bits_cor(H21RXSB_GP1_REGISTER_M42H_IVCRX, _BIT(3), 1, port);
+		//clk ready threshold
+		hdmirx_wr_cor(H21RXSB_DIFF1T_M42H_IVCRX, 0x20, port);
+	} else {
+		hdmirx_wr_cor(DPLL_CFG6_DPLL_IVCRX, 0x10, port);
+		hdmirx_wr_cor(RX_H21_CTRL_PWD_IVCRX, 0x0, port);
+	}
+}
+
+void cor_init(u8 port)
+{
+	u8 data8;
+
+	//--------AON REG------
+	data8  = 0;
+	data8 |= (0 << 4);// [4]   reg_sw_rst_auto
+	data8 |= (1 << 0);// [0]   reg_sw_rst
+	hdmirx_wr_cor(RX_AON_SRST_AON_IVCRX, data8, port);//register address: 0x0005
+
+	hdmirx_wr_cor(RX_PWD_INT_CTRL, 0x00, port);//[1] reg_intr_polarity, default = 1
+
+	data8  = 0;
+	data8 |= (0 << 3);// [3] reg_soft_intr_en
+	data8 |= (0 << 1);// [1] reg_intr_polarity (default is 1)
+	hdmirx_wr_cor(RX_INT_CTRL, data8, port);//register address: 0x0079
 
 	data8  = 0;
 	data8 |= (0 << 3);// [4:3] reg_dsc_bypass_align
@@ -4239,25 +4320,6 @@ void cor_init(u8 port)
 	data8 |= (0 << 5);//reg_invert_tclk
 	hdmirx_wr_cor(RX_TEST_STAT, data8, port);//register address: 0x103b (0x80)
 
-	data8  = 0;
-	data8 |= (0 << 3);//[5:3] divides the vpc out clock
-	//[2:0] divides the vpc core clock:
-	//0: divide by 1; 1: divide by 2; 3: divide by 4; 7: divide by 8
-	data8 |= (1 << 0);
-	hdmirx_wr_cor(RX_PWD0_CLK_DIV_0, data8, port) ;//register address: 0x10c1
-
-	data8 = 0;
-	data8 |= (0 << 7);// [  7] cbcr_order
-	data8 |= (0 << 6);// [  6] yc_demux_polarity
-	data8 |= (0 << 5);// [  5] yc_demux_enable
-	hdmirx_wr_cor(RX_VP_INPUT_FORMAT_LO, data8, port);
-
-	data8  = 0;
-	data8 |= (0 << 3);// [  3] mux_cb_or_cr
-	data8 |= (0 << 2);// [  2] mux_420_enable
-	data8 |= (0 << 0);// [1:0] input_pixel_rate
-	hdmirx_wr_cor(RX_VP_INPUT_FORMAT_HI, data8, port);
-
 	//===hdcp 1.4 needed
 	hdmirx_wr_cor(RX_SW_HDMI_MODE_PWD_IVCRX, 0x04, port);//register address: 0x1022
 
@@ -4279,7 +4341,6 @@ void cor_init(u8 port)
 	hdmirx_wr_cor(PWD0_CLK_EN_4_PHYCK_IVCRX, 0x04, port);//register address: 0x20a6
 
 	hdmirx_wr_cor(RX_AON_SRST_AON_IVCRX, 0x00, port);//reset
-	hdmirx_wr_cor(RX_PWD_INT_CTRL, 0x00, port);//[1] reg_intr_polarity, default = 1
 	//-------------------
 	//  vp core config
 	//-------------------
@@ -4291,22 +4352,6 @@ void cor_init(u8 port)
 	data8 |= (0	   << 1);// hsync_polarity
 	data8 |= (0	   << 0);// vsync_polarity
 	hdmirx_wr_cor(VP_OUTPUT_SYNC_CFG_VID_IVCRX, data8, port);//register address: 0x1842
-
-	data32 = 0;
-	//data32 |= (((rx_color_format==HDMI_COLOR_FORMAT_422)?3:2)   << 9);
-	data32 |= (2 << 9);
-	// [11: 9] select_cr: 0=ch1(Y); 1=ch0(Cb); 2=ch2(Cr); 3={ch2 8-b,ch0 4-b}(422).
-	//data32 |= (((rx_color_format==HDMI_COLOR_FORMAT_422)?3:1)   << 6);
-	data32 |= (1 << 6);
-	// [ 8: 6] select_cb: 0=ch1(Y); 1=ch0(Cb); 2=ch2(Cr); 3={ch2 8-b,ch0 4-b}(422).
-	//data32 |= (((rx_color_format==HDMI_COLOR_FORMAT_422)?3:0)   << 3);
-	data32 |= (0 << 3);
-	// [ 5: 3] select_y : 0=ch1(Y); 1=ch0(Cb); 2=ch2(Cr); 3={ch1 8-b,ch0 4-b}(422).
-	data32 |= (0 << 2);// [    2] reverse_cr
-	data32 |= (0 << 1);// [    1] reverse_cb
-	data32 |= (0 << 0);// [    0] reverse_y
-	hdmirx_wr_cor(VP_INPUT_MAPPING_VID_IVCRX, data32 & 0xff, port);
-	hdmirx_wr_cor(VP_INPUT_MAPPING_VID_IVCRX + 1, (data32 >> 8) & 0xff, port);
 
 	//------------------
 	// audio I2S config
@@ -4362,6 +4407,9 @@ void cor_init(u8 port)
 	data8 |= (0 << 0);//[0]  reg_pcm
 	hdmirx_wr_cor(RX_I2S_CTRL2_AUD_IVCRX, data8, port);
 
+	hdmirx_wr_cor(RX_HPD_C_CTRL_AON_IVCRX, 0x1, port);//HPD
+	hdmirx_wr_cor(SCDCS_100MS_IN_1MS_CNT_SCDC_IVCRX, 0x1, port);
+
 	data8 = 0;
 	data8 |= (3 << 6);//[7:6] reg_sd3_map
 	data8 |= (2 << 4);//[5:4] reg_sd2_map
@@ -4375,7 +4423,6 @@ void cor_init(u8 port)
 
 	hdmirx_wr_cor(RX_AUDO_MUTE_AUD_IVCRX, 0x00, port);//AUDO_MODE
 	hdmirx_wr_cor(RX_OW_15_8_AUD_IVCRX, 0x00, port);//OW_15_8
-	hdmirx_wr_cor(AAC_MCLK_SEL_AUD_IVCRX, 0x80, port);//MCLK_SEL [5:4]=>00:128*Fs;01:256*Fs
 
 	data8 = 0;
 	data8 |= (0 << 7);//[7] enable overwrite length ralated cbit
@@ -4422,16 +4469,6 @@ void cor_init(u8 port)
 	//}
 	hdmirx_wr_cor(RX_3D_SW_OW2_AUD_IVCRX, data8, port);//duplicate
 
-	hdmirx_wr_cor(RX_PWD_SRST_PWD_IVCRX, 0x1a, port);//SRST = 1
-	/* BIT0 AUTO RST AUD FIFO when fifo err */
-	hdmirx_wr_cor(RX_PWD_SRST_PWD_IVCRX, 0x01, port);//SRST = 0
-
-	/* TDM cfg */
-	hdmirx_wr_cor(RX_TDM_CTRL1_AUD_IVCRX, 0x00, port);
-	hdmirx_wr_cor(RX_TDM_CTRL2_AUD_IVCRX, 0x10, port);
-
-	//clr gcp wr; disable hw avmute for [T7,T5M)
-	hdmirx_wr_cor(DEC_AV_MUTE_DP2_IVCRX, 0x20, port);
 	// hdcp 2x ECC detection enable  mode 3
 	hdmirx_wr_cor(HDCP2X_RX_ECC_CTRL, 3, port);
 	hdmirx_wr_cor(HDCP2X_RX_ECC_CONS_ERR_THR, 50, port);
@@ -4440,21 +4477,8 @@ void cor_init(u8 port)
 	//hdmirx_wr_cor(HDCP2X_RX_ECC_GVN_FRM_ERR_THR_2, 0xff, port);
 	//hdmirx_wr_cor(HDCP2X_RX_GVN_FRM, 30, port);
 
-	//DPLL
-	if (rx[port].var.frl_rate) {
-		//frl_debug todo
-		hdmirx_wr_cor(DPLL_CFG6_DPLL_IVCRX, 0x0, port);
-		hdmirx_wr_cor(H21RXSB_D2TH_M42H_IVCRX, 0x20, port);
-		hdmirx_wr_bits_cor(H21RXSB_GP1_REGISTER_M42H_IVCRX, _BIT(3), 1, port);
-		//clk ready threshold
-		hdmirx_wr_cor(H21RXSB_DIFF1T_M42H_IVCRX, 0x20, port);
-	} else {
-		hdmirx_wr_cor(DPLL_CFG6_DPLL_IVCRX, 0x10, port);
-		hdmirx_wr_cor(RX_H21_CTRL_PWD_IVCRX, 0x0, port);
-	}
 	hdmirx_wr_cor(DPLL_HDMI2_DPLL_IVCRX, 0, port);
-
-	hdmirx_wr_cor(HDMI2_MODE_CTRL_AON_IVCRX, 0x11, port);
+	cor_config(port);
 }
 
 void hdmirx_hbr2spdif(u8 val, u8 port)
@@ -4485,10 +4509,10 @@ void hdmirx_hw_config(u8 port)
 	//rx_i2c_div_init();
 	hdmirx_output_en(false);
 	if (rx_info.chip_id >= CHIP_ID_T3X) {
-		top_init(port);
-		cor_init(port);
+		top_config(port);
+		cor_config(port);
 	} else if (rx_info.chip_id >= CHIP_ID_T7) {
-		cor_init(port);
+		cor_config(port);
 	} else {
 		control_reset();
 		rx_hdcp_init();
@@ -4541,8 +4565,8 @@ void hdmirx_hw_probe(void)
 	hdmirx_top_sw_reset();
 	if (rx_info.chip_id >= CHIP_ID_T3X) {
 		for (i = 0; i < 4; i++) {
-			cor_init(i); //todo
 			top_init(i);
+			cor_init(i); //todo
 			packet_init(i);
 		}
 	} else if (rx_info.chip_id >= CHIP_ID_T7) {

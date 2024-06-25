@@ -2014,8 +2014,6 @@ void hdcp_init_t7(u8 port)
 	//======================================
 	// HDCP 2.X Config ---- RX
 	//======================================
-	hdmirx_wr_cor(RX_HPD_C_CTRL_AON_IVCRX, 0x1, port);//HPD
-	hdmirx_wr_cor(SCDCS_100MS_IN_1MS_CNT_SCDC_IVCRX, 0x1, port);
 	//todo: enable hdcp22 according hdcp burning
 	if ((is_rx_hdcp22key_loaded_t7() && is_rx_hdcp22key_crc0_pass()) || hdcp_22_en)
 		hdmirx_wr_cor(RX_HDCP2x_CTRL_PWD_IVCRX, 0x1, port);//ri_hdcp2x_en

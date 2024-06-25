@@ -3951,11 +3951,21 @@ void rx_hdcp_monitor(u8 port)
 		rx[port].ecc_err_frames_cnt = 0;
 	}
 	if (rx[port].ecc_err_frames_cnt >= rx_ecc_err_frames) {
-		if (rx[port].hdcp.hdcp_version == HDCP_VER_22)
+		if (rx[port].hdcp.hdcp_version == HDCP_VER_22 || rx[port].cur.hdcp22_state) {
+			rx_pr("port%d hdcp22 reauth-err:%d, reauth_req:0x%x\n",
+				port, rx[port].ecc_err,
+				hdmirx_rd_cor(CP2PAX_CTRL_0_HDCP2X_IVCRX, port));
 			rx_hdcp_22_sent_reauth(port);
-		else if (rx[port].hdcp.hdcp_version == HDCP_VER_14)
+		} else if (rx[port].hdcp.hdcp_version == HDCP_VER_14 || rx[port].cur.hdcp14_state) {
+			rx_pr("port%d hdcp14 reauth-err:%d, reauth_req:0x%x\n",
+				port, rx[port].ecc_err,
+				hdmirx_rd_cor(CP2PAX_CTRL_0_HDCP2X_IVCRX, port));
 			rx_hdcp_14_sent_reauth(port);
-		rx_pr("reauth-err:%d\n", rx[port].ecc_err);
+		} else {
+			rx_pr("port%d reauth-err:%d, reauth_req:0x%x\n",
+				port, rx[port].ecc_err,
+				hdmirx_rd_cor(CP2PAX_CTRL_0_HDCP2X_IVCRX, port));
+		}
 		rx[port].hdcp.hdcp_version = HDCP_VER_NONE;
 		rx[port].state = FSM_SIG_WAIT_STABLE;
 		rx[port].ecc_err = 0;

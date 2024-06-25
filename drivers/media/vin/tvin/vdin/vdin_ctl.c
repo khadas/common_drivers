@@ -6477,6 +6477,11 @@ void vdin_set_drm_data(struct vdin_dev_s *devp,
 			(vf->signal_type & (~0xFF00)));
 	}
 
+	if (devp->prop.dolby_vision)
+		vf->signal_type |= (1 << 30);
+	else
+		vf->signal_type &= ~(1 << 30);
+
 	/* hdr10+ check */
 	vdin_hdr10plus_check(devp, vf);
 

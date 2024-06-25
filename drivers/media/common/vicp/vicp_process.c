@@ -1615,25 +1615,37 @@ static void dump_yuv(int flag, struct vframe_s *vframe)
 #endif
 }
 
-static int get_input_color_bitdepth(struct vframe_s *vf)
+static int get_input_color_bitdepth(struct vframe_s *vf, bool need_use_dw)
 {
 	int bitdepth = 0;
+	int ret = 0;
 
 	if (IS_ERR_OR_NULL(vf)) {
 		vicp_print(VICP_ERROR, "%s: NULL param.\n", __func__);
 		return -1;
 	}
 
-	if (vf->bitdepth & BITDEPTH_Y9)
-		bitdepth = 9;
-	else if (vf->bitdepth & BITDEPTH_Y10)
-		bitdepth = 10;
-	else if (vf->bitdepth & BITDEPTH_Y12)
-		bitdepth = 12;
-	else
-		bitdepth = 8;
+	vicp_print(VICP_INFO, "bitdepth:0x%x, bitdepth_dw:0x%x.\n", vf->bitdepth, vf->bitdepth_dw);
+	if (vf->source_type == VFRAME_SOURCE_TYPE_HDMI ||
+	    vf->source_type == VFRAME_SOURCE_TYPE_CVBS) {
+		if ((vf->type & VIDTYPE_COMPRESS) && need_use_dw)
+			bitdepth = vf->bitdepth_dw;
+		else
+			bitdepth = vf->bitdepth;
+	} else {
+		bitdepth = vf->bitdepth;
+	}
 
-	return bitdepth;
+	if (bitdepth & BITDEPTH_Y9)
+		ret = 9;
+	else if (bitdepth & BITDEPTH_Y10)
+		ret = 10;
+	else if (bitdepth & BITDEPTH_Y12)
+		ret = 12;
+	else
+		ret = 8;
+
+	return ret;
 }
 
 static int get_input_color_format(struct vframe_s *vf)
@@ -1645,8 +1657,10 @@ static int get_input_color_format(struct vframe_s *vf)
 		return -1;
 	}
 
+	vicp_print(VICP_INFO, "type:0x%x.\n", vf->type);
 	/*0:yuv444 1:yuv422 2:yuv420 */
-	if (vf->type & VIDTYPE_VIU_444)
+	if ((vf->type & VIDTYPE_VIU_444) ||
+		(vf->type & VIDTYPE_RGB_444))
 		format = 0;
 	else if (vf->type & VIDTYPE_VIU_422)
 		format = 1;
@@ -1654,6 +1668,21 @@ static int get_input_color_format(struct vframe_s *vf)
 		format = 2;
 
 	return format;
+}
+
+static bool is_dv_input(struct vframe_s *vf)
+{
+	bool ret = false;
+
+	if (IS_ERR_OR_NULL(vf)) {
+		vicp_print(VICP_ERROR, "%s: NULL param.\n", __func__);
+		return -1;
+	}
+
+	if (vf->signal_type & (1 << 30))
+		ret = true;
+
+	return ret;
 }
 
 static void set_vid_cmpr_basic_param(struct vid_cmpr_top_s *vid_cmpr_top)
@@ -2069,6 +2098,12 @@ int vicp_process_config(struct vicp_data_config_s *data_config,
 		if ((input_area + 15) / output_area >> 4)
 			need_use_dw = true;
 
+		if (is_dv_input(data_config->input_data.data_vf)) {
+			vicp_print(VICP_INFO, "%s: dv input(0x%x).\n",
+				__func__, data_config->input_data.data_vf->signal_type);
+			need_use_dw = true;
+		}
+
 		if (data_config->input_data.data_vf->type & VIDTYPE_COMPRESS)
 			is_fbc_exist = true;
 
@@ -2080,7 +2115,6 @@ int vicp_process_config(struct vicp_data_config_s *data_config,
 			vid_cmpr_top->src_vsize = input_vframe->compHeight;
 			vid_cmpr_top->src_head_baddr = input_vframe->compHeadAddr;
 			vid_cmpr_top->src_body_baddr = input_vframe->compBodyAddr;
-			vid_cmpr_top->src_compbits = get_input_color_bitdepth(input_vframe);
 
 			if (input_vframe->type & VIDTYPE_COMPRESS_LOSS &&
 			    input_vframe->vf_lossycomp_param.lossy_mode == 1) {
@@ -2135,14 +2169,10 @@ int vicp_process_config(struct vicp_data_config_s *data_config,
 				vid_cmpr_top->canvas_width[2] =
 					canvas_get_width(input_vframe->canvas0Addr >> 16 & 0xff);
 			}
-
-			if (is_fbc_exist)
-				vid_cmpr_top->src_compbits = 8;
-			else
-				vid_cmpr_top->src_compbits = get_input_color_bitdepth(input_vframe);
 		}
 		vid_cmpr_top->src_vf = input_vframe;
 		vid_cmpr_top->src_fmt_mode = get_input_color_format(input_vframe);
+		vid_cmpr_top->src_compbits = get_input_color_bitdepth(input_vframe, need_use_dw);
 		vid_cmpr_top->src_win_bgn_h = 0;
 		vid_cmpr_top->src_win_end_h = vid_cmpr_top->src_hsize - 1;
 		vid_cmpr_top->src_win_bgn_v = 0;

@@ -375,7 +375,7 @@ void dmc_vio_check_page(void *data)
 	}
 }
 
-unsigned long read_violation_mem(unsigned long addr, char rw)
+unsigned long __no_sanitize_address read_violation_mem(unsigned long addr, char rw)
 {
 	struct page *page;
 	unsigned long *p, *q;
@@ -1632,6 +1632,10 @@ static int __init dmc_monitor_probe(struct platform_device *pdev)
 		dmc_mon = NULL;
 		return -EINVAL;
 	}
+
+	/* clear reg before set it */
+	if (dmc_mon->ops && dmc_mon->ops->disable)
+		dmc_mon->ops->disable(dmc_mon);
 
 	if (init_dmc_debug)
 		dmc_mon->debug = init_dmc_debug;

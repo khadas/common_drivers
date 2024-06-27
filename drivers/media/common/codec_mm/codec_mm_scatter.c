@@ -87,6 +87,11 @@ module_param(scatter_debug_mode, int, 0644);
 #define MAX_SID (SID_MASK - 1)
 #define MAX_HASH_SID (MAX_SID - 1)
 
+#define SCATTER_ALLOC_FROM_DEFAULT	0
+#define SCATTER_ALLOC_FROM_SYS		1
+#define SCATTER_ALLOC_FROM_CMA		2
+#define SCATTER_ALLOC_FROM_MIXED	3
+
 #define ADDR_SEED(paddr) (((paddr) >> (MAX_ADDR_SHIFT << 1)) +\
 					((paddr) >> MAX_ADDR_SHIFT) +\
 					(paddr))
@@ -3120,6 +3125,46 @@ static void codec_mm_scatter_monitor(struct work_struct *work)
 	mutex_unlock(&smgt->monitor_lock);
 }
 
+static u32 codec_mm_scatter_get_reserved_block_size(void)
+{
+	u32 ret, reserved_block_size;
+	int alloc_mode =
+		codec_mm_get_property_from_dts("scatter_alloc_mode");
+	u32 total_size = codec_mm_get_total_size() / SZ_1M;
+
+	if (alloc_mode < 0)
+		alloc_mode = SCATTER_ALLOC_FROM_DEFAULT;
+
+	switch (alloc_mode) {
+	case SCATTER_ALLOC_FROM_SYS:
+		ret = total_size;
+		break;
+
+	case SCATTER_ALLOC_FROM_CMA:
+		ret = 0;
+		break;
+
+	case SCATTER_ALLOC_FROM_MIXED:
+		reserved_block_size =
+			codec_mm_get_property_from_dts("reserved_block_size");
+		if (reserved_block_size > total_size ||
+			reserved_block_size < 0) {
+			ret = 300;
+			pr_info("reserved_block_size is %d, reset as 300.\n",
+				reserved_block_size);
+		} else {
+			ret = reserved_block_size;
+		}
+		break;
+
+	case SCATTER_ALLOC_FROM_DEFAULT:
+	default:
+		ret = 300;
+	}
+
+	return ret;
+}
+
 static int codec_mm_scatter_mgt_alloc_in(struct codec_mm_scatter_mgt **psmgt)
 {
 	struct codec_mm_scatter_mgt *smgt;
@@ -3137,7 +3182,7 @@ static int codec_mm_scatter_mgt_alloc_in(struct codec_mm_scatter_mgt **psmgt)
 	smgt->try_alloc_in_sys_page_cnt_max = MAX_SYS_BLOCK_PAGE;
 	smgt->try_alloc_in_sys_page_cnt = MAX_SYS_BLOCK_PAGE;
 	smgt->try_alloc_in_sys_page_cnt_min = MIN_SYS_BLOCK_PAGE;
-	smgt->reserved_block_mm_M = 300;
+	smgt->reserved_block_mm_M = codec_mm_scatter_get_reserved_block_size();
 	smgt->keep_size_PAGE = is_2k_platform() ?
 			4 * SZ_1M >> PAGE_SHIFT : 20 * SZ_1M >> PAGE_SHIFT;
 	smgt->alloc_from_cma_first = 1;

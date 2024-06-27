@@ -125,8 +125,14 @@
 		codec_mm_cma:linux,codec_mm_cma {
 			compatible = "shared-dma-pool";
 			reusable;
-			/*Primary + Secondary + PIP based on BDS/ASOP: max scenario need 692MB*/
-			size = <0x0 0x2b400000>;
+			/*
+			 * Scenario: Primary + Secondary + PIP
+			 * Total size: 628M
+			 * Note:
+			 *  setting to 604M if scatter_alloc_mode is 0.
+			 *  setting to 580M if scatter_alloc_mode is 1.
+			 */
+			size = <0x0 0x24400000>;
 			alignment = <0x0 0x400000>;
 			alloc-ranges = <0x0 0x0 0x0 0xe0000000>;
 			linux,contiguous-region;
@@ -309,6 +315,12 @@
 		memory-region = <&codec_mm_cma &codec_mm_reserved &secure_vdec_reserved>;
 		dev_name = "codec_mm";
 		status = "okay";
+		/*
+		 * scatter_alloc_mode: the mode of scatter memory allocation
+		 * 0: default mode, alloc from system and cma
+		 * 1: only alloc from system
+		 */
+		scatter_alloc_mode = <1>;
 	};
 
 	cvbsout {

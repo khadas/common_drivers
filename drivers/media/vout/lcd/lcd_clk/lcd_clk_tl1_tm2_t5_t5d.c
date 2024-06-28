@@ -458,15 +458,15 @@ static void lcd_set_vid_pll_div_txhd2(struct aml_lcd_drv_s *pdrv)
 	lcd_combo_dphy_setb(pdrv, COMBO_DPHY_VID_PLL0_DIV_TXHD2, 0, 15, 1);
 
 	i = 0;
-	while (lcd_clk_div_table[i][0] < cconf->data->div_sel_max) {
-		if (cconf->div_sel == lcd_clk_div_table[i][0])
+	while (lcd_clk_div_table[i].divider < cconf->data->div_sel_max) {
+		if (cconf->div_sel == lcd_clk_div_table[i].divider)
 			break;
 		i++;
 	}
-	if (lcd_clk_div_table[i][0] == cconf->data->div_sel_max)
+	if (lcd_clk_div_table[i].divider == cconf->data->div_sel_max)
 		LCDERR("invalid clk divider\n");
-	shift_val = lcd_clk_div_table[i][1];
-	shift_sel = lcd_clk_div_table[i][2];
+	shift_val = lcd_clk_div_table[i].shift_val;
+	shift_sel = lcd_clk_div_table[i].shift_sel;
 
 	if (shift_val == 0xffff) { /* if divide by 1 */
 		lcd_combo_dphy_setb(pdrv, COMBO_DPHY_VID_PLL0_DIV_TXHD2, 1, 18, 1);
@@ -1408,7 +1408,7 @@ static struct lcd_clk_data_s lcd_clk_data_txhd2 = {
 	.pll_out_fmax = 3100000000ULL,
 	.pll_out_fmin = 187500000,
 	.div_in_fmax = 3100000000ULL,
-	.div_out_fmax = 750000000,
+	.div_out_fmax = 1500000000U,
 	.xd_out_fmax = 400000000,
 	.od_cnt = 3,
 	.have_tcon_div = 1,

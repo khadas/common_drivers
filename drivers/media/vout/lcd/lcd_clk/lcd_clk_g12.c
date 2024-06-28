@@ -358,15 +358,15 @@ static void lcd_set_vid_pll_div_g12b(struct aml_lcd_drv_s *pdrv)
 	lcd_hiu_setb(HHI_VID_PLL_CLK_DIV, 0, 15, 1);
 
 	i = 0;
-	while (lcd_clk_div_table[i][0] < cconf->data->div_sel_max) {
-		if (cconf->div_sel == lcd_clk_div_table[i][0])
+	while (lcd_clk_div_table[i].divider < cconf->data->div_sel_max) {
+		if (cconf->div_sel == lcd_clk_div_table[i].divider)
 			break;
 		i++;
 	}
-	if (lcd_clk_div_table[i][0] == CLK_DIV_SEL_MAX)
+	if (lcd_clk_div_table[i].divider == CLK_DIV_SEL_MAX)
 		LCDERR("invalid clk divider\n");
-	shift_val = lcd_clk_div_table[i][1];
-	shift_sel = lcd_clk_div_table[i][2];
+	shift_val = lcd_clk_div_table[i].shift_val;
+	shift_sel = lcd_clk_div_table[i].shift_sel;
 
 	if (shift_val == 0xffff) { /* if divide by 1 */
 		lcd_hiu_setb(HHI_VID_PLL_CLK_DIV, 1, 18, 1);
@@ -630,7 +630,7 @@ static int lcd_clk_config_print_g12a(struct aml_lcd_drv_s *pdrv, char *buf, int 
 			"  pll_od3:  %d\n"
 			"  div_sel:  %s(index %d)\n",
 			cconf->pll_od2_sel, cconf->pll_od3_sel,
-			lcd_clk_div_sel_table[cconf->div_sel], cconf->div_sel);
+			lcd_clk_div_table[cconf->div_sel].name, cconf->div_sel);
 	}
 
 	len += snprintf((buf + len), n - len,

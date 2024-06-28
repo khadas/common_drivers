@@ -93,14 +93,10 @@
 #define EDP_DIV1_SEL_MAX            8
 
 extern unsigned int tcon_div[5][3];
-extern unsigned int edp_div0_table[15];
-extern unsigned int edp_div1_table[10];
-extern char *lcd_clk_div_sel_table[];
 
 extern const unsigned int od_table[6];
 extern const unsigned int od_fb_table[2];
 extern const unsigned int tcon_div_table[5];
-extern unsigned int lcd_clk_div_table[][5];
 
 /* g9tv, g9bb, gxbb divider */
 #define CLK_DIV_I2O     0
@@ -125,5 +121,16 @@ enum div_sel_e {
 	CLK_DIV_SEL_2p33, /* 16 */
 	CLK_DIV_SEL_MAX,
 };
+
+struct lcd_clk_div_table_s {
+	char *name;
+	unsigned char divider;
+	unsigned char num;
+	unsigned char den;
+	unsigned char shift_sel;
+	unsigned short shift_val;
+};
+
+extern struct lcd_clk_div_table_s lcd_clk_div_table[];
 
 #endif

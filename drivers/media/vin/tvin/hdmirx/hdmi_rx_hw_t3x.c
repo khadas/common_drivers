@@ -5478,7 +5478,7 @@ void audio_setting_for_aud21(int frl_rate, u8 port)
 		wr_reg_clk_ctl(T3X_CLKCTRL_AUD21_PLL_CTRL1, 0x8);
 		//aud div
 		hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX21PHY_DCHA_PI,
-		MSK(2, 12), 0x2, port);
+		MSK(2, 12), 0x3, port);
 		//Na
 		hdmirx_wr_bits_clk_ctl(T3X_CLKCTRL_AUD21_PLL_CTRL0,
 		_BIT(13), 1);

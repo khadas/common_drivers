@@ -5517,7 +5517,7 @@ void rx_main_state_machine(void)
 		if (check_real_sr_change(port))
 			rx_audio_pll_sw_update();
 
-		if (is_aud_pll_error()) {
+		if (is_aud_pll_error_20()) {
 			rx[port].aud_sr_unstable_cnt++;
 			if (rx[port].aud_sr_unstable_cnt > aud_sr_stb_max) {
 				unsigned int aud_sts = rx_get_aud_pll_err_sts(port);

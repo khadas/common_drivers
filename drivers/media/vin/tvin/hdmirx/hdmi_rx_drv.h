@@ -68,7 +68,8 @@
 //2024.03.04 fix repeat issue
 //2024.04.24 remove esd hpd
 //2024.07.04 optimize pcs reset flow
-#define RX_VER0 "ver.2024/07/04"
+//2024.07.10 correct 12g aud div
+#define RX_VER0 "ver.2024/07/10"
 
 
 /*print type*/
@@ -1201,7 +1202,9 @@ unsigned int hdmirx_hw_dump_reg(unsigned char *buf, int size);
 unsigned int hdmirx_show_info(unsigned char *buf, int size, u8 port);
 unsigned int hdmirx_show_info_t3x(unsigned char *buf, int size);
 bool is_aud_fifo_error(void);
-bool is_aud_pll_error(void);
+bool is_aud_pll_error_20(void);
+bool is_aud_pll_error_21(void);
+
 int hdmirx_debug(const char *buf, int size);
 void dump_reg(u8 port);
 void dump_edid_reg(u32 size);

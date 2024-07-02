@@ -3903,6 +3903,8 @@ void rx_afifo_monitor(u8 port)
 		return;
 	}
 
+	if (is_aud_pll_error_21())
+		return;
 	if (rx_afifo_dbg_en) {
 		afifo_overflow_cnt = 0;
 		afifo_underflow_cnt = 0;
@@ -4648,7 +4650,7 @@ bool is_aud_fifo_error(void)
  *
  * return true if audio clock is in range, false otherwise.
  */
-bool is_aud_pll_error(void)
+bool is_aud_pll_error_20(void)
 {
 	bool ret = true;
 	u32 clk;
@@ -4657,6 +4659,25 @@ bool is_aud_pll_error(void)
 
 	if (rx_info.chip_id >= CHIP_ID_T7)
 		return false;
+	clk = rx[rx_info.main_port].aud_info.aud_clk;
+	aud_128fs = rx[rx_info.main_port].aud_info.real_sr * 128;
+	aud_512fs = rx[rx_info.main_port].aud_info.real_sr * 512;
+	if (rx[rx_info.main_port].aud_info.real_sr == 0)
+		return false;
+	if (abs(clk - aud_128fs) < AUD_PLL_THRESHOLD ||
+	    abs(clk - aud_512fs) < AUD_PLL_THRESHOLD)
+		ret = false;
+	if ((ret) && (log_level & AUDIO_LOG))
+		rx_pr("clk:%d,128fs:%d,512fs:%d,\n", clk, aud_128fs, aud_512fs);
+	return ret;
+}
+
+bool is_aud_pll_error_21(void)
+{
+	bool ret = true;
+	u32 clk;
+	u32 aud_128fs;
+	u32 aud_512fs;
 
 	clk = rx[rx_info.main_port].aud_info.aud_clk;
 	aud_128fs = rx[rx_info.main_port].aud_info.real_sr * 128;

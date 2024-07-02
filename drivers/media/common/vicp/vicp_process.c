@@ -2177,7 +2177,7 @@ int vicp_process_config(struct vicp_data_config_s *data_config,
 			current_dump_flag = dump_yuv_flag;
 		}
 	} else {
-		input_dma = data_config->input_data.data_dma;
+		input_dma = &data_config->input_data.data_dma;
 		vid_cmpr_top->src_compress = 0;
 		temp_compress_param.compress_mode = LOSSY_COMPRESS_MODE_OFF;
 		vid_cmpr_top->src_hsize = input_dma->data_width;

@@ -2742,9 +2742,10 @@ static void vframe_composer(struct composer_dev *dev)
 			memset(&data_config, 0, sizeof(struct vicp_data_config_s));
 			config_vicp_input_data(src_vf,
 					addr,
-					dst_buf->buf_w,
-					dst_buf->buf_w,
-					dst_buf->buf_h,
+					vframe_info_cur->buffer_w,
+					vframe_info_cur->buffer_h,
+					vframe_info_cur->reserved[0],
+					vframe_info_cur->reserved[1],
 					1,
 					VICP_COLOR_FORMAT_YUV420,
 					8,
@@ -2849,11 +2850,12 @@ static void vframe_composer(struct composer_dev *dev)
 			if (ret < 0)
 				vc_print(dev->index, PRINT_ERROR, "ge2d composer failed\n");
 		}
+		src_vf = NULL;
 	}
 
 	for (i = 0; i < count; i++) {
 		if (!input_vf[i] || out_axis[i].width == 0 || out_axis[i].height == 0) {
-			vc_print(dev->index, PRINT_ERROR, "invalid aiface param.\n");
+			vc_print(dev->index, PRINT_AIFACE, "invalid aiface param.\n");
 			break;
 		}
 

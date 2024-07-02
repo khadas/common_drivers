@@ -123,7 +123,7 @@ struct dma_data_config_s {
 struct input_data_param_s {
 	bool is_vframe;
 	struct vframe_s *data_vf;
-	struct dma_data_config_s *data_dma;
+	struct dma_data_config_s data_dma;
 };
 
 struct output_data_param_s {

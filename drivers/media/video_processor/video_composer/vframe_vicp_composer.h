@@ -14,8 +14,9 @@
 
 bool is_vicp_supported(void);
 enum vicp_rotation_mode_e map_rotationmode_from_vc_to_vicp(int rotation_vc);
-int config_vicp_input_data(struct vframe_s *vf, ulong addr, int stride, int width, int height,
-	int endian, int color_fmt, int color_depth, struct input_data_param_s *input_data);
+int config_vicp_input_data(struct vframe_s *vf, ulong addr, int stride_w, int stride_y,
+	int width, int height, int endian, int color_fmt, int color_depth,
+	struct input_data_param_s *input_data);
 int config_vicp_output_data(int fbc_out_en, int mif_out_en, ulong *phy_addr, int stride,
 	int width, int height, int endian, enum vicp_color_format_e cfmt_mif, int cdep_mif,
 	enum vicp_color_format_e cfmt_fbc, int cdep_fbc, int init_ctrl, int pip_mode,

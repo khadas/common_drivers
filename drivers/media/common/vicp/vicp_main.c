@@ -833,7 +833,6 @@ static unsigned long get_buf_phy_addr(u32 buf_fd)
 static int config_vicp_param(struct vicp_data_info_s *vicp_data_info,
 	struct vicp_data_config_s *data_config)
 {
-	struct dma_data_config_s data_dma;
 
 	if (IS_ERR_OR_NULL(vicp_data_info) || IS_ERR_OR_NULL(data_config)) {
 		pr_err("%s: NULL param, please check.\n", __func__);
@@ -841,18 +840,16 @@ static int config_vicp_param(struct vicp_data_info_s *vicp_data_info,
 	}
 
 	data_config->input_data.is_vframe = false;
-	memset(&data_dma, 0, sizeof(struct dma_data_config_s));
-	data_dma.buf_addr = get_buf_phy_addr(vicp_data_info->src_buf_fd);
-	data_dma.buf_stride_w = vicp_data_info->src_buf_alisg_w;
-	data_dma.buf_stride_h = vicp_data_info->src_buf_alisg_h;
-	data_dma.color_format = vicp_data_info->src_color_fmt;
-	data_dma.color_depth = vicp_data_info->src_color_depth;
-	data_dma.data_width = vicp_data_info->src_data_w;
-	data_dma.data_height = vicp_data_info->src_data_h;
-	data_dma.plane_count = 2;
-	data_dma.endian = vicp_data_info->src_endian;
-	data_dma.need_swap_cbcr = vicp_data_info->src_swap_cbcr;
-	data_config->input_data.data_dma = &data_dma;
+	data_config->input_data.data_dma.buf_addr = get_buf_phy_addr(vicp_data_info->src_buf_fd);
+	data_config->input_data.data_dma.buf_stride_w = vicp_data_info->src_buf_alisg_w;
+	data_config->input_data.data_dma.buf_stride_h = vicp_data_info->src_buf_alisg_h;
+	data_config->input_data.data_dma.color_format = vicp_data_info->src_color_fmt;
+	data_config->input_data.data_dma.color_depth = vicp_data_info->src_color_depth;
+	data_config->input_data.data_dma.data_width = vicp_data_info->src_data_w;
+	data_config->input_data.data_dma.data_height = vicp_data_info->src_data_h;
+	data_config->input_data.data_dma.plane_count = 2;
+	data_config->input_data.data_dma.endian = vicp_data_info->src_endian;
+	data_config->input_data.data_dma.need_swap_cbcr = vicp_data_info->src_swap_cbcr;
 
 	data_config->output_data.fbc_out_en = false;
 	data_config->output_data.mif_out_en = true;

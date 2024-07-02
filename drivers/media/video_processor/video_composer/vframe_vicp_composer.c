@@ -48,10 +48,10 @@ enum vicp_rotation_mode_e map_rotationmode_from_vc_to_vicp(int rotation_vc)
 	return rotation;
 }
 
-int config_vicp_input_data(struct vframe_s *vf, ulong addr, int stride, int width, int height,
-	int endian, int color_fmt, int color_depth, struct input_data_param_s *input_data)
+int config_vicp_input_data(struct vframe_s *vf, ulong addr, int stride_w, int stride_y,
+	int width, int height, int endian, int color_fmt, int color_depth,
+	struct input_data_param_s *input_data)
 {
-	struct dma_data_config_s dma_data;
 
 	if (IS_ERR_OR_NULL(input_data)) {
 		pr_info("%s: NULL param, please check.\n", __func__);
@@ -65,19 +65,16 @@ int config_vicp_input_data(struct vframe_s *vf, ulong addr, int stride, int widt
 	} else {
 		input_data->is_vframe = false;
 
-		memset(&dma_data, 0, sizeof(struct dma_data_config_s));
-		dma_data.buf_addr = addr;
-		dma_data.buf_stride_w = stride;
-		dma_data.buf_stride_h = stride;
-		dma_data.data_width = width;
-		dma_data.data_height = height;
-		dma_data.color_format = color_fmt;
-		dma_data.color_depth = color_depth;
-		dma_data.plane_count = 2;
-		dma_data.endian = endian;
-		dma_data.need_swap_cbcr = 0;
-
-		input_data->data_dma = &dma_data;
+		input_data->data_dma.buf_addr = addr;
+		input_data->data_dma.buf_stride_w = stride_w;
+		input_data->data_dma.buf_stride_h = stride_y;
+		input_data->data_dma.data_width = width;
+		input_data->data_dma.data_height = height;
+		input_data->data_dma.color_format = color_fmt;
+		input_data->data_dma.color_depth = color_depth;
+		input_data->data_dma.plane_count = 2;
+		input_data->data_dma.endian = endian;
+		input_data->data_dma.need_swap_cbcr = 0;
 	}
 
 	return 0;

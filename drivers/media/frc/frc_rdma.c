@@ -883,7 +883,13 @@ static int parse_para(const char *para, int para_num, int *result)
 ssize_t frc_rdma_trace_enable_show(struct class *cla,
 	struct class_attribute *attr, char *buf)
 {
-	return snprintf(buf, PAGE_SIZE, "%x\n", rdma_trace_enable);
+	ssize_t len = 0;
+
+	len += sprintf(buf + len, "set trace_enable: echo 1 > /sys/class/frc/trace_enable\n");
+	len += sprintf(buf + len, "set trace_reg: echo 0x60 xx > /sys/class/frc/trace_reg\n");
+	len += snprintf(buf + len, PAGE_SIZE, "trace_enable\t=%d\n", rdma_trace_enable);
+
+	return len;
 }
 
 ssize_t frc_rdma_trace_enable_stroe(struct class *cla,

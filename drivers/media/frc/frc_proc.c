@@ -1176,9 +1176,10 @@ void frc_input_vframe_handle(struct frc_dev_s *devp, struct vframe_s *vf,
 			no_input = true;
 			frc_re_cfg_cnt = 0;  // need reopen instantly
 		}
-		schedule_work(&devp->frc_secure_work);
-		//pr_frc(2, "frc_re_cfg_cnt:%d pre_secure_mode:%d\n",
-			//frc_re_cfg_cnt, devp->buf.secured);
+		// pr_frc(0, "sec chg _______\n");
+		// schedule_work(&devp->frc_secure_work);
+		// pr_frc(2, "frc_re_cfg_cnt:%d pre_secure_mode:%d\n",
+		// frc_re_cfg_cnt, devp->buf.secured);
 	} else {
 		frc_re_cfg_cnt = FRC_RE_CFG_CNT;
 	}
@@ -1292,7 +1293,7 @@ void frc_mm_secure_set(struct frc_dev_s *devp)
 				tee_protect_mem_by_type(TEE_MEM_TYPE_FRC, addr_start,
 							addr_size, &secure_tee_handle);
 				frc_force_secure(true);
-				pr_frc(1, "%s handl:%d addr_start:0x%lx addr_size:0x%x\n",
+				pr_frc(2, "%s handl:%d addr_start:0x%lx addr_size:0x%x\n",
 					__func__, secure_tee_handle,
 					(ulong)addr_start, addr_size);
 			}

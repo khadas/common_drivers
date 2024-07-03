@@ -181,7 +181,7 @@ void WRITE_FRC_REG_BY_CPU(unsigned int reg, unsigned int val)
 #ifndef FRC_DISABLE_REG_RD_WR
 	if (get_frc_devp()->power_on_flag == 0)
 		return;
-	if (get_frc_devp()->clk_state == FRC_CLOCK_OFF)
+	if (get_frc_devp()->clk_state != FRC_CLOCK_NOR)
 		return;
 	writel(val, (frc_base + (reg << 2)));
 #endif
@@ -193,7 +193,7 @@ void WRITE_FRC_REG(unsigned int reg, unsigned int val)
 #ifndef FRC_DISABLE_REG_RD_WR
 	if (get_frc_devp()->power_on_flag == 0)
 		return;
-	if (get_frc_devp()->clk_state == FRC_CLOCK_OFF)
+	if (get_frc_devp()->clk_state != FRC_CLOCK_NOR)
 		return;
 	// if (fw_idx >= 500) {
 	// memset(&fw_wr_reg[0], 0x00, sizeof(struct frc_fw_regs_s)*200);
@@ -217,7 +217,7 @@ void WRITE_FRC_BITS(unsigned int reg, unsigned int value,
 	int r = (reg << 2);
 	if (get_frc_devp()->power_on_flag == 0)
 		return;
-	if (get_frc_devp()->clk_state == FRC_CLOCK_OFF)
+	if (get_frc_devp()->clk_state != FRC_CLOCK_NOR)
 		return;
 	orig =  readl((frc_base + r));
 	tmp = orig  & ~mask;
@@ -233,7 +233,7 @@ void FRC_RDMA_WR_REG_IN(unsigned int reg, unsigned int val)
 #ifndef FRC_DISABLE_REG_RD_WR
 	if (get_frc_devp()->power_on_flag == 0)
 		return;
-	if (get_frc_devp()->clk_state == FRC_CLOCK_OFF)
+	if (get_frc_devp()->clk_state != FRC_CLOCK_NOR)
 		return;
 
 	_frc_rdma_wr_reg_in(reg, val);
@@ -246,7 +246,7 @@ void FRC_RDMA_WR_REG_OUT(unsigned int reg, unsigned int val)
 #ifndef FRC_DISABLE_REG_RD_WR
 	if (get_frc_devp()->power_on_flag == 0)
 		return;
-	if (get_frc_devp()->clk_state == FRC_CLOCK_OFF)
+	if (get_frc_devp()->clk_state != FRC_CLOCK_NOR)
 		return;
 
 	_frc_rdma_wr_reg_out(reg, val);
@@ -254,14 +254,43 @@ void FRC_RDMA_WR_REG_OUT(unsigned int reg, unsigned int val)
 }
 EXPORT_SYMBOL(FRC_RDMA_WR_REG_OUT);
 
+void FRC_RDMA_WR_REG_IN_ALG(unsigned int reg, unsigned int val)
+{
+#ifndef FRC_DISABLE_REG_RD_WR
+	if (get_frc_devp()->power_on_flag == 0)
+		return;
+	if (get_frc_devp()->clk_state != FRC_CLOCK_NOR)
+		return;
+	if (get_frc_rdma()->rdma_alg_en)
+		_frc_rdma_wr_reg_in(reg, val);
+	else
+		writel(val, (frc_base + (reg << 2)));
+#endif
+}
+EXPORT_SYMBOL(FRC_RDMA_WR_REG_IN_ALG);
+
+void FRC_RDMA_WR_REG_OUT_ALG(unsigned int reg, unsigned int val)
+{
+#ifndef FRC_DISABLE_REG_RD_WR
+	if (get_frc_devp()->power_on_flag == 0)
+		return;
+	if (get_frc_devp()->clk_state != FRC_CLOCK_NOR)
+		return;
+	if (get_frc_rdma()->rdma_alg_en)
+		_frc_rdma_wr_reg_out(reg, val);
+	else
+		writel(val, (frc_base + (reg << 2)));
+#endif
+}
+EXPORT_SYMBOL(FRC_RDMA_WR_REG_OUT_ALG);
+
 int READ_FRC_RDMA_REG(unsigned int reg)
 {
 #ifndef FRC_DISABLE_REG_RD_WR
-	// if (get_frc_devp()->power_on_flag == 0)
-	// return 0;
-	// if (get_frc_devp()->clk_state == FRC_CLOCK_OFF)
-	// return 0;
-	// return readl(frc_base + (reg << 2));
+	if (get_frc_devp()->power_on_flag == 0)
+		return 0;
+	if (get_frc_devp()->clk_state != FRC_CLOCK_NOR)
+		return 0;
 
 	return _frc_rdma_rd_reg(reg);
 #endif
@@ -277,7 +306,7 @@ void UPDATE_FRC_REG_BITS(unsigned int reg,
 
 	if (get_frc_devp()->power_on_flag == 0)
 		return;
-	if (get_frc_devp()->clk_state == FRC_CLOCK_OFF)
+	if (get_frc_devp()->clk_state != FRC_CLOCK_NOR)
 		return;
 	value &= mask;
 	val = readl(frc_base + (reg << 2));
@@ -300,7 +329,7 @@ void UPDATE_FRC_REG_BITS_1(unsigned int reg,
 
 	if (get_frc_devp()->power_on_flag == 0)
 		return;
-	if (get_frc_devp()->clk_state == FRC_CLOCK_OFF)
+	if (get_frc_devp()->clk_state != FRC_CLOCK_NOR)
 		return;
 	value &= mask;
 	val = readl(frc_base + (reg << 2));
@@ -317,7 +346,7 @@ int READ_FRC_REG(unsigned int reg)
 #ifndef FRC_DISABLE_REG_RD_WR
 	if (get_frc_devp()->power_on_flag == 0)
 		return 0;
-	if (get_frc_devp()->clk_state == FRC_CLOCK_OFF)
+	if (get_frc_devp()->clk_state != FRC_CLOCK_NOR)
 		return 0;
 	return readl(frc_base + (reg << 2));
 #else
@@ -333,7 +362,7 @@ u32 READ_FRC_BITS(u32 reg, const u32 start, const u32 len)
 #ifndef FRC_DISABLE_REG_RD_WR
 	if (get_frc_devp()->power_on_flag == 0)
 		return 0;
-	if (get_frc_devp()->clk_state == FRC_CLOCK_OFF)
+	if (get_frc_devp()->clk_state != FRC_CLOCK_NOR)
 		return 0;
 	val = ((READ_FRC_REG(reg) >> (start)) & ((1L << (len)) - 1));
 #endif

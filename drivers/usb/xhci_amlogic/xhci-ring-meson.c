@@ -2261,6 +2261,9 @@ static int finish_td(struct aml_xhci_hcd *xhci, struct aml_xhci_virt_ep *ep,
 		offset = (u64)tmp_dma_align - (u64)urb_priv->tmp_dma;
 		if (urb_priv->tmp_buf) {
 			while (urb_priv->dst_buf[i] != 0) {
+				dma_sync_single_for_cpu(urb->dev->bus->controller,
+					(unsigned long)phys_to_virt(tmp_dma_align + 512 * i),
+					512, DMA_BIDIRECTIONAL);
 				memcpy(phys_to_virt(urb_priv->dst_dma[i]),
 					phys_to_virt(tmp_dma_align + 512 * i), 512);
 				dma_sync_single_for_device(urb->dev->bus->controller,

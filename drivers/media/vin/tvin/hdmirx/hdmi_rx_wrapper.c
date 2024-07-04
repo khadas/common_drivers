@@ -110,6 +110,7 @@ int frl_debug_en;
 int rs_err_chk;
 int err_cnt = 100;
 bool cts_ced_err_test;
+int edid_seg_flag[4];
 //static int auds_rcv_sts;
 //module_param(auds_rcv_sts, int, 0664);
 //MODULE_PARM_DESC(auds_rcv_sts, "auds_rcv_sts");
@@ -1878,6 +1879,21 @@ reisr:hdmirx_top_intr_stat = hdmirx_rd_top(TOP_INTR_STAT, port);
 		rx_pr("[isr] enc rise\n");
 	if (hdmirx_top_intr_stat & (1 << 16))
 		rx_pr("[isr] enc fall\n");
+	if (rx_info.chip_id < CHIP_ID_T3X) {
+		if (hdmirx_top_intr_stat & ((1 << port) << 17)) {
+			edid_seg_flag[port] = 1;
+			rx_edid_reset_task(port);
+		}
+		if (port == E_PORT3 && hdmirx_top_intr_stat & (1 << 31)) {
+			edid_seg_flag[port] = 1;
+			rx_edid_reset_task(port);
+		}
+	} else {
+		if (hdmirx_top_intr_stat & (1 << 5)) {
+			edid_seg_flag[port] = 1;
+			rx_edid_reset_task(port);
+		}
+	}
 	if (hdmirx_top_intr_stat & (1 << 3))
 		rx_pr("[isr] 5v rise\n");
 	if (hdmirx_top_intr_stat & (1 << 4))
@@ -2022,6 +2038,10 @@ irqreturn_t irq1_handler(int irq, void *params)
 		rx_pr("[isr] enc rise\n");
 	if (hdmirx_top_intr_stat & (1 << 16))
 		rx_pr("[isr] enc fall\n");
+	if (hdmirx_top_intr_stat & (1 << 5)) {
+		edid_seg_flag[E_PORT1] = 1;
+		rx_edid_reset_task(E_PORT1);
+	}
 	if (hdmirx_top_intr_stat & (1 << 3))
 		rx_pr("[isr] 5v rise\n");
 	if (hdmirx_top_intr_stat & (1 << 4))
@@ -2176,6 +2196,10 @@ irqreturn_t irq2_handler(int irq, void *params)
 		rx_pr("[isr] enc rise\n");
 	if (hdmirx_top_intr_stat & (1 << 16))
 		rx_pr("[isr] enc fall\n");
+	if (hdmirx_top_intr_stat & (1 << 5)) {
+		edid_seg_flag[E_PORT2] = 1;
+		rx_edid_reset_task(E_PORT2);
+	}
 	if (hdmirx_top_intr_stat & (1 << 3))
 		rx_pr("[isr] 5v rise\n");
 	if (hdmirx_top_intr_stat & (1 << 4))
@@ -2352,6 +2376,10 @@ irqreturn_t irq3_handler(int irq, void *params)
 		rx_pr("[isr] enc rise\n");
 	if (hdmirx_top_intr_stat & (1 << 16))
 		rx_pr("[isr] enc fall\n");
+	if (hdmirx_top_intr_stat & (1 << 5)) {
+		edid_seg_flag[E_PORT3] = 1;
+		rx_edid_reset_task(E_PORT3);
+	}
 	if (hdmirx_top_intr_stat & (1 << 3))
 		rx_pr("[isr] 5v rise\n");
 	if (hdmirx_top_intr_stat & (1 << 4))
@@ -5082,6 +5110,7 @@ void rx_main_state_machine(void)
 		rx[port].var.edid_update_flag = 0;
 		pre_port = port;
 		rx[port].pre_5v_sts = 1;
+		rx_irq_en(IRQ_EN_EDID, port);
 		rx_set_cur_hpd(1, 0, port);
 		rx[port].last_sw_vic = 0;
 		memset(&rx[port].pre, 0, sizeof(struct rx_video_info));
@@ -5579,6 +5608,7 @@ void rx_port0_main_state_machine(void)
 		rx[port].var.downstream_hpd_flag = 0;
 		rx[port].var.edid_update_flag = 0;
 		rx[port].pre_5v_sts = 1;
+		rx_irq_en(IRQ_EN_EDID, port);
 		rx_set_cur_hpd(1, 0, port);
 		rx[port].last_sw_vic = 0;
 		memset(&rx[port].pre, 0, sizeof(struct rx_video_info));
@@ -5982,6 +6012,7 @@ void rx_port1_main_state_machine(void)
 		rx[port].var.clk_unstable_cnt = 0;
 		rx[port].var.downstream_hpd_flag = 0;
 		rx[port].var.edid_update_flag = 0;
+		rx_irq_en(IRQ_EN_EDID, port);
 		rx_set_cur_hpd(1, 0, port);
 		rx[port].last_sw_vic = 0;
 		memset(&rx[port].pre, 0, sizeof(struct rx_video_info));
@@ -6391,6 +6422,7 @@ void rx_port2_main_state_machine(void)
 		rx[port].var.edid_update_flag = 0;
 		pre_port = port;
 		rx[port].pre_5v_sts = 1;
+		rx_irq_en(IRQ_EN_EDID, port);
 		rx_set_cur_hpd(1, 0, port);
 		//rx_irq_en(IRQ_EN_EDID, port);
 		rx[port].last_sw_vic = 0;
@@ -6897,7 +6929,7 @@ void rx_port3_main_state_machine(void)
 		rx[port].var.edid_update_flag = 0;
 		pre_port = port;
 		rx[port].pre_5v_sts = 1;
-		//rx_irq_en(IRQ_EN_EDID, port);
+		rx_irq_en(IRQ_EN_EDID, port);
 		rx_set_cur_hpd(1, 0, port);
 		rx[port].last_sw_vic = 0;
 		memset(&rx[port].pre, 0, sizeof(struct rx_video_info));

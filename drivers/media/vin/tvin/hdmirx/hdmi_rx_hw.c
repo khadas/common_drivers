@@ -1720,6 +1720,7 @@ void hdmirx_top_irq_en(u8 en, u8 port)
 	} else if (rx_info.chip_id >= CHIP_ID_T7 &&
 		rx_info.chip_id <= CHIP_ID_TXHD2) {
 		data32  = 0;
+		data32 |= (1    << 31); // [   19] edid_addr3_intr
 		data32 |= (0    << 30); // [   30] aud_chg;
 		data32 |= (1    << 29); // [   29] hdmirx_sqofclk_fall;
 		data32 |= (0    << 28); // [   28] hdmirx_sqofclk_rise;
@@ -1727,9 +1728,9 @@ void hdmirx_top_irq_en(u8 en, u8 port)
 		data32 |= (0    << 26); // [   26] last_emp_done;
 		data32 |= (1	<< 25); // [   25] emp_field_done;
 		data32 |= (0    << 23); // [   23] meter_stable_chg_cable;
-		data32 |= (0    << 19); // [   19] edid_addr2_intr
-		data32 |= (0    << 18); // [   18] edid_addr1_intr
-		data32 |= (0    << 17); // [   17] edid_addr0_intr
+		data32 |= (1    << 19); // [   19] edid_addr2_intr
+		data32 |= (1    << 18); // [   18] edid_addr1_intr
+		data32 |= (1    << 17); // [   17] edid_addr0_intr
 		data32 |= (0    << 16); // [   16] hdcp_enc_state_fall
 		data32 |= (0    << 15); // [   15] hdcp_enc_state_rise
 		data32 |= (0    << 14); // [   14] hdcp_auth_start_fall
@@ -1763,6 +1764,27 @@ void hdmirx_top_irq_en(u8 en, u8 port)
 		//hdmirx_wr_top(TOP_INTR_MASKN, top_intr_maskn_value, port);
 	} else if (en == IRQ_EN_HDCP) {
 		top_intr_maskn_value = 1 << 1;
+	} else if (en == IRQ_EN_EDID) {
+		switch (rx_info.chip_id) {
+		case CHIP_ID_T3X:
+			top_intr_maskn_value = 1 << 5;
+			break;
+		case CHIP_ID_TXHD2:
+		case CHIP_ID_T5M:
+		case CHIP_ID_TL1:
+		case CHIP_ID_TM2:
+		case CHIP_ID_T5:
+		case CHIP_ID_T5D:
+		case CHIP_ID_T7:
+		case CHIP_ID_T3:
+		case CHIP_ID_T5W:
+		default:
+			if (port <= E_PORT2)
+				top_intr_maskn_value = (1 << port) << 17;
+			if (port == E_PORT3)
+				top_intr_maskn_value = 1 << 31;
+			break;
+		}
 	} else {
 		top_intr_maskn_value = 0;
 	}
@@ -2374,6 +2396,7 @@ bool rx_is_need_edid_reset(u8 port)
 
 void rx_edid_module_reset(void)
 {
+	hdmirx_wr_bits_top_common(TOP_EDID_GEN_CNTL, MSK(3, 8), 7);
 	if (rx_info.chip_id == CHIP_ID_T3X) {
 		hdmirx_wr_top_common(TOP_SW_RESET, 0x1000);
 		udelay(1);
@@ -2383,6 +2406,7 @@ void rx_edid_module_reset(void)
 		udelay(1);
 		hdmirx_wr_top_common(TOP_SW_RESET, 0);
 	}
+	hdmirx_wr_bits_top_common(TOP_EDID_GEN_CNTL, MSK(3, 8), 0);
 }
 
 void rx_i2c_div_init(void)
@@ -7553,5 +7577,32 @@ void aml_phy_get_def_trim_value(void)
 	if (rx_info.chip_id == CHIP_ID_T3X)
 		rx_pr("rterm trim 2.1=0x%x-%d\n", rx_info.aml_phy_21.rterm_val,
 			rx_info.aml_phy_21.rterm_flag);
+}
+
+bool rx_is_edid_seg(u8 port)
+{
+	u32 temp = 0;
+
+	if (rx_info.chip_id == CHIP_ID_T3X) {
+		temp = hdmirx_rd_top(TOP_EDID_GEN_STAT, port);
+	} else {
+		switch (port) {
+		case E_PORT0:
+			temp = hdmirx_rd_top(TOP_EDID_GEN_STAT, E_PORT0);
+			break;
+		case E_PORT1:
+			temp = hdmirx_rd_top(TOP_EDID_GEN_STAT_B, E_PORT1);
+			break;
+		case E_PORT2:
+			temp = hdmirx_rd_top(TOP_EDID_GEN_STAT_C, E_PORT2);
+			break;
+		case E_PORT3:
+			temp = hdmirx_rd_top(TOP_EDID_GEN_STAT_D, E_PORT3);
+			break;
+		default:
+			break;
+		}
+	}
+	return temp == 0x10100;
 }
 

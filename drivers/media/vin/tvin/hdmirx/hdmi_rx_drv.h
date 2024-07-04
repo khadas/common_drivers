@@ -1026,6 +1026,13 @@ struct work_data {
 	u8 port;
 };
 
+struct edid_delayed_work_data {
+	struct delayed_work delayed_work;
+	u8 port;
+	unsigned int state[E_PORT_NUM];
+	u8 edid_offset_cur[E_PORT_NUM];
+};
+
 #define WHITE_LIST_SIZE 25
 enum spec_dev_e {
 	/* following devices need to switch to edid2.0 */
@@ -1076,6 +1083,7 @@ extern struct work_struct	aml_phy_dwork_port3;
 extern struct workqueue_struct	*aml_phy_wq_port3;
 extern struct work_struct     clkmsr_dwork;
 extern struct workqueue_struct *clkmsr_wq;
+extern struct edid_delayed_work_data edid_reset_work;
 extern struct work_struct     earc_hpd_dwork;
 extern struct workqueue_struct *earc_hpd_wq;
 extern struct workqueue_struct	*repeater_wq;

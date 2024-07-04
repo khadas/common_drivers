@@ -6,6 +6,9 @@
 #ifndef _HDMI_RX_EDID_H_
 #define _HDMI_RX_EDID_H_
 
+/* 2024.07.04 do edid reset to clear segment for edid 512 by edid intr */
+#define RX_EDID_H_VER "ver.2024/07/04"
+
 #define EDID_EXT_BLK_OFF	128
 #define EDID_BLK_SIZE		128
 #define EDID_SIZE			512
@@ -851,6 +854,12 @@ enum rx_edid_selection {
 	use_edid_def_secondary_phyaddr = 5,
 };
 
+enum edid_states_e {
+	EDID_WAIT_READ_DONE,
+	EDID_WAIT_OTHER_PORT_IDLE,
+	EDID_RESET_DONE,
+};
+
 extern u8 port_hpd_rst_flag;
 extern int edid_mode;
 extern int port_map;
@@ -931,6 +940,9 @@ void rpt_edid_colorimetry_db_extraction(unsigned char *p_edid);
 void rpt_edid_420_vdb_extraction(unsigned char *p_edid);
 void rpt_edid_hdr_static_db_extraction(unsigned char *p_edid);
 void rpt_edid_extraction(unsigned char *p_edid);
+void rx_edid_reset_handler(struct work_struct *work);
+void rx_edid_reset_task(u8 port);
+
 #endif
 void rx_get_edid_support(u8 port);
 void rx_print_edid_support(void);

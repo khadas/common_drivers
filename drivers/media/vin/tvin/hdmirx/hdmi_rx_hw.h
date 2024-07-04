@@ -23,6 +23,7 @@
 #define KHz	1000
 
 #define IRQ_EN_ALL	3
+#define IRQ_EN_EDID 2
 #define IRQ_EN_HDCP 1
 
 #define HHI_GCLK_MPEG0			(0x50  <<  2) /* (0xC883C000 + 0x140) */
@@ -216,7 +217,7 @@
 #define TOP_EDID_RAM_OVR7_DATA           0x024
 #define TOP_EDID_GEN_STAT_B              0x025
 #define TOP_EDID_GEN_STAT_C              0x026
-#define TOP_EDID_GEN_STAT_D              0x027
+#define TOP_EDID_GEN_STAT_D              0x031
 /* tl1 */
 #define TOP_CHAN_SWITCH_0				0x028
 #define TOP_TMDS_ALIGN_CNTL0			0x029
@@ -3262,6 +3263,7 @@ void hdmirx_wr_top_common(unsigned int addr, unsigned int data);
 unsigned int hdmirx_rd_top_common(unsigned int addr);
 void hdmirx_wr_edid(unsigned int addr, unsigned int data);
 unsigned int hdmirx_rd_edid(unsigned int addr);
+u32 hdmirx_rd_bits_top(u16 addr, u32 mask, u8 port);
 void hdmirx_wr_bits_top(unsigned int addr,
 			unsigned int mask,
 			unsigned int value, u8 port);
@@ -3475,6 +3477,7 @@ void reset_pcs(u8 port);
 bool is_earc_hpd_low(void);
 void rx_mute_vpp(u8 port);
 void aml_phy_get_def_trim_value(void);
+bool rx_is_edid_seg(u8 port);
 
 /* t3x  */
 void hdmi_tx_rx_frl_training_main(u8 port);

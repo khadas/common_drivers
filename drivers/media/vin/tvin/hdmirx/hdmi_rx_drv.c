@@ -113,6 +113,7 @@ struct work_struct     clkmsr_dwork;
 struct workqueue_struct *clkmsr_wq;
 struct work_struct     earc_hpd_dwork;
 struct workqueue_struct *earc_hpd_wq;
+struct edid_delayed_work_data edid_reset_work;
 
 // edid updata
 struct edid_update_work_s edid_update_dwork;
@@ -3938,6 +3939,7 @@ static int hdmirx_probe(struct platform_device *pdev)
 	earc_hpd_wq = create_workqueue(hdevp->frontend.name);
 	INIT_WORK(&earc_hpd_dwork, rx_earc_hpd_handler);
 
+	INIT_DELAYED_WORK(&edid_reset_work.delayed_work, rx_edid_reset_handler);
 	/* create for frl training */
 	kthread_init_worker(&frl_worker);
 	frl_worker_task = kthread_run(kthread_worker_fn,

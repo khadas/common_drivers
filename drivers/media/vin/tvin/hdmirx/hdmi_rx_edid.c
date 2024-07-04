@@ -21,6 +21,7 @@
 #include "hdmi_rx_drv.h"
 #include "hdmi_rx_edid.h"
 #include "hdmi_rx_hw.h"
+#include "hdmi_rx_wrapper.h"
 
 enum edid_delivery_mothed_e edid_delivery_mothed;
 /* buff to store downstream EDID or EDID load from bin */
@@ -5177,5 +5178,87 @@ void edid_type_update(u8 port)
 		schedule_work(&edid_update_dwork.work);
 		rx[port].edid_type.need_update = false;
 	}
+}
+
+void rx_edid_reset_task(u8 port)
+{
+	edid_reset_work.port = port;
+	edid_reset_work.state[port] = EDID_WAIT_READ_DONE;
+	schedule_delayed_work(&edid_reset_work.delayed_work, msecs_to_jiffies(40));
+}
+
+u8 rx_read_edid_offset(u8 port)
+{
+	u32 temp = 0;
+
+	switch (rx_info.chip_id) {
+	case CHIP_ID_T3X:
+		temp = hdmirx_rd_top(TOP_EDID_GEN_STAT, E_PORT0) & 0x1ff;
+		break;
+	case CHIP_ID_TXHD2:
+	case CHIP_ID_T5M:
+	case CHIP_ID_TL1:
+	case CHIP_ID_TM2:
+	case CHIP_ID_T5:
+	case CHIP_ID_T5D:
+	case CHIP_ID_T7:
+	case CHIP_ID_T3:
+	case CHIP_ID_T5W:
+	default:
+		switch (port) {
+		case E_PORT0:
+			temp = hdmirx_rd_top(TOP_EDID_GEN_STAT, E_PORT0) & 0x1ff;
+			break;
+		case E_PORT1:
+			temp = hdmirx_rd_top(TOP_EDID_GEN_STAT_B, E_PORT1) & 0x1ff;
+			break;
+		case E_PORT2:
+			temp = hdmirx_rd_top(TOP_EDID_GEN_STAT_C, E_PORT2) & 0x1ff;
+			break;
+		case E_PORT3:
+			temp = hdmirx_rd_top(TOP_EDID_GEN_STAT_D, E_PORT3) & 0x1ff;
+			break;
+		default:
+			break;
+		}
+		break;
+	}
+	return temp;
+}
+
+void rx_edid_reset_handler(struct work_struct *work)
+{
+	struct delayed_work *dw = container_of(work, struct delayed_work, work);
+	struct edid_delayed_work_data *dwd =
+		container_of(dw, struct edid_delayed_work_data, delayed_work);
+	int i;
+
+	switch (dwd->state[dwd->port]) {
+	case EDID_WAIT_READ_DONE:
+		if (!rx_is_edid_seg(dwd->port))
+			break;
+		dwd->state[dwd->port] = EDID_WAIT_OTHER_PORT_IDLE;
+		break;
+	case EDID_WAIT_OTHER_PORT_IDLE:
+		for (i = 0; i < rx_info.port_num; i++) {
+			dwd->edid_offset_cur[i] = rx_read_edid_offset(i) & 0xff;
+			if (dwd->edid_offset_cur[i] != 0)
+				break;
+		}
+		if (i == rx_info.port_num) {
+			rx_edid_module_reset();
+			if (rx_read_edid_offset(dwd->port) != 0)
+				rx_pr("edid reset fail\n");
+			edid_seg_flag[dwd->port] = 0;
+			dwd->state[dwd->port] = EDID_RESET_DONE;
+		}
+		break;
+	case EDID_RESET_DONE:
+		break;
+	default:
+		break;
+	}
+	if (edid_seg_flag[dwd->port])
+		schedule_delayed_work(&edid_reset_work.delayed_work, msecs_to_jiffies(40));
 }
 

@@ -3759,6 +3759,9 @@ void crg_handle_setup_pkt(struct crg_gadget_dev *crg_udc,
 	if (!crg_udc->async_cb_flag) {
 		CRG_ERROR("crg gadget setup pkt coming too quick!\n");
 		spin_lock_irqsave(&crg_udc->udc_lock, flags);
+		/* Complete any reqs on EP0 queue */
+		if (crg_udc->udc_ep[0].desc)
+			nuke(&crg_udc->udc_ep[0], -ESHUTDOWN, flags);
 		if (list_empty(&crg_udc->udc_ep[0].queue))
 			set_ep0_halt(crg_udc);
 		return;

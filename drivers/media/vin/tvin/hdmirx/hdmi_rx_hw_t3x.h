@@ -219,6 +219,8 @@ extern int tuning_cnt;
 extern int vga_tuning_min;
 extern int vga_tuning_max;
 extern int cal_phy_time;
+extern int pll_band;
+extern int cdr_bw;
 
 /*--------------------------function declare------------------*/
 /* T3X */

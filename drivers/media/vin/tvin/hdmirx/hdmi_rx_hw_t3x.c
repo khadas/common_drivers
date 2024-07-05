@@ -56,6 +56,9 @@ int valid_m_wait_max = 800;
 int vga_tuning_min = 0x21;
 int vga_tuning_max = 0x26;
 int cal_phy_time;
+int pll_band = 5;
+int cdr_bw = 4;
+
 enum frl_train_sts_e frl_train_sts = E_FRL_TRAIN_START;
 enum frl_train_sts_e frl_train_sts1 = E_FRL_TRAIN_START;
 
@@ -1469,7 +1472,7 @@ static const u32 phy_dcha_t3x_21[][4] = {
 		0x2340ffff, 0x05ff1a05, 0x51102000, 0x07f06555,
 	},
 	{	 /* FRL 10G */
-		0x2320ffff, 0x05ff1a05, 0x51102000, 0x07f06555,
+		0x7330bbbb, 0x05ff1a05, 0x51102000, 0x07f06555,
 	},
 	{	 /* FRL 12G */
 		0x7330bbbb, 0x05ff1a05, 0x51102000, 0x07f06555,
@@ -1846,6 +1849,8 @@ void rx_21_frl_pll_cfg(int f_rate, u8 port)
 {
 	if (log_level & FRL_LOG)
 		rx_pr("port-%d f_rate=%d\n", port, f_rate);
+	int data32;
+
 	if (f_rate == FRL_3G_3LANE) {
 		hdmirx_wr_amlphy_t3x(T3X_HDMIRX21PLL_CTRL0, 0x05007d00, port);
 		hdmirx_wr_amlphy_t3x(T3X_HDMIRX21PLL_CTRL1, 0x014810e6, port);
@@ -1885,7 +1890,9 @@ void rx_21_frl_pll_cfg(int f_rate, u8 port)
 		hdmirx_wr_amlphy_t3x(T3X_HDMIRX21PLL_CTRL0, 0x05202000, port);
 		hdmirx_wr_amlphy_t3x(T3X_HDMIRX21PLL_CTRL1, 0x014817e6, port);
 		hdmirx_wr_amlphy_t3x(T3X_HDMIRX21PLL_CTRL2, 0x00187d06, port);
-		hdmirx_wr_amlphy_t3x(T3X_HDMIRX21PLL_CTRL3, 0xf0002dd3, port);
+		data32 = 0xf0002d03;
+		data32 |= (pll_band << 4);
+		hdmirx_wr_amlphy_t3x(T3X_HDMIRX21PLL_CTRL3, data32, port);
 		hdmirx_wr_amlphy_t3x(T3X_HDMIRX21PLL_CTRL4, 0x55813041, port);
 		hdmirx_wr_amlphy_t3x(T3X_HDMIRX21PLL_CTRL2, 0x00087d07, port);
 		usleep_range(10, 20);
@@ -1903,7 +1910,9 @@ void rx_21_frl_pll_cfg(int f_rate, u8 port)
 		hdmirx_wr_amlphy_t3x(T3X_HDMIRX21PLL_CTRL0, 0x05202800, port);
 		hdmirx_wr_amlphy_t3x(T3X_HDMIRX21PLL_CTRL1, 0x014817e6, port);
 		hdmirx_wr_amlphy_t3x(T3X_HDMIRX21PLL_CTRL2, 0x00187d06, port);
-		hdmirx_wr_amlphy_t3x(T3X_HDMIRX21PLL_CTRL3, 0xf0002dd3, port);
+		data32 = 0xf0002d03;
+		data32 |= (pll_band << 4);
+		hdmirx_wr_amlphy_t3x(T3X_HDMIRX21PLL_CTRL3, data32, port);
 		hdmirx_wr_amlphy_t3x(T3X_HDMIRX21PLL_CTRL4, 0x55813041, port);
 		hdmirx_wr_amlphy_t3x(T3X_HDMIRX21PLL_CTRL2, 0x00187d07, port);
 		usleep_range(10, 20);
@@ -2036,12 +2045,15 @@ void rx_21_eq_cfg(int f_rate, u8 port)
 	rx_21_eq_retry(port);
 	if (rx_info.aml_phy_21.dfe_en)
 		rx_21_dfe_en(port);
-	if (rx_info.aml_phy_21.vga_tune && rx[port].var.frl_rate == FRL_12G_4LANE)
+	if (rx_info.aml_phy_21.vga_tune &&
+		(rx[port].var.frl_rate == FRL_12G_4LANE ||
+		rx[port].var.frl_rate == FRL_10G_4LANE))
 		hdmirx_vga_gain_tuning(port);
 	hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX21PHY_DCHD_CDR, CDR_LKDET_EN, 0x1, port);
 	hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX21PHY_DCHD_CDR, MUX_EYE_EN, 0x0, port);
 	hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX21PHY_DCHD_EQ, MUX_BLOCK_SEL, 0x2, port);
 	hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX21PHY_DCHD_CDR, MUX_CDR_DBG_SEL, 0x1, port);
+	hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX21PHY_DCHD_CDR, MSK(4, 0), cdr_bw, port);
 	usleep_range(100, 110);
 	data32 = hdmirx_rd_amlphy_t3x(T3X_HDMIRX21PHY_DCH_STAT, port);
 	cdr0_int = data32 & 0x7f;

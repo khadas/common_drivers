@@ -2575,8 +2575,12 @@ bool de_active_check(u8 port)
 	//if (rx[port].cur.htotal <= 200 || rx[port].cur.vtotal <= 200)
 		//ret = true;
 
-	if (rx[port].cur.hactive - rx[port].cur.vactive >= 6000)
+	if (abs(rx[port].cur.hactive - rx[port].cur.vactive) >= 6000)
 		ret = true;
+
+	if (rx[port].cur.hactive == 0 && rx[port].cur.vactive == 0)
+		ret = false;
+
 	return ret;
 }
 
@@ -3816,6 +3820,8 @@ void rx_get_global_variable(const char *buf)
 	pr_var(reset_pcs_en, i++);
 	pr_var(cts_ced_err_test, i++);
 	pr_var(cal_phy_time, i++);
+	pr_var(pll_band, i++);
+	pr_var(cdr_bw, i++);
 	pr_var(rx[E_PORT0].var.clk_stable_cnt, i++);
 	pr_var(rx[E_PORT1].var.clk_stable_cnt, i++);
 	pr_var(rx[E_PORT2].var.clk_stable_cnt, i++);
@@ -3898,38 +3904,10 @@ void rx_get_global_variable(const char *buf)
 	pr_var(rx_info.aml_phy_21.pre_int, i++);
 	pr_var(rx_info.aml_phy_21.pre_int_en, i++);
 	pr_var(rx_info.aml_phy_21.rterm_dbg_lvl, i++);
-	pr_var(rx[E_PORT2].var.frl_rate, i++);
-	pr_var(rx[E_PORT3].var.frl_rate, i++);
 	pr_var(tuning_cnt, i++);
 	pr_var(frl_scrambler_en, i++);
-	pr_var(frl_sync_cnt, i++);
-	pr_var(phy_rate, i++);
-	pr_var(odn_reg_n_mul, i++);
 	pr_var(ext_cnt, i++);
-	pr_var(tr_delay0, i++);
-	pr_var(tr_delay1, i++);
-	pr_var(force_clk_stable, i++);
-	pr_var(audio_debug, i++);
 	pr_var(edid_auto_debug, i++);
-	pr_var(port_debug_en, i++);
-	pr_var(fpll_sel, i++);
-	pr_var(fpll_chk_lvl, i++);
-	pr_var(rx_info.aml_phy.hyper_gain_en, i++);
-	pr_var(edid_reset_max, i++);
-	pr_var(vdin_reset_pcs_en, i++);
-	pr_var(rx_5v_wake_up_en, i++);
-	pr_var(hdcp_22_en, i++);
-	pr_var(fpll_ready_max, i++);
-	pr_var(vpp_mute_cnt, i++);
-	pr_var(gcp_mute_cnt, i++);
-	pr_var(fps_unready_max, i++);
-	pr_var(clk_msr_param, i++);
-	pr_var(fsm_debug, i++);
-	pr_var(rs_err_chk, i++);
-	pr_var(err_cnt, i++);
-	pr_var(vga_tuning_max, i++);
-	pr_var(vga_tuning_min, i++);
-	pr_var(ecc_err_monitor, i++);
 }
 
 bool str_cmp(unsigned char *buff, unsigned char *str)
@@ -4230,8 +4208,6 @@ int rx_set_global_variable(const char *buf, int size)
 		return pr_var(frl_sync_cnt, index);
 	if (set_pr_var(tmpbuf, var_to_str(port_debug_en), &port_debug_en, value))
 		return pr_var(port_debug_en, index);
-	if (set_pr_var(tmpbuf, var_to_str(audio_debug), &audio_debug, value))
-		return pr_var(audio_debug, index);
 	if (set_pr_var(tmpbuf, var_to_str(phy_rate), &phy_rate, value))
 		return pr_var(phy_rate, index);
 	if (set_pr_var(tmpbuf, var_to_str(odn_reg_n_mul), &odn_reg_n_mul, value))
@@ -4313,6 +4289,12 @@ int rx_set_global_variable(const char *buf, int size)
 	if (set_pr_var(tmpbuf, var_to_str(cal_phy_time),
 		&cal_phy_time, value))
 		return pr_var(cal_phy_time, index);
+	if (set_pr_var(tmpbuf, var_to_str(pll_band),
+		&pll_band, value))
+		return pr_var(pll_band, index);
+	if (set_pr_var(tmpbuf, var_to_str(cdr_bw),
+		&cdr_bw, value))
+		return pr_var(cdr_bw, index);
 	//fsm var
 	if (set_pr_var(tmpbuf, var_to_str(rx[E_PORT0].var.dbg_ve),
 		&rx[E_PORT0].var.dbg_ve, value))
@@ -4350,12 +4332,6 @@ int rx_set_global_variable(const char *buf, int size)
 	if (set_pr_var(tmpbuf, var_to_str(rx[E_PORT3].var.force_pattern),
 		&rx[E_PORT3].var.force_pattern, value))
 		return pr_var(rx[E_PORT3].var.force_pattern, index);
-	if (set_pr_var(tmpbuf, var_to_str(rx[E_PORT2].var.frl_rate),
-		&rx[E_PORT2].var.frl_rate, value))
-		return pr_var(rx[E_PORT2].var.frl_rate, index);
-	if (set_pr_var(tmpbuf, var_to_str(rx[E_PORT3].var.frl_rate),
-		&rx[E_PORT3].var.frl_rate, value))
-		return pr_var(rx[E_PORT3].var.frl_rate, index);
 	//phy var
 	if (set_pr_var(tmpbuf, var_to_str(rx[E_PORT0].phy.aud_div),
 		&rx[E_PORT0].phy.aud_div, value))
@@ -4528,26 +4504,10 @@ int rx_set_global_variable(const char *buf, int size)
 		return pr_var(rx[E_PORT3].var.frl_rate, index);
 	if (set_pr_var(tmpbuf, var_to_str(frl_scrambler_en), &frl_scrambler_en, value))
 		return pr_var(frl_scrambler_en, index);
-	if (set_pr_var(tmpbuf, var_to_str(frl_sync_cnt), &frl_sync_cnt, value))
-		return pr_var(frl_sync_cnt, index);
-	if (set_pr_var(tmpbuf, var_to_str(port_debug_en), &port_debug_en, value))
-		return pr_var(port_debug_en, index);
-	if (set_pr_var(tmpbuf, var_to_str(audio_debug), &audio_debug, value))
-		return pr_var(audio_debug, index);
 	if (set_pr_var(tmpbuf, var_to_str(edid_auto_debug), &edid_auto_debug, value))
 		return pr_var(edid_auto_debug, index);
-	if (set_pr_var(tmpbuf, var_to_str(phy_rate), &phy_rate, value))
-		return pr_var(phy_rate, index);
-	if (set_pr_var(tmpbuf, var_to_str(odn_reg_n_mul), &odn_reg_n_mul, value))
-		return pr_var(odn_reg_n_mul, index);
 	if (set_pr_var(tmpbuf, var_to_str(ext_cnt), &ext_cnt, value))
 		return pr_var(ext_cnt, index);
-	if (set_pr_var(tmpbuf, var_to_str(tr_delay0), &tr_delay0, value))
-		return pr_var(tr_delay0, index);
-	if (set_pr_var(tmpbuf, var_to_str(tr_delay1), &tr_delay1, value))
-		return pr_var(tr_delay1, index);
-	if (set_pr_var(tmpbuf, var_to_str(force_clk_stable), &force_clk_stable, value))
-		return pr_var(force_clk_stable, index);
 	if (set_pr_var(tmpbuf, var_to_str(rx_info.aml_phy_21.phy_bwth),
 		&rx_info.aml_phy_21.phy_bwth, value))
 		return pr_var(rx_info.aml_phy_21.phy_bwth, index);
@@ -4879,6 +4839,7 @@ void rx_5v_monitor(void)
 			}
 		}
 	}
+
 	if (check_cnt >= pow5v_max_cnt) {
 		check_cnt = 0;
 		pwr_sts = tmp_5v;
@@ -6475,29 +6436,14 @@ void rx_port2_main_state_machine(void)
 		//wait timing stable for debug;
 		if (rx[port].var.fpll_ready_cnt++ < fpll_ready_max)
 			break;
-		if (rx[port].var.flt_update) {
-			hal_flt_update_set(port);
-			rx[port].var.flt_update = 0;
-			rx[port].state = FSM_FRL_FLT_READY;
-		}
-		rx[port].var.lock = hdmirx_rd_cor(SCDCS_STATUS_FLAGS0_SCDC_IVCRX, port);
-		if ((rx[port].var.lock & 0x1f) != 0x1e &&
-			(rx[port].var.lock & 0x1f) != 0xe) {
-			if (rx[port].var.frl_lock_det_cnt++ < frl_lock_det_max)
-				break;
-			rx[port].var.frl_lock_det_cnt = 0;
-			hdmirx_clr_scdc(true, port);
-			rx[port].state = FSM_HPD_LOW;
-			break;
-		}
 		rx[port].var.fpll_ready_cnt = 0;
 		if (is_fpll_err(port)) {
 			if (rx[port].var.fpll_stable_cnt++ < fpll_stable_max)
 				break;
 		}
-		rx[port].var.fpll_stable_cnt = 0;
 		if (cts_ced_err_test)
 			rx_rcc_err_frl_config(port);
+		rx[port].var.fpll_stable_cnt = 0;
 		rx[port].state =  FSM_SIG_UNSTABLE;
 		htotal_cnt = 0;
 		clr_frl_fifo_status(port);
@@ -6645,7 +6591,8 @@ void rx_port2_main_state_machine(void)
 				 * recognition to DVI of low probability
 				 */
 				if (rx[port].pre.sw_dvi &&  rx[port].var.dvi_check_en &&
-					rx[port].hdcp.hdcp_version == HDCP_VER_NONE) {
+					rx[port].hdcp.hdcp_version == HDCP_VER_NONE &&
+					!rx[port].var.frl_rate) {
 					rx[port].state = FSM_HPD_LOW;
 					 rx[port].var.dvi_check_en = false;
 					break;
@@ -6738,10 +6685,6 @@ void rx_port2_main_state_machine(void)
 		//rx_monitor_error_counter(port);
 		#endif
 		/* video info change */
-		if (rx[port].var.frl_rate) {
-			if (rx_get_clkready_sts(port) == 0 && rx_get_valid_m_sts(port))
-				rx_21_fpll_cfg(rx[port].var.frl_rate, port);
-		}
 		if (!is_tmds_valid(port)) {
 			rx[port].clk.t_clk_pre = rx[port].clk.tclk;
 			if (video_mute_enabled(port)) {
@@ -6983,30 +6926,15 @@ void rx_port3_main_state_machine(void)
 	case FSM_WAIT_FRL_TRN_DONE:
 		if (rx[port].var.fpll_ready_cnt++ < fpll_ready_max)
 			break;
-		if (rx[port].var.flt_update) {
-			hal_flt_update_set(port);
-			rx[port].var.flt_update = 0;
-			rx[port].state = FSM_FRL_FLT_READY;
-		}
-		rx[port].var.lock = hdmirx_rd_cor(SCDCS_STATUS_FLAGS0_SCDC_IVCRX, port);
-		if ((rx[port].var.lock & 0x1f) != 0x1e &&
-			(rx[port].var.lock & 0x1f) != 0xe) {
-			if (rx[port].var.frl_lock_det_cnt++ < frl_lock_det_max)
-				break;
-			rx[port].var.frl_lock_det_cnt = 0;
-			hdmirx_clr_scdc(true, port);
-			rx[port].state = FSM_HPD_LOW;
-			break;
-		}
 		rx[port].var.fpll_ready_cnt = 0;
 		if (is_fpll_err(port)) {
 			if (rx[port].var.fpll_stable_cnt++ < fpll_stable_max)
 				break;
 		}
-		rx[port].var.fpll_stable_cnt = 0;
-		rx[port].state = FSM_SIG_UNSTABLE;
 		if (cts_ced_err_test)
 			rx_rcc_err_frl_config(port);
+		rx[port].var.fpll_stable_cnt = 0;
+		rx[port].state = FSM_SIG_UNSTABLE;
 		htotal_cnt = 0;
 		clr_frl_fifo_status(port);
 		break;
@@ -7152,7 +7080,8 @@ void rx_port3_main_state_machine(void)
 				 * recognition to DVI of low probability
 				 */
 				if (rx[port].pre.sw_dvi &&  rx[port].var.dvi_check_en &&
-					rx[port].hdcp.hdcp_version == HDCP_VER_NONE) {
+					rx[port].hdcp.hdcp_version == HDCP_VER_NONE &&
+					!rx[port].var.frl_rate) {
 					rx[port].state = FSM_HPD_LOW;
 					 rx[port].var.dvi_check_en = false;
 					break;
@@ -7245,10 +7174,6 @@ void rx_port3_main_state_machine(void)
 		//rx_monitor_error_counter(port);
 		#endif
 		/* video info change */
-		if (rx[port].var.frl_rate) {
-			if (rx_get_clkready_sts(port) == 0 && rx_get_valid_m_sts(port))
-				rx_21_fpll_cfg(rx[port].var.frl_rate, port);
-		}
 		if (!is_tmds_valid(port)) {
 			if (video_mute_enabled(port)) {
 				hdmirx_mute_vpp(true, port);
@@ -8187,6 +8112,10 @@ void frate_monitor(void)
 					rx_irq_en(0, port);
 				}
 			}
+			if (rx[port].state == FSM_SIG_READY) {
+				if (rx_get_clkready_sts(port) == 0 && rx_get_valid_m_sts(port))
+					rx_21_fpll_cfg(rx[port].var.frl_rate, port);
+			}
 		}
 	}
 	//rx_monitor_error_counter(port);
@@ -8253,6 +8182,10 @@ void frate_monitor1(void)
 					//hdmirx_top_irq_en(0, 0, port);
 					rx_irq_en(0, port);
 				}
+			}
+			if (rx[port].state == FSM_SIG_READY) {
+				if (rx_get_clkready_sts(port) == 0 && rx_get_valid_m_sts(port))
+					rx_21_fpll_cfg(rx[port].var.frl_rate, port);
 			}
 		}
 	}

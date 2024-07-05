@@ -30,7 +30,8 @@
 #define TIMER_STATE_CHECK	(1 * HZ / 100)
 
 /* 2024.07.02 optimize suspend flow */
-#define RX_WRAPPER_VER "ver.2024/07/02"
+/* 2024.07.19 optimize cts flow */
+#define RX_WRAPPER_VER "ver.2024/07/19"
 
 struct freq_ref_s {
 	bool interlace;

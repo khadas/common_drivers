@@ -2623,7 +2623,7 @@ static ssize_t info_show(struct device *dev,
 		pos = hdmirx_show_info(buf, PAGE_SIZE, port);
 	} else {
 		for (port = E_PORT0; port < rx_info.port_num; port++)
-			pos += hdmirx_show_info(buf, PAGE_SIZE, port);
+			pos += hdmirx_show_info(buf + strlen(buf), PAGE_SIZE, port);
 	}
 
 	return pos;

@@ -5196,6 +5196,10 @@ void rx_get_colordepth(u8 port)
 {
 	u8 tmp;
 
+	if (rx[port].cur.colorspace == E_COLOR_YUV422) {
+		rx[port].cur.colordepth = E_COLORDEPTH_12;
+		return;
+	}
 	if (rx_info.chip_id >= CHIP_ID_T7)
 		tmp = hdmirx_rd_cor(COR_VININ_STS, port);
 	else

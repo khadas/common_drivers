@@ -9,7 +9,8 @@
 /* 2024.07.02 disable audio monitor when no audio sample rate */
 /* 2024.07.05 only set the corresponding port term */
 /* 2024.07.10 Separate registers for top_init, cor_init */
-#define RX_HW_VER "ver.2024/07/10"
+/* 2024.07.22 Set colordepth to 12 when colorspace is YUV422 */
+#define RX_HW_VER "ver.2024/07/22"
 
 #define K_TEST_CHK_ERR_CNT
 

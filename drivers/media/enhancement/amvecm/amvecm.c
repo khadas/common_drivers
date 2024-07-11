@@ -4343,6 +4343,7 @@ static long amvecm_ioctl(struct file *file,
 #endif
 	default:
 		ret = -EINVAL;
+		pr_amvecm_dbg("ioctl default case(0x%x).\n", cmd);
 		break;
 	}
 

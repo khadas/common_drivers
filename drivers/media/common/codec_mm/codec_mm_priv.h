@@ -47,4 +47,5 @@ void codec_mm_set_min_linear_size(int min_mem_val);
 int codec_mm_get_min_linear_size(void);
 int codec_mm_get_scatter_watermark(void);
 bool is_2k_platform(void);
+u32 codec_mm_get_property_from_dts(char *property_name);
 #endif /**/

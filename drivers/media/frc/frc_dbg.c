@@ -626,8 +626,8 @@ ssize_t frc_debug_rdma_if_help(struct frc_dev_s *devp, char *buf)
 	len += sprintf(buf + len, "rdma_en\t\t=%d drv, %d alg\n",
 		frc_rdma->rdma_en, fw_data->frc_top_type.rdma_en);
 	len += sprintf(buf + len, "rdma_table\t=show frc rdma table\n");
-	len += sprintf(buf + len, "trace_en\t=echo 1 > rdma_trace_enable\n");
-	len += sprintf(buf + len, "trace_reg\t=echo 0x60 0x61 xx > rdma_trace_reg\n");
+	len += sprintf(buf + len, "set trace_enable: echo 1 > /sys/class/frc/trace_enable\n");
+	len += sprintf(buf + len, "set trace_reg: echo 0x60 xx > /sys/class/frc/trace_reg\n");
 
 	return len;
 }

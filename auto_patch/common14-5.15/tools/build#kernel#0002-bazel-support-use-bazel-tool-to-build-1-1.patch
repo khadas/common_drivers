@@ -1,4 +1,4 @@
-From a5d2226ff86af07d69b41c55da120626819f3f8a Mon Sep 17 00:00:00 2001
+From d25f8c36e59cf28a6e2a769538b75d1c1a7c10fc Mon Sep 17 00:00:00 2001
 From: Wanwei Jiang <wanwei.jiang@amlogic.com>
 Date: Thu, 30 Mar 2023 23:14:01 +0800
 Subject: [PATCH] bazel: support use bazel tool to build [1/1]
@@ -21,18 +21,18 @@ Signed-off-by: Wanwei Jiang <wanwei.jiang@amlogic.com>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/kleaf/impl/kernel_module.bzl b/kleaf/impl/kernel_module.bzl
-index 29357a0..f621860 100644
+index d24210b5..45f57459 100644
 --- a/kleaf/impl/kernel_module.bzl
 +++ b/kleaf/impl/kernel_module.bzl
-@@ -441,7 +441,7 @@ def _kernel_module_impl(ctx):
+@@ -470,7 +470,7 @@ def _kernel_module_impl(ctx):
               # Grab *.cmd
                 {grab_cmd_cmd}
               # Move Module.symvers
 -               rsync -aL ${{OUT_DIR}}/${{ext_mod_rel}}/Module.symvers {module_symvers}
 +               rsync -aL $(find ${{OUT_DIR}}/${{ext_mod_rel}} -name Module.symvers) {module_symvers}
- 
+              # Grab and then drop modules.order
+                {grab_modules_order_cmd}
                 {drop_modules_order_cmd}
-                """.format(
 -- 
-2.25.1
+2.42.0
 

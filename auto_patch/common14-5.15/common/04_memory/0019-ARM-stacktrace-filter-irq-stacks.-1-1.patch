@@ -1,4 +1,4 @@
-From c745ee3b1da734e50d503c02afbfabacf97612e1 Mon Sep 17 00:00:00 2001
+From ab3dc2dc9faed8fe62924d500c038996cd0af21e Mon Sep 17 00:00:00 2001
 From: "qiankun.wang" <qiankun.wang@amlogic.com>
 Date: Fri, 25 Aug 2023 12:48:23 +0800
 Subject: [PATCH] ARM: stacktrace: filter irq stacks. [1/1]
@@ -21,31 +21,11 @@ THXD2
 Change-Id: Ib99f366955a051cb439ee9f86dfe2c667288d2d0
 Signed-off-by: qiankun.wang <qiankun.wang@amlogic.com>
 ---
- arch/arm/include/asm/exception.h | 4 ++++
- mm/kasan/kasan.h                 | 4 ++++
- 2 files changed, 8 insertions(+)
+ mm/kasan/kasan.h | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/arch/arm/include/asm/exception.h b/arch/arm/include/asm/exception.h
-index 58e039a851af..c56ab8bb419a 100644
---- a/arch/arm/include/asm/exception.h
-+++ b/arch/arm/include/asm/exception.h
-@@ -10,10 +10,14 @@
- 
- #include <linux/interrupt.h>
- 
-+#ifdef CONFIG_AMLOGIC_ARM_KASAN
-+#define __exception_irq_entry   __irq_entry
-+#else
- #ifdef CONFIG_FUNCTION_GRAPH_TRACER
- #define __exception_irq_entry	__irq_entry
- #else
- #define __exception_irq_entry
- #endif
-+#endif
- 
- #endif /* __ASM_ARM_EXCEPTION_H */
 diff --git a/mm/kasan/kasan.h b/mm/kasan/kasan.h
-index 47da190423d4..302d6a8d87f3 100644
+index 47da190423d4c..302d6a8d87f39 100644
 --- a/mm/kasan/kasan.h
 +++ b/mm/kasan/kasan.h
 @@ -188,7 +188,11 @@ static inline bool kasan_requires_meta(void)

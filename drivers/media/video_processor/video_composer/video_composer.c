@@ -2892,6 +2892,8 @@ static void vframe_composer(struct composer_dev *dev)
 		src_vf = NULL;
 	}
 
+	src_vf = common_para.input_para.vframe;
+
 	for (i = 0; i < count; i++) {
 		if (!input_vf[i] || out_axis[i].width == 0 || out_axis[i].height == 0) {
 			vc_print(dev->index, PRINT_AIFACE, "invalid aiface param.\n");

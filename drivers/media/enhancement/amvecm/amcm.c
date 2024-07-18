@@ -220,6 +220,13 @@ void am_set_regmap(struct am_regs_s *p, int vpp_index)
 		mask = p->am_reg[i].mask;
 		val = p->am_reg[i].val;
 		addr = p->am_reg[i].addr;
+
+		if (addr == 0) {
+			pr_amcm_dbg("\n[%s] i=%d, mask=%d, val=%d, p length=%d\n",
+				__func__, i, mask, val, p->length);
+			continue;
+		}
+
 		skip = skip_pq_ctrl_load(&p->am_reg[i]);
 		if (skip != 0)
 			mask &= ~skip;

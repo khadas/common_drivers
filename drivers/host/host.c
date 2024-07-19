@@ -395,12 +395,10 @@ static int host_resume(struct device *dev)
 
 static int host_miscdev_open(struct inode *inode, struct file *fp)
 {
-	struct miscdevice *misc;
-	struct host_module *host;
+	struct miscdevice *misc = fp->private_data;
+	struct host_data *host_data = container_of(misc, struct host_data, misc);
 
-	misc = fp->private_data;
-	host = dev_get_drvdata(misc->this_device);
-	fp->private_data = host;
+	fp->private_data = host_data->host;
 
 	return 0;
 }
@@ -636,49 +634,43 @@ static const struct file_operations host_miscdev_fops = {
 	.mmap = host_miscdev_mmap,
 };
 
-static struct miscdevice host_miscdev[] = {
-	{
-		.minor  = MISC_DYNAMIC_MINOR,
-		.name   = "hifi4dsp0",
-		.fops   = &host_miscdev_fops,
-	},
-	{
-		.minor  = MISC_DYNAMIC_MINOR,
-		.name   = "hifi4dsp1",
-		.fops   = &host_miscdev_fops,
-	},
-	{
-		.minor  = MISC_DYNAMIC_MINOR,
-		.name   = "mfh0",
-		.fops   = &host_miscdev_fops,
-	},
-	{
-		.minor  = MISC_DYNAMIC_MINOR,
-		.name   = "mfh1",
-		.fops   = &host_miscdev_fops,
-	}
-};
-
 static struct host_data host_data_table[] = {
 	{
 		.name = "dspboota",
 		.hostid = 0,
-		.misc = &host_miscdev[0],
+		.misc = {
+			.minor  = MISC_DYNAMIC_MINOR,
+			.name   = "hifi4dsp0",
+			.fops   = &host_miscdev_fops,
+		},
 	},
 	{
 		.name = "dspbootb",
 		.hostid = 1,
-		.misc = &host_miscdev[1],
+		.misc = {
+			.minor  = MISC_DYNAMIC_MINOR,
+			.name   = "hifi4dsp1",
+			.fops   = &host_miscdev_fops,
+
+		},
 	},
 	{
 		.name = "m4a",
 		.hostid = 0,
-		.misc = &host_miscdev[2],
+		.misc = {
+			.minor  = MISC_DYNAMIC_MINOR,
+			.name   = "mfh0",
+			.fops   = &host_miscdev_fops,
+		},
 	},
 	{
 		.name = "m4b",
 		.hostid = 1,
-		.misc = &host_miscdev[3],
+		.misc = {
+			.minor  = MISC_DYNAMIC_MINOR,
+			.name   = "mfh1",
+			.fops   = &host_miscdev_fops,
+		},
 	}
 };
 
@@ -868,7 +860,7 @@ static int host_platform_probe(struct platform_device *pdev)
 
 	host->dev = dev;
 	host->hostid = host_data->hostid;
-	host->misc = host_data->misc;
+	host->misc = &host_data->misc;
 	host->host_data = host_data;
 
 	ret = host_parse_devtree(pdev, host);
@@ -876,7 +868,7 @@ static int host_platform_probe(struct platform_device *pdev)
 		return ret;
 	host_parse_firmware_name(host, host_data);
 
-	ret = misc_register(host_data->misc);
+	ret = misc_register(&host_data->misc);
 	if (ret) {
 		dev_err(dev, "Misc register fail\n");
 		return ret;
@@ -886,7 +878,7 @@ static int host_platform_probe(struct platform_device *pdev)
 	host_create_debugfs_files(host);
 	host_create_device_files(&pdev->dev);
 	device_init_wakeup(&pdev->dev, 1);
-	dev_set_drvdata(host_data->misc->this_device, host);
+	host_data->host = host;
 	platform_set_drvdata(pdev, host);
 	return 0;
 }

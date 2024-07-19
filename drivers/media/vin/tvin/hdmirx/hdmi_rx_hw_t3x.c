@@ -5902,7 +5902,7 @@ void rx_read_ecc_err(u8 port)
 bool is_fsm_ready_t3x(void)
 {
 	return rx_info.chip_id == CHIP_ID_T3X &&
-		hdmi_cec_en != 0xff && is_valid_edid_data(edid_cur);
+		hdmi_cec_en != 0xff && rx_info.edid_update_done == 0xf;
 }
 
 bool rx_is_power_off_t3x(u8 port)

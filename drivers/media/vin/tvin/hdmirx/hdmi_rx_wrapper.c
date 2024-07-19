@@ -4831,7 +4831,7 @@ void rx_5v_monitor(void)
 
 	for (i = 0; i < rx_info.port_num; i++) {
 		if (rx_info.chip_id == CHIP_ID_T3X) {
-			if (rx[i].cur_5v_sts == 0) {
+			if (((tmp_5v >> i) & 1) == 0) {
 				if (rx_get_hpd_sts(i) == 1)
 					rx_set_cur_hpd(0, 5, i);
 				if (!rx_is_phy_power_off(i))

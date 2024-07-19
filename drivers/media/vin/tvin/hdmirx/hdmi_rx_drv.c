@@ -1932,6 +1932,7 @@ static long hdmirx_ioctl(struct file *file, unsigned int cmd,
 				fsm_restart(port_idx);
 			}
 		}
+		rx_info.edid_update_done |= _BIT(port_idx);
 		mutex_unlock(&devp->rx_lock);
 		break;
 	case HDMI_IOC_PC_MODE_ON:
@@ -3159,35 +3160,33 @@ static void rx_phy_resume(void)
 
 void rx_emp_resource_allocate(struct device *dev)
 {
-	if (rx_info.chip_id >= CHIP_ID_TL1) {
-		/* allocate buffer */
-		if (!rx_info.emp_buff_a.store_a)
-			rx_info.emp_buff_a.store_a =
-				kmalloc(EMP_BUFFER_SIZE, GFP_KERNEL);
-		else
-			rx_pr("malloc emp buffer err\n");
+	if (rx_info.chip_id < CHIP_ID_TL1)
+		return;
+	/* allocate buffer to recive EMP data for sw */
+	if (!rx_info.emp_buff_a.store_a)
+		rx_info.emp_buff_a.store_a =
+			kmalloc(EMP_BUFFER_SIZE, GFP_KERNEL);
+	else
+		rx_pr("malloc emp buffer err\n");
 
-		if (rx_info.emp_buff_a.store_a)
-			rx_info.emp_buff_a.store_b =
-				rx_info.emp_buff_a.store_a + (EMP_BUFFER_SIZE >> 1);
-		else
-			rx_pr("emp buff err-0\n");
-		rx_info.emp_buff_a.dump_mode = DUMP_MODE_EMP;
-		/* allocate buffer for hw access*/
-		rx_info.emp_buff_a.pg_addr =
-			dma_alloc_from_contiguous(dev,
-						  EMP_BUFFER_SIZE >> PAGE_SHIFT, 0, 0);
-		if (rx_info.emp_buff_a.pg_addr) {
-			/* hw access */
-			/* page to real physical address*/
-			rx_info.emp_buff_a.p_addr_a = page_to_phys(rx_info.emp_buff_a.pg_addr);
-			rx_info.emp_buff_a.p_addr_b =
-				rx_info.emp_buff_a.p_addr_a + (EMP_BUFFER_SIZE >> 1);
-		} else {
-			rx_pr("emp buff err-1\n");
-		}
-		rx_info.emp_buff_a.emp_pkt_cnt = 0;
+	if (rx_info.emp_buff_a.store_a)
+		rx_info.emp_buff_a.store_b =
+			rx_info.emp_buff_a.store_a + (EMP_BUFFER_SIZE >> 1);
+	else
+		rx_pr("emp buff err-0\n");
+	rx_info.emp_buff_a.dump_mode = DUMP_MODE_EMP;
+	/* allocate buffer for hw access*/
+	rx_info.emp_buff_a.hw_addr = kmalloc(EMP_BUFFER_SIZE, GFP_KERNEL);
+	if (rx_info.emp_buff_a.hw_addr) {
+		/* hw access */
+		/* page to real physical address*/
+		rx_info.emp_buff_a.p_addr_a = virt_to_phys(rx_info.emp_buff_a.hw_addr);
+		rx_info.emp_buff_a.p_addr_b =
+			rx_info.emp_buff_a.p_addr_a + (EMP_BUFFER_SIZE >> 1);
+	} else {
+		rx_pr("emp buff err-1\n");
 	}
+	rx_info.emp_buff_a.emp_pkt_cnt = 0;
 }
 
 void rx_emp1_resource_allocate(struct device *dev)
@@ -3206,14 +3205,11 @@ void rx_emp1_resource_allocate(struct device *dev)
 		rx_pr("emp buff err-0\n");
 	rx_info.emp_buff_b.dump_mode = DUMP_MODE_EMP;
 	/* allocate buffer for hw access*/
-	rx_info.emp_buff_b.pg_addr =
-		dma_alloc_from_contiguous(dev,
-					  EMP_BUFFER_SIZE >> PAGE_SHIFT, 0, 0);
-	if (rx_info.emp_buff_b.pg_addr) {
+	rx_info.emp_buff_b.hw_addr = kmalloc(EMP_BUFFER_SIZE, GFP_KERNEL);
+	if (rx_info.emp_buff_b.hw_addr) {
 		/* hw access */
 		/* page to real physical address*/
-		rx_info.emp_buff_b.p_addr_a =
-			page_to_phys(rx_info.emp_buff_b.pg_addr);
+		rx_info.emp_buff_b.p_addr_a = virt_to_phys(rx_info.emp_buff_b.hw_addr);
 		rx_info.emp_buff_b.p_addr_b =
 			rx_info.emp_buff_b.p_addr_a + (EMP_BUFFER_SIZE >> 1);
 	} else {
@@ -3256,7 +3252,7 @@ void rx_tmds_resource_allocate(struct device *dev, u8 port)
 	/*phys_addr_t p_addr;*/
 	/*struct page *pg_addr;*/
 
-	if (!rx[port].emp_info)
+	if (!rx[port].emp_info || !rx[port].emp_info->pg_addr)
 		return;
 
 	if (rx_info.chip_id >= CHIP_ID_TL1) {

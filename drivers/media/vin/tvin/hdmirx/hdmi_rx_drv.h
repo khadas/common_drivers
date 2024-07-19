@@ -573,7 +573,7 @@ struct rx_video_info {
 #define DUMP_MODE_EMP	0
 #define DUMP_MODE_TMDS	1
 #define TMDS_BUFFER_SIZE	0x2000000 /*32M*/
-#define EMP_BUFFER_SIZE		0x1000	/*4k*/
+#define EMP_BUFFER_SIZE		0x800 //2k
 #define EMP_BUFF_MAX_PKT_CNT	32
 #define TMDS_DATA_BUFFER_SIZE	0x200000
 
@@ -829,6 +829,7 @@ struct clk_msr {
 
 struct emp_info_s {
 	unsigned int dump_mode;
+	void __iomem *hw_addr;
 	struct page *pg_addr;
 	phys_addr_t p_addr_a;
 	phys_addr_t p_addr_b;
@@ -927,6 +928,7 @@ struct rx_info_s {
 	struct i2c_info_s i2c_buff;
 	struct edid_capacity edid_cap;
 	bool suspend_flag;
+	u8 edid_update_done;
 };
 
 struct rx_s {

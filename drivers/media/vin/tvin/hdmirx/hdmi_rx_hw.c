@@ -6799,7 +6799,7 @@ void rx_emp_to_ddr_init(u8 port)
 	if (rx_info.chip_id < CHIP_ID_TL1)
 		return;
 
-	if (rx_info.emp_buff_a.pg_addr) {
+	if (rx_info.emp_buff_a.hw_addr) {
 		rx_pr("%s\n", __func__);
 		/*disable field done and last pkt interrupt*/
 		data32 = hdmirx_rd_top(TOP_INTR_MASKN, port);
@@ -6883,7 +6883,7 @@ void rx_emp1_to_ddr_init(u8 port)
 	if (rx_info.chip_id < CHIP_ID_TL1)
 		return;
 
-	if (rx_info.emp_buff_b.pg_addr) {
+	if (rx_info.emp_buff_b.hw_addr) {
 		/*disable field done and last pkt interrupt*/
 		data32 = hdmirx_rd_top(TOP_INTR_MASKN, port);
 		if (rx_info.chip_id >= CHIP_ID_T3X) {
@@ -6954,13 +6954,12 @@ void rx_emp1_to_ddr_init(u8 port)
 void rx_emp_field_done_irq(u8 port)
 {
 	phys_addr_t p_addr;
-	u32 recv_pkt_cnt, recv_byte_cnt, recv_pagenum;
+	u32 recv_pkt_cnt, recv_byte_cnt;
 	u32 emp_pkt_cnt = 0;
 	unsigned char *src_addr;
 	unsigned char *dst_addr;
 	u32 i, j, k;
 	u32 data_cnt = 0;
-	struct page *cur_start_pg_addr;
 	struct emp_info_s *emp_buf_p = NULL;
 
 	if (rx[port].emp_vid_idx == 0) {
@@ -6985,7 +6984,6 @@ void rx_emp_field_done_irq(u8 port)
 		recv_byte_cnt = EMP_BUFFER_SIZE >> 2;
 	//if (log_level & PACKET_LOG)
 		//rx_pr("recv_byte_cnt=0x%x\n", recv_byte_cnt);
-	recv_pagenum = (recv_byte_cnt >> PAGE_SHIFT) + 1;
 
 	if (emp_buf_p->irq_cnt & 0x1) {
 		dst_addr = emp_buf_p->store_b;
@@ -7004,33 +7002,18 @@ void rx_emp_field_done_irq(u8 port)
 	}
 	if (!rx[port].emp_pkt_rev)
 		rx[port].emp_pkt_rev = true;
-	for (i = 0; i < recv_pagenum;) {
-		/*one page 4k*/
-		cur_start_pg_addr = phys_to_page(p_addr + i * PAGE_SIZE);
-		if (p_addr == emp_buf_p->p_addr_a)
-			src_addr = kmap_atomic(cur_start_pg_addr);
-		else
-			src_addr = kmap_atomic(cur_start_pg_addr) + (emp_buf_p->p_addr_b -
-				emp_buf_p->p_addr_a) % PAGE_SIZE;
-		if (!src_addr)
-			return;
-		dma_sync_single_for_cpu(hdmirx_dev, (p_addr + i * PAGE_SIZE),
-					PAGE_SIZE, DMA_TO_DEVICE);
-		for (j = 0; j < recv_byte_cnt;) {
-			//if (src_addr[j] == 0x7f) {
-			emp_pkt_cnt++;
-			/*32 bytes per emp pkt*/
-			for (k = 0; k < 32; k++) {
-				dst_addr[data_cnt] = src_addr[j + k];
-				data_cnt++;
-			}
-			//}
-			j += 32;
+
+	src_addr = phys_to_virt(p_addr);
+	if (!src_addr)
+		return;
+	for (j = 0; j < recv_byte_cnt;) {
+		emp_pkt_cnt++;
+		/*32 bytes per emp pkt*/
+		for (k = 0; k < 32; k++) {
+			dst_addr[data_cnt] = src_addr[j + k];
+			data_cnt++;
 		}
-		/*release*/
-		/*__kunmap_atomic(src_addr);*/
-		kunmap_atomic(src_addr);
-		i++;
+		j += 32;
 	}
 	if (emp_pkt_cnt * 32 > 1024) {
 		if (log_level & 0x400)

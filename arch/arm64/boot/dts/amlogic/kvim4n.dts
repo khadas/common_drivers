@@ -568,10 +568,6 @@
 		compatible = "amlogic, auge-sound-card";
 		aml-audio-card,name = "AML-AUGESOUND";
 
-		/*avout mute gpio*/
-		avout_mute-gpios = <&gpio GPIOH_2 GPIO_ACTIVE_HIGH>;
-		//spk_mute-gpios = <&gpio GPIOD_2 GPIO_ACTIVE_LOW>;
-
 		interrupts = <GIC_SPI 51 IRQ_TYPE_EDGE_RISING>;
 		interrupt-names = "audio_exception64";
 
@@ -917,17 +913,17 @@
 	adc_keypad {
 		compatible = "amlogic, adc_keypad";
 		status = "okay";
-		key_name = "update", "vol-", "vol+", "enter";
-		key_num = <4>;
+		key_name = "func";
+		key_num = <1>;
 		io-channels = <&saradc 2>;
 		io-channel-names = "key-chan-2";
-		key_chan = <2 2 2 2>;
-		key_code = <141 114 115 28>;
-		key_val = <0 143 266 389>; //val=voltage/1800mV*1023
-		key_tolerance = <40 40 40 40>;
+		key_chan = <2 2 2>;
+		key_code = <KEY_HOMEPAGE>;
+		key_val = <108>; //val=voltage/1800mV*1023
+		key_tolerance = <40>;
 	};
 
-	gpio_keypad{
+	gpio_keypad {
 		compatible = "amlogic, gpio_keypad";
 		status = "okay";
 		scan_period = <20>;
@@ -935,7 +931,7 @@
 		key_name = "power";
 		key_code = <KEY_POWER>;
 		key_type = <EV_KEY>;
-		key-gpios = <&gpio  GPIOD_3  GPIO_ACTIVE_HIGH>;
+		key-gpios = <&gpio  GPIOD_4  GPIO_ACTIVE_HIGH>;
 		detect_mode = <0>;/*0:polling mode, 1:irq mode*/
 	};
 
@@ -1028,8 +1024,8 @@
 		regulator-name = "VDDIO_C: SD/TF";
 		regulator-min-microvolt = <1800000>;
 		regulator-max-microvolt = <3300000>;
-		gpio = <&gpio GPIOE_2 GPIO_ACTIVE_HIGH>;
-		gpios-states = <1>;
+		gpio = <&gpio GPIOD_9 GPIO_ACTIVE_HIGH>;
+		gpios-states = <0>;
 
 		/* Based on P200 schematics, signal CARD_1.8V/3.3V_CTR */
 		states = <1800000 1
@@ -1122,8 +1118,8 @@
 		pinctrl-names = "tdm_pins";
 		pinctrl-0 = <&mclk_1_pins
 			&tdm_b_pins
-			&tdm_d4_pins
-			&tdm_d5_pins
+			&tdm_d2_pins
+			&tdm_d3_pins
 			&tdmb_clk_pins>;
 
 		/*
@@ -1500,13 +1496,13 @@
 };
 
 &crg20_otg {
-	status = "disable";
-	controller-type = <3>;
+	status = "okay";
+	controller-type = <2>;
 };
 
 &crg21_otg {
 	status = "okay";
-	controller-type = <3>;
+	controller-type = <2>;
 };
 
 &crg2_drd {
@@ -1524,15 +1520,15 @@
 &crg_phy_20 {
 	status = "okay";
 	portnum = <1>;
-	gpio-vbus-power = "GPIOM_8";
-	gpios = <&gpio GPIOM_8 GPIO_ACTIVE_HIGH>;
+	gpio-vbus-power = "GPIOY_5";
+	gpios = <&gpio GPIOY_5 GPIO_ACTIVE_HIGH>;
 };
 
 &crg_phy_21 {
 	status = "okay";
 	portnum = <1>;
-	gpio-vbus-power = "GPIOM_9";
-	gpios = <&gpio GPIOM_9 GPIO_ACTIVE_HIGH>;
+//	gpio-vbus-power = "GPIOY_5";
+//	gpios = <&gpio GPIOY_5 GPIO_ACTIVE_HIGH>;
 };
 
 &crg3_phy_20 {
@@ -1548,7 +1544,14 @@
 &pcie {
 	reset-gpio = <&gpio GPIOH_3 GPIO_ACTIVE_HIGH>;
 	iommu-map = <0x100 &smmu 0x5 0x10>;
-	status = "disable";
+	status = "okay";
+};
+
+&i2c0{
+	status = "okay";
+	pinctrl-names="default";
+	pinctrl-0=<&i2c0_pins1>;
+	clock-frequency = <100000>; /* default 100k */
 };
 
 &i2c1 {
@@ -1642,6 +1645,13 @@
 	clock-frequency = <100000>; /* default 100k */
 };
 
+&i2c_AO_A {
+	status = "okay";
+	pinctrl-names="default";
+	pinctrl-0=<&i2c0_ao_pins1>;
+	clock-frequency = <100000>; /* default 100k */
+};
+
 /* SDIO */
 &sd_emmc_a {
 	status = "okay";
@@ -1687,7 +1697,7 @@
 	max-frequency = <200000000>;
 
 	disable-wp;
-
+	use_intf3_tuning;
 	cd-gpios = <&gpio GPIOC_6 GPIO_ACTIVE_HIGH>;
 	//dat1-gpios = <&gpio GPIOC_1 GPIO_ACTIVE_HIGH>;
 	vmmc-supply = <&sd_3v3>;
@@ -1705,7 +1715,6 @@
 	mmc-ddr-1_8v;
 	mmc-hs200-1_8v;
 	mmc-hs400-1_8v;
-	//mmc-hs400-enhanced-strobe;
 	max-frequency = <200000000>;
 	non-removable;
 	disable-wp;
@@ -1719,10 +1728,22 @@
 	status = "okay";
 };
 
+&ext_mdio {
+	external_phy: ethernet-phy@0 {
+		reg = <0>;
+		max-speed = <1000>;
+	};
+};
+
 &ethmac {
+	pinctrl-0 = <&eth_pins>, <&eth_rgmii_pins>;
+	pinctrl-names = "default";
 	status = "okay";
-	phy-handle = <&internal_ephy>;
-	phy-mode = "rmii";
+	phy-mode = "rgmii";
+	phy-handle = <&external_phy>;
+	mc_val = <0x1621>;
+	cali_val = <0xa0000>;
+	amlogic,tx-delay-ns = <2>;
 };
 
 &uart_A {
@@ -1806,7 +1827,6 @@
 &drm_vpu {
 	status = "okay";
 	logo_addr = "0x3f800000";
-
 	connectors_dev: port@1 {
 		drm_to_lcd0: endpoint@2 {
 			reg = <2>;
@@ -1922,11 +1942,11 @@
 	};
 
 	tdm_b_pins: tdm_b_pin {
-		mux { /* GPIOT_1, GPIOT_2, GPIOT_5, GPIOT_6 */
+		mux { /* GPIOT_1, GPIOT_2, GPIOT_3, GPIOT_4 */
 			groups = "tdm_sclk1",
 				"tdm_fs1",
-				"tdm_d4",
-				"tdm_d5";
+				"tdm_d2",
+				"tdm_d3";
 			function = "tdm";
 		};
 	};
@@ -2023,6 +2043,16 @@
 			output-low;
 		};
 	};
+
+	e_uart_pins_no_cts_rts:e_uart {
+		mux {
+			groups = "uart_e_tx",
+					"uart_e_rx";
+			bias-pull-up;
+			output-high;
+			function = "uart_e";
+		};
+	};
 };
 
 &pinctrl_audio {
@@ -2037,6 +2067,20 @@
 		mux {
 			groups = "tdm_d1";
 			function = "tdmina_lane0";
+		};
+	};
+
+	tdm_d2_pins: tdm_d2_pin {
+		mux {
+			groups = "tdm_d2";
+			function = "tdmoutb_lane0";
+		};
+	};
+
+	tdm_d3_pins: tdm_d3_pin {
+		mux {
+			groups = "tdm_d3";
+			function = "tdminb_lane0";
 		};
 	};
 
@@ -2122,6 +2166,8 @@
 
 &pwm_ef {
 	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&pwm_f_pins>;
 };
 
 &irblaster {
@@ -2131,6 +2177,16 @@
 &uart_C {
 	status = "okay";
 	uart-has-rtscts;
+};
+
+&uart_E {
+	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&e_uart_pins_no_cts_rts>;
+};
+
+&state_led {
+	status = "okay";
 };
 
 &pwmao_ab {

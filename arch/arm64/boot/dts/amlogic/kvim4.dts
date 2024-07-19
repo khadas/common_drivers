@@ -1538,6 +1538,14 @@
 	};
 };
 
+&i2c3 {
+	status = "okay";
+	pinctrl-names = "default";//, "sleep"
+	pinctrl-0 = <&i2c3_pins1>;
+	clock-frequency = <100000>; /* default 100k */
+
+};
+
 &i2c5 {
 	status = "okay";
 	pinctrl-names = "default";//, "sleep"

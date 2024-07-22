@@ -4471,8 +4471,10 @@ void vdin_calculate_duration(struct vdin_dev_s *devp)
 
 		if (!devp->game_mode) {
 			duration_diff = curr_wr_vf->duration - devp->duration;
+			/* duration = 96000/fps */
 			if (abs(duration_diff) > VDIN_DURATION_FILTER_VALUE)
-				curr_wr_vf->duration = devp->duration;
+				curr_wr_vf->duration = DIV_ROUND_CLOSEST(9600000,
+					devp->prop.frame_rate);
 		}
 
 		if (devp->index)

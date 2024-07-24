@@ -4126,9 +4126,6 @@ static int vdin_open(struct inode *inode, struct file *file)
 		return -ENXIO;
 	}
 
-	if (devp->set_canvas_manual == 1)
-		return 0;
-
 	if (devp->index >= VDIN_MAX_DEVS)
 		return -ENXIO;
 
@@ -5172,12 +5169,15 @@ static long vdin_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 			       VDIN_CANVAS_MAX_CNT);
 			memset(devp->keystone_entry, 0,
 			       sizeof(struct vf_entry *) * VDIN_CANVAS_MAX_CNT);
+			devp->set_canvas_manual = 0;
+			devp->cma_config_flag = devp->cma_config_flag_bak;
+			devp->hv_reverse_en = 0;
 		}
 		break;
 
 	case TVIN_IOC_S_CANVAS_ADDR:
-		if (devp->index == 0 || !devp->set_canvas_manual) {
-			pr_info("TVIN_IOC_S_CANVAS_ADDR vdin0 or not manual canvas\n");
+		if (devp->index == 0) {
+			pr_info("TVIN_IOC_S_CANVAS_ADDR vdin0\n");
 			break;
 		}
 
@@ -5237,6 +5237,9 @@ static long vdin_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 			__close_fd(current->files, vdinsetcanvas[i].fd);
 #endif
 		}
+		devp->set_canvas_manual = 1;
+		devp->cma_config_flag = 0x100;
+		devp->hv_reverse_en = 1;
 		break;
 
 	case TVIN_IOC_S_CANVAS_RECOVERY:
@@ -6297,15 +6300,6 @@ static void vdin_get_dts_config(struct vdin_dev_s *devp,
 {
 	int ret = 0;
 
-	ret = of_property_read_u32(pdev->dev.of_node,
-				   "set_canvas_manual",
-				   &devp->set_canvas_manual);
-
-	if (ret)
-		devp->set_canvas_manual = 0;
-	if (devp->set_canvas_manual == 1)
-		devp->cma_config_flag = 0x100;
-
 	devp->dts_config.urgent_en = of_property_read_bool(pdev->dev.of_node,
 		"urgent_en");
 
@@ -6358,6 +6352,7 @@ static void vdin_get_dts_config(struct vdin_dev_s *devp,
 	devp->cr_lossy_param.ofset_burst4_en = 0;
 	/* txhd2 keystone,0:vppout;1:postblend */
 	devp->dts_config.keystone_sel = 0;
+	devp->set_canvas_manual = 0;
 }
 
 static int vdin_drv_probe(struct platform_device *pdev)
@@ -6460,6 +6455,7 @@ static int vdin_drv_probe(struct platform_device *pdev)
 			pr_err("don't find  match flag_cma\n");
 			devp->cma_config_flag = 0;
 		}
+		devp->cma_config_flag_bak = devp->cma_config_flag;
 		if (devp->cma_config_flag & 0x1) {
 			ret = of_property_read_u32(pdev->dev.of_node,
 						   "cma_size",

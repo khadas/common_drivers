@@ -942,6 +942,7 @@ struct vdin_dev_s {
 	 *bit8: (1:discontinuous alloc way;0:continuous alloc way)
 	 */
 	unsigned int cma_config_flag;
+	unsigned int cma_config_flag_bak;
 #ifdef CONFIG_CMA
 	struct platform_device	*this_pdev;
 	struct page *venc_pages;

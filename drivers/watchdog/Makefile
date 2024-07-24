@@ -15,3 +15,4 @@ $(MODULE_NAME_SMC)-y += arm_smc_wdt.o
 PR_FMT_SMC = $(subst amlogic-,,$(MODULE_NAME_SMC))
 PR_FMT_DEFINE_SMC="-Dpr_fmt(fmt)= \"$(PR_FMT_SMC): \" fmt"
 ccflags_arm_smc_wdt.o += $(PR_FMT_DEFINE_SMC)
+obj-$(CONFIG_TPS3851_WATCHDOG) += tps3851_wdt.o

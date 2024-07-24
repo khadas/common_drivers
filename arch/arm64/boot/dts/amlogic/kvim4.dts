@@ -1575,6 +1575,11 @@
 		fan,trig_temp_level2 = <100>;
 		hwver = "VIM4.V11"; /* Will be updated in uboot. */
 	};
+
+	khadas-rtc@51 {
+		compatible = "haoyu,hym8563";
+		reg = <0x51>;
+	};
 };
 
 /* SDIO */

@@ -16,6 +16,11 @@ config AMLOGIC_POWER_EE
 	help
 	  this config enables to use amlogic ee power management driver
 
+config CHARGER_BQ25700
+        tristate "TI BQ25700 battery charger driver"
+        depends on I2C
+		default m
+        help
+          Say Y to enable support for the TI BQ25700 battery charger.
 
 source "$(COMMON_DRIVERS_DIR)/drivers/power/meson_pmic6b/Kconfig"
-

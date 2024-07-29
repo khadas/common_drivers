@@ -1884,7 +1884,6 @@ static void lcd_bootup_config_init(struct aml_lcd_drv_s *pdrv)
 	pdrv->mute_count_test = 0;
 	pdrv->unmute_count_test = 0;
 	pdrv->tcon_isr_bypass = 0;
-	pdrv->fr_mode = 0;
 	pdrv->viu_sel = LCD_VIU_SEL_NONE;
 	pdrv->vsync_none_timer_flag = 0;
 	pdrv->module_reset = lcd_module_reset;

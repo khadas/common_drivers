@@ -565,7 +565,7 @@ static int lcd_info_basic_print(struct aml_lcd_drv_s *pdrv, char *buf, int offse
 		"config_check_glb: %d, config_check_para: 0x%x, config_check_en: %d\n"
 		"panel_type: %s, chip: %d, mode: %s, status: 0x%x\n"
 		"viu_sel: %d, isr_cnt: %d, resume_type: %d\n"
-		"fr_auto_flag: 0x%x, fr_mode: %d, fr_duration: %d, frame_rate: %d\n"
+		"fr_auto_flag: 0x%x, fr_duration: %d, frame_rate: %d\n"
 		"fr_auto_policy(global): %d, fr_auto_cus: 0x%x, custom_pinmux: %d\n"
 		"mute_state: %d, test_flag: 0x%x\n"
 		"key_valid: %d, config_load: %d\n",
@@ -574,7 +574,7 @@ static int lcd_info_basic_print(struct aml_lcd_drv_s *pdrv, char *buf, int offse
 		pconf->propname, pdrv->data->chip_type,
 		lcd_mode_mode_to_str(pdrv->mode), pdrv->status,
 		pdrv->viu_sel, pdrv->vsync_cnt, pdrv->resume_type,
-		pconf->fr_auto_flag, pdrv->fr_mode, pdrv->fr_duration,
+		pconf->fr_auto_flag, pdrv->fr_duration,
 		pconf->timing.act_timing.frame_rate,
 		pdrv->fr_auto_policy, pconf->fr_auto_cus, pconf->custom_pinmux,
 		mute_state, pdrv->test_flag,

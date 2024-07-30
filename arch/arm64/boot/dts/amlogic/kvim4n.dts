@@ -8,7 +8,7 @@
 #include "mesont7c.dtsi"
 #include "partition_mbox_ab.dtsi"
 #include <dt-bindings/input/input.h>
-#include "mesont7_an400-panel.dtsi"
+#include "kvim4-panel.dtsi"
 #include "mesont7c_drm.dtsi"
 
 / {
@@ -2002,6 +2002,7 @@
 &amhdmitx {
 	status = "okay";
 	repeater_tx = <0>;
+	enc_idx = <2>;
 	vrr_type = <2>; /* 1: GAME-VRR, 2: QMS-VRR */
 	hdmi_repeater = <0>;
 };
@@ -2146,14 +2147,6 @@
 		};
 	};
 
-	bl1_pwm_off_pins:bl1_pwm_off_pin {
-		mux {
-			groups = "GPIOY_8";
-			function = "gpio_periphs";
-			output-low;
-		};
-	};
-
 	e_uart_pins_no_cts_rts:e_uart {
 		mux {
 			groups = "uart_e_tx",
@@ -2276,8 +2269,6 @@
 
 &pwm_ef {
 	status = "okay";
-	pinctrl-names = "default";
-	pinctrl-0 = <&pwm_f_pins>;
 };
 
 &irblaster {

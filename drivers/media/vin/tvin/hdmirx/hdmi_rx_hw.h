@@ -10,6 +10,7 @@
 /* 2024.07.05 only set the corresponding port term */
 /* 2024.07.10 Separate registers for top_init, cor_init */
 /* 2024.07.22 Set colordepth to 12 when colorspace is YUV422 */
+/* 2024.07.31 hdcp2.2 repeater enabled for t7 only */
 #define RX_HW_VER "ver.2024/07/22"
 
 #define K_TEST_CHK_ERR_CNT

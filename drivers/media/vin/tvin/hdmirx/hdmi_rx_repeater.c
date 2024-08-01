@@ -138,7 +138,8 @@ int rx_hdmi_tx_notify_handler(struct notifier_block *nb,
 		if (!rx_info.main_port_open)
 			port_hpd_rst_flag = 7;
 		//if (hdmirx_repeat_support())
-		rx[rx_info.main_port].hdcp.repeat = true;
+		if (rx_info.chip_id == CHIP_ID_T7)
+			rx[rx_info.main_port].hdcp.repeat = true;
 		fsm_restart(rx_info.main_port);
 		ret = NOTIFY_OK;
 		break;
@@ -146,13 +147,15 @@ int rx_hdmi_tx_notify_handler(struct notifier_block *nb,
 		if (log_level & EDID_LOG)
 			rx_pr("%s, HDMITX_UNPLUG, recover primary EDID\n",
 			      __func__);
-		rx[rx_info.main_port].hdcp.repeat = false;
+		if (rx_info.chip_id == CHIP_ID_T7)
+			rx[rx_info.main_port].hdcp.repeat = false;
 		if (rpt_only_mode == 1) {
 			rx_force_hpd_rxsense_cfg(0);
 		} else {
 			rx_update_tx_edid_with_audio_block(NULL, NULL);
 			hdmi_rx_top_edid_update();
-			hdcp_init_t7(rx_info.main_port);
+			if (rx_info.chip_id == CHIP_ID_T7)
+				hdcp_init_t7(rx_info.main_port);
 		}
 		//rx_irq_en(0, rx_info.main_port);
 		//rx_set_cur_hpd(0, 4);

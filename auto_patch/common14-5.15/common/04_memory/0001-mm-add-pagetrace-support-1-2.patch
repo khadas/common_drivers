@@ -1,4 +1,4 @@
-From e4e627563da79cfef726ae525671918efd28ff84 Mon Sep 17 00:00:00 2001
+From 40113b50158ff0a93935cc8c62b37574111f4de2 Mon Sep 17 00:00:00 2001
 From: Tao Zeng <tao.zeng@amlogic.com>
 Date: Thu, 20 Jan 2022 15:09:43 +0800
 Subject: [PATCH] mm: add pagetrace support [1/2]
@@ -26,7 +26,7 @@ Change-Id: I69cc8b4f4fa4c323204f86e5c76613cd3d6087df
  6 files changed, 58 insertions(+)
 
 diff --git a/include/linux/mm.h b/include/linux/mm.h
-index a9d717452229..c7f76c50ad95 100644
+index 86a219839714b..d2a28f2e12b8b 100644
 --- a/include/linux/mm.h
 +++ b/include/linux/mm.h
 @@ -1143,7 +1143,23 @@ vm_fault_t finish_mkwrite_fault(struct vm_fault *vmf);
@@ -54,7 +54,7 @@ index a9d717452229..c7f76c50ad95 100644
  #define ZONES_PGOFF		(NODES_PGOFF - ZONES_WIDTH)
  #define LAST_CPUPID_PGOFF	(ZONES_PGOFF - LAST_CPUPID_WIDTH)
 diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
-index 42786e6364ef..1c5941316611 100644
+index 076bb5eb99f2c..8caa17dc547d4 100644
 --- a/include/linux/mm_types.h
 +++ b/include/linux/mm_types.h
 @@ -70,8 +70,18 @@ struct mem_cgroup;
@@ -77,10 +77,10 @@ index 42786e6364ef..1c5941316611 100644
  	 * Five words (20/40 bytes) are available in this union.
  	 * WARNING: bit 0 of the first word is used for PageTail(). That
 diff --git a/init/main.c b/init/main.c
-index 03c527fbe7fe..53273d5d7926 100644
+index 74aa707f2f719..bfa45a214d76a 100644
 --- a/init/main.c
 +++ b/init/main.c
-@@ -112,6 +112,10 @@
+@@ -113,6 +113,10 @@
  
  #include <kunit/test.h>
  
@@ -91,7 +91,7 @@ index 03c527fbe7fe..53273d5d7926 100644
  static int kernel_init(void *);
  
  extern void init_IRQ(void);
-@@ -855,6 +859,10 @@ static void __init mm_init(void)
+@@ -860,6 +864,10 @@ static void __init mm_init(void)
  	kfence_alloc_pool();
  	report_meminit();
  	stack_depot_init();
@@ -103,7 +103,7 @@ index 03c527fbe7fe..53273d5d7926 100644
  	mem_init_print_info();
  	/* page_owner must be initialized after buddy is ready */
 diff --git a/mm/compaction.c b/mm/compaction.c
-index 39c6c289aeef..286bfdf50db6 100644
+index cccb46701c233..2d05f1a97c1af 100644
 --- a/mm/compaction.c
 +++ b/mm/compaction.c
 @@ -24,6 +24,9 @@
@@ -116,7 +116,7 @@ index 39c6c289aeef..286bfdf50db6 100644
  
  #ifdef CONFIG_COMPACTION
  static inline void count_compact_event(enum vm_event_item item)
-@@ -1726,6 +1729,9 @@ static struct page *compaction_alloc(struct page *migratepage,
+@@ -1738,6 +1741,9 @@ static struct page *compaction_alloc(struct page *migratepage,
  	freepage = list_entry(cc->freepages.next, struct page, lru);
  	list_del(&freepage->lru);
  	cc->nr_freepages--;
@@ -127,7 +127,7 @@ index 39c6c289aeef..286bfdf50db6 100644
  	return freepage;
  }
 diff --git a/mm/mm_init.c b/mm/mm_init.c
-index 0d7b2bd2454a..9383fd4c80bc 100644
+index 0d7b2bd2454a1..9383fd4c80bcc 100644
 --- a/mm/mm_init.c
 +++ b/mm/mm_init.c
 @@ -63,7 +63,12 @@ void __init mminit_verify_pageflags_layout(void)
@@ -144,7 +144,7 @@ index 0d7b2bd2454a..9383fd4c80bc 100644
  		- LAST_CPUPID_SHIFT - KASAN_TAG_WIDTH - LRU_GEN_WIDTH - LRU_REFS_WIDTH;
  	mminit_dprintk(MMINIT_TRACE, "pageflags_layout_widths",
 diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index f2fc6a5b452a..4556353ed7a2 100644
+index aaf0fa0c86ba4..e52aafa96869c 100644
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
 @@ -81,6 +81,10 @@
@@ -156,9 +156,9 @@ index f2fc6a5b452a..4556353ed7a2 100644
 +#endif
 +
  EXPORT_TRACEPOINT_SYMBOL_GPL(mm_page_alloc);
+ EXPORT_TRACEPOINT_SYMBOL_GPL(mm_page_free);
  
- /* Free Page Internal flags: for internal, non-pcp variants of free_pages(). */
-@@ -1485,6 +1489,9 @@ static __always_inline bool free_pages_prepare(struct page *page,
+@@ -1486,6 +1490,9 @@ static __always_inline bool free_pages_prepare(struct page *page,
  
  	debug_pagealloc_unmap_pages(page, 1 << order);
  
@@ -168,7 +168,7 @@ index f2fc6a5b452a..4556353ed7a2 100644
  	return true;
  }
  
-@@ -5623,6 +5630,9 @@ unsigned long __alloc_pages_bulk(gfp_t gfp, int preferred_nid,
+@@ -5624,6 +5631,9 @@ unsigned long __alloc_pages_bulk(gfp_t gfp, int preferred_nid,
  		else
  			page_array[nr_populated] = page;
  		nr_populated++;
@@ -178,7 +178,7 @@ index f2fc6a5b452a..4556353ed7a2 100644
  	}
  
  	pcp_spin_unlock_irqrestore(pcp, flags);
-@@ -5716,6 +5726,9 @@ struct page *__alloc_pages(gfp_t gfp, unsigned int order, int preferred_nid,
+@@ -5717,6 +5727,9 @@ struct page *__alloc_pages(gfp_t gfp, unsigned int order, int preferred_nid,
  	}
  
  	trace_mm_page_alloc(page, order, alloc_gfp, ac.migratetype);

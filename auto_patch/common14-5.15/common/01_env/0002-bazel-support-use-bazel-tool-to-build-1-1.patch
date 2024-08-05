@@ -1,4 +1,4 @@
-From 060d3d7efc79e5afede33ba0f30806dc8ae88a72 Mon Sep 17 00:00:00 2001
+From 8940fb97cd789e43bbc30ca08cc988650d7e7f11 Mon Sep 17 00:00:00 2001
 From: Wanwei Jiang <wanwei.jiang@amlogic.com>
 Date: Fri, 17 Mar 2023 17:35:31 +0800
 Subject: [PATCH] bazel: support use bazel tool to build [1/1]
@@ -22,10 +22,10 @@ Signed-off-by: Wanwei Jiang <wanwei.jiang@amlogic.com>
  2 files changed, 9 insertions(+)
 
 diff --git a/BUILD.bazel b/BUILD.bazel
-index 5a0845d3f1d0..8b1b276e53cb 100644
+index 53967b0338e4d..cd38c16c8b1ff 100644
 --- a/BUILD.bazel
 +++ b/BUILD.bazel
-@@ -859,3 +859,6 @@ ddk_headers(
+@@ -797,3 +797,6 @@ ddk_headers(
      ],
      visibility = ["//visibility:private"],
  )
@@ -33,7 +33,7 @@ index 5a0845d3f1d0..8b1b276e53cb 100644
 +load("//common:common_drivers/amlogic.bzl", "define_amlogic")
 +define_amlogic()
 diff --git a/modules.bzl b/modules.bzl
-index 8f8e07abcec9..2ff706b27619 100644
+index d8c38eeb33a9d..3e24057c9ce1b 100644
 --- a/modules.bzl
 +++ b/modules.bzl
 @@ -6,6 +6,8 @@ This module contains a full list of kernel modules
@@ -44,8 +44,8 @@ index 8f8e07abcec9..2ff706b27619 100644
 +
  _COMMON_GKI_MODULES_LIST = [
      # keep sorted
-     "drivers/block/null_blk/null_blk.ko",
-@@ -107,4 +109,8 @@ def get_gki_modules_list(arch = None):
+     "drivers/block/zram/zram.ko",
+@@ -106,4 +108,8 @@ def get_gki_modules_list(arch = None):
              arch,
          ))
  

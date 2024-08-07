@@ -2692,6 +2692,26 @@ static void vframe_composer(struct composer_dev *dev)
 			vc_print(dev->index, PRINT_ERROR, "vframe_info_cur NULL\n");
 			return;
 		}
+
+		vc_print(dev->index, PRINT_AXIS,
+			 "=========frame info:==========\n");
+		vc_print(dev->index, PRINT_AXIS,
+			 "frame aixs x,y,w,h: %d %d %d %d\n",
+			 vframe_info_cur->dst_x, vframe_info_cur->dst_y,
+			 vframe_info_cur->dst_w, vframe_info_cur->dst_h);
+		vc_print(dev->index, PRINT_AXIS,
+			 "frame crop t,l,b,r: %d %d %d %d\n",
+			 vframe_info_cur->crop_y, vframe_info_cur->crop_x,
+			 vframe_info_cur->crop_h, vframe_info_cur->crop_w);
+		vc_print(dev->index, PRINT_AXIS,
+			 "frame buffer Width X Height: %d X %d\n",
+			 vframe_info_cur->buffer_w, vframe_info_cur->buffer_h);
+		vc_print(dev->index, PRINT_AXIS,
+			 "frame buffer stride Width X Height: %d X %d\n",
+			 vframe_info_cur->reserved[0], vframe_info_cur->reserved[1]);
+		vc_print(dev->index, PRINT_AXIS,
+			 "===============================\n");
+
 		is_dec_vf = is_valid_mod_type(file_vf->private_data, VF_SRC_DECODER);
 		is_v4l_vf = is_valid_mod_type(file_vf->private_data, VF_PROCESS_V4LVIDEO);
 		if (vframe_info_cur->transform != 0 || count != 1)
@@ -2783,8 +2803,8 @@ static void vframe_composer(struct composer_dev *dev)
 					addr,
 					vframe_info_cur->buffer_w,
 					vframe_info_cur->buffer_h,
-					vframe_info_cur->reserved[0],
-					vframe_info_cur->reserved[1],
+					vframe_info_cur->buffer_w,
+					vframe_info_cur->buffer_h,
 					1,
 					VICP_COLOR_FORMAT_YUV420,
 					8,

@@ -722,7 +722,7 @@ static const struct pll_params_table t3x_gp0_pll_table[] = {
 static const struct reg_sequence t3x_gp0_init_regs[] = {
 	{ .reg = CLKCTRL_GP0PLL_CTRL1,	.def = 0x03a00000 },
 	{ .reg = CLKCTRL_GP0PLL_CTRL2,	.def = 0x00040000 },
-	{ .reg = CLKCTRL_GP0PLL_CTRL3,	.def = 0x090da200 },
+	{ .reg = CLKCTRL_GP0PLL_CTRL3,	.def = 0x0b0da200 },
 };
 
 static struct clk_regmap t3x_gp0_pll_dco = {
@@ -795,7 +795,7 @@ static const struct pll_params_table t3x_gp1_pll_table[] = {
 static const struct reg_sequence t3x_gp1_init_regs[] = {
 	{ .reg = CLKCTRL_GP1PLL_CTRL1,	.def = 0x03a00000 },
 	{ .reg = CLKCTRL_GP1PLL_CTRL2,	.def = 0x00040000 },
-	{ .reg = CLKCTRL_GP1PLL_CTRL3,	.def = 0x090da200 },
+	{ .reg = CLKCTRL_GP1PLL_CTRL3,	.def = 0x0b0da200 },
 };
 
 static struct clk_regmap t3x_gp1_pll_dco = {
@@ -1187,7 +1187,7 @@ static struct t3x_sys_pll_nb_data t3x_sys3_pll_nb_data = {
 static const struct reg_sequence t3x_hifi_init_regs[] = {
 	{ .reg = CLKCTRL_HIFIPLL_CTRL1,	.def = 0x03a00000 },
 	{ .reg = CLKCTRL_HIFIPLL_CTRL2,	.def = 0x00040000 },
-	{ .reg = CLKCTRL_HIFIPLL_CTRL3,	.def = 0x090da200 },
+	{ .reg = CLKCTRL_HIFIPLL_CTRL3,	.def = 0x0b0da200 },
 };
 
 static struct clk_regmap t3x_hifi_pll_dco = {
@@ -1260,7 +1260,7 @@ static struct clk_regmap t3x_hifi_pll = {
 static const struct reg_sequence t3x_hifi1_init_regs[] = {
 	{ .reg = CLKCTRL_HIFI1PLL_CTRL1, .def = 0x03a00000 },
 	{ .reg = CLKCTRL_HIFI1PLL_CTRL2, .def = 0x00040000 },
-	{ .reg = CLKCTRL_HIFI1PLL_CTRL3, .def = 0x090da200 },
+	{ .reg = CLKCTRL_HIFI1PLL_CTRL3, .def = 0x0b0da200 },
 };
 
 static struct clk_regmap t3x_hifi1_pll_dco = {

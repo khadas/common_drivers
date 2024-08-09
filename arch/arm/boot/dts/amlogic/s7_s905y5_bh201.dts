@@ -571,7 +571,7 @@
 
 		spk_mute-gpios = <&gpio GPIOH_5 GPIO_ACTIVE_HIGH>;
 		aml-audio-card,dai-link@0 {
-			format = "dsp_a";
+			format = "dsp_b";
 			mclk-fs = <512>;
 			//continuous-clock;
 			//bitclock-inversion;
@@ -930,6 +930,14 @@
 	status = "okay";
 };
 
+&tdma {
+	pinctrl-names = "tdm_pins";
+	pinctrl-0 = <&tdm_a
+		&tdm_d0_pins
+		&tdm_d1_pins
+		&tdma_clk_pins>;
+};
+
 &pinctrl_audio {
 	tdm_d0_pins: tdm_d0_pin {
 		mux {
@@ -954,6 +962,18 @@
 };
 
 &periphs_pinctrl {
+	tdm_a: tdm_a {
+		mux { /* GPIOX_11, GPIOX_10, GPIOX_8, GPIOX_9 */
+			groups = "tdm_sclk0",
+				"tdm_fs0",
+				"tdm_d0",
+
+				/* Disable for NSK2 Smartcard */
+				"tdm_d1";
+
+			function = "tdm";
+		};
+	};
 	dvb_s_ts0_pins: dvb_s_ts0_pins {
 		tsin_a {
 			groups = "tsin_a_sop",
@@ -1210,7 +1230,6 @@
 	status = "disabled";
 	pinctrl-names = "default";
 	pinctrl-0 = <&spicc0_pins_x>;
-	cs-gpios = <&gpio GPIOX_10 0>;
 };
 
 &spifc {
@@ -1237,10 +1256,11 @@
 
 &amhdmitx {
 	status = "okay";
+	vrr_type = <2>; /* 1: GAME-VRR, 2: QMS-VRR */
 };
 
 &drm_amcvbsout {
-	status = "disabled";
+	status = "okay";
 };
 
 /*if you want to use vdin just modify status to "ok"*/

@@ -32,6 +32,13 @@
 			status = "okay";
 		};
 
+		amaudio: amaudio {
+			compatible = "amlogic, amaudio";
+			reg = <0xfe440000 0x10000>;
+			reg-names = "otp_tee_base";
+			status = "okay";
+		};
+
 		/* Sound iomap */
 		aml_snd_iomap {
 			compatible = "amlogic, snd-iomap";
@@ -39,10 +46,69 @@
 			#address-cells=<1>;
 			#size-cells=<1>;
 			ranges;
+			pdm_bus {
+				reg = <0xFE331000 0x400>;
+			};
 			audiobus_base {
-				reg = <0xfe330000 0x3000>;
+				reg = <0xFE330000 0x1000>;
+			};
+			audiolocker_base {
+				reg = <0xFE331400 0x400>;
+			};
+			eqdrc_base {
+				reg = <0xFE332000 0x1000>;
+			};
+			vad_base {
+				reg = <0xFE331800 0x400>;
+			};
+			resampleA_base {
+				reg = <0xFE331c00 0x104>;
+			};
+			resampleB_base {
+				reg = <0xFE334000 0x104>;
 			};
 		};
+
+		/* eARC */
+		audio_earc: bus@fe333000 {
+			compatible = "simple-bus";
+			reg = <0xfe333000 0x1000>;
+			#address-cells = <1>;
+			#size-cells = <1>;
+			ranges = <0x0 0xfe333000 0x1000>;
+
+			earc: earc@0 {
+				compatible = "amlogic, s7d-snd-earc";
+				#sound-dai-cells = <0>;
+
+				status = "disabled";
+
+				reg =
+					<0x800 0x400>,
+					<0xc00 0x200>,
+					<0xe00 0x200>;
+				reg-names =
+					"rx_cmdc",
+					"rx_dmac",
+					"rx_top";
+
+				clocks = < &clkaudio CLKID_EARCRX_CMDC
+					&clkaudio CLKID_EARCRX_DMAC
+					&clkc CLKID_FCLK_DIV4
+					&clkc CLKID_FCLK_DIV4
+					>;
+				clock-names =
+					"rx_cmdc",
+					"rx_dmac",
+					"rx_cmdc_srcpll",
+					"rx_dmac_srcpll";
+
+				interrupts = <
+					GIC_SPI 48 IRQ_TYPE_LEVEL_HIGH>;
+				interrupt-names = "earc_rx";
+			};
+		};
+
 		audiobus: audiobus@fe330000 {
 			compatible = "amlogic, audio-controller", "simple-bus";
 			reg = <0xfe330000 0x3000>;
@@ -50,7 +116,7 @@
 			#address-cells = <1>;
 			#size-cells = <1>;
 			ranges = <0x0 0xfe330000 0x3000>;
-			chip_id = <0x46>;
+			chip_id = <0x47>;
 		//	power-domains = <&pwrdm PDID_T7_AUDIO>;
 			status = "okay";
 
@@ -92,13 +158,18 @@
 		compatible = "amlogic, t5-snd-tdma";
 		#sound-dai-cells = <0>;
 
-		dai-tdm-lane-slot-mask-in = <1 1>;
-		dai-tdm-lane-slot-mask-out = <1 1>;
+		dai-tdm-lane-slot-mask-in = <1 0>;
+		dai-tdm-lane-slot-mask-out = <0 1>;
 		dai-tdm-clk-sel = <0>;
 		clocks = <&clkaudio CLKID_AUDIO_MCLK_A
 				&clkc CLKID_HIFI_PLL
 				&clkc CLKID_HIFI1_PLL>;
 		clock-names = "mclk", "clk_srcpll", "clk_src_cd";
+		pinctrl-names = "tdm_pins";
+		pinctrl-0 = <&tdm_a_pins
+			&tdm_d0_pins
+			&tdm_d1_pins
+			&tdma_clk_pins>;
 		suspend-clk-off = <1>;
 		/* enable control gain */
 		ctrl_gain = <1>;
@@ -112,37 +183,15 @@
 		dai-tdm-lane-slot-mask-in = <1 1 1 1>;
 		dai-tdm-lane-slot-mask-out = <1 1 1 1>;
 		dai-tdm-clk-sel = <1>;
-
 		clocks = <&clkaudio CLKID_AUDIO_MCLK_B
 				&clkc CLKID_HIFI_PLL
 				&clkc CLKID_HIFI1_PLL>;
 		clock-names = "mclk", "clk_srcpll", "clk_src_cd";
-		/*
-		 * 0: tdmout_a;
-		 * 1: tdmout_b;
-		 * 2: tdmout_c;
-		 * 3: spdifout;
-		 * 4: spdifout_b;
-		 */
-		samesource_sel = <3>;
-
-		/*enable default mclk(12.288M), before extern codec start*/
-		start_clk_enable = <1>;
-
-		/*tdm clk tuning enable*/
-		clk_tuning_enable = <1>;
-
-		/* enable control gain */
-		ctrl_gain = <1>;
 		suspend-clk-off = <1>;
 		i2s2hdmi = <1>;
-		status = "okay";
 		src-clk-freq = <491520000>;
-		/* !!!For --TV platform-- ONLY */
-		Channel_Mask {
-			/*i2s has 4 pins, 8channel, mux output*/
-			Spdif_samesource_Channel_Mask = "i2s_0/1";
-		};
+		status = "okay";
+
 	};
 
 	tdmc:tdm@2 {
@@ -157,10 +206,31 @@
 				&clkc CLKID_HIFI_PLL
 				&clkc CLKID_HIFI1_PLL>;
 		clock-names = "mclk", "clk_srcpll", "clk_src_cd";
-		suspend-clk-off = <1>;
+		pinctrl-names = "tdm_pins";
+		pinctrl-0 = <
+			&tdm_c_pins
+			&tdm_d2_pins
+			&tdmc_clk_pins>;
+		/*
+		 * 0: tdmout_a;
+		 * 1: tdmout_b;
+		 * 2: tdmout_c;
+		 * 3: spdifout;
+		 * 4: spdifout_b;
+		 */
+		samesource_sel = <3>;
 
+		/*enable default mclk(12.288M), before extern codec start*/
+		start_clk_enable = <1>;
+		src-clk-freq = <491520000>;
+		suspend-clk-off = <1>;
 		ctrl_gain = <1>;
 		status = "okay";
+		/* !!!For --TV platform-- ONLY */
+		Channel_Mask {
+			/*i2s has 4 pins, 8channel, mux output*/
+			Spdif_samesource_Channel_Mask = "i2s_0/1";
+		};
 	};
 
 	pdma:pdm {
@@ -177,13 +247,14 @@
 			"dclk_srcpll",
 			"pdm_dclk",
 			"pdm_sysclk";
-
+		pinctrl-names = "pdm_pins";
+		pinctrl-0 = <&pdmin>;
 		train_sample_count = <10>;
 		src-clk-freq = <491520000>;
 		/* mode 0~4, defalut:1 */
 		filter_mode = <1>;
 
-		status = "disabled";
+		status = "okay";
 	};
 
 	spdifa:spdif@0 {
@@ -201,10 +272,11 @@
 				"gate_spdifout", "clk_spdifin", "clk_spdifout";
 
 		interrupts =
-				<GIC_SPI 151 IRQ_TYPE_EDGE_RISING>;
+				<GIC_SPI 35 IRQ_TYPE_EDGE_RISING>;
 		interrupt-names = "irq_spdifin";
 		pinctrl-names = "spdif_pins", "spdif_pins_mute";
-		pinctrl-0 = <&spdif_out_a_h4_pins>;
+		pinctrl-0 = <&spdif_out_a_h4_pins
+					&spdifin>;
 		pinctrl-1 = <&spdif_out_a_h4_mute_pins>;
 		/*
 		 * 0: tdmout_a;
@@ -244,7 +316,7 @@
 				<GIC_SPI 42 IRQ_TYPE_EDGE_RISING>;
 		interrupt-names = "irq_frhdmirx";
 
-		status = "disabled";
+		status = "okay";
 	};
 
 	aed:effect {
@@ -263,13 +335,13 @@
 		 * 3:spdifout
 		 * 4:spdifout_b
 		 */
-		eqdrc_module = <1>;
+		eqdrc_module = <2>;
 		/* max 0xf, each bit for one lane, usually one lane */
 		lane_mask = <0x1>;
 		/* max 0xff, each bit for one channel */
-		channel_mask = <0xff>;
+		channel_mask = <0x3>;
 		suspend-clk-off = <1>;
-		status = "disabled";
+		status = "okay";
 	};
 
 	asrca: resample@0 {
@@ -296,7 +368,7 @@
 		src-clk-freq = <491520000>;
 		resample_module = <8>;
 		suspend-clk-off = <1>;
-		status = "disabled";
+		status = "okay";
 	};
 
 	asrcb: resample@1 {
@@ -308,8 +380,46 @@
 		src-clk-freq = <491520000>;
 		/*this resample is only used for loopback_A.*/
 		suspend-clk-off = <1>;
-		status = "disable";
+		capture_sample_rate = <16000>;
+		status = "disabled";
 	};
+
+	vad:vad {
+		compatible = "amlogic, snd-vad";
+		#sound-dai-cells = <0>;
+
+		clocks = <&clkaudio CLKID_AUDIO_GATE_TOVAD
+			&clkc CLKID_FCLK_DIV5
+			&clkaudio CLKID_AUDIO_VAD>;
+		clock-names = "gate", "pll", "clk";
+
+		interrupts = <GIC_SPI 39 IRQ_TYPE_EDGE_RISING
+				GIC_SPI 44 IRQ_TYPE_EDGE_RISING>;
+		interrupt-names = "irq_wakeup", "irq_frame_sync";
+
+		/*
+		 * Data src sel:
+		 * 0: tdmin_a;
+		 * 1: tdmin_b;
+		 * 2: tdmin_c;
+		 * 3: spdifin;
+		 * 4: pdmin;
+		 * 5: loopback_b;
+		 * 6: tdmin_lb;
+		 * 7: loopback_a;
+		 */
+		src = <4>;
+
+		/*
+		 * deal with hot word in user space or kernel space
+		 * 0: in user space
+		 * 1: in kernel space
+		 */
+		level = <1>;
+
+		status = "okay";
+	};
+
 	loopbacka:loopback@0 {
 		compatible = "amlogic, t5-loopbacka";
 		#sound-dai-cells = <0>;
@@ -337,10 +447,10 @@
 		 * 4: pdmin;
 		 */
 		datain_src = <4>;
-		datain_chnum = <2>;
+		datain_chnum = <0>;
 		datain_chmask = <0x3>;
 		/* config which data pin for loopback */
-		datain-lane-mask-in = <1 1 0 0>;
+		datain-lane-mask-in = <1 0 0 0>;
 
 		/* calc mclk for datalb */
 		mclk-fs = <256>;
@@ -355,15 +465,15 @@
 		 * 7: PAD_TDMINB_D*, oe, refer to core pinmux
 		 */
 		/* if tdmin_lb >= 3, use external loopback */
-		datalb_src = <1>;
+		datalb_src = <2>;
 		datalb_chnum = <2>;
 		datalb_chmask = <0x3>;
 		/* config which data pin as loopback */
 		datalb-lane-mask-in = <1 0 0 0>;
-
+		src-clk-freq = <491520000>;
 		/* define loopack with pdm mic. */
 		mic-src = <&pdma>;
-		status = "disabled";
+		status = "okay";
 	};
 
 	loopbackb:loopback@1 {
@@ -400,7 +510,7 @@
 		datain_chmask = <0xf>;
 		/* config which data pin for loopback */
 		datain-lane-mask-in = <1 0 1 0>;
-
+		src-clk-freq = <491520000>;
 		/* tdmin_lb src
 		 * 0: tdmoutA
 		 * 1: tdmoutB
@@ -412,7 +522,7 @@
 		 * 7: PAD_TDMINB_D*, oe, refer to core pinmux
 		 */
 		/* if tdmin_lb >= 3, use external loopback */
-		datalb_src = <1>;
+		datalb_src = <2>;
 		datalb_chnum = <2>;
 		datalb_chmask = <0x3>;
 		/* config which data pin as loopback */
@@ -423,17 +533,89 @@
 }; /* end of audiobus */
 
 &periphs_pinctrl {
-	spdif_out_a_h4_pins: spdifout_a_h4 {
-		mux { /* GPIOH_4 */
-			groups = "spdif_out_h";
-			function = "spdif_out";
+	tdm_a_pins: tdm_a_pins {
+		mux { /* GPIOX_11, GPIOX_10, GPIOX_8, GPIOX_9 */
+			groups = "tdm_sclk0",
+				"tdm_fs0",
+				"tdm_d0",
+				"tdm_d1";
+			function = "tdm";
 		};
 	};
+
+	spdif_out_a_h4_pins: spdifout_a_h4 {
+		mux { /* GPIOH_4 */
+			groups = "spdif_out_h4";
+			function = "spdif";
+		};
+	};
+
+	spdifin: spdifin {
+		mux {/* GPIOH_9 */
+			groups = "spdif_in_h9";
+			function = "spdif";
+		};
+	};
+
 	spdif_out_a_h4_mute_pins: spdifout_a_h4_mute {
 		 mux { /* GPIOH_4 */
 			groups = "GPIOH_4";
 			function = "gpio_periphs";
 			output-low;
+		};
+	};
+
+	pdmin: pdmin {
+		mux { /* GPIODV_3, GPIODV_4*/
+			groups = "pdm_dclk_dv3",
+					"pdm_din0_dv4";
+			function = "pdm";
+		};
+	};
+
+	tdm_c_pins: tdm_c_pin {
+		mux { /* GPIODV_1, GPIODV_2, GPIODV_5 */
+			groups = "tdm_sclk1_dv1",
+				"tdm_fs1_dv2",
+				"tdm_d2_dv5";
+			function = "tdm";
+		};
+	};
+};
+
+&pinctrl_audio {
+	tdm_d0_pins: tdm_d0_pin {
+		mux {
+			groups = "tdm_d0";
+			function = "tdmouta_lane1";
+		};
+	};
+
+	tdm_d1_pins: tdm_d1_pin {
+		mux {
+			groups = "tdm_d1";
+			function = "tdmina_lane0";
+		};
+	};
+
+	tdma_clk_pins: tdm_clk_pin {
+		mux {
+			groups = "tdm_sclk0", "tdm_lrclk0";
+			function = "tdm_clk_outa";
+		};
+	};
+
+	tdm_d2_pins: tdm_d2_pin {
+		mux {
+			groups = "tdm_d2";
+			function = "tdmoutc_lane0";
+		};
+	};
+
+	tdmc_clk_pins: tdmc_clk_pin {
+		mux {
+			groups = "tdm_sclk1", "tdm_lrclk1";
+			function = "tdm_clk_outc";
 		};
 	};
 };

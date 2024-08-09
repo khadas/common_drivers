@@ -651,7 +651,7 @@
 		reg=<0x0 0xff800228 0x0 0x4>;
 		memory-region = <&defendkey_reserved>;
 		mem_size = <0x100000>;
-		status = "disabled";
+		status = "okay";
 	};
 
 	provisionkey {
@@ -704,6 +704,35 @@
 		clk_level = <8>;
 		/* 0: 24M       1: 100.0M    2: 166.7M    3: 200.0M    4: 250.0M */
 		/* 5: 333.3M    6: 400.0M    7: 500.0M    8: 666.7M */
+	};
+
+	vclk_serve: vclk_serve {
+		compatible = "amlogic, vclk_serve";
+		status = "okay";
+		reg = <0x0 0xff63c000 0x0 0x400    /* ana reg */
+			   0x0 0xff646000 0x0 0x4a0>; /* clk reg */
+	};
+
+	vout_mux: vout_mux {
+		compatible = "amlogic, vout_mux-t5w";
+		status = "okay";
+		clocks = <&clkc CLKID_FCLK_DIV5>, <&clkc CLKID_VDIN_MEAS>;
+		clock-names = "fclk_div5", "vdin_meas_clk";
+	};
+
+	vout: vout {
+		compatible = "amlogic, vout";
+		status = "okay";
+	};
+
+	vout2: vout2 {
+		compatible = "amlogic, vout2";
+		status = "okay";
+	};
+
+	dummy_venc: dummy_venc {
+		compatible = "amlogic, dummy_venc_t5w";
+		status = "okay";
 	};
 
 	soc {
@@ -1278,30 +1307,9 @@
 			pinctrl-0=<&jtag_apao_pins>;
 		};
 
-		vclk_serve: vclk_serve {
-			compatible = "amlogic, vclk_serve";
-			status = "okay";
-			reg = <0x0 0xff63c000 0x0 0x400    /* ana reg */
-			       0x0 0xff646000 0x0 0x4a0>; /* clk reg */
-		};
-
-		vout_mux: vout_mux {
-			compatible = "amlogic, vout_mux-t5w";
-			status = "okay";
-		};
-
-		vout: vout {
-			compatible = "amlogic, vout";
-			status = "okay";
-		};
-
-		vout2: vout2 {
-			compatible = "amlogic, vout2";
-			status = "okay";
-		};
-
-		dummy_venc: dummy_venc {
-			compatible = "amlogic, dummy_venc_t5w";
+		di_process {
+			compatible = "amlogic, di_process";
+			dev_name = "di_process";
 			status = "okay";
 		};
 
@@ -1448,13 +1456,14 @@
 				clocks = < &clkaudio CLKID_EARCTX_CMDC
 						&clkaudio CLKID_EARCTX_DMAC
 						&clkc CLKID_FCLK_DIV4
-						&clkc CLKID_MPLL2
-						>;
+						&clkc CLKID_HIFI_PLL
+						&clkc CLKID_MPLL2>;
 				clock-names =
 						"tx_cmdc",
 						"tx_dmac",
 						"tx_cmdc_srcpll",
-						"tx_dmac_srcpll";
+						"tx_dmac_srcpll",
+						"clk_src_cd";
 
 				interrupts = <
 						GIC_SPI 233 IRQ_TYPE_LEVEL_HIGH>;
@@ -1978,16 +1987,25 @@
 			status = "okay";
 			compatible = "amlogic, meson-cooldev";
 			cooling_devices {
+				ddrtype_reg = <0xff6388b0>;
 				ddr_cool {
-				ddr_reg = <0xff6384b4 0xff638648>;
-				ddr_status = <13>;
-				ddr_bits = <8 15>, <0 8>;
-				ddr_data = <152 152 152 120 94 76 76 60 60 46 46 38 18>;
-				gpu_data = <0x33 0x33 0x33 0x33 0x33 0x33 0x33 0x33 0x33
-					0x33 0x33 0x33 0x33>;
-				node_name = "ddr_cool0";
-				device_type = "ddr";
-			};
+					ddr_reg = <0xff6384b4 0xff638648>;
+					ddr_status = <13>;
+					ddr_bits = <8 15>, <0 8>;
+					ddr_data = <152 152 152 120 94 76 76 60 60 46 46 38 18>;
+					gpu_data = <0x33 0x33 0x33 0x33 0x33 0x33 0x33 0x33 0x33
+						0x33 0x33 0x33 0x33>;
+					node_name = "ddr_cool0";
+					device_type = "ddr";
+				};
+				ddr_cool_20nm {
+					ddr_reg = <0xff6384b4>;
+					ddr_status = <3>;
+					ddr_bits = <8 15>;
+					ddr_data = <0x4c 0x26 0x13>;
+					node_name = "ddr_cool1";
+					device_type = "ddr";
+				};
 				cpucore_cool_cluster0 {
 					cluster_id = <0>;
 					node_name = "cpucore0";
@@ -2000,6 +2018,9 @@
 				};
 			};
 			ddr_cool0:ddr_cool0 {
+				#cooling-cells = <2>; /* min followed by max */
+			};
+			ddr_cool1:ddr_cool1 {
 				#cooling-cells = <2>; /* min followed by max */
 			};
 			cpucore0:cpucore0 {
@@ -2029,7 +2050,12 @@
 						hysteresis = <5000>;
 						type = "hot";
 					};
-					pcritical: trip-point@3 {
+					pddr_change1: trip-point@3 {
+						temperature = <90000>;
+						hysteresis = <10000>;
+						type = "hot";
+					};
+					pcritical: trip-point@4 {
 						temperature = <115000>;
 						hysteresis = <1000>;
 						type = "critical";
@@ -2043,7 +2069,12 @@
 					};
 					ddr_cooling_map {
 						trip = <&pddr_change>;
-						cooling-device = <&ddr_cool0 0 2>;
+						cooling-device = <&ddr_cool0 0 12>;
+						contribution = <1024>;
+					};
+					ddr_cooling_map1 {
+						trip = <&pddr_change1>;
+						cooling-device = <&ddr_cool1 0 2>;
 						contribution = <1024>;
 					};
 					gpufreq_cooling_map {
@@ -2395,6 +2426,14 @@
 			function = "spi1";
 			drive-strength-microamp = <3000>;
 			bias-pull-up;
+		};
+	};
+
+	spicc1_cs_pins: spicc1_cs_pins {
+		mux {
+			groups = "spi1_ss0_h";
+			function = "spi1";
+			drive-strength-microamp = <3000>;
 		};
 	};
 

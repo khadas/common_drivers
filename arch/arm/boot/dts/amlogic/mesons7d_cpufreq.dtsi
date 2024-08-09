@@ -1,0 +1,97 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
+ */
+/ {
+	cpu_opp_table0: cpu_opp_table0 {
+		compatible = "operating-points-v2";
+		opp-shared;
+
+		opp00 {
+			opp-hz = /bits/ 64 <100000000>;
+			opp-microvolt = <849000>;
+		};
+		opp01 {
+			opp-hz = /bits/ 64 <250000000>;
+			opp-microvolt = <849000>;
+		};
+		opp02 {
+			opp-hz = /bits/ 64 <500000000>;
+			opp-microvolt = <849000>;
+		};
+		opp03 {
+			opp-hz = /bits/ 64 <666666666>;
+			opp-microvolt = <879000>;
+		};
+		opp04 {
+			opp-hz = /bits/ 64 <1000000000>;
+			opp-microvolt = <879000>;
+		};
+		opp05 {
+			opp-hz = /bits/ 64 <1200000000>;
+			opp-microvolt = <879000>;
+		};
+		opp06 {
+			opp-hz = /bits/ 64 <1404000000>;
+			opp-microvolt = <899000>;
+		};
+		opp07 {
+			opp-hz = /bits/ 64 <1608000000>;
+			opp-microvolt = <919000>;
+		};
+		opp08 {
+			opp-hz = /bits/ 64 <1800000000>;
+			opp-microvolt = <919000>;
+		};
+		opp09 {
+			opp-hz = /bits/ 64 <2004000000>;
+			opp-microvolt = <929000>;
+		};
+		opp10 {
+			opp-hz = /bits/ 64 <2208000000>;
+			opp-microvolt = <939000>;
+		};
+		opp11 {
+			opp-hz = /bits/ 64 <2304000000>;
+			opp-microvolt = <949000>;
+		};
+		opp12 {
+			opp-hz = /bits/ 64 <2352000000>;
+			opp-microvolt = <959000>;
+		};
+	};
+
+	meson-cpufreq {
+		compatible = "amlogic, aml-cpufreq-v2";
+		status = "okay";
+
+		cluster0-cpu-supply = <&vddcpu0>;
+
+		cluster0 {
+			clocks = <&scmi_clk CLKID_SCMI_CPU_CLK>, <&scmi_clk CLKID_SCMI_DSU_CLK>;
+			clock-names = "cpuclk", "dsuclk";
+			voltage-tolerance = <0>;
+			clock-latency = <50000>;
+			//skip_volt_scaling;
+			cluster_cores = <0 1 2 3>;
+			//pdvfs_enabled;
+			dsu-opp-table0 = <1000000 1122000 879000>,
+					<1404000 1440000 929000>,
+					<1800000 1872000 1009000>;
+			dsu-opp-table1 = <1000000 1122000 879000>,
+					<1404000 1440000 929000>,
+					<1800000 1872000 1009000>;
+			dsu-opp-table2 = <1000000 1122000 879000>,
+					<1404000 1440000 929000>,
+					<1800000 1872000 1009000>;
+			dsu-opp-table3 = <1000000 1122000 879000>,
+					<1404000 1440000 929000>,
+					<1800000 1872000 1009000>;
+		};
+	};
+};/* end of / */
+
+&CPU0 {
+	#cooling-cells = <2>;
+	operating-points-v2 = <&cpu_opp_table0>;
+};

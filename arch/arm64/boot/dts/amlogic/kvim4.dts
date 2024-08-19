@@ -40,6 +40,7 @@
 		spi4 = &spicc3;
 		spi5 = &spicc4;
 		spi6 = &spicc5;
+		ethernet0 = &ethmac;
 		tsensor0 = &a73_tsensor;
 		tsensor1 = &a53_tsensor;
 		tsensor2 = &gpu_tsensor;
@@ -835,7 +836,7 @@
 	dvb-demux {
 		compatible = "amlogic sc2, dvb-demux";
 		dev_name = "dvb-demux";
-		status = "okay";
+		status = "disabled";
 
 		reg = <0x0 0xfe000000 0x0 0x480000>;
 
@@ -1748,6 +1749,8 @@
 	external_phy: ethernet-phy@0 {
 		reg = <0>;
 		max-speed = <1000>;
+		reset-assert-us = <20000>;
+		reset-deassert-us = <50000>;
 	};
 };
 
@@ -1757,6 +1760,7 @@
 	status = "okay";
 	phy-mode = "rgmii";
 	phy-handle = <&external_phy>;
+	internal_phy = <2>;
 	mc_val = <0x1621>;
 	cali_val = <0xa0000>;
 	amlogic,tx-delay-ns = <2>;

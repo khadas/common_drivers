@@ -49,6 +49,9 @@
 #include <linux/amlogic/media/vrr/vrr.h>
 /*#include <linux/amlogic/amports/vframe.h>*/
 #include <linux/amlogic/media/vout/hdmi_tx_ext.h>
+#ifdef AMLOGIC_MEDIA_ENHANCEMENT_VECM
+#include <linux/amlogic/media/amvecm/amvecm.h>
+#endif
 #include <linux/of_gpio.h>
 #ifdef CONFIG_AMLOGIC_LEGACY_EARLY_SUSPEND
 #include <linux/amlogic/pm.h>
@@ -1180,6 +1183,11 @@ void hdmirx_get_vsi_info(struct tvin_sig_property_s *prop, u8 port)
 {
 	static u8 last_vsi_state;
 
+#ifdef AMLOGIC_MEDIA_ENHANCEMENT_VECM
+	rx_info.hdr10p_en = is_hdr10plus_enable();
+#else
+	rx_info.hdr10p_en = false;
+#endif
 	if (last_vsi_state != rx[port].vs_info_details.vsi_state) {
 		if (log_level & PACKET_LOG) {
 			rx_pr("!!!vsi state = %d\n",
@@ -1227,9 +1235,12 @@ void hdmirx_get_vsi_info(struct tvin_sig_property_s *prop, u8 port)
 		}
 		break;
 	case E_VSI_HDR10PLUS:
-		prop->hdr10p_info.hdr10p_on = rx[port].vs_info_details.hdr10plus;
-		memcpy(&prop->hdr10p_info.hdr10p_data, &rx_pkt[port].multi_vs_info[HDR10PLUS],
-			sizeof(struct tvin_hdr10p_data_s));
+		if (rx_info.hdr10p_en) {
+			prop->hdr10p_info.hdr10p_on = rx[port].vs_info_details.hdr10plus;
+			memcpy(&prop->hdr10p_info.hdr10p_data,
+				&rx_pkt[port].multi_vs_info[HDR10PLUS],
+				sizeof(struct tvin_hdr10p_data_s));
+		}
 		break;
 	case E_VSI_CUVAHDR:
 		prop->cuva_info.cuva_on = true;

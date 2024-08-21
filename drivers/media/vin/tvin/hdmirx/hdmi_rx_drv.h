@@ -918,6 +918,7 @@ struct rx_info_s {
 	bool boot_flag;
 	bool main_port_open;
 	bool pip_on;
+	bool hdr10p_en;
 	u8 vrr_min;
 	u8 vrr_max;
 	u32 arc_port;

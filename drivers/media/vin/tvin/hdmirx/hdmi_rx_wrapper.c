@@ -7572,6 +7572,7 @@ void dump_video_status(u8 port)
 	rx_pr("ecc cnt:%d\n", rx[port].ecc_err);
 	rx_pr("****pkts_info_details:*****\n");
 	rx_pr("hdr10plus = %d\n", rx[port].vs_info_details.hdr10plus);
+	rx_pr("hdr10P_en = %d\n", rx_info.hdr10p_en);
 	rx_pr("hdmi_allm_mode = %d\n", rx[port].vs_info_details.hdmi_allm);
 	rx_pr("dv_allm_mode = %d\n", rx[port].vs_info_details.dv_allm);
 	rx_pr("itcontent = %d\n", rx[port].cur.it_content);

@@ -1218,13 +1218,24 @@ void v4lvideo_data_copy(struct v4l_data_t *v4l_data,
 		return;
 	}
 
-	pr_debug("%s: vf->type: %d vf->compWidth: %d\n",
-			__func__, vf->type, vf->compWidth);
+	pr_debug("%s: vf->type:%d vf->compWidth:%d vf->compHeight:%d\n",
+			__func__, vf->type, vf->compWidth, vf->compHeight);
+	pr_debug("vf->width:%d vf->height:%d v4l_data->width:%d v4l_data->height:%d\n",
+			vf->width, vf->height, v4l_data->width, v4l_data->height);
+	pr_debug("v4l_data->byte_stride:%d v4l_data->size:%zu\n",
+			v4l_data->byte_stride, v4l_data->size);
 
 	/*
 	 * fbc decoder for VIDTYPE_COMPRESS
 	 */
 	if ((vf->type & VIDTYPE_COMPRESS)) {
+		size_t size = v4l_data->byte_stride * (v4l_data->height + vf->compHeight / 2);
+
+		if (size > v4l_data->size) {
+			pr_err("%s: afbc video size(%zu) larger than v4l_data->size.\n",
+				__func__, size);
+			return;
+		}
 		if (print_flag)
 			pr_info("fbc decoder path\n");
 		if ((vf->bitdepth & BITDEPTH_YMASK)  == BITDEPTH_Y10)
@@ -1282,6 +1293,10 @@ void v4lvideo_data_copy(struct v4l_data_t *v4l_data,
 	/*
 	 * GE2D copy for non-compress
 	 */
+	if (vf->width > v4l_data->width || vf->height > v4l_data->height) {
+		pr_err("%s: none-afbc video WxH larger than buffer WxH.\n", __func__);
+		return;
+	}
 	is_10bit = vf->bitdepth & BITDEPTH_Y10;
 	di_mode = vf->type & VIDTYPE_DI_PW;
 	if (is_10bit && !di_mode) {

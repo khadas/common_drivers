@@ -330,6 +330,16 @@ void hdrinfo_to_vinfo(struct hdr_info *hdrinfo, struct hdmitx_common *tx_comm);
 void set_dummy_dv_info(struct vout_device_s *vdev);
 void hdmitx_build_fmt_attr_str(struct hdmitx_common *tx_comm);
 
+/*
+ * HDR10plus is only supported by OTT when is_hdr10plus_enable is true
+ * add weak function declaration to prevent compilation errors
+ */
+bool is_hdr10plus_enable(void);
+__weak bool is_hdr10plus_enable(void)
+{
+	return false;
+}
+
 /* common work for plugin/resume, which is done in lock */
 void hdmitx_plugin_common_work(struct hdmitx_common *tx_comm);
 /* common work for plugout */

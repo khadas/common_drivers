@@ -41,6 +41,7 @@
 #include <linux/vmalloc.h>
 #include <linux/amlogic/media/vout/vinfo.h>
 #include <linux/amlogic/media/vout/vout_notify.h>
+#include <linux/amlogic/media/amvecm/amvecm.h>
 #if IS_ENABLED(CONFIG_AMLOGIC_SND_SOC)
 #include <linux/amlogic/media/sound/aout_notify.h>
 #endif
@@ -1254,6 +1255,10 @@ static void hdmitx_set_hdr10plus_pkt(unsigned int flag,
 	unsigned char VEN_DB[27] = {0x00};
 	struct hdmitx_hw_common *tx_hw_base = &hdev->tx_hw.base;
 	struct rx_cap *prxcap = &hdev->tx_comm.rxcap;
+
+	/* HDR10plus is only supported by OTT when is_hdr10plus_enable is true */
+	if (!is_hdr10plus_enable())
+		return;
 
 	HDMITX_DEBUG_PACKET("%s[%d]\n", __func__, __LINE__);
 	if (hdev->bist_lock)

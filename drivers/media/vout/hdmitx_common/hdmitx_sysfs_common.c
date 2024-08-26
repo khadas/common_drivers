@@ -9,6 +9,7 @@
 #include <linux/delay.h>
 #include <linux/amlogic/media/vout/vinfo.h>
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_common.h>
+#include <linux/amlogic/media/amvecm/amvecm.h>
 #include "hdmitx_sysfs_common.h"
 #include "hdmitx_log.h"
 #include "hdmitx_compliance.h"
@@ -364,8 +365,10 @@ static ssize_t _hdr_cap_show(struct device *dev,
 	const struct hdr10_plus_info *hdr10p = &hdr->hdr10plus_info;
 	const struct sbtm_info *sbtm = &hdr->sbtm_info;
 
+	/* HDR10plus is only supported by OTT when is_hdr10plus_enable is true */
 	if (hdr10p->ieeeoui == HDR10_PLUS_IEEE_OUI &&
-		hdr10p->application_version != 0xFF)
+		hdr10p->application_version != 0xFF &&
+		is_hdr10plus_enable())
 		hdr10plugsupported = 1;
 	pos += snprintf(buf + pos, PAGE_SIZE, "HDR10Plus Supported: %d\n",
 		hdr10plugsupported);

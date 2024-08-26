@@ -44,6 +44,7 @@
 #endif
 #include <linux/amlogic/media/vout/hdmi_tx_ext.h>
 #include <linux/amlogic/media/vrr/vrr.h>
+#include <linux/amlogic/media/amvecm/amvecm.h>
 
 #include "hdmi_tx_module.h"
 #include "hdmi_tx_ext.h"
@@ -1459,6 +1460,10 @@ static void hdmitx_set_hdr10plus_pkt(u32 flag,
 	u8 db[28] = {0x00};
 	u8 *ven_db = &db[1];
 	struct rx_cap *prxcap = &hdev->tx_comm.rxcap;
+
+	/* HDR10plus is only supported by OTT when is_hdr10plus_enable is true */
+	if (!is_hdr10plus_enable())
+		return;
 
 	HDMITX_DEBUG_PACKET("%s[%d]\n", __func__, __LINE__);
 	if (!is_cur_hdmi_mode())

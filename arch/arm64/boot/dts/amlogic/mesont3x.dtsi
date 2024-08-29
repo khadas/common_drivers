@@ -3572,7 +3572,7 @@
 		/* vlock_pll_m_limit = <1>;*/
 		/* vlock_line_limit = <2>;*/
 		clocks = <&clkc CLKID_VID_LOCK>;
-		clock-names = "cts_vid_lock_clk";
+		clock-names = "cts_vid_lock_clk";enable_hdr10plus = <0>;/*1:enable ;0:disable*/
 	};
 
 	amvideom: meson-amvideom {

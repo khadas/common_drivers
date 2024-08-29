@@ -614,5 +614,7 @@ int pkt_adv_chip(void);
 extern unsigned int ai_color_enable;
 
 void resume_recovery_process(int vpp_index);
+
+bool is_hdr10plus_enable(void);
 #endif /* AMVECM_H */
 

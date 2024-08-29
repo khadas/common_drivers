@@ -4171,6 +4171,9 @@ uint32_t sink_hdr_support(const struct vinfo_s *vinfo)
 	else
 		new_hdr_cap = hdr_cap;
 
+	if (!is_hdr10plus_enable())
+		new_hdr_cap &= (~HDRP_SUPPORT);
+
 	if (vinfo)
 		pr_csc(256, "%s:support %d %d %d,mode=%d,hdr_cap 0x%x,0x%x\n",
 			__func__,
@@ -4243,6 +4246,10 @@ uint32_t sink_hdr_support_ori_cap(const struct vinfo_s *vinfo)
 		if (dv_cap)
 			hdr_cap |= (dv_cap << DV_SUPPORT_SHF) & DV_SUPPORT;
 	}
+
+	if (!is_hdr10plus_enable())
+		hdr_cap &= (~HDRP_SUPPORT);
+
 	if (vinfo)
 		pr_csc(256, "%s: support %d %d %d,mode=%d, hdr_cap 0x%x\n",
 			__func__,
@@ -4613,6 +4620,12 @@ enum vpp_matrix_csc_e get_csc_type(void)
 				/* pr_csc(1, "\tHDR10+!!!\n"); */
 				csc_type =
 					VPP_MATRIX_BT2020YUV_BT2020RGB_DYNAMIC;
+				if (!is_hdr10plus_enable()) {
+					csc_type = VPP_MATRIX_BT2020YUV_BT2020RGB;
+					pr_csc(1,
+						"[%s] system not support hdr10+, treat as hdr10\n",
+						__func__);
+				}
 			} else {
 				pr_csc(1,
 				       "\tWARNING: non-standard HDR10+!!!\n");
@@ -7339,10 +7352,13 @@ static enum hdr_type_e get_source_type(enum vd_path_e vd_path,
 		else if (vinfo_lcd_support() ||
 			(!sink_support_hdr10_plus(vinfo) &&
 			 !sink_support_hdr(vinfo) &&
-			 !is_amdv_enable()))
+			 !is_amdv_enable())) {
+			if (!is_hdr10plus_enable())
+				return HDRTYPE_HDR10;
 			return HDRTYPE_HDR10PLUS;
-		else
+		} else {
 			return HDRTYPE_HDR10;
+		}
 	} else if (signal_transfer_characteristic == 16) {
 		if (signal_cuva)
 			return HDRTYPE_CUVA_HDR;

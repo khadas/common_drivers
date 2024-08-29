@@ -1284,6 +1284,7 @@ bool is_cuva_frame(struct vframe_s *vf);
 bool is_hdr10plus_frame(struct vframe_s *vf);
 bool vf_is_hlg(struct vframe_s *vf);
 bool vf_is_hdr10_plus(struct vframe_s *vf);
+bool vf_signal_type_is_hdr10plus(struct vframe_s *vf);
 bool vf_is_hdr10(struct vframe_s *vf);
 bool is_dv_standard_es(int dvel, int mflag, int width);
 void calculate_crc(void);

@@ -611,6 +611,8 @@ static void d_convert_str(int num,
 }
 #endif
 
+bool enable_hdr10plus;/* enable hdr10+ or not */
+
 /* vpp brightness/contrast/saturation/hue */
 int __init amvecm_load_pq_val(char *str)
 {
@@ -1219,6 +1221,31 @@ static ssize_t amvecm_frame_lock_store(struct class *cla,
 		const char *buf, size_t count)
 {
 	return frame_lock_debug_store(cla, attr, buf, count);
+}
+
+static ssize_t amvecm_enable_hdr10plus_show
+	 (struct class *cla,
+	  struct class_attribute *attr,
+	  char *buf)
+{
+	return sprintf(buf, "%d\n", enable_hdr10plus);
+}
+
+static ssize_t amvecm_enable_hdr10plus_store
+	 (struct class *cla,
+	  struct class_attribute *attr,
+	  const char *buf, size_t count)
+{
+	size_t r;
+	int value = 0;
+
+	pr_info("set enable_hdr10plus: %s\n", buf);
+	r = kstrtoint(buf, 0, &value);
+	if (r != 0)
+		return -EINVAL;
+	enable_hdr10plus = value;
+	pr_info("current enable_hdr10plus is %d\n", value);
+	return count;
 }
 
 /* #endif */
@@ -13290,6 +13317,9 @@ static struct class_attribute amvecm_class_attrs[] = {
 	__ATTR(ble_whe_dbg, 0644,
 		amvecm_ble_whe_dbg_show,
 		amvecm_ble_whe_dbg_store),
+	__ATTR(enable_hdr10plus, 0664,
+		amvecm_enable_hdr10plus_show,
+		amvecm_enable_hdr10plus_store),
 #endif
 	__ATTR_NULL
 };
@@ -13740,6 +13770,12 @@ static void aml_vecm_dt_parse(struct amvecm_dev_s *devp, struct platform_device 
 			pr_amvecm_dbg("Can't find  osd_pic_en.\n");
 		else
 			osd_pic_en = val;
+		ret = of_property_read_u32(node, "enable_hdr10plus", &val);
+		if (ret)
+			pr_amvecm_dbg("Can't find enable_hdr10plus.\n");
+		else
+			enable_hdr10plus = val;
+		pr_info("enable_hdr10plus =%d\n", enable_hdr10plus);
 #endif
 
 		/*get compatible matched device, to get chip related data*/
@@ -14003,6 +14039,12 @@ void set_hdr_output(int out)
 }
 EXPORT_SYMBOL(set_hdr_output);
 #endif
+
+bool is_hdr10plus_enable(void)
+{
+	return enable_hdr10plus;
+}
+EXPORT_SYMBOL(is_hdr10plus_enable);
 
 static int aml_vecm_probe(struct platform_device *pdev)
 {

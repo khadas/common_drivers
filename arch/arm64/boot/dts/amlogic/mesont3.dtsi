@@ -1920,6 +1920,7 @@
 		dev_name = "aml_vecm";
 		clocks = <&clkc CLKID_VID_LOCK>;
 		clock-names = "cts_vid_lock_clk";
+		enable_hdr10plus = <0>;/*1:enable ;0:disable*/
 	};
 
 	amdolby_vision {

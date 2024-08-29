@@ -12954,12 +12954,19 @@ void amvecm_gamma_init(bool en)
 	}
 
 	if (cpu_after_eq_t7()) {
-		if (is_meson_t7_cpu()) {
+		if (is_meson_t7_cpu() ||
+			chip_type_id == chip_t3x) {
+			if (chip_type_id == chip_t3x) {
+				p_gm = get_gm_data();
+				p_gm->max_idx = 257;
+				p_gm->auto_inc = 1 << L_H_AUTO_INC_2;
+				p_gm->addr_port = LCD_GAMMA_ADDR_PORT0;
+				p_gm->data_port = LCD_GAMMA_DATA_PORT0;
+			}
 			vecm_latch_flag |= FLAG_GAMMA_TABLE_R;
 			vecm_latch_flag |= FLAG_GAMMA_TABLE_G;
 			vecm_latch_flag |= FLAG_GAMMA_TABLE_B;
 		} else if (chip_type_id == chip_t5m ||
-				   chip_type_id == chip_t3x ||
 				   chip_type_id == chip_txhd2 ||
 				   chip_type_id == chip_a4) {
 			p_gm = get_gm_data();
@@ -13002,10 +13009,14 @@ void amvecm_gamma_init(bool en)
 					H_SEL_B);
 	}
 
-	if (en)
-		vecm_latch_flag |= FLAG_GAMMA_TABLE_EN;
-	else
-		vecm_latch_flag |= FLAG_GAMMA_TABLE_DIS;
+	if (chip_type_id != chip_t3x) {
+		if (en)
+			vecm_latch_flag |= FLAG_GAMMA_TABLE_EN;
+		else
+			vecm_latch_flag |= FLAG_GAMMA_TABLE_DIS;
+	}
+
+	pr_info("\n[%s] en = %d\n", __func__, en);
 }
 #endif
 
@@ -13764,7 +13775,8 @@ static void aml_vecm_dt_parse(struct amvecm_dev_s *devp, struct platform_device 
 	vpp_probe_enable();
 #endif
 
-	amvecm_wb_init(wb_en);
+	if (chip_type_id != chip_t3x)
+		amvecm_wb_init(wb_en);
 
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	amvecm_gamma_init(gamma_en);

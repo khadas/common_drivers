@@ -72,6 +72,7 @@ struct v4l_data_t {
 	int byte_stride;
 	u32 width;
 	u32 height;
+	size_t size;
 };
 
 void v4lvideo_data_copy(struct v4l_data_t *v4l_data,

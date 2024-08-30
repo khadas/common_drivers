@@ -459,6 +459,7 @@ void vpp_enable_lcd_gamma_table(int viu_sel, int rdma_write, int vpp_index)
 {
 	unsigned int offset = 0x0;
 	unsigned int reg_ctrl = L_GAMMA_CNTL_PORT;
+	unsigned int data = 0x0;
 
 	if (viu_sel == 0) /*venc0*/
 		offset = 0;
@@ -483,10 +484,15 @@ void vpp_enable_lcd_gamma_table(int viu_sel, int rdma_write, int vpp_index)
 	if (cpu_after_eq_t7()) {
 		pr_amve_bringup_dbg("%s: reg_ctrl = %d, rdma_write/offset = %d/%d\n",
 			__func__, reg_ctrl, rdma_write, offset);
+		data = READ_VPP_REG(reg_ctrl + offset);
+		pr_info("\n[%s] enable_lcd_gamma_table data = 0x%x\n",
+			__func__, data);
+		if (data & 0x1)
+			return;
 
 		if (rdma_write)
-			VSYNC_WRITE_VPP_REG_BITS_VPP_SEL(reg_ctrl + offset,
-				1, L_GAMMA_EN, 1, vpp_index);
+			VSYNC_WRITE_VPP_REG_VPP_SEL(reg_ctrl + offset,
+				(data | 0x1), vpp_index);
 		else
 			WRITE_VPP_REG_BITS(reg_ctrl + offset,
 				1, L_GAMMA_EN, 1);
@@ -506,6 +512,7 @@ void vpp_disable_lcd_gamma_table(int viu_sel, int rdma_write, int vpp_index)
 {
 	unsigned int offset = 0x0;
 	unsigned int reg_ctrl = L_GAMMA_CNTL_PORT;
+	unsigned int data = 0x0;
 
 	if (viu_sel == 0) /*venc0*/
 		offset = 0;
@@ -530,10 +537,14 @@ void vpp_disable_lcd_gamma_table(int viu_sel, int rdma_write, int vpp_index)
 	if (cpu_after_eq_t7()) {
 		pr_amve_bringup_dbg("%s: reg_ctrl = %d, rdma_write/offset = %d/%d\n",
 			__func__, reg_ctrl, rdma_write, offset);
+		data = READ_VPP_REG(reg_ctrl + offset);
+		pr_info("\n[%s] disable_lcd_gamma_table data = 0x%x\n", __func__, data);
+		if (!(data & 0x1))
+			return;
 
 		if (rdma_write)
-			VSYNC_WRITE_VPP_REG_BITS_VPP_SEL(reg_ctrl + offset,
-				0, L_GAMMA_EN, 1, vpp_index);
+			VSYNC_WRITE_VPP_REG_VPP_SEL(reg_ctrl + offset,
+				(data & 0xfffffffe), vpp_index);
 		else
 			WRITE_VPP_REG_BITS(reg_ctrl + offset,
 				0, L_GAMMA_EN, 1);
@@ -3258,16 +3269,20 @@ int vpp_pq_ctrl_config(struct pq_ctrl_s pq_cfg, enum wr_md_e md, int vpp_index)
 			ve_bs_ctl(md, 0, vpp_index);
 			ve_ble_ctl(md, pq_cfg.black_ext_en, vpp_index);
 			ve_cc_ctl(md, pq_cfg.chroma_cor_en, vpp_index);
-			post_wb_ctl(md, pq_cfg.wb_en, vpp_index);
+
+			if (chip_type_id != chip_t3x)
+				post_wb_ctl(md, pq_cfg.wb_en, vpp_index);
 
 			if (chip_type_id == chip_t3x) {
 				wb_en = pq_cfg.wb_en;
+				pr_info("\n[%s] WR_VCB gamma_en/pq_cfg.gamma_en = %d/%d\n",
+					__func__, gamma_en, pq_cfg.gamma_en);
 
-				gamma_en = pq_cfg.gamma_en;
-				if (gamma_en)
-					vpp_enable_lcd_gamma_table(0, 0, vpp_index);
-				else
-					vpp_disable_lcd_gamma_table(0, 0, vpp_index);
+//				gamma_en = pq_cfg.gamma_en;
+//				if (gamma_en)
+//					vpp_enable_lcd_gamma_table(0, 0, vpp_index);
+//				else
+//					vpp_disable_lcd_gamma_table(0, 0, vpp_index);
 
 				if (pq_cfg.lc_en)
 					lc_en = 1;

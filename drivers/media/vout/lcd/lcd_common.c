@@ -3306,8 +3306,12 @@ static int lcd_timing_fr_update(struct aml_lcd_drv_s *pdrv)
 		temp = duration_num;
 		temp = temp * h_period * v_period;
 		pclk = lcd_do_div(temp, duration_den);
-		if (pconf->timing.act_timing.pixel_clk != pclk)
-			pconf->timing.clk_change |= LCD_CLK_PLL_CHANGE;
+		if (pconf->timing.act_timing.pixel_clk != pclk) {
+			if (pdrv->fr_hint_pll_frac_only)
+				pconf->timing.clk_change |= LCD_CLK_FRAC_UPDATE;
+			else
+				pconf->timing.clk_change |= LCD_CLK_PLL_CHANGE;
+		}
 		break;
 	case 1: /* htotal adjust */
 		temp = pclk;
@@ -3400,9 +3404,13 @@ static int lcd_timing_fr_update(struct aml_lcd_drv_s *pdrv)
 			temp = duration_num;
 			temp = temp * h_period * v_period;
 			pclk = lcd_do_div(temp, duration_den);
-			if (pconf->timing.act_timing.pixel_clk != pclk)
-				pconf->timing.clk_change |= LCD_CLK_PLL_CHANGE;
-		} else if ((duration_num / duration_den) == 47) {
+			if (pconf->timing.act_timing.pixel_clk != pclk) {
+				if (pdrv->fr_hint_pll_frac_only)
+					pconf->timing.clk_change |= LCD_CLK_FRAC_UPDATE;
+				else
+					pconf->timing.clk_change |= LCD_CLK_PLL_CHANGE;
+			}
+		} else  if ((duration_num / duration_den) == 47) {
 			/* htotal adjust */
 			temp = pclk;
 			h_period = v_period * 50;
@@ -3448,8 +3456,11 @@ static int lcd_timing_fr_update(struct aml_lcd_drv_s *pdrv)
 	default:
 		LCDERR("[%d]: %s: invalid fr_adjust_type: %d\n",
 		       pdrv->index, __func__, type);
+		pdrv->fr_hint_pll_frac_only = 0;
 		return 0;
 	}
+
+	pdrv->fr_hint_pll_frac_only = 0;
 
 	memset(str, 0, 100);
 	if (pconf->timing.act_timing.v_period != v_period) {

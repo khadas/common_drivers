@@ -633,7 +633,6 @@ static int lcd_set_current_vmode(enum vmode_e mode, void *data)
 
 	/* clear fr*/
 	pdrv->fr_duration = 0;
-	pdrv->fr_mode = 0;
 
 	mutex_lock(&lcd_power_mutex);
 
@@ -860,6 +859,7 @@ static int lcd_set_vframe_rate_hint(int duration, void *data)
 	unsigned int frame_rate = 60;
 	unsigned int duration_num = 60, duration_den = 1, frac = 0;
 	struct lcd_vframe_match_s *vtable = NULL;
+	struct lcd_detail_timing_s *act_timing = &pdrv->config.timing.act_timing;
 	int n, find = 0;
 
 	if (!pdrv)
@@ -900,9 +900,8 @@ static int lcd_set_vframe_rate_hint(int duration, void *data)
 		      pdrv->index, __func__,
 		      info->name, pdrv->config.fr_auto_flag);
 
-		pdrv->fr_duration = 0;
-		if (pdrv->fr_mode == 0) {
-			LCDPR("[%d]: %s: fr_mode is invalid, exit\n",
+		if (pdrv->fr_duration == 0) {
+			LCDPR("[%d]: %s: fr_duration is invalid, exit\n",
 			      pdrv->index, __func__);
 			return 0;
 		}
@@ -916,7 +915,7 @@ static int lcd_set_vframe_rate_hint(int duration, void *data)
 			pdrv->config.timing.base_timing.sync_duration_den;
 		pdrv->config.timing.act_timing.frac =
 			pdrv->config.timing.base_timing.frac;
-		pdrv->fr_mode = 0;
+		pdrv->fr_duration = 0;
 	} else {
 		find = lcd_framerate_auto_std_duration_index(pdrv, vtable, n, duration);
 		if (find >= LCD_DURATION_MAX) {
@@ -934,7 +933,11 @@ static int lcd_set_vframe_rate_hint(int duration, void *data)
 		      pdrv->index, __func__, pdrv->config.fr_auto_flag,
 		      duration, frame_rate);
 
-		pdrv->fr_duration = duration;
+		pdrv->fr_duration = duration_num * 100 / duration_den;
+		pdrv->fr_hint_pll_frac_only =
+			(lcd_diff((act_timing->sync_duration_num / act_timing->sync_duration_den),
+				(duration_num / duration_den)) < 2);
+
 		/* if the sync_duration is same as current */
 		if (duration_num == pdrv->config.timing.act_timing.sync_duration_num &&
 		    duration_den == pdrv->config.timing.act_timing.sync_duration_den) {
@@ -948,7 +951,6 @@ static int lcd_set_vframe_rate_hint(int duration, void *data)
 		pdrv->config.timing.act_timing.sync_duration_num = duration_num;
 		pdrv->config.timing.act_timing.sync_duration_den = duration_den;
 		pdrv->config.timing.act_timing.frac = frac;
-		pdrv->fr_mode = 1;
 	}
 
 	lcd_framerate_automation_set_mode(pdrv);

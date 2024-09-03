@@ -883,6 +883,7 @@ static bool video_mute_on;
 static bool videopip_mute_on;
 /* 0: off, 1: vpp mute 2:dv mute */
 static int video_mute_status;
+static int video_vpp_mute;
 static int videopip_mute_status;
 static bool output_mute_on;
 /* 0: off, 1: on */
@@ -6514,7 +6515,7 @@ void rx_mute_vpp(u8 port_type)
 		WRITE_VCBUS_REG(VPP_VD1_CLIP_MISC1, black_val);
 	}
 	video_mute_array[HDMI_RX_MUTE_SET] = true;
-	video_mute_status = VIDEO_MUTE_ON_VPP;
+	video_vpp_mute = VIDEO_BE_MUTED;
 }
 EXPORT_SYMBOL(rx_mute_vpp);
 
@@ -6532,7 +6533,6 @@ void rx_mute_videopip(void)
 		WRITE_VCBUS_REG(VPP_VD2_CLIP_MISC1, black_val);
 	}
 	videopip_mute_on = true;
-	videopip_mute_status = VIDEO_MUTE_ON_VPP;
 }
 EXPORT_SYMBOL(rx_mute_videopip);
 
@@ -6586,7 +6586,11 @@ static inline void mute_vpp(u8 layer_id)
 	setting.clip_done = false;
 	setting.clip_max = black_val;
 	setting.clip_min = black_val;
-	if (is_tv_panel()) {
+	/*
+	 * add video_mute_array[HDMI_RX_MUTE_SET]
+	 * and video_vpp_mute to avoid rx mute tx output,cause vpp be muted
+	 */
+	if (is_tv_panel() || video_mute_array[HDMI_RX_MUTE_SET]) {
 		if (!cpu_after_eq(MESON_CPU_MAJOR_ID_T7) ||
 			cur_dev->display_module == OLD_DISPLAY_MODULE) {
 			/* vd1 hdr core after vd1 clip */
@@ -6598,8 +6602,10 @@ static inline void mute_vpp(u8 layer_id)
 				}
 		}
 		vd_clip_setting(vpp_index, layer_id, &setting);
+		video_vpp_mute = VIDEO_BE_MUTED;
 	} else {
 		vpp_clip_setting(vpp_index, &setting);
+		video_vpp_mute = VPP_BE_MUTED;
 	}
 }
 
@@ -6611,10 +6617,13 @@ static inline void unmute_vpp(u8 layer_id)
 	setting.clip_done = false;
 	setting.clip_max = 0x3fffffff;
 	setting.clip_min = 0x0;
-	if (is_tv_panel())
+	if (is_tv_panel() || video_vpp_mute == VIDEO_BE_MUTED) {
 		vd_clip_setting(vpp_index, layer_id, &setting);
-	else
+		video_vpp_mute = VIDEO_BE_UNMUTED;
+	} else {
 		vpp_clip_setting(vpp_index, &setting);
+		video_vpp_mute = VPP_BE_UNMUTED;
+	}
 }
 
 void check_video_mute(void)

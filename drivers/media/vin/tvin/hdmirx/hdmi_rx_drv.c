@@ -49,7 +49,7 @@
 #include <linux/amlogic/media/vrr/vrr.h>
 /*#include <linux/amlogic/amports/vframe.h>*/
 #include <linux/amlogic/media/vout/hdmi_tx_ext.h>
-#ifdef AMLOGIC_MEDIA_ENHANCEMENT_VECM
+#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_VECM
 #include <linux/amlogic/media/amvecm/amvecm.h>
 #endif
 #include <linux/of_gpio.h>
@@ -1183,7 +1183,7 @@ void hdmirx_get_vsi_info(struct tvin_sig_property_s *prop, u8 port)
 {
 	static u8 last_vsi_state;
 
-#ifdef AMLOGIC_MEDIA_ENHANCEMENT_VECM
+#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_VECM
 	rx_info.hdr10p_en = is_hdr10plus_enable();
 #else
 	rx_info.hdr10p_en = false;

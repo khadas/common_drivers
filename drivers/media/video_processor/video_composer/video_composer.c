@@ -2913,6 +2913,7 @@ static void vframe_composer(struct composer_dev *dev)
 	}
 
 	src_vf = common_para.input_para.vframe;
+	dst_vf->ready_jiffies64 = src_vf->ready_jiffies64;
 
 	for (i = 0; i < count; i++) {
 		if (!input_vf[i] || out_axis[i].width == 0 || out_axis[i].height == 0) {

@@ -6,6 +6,7 @@
 /dts-v1/;
 
 #include "mesont3x.dtsi"
+#include "hdr10plus.dtsi"
 #include "partition_mbox_ab.dtsi"
 #include "mesont3x_pxp-panel.dtsi"
 #include "mesont3x_drm.dtsi"

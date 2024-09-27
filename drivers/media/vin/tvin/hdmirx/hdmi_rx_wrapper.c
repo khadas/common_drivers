@@ -473,15 +473,15 @@ void hdmirx_fsm_var_init(void)
 		sig_stable_max = 4;
 		dwc_rst_wait_cnt_max = 5; //for repeater
 		spec_dev_wait_cnt_max = 200;
-		clk_unstable_max = 50;
-		esd_phy_rst_max = 16;
+		clk_unstable_max = 80;
+		esd_phy_rst_max = 10;
 		pll_unlock_max = 30;
 		//do not to check colorspace changes
 		//Vdin can adapt it automatically
 		stable_check_lvl = 0x7c3;
 		pll_lock_max = 2;
 		err_cnt_sum_max = 10;
-		hpd_wait_max = 74;
+		hpd_wait_max = 110;
 		sig_unstable_max = 20;
 		sig_unready_max = 0;
 		/* decreased to 2 */
@@ -3462,9 +3462,6 @@ bool rx_hpd_keep_low(u8 port)
 		rx[port].var.hpd_wait_cnt <= hpd_wait_21_max)
 		ret = true;
 
-	if (!rx[port].pre_5v_sts)
-		ret = false;
-
 	return ret;
 }
 
@@ -5572,7 +5569,7 @@ void rx_port0_main_state_machine(void)
 			break;
 		rx[port].var.hpd_wait_cnt++;
 		if (rx_get_cur_hpd_sts(port) == 0) {
-			if (rx_hpd_keep_low(port))
+			if (rx_hpd_keep_low(port) && rx[port].pre_5v_sts)
 				break;
 			//hdmirx_hw_config(port);//todo
 		}
@@ -5977,7 +5974,7 @@ void rx_port1_main_state_machine(void)
 			break;
 		rx[port].var.hpd_wait_cnt++;
 		if (rx_get_cur_hpd_sts(port) == 0) {
-			if (rx_hpd_keep_low(port))
+			if (rx_hpd_keep_low(port) && rx[port].pre_5v_sts)
 				break;
 			//hdmirx_hw_config(port);//todo
 		}
@@ -6386,7 +6383,7 @@ void rx_port2_main_state_machine(void)
 			break;
 		rx[port].var.hpd_wait_cnt++;
 		if (rx_get_cur_hpd_sts(port) == 0) {
-			if (rx_hpd_keep_low(port))
+			if (rx_hpd_keep_low(port) && rx[port].pre_5v_sts)
 				break;
 			//hdmirx_hw_config(port);
 		}
@@ -6875,7 +6872,7 @@ void rx_port3_main_state_machine(void)
 			break;
 		rx[port].var.hpd_wait_cnt++;
 		if (rx_get_cur_hpd_sts(port) == 0) {
-			if (rx_hpd_keep_low(port))
+			if (rx_hpd_keep_low(port) && rx[port].pre_5v_sts)
 				break;
 			//hdmirx_hw_config(port);
 		}

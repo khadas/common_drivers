@@ -31,7 +31,7 @@
 
 /* 2024.07.02 optimize suspend flow */
 /* 2024.07.19 optimize cts flow */
-#define RX_WRAPPER_VER "ver.2024/07/19"
+#define RX_WRAPPER_VER "ver.2024/08/30"
 
 struct freq_ref_s {
 	bool interlace;

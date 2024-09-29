@@ -625,6 +625,7 @@ err_remove_config_dt:
 
 #if IS_ENABLED(CONFIG_AMLOGIC_ETH_PRIVE)
 #ifdef CONFIG_PM_SLEEP
+extern void realtek_setup_wol(int enable, bool is_shutdown);
 static void meson8b_dwmac_shutdown(struct platform_device *pdev)
 {
 	struct net_device *ndev = platform_get_drvdata(pdev);
@@ -643,6 +644,7 @@ static void meson8b_dwmac_shutdown(struct platform_device *pdev)
 		if (dwmac->data->suspend)
 			ret = dwmac->data->suspend(dwmac);
 	}
+	realtek_setup_wol(1, 1);
 }
 
 static int dwmac_suspend(struct meson8b_dwmac *dwmac)
@@ -679,7 +681,7 @@ static void dwmac_resume(struct meson8b_dwmac *dwmac)
 			writel(0x34047, phy_analog_config_addr + 0x84);
 			writel(0x74047, phy_analog_config_addr + 0x84);
 		}
-	} else if (phy_pll_mode == 2) {/*s7 new*/
+	} else if (phy_pll_mode == 2) {
 		writel(0x00510630, phy_analog_config_addr + 0x44);
 		writel(0x222210a0, phy_analog_config_addr + 0x48);
 		writel(0x00518630, phy_analog_config_addr + 0x44);
@@ -726,6 +728,7 @@ static int meson8b_suspend(struct device *dev)
 		}
 		without_reset = 0;
 	}
+	realtek_setup_wol(1, 0);
 	return ret;
 }
 
@@ -742,15 +745,15 @@ static int meson8b_resume(struct device *dev)
 	if ((wol_switch_from_user) && (without_reset)) {
 		ret = stmmac_resume(dev);
 
-		if (get_resume_method() == ETH_PHY_WAKEUP) {
-			pr_info("evan---wol rx--KEY_POWER\n");
+		/*if (get_resume_method() == ETH_PHY_WAKEUP) {
+			printk("evan---wol rx--KEY_POWER\n");
 			input_event(dwmac->input_dev,
 				EV_KEY, KEY_POWER, 1);
 			input_sync(dwmac->input_dev);
 			input_event(dwmac->input_dev,
 				EV_KEY, KEY_POWER, 0);
 			input_sync(dwmac->input_dev);
-		}
+		}*/
 		/*RTC wait linkup*/
 		pr_info("eth hold wakelock 5s\n");
 		pm_wakeup_event(dev, 5000);
@@ -769,6 +772,7 @@ static int meson8b_resume(struct device *dev)
 		if (phy_mode == 2)
 			stmmac_global_err(priv);
 	}
+	realtek_setup_wol(0, 0);
 	return ret;
 }
 

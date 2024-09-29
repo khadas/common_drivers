@@ -20,6 +20,38 @@
 #include "stmmac.h"
 #include "stmmac_platform.h"
 
+#ifdef CONFIG_DWMAC_MESON
+static u8 DEFMAC[] = {0, 0, 0, 0, 0, 0};
+static unsigned int g_mac_addr_setup;
+static unsigned char chartonum(char c)
+{
+	if (c >= '0' && c <= '9')
+		return c - '0';
+	if (c >= 'A' && c <= 'F')
+		return (c - 'A') + 10;
+	if (c >= 'a' && c <= 'f')
+		return (c - 'a') + 10;
+
+	return 0;
+}
+
+static int __init mac_addr_set(char *line)
+{
+	unsigned char mac[6];
+	int i = 0;
+	for (i = 0; i < 6 && line[0] != '\0' && line[1] != '\0'; i++) {
+	mac[i] = chartonum(line[0]) << 4 | chartonum(line[1]);
+	line += 3;
+	}
+	memcpy(DEFMAC, mac, 6);
+	printk("uboot setup mac-addr: %x:%x:%x:%x:%x:%x\n",
+	DEFMAC[0], DEFMAC[1], DEFMAC[2], DEFMAC[3], DEFMAC[4], DEFMAC[5]);
+	g_mac_addr_setup++;
+	return 0;
+}
+__setup("mac=", mac_addr_set);
+#endif
+
 #ifdef CONFIG_OF
 
 /**
@@ -384,6 +416,20 @@ static int stmmac_of_get_mac_mode(struct device_node *np)
 	return -ENODEV;
 }
 
+static int setup_mac_addr(struct platform_device *pdev, u8 *mac)
+{
+       struct device_node *np = pdev->dev.of_node;
+#ifdef CONFIG_DWMAC_MESON
+	if (g_mac_addr_setup)   /*so uboot mac= is first priority.*/
+		mac = DEFMAC;
+	else
+		of_get_mac_address(np, mac);
+#else
+	of_get_mac_address(np, mac);
+#endif
+	return 0;
+}
+
 #ifdef CONFIG_AMLOGIC_ETH_PRIVE
 static int setup_aml_clk(struct platform_device *pdev)
 {
@@ -451,13 +497,14 @@ stmmac_probe_config_dt(struct platform_device *pdev, u8 *mac)
 	if (!plat)
 		return ERR_PTR(-ENOMEM);
 
-	rc = of_get_mac_address(np, mac);
+	/*rc = of_get_mac_address(np, mac);
 	if (rc) {
 		if (rc == -EPROBE_DEFER)
 			return ERR_PTR(rc);
 
 		eth_zero_addr(mac);
-	}
+	}*/
+	setup_mac_addr(pdev, mac);
 
 	phy_mode = device_get_phy_mode(&pdev->dev);
 	if (phy_mode < 0)

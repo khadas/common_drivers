@@ -243,7 +243,7 @@ int crg_host_init(struct crg *crg)
 
 	if (is_meson_t7_cpu() || is_meson_t3_cpu()) {
 		props[prop_idx++] = PROPERTY_ENTRY_BOOL("xhci-crg-host-007");
-		props[prop_idx++] = PROPERTY_ENTRY_BOOL("xhci-crg-host-010");
+		//props[prop_idx++] = PROPERTY_ENTRY_BOOL("xhci-crg-host-010");
 		props[prop_idx++] = PROPERTY_ENTRY_BOOL("xhci-crg-host-014");
 	}
 

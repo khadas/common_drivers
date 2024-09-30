@@ -1095,7 +1095,7 @@ static u32 vdin_is_delay_vfe2rd_list(struct vdin_dev_s *devp)
 /* For DV HW5 on T3X only */
 static void vdin_dv_hw5_init(struct vdin_dev_s *devp)
 {
-	if (!is_meson_t3x_cpu())
+	if (!is_meson_t3x_cpu() || devp->work_mode == VDIN_WORK_MD_V4L)
 		return;
 
 	//not dv input,return
@@ -1201,7 +1201,6 @@ static void vdin_start_param_init(struct vdin_dev_s *devp)
 	if (!devp->debug.dbg_dv_hw5)
 		memset(&devp->dv_hw5, 0, sizeof(devp->dv_hw5));
 
-	devp->afbce_flag = devp->dts_config.afbce_flag_cfg;
 	//todo:more parameter initializations will be move here
 }
 

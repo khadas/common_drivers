@@ -3993,12 +3993,11 @@ start_chk:
 	} else if (!strcmp(parm[0], "afbce_flag")) {
 		if (parm[1]) {
 			if (kstrtouint(parm[1], 16, &temp) == 0) {
-				devp->dts_config.afbce_flag_cfg = temp;
-				pr_info("set afbce_flag: 0x%x\n",
-					devp->dts_config.afbce_flag_cfg);
+				devp->afbce_flag = temp;
+				pr_info("set afbce_flag: 0x%x\n", devp->afbce_flag);
 			}
 		} else {
-			pr_err("err.afbce_flag: 0x%x\n", devp->dts_config.afbce_flag_cfg);
+			pr_err("err.cur afbce_flag: 0x%x\n", devp->afbce_flag);
 		}
 	} else if (!strcmp(parm[0], "afbce_mode")) {
 		if (parm[2]) {

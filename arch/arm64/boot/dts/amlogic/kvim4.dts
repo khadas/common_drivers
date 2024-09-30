@@ -1601,7 +1601,7 @@
 	//pinctrl-1 = <&i2c2_sleep_pins2>;
 	clock-frequency = <100000>; /* default 100k */
 	bq25703@6b {
-             status = "okay";
+             status = "disable";
              compatible = "bq25703";
              reg = <0x6b>;
              irq-gpio = <&gpio GPIOD_5 IRQ_TYPE_LEVEL_LOW>;
@@ -1620,7 +1620,7 @@
              pd-charge-only = <0>;
 	};
 	cw201x@62 {
-             status = "okay";
+             status = "disable";
              compatible = "cellwise,cw2015";
              reg = <0x62>;
              bat_config_info = <0x15 0x7F 0x6E 0x66 0x65 0x5C 0x5B 0x59

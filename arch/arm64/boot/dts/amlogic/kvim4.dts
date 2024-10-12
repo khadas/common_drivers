@@ -492,7 +492,6 @@
 				<&clkc CLKID_MCLK_PLL>,
 				<&xtal>;
 		clock-names = "mclk_0","mclk_1","mclk_0_pre","mclk_1_pre","mclk_p","mclk_x";
-		pwdn = <&gpio GPIOM_11 GPIO_ACTIVE_HIGH>;
 		reset = <&gpio GPIOM_5 GPIO_ACTIVE_HIGH>;
 		af = <&gpio GPIOM_5 GPIO_ACTIVE_HIGH>;
 	};
@@ -1520,7 +1519,6 @@
 		#sound-dai-cells = <0>;
 		reg = <0x1b>;
 		status = "okay";
-		reset_pin = <&gpio GPIOT_19 GPIO_ACTIVE_HIGH>;
 	};
 
 	tas5707_3a: tas5707_3a@1d {

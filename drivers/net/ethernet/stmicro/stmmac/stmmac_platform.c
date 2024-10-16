@@ -421,7 +421,7 @@ static int setup_mac_addr(struct platform_device *pdev, u8 *mac)
        struct device_node *np = pdev->dev.of_node;
 #ifdef CONFIG_DWMAC_MESON
 	if (g_mac_addr_setup)   /*so uboot mac= is first priority.*/
-		mac = DEFMAC;
+		memcpy(mac, DEFMAC, 6);
 	else
 		of_get_mac_address(np, mac);
 #else

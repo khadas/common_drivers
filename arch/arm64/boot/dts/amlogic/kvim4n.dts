@@ -2297,10 +2297,6 @@
 	pinctrl-0 = <&e_uart_pins_no_cts_rts>;
 };
 
-&state_led {
-	status = "okay";
-};
-
 &pwmao_ab {
 	status = "okay";
 };

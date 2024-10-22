@@ -969,7 +969,7 @@ static void dsi_host_on_pre(struct aml_lcd_drv_s *pdrv)
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
 		LCDPR("[%d]: %s\n", pdrv->index, __func__);
 
-	lcd_venc_enable(pdrv, 0);
+	// lcd_venc_enable(pdrv, 0);
 	lcd_delay_us(100);
 
 	mipi_dsi_config_post(&pdrv->config);
@@ -1004,6 +1004,8 @@ static void dsi_host_on_post(struct aml_lcd_drv_s *pdrv)
 	u8 op_mode_disp = pdrv->config.control.mipi_cfg.operation_mode_display;
 	u8 op_mode_init = pdrv->config.control.mipi_cfg.operation_mode_init;
 
+	lcd_venc_enable(pdrv, 0);
+
 	if (op_mode_disp != op_mode_init) {
 		set_mipi_dsi_host(pdrv, MIPI_DSI_VIRTUAL_CHAN_ID,
 			0, //Chroma sub sample, only for YUV 422 or 420, even or odd
@@ -1024,6 +1026,7 @@ static void dsi_host_off_pre(struct aml_lcd_drv_s *pdrv)
 			0, //Chroma sub sample, only for YUV 422 or 420, even or odd
 			dconf->operation_mode_init); //DSI operation mode, video or command
 	}
+	lcd_venc_enable(pdrv, 1);
 }
 
 static void dsi_switch_operation_mode(struct aml_lcd_drv_s *pdrv, u8 op_mode)

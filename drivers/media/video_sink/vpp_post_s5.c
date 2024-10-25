@@ -465,12 +465,15 @@ static void vpp_post_blend_set(u32 vpp_index,
 	rdma_wr_bits(vpp_reg->vpp_postblend_vd1_v_start_end,
 		(vpp_blend->bld_din0_v_start << 16) |
 		vpp_blend->bld_din0_v_end, 0, 32);
-	rdma_wr_bits(vpp_reg->vpp_postblend_vd2_h_start_end,
-		(vpp_blend->bld_din1_h_start << 16) |
-		vpp_blend->bld_din1_h_end, 0, 32);
-	rdma_wr_bits(vpp_reg->vpp_postblend_vd2_v_start_end,
-		(vpp_blend->bld_din1_v_start << 16) |
-		vpp_blend->bld_din1_v_end, 0, 32);
+
+	/* move this code to vpp_blend_vd2_set()
+	 * rdma_wr_bits(vpp_reg->vpp_postblend_vd2_h_start_end,
+	 *	(vpp_blend->bld_din1_h_start << 16) |
+	 *	vpp_blend->bld_din1_h_end, 0, 32);
+	 * rdma_wr_bits(vpp_reg->vpp_postblend_vd2_v_start_end,
+	 *	(vpp_blend->bld_din1_v_start << 16) |
+	 *	vpp_blend->bld_din1_v_end, 0, 32);
+	 */
 	if (is_vpp0(1)) {
 		rdma_wr_bits(vpp_reg->vpp_postblend_vd3_h_start_end,
 			(vpp_blend->bld_din2_h_start << 16) |
@@ -1588,21 +1591,23 @@ int update_vpp_input_info(const struct vinfo_s *info, u8 vpp_index)
 	din_y_start_pre[0] = din_y_start;
 
 	/* check vd2, update size when vpp_index matched */
-	if (vpp_index == vd_layer[1].vpp_index) {
-		vpp_input.din_hsize[1] = vd_proc->vd2_proc.dout_hsize;
-		vpp_input.din_vsize[1] = vd_proc->vd2_proc.dout_vsize;
-		vpp_input.din_x_start[1] = vd_proc->vd2_proc.vd2_dout_x_start;
-		vpp_input.din_y_start[1] = vd_proc->vd2_proc.vd2_dout_y_start;
-	} else {
-		vpp_input.din_hsize[1] = din_hsize_pre[1];
-		vpp_input.din_vsize[1] = din_vsize_pre[1];
-		vpp_input.din_x_start[1] = din_x_start_pre[1];
-		vpp_input.din_y_start[1] = din_y_start_pre[1];
-	}
-	din_hsize_pre[1] = vd_proc->vd2_proc.dout_hsize;
-	din_vsize_pre[1] = vd_proc->vd2_proc.dout_vsize;
-	din_x_start_pre[1] = vd_proc->vd2_proc.vd2_dout_x_start;
-	din_y_start_pre[1] = vd_proc->vd2_proc.vd2_dout_y_start;
+	/* move this code to update_vpp_vd2_input_info()
+	 * if (vpp_index == vd_layer[1].vpp_index) {
+	 *	vpp_input.din_hsize[1] = vd_proc->vd2_proc.dout_hsize;
+	 *	vpp_input.din_vsize[1] = vd_proc->vd2_proc.dout_vsize;
+	 *	vpp_input.din_x_start[1] = vd_proc->vd2_proc.vd2_dout_x_start;
+	 *	vpp_input.din_y_start[1] = vd_proc->vd2_proc.vd2_dout_y_start;
+	 * } else {
+	 *	vpp_input.din_hsize[1] = din_hsize_pre[1];
+	 *	vpp_input.din_vsize[1] = din_vsize_pre[1];
+	 *	vpp_input.din_x_start[1] = din_x_start_pre[1];
+	 *	vpp_input.din_y_start[1] = din_y_start_pre[1];
+	 * }
+	 * din_hsize_pre[1] = vd_proc->vd2_proc.dout_hsize;
+	 * din_vsize_pre[1] = vd_proc->vd2_proc.dout_vsize;
+	 * din_x_start_pre[1] = vd_proc->vd2_proc.vd2_dout_x_start;
+	 * din_y_start_pre[1] = vd_proc->vd2_proc.vd2_dout_y_start;
+	 */
 
 	/* vd3 */
 	vpp_input.din_hsize[2] = 0;

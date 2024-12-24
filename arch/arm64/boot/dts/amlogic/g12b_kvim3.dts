@@ -959,6 +959,7 @@
 };
 
 &drm_subsystem {
+	crtc_masks = <2 1 1>;
 	dummyl_from_hdmitx = /bits/ 8  <1>;
 };
 

@@ -22,6 +22,7 @@ RAMDISK_MODULES_LOAD_LIST=(
 	amlogic-efuse-unifykey
 	amlogic-mmc
 	amlogic-i2c.ko
+	gpio-pca953x.ko
 	amlogic-spi.ko
 	amlogic-rng.ko
 	tee.ko

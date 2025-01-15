@@ -581,7 +581,7 @@ static int hdmitx_validate_mode(struct hdmitx_hw_common *tx_hw, u32 vic)
 		return -EINVAL;
 
 	/*hdmitx21 VESA mode is not supported yet*/
-	if (vic == HDMI_0_UNKNOWN || vic > HDMI_CEA_VIC_END)
+	if (vic == HDMI_0_UNKNOWN)
 		return -EINVAL;
 
 	timing = hdmitx_mode_vic_to_hdmi_timing(vic);

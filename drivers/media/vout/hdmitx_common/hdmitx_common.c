@@ -108,7 +108,7 @@ int hdmitx_common_validate_vic(struct hdmitx_common *tx_comm, u32 vic)
 		/* if the vic equals to HDMI_0_UNKNOWN or VESA,
 		 * then create it as over limited
 		 */
-		if (vic == HDMI_0_UNKNOWN || vic >= HDMITX_VESA_OFFSET)
+		if (vic == HDMI_0_UNKNOWN)
 			return -ERANGE;
 		/* check the resolution is over 1920x1080 or not */
 		if (timing->h_active > 1920 || timing->v_active > 1080)

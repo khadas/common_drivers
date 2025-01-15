@@ -1561,8 +1561,7 @@
 
 &usb2_phy_v2 {
 	status = "okay";
-	portnum = <0>;
-	otg = <1>;
+	portnum = <2>;
 };
 
 &usb3_phy_v2 {

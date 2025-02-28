@@ -551,11 +551,11 @@ static int amlogic_crg_drd_usb2_probe(struct platform_device *pdev)
 	if (gpio_name) {
 		gpio_vbus_power_pin = 1;
 		usb_gd = devm_gpiod_get_index(&pdev->dev,
-					 NULL, 0, GPIOD_OUT_LOW);
+					 NULL, 0, GPIOD_OUT_HIGH);
 		if (IS_ERR(usb_gd))
 			return -1;
 
-		gpiod_direction_output(usb_gd, 0);
+		gpiod_direction_output(usb_gd, 1);
 		usleep_range(50000, 60000);
 	}
 

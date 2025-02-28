@@ -3350,7 +3350,7 @@
 		key_3:key_3{
 			keyname = "usid";
 			offset = <18>;
-			size = <10>;
+			size = <5>;
 		};
 	};
 	gpu_opp_table: gpu_opp_table {

@@ -30,6 +30,7 @@ static char adc_key_mode_name[MAX_NAME_LEN] = "abcdef";
 static char kernelkey_en_name[MAX_NAME_LEN] = "abcdef";
 static bool keypad_enable_flag = true;
 struct mbox_chan *adc_mbox_chan;
+extern int key_test_flag;
 
 static int meson_adc_kp_search_key(struct meson_adc_kp *kp)
 {
@@ -58,6 +59,9 @@ static int meson_adc_kp_search_key(struct meson_adc_kp *kp)
 
 static void meson_adc_kp_report_key(struct meson_adc_kp *kp, int code, int value)
 {
+    if(key_test_flag){
+        code = KEY_VOLUMEDOWN;
+    }
 	input_report_key(kp->input, code, value);
 	input_sync(kp->input);
 
@@ -613,6 +617,7 @@ static int meson_adc_kp_probe(struct platform_device *pdev)
 
 	meson_adc_kp_led_blink_register(pdev);
 
+	input_set_capability(kp->input, EV_KEY, KEY_VOLUMEDOWN);
 	return ret;
 
 err2:

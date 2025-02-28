@@ -41,6 +41,19 @@ struct gpio_keypad {
 	struct class kp_class;
 };
 
+int key_test_flag = 0;
+
+static ssize_t keytest_store(struct class *cls, struct class_attribute *attr,
+			     const char *buf, size_t count)
+{
+    if (kstrtoint(buf, 0, &key_test_flag))
+            return -EINVAL;
+    printk("key_test_flag: %d\n", key_test_flag);
+    return count;
+}
+
+static CLASS_ATTR_WO(keytest);
+
 static irqreturn_t gpio_irq_handler(int irq, void *data)
 {
 	struct gpio_keypad *keypad;
@@ -58,14 +71,18 @@ static void report_key_code(struct gpio_keypad *keypad, int gpio_val)
 	if (key->count >= KEY_JITTER_COUNT) {
 		key->current_status = gpio_val;
 		if (key->current_status) {
-			input_event(keypad->input_dev, key->key_type,
-				    key->code, 0);
+			if(key_test_flag)
+				input_event(keypad->input_dev, key->key_type, KEY_VOLUMEUP, 0);
+			else
+				input_event(keypad->input_dev, key->key_type, key->code, 0);
 
 			dev_dbg(&keypad->input_dev->dev,
 				 "key %d up.\n", key->code);
 		} else {
-			input_event(keypad->input_dev, key->key_type,
-				    key->code, 1);
+			if(key_test_flag)
+				input_event(keypad->input_dev, key->key_type, KEY_VOLUMEUP, 1);
+			else
+				input_event(keypad->input_dev, key->key_type, key->code, 1);
 
 			dev_dbg(&keypad->input_dev->dev,
 				 "key %d down.\n", key->code);
@@ -137,6 +154,7 @@ static CLASS_ATTR_RO(table);
 
 static struct attribute *meson_gpiokey_attrs[] = {
 	&class_attr_table.attr,
+	&class_attr_keytest.attr,
 	NULL
 };
 
@@ -302,6 +320,7 @@ static int meson_gpio_kp_probe(struct platform_device *pdev)
 				 "failed to register wakeup source!\n");
 	}
 
+	input_set_capability(input_dev, EV_KEY, KEY_VOLUMEUP);
 	return 0;
 }
 

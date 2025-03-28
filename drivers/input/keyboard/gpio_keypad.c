@@ -42,12 +42,14 @@ struct gpio_keypad {
 };
 
 int key_test_flag = 0;
+EXPORT_SYMBOL(key_test_flag);
 
 static ssize_t keytest_store(struct class *cls, struct class_attribute *attr,
 			     const char *buf, size_t count)
 {
     if (kstrtoint(buf, 0, &key_test_flag))
             return -EINVAL;
+	key_test_flag = 1;
     printk("key_test_flag: %d\n", key_test_flag);
     return count;
 }

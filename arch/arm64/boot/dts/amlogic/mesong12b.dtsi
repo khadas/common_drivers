@@ -342,7 +342,7 @@
 		#clock-cells = <0>;
 	};
 
-	rtc{
+	vrtc: rtc{
 		compatible = "amlogic,meson-vrtc";
 		reg = <0x0 0xff8000a8 0x0 0x4>;
 		mboxes = <&mbox_pl G12B_REE2AO_VRTC>;
@@ -1385,7 +1385,7 @@
 		reg = <0x0 0xff638048 0x0 0x2000>;
 	};
 
-	ge2d {
+	ge2d: ge2d {
 		compatible = "amlogic, ge2d-g12a";
 		dev_name = "ge2d";
 		status = "okay";
@@ -2031,21 +2031,21 @@
 		key_0:key_0{
 			keyname = "mac";
 			offset = <0>;
-			size = <6>;
+			size = <12>;
 		};
 		key_1:key_1{
 			keyname = "mac_bt";
-			offset = <6>;
+			offset = <12>;
 			size = <6>;
 		};
 		key_2:key_2{
 			keyname = "mac_wifi";
-			offset = <12>;
+			offset = <18>;
 			size = <6>;
 		};
 		key_3:key_3{
 			keyname = "usid";
-			offset = <18>;
+			offset = <24>;
 			size = <16>;
 		};
 	};
@@ -2195,15 +2195,6 @@
 };
 
 &pinctrl_periphs {
-
-//	bl_pwm_off_pins:bl_pwm_off_pin {
-//		mux {
-//			groups = "GPIOH_5";
-//			function = "gpio_periphs";
-//			bias-pull-up;
-//			drive-strength-microamp = <4000>;
-//		};
-//	};
 
 	emmc_pins: emmc_pins {
 		mux-0 {

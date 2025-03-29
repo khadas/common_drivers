@@ -75,7 +75,7 @@
 
 &drm_vpu {
 	assigned-clocks = <&clkc CLKID_VPU_CLKC_MUX>;
-	assigned-clock-rates = <200000000>;
+	assigned-clock-rates = <667000000>;
 	connectors_dev: port@1 {
 		drm_to_lcd0: endpoint@2 {
 			reg = <2>;

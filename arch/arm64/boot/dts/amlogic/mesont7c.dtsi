@@ -308,7 +308,7 @@
 			<0x0 0xfe0102dc 0x0 0x4>; /*SYSCTRL_STICKY_REG7*/
 	};
 
-	aml_reboot {
+	aml_reboot: aml_reboot {
 		compatible = "aml, reboot";
 		sys_reset = <0x84000009>;
 		sys_poweroff = <0x84000008>;
@@ -3201,7 +3201,7 @@
 		status = "okay";
 	};
 
-	ge2d:ge2d {
+	ge2d: ge2d {
 		compatible = "amlogic, ge2d-t7";
 		status = "okay";
 		interrupts = <GIC_SPI 217 IRQ_TYPE_EDGE_RISING>;
@@ -3351,7 +3351,7 @@
 		key_3:key_3{
 			keyname = "usid";
 			offset = <18>;
-			size = <16>;
+			size = <10>;
 		};
 	};
 	gpu_opp_table: gpu_opp_table {

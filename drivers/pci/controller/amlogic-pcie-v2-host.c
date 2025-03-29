@@ -431,7 +431,7 @@ static int amlogic_pcie_get_reset_gpio(struct amlogic_pcie *aml_pcie)
 	aml_pcie->reset_gpio = of_get_named_gpio(node, "reset-gpio", 0);
 	if (gpio_is_valid(aml_pcie->reset_gpio)) {
 		ret = devm_gpio_request_one(dev, aml_pcie->reset_gpio,
-					    GPIOF_OUT_INIT_HIGH,
+					    GPIOF_OUT_INIT_LOW,
 					    "pcie_perst");
 		if (ret) {
 			dev_err(dev, "unable to get reset gpio\n");

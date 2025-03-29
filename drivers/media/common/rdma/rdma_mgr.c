@@ -1373,7 +1373,7 @@ int rdma_write_reg(int handle, u32 adr, u32 val)
 		!is_in_vsync_isr_viu3()) || (smp_processor_id() != 0)) &&
 		get_rdma_handle(VSYNC_RDMA) == handle) {
 #endif
-		dump_stack();
+//		dump_stack();
 		pr_info("rdma_write(%d) %d(%x)<=%x\n",
 			handle, ins->rdma_item_count, adr, val);
 	}
@@ -1381,7 +1381,7 @@ int rdma_write_reg(int handle, u32 adr, u32 val)
 	if (adr == 0) {
 		pr_info("rdma_write(%d) write zero addr = %x, count:%d\n",
 			handle, val, ins->rdma_item_count);
-		dump_stack();
+//		dump_stack();
 	}
 	if (debug_flag & 1 ||
 		(rdma_trace_enable &&

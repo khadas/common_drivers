@@ -2140,7 +2140,9 @@
 		compatible = "amlogic, aml-wifi";
 		status = "disabled";
 		irq_trigger_type = "IRQF_TRIGGER_LOW";
-		wifi_static_buf = <0>;
+		wifi_static_buf = <2>;
+		pinctrl-0 = <&pwm_e_pins1>;
+		pinctrl-names = "default";
 		//pinctrl-0 = <&pwm_e_pins>;
 		//pinctrl-names = "default";
 		pwm_config = <&wifi_pwm_conf>;
@@ -2232,7 +2234,7 @@
 		key_3:key_3{
 			keyname = "usid";
 			offset = <18>;
-			size = <16>;
+			size = <14>;
 		};
 	};
 

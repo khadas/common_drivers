@@ -966,6 +966,7 @@
 &amhdmitx {
 	status = "okay";
 	hdcp_ctl_lvl = <1>;
+	max_refreshrate = <120>;
 };
 
 &drm_vpu {

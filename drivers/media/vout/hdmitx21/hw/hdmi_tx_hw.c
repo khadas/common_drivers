@@ -608,16 +608,19 @@ static int hdmitx_validate_mode(struct hdmitx_hw_common *tx_hw, u32 vic)
 	int ret = 0;
 	const struct hdmi_timing *timing;
 
-	if (!tx_hw || !global_tx_hw->chip_data)
+	if (!tx_hw || !global_tx_hw->chip_data) {
 		return -EINVAL;
+	}
 
 	/*hdmitx21 VESA mode is not supported yet*/
-	if (vic == HDMI_0_UNKNOWN || vic > HDMI_CEA_VIC_END)
+	if (vic == HDMI_0_UNKNOWN) {
 		return -EINVAL;
+	}
 
 	timing = hdmitx_mode_vic_to_hdmi_timing(vic);
-	if (!timing)
+	if (!timing) {
 		return -EINVAL;
+	}
 
 	switch (global_tx_hw->chip_data->chip_type) {
 	case MESON_CPU_ID_S5:

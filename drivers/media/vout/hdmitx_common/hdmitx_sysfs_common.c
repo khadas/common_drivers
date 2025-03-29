@@ -859,8 +859,9 @@ static ssize_t disp_cap_show(struct device *dev,
 	/*copy edid vic list*/
 	if (prxcap->VIC_count > 0)
 		memcpy(edid_vics, prxcap->VIC, sizeof(int) * prxcap->VIC_count);
-	for (i = 0; i < VESA_MAX_TIMING && prxcap->vesa_timing[i]; i++)
+	for (i = 0; i < VESA_MAX_TIMING && prxcap->vesa_timing[i]; i++) {
 		edid_vics[prxcap->VIC_count + i] = prxcap->vesa_timing[i];
+	}
 
 	for (i = 0; i < vic_len; i++) {
 		vic = edid_vics[i];
@@ -902,6 +903,16 @@ static ssize_t disp_cap_show(struct device *dev,
 			pos += snprintf(buf + pos, PAGE_SIZE, "*\n");
 		else
 			pos += snprintf(buf + pos, PAGE_SIZE, "\n");
+	}
+
+	for (i = 0; i < VESA_MAX_TIMING && prxcap->vesa_timing[i]; i++) {
+		vic = prxcap->vesa_timing[i];
+		/* skip CEA modes */
+		if (vic < HDMITX_VESA_OFFSET)
+			continue;
+		timing = hdmitx_mode_vic_to_hdmi_timing(vic);
+		if (timing)
+			pos += snprintf(buf + pos, PAGE_SIZE, "%s\n", timing->name);
 	}
 
 	vfree(edid_vics);

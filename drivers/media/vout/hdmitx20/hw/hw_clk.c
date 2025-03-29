@@ -19,6 +19,12 @@
 
 #define SET_CLK_MAX_TIMES 10
 #define CLK_TOLERANCE 2 /* Unit: MHz */
+#define MIN_HTXPLL_VCO 3000000 /* Min 3GHz */
+#define MAX_HTXPLL_VCO 6000000 /* Max 6GHz */
+#define MIN_FPLL_VCO 1600000 /* Min 1.6GHz */
+#define MAX_FPLL_VCO 3200000 /* Max 3.2GHz */
+#define MIN_GP2PLL_VCO 1600000 /* Min 1.6GHz */
+#define MAX_GP2PLL_VCO 3200000 /* Max 3.2GHz */
 
 /* local frac_rate flag */
 static u32 frac_rate;
@@ -681,9 +687,6 @@ static struct hw_enc_clk_val_group setting_enc_clk_val_24[] = {
 	{{HDMIV_1280x768p60hz,
 	  HDMI_VIC_END},
 		3180000, 4, 1, 1, VID_PLL_DIV_5, 2, 1, 1, -1},
-	{{HDMIV_1280x800p60hz,
-	  HDMI_VIC_END},
-		5680000, 4, 2, 1, VID_PLL_DIV_5, 2, 1, 1, -1},
 	{{HDMIV_1152x864p75hz,
 	  HDMIV_1280x960p60hz,
 	  HDMIV_1280x1024p60hz,
@@ -905,6 +908,45 @@ static void set_hdmitx_fe_clk(struct hdmitx_dev *hdev)
 	hd_set_reg_bits(hdmi_clk_cntl, tmp, 20, 4);
 }
 
+static void calc_pixel_clk_hpll_vco_od(u32 pixel_freq, u32 *vco_out, u32 *od1, u32 *od2)
+{
+	u32 htx_vco = 5940000;
+	u32 div = 1;
+
+	if (!vco_out || !od1 || !od2)
+		return;
+
+	if (pixel_freq < 25175 || pixel_freq > 5940000) {
+		pr_err("%s[%d] not valid pixel clock %d\n", __func__, __LINE__, pixel_freq);
+		return;
+	}
+
+	pixel_freq = pixel_freq * 10; /* for tmds modes, here should multi 10 */
+	if (pixel_freq > MAX_HTXPLL_VCO) {
+		pr_err("%s[%d] base_pixel_clk %d over MAX_HTXPLL_VCO %d\n",
+			__func__, __LINE__, pixel_freq, MAX_HTXPLL_VCO);
+	}
+
+	/* the base pixel_clk range should be 250M ~ 5940M? */
+	htx_vco = pixel_freq;
+	do {
+		if (htx_vco >= MIN_HTXPLL_VCO && htx_vco < MAX_HTXPLL_VCO)
+			break;
+		div *= 2;
+		htx_vco *= 2;
+	} while (div <= 16);
+
+	*vco_out = htx_vco;
+	/* setting htxpll div */
+	if (div > 4) {
+		*od1 = 4;
+		*od2 = div / 4;
+	} else {
+		*od1 = div;
+		*od2 = 1;
+	}
+}
+
 static void hdmitx_set_clk_(struct hdmitx_dev *hdev,
 		struct hw_enc_clk_val_group *test_clk)
 {
@@ -915,6 +957,7 @@ static void hdmitx_set_clk_(struct hdmitx_dev *hdev,
 	enum hdmi_colorspace cs = hdev->tx_comm.fmt_para.cs;
 	enum hdmi_color_depth cd = hdev->tx_comm.fmt_para.cd;
 	struct hdmitx20_hw *tx_hw = &hdev->tx_hw;
+	struct hw_enc_clk_val_group tmp_clk = {0};
 
 	if (!test_clk)
 		return;
@@ -963,9 +1006,12 @@ static void hdmitx_set_clk_(struct hdmitx_dev *hdev,
 		}
 		if (j == sizeof(setting_enc_clk_val_24)
 			/ sizeof(struct hw_enc_clk_val_group)) {
-			HDMITX_INFO("%d:Not find VIC = %d for hpll setting\n",
-				__LINE__, vic);
-			return;
+			/* if vic is VESA mode, then here will automatically calculate the clks */
+			if (vic < HDMITX_VESA_OFFSET) {
+				HDMITX_INFO("%d:Not find VIC = %d for hpll setting\n",
+					__LINE__, vic);
+				return;
+			}
 		}
 	} else if (cd == COLORDEPTH_30B) {
 		if (is_hdmi4k_support_420(vic) && cs != HDMI_COLORSPACE_YUV420) {
@@ -1017,23 +1063,47 @@ static void hdmitx_set_clk_(struct hdmitx_dev *hdev,
 	}
 next:
 	*test_clk = p_enc[j];
+	memcpy(&tmp_clk, &p_enc[j], sizeof(struct hw_enc_clk_val_group));
+	if (vic >= HDMITX_VESA_OFFSET) {
+		const struct hdmi_timing *timing = NULL;
+
+		timing = hdmitx_mode_vic_to_hdmi_timing(vic);
+		if (!timing) {
+			HDMITX_INFO("failed to find VIC %d timing\n", vic);
+			return;
+		}
+		memset(&tmp_clk, 0, sizeof(tmp_clk));
+		calc_pixel_clk_hpll_vco_od(timing->pixel_freq,
+			&tmp_clk.hpll_clk_out, &tmp_clk.od1, &tmp_clk.od2);
+		tmp_clk.od3 = 1; /* fixed divider value */
+		tmp_clk.vid_pll_div = VID_PLL_DIV_5;
+		tmp_clk.vid_clk_div = 2; /* fixed divider value */
+		tmp_clk.hdmi_tx_pixel_div = 1;
+		tmp_clk.encp_div = 1;
+		tmp_clk.enci_div = -1;
+	}
+	HDMITX_INFO("hdmitx sub-clock: %d %d %d %d %d %d %d %d %d\n",
+		tmp_clk.hpll_clk_out, tmp_clk.od1, tmp_clk.od2, tmp_clk.od3,
+		tmp_clk.vid_pll_div, tmp_clk.vid_clk_div, tmp_clk.hdmi_tx_pixel_div,
+		tmp_clk.encp_div, tmp_clk.enci_div);
+
 	hdmitx_set_cts_sys_clk(tx_hw);
-	set_hpll_clk_out(tx_hw, p_enc[j].hpll_clk_out);
+	set_hpll_clk_out(tx_hw, tmp_clk.hpll_clk_out);
 	if (cd == COLORDEPTH_24B && hdev->sspll)
 		set_hpll_sspll(vic);
-	set_hpll_od1(tx_hw, p_enc[j].od1);
-	set_hpll_od2(tx_hw, p_enc[j].od2);
-	set_hpll_od3(tx_hw, p_enc[j].od3);
-	set_hpll_od3_clk_div(tx_hw, p_enc[j].vid_pll_div);
-	pr_debug("j = %d  vid_clk_div = %d\n", j, p_enc[j].vid_clk_div);
-	set_vid_clk_div(tx_hw, p_enc[j].vid_clk_div);
-	set_hdmi_tx_pixel_div(tx_hw, p_enc[j].hdmi_tx_pixel_div);
+	set_hpll_od1(tx_hw, tmp_clk.od1);
+	set_hpll_od2(tx_hw, tmp_clk.od2);
+	set_hpll_od3(tx_hw, tmp_clk.od3);
+	set_hpll_od3_clk_div(tx_hw, tmp_clk.vid_pll_div);
+	pr_debug("j = %d  vid_clk_div = %d\n", j, tmp_clk.vid_clk_div);
+	set_vid_clk_div(tx_hw, tmp_clk.vid_clk_div);
+	set_hdmi_tx_pixel_div(tx_hw, tmp_clk.hdmi_tx_pixel_div);
 
 	if (hdev->tx_comm.hdmitx_vinfo.viu_mux == VIU_MUX_ENCI) {
-		set_enci_div(tx_hw, p_enc[j].enci_div);
+		set_enci_div(tx_hw, tmp_clk.enci_div);
 		hdmitx_enable_enci_clk(hdev);
 	} else {
-		set_encp_div(tx_hw, p_enc[j].encp_div);
+		set_encp_div(tx_hw, tmp_clk.encp_div);
 		hdmitx_enable_encp_clk(hdev);
 	}
 	set_hdmitx_fe_clk(hdev);

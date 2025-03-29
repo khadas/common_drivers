@@ -225,6 +225,7 @@ struct meson_vpu_osd_layer_info {
 	u32 status_changed;
 	int sec_en;
 	u32 *palette_arry;
+	bool fbdev_commit;
 };
 
 enum osd_mif_acc_mode {
@@ -287,6 +288,7 @@ struct meson_vpu_osd_state {
 	u32 read_ports;
 	int sec_en;
 	u32 *palette_arry;
+	bool fbdev_commit;
 };
 
 struct meson_vpu_video_layer_info {

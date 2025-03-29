@@ -201,6 +201,44 @@ static void set_hpll_hclk_dongle_5940m(void)
 	HDMITX_INFO("HPLL: 0x%x\n", hd_read_reg(P_HHI_HDMI_PLL_CNTL0));
 }
 
+static void g12a_auto_set_hpll(u32 clk)
+{
+	u32 quotient;
+	u32 remainder;
+	u32 rem_1;
+	u32 rem_2;
+
+	if (clk < 3000000 || clk >= 6000000) {
+		HDMITX_ERROR("%s[%d] clock should be 3~6G\n", __func__, __LINE__);
+		return;
+	}
+
+	quotient = clk / 24000;
+	remainder = clk - quotient * 24000;
+	/* remainder range: 0 ~ 99999, 0x1869f, 17bits */
+	/* convert remainder to 0 ~ 2^17 */
+	if (remainder) {
+		rem_1 = remainder / 16;
+		rem_2 = remainder - rem_1 * 16;
+		rem_1 *= 1 << 17;
+		rem_1 /= 1500;
+		rem_2 *= 1 << 13;
+		rem_2 /= 1500;
+		remainder = rem_1 + rem_2;
+	}
+
+	hd_write_reg(P_HHI_HDMI_PLL_CNTL0, 0x3b000400 | (quotient & 0x1ff));
+	hd_set_reg_bits(P_HHI_HDMI_PLL_CNTL0, 0x3, 28, 2);
+	hd_write_reg(P_HHI_HDMI_PLL_CNTL1, remainder);
+	hd_write_reg(P_HHI_HDMI_PLL_CNTL2, 0x00000000);
+	hd_write_reg(P_HHI_HDMI_PLL_CNTL3, 0x6a685c00);
+	hd_write_reg(P_HHI_HDMI_PLL_CNTL4, 0x33771290);
+	hd_write_reg(P_HHI_HDMI_PLL_CNTL5, 0x3927200a);
+	hd_write_reg(P_HHI_HDMI_PLL_CNTL6, 0x55540000);
+	hd_set_reg_bits(P_HHI_HDMI_PLL_CNTL0, 0x0, 29, 1);
+	WAIT_FOR_PLL_LOCKED(P_HHI_HDMI_PLL_CNTL0);
+}
+
 void set_g12a_hpll_clk_out(unsigned int frac_rate, unsigned int clk)
 {
 	struct hdmitx_dev *hdev = get_hdmitx_device();
@@ -491,8 +529,21 @@ void set_g12a_hpll_clk_out(unsigned int frac_rate, unsigned int clk)
 		WAIT_FOR_PLL_LOCKED(P_HHI_HDMI_PLL_CNTL0);
 		HDMITX_INFO("HPLL: 0x%x\n", hd_read_reg(P_HHI_HDMI_PLL_CNTL0));
 		break;
+	case 3340000:
+		hd_write_reg(P_HHI_HDMI_PLL_CNTL0, 0x3b00048b);
+		hd_write_reg(P_HHI_HDMI_PLL_CNTL1, 0x00005555);
+		hd_write_reg(P_HHI_HDMI_PLL_CNTL2, 0x00000000);
+		hd_write_reg(P_HHI_HDMI_PLL_CNTL3, 0x0a691c00);
+		hd_write_reg(P_HHI_HDMI_PLL_CNTL4, 0x33771290);
+		hd_write_reg(P_HHI_HDMI_PLL_CNTL5, 0x39270000);
+		hd_write_reg(P_HHI_HDMI_PLL_CNTL6, 0x50540000);
+		hd_set_reg_bits(P_HHI_HDMI_PLL_CNTL0, 0x0, 29, 1);
+		WAIT_FOR_PLL_LOCKED(P_HHI_HDMI_PLL_CNTL0);
+		HDMITX_INFO("HPLL: 0x%x\n", hd_read_reg(P_HHI_HDMI_PLL_CNTL0));
+		break;
 	default:
-		HDMITX_INFO("error hpll clk: %d\n", clk);
+		HDMITX_INFO("auto setup hpll clk: %d\n", clk);
+		g12a_auto_set_hpll(clk);
 		break;
 	}
 }

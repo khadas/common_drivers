@@ -449,18 +449,16 @@ static void edid_parsing_id_serial_number(struct rx_cap *prxcap,
 static void store_vesa_idx(struct rx_cap *prxcap, enum hdmi_vic vesa_timing)
 {
 	int i;
+	int already = 0;
 
-	if (!prxcap)
-		return;
-
-	for (i = 0; i < VESA_MAX_TIMING; i++) {
-		if (!prxcap->vesa_timing[i]) {
-			prxcap->vesa_timing[i] = vesa_timing;
+	for (i = 0; i < VESA_MAX_TIMING && prxcap->vesa_timing[i]; i++) {
+		if (prxcap->vesa_timing[i] == vesa_timing) {
+			already = 1;
 			break;
 		}
-
-		if (prxcap->vesa_timing[i] == vesa_timing)
-			break;
+	}
+	if (!already && i != VESA_MAX_TIMING) {
+		prxcap->vesa_timing[i] = vesa_timing;
 	}
 }
 
@@ -2570,7 +2568,8 @@ static void _edid_parse_base_structure(struct rx_cap *prxcap, unsigned char *EDI
 			prxcap->ieeeoui = HDMI_IEEE_OUI;
 		if (zero_numbers > 120)
 			prxcap->ieeeoui = HDMI_IEEE_OUI;
-		hdmitx_edid_set_default_vic(prxcap);
+		if (prxcap->ieeeoui == HDMI_IEEE_OUI)
+			hdmitx_edid_set_default_vic(prxcap);
 	}
 }
 
@@ -2764,7 +2763,7 @@ int hdmitx_edid_parse(struct rx_cap *prxcap, u8 *edid_buf)
 	}
 
 	/* if edid are all zeroes, or no VIC, set default vic */
-	if (edid_zero_data(edid_buf) || prxcap->VIC_count == 0)
+	if (edid_zero_data(edid_buf) || (prxcap->VIC_count == 0 && prxcap->ieeeoui == HDMI_IEEE_OUI))
 		hdmitx_edid_set_default_vic(prxcap);
 
 	if (prxcap->ieeeoui != HDMI_IEEE_OUI)

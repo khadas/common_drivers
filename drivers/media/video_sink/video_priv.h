@@ -260,6 +260,13 @@ enum aisr_demo_type_e {
 	SHARPNESS
 };
 
+enum video_vpp_mute_type {
+	VIDEO_BE_MUTED,
+	VIDEO_BE_UNMUTED,
+	VPP_BE_MUTED,
+	VPP_BE_UNMUTED,
+};
+
 typedef u32 (*rdma_rd_op)(u32 reg);
 typedef int (*rdma_wr_op)(u32 reg, u32 val);
 typedef int (*rdma_wr_bits_op)(u32 reg, u32 val, u32 start, u32 len);

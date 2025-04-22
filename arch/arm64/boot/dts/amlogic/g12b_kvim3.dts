@@ -543,12 +543,37 @@
 		compatible = "amlogic, auge-sound-card";
 		aml-audio-card,name = "AML-AUGESOUND";
 
-		/*avout mute gpio*/
-		avout_mute-gpios = <&gpio_ao GPIOAO_2 GPIO_ACTIVE_HIGH>;
 		/*for audio effect ,eqdrc */
 		//aml-audio-card,effect = <&audio_effect>;
 
 		aml-audio-card,dai-link@0 {
+			format = "i2s";
+			mclk-fs = <256>;
+			//continuous-clock;
+			//bitclock-inversion;
+			//frame-inversion;
+			bitclock-master = <&aml_tdmb>;
+			frame-master = <&aml_tdmb>;
+			//bitclock-master = <&tdmbcodec>;
+			//frame-master = <&tdmbcodec>;
+			/* suffix-name, sync with android audio hal
+			 * what's the dai link used for
+			 */
+			suffix-name = "alsaPORT-i2s";
+			cpu {
+				sound-dai = <&aml_tdmb>;
+				dai-tdm-slot-tx-mask = <1 1>;
+				dai-tdm-slot-rx-mask = <1 1>;
+				dai-tdm-slot-num = <2>;
+				dai-tdm-slot-width = <32>;
+				system-clock-frequency = <12288000>;
+			};
+			tdmbcodec: codec {
+				sound-dai = <&amlogic_codec>;
+			};
+		};
+
+		aml-audio-card,dai-link@1 {
 			format = "dsp_a";
 			mclk-fs = <512>;
 			//continuous-clock;
@@ -577,33 +602,6 @@
 			};
 		};
 
-		aml-audio-card,dai-link@1 {
-			format = "i2s";
-			mclk-fs = <256>;
-			//continuous-clock;
-			//bitclock-inversion;
-			//frame-inversion;
-			bitclock-master = <&aml_tdmb>;
-			frame-master = <&aml_tdmb>;
-			//bitclock-master = <&tdmbcodec>;
-			//frame-master = <&tdmbcodec>;
-			/* suffix-name, sync with android audio hal
-			 * what's the dai link used for
-			 */
-			suffix-name = "alsaPORT-i2s";
-			cpu {
-				sound-dai = <&aml_tdmb>;
-				dai-tdm-slot-tx-mask = <1 1>;
-				dai-tdm-slot-rx-mask = <1 1>;
-				dai-tdm-slot-num = <2>;
-				dai-tdm-slot-width = <32>;
-				system-clock-frequency = <12288000>;
-			};
-			tdmbcodec: codec {
-				sound-dai = <&amlogic_codec>;
-			};
-		};
-
 		aml-audio-card,dai-link@2 {
 			format = "i2s";
 			mclk-fs = <256>;
@@ -629,7 +627,7 @@
 			};
 		};
 
-		ml-audio-card,dai-link@3 {
+		aml-audio-card,dai-link@3 {
 			mclk-fs = <128>;
 			/* suffix-name, sync with android audio hal
 			 * what's the dai link used for
@@ -988,8 +986,8 @@
 
 &i2c3 {
 	status = "okay";
-	pinctrl-names = "default";
-	pinctrl-0 = <&i2c3_master_pins2>;
+	pinctrl-names="default";
+	pinctrl-0=<&i2c3_master_pins2>;
 	clock-frequency = <100000>; /* default 100k */
 
 	ft5336@38 {
@@ -1042,6 +1040,11 @@
 		status = "okay";
 	};
 
+	hym8563-rtc@51 {
+		compatible = "haoyu,hym8563";
+		reg = <0x51>;
+	};
+
 	khadas-mcu@18 {
 		compatible = "khadas-mcu";
 		reg = <0x18>;
@@ -1051,7 +1054,7 @@
 		hwver = "VIM3.V13"; /* Will be updated in uboot. */
 	};
 
-	khadas-kxtj3 {
+	khadas-kxtj3@e {
 		compatible = "kxtj3";
 		reg = <0x0E>;
 		type = <2>;
@@ -1386,6 +1389,7 @@
 			function = "gpio_aobus";
 		};
 	};
+
 	bl_pwm_off_pins:bl_pwm_off_pin {
 		mux {
 			groups = "GPIOAO_6";
@@ -1459,6 +1463,8 @@
 };
 
 &sd_emmc_b {
+	//vmmc-supply = <&vddao3v3_reg>;
+	//vqmmc-supply = <&vddio_c>;
 	status = "okay";
 	pinctrl-0 = <&sdcard_pins>;
 	pinctrl-1 = <&sdcard_clk_gate_pins>;
@@ -1475,26 +1481,26 @@
 	//	&ao_to_sd_uart_pins>;
 
 	pinctrl-names = "sd_default",
-			"clk-gate",
-			"sd_1bit_pins";
-	//		"sd_clk_cmd_uart_pins",
-	//		"sd_1bit_uart_pins",
-	//		"sd_to_ao_uart_pins",
-	//		"ao_to_sd_uart_pins",
-	//		"sd_to_ao_jtag_pins",
-	//		"ao_to_sd_jtag_pins";
-			bus-width = <4>;
-			cap-sd-highspeed;
-			sd-uhs-sdr12;
-			sd-uhs-sdr25;
-			sd-uhs-sdr50;
-			sd-uhs-sdr104;
-			max-frequency = <200000000>;
-			disable-wp;
-			dat1-gpios = <&gpio GPIOC_1 GPIO_ACTIVE_HIGH>;
-			cd-gpios = <&gpio GPIOC_6 GPIO_ACTIVE_HIGH>;
-//			vmmc-supply = <&vddao3v3_reg>;
-//			vqmmc-supply = <&vddio_c>;
+				"clk-gate",
+				"sd_1bit_pins";
+	//			"sd_clk_cmd_uart_pins",
+	//			"sd_1bit_uart_pins",
+	//			"sd_to_ao_uart_pins",
+	//			"ao_to_sd_uart_pins",
+	//			"sd_to_ao_jtag_pins",
+	//			"ao_to_sd_jtag_pins";
+				bus-width = <4>;
+				cap-sd-highspeed;
+//      sd-uhs-sdr12;
+//      sd-uhs-sdr25;
+//      sd-uhs-sdr50;
+//      sd-uhs-sdr104;
+				max-frequency = <200000000>;
+				disable-wp;
+				dat1-gpios = <&gpio GPIOC_1 GPIO_ACTIVE_HIGH>;
+				cd-gpios = <&gpio GPIOC_6 GPIO_ACTIVE_HIGH>;
+				//vmmc-supply = <&vddao_3v3>;
+				//vqmmc-supply = <&emmc_1v8>;
 };
 
 &sd_emmc_a {
@@ -1583,8 +1589,8 @@
 	status = "okay";
 	portnum = <1>;
 	otg = <1>;
-	gpio-vbus-power = "GPIOH_6";
-	gpios = <&gpio GPIOH_6 GPIO_ACTIVE_HIGH>;
+	gpio-vbus-power = "GPIOA_6";
+	gpios = <&gpio GPIOA_6 GPIO_ACTIVE_HIGH>;
 };
 
 &dwc2_a {
@@ -1595,10 +1601,10 @@
 
 &ext_mdio {
 	external_phy: ethernet-phy@0 {
-	reg = <0>;
-	max-speed = <1000>;
-	reset-assert-us = <20000>;
-	reset-deassert-us = <50000>;
+		reg = <0>;
+		max-speed = <1000>;
+		reset-assert-us = <20000>;
+		reset-deassert-us = <50000>;
 	};
 };
 
@@ -1619,6 +1625,7 @@
 
 &uart_A {
 	status = "okay";
+	uart_for_bt = <1>;
 };
 
 &uart_C {
@@ -1650,6 +1657,7 @@
 
 	spidev@1 {
 		status = "okay";
+
 		compatible = "linux,spidev";
 		/* spi default max clock 100Mhz */
 		spi-max-frequency = <100000000>;
@@ -1684,5 +1692,8 @@
 
 &wdt {
 	amlogic,feed_watchdog_mode = <0>; /* 0:sysfs,1:kernel */
+	status = "disabled";
+};
+&vrtc {
 	status = "disabled";
 };

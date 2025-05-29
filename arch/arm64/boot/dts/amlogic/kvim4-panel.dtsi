@@ -633,15 +633,15 @@
 			model_name = "TS101";
 			interface = "mipi";
 			basic_setting = <1920 1200 /*h_active, v_active*/
-				2066 1229 /*h_period, v_period*/
+				1932 1229 /*h_period, v_period*/
 				8 /*lcd_bits*/
 				154 86>; /*screen_widht, screen_height*/
-			lcd_timing = <4 32 0 /*hs_width, hs_bp, hs_pol*/
+			lcd_timing = <4 4 0 /*hs_width, hs_bp, hs_pol*/
 				4 14 0>; /*vs_width, vs_bp, vs_pol*/
 			clk_attr = <0xff /*fr_adj_type(0=clk, 1=htotal, 2=vtotal)*/
 				0 /*clk_ss_level */
 				1 /*clk_auto_generate*/
-				137112156>; /*pixel_clk(unit in Hz)*/
+				142465680>; /*pixel_clk(unit in Hz)*/
 			mipi_attr = <4 /*lane_num*/
 				1000 /*bit_rate_max(MHz)*/
 				0 /*factor(*100, default 0 for auto)*/

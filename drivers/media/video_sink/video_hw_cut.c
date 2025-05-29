@@ -570,7 +570,7 @@ EXPORT_SYMBOL(get_dv_vpu_mem_power_status);
 static struct vframe_pic_mode_s gpic_info[MAX_VD_LAYERS];
 u32 reference_zorder = 128;
 static int param_vpp_num = VPP_MAX;
-u32 vpp_hold_line[VPP_MAX] = {8, 8, 8, 8};
+u32 vpp_hold_line[VPP_MAX] = {2, 2, 2, 2};
 static u32 cur_vpp_num = MAX_VPP_NUM;
 static unsigned int cur_vf_flag[MAX_VPP_NUM];
 static u32 vpp_ofifo_size = 0x1000;

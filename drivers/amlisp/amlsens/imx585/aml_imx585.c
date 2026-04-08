@@ -139,7 +139,7 @@ static int imx585_write_buffered_reg(struct imx585 *imx585, u16 address_low,
 	}
 
 	for (i = 0; i < nr_regs; i++) {
-		val = (u8)(value >> (i * 8)); //low register writed low value
+		val = (u8)(value >> (i * 8)); //low register write low value
 		//pr_err("%s addr: 0x%x, value 0x%x", __func__, (address_low + i), val);
 		ret = imx585_write_reg(imx585, address_low + i, val);
 		if (ret) {

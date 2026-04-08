@@ -231,13 +231,13 @@ static int imx415_set_vts(struct imx415 *imx415, u32 value)
 	vts_h = (vts >> 8) & 0xff;
 	vts_l = vts & 0xff;
 
-	ret = imx415_write_reg(imx415, 0x3025, vts_h);
+	ret = imx415_write_reg(imx415, 0x3025, vts_h);//0x09
 	if (ret) {
 		dev_err(imx415->dev, "Error setting vts register, line %d\n", __LINE__);
 		goto ERR;
 	}
 
-	ret = imx415_write_reg(imx415, 0x3024, vts_l);
+	ret = imx415_write_reg(imx415, 0x3024, vts_l);//0x18
 	if (ret) {
 		dev_err(imx415->dev, "Error setting vts register, line %d\n", __LINE__);
 		goto ERR;
@@ -886,6 +886,7 @@ int imx415_init(struct i2c_client *client, void *sdrv)
 	imx415->client->addr = IMX415_SLAVE_ID;
 	imx415->gpio = &sensor->gpio;
 	imx415->fps = 30;
+	imx415->nlanes = 4;
 
 	imx415->regmap = devm_regmap_init_i2c(client, &imx415_regmap_config);
 	if (IS_ERR(imx415->regmap)) {

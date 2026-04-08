@@ -189,8 +189,6 @@ static int ov08a10_set_gain(struct ov08a10 *ov08a10, u32 value)
 {
 	int ret;
 	ret = ov08a10_write_reg(ov08a10, OV08A10_GAIN, (value >> 8) & 0xFF);
-	//dev_err(ov08a10->dev, "OV08A10_GAIN = %d\n",value);
-
 	if (ret)
 		dev_err(ov08a10->dev, "Unable to write gain_H\n");
 	ret = ov08a10_write_reg(ov08a10, OV08A10_GAIN_L, value & 0xFF);

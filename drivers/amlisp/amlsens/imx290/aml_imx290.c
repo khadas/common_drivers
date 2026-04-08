@@ -822,6 +822,7 @@ int imx290_init(struct i2c_client *client, void *sdrv)
 	imx290->client->addr = IMX290_SLAVE_ID;
 	imx290->gpio = &sensor->gpio;
 	imx290->fps = 30;
+	imx290->nlanes = 4;
 
 	imx290->regmap = devm_regmap_init_i2c(client, &imx290_regmap_config);
 	if (IS_ERR(imx290->regmap)) {

@@ -156,8 +156,8 @@ static void dw9714_vcm_move( void *ctx, uint16_t position )
     p_ctx->param.next_pos = position;
 
     pos = ( position ) / (p_ctx->param.min_step);
-    pr_err("%s  position %d / min_step  %d = pos %d",
-            __func__, position, p_ctx->param.min_step,  pos );
+//    pr_err("%s  position %d / min_step  %d = pos %d",
+//            __func__, position, p_ctx->param.min_step,  pos );
 
     pos = pos & 0x3FF ; // 10 bits data.
 
